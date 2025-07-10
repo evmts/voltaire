@@ -22,6 +22,15 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    
+    const rlp_mod = b.createModule(.{
+        .root_source_file = b.path("src/rlp/rlp.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    
+    // Add Rlp import to address module
+    address_mod.addImport("Rlp", rlp_mod);
     const evm_mod = b.createModule(.{
         .root_source_file = b.path("src/evm/evm.zig"),
         .target = target,
@@ -30,6 +39,21 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     evm_mod.addImport("Address", address_mod);
+    
+    // Add root.zig as Evm module to evm_mod so it can import itself
+    const root_mod = b.createModule(.{
+        .root_source_file = b.path("src/evm/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    root_mod.addImport("Address", address_mod);
+    
+    // Allow evm module to import itself through root
+    evm_mod.addImport("Evm", root_mod);
+    
+    // Add Address to lib_mod so tests can access it
+    lib_mod.addImport("Address", address_mod);
+    lib_mod.addImport("evm", evm_mod);
 
     const exe_mod = b.createModule(.{ .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize });
     exe_mod.addImport("Guillotine_lib", lib_mod);
