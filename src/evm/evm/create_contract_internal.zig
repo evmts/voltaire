@@ -6,7 +6,7 @@ const CreateResult = @import("create_result.zig").CreateResult;
 const Keccak256 = std.crypto.hash.sha3.Keccak256;
 const constants = @import("../constants/constants.zig");
 const Log = @import("../log.zig");
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 
 pub fn create_contract_internal(self: *Vm, creator: Address.Address, value: u256, init_code: []const u8, gas: u64, new_address: Address.Address) (std.mem.Allocator.Error || @import("../state/database_interface.zig").DatabaseError || ExecutionError.Error)!CreateResult {
     Log.debug("VM.create_contract_internal: Creating contract from {any} to {any}, value={}, gas={}", .{ creator, new_address, value, gas });

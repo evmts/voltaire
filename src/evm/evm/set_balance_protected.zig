@@ -1,6 +1,6 @@
 const std = @import("std");
 const Address = @import("Address");
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 const ValidateStaticContextError = @import("validate_static_context.zig").ValidateStaticContextError;
 
 pub const SetBalanceProtectedError = ValidateStaticContextError || std.mem.Allocator.Error || @import("../state/database_interface.zig").DatabaseError;

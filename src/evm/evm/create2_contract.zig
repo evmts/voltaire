@@ -2,7 +2,7 @@ const std = @import("std");
 const Address = @import("Address");
 const ExecutionError = @import("../execution/execution_error.zig");
 const CreateResult = @import("create_result.zig").CreateResult;
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 
 pub const Create2ContractError = std.mem.Allocator.Error || Address.CalculateCreate2AddressError || @import("../state/database_interface.zig").DatabaseError || ExecutionError.Error;
 

@@ -5,7 +5,7 @@ const Frame = @import("../frame/frame.zig");
 const Operation = @import("../opcodes/operation.zig");
 const RunResult = @import("run_result.zig").RunResult;
 const Log = @import("../log.zig");
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 
 /// Core bytecode execution with configurable static context.
 /// Runs the main VM loop, executing opcodes sequentially while tracking

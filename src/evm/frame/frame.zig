@@ -4,7 +4,7 @@ const Stack = @import("../stack/stack.zig");
 const Contract = @import("./contract.zig");
 const ExecutionError = @import("../execution/execution_error.zig");
 const Log = @import("../log.zig");
-const ReturnData = @import("../vm/return_data.zig").ReturnData;
+const ReturnData = @import("../evm/return_data.zig").ReturnData;
 
 /// EVM execution frame representing a single call context.
 ///

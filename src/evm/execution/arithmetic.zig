@@ -56,7 +56,7 @@ const Operation = @import("../opcodes/operation.zig");
 const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 
 /// ADD opcode (0x01) - Addition operation
 ///

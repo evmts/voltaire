@@ -1,6 +1,6 @@
 const std = @import("std");
 const Address = @import("Address");
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 
 pub const EmitLogError = std.mem.Allocator.Error;
 

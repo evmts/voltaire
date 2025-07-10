@@ -1,7 +1,7 @@
 const ExecutionError = @import("../execution/execution_error.zig");
 const Contract = @import("../frame/contract.zig");
 const RunResult = @import("run_result.zig").RunResult;
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 
 /// Execute contract bytecode in read-only mode.
 /// Identical to interpret() but prevents any state modifications.

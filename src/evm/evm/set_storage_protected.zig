@@ -1,5 +1,5 @@
 const std = @import("std");
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 const ExecutionError = @import("../execution/execution_error.zig");
 const Address = @import("Address");
 

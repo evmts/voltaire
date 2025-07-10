@@ -1,4 +1,4 @@
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 
 pub const ValidateValueTransferError = error{WriteProtection};
 

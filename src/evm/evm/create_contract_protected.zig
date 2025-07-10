@@ -1,6 +1,6 @@
 const Address = @import("Address");
 const CreateResult = @import("create_result.zig").CreateResult;
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 const ValidateStaticContextError = @import("validate_static_context.zig").ValidateStaticContextError;
 const CreateContractError = @import("create_contract.zig").CreateContractError;
 

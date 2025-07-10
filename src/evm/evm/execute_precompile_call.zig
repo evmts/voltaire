@@ -3,7 +3,7 @@ const Address = @import("Address");
 const CallResult = @import("call_result.zig").CallResult;
 const precompiles = @import("../precompiles/precompiles.zig");
 const Log = @import("../log.zig");
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 
 const CallContractError = std.mem.Allocator.Error;
 

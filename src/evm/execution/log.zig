@@ -3,7 +3,7 @@ const Operation = @import("../opcodes/operation.zig");
 const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 const gas_constants = @import("../constants/gas_constants.zig");
 const Address = @import("Address");
 

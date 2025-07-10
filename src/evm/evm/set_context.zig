@@ -1,5 +1,5 @@
 const Context = @import("../access_list/context.zig");
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 
 /// Update the transaction and block context for the VM.
 /// This updates the context stored in the access list which is used for

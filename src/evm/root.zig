@@ -104,7 +104,7 @@ pub const stack_validation = @import("stack/stack_validation.zig");
 pub const StoragePool = @import("frame/storage_pool.zig");
 
 /// Main virtual machine implementation
-pub const Vm = @import("vm.zig");
+pub const Vm = @import("evm.zig");
 
 /// EVM state management (accounts, storage, logs)
 pub const EvmState = @import("state/state.zig");
@@ -115,7 +115,7 @@ pub const DatabaseInterface = @import("state/database_interface.zig").DatabaseIn
 /// Database error types
 pub const DatabaseError = @import("state/database_interface.zig").DatabaseError;
 
-/// Account state structure  
+/// Account state structure
 pub const Account = @import("state/database_interface.zig").Account;
 
 /// Memory database implementation
@@ -279,31 +279,24 @@ pub const CalculateCreate2AddressError = Address.CalculateCreate2AddressError;
 /// Main execution error enumeration used throughout EVM
 pub const ExecutionErrorEnum = ExecutionError.Error;
 
-// Tests - run individual module tests to isolate segfault
 test "VM module" {
     std.testing.refAllDecls(Vm);
 }
-
 test "Frame module" {
     std.testing.refAllDecls(Frame);
 }
-
 test "Stack module" {
     std.testing.refAllDecls(Stack);
 }
-
 test "Memory module" {
     std.testing.refAllDecls(Memory);
 }
-
 test "ExecutionError module" {
     std.testing.refAllDecls(ExecutionError);
 }
-
 test "Contract module" {
     std.testing.refAllDecls(Contract);
 }
-
 test "JumpTable module" {
     std.testing.refAllDecls(JumpTable);
 }

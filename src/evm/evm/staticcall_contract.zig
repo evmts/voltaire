@@ -2,7 +2,7 @@ const std = @import("std");
 const Address = @import("Address");
 const CallResult = @import("call_result.zig").CallResult;
 const Log = @import("../log.zig");
-const Vm = @import("../vm.zig");
+const Vm = @import("../evm.zig");
 
 pub const StaticcallContractError = std.mem.Allocator.Error;
 
