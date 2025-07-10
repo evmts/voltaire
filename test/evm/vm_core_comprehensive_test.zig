@@ -1,17 +1,17 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("opcodes/test_helpers.zig");
+const Evm = @import("evm");
 const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
+const ExecutionError = Evm.ExecutionError;
 
 // Import VM core components through evm module
-const Evm = @import("evm");
 const Context = Evm.Context;
 const VM = Evm.Evm;
-const Frame = Evm.Frame;
 const Memory = Evm.Memory;
 const Stack = Evm.stack.Stack;
-const Contract = Evm.contract.Contract;
-const ExecutionError = Evm.execution.ExecutionError;
 const Hardfork = Evm.hardforks.Hardfork;
 const JumpTable = Evm.jump_table.JumpTable;
 const ChainRules = Evm.hardforks.ChainRules;
@@ -102,12 +102,14 @@ test "VMCore: Context chain identification" {
 
 test "VMCore: Context opcode mapping values" {
     // Test realistic mainnet values for all opcode fields
+    const alice: Address.Address = [_]u8{0x11} ** 20;
+    const bob: Address.Address = [_]u8{0x22} ** 20;
     const context = Context.init_with_values(
-        helpers.TestAddresses.ALICE,    // tx_origin
+        alice,    // tx_origin
         25_000_000_000,                 // gas_price: 25 gwei
         19_000_000,                     // block_number
         1_700_000_000,                  // block_timestamp
-        helpers.TestAddresses.BOB,      // block_coinbase (validator)
+        bob,      // block_coinbase (validator)
         0,                              // block_difficulty (post-merge: 0)
         30_000_000,                     // block_gas_limit
         1,                              // chain_id: mainnet
@@ -132,7 +134,11 @@ test "VMCore: Context opcode mapping values" {
 test "VMCore: VM initialization with default hardfork" {
     const allocator = testing.allocator;
     
-    var vm = try VM.init(allocator, null, null);
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try VM.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
     // Verify VM is properly initialized
@@ -153,7 +159,11 @@ test "VMCore: VM initialization with specific hardfork" {
     const hardforks_to_test = [_]Hardfork{ .FRONTIER, .HOMESTEAD, .BYZANTIUM, .CONSTANTINOPLE, .ISTANBUL, .BERLIN, .LONDON, .PARIS, .SHANGHAI, .CANCUN };
     
     for (hardforks_to_test) |hardfork| {
-        var vm = try VM.init_with_hardfork(allocator, hardfork);
+        var memory_db = MemoryDatabase.init(allocator);
+        defer memory_db.deinit();
+
+        const db_interface = memory_db.to_database_interface();
+        var vm = try VM.init_with_hardfork(allocator, db_interface, hardfork);
         defer vm.deinit();
         
         // Verify hardfork-specific initialization
@@ -168,7 +178,12 @@ test "VMCore: VM initialization with specific hardfork" {
 
 test "VMCore: VM program counter management and control flow" {
     const allocator = testing.allocator;
-    var vm = try VM.init(allocator, null, null);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try VM.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
     // Test bytecode with PC-modifying operations
@@ -181,12 +196,17 @@ test "VMCore: VM program counter management and control flow" {
         0x00,           // STOP
     };
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &bytecode,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
@@ -200,18 +220,28 @@ test "VMCore: VM program counter management and control flow" {
 
 test "VMCore: VM execution loop with gas tracking" {
     const allocator = testing.allocator;
-    var vm = try VM.init(allocator, null, null);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try VM.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
     // Simple bytecode: PUSH1 1, PUSH1 2, ADD, STOP
     const bytecode = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 };
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &bytecode,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     contract.gas = 100000;
@@ -228,18 +258,28 @@ test "VMCore: VM execution loop with gas tracking" {
 
 test "VMCore: VM depth tracking in nested calls" {
     const allocator = testing.allocator;
-    var vm = try VM.init(allocator, null, null);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try VM.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
     // Test depth increments properly
     try testing.expectEqual(@as(u16, 0), vm.depth);
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{0x00}, // STOP
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
@@ -254,15 +294,25 @@ test "VMCore: VM depth tracking in nested calls" {
 
 test "VMCore: VM static context enforcement" {
     const allocator = testing.allocator;
-    var vm = try VM.init(allocator, null, null);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try VM.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{0x00}, // STOP
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
@@ -277,16 +327,26 @@ test "VMCore: VM static context enforcement" {
 
 test "VMCore: VM instruction dispatch error handling" {
     const allocator = testing.allocator;
-    var vm = try VM.init(allocator, null, null);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try VM.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
     // Test invalid opcode
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{0xFE}, // INVALID opcode
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     contract.gas = 100000;
@@ -305,12 +365,17 @@ test "VMCore: VM instruction dispatch error handling" {
 test "VMCore: Frame initialization and cleanup" {
     const allocator = testing.allocator;
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{0x00},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
@@ -338,21 +403,30 @@ test "VMCore: Frame initialization and cleanup" {
 test "VMCore: Frame state inheritance and context switching" {
     const allocator = testing.allocator;
     
-    var parent_contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const bob: Address.Address = [_]u8{0x22} ** 20;
+    var parent_contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{0x00},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer parent_contract.deinit(allocator, null);
     
-    var child_contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.BOB,
-        helpers.TestAddresses.CONTRACT,
+    var child_contract = Contract.init(
+        contract_addr,
+        bob,
         0,
+        100000,
         &[_]u8{0x00},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer child_contract.deinit(allocator, null);
     
@@ -397,12 +471,17 @@ test "VMCore: Frame state inheritance and context switching" {
 test "VMCore: Frame gas consumption and tracking" {
     const allocator = testing.allocator;
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{0x00},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
@@ -432,12 +511,17 @@ test "VMCore: Frame gas consumption and tracking" {
 test "VMCore: Frame call depth limits" {
     const allocator = testing.allocator;
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{0x00},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
@@ -463,12 +547,17 @@ test "VMCore: Frame call depth limits" {
 test "VMCore: Frame stack and memory integration" {
     const allocator = testing.allocator;
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{0x00},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
@@ -750,7 +839,12 @@ test "VMCore: Stack performance and large data handling" {
 
 test "VMCore: Integration - Complete execution flow" {
     const allocator = testing.allocator;
-    var vm = try VM.init(allocator, null, null);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try VM.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
     // Bytecode: PUSH1 10, PUSH1 20, ADD, MSTORE(0), MLOAD(0), STOP
@@ -765,12 +859,17 @@ test "VMCore: Integration - Complete execution flow" {
         0x00,           // STOP
     };
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &bytecode,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     contract.gas = 100000;
@@ -785,18 +884,28 @@ test "VMCore: Integration - Complete execution flow" {
 
 test "VMCore: Integration - Error propagation across components" {
     const allocator = testing.allocator;
-    var vm = try VM.init(allocator, null, null);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try VM.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
     // Test stack underflow error propagation
     const bytecode = [_]u8{ 0x01 }; // ADD with empty stack
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &bytecode,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     contract.gas = 100000;
@@ -810,7 +919,12 @@ test "VMCore: Integration - Error propagation across components" {
 
 test "VMCore: Integration - Memory and gas coordination" {
     const allocator = testing.allocator;
-    var vm = try VM.init(allocator, null, null);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try VM.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
     // Test large memory allocation with limited gas
@@ -821,12 +935,17 @@ test "VMCore: Integration - Memory and gas coordination" {
         0x00,               // STOP
     };
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000, // Limited gas
         &bytecode,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     contract.gas = 1000; // Limited gas

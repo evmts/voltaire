@@ -555,10 +555,12 @@ pub fn emit_log(self: *EvmState, address: Address.Address, topics: []const u256,
     
     // Clone the data to ensure it persists
     const data_copy = try self.allocator.alloc(u8, data.len);
+    errdefer self.allocator.free(data_copy);
     @memcpy(data_copy, data);
 
     // Clone the topics to ensure they persist
     const topics_copy = try self.allocator.alloc(u256, topics.len);
+    errdefer self.allocator.free(topics_copy);
     @memcpy(topics_copy, topics);
 
     const log = EvmLog{

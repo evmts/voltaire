@@ -1,12 +1,7 @@
 // Main entry point for opcodes tests
 
-// Import test helpers
-const test_helpers = @import("test_helpers.zig");
-
 // Import all test files
 test {
-    // Test helpers are already imported above
-    
     // Opcode tests
     _ = @import("arithmetic_test.zig");
     _ = @import("bitwise_test.zig");

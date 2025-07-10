@@ -123,6 +123,58 @@ The following modules are configured in `build.zig`:
 - `Rlp` - RLP encoding/decoding
 - Other modules as defined in build.zig
 
+## Memory Management and Allocation Awareness
+
+### CRITICAL: Always Think About Memory Ownership
+
+When working with Zig code, **ALWAYS** be conscious of memory allocations:
+
+1. **Every allocation needs a corresponding deallocation**
+   - If you see `allocator.create()` or `allocator.alloc()`, immediately think: "Where is this freed?"
+   - If you see `init()` that takes an allocator, check if there's a corresponding `deinit()`
+
+2. **Ownership patterns to watch for**:
+   - **errdefer** - Use when allocation might fail before ownership transfer
+   - **defer** - Use when you own the memory for the entire function scope
+   - **Ownership transfer** - Document when passing allocated memory to caller
+
+3. **Common patterns**:
+   ```zig
+   // Pattern 1: Function owns memory
+   const thing = try allocator.create(Thing);
+   defer allocator.destroy(thing);
+   
+   // Pattern 2: Error handling
+   const thing = try allocator.create(Thing);
+   errdefer allocator.destroy(thing);
+   thing.* = try Thing.init(allocator);
+   
+   // Pattern 3: Ownership transfer to caller
+   pub fn createThing(allocator: Allocator) !*Thing {
+       const thing = try allocator.create(Thing);
+       // Caller is responsible for calling destroy
+       return thing;
+   }
+   ```
+
+4. **Contract pattern in EVM code**:
+   - `Contract.init()` requires `contract.deinit(allocator, null)`
+   - `Frame.init()` requires `frame.deinit()`
+   - Always use defer immediately after initialization
+
+5. **Test-specific rules**:
+   - Every `init` in a test MUST have a corresponding `defer deinit`
+   - Use `defer` immediately after the initialization line
+   - This prevents memory leaks in tests
+
+## Commenting Guidelines
+
+### Comments Should Be Minimal and Purposeful
+- **Only add useful and necessary comments** - avoid overcommenting
+- **Do not add comments for obvious operations** - code should be self-explanatory
+- **Avoid explaining what the code does** - explain why when needed
+- **No redundant comments** - if removing code, don't add comments about what was removed
+
 ## Notes for AI Assistants
 
 When writing tests for this codebase:
@@ -131,6 +183,8 @@ When writing tests for this codebase:
 3. **Make tests verbose and explicit**
 4. **Prioritize readability over DRY principles**
 5. **Each test should be understandable in isolation**
+6. **ALWAYS add defer statements for cleanup after allocations**
+7. **Follow minimal commenting guidelines** - add comments only when necessary
 
 ### Important: When Things Don't Go As Planned
 

@@ -1,13 +1,23 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const test_helpers = @import("opcodes/test_helpers.zig");
 const Address = @import("Address");
+const Contract = Evm.Contract;
+const MemoryDatabase = Evm.MemoryDatabase;
 
 // Test addresses - use small simple values
 const DEPLOYER_ADDRESS = Address.from_u256(0x1111);
 const USER_ADDRESS = Address.from_u256(0x2222);
 const CONTRACT_ADDRESS = Address.from_u256(0x3333);
+
+// Helper to convert byte array to u256 (big-endian)
+fn bytesToU256(bytes: []const u8) u256 {
+    var value: u256 = 0;
+    for (bytes) |byte| {
+        value = (value << 8) | byte;
+    }
+    return value;
+}
 
 // Test basic inheritance and virtual function calls
 test "E2E: Basic inheritance - virtual function overrides" {
@@ -20,8 +30,19 @@ test "E2E: Basic inheritance - virtual function overrides" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create EVM instance
+    var evm_instance = try allocator.create(Evm.Evm);
+    defer allocator.destroy(evm_instance);
+    
+    var memory_db = try allocator.create(MemoryDatabase);
+    defer allocator.destroy(memory_db);
+    
+    memory_db.* = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
     
     // Simulate virtual function override behavior
     // Base implementation returns base value, derived multiplies by factor
@@ -51,18 +72,28 @@ test "E2E: Basic inheritance - virtual function overrides" {
         0xF3,       // RETURN
     };
     
-    const result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract and execute
+    var contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &virtual_override_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm_instance.state.set_code(CONTRACT_ADDRESS, &virtual_override_bytecode);
+    
+    // Execute the contract
+    const result = try evm_instance.interpret(&contract, &[_]u8{});
     defer if (result.output) |output| allocator.free(output);
     
     try testing.expect(result.status == .Success);
     if (result.output) |output| {
-        const value = test_helpers.bytesToU256(output);
+        const value = bytesToU256(output);
         try testing.expectEqual(@as(u256, 300), value); // 100 * 3
     }
 }
@@ -78,8 +109,19 @@ test "E2E: Interface compliance - polymorphic behavior" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create EVM instance
+    var evm_instance = try allocator.create(Evm.Evm);
+    defer allocator.destroy(evm_instance);
+    
+    var memory_db = try allocator.create(MemoryDatabase);
+    defer allocator.destroy(memory_db);
+    
+    memory_db.* = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
     
     // Simulate interface compliance - different implementations of same interface
     const interface_test_bytecode = [_]u8{
@@ -120,13 +162,23 @@ test "E2E: Interface compliance - polymorphic behavior" {
         0xF3,       // RETURN
     };
     
-    const result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract and execute
+    var contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &interface_test_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm_instance.state.set_code(CONTRACT_ADDRESS, &interface_test_bytecode);
+    
+    // Execute the contract
+    const result = try evm_instance.interpret(&contract, &[_]u8{});
     defer if (result.output) |output| allocator.free(output);
     
     try testing.expect(result.status == .Success);
@@ -134,11 +186,11 @@ test "E2E: Interface compliance - polymorphic behavior" {
         try testing.expectEqual(@as(usize, 64), output.len);
         
         // ConcreteA result: 50 * 2 = 100
-        const concrete_a_result = test_helpers.bytesToU256(output[0..32]);
+        const concrete_a_result = bytesToU256(output[0..32]);
         try testing.expectEqual(@as(u256, 100), concrete_a_result);
         
         // ConcreteB result: 50 + 5 = 55
-        const concrete_b_result = test_helpers.bytesToU256(output[32..64]);
+        const concrete_b_result = bytesToU256(output[32..64]);
         try testing.expectEqual(@as(u256, 55), concrete_b_result);
     }
 }
@@ -154,8 +206,19 @@ test "E2E: Multiple inheritance - diamond pattern resolution" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create EVM instance
+    var evm_instance = try allocator.create(Evm.Evm);
+    defer allocator.destroy(evm_instance);
+    
+    var memory_db = try allocator.create(MemoryDatabase);
+    defer allocator.destroy(memory_db);
+    
+    memory_db.* = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
     
     // Simulate diamond inheritance: Diamond inherits from LeftBase and RightBase
     const diamond_test_bytecode = [_]u8{
@@ -180,18 +243,28 @@ test "E2E: Multiple inheritance - diamond pattern resolution" {
         0xF3,       // RETURN
     };
     
-    const result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract and execute
+    var contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &diamond_test_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm_instance.state.set_code(CONTRACT_ADDRESS, &diamond_test_bytecode);
+    
+    // Execute the contract
+    const result = try evm_instance.interpret(&contract, &[_]u8{});
     defer if (result.output) |output| allocator.free(output);
     
     try testing.expect(result.status == .Success);
     if (result.output) |output| {
-        const combined_value = test_helpers.bytesToU256(output);
+        const combined_value = bytesToU256(output);
         try testing.expectEqual(@as(u256, 800), combined_value);
     }
 }
@@ -208,8 +281,19 @@ test "E2E: Function visibility - access control patterns" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create EVM instance
+    var evm_instance = try allocator.create(Evm.Evm);
+    defer allocator.destroy(evm_instance);
+    
+    var memory_db = try allocator.create(MemoryDatabase);
+    defer allocator.destroy(memory_db);
+    
+    memory_db.* = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
     
     // Test internal function access through public wrapper
     const visibility_test_bytecode = [_]u8{
@@ -251,18 +335,28 @@ test "E2E: Function visibility - access control patterns" {
         0xF3,       // RETURN
     };
     
-    const result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract and execute
+    var contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &visibility_test_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm_instance.state.set_code(CONTRACT_ADDRESS, &visibility_test_bytecode);
+    
+    // Execute the contract
+    const result = try evm_instance.interpret(&contract, &[_]u8{});
     defer if (result.output) |output| allocator.free(output);
     
     try testing.expect(result.status == .Success);
     if (result.output) |output| {
-        const total = test_helpers.bytesToU256(output);
+        const total = bytesToU256(output);
         // 100 (internal function) + 1 (private) + 2 (internal) + 3 (public) = 106
         try testing.expectEqual(@as(u256, 106), total);
     }

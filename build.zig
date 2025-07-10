@@ -71,6 +71,44 @@ pub fn build(b: *std.Build) void {
     // step when running `zig build`).
     b.installArtifact(exe);
 
+    // WASM library build
+    const wasm_target = b.resolveTargetQuery(.{
+        .cpu_arch = .wasm32,
+        .os_tag = .wasi,
+    });
+
+    const wasm_lib_mod = b.createModule(.{
+        .root_source_file = b.path("src/root_c.zig"),
+        .target = wasm_target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    wasm_lib_mod.addImport("Address", address_mod);
+    wasm_lib_mod.addImport("evm", evm_mod);
+    wasm_lib_mod.addImport("Rlp", rlp_mod);
+
+    const wasm_lib = b.addLibrary(.{
+        .name = "guillotine",
+        .root_module = wasm_lib_mod,
+        .linkage = .static,
+    });
+
+    wasm_lib.entry = .disabled;
+
+    const wasm_install = b.addInstallArtifact(wasm_lib, .{});
+    
+    // Add step to report WASM bundle size
+    const wasm_size_step = b.addSystemCommand(&[_][]const u8{
+        "sh", "-c", 
+        "echo '\\n=== WASM Bundle Size Report ===' && " ++
+        "ls -lh zig-out/lib/libguillotine.a | awk '{print \"WASM Bundle Size: \" $5}' && " ++
+        "echo '=== End Report ===\\n'"
+    });
+    wasm_size_step.step.dependOn(&wasm_install.step);
+    
+    const wasm_step = b.step("wasm", "Build WASM library and show bundle size");
+    wasm_step.dependOn(&wasm_size_step.step);
+
     // This *creates* a Run step in the build graph, to be executed when another
     // step is evaluated that depends on it. The next line below will establish
     // such a dependency.
@@ -193,16 +231,6 @@ pub fn build(b: *std.Build) void {
     const opcodes_test_step = b.step("test-opcodes", "Run Opcodes tests");
     opcodes_test_step.dependOn(&run_opcodes_test.step);
 
-    // Create test_helpers module for opcode tests
-    const test_helpers_mod = b.addModule("test_helpers", .{
-        .root_source_file = b.path("test/evm/opcodes/test_helpers.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    test_helpers_mod.stack_check = false;
-    test_helpers_mod.single_threaded = true;
-    test_helpers_mod.addImport("Address", address_mod);
-    test_helpers_mod.addImport("evm", evm_mod);
 
     // Add VM opcode tests
     const vm_opcode_test = b.addTest(.{
@@ -231,7 +259,6 @@ pub fn build(b: *std.Build) void {
     integration_test.root_module.stack_check = false;
     integration_test.root_module.addImport("Address", address_mod);
     integration_test.root_module.addImport("evm", evm_mod);
-    integration_test.root_module.addImport("test_helpers", test_helpers_mod);
 
     const run_integration_test = b.addRunArtifact(integration_test);
     const integration_test_step = b.step("test-integration", "Run Integration tests");
@@ -248,7 +275,6 @@ pub fn build(b: *std.Build) void {
     gas_test.root_module.stack_check = false;
     gas_test.root_module.addImport("Address", address_mod);
     gas_test.root_module.addImport("evm", evm_mod);
-    gas_test.root_module.addImport("test_helpers", test_helpers_mod);
 
     const run_gas_test = b.addRunArtifact(gas_test);
     const gas_test_step = b.step("test-gas", "Run Gas Accounting tests");

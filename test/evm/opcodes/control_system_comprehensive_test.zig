@@ -1,7 +1,11 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers.zig");
+const Evm = @import("evm");
 const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
+const ExecutionError = Evm.ExecutionError;
 
 // ============================
 // 0xF3: RETURN opcode
@@ -9,8 +13,13 @@ const Address = @import("Address");
 
 test "RETURN (0xF3): Return data from execution" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{
         0x60, 0x00, // PUSH1 0x00 (offset = 0)
@@ -18,43 +27,57 @@ test "RETURN (0xF3): Return data from execution" {
         0xF3, // RETURN
     };
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
 
     // Write data to memory
     const return_data = "Hello from RETURN!" ++ ([_]u8{0} ** 14);
-    _ = try test_frame.frame.memory.set_data(0, return_data[0..]);
+    _ = try frame.memory.set_data(0, return_data[0..]);
 
     // Execute push operations
-    test_frame.frame.pc = 0;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 2;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 4;
+    frame.pc = 0;
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 2;
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 4;
 
     // Execute RETURN
-    const result = helpers.executeOpcode(0xF3, test_vm.evm, test_frame.frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF3);
 
     // RETURN should trigger STOP error with return data
-    try testing.expectError(helpers.ExecutionError.Error.STOP, result);
+    try testing.expectError(ExecutionError.Error.STOP, result);
 
     // Check return data buffer was set
-    try testing.expectEqualSlices(u8, return_data[0..], test_frame.frame.return_data.get());
+    try testing.expectEqualSlices(u8, return_data[0..], frame.return_data.get());
 }
 
 test "RETURN: Empty return data" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{
         0x60, 0x00, // PUSH1 0x00 (size = 0)
@@ -62,31 +85,40 @@ test "RETURN: Empty return data" {
         0xF3, // RETURN
     };
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
 
     // Execute push operations
-    test_frame.frame.pc = 0;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 2;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 4;
+    frame.pc = 0;
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 2;
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 4;
 
     // Execute RETURN
-    const result = helpers.executeOpcode(0xF3, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.STOP, result);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF3);
+    try testing.expectError(ExecutionError.Error.STOP, result);
 
     // Check empty return data
-    try testing.expectEqual(@as(usize, 0), test_frame.frame.return_data.size());
+    try testing.expectEqual(@as(usize, 0), frame.return_data.size());
 }
 
 // ============================
@@ -95,8 +127,13 @@ test "RETURN: Empty return data" {
 
 test "REVERT (0xFD): Revert with data" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{
         0x60, 0x00, // PUSH1 0x00 (offset = 0)
@@ -104,43 +141,57 @@ test "REVERT (0xFD): Revert with data" {
         0xFD, // REVERT
     };
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
 
     // Write revert reason to memory
     const revert_data = "Revert reason!" ++ ([_]u8{0} ** 2);
-    _ = try test_frame.frame.memory.set_data(0, revert_data[0..]);
+    _ = try frame.memory.set_data(0, revert_data[0..]);
 
     // Execute push operations
-    test_frame.frame.pc = 0;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 2;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 4;
+    frame.pc = 0;
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 2;
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 4;
 
     // Execute REVERT
-    const result = helpers.executeOpcode(0xFD, test_vm.evm, test_frame.frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFD);
 
     // REVERT should trigger REVERT error
-    try testing.expectError(helpers.ExecutionError.Error.REVERT, result);
+    try testing.expectError(ExecutionError.Error.REVERT, result);
 
     // Check revert data was set
-    try testing.expectEqualSlices(u8, revert_data[0..], test_frame.frame.return_data.get());
+    try testing.expectEqualSlices(u8, revert_data[0..], frame.return_data.get());
 }
 
 test "REVERT: Empty revert data" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{
         0x60, 0x00, // PUSH1 0x00 (size = 0)
@@ -148,31 +199,42 @@ test "REVERT: Empty revert data" {
         0xFD, // REVERT
     };
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
 
     // Execute instructions
     for (0..2) |i| {
-        test_frame.frame.pc = i * 2;
-        _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
+        frame.pc = i * 2;
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
     }
-    test_frame.frame.pc = 4;
+    frame.pc = 4;
 
     // Execute REVERT
-    const result = helpers.executeOpcode(0xFD, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.REVERT, result);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFD);
+    try testing.expectError(ExecutionError.Error.REVERT, result);
 
     // Check empty revert data
-    try testing.expectEqual(@as(usize, 0), test_frame.frame.return_data.size());
+    try testing.expectEqual(@as(usize, 0), frame.return_data.size());
 }
 
 // ============================
@@ -181,33 +243,47 @@ test "REVERT: Empty revert data" {
 
 test "INVALID (0xFE): Consume all gas and fail" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xFE}; // INVALID
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
-    const gas_before = test_frame.frame.gas_remaining;
+    const gas_before = frame.gas_remaining;
 
     // Execute INVALID
-    const result = helpers.executeOpcode(0xFE, test_vm.evm, test_frame.frame);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFE);
 
     // Should return InvalidOpcode error
-    try testing.expectError(helpers.ExecutionError.Error.InvalidOpcode, result);
+    try testing.expectError(ExecutionError.Error.InvalidOpcode, result);
 
     // Should consume all gas
-    try testing.expectEqual(@as(u64, 0), test_frame.frame.gas_remaining);
+    try testing.expectEqual(@as(u64, 0), frame.gas_remaining);
     try testing.expect(gas_before > 0); // Had gas before
 }
 
@@ -217,8 +293,13 @@ test "INVALID (0xFE): Consume all gas and fail" {
 
 test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{
         0x73, // PUSH20 (beneficiary address)
@@ -247,92 +328,130 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
         0xFF, // SELFDESTRUCT
     };
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         1000, // Give contract some balance
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
     // Execute PUSH20
-    test_frame.frame.pc = 0;
-    _ = try helpers.executeOpcode(0x73, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 21;
+    frame.pc = 0;
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x73);
+    frame.pc = 21;
 
     // Execute SELFDESTRUCT
-    const result = helpers.executeOpcode(0xFF, test_vm.evm, test_frame.frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFF);
 
     // SELFDESTRUCT returns STOP
-    try testing.expectError(helpers.ExecutionError.Error.STOP, result);
+    try testing.expectError(ExecutionError.Error.STOP, result);
 }
 
 test "SELFDESTRUCT: Static call protection" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xFF}; // SELFDESTRUCT
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
     // Set static mode
-    test_frame.frame.is_static = true;
+    frame.is_static = true;
 
     // Push beneficiary address
-    try test_frame.pushStack(&[_]u256{Address.to_u256(helpers.TestAddresses.BOB)});
+    const bob_addr: Address.Address = [_]u8{0x22} ** 20;
+    try frame.stack.append(Address.to_u256(bob_addr));
 
     // Execute SELFDESTRUCT
-    const result = helpers.executeOpcode(0xFF, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.WriteProtection, result);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFF);
+    try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
 test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xFF}; // SELFDESTRUCT
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
     // Ensure beneficiary is cold
-    test_vm.evm.access_list.clear();
+    evm.access_list.clear();
 
     // Push cold beneficiary address
     const cold_address = [_]u8{0xDD} ** 20;
-    try test_frame.pushStack(&[_]u256{Address.to_u256(cold_address)});
+    try frame.stack.append(Address.to_u256(cold_address));
 
-    const gas_before = test_frame.frame.gas_remaining;
-    const result = helpers.executeOpcode(0xFF, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.STOP, result);
+    const gas_before = frame.gas_remaining;
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFF);
+    try testing.expectError(ExecutionError.Error.STOP, result);
 
     // Check that cold address access cost was consumed
-    const gas_used = gas_before - test_frame.frame.gas_remaining;
+    const gas_used = gas_before - frame.gas_remaining;
     // Base SELFDESTRUCT (5000) + cold access (2600) = 7600
     try testing.expect(gas_used >= 7600);
 }
@@ -343,33 +462,47 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
 
 test "Control opcodes: Gas consumption" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test RETURN gas consumption (memory expansion)
     const return_code = [_]u8{0xF3}; // RETURN
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &return_code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
     // Return large data requiring memory expansion
-    try test_frame.pushStack(&[_]u256{0}); // offset
-    try test_frame.pushStack(&[_]u256{0x1000}); // size (4096 bytes)
+    try frame.stack.append(0); // offset
+    try frame.stack.append(0x1000); // size (4096 bytes)
 
-    const gas_before = test_frame.frame.gas_remaining;
-    const result = helpers.executeOpcode(0xF3, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.STOP, result);
+    const gas_before = frame.gas_remaining;
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF3);
+    try testing.expectError(ExecutionError.Error.STOP, result);
 
-    const gas_used = gas_before - test_frame.frame.gas_remaining;
+    const gas_used = gas_before - frame.gas_remaining;
     // Should include memory expansion cost
     try testing.expect(gas_used > 400); // Significant gas for memory
 }
@@ -380,109 +513,152 @@ test "Control opcodes: Gas consumption" {
 
 test "RETURN/REVERT: Large memory offset" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const opcodes = [_]u8{ 0xF3, 0xFD }; // RETURN, REVERT
 
     for (opcodes) |opcode| {
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        const caller: Address.Address = [_]u8{0x11} ** 20;
+        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{opcode},
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
+        var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
+        test_frame.memory.finalize_root();
+        test_frame.gas_remaining = 10000;
 
         // Push large offset
-        try test_frame.pushStack(&[_]u256{0x1000}); // offset = 4096
-        try test_frame.pushStack(&[_]u256{32}); // size = 32
+        try test_frame.stack.append(0x1000); // offset = 4096
+        try test_frame.stack.append(32); // size = 32
 
-        const gas_before = test_frame.frame.gas_remaining;
-        const result = helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame);
+        const gas_before = test_frame.gas_remaining;
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
+        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
 
         if (opcode == 0xF3) {
-            try testing.expectError(helpers.ExecutionError.Error.STOP, result);
+            try testing.expectError(ExecutionError.Error.STOP, result);
         } else {
-            try testing.expectError(helpers.ExecutionError.Error.REVERT, result);
+            try testing.expectError(ExecutionError.Error.REVERT, result);
         }
 
         // Check memory expansion gas was consumed
-        const gas_used = gas_before - test_frame.frame.gas_remaining;
+        const gas_used = gas_before - test_frame.gas_remaining;
         try testing.expect(gas_used > 400);
     }
 }
 
 test "RETURN/REVERT: Stack underflow" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const opcodes = [_]u8{ 0xF3, 0xFD }; // RETURN, REVERT
 
     for (opcodes) |opcode| {
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        const caller: Address.Address = [_]u8{0x11} ** 20;
+        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{opcode},
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
+        var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
+        test_frame.memory.finalize_root();
+        test_frame.gas_remaining = 1000;
 
         // Empty stack
-        const result = helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame);
-        try testing.expectError(helpers.ExecutionError.Error.StackUnderflow, result);
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
+        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 
         // Only one item on stack (need 2)
-        try test_frame.pushStack(&[_]u256{0});
-        const result2 = helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame);
-        try testing.expectError(helpers.ExecutionError.Error.StackUnderflow, result2);
+        try test_frame.stack.append(0);
+        const result2 = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        try testing.expectError(ExecutionError.Error.StackUnderflow, result2);
     }
 }
 
 test "Control flow interaction: Call with REVERT" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xF1}; // CALL
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
     // Push CALL parameters in reverse order (stack is LIFO)
     // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, value, to, gas
-    try test_frame.pushStack(&[_]u256{32}); // ret_size
-    try test_frame.pushStack(&[_]u256{0}); // ret_offset
-    try test_frame.pushStack(&[_]u256{0}); // args_size
-    try test_frame.pushStack(&[_]u256{0}); // args_offset
-    try test_frame.pushStack(&[_]u256{0}); // value
-    try test_frame.pushStack(&[_]u256{Address.to_u256(helpers.TestAddresses.BOB)}); // to
-    try test_frame.pushStack(&[_]u256{2000}); // gas
+    try frame.stack.append(32); // ret_size
+    try frame.stack.append(0); // ret_offset
+    try frame.stack.append(0); // args_size
+    try frame.stack.append(0); // args_offset
+    try frame.stack.append(0); // value
+    const bob_addr: Address.Address = [_]u8{0x22} ** 20;
+    try frame.stack.append(Address.to_u256(bob_addr)); // to
+    try frame.stack.append(2000); // gas
 
     // Execute the CALL (VM handles the actual call)
-    _ = try helpers.executeOpcode(0xF1, test_vm.evm, test_frame.frame);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
 
     // Check success status pushed to stack (regular calls not implemented yet)
-    const success = try test_frame.popStack();
+    const success = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), success);
 
     // Note: This test verifies CALL behavior - currently fails because

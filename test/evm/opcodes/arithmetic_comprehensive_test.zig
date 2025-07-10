@@ -1,6 +1,11 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers.zig");
+const Evm = @import("evm");
+const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
+const ExecutionError = Evm.ExecutionError;
 
 // ============================
 // 0x00: STOP opcode
@@ -8,28 +13,42 @@ const helpers = @import("test_helpers.zig");
 
 test "STOP (0x00): Halt execution" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
     const code = [_]u8{0x00}; // STOP
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
     // Execute STOP
-    const result = helpers.executeOpcode(0x00, test_vm.evm, test_frame.frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x00);
     
     // Should return STOP error
-    try testing.expectError(helpers.ExecutionError.Error.STOP, result);
+    try testing.expectError(ExecutionError.Error.STOP, result);
 }
 
 // ============================
@@ -38,88 +57,132 @@ test "STOP (0x00): Halt execution" {
 
 test "ADD (0x01): Basic addition" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
     const code = [_]u8{0x01}; // ADD
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test basic addition: 5 + 10 = 15
-    try test_frame.pushStack(&[_]u256{5});
-    try test_frame.pushStack(&[_]u256{10});
-    
-    const result = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame);
+    try frame.stack.append(5);
+    try frame.stack.append(10);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
-    
-    const value = try test_frame.popStack();
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 15), value);
 }
 
 test "ADD: Overflow wraps to zero" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x01},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test overflow: MAX + 1 = 0
     const max_u256 = std.math.maxInt(u256);
-    try test_frame.pushStack(&[_]u256{max_u256});
-    try test_frame.pushStack(&[_]u256{1});
-    
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(max_u256);
+    try frame.stack.append(1);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
 }
 
 test "ADD: Large numbers" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x01},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test large number addition
     const large1 = std.math.maxInt(u256) / 2;
     const large2 = std.math.maxInt(u256) / 3;
-    try test_frame.pushStack(&[_]u256{large1});
-    try test_frame.pushStack(&[_]u256{large2});
-    
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(large1);
+    try frame.stack.append(large2);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
+
+    const value = try frame.stack.pop();
     const expected = large1 +% large2; // Wrapping addition
     try testing.expectEqual(expected, value);
 }
@@ -130,83 +193,128 @@ test "ADD: Large numbers" {
 
 test "MUL (0x02): Basic multiplication" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x02},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test basic multiplication: 5 * 10 = 50
-    try test_frame.pushStack(&[_]u256{5});
-    try test_frame.pushStack(&[_]u256{10});
-    
-    _ = try helpers.executeOpcode(0x02, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(5);
+    try frame.stack.append(10);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x02);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 50), value);
 }
 
 test "MUL: Multiplication by zero" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x02},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test multiplication by zero
-    try test_frame.pushStack(&[_]u256{1000});
-    try test_frame.pushStack(&[_]u256{0});
-    
-    _ = try helpers.executeOpcode(0x02, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(1000);
+    try frame.stack.append(0);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x02);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
 }
 
 test "MUL: Overflow behavior" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x02},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test overflow: (2^128) * (2^128) should wrap
     const half_max = @as(u256, 1) << 128;
-    try test_frame.pushStack(&[_]u256{half_max});
-    try test_frame.pushStack(&[_]u256{half_max});
-    
-    _ = try helpers.executeOpcode(0x02, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(half_max);
+    try frame.stack.append(half_max);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x02);
+
+    const value = try frame.stack.pop();
     // Result should be 0 due to overflow (2^256 mod 2^256 = 0)
     try testing.expectEqual(@as(u256, 0), value);
 }
@@ -217,55 +325,85 @@ test "MUL: Overflow behavior" {
 
 test "SUB (0x03): Basic subtraction" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x03},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test basic subtraction: 10 - 5 = 5
-    try test_frame.pushStack(&[_]u256{10});
-    try test_frame.pushStack(&[_]u256{5});
-    
-    _ = try helpers.executeOpcode(0x03, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(10);
+    try frame.stack.append(5);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x03);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 5), value);
 }
 
 test "SUB: Underflow wraps to max" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x03},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test underflow: 0 - 1 = MAX
-    try test_frame.pushStack(&[_]u256{0});
-    try test_frame.pushStack(&[_]u256{1});
-    
-    _ = try helpers.executeOpcode(0x03, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(0);
+    try frame.stack.append(1);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x03);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(std.math.maxInt(u256), value);
 }
 
@@ -275,82 +413,127 @@ test "SUB: Underflow wraps to max" {
 
 test "DIV (0x04): Basic division" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x04},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test basic division: 20 / 5 = 4
-    try test_frame.pushStack(&[_]u256{20});
-    try test_frame.pushStack(&[_]u256{5});
-    
-    _ = try helpers.executeOpcode(0x04, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(20);
+    try frame.stack.append(5);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x04);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 4), value);
 }
 
 test "DIV: Division by zero returns zero" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x04},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test division by zero: 100 / 0 = 0
-    try test_frame.pushStack(&[_]u256{100});
-    try test_frame.pushStack(&[_]u256{0});
-    
-    _ = try helpers.executeOpcode(0x04, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(100);
+    try frame.stack.append(0);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x04);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
 }
 
 test "DIV: Integer division truncates" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x04},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test truncation: 7 / 3 = 2 (not 2.33...)
-    try test_frame.pushStack(&[_]u256{7});
-    try test_frame.pushStack(&[_]u256{3});
-    
-    _ = try helpers.executeOpcode(0x04, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(7);
+    try frame.stack.append(3);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x04);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 2), value);
 }
 
@@ -360,114 +543,174 @@ test "DIV: Integer division truncates" {
 
 test "SDIV (0x05): Signed division positive" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x05},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test positive division: 20 / 5 = 4
-    try test_frame.pushStack(&[_]u256{20});
-    try test_frame.pushStack(&[_]u256{5});
-    
-    _ = try helpers.executeOpcode(0x05, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(20);
+    try frame.stack.append(5);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x05);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 4), value);
 }
 
 test "SDIV: Signed division negative" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x05},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test negative division: -20 / 5 = -4
     // In two's complement: -20 = MAX - 19
     const neg_20 = std.math.maxInt(u256) - 19;
-    try test_frame.pushStack(&[_]u256{neg_20});
-    try test_frame.pushStack(&[_]u256{5});
-    
-    _ = try helpers.executeOpcode(0x05, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(neg_20);
+    try frame.stack.append(5);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x05);
+
+    const value = try frame.stack.pop();
     const expected = std.math.maxInt(u256) - 3; // -4 in two's complement
     try testing.expectEqual(expected, value);
 }
 
 test "SDIV: Division by zero returns zero" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x05},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test division by zero
-    try test_frame.pushStack(&[_]u256{100});
-    try test_frame.pushStack(&[_]u256{0});
-    
-    _ = try helpers.executeOpcode(0x05, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(100);
+    try frame.stack.append(0);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x05);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
 }
 
 test "SDIV: Edge case MIN / -1" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x05},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test MIN / -1 = MIN (special case)
     const min_i256 = @as(u256, 1) << 255; // -2^255 in two's complement
     const neg_1 = std.math.maxInt(u256); // -1 in two's complement
-    try test_frame.pushStack(&[_]u256{min_i256});
-    try test_frame.pushStack(&[_]u256{neg_1});
-    
-    _ = try helpers.executeOpcode(0x05, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(min_i256);
+    try frame.stack.append(neg_1);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x05);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(min_i256, value);
 }
 
@@ -477,55 +720,85 @@ test "SDIV: Edge case MIN / -1" {
 
 test "MOD (0x06): Basic modulo" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x06},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test basic modulo: 17 % 5 = 2
-    try test_frame.pushStack(&[_]u256{17});
-    try test_frame.pushStack(&[_]u256{5});
-    
-    _ = try helpers.executeOpcode(0x06, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(17);
+    try frame.stack.append(5);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x06);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 2), value);
 }
 
 test "MOD: Modulo by zero returns zero" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x06},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test modulo by zero: 100 % 0 = 0
-    try test_frame.pushStack(&[_]u256{100});
-    try test_frame.pushStack(&[_]u256{0});
-    
-    _ = try helpers.executeOpcode(0x06, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(100);
+    try frame.stack.append(0);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x06);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
 }
 
@@ -535,56 +808,86 @@ test "MOD: Modulo by zero returns zero" {
 
 test "SMOD (0x07): Signed modulo positive" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x07},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test positive modulo: 17 % 5 = 2
-    try test_frame.pushStack(&[_]u256{17});
-    try test_frame.pushStack(&[_]u256{5});
-    
-    _ = try helpers.executeOpcode(0x07, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(17);
+    try frame.stack.append(5);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x07);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 2), value);
 }
 
 test "SMOD: Signed modulo negative" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x07},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test negative modulo: -17 % 5 = -2
     const neg_17 = std.math.maxInt(u256) - 16;
-    try test_frame.pushStack(&[_]u256{neg_17});
-    try test_frame.pushStack(&[_]u256{5});
-    
-    _ = try helpers.executeOpcode(0x07, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(neg_17);
+    try frame.stack.append(5);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x07);
+
+    const value = try frame.stack.pop();
     const expected = std.math.maxInt(u256) - 1; // -2 in two's complement
     try testing.expectEqual(expected, value);
 }
@@ -595,86 +898,131 @@ test "SMOD: Signed modulo negative" {
 
 test "ADDMOD (0x08): Basic modular addition" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x08},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test: (10 + 10) % 8 = 4
-    try test_frame.pushStack(&[_]u256{10});
-    try test_frame.pushStack(&[_]u256{10});
-    try test_frame.pushStack(&[_]u256{8});
-    
-    _ = try helpers.executeOpcode(0x08, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(10);
+    try frame.stack.append(10);
+    try frame.stack.append(8);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x08);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 4), value);
 }
 
 test "ADDMOD: Modulo zero returns zero" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x08},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test: (10 + 10) % 0 = 0
-    try test_frame.pushStack(&[_]u256{10});
-    try test_frame.pushStack(&[_]u256{10});
-    try test_frame.pushStack(&[_]u256{0});
-    
-    _ = try helpers.executeOpcode(0x08, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(10);
+    try frame.stack.append(10);
+    try frame.stack.append(0);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x08);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
 }
 
 test "ADDMOD: No intermediate overflow" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x08},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test with values that would overflow u256
     const max = std.math.maxInt(u256);
-    try test_frame.pushStack(&[_]u256{max});   // first addend (pushed first, popped third)
-    try test_frame.pushStack(&[_]u256{max});   // second addend (pushed second, popped second)
-    try test_frame.pushStack(&[_]u256{10});    // modulus (pushed last, popped first)
-    
-    _ = try helpers.executeOpcode(0x08, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(max);   // first addend (pushed first, popped third)
+    try frame.stack.append(max);   // second addend (pushed second, popped second)
+    try frame.stack.append(10);    // modulus (pushed last, popped first)
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x08);
+
+    const value = try frame.stack.pop();
     // (MAX + MAX) % 10 = 4
     // MAX + MAX in u256 wraps to: 2^256 - 2 (since MAX = 2^256 - 1)
     // (2^256 - 2) % 10 = 4 (since 2^256 % 10 = 6)
@@ -687,58 +1035,88 @@ test "ADDMOD: No intermediate overflow" {
 
 test "MULMOD (0x09): Basic modular multiplication" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x09},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test: (10 * 10) % 8 = 4
-    try test_frame.pushStack(&[_]u256{10});
-    try test_frame.pushStack(&[_]u256{10});
-    try test_frame.pushStack(&[_]u256{8});
-    
-    _ = try helpers.executeOpcode(0x09, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(10);
+    try frame.stack.append(10);
+    try frame.stack.append(8);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x09);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 4), value);
 }
 
 test "MULMOD: No intermediate overflow" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x09},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test with values that would overflow u256
     const large = @as(u256, 1) << 200;
-    try test_frame.pushStack(&[_]u256{large});
-    try test_frame.pushStack(&[_]u256{large});
-    try test_frame.pushStack(&[_]u256{100});
-    
-    _ = try helpers.executeOpcode(0x09, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(large);
+    try frame.stack.append(large);
+    try frame.stack.append(100);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x09);
+
+    const value = try frame.stack.pop();
     // Should compute correctly without overflow
     try testing.expect(value < 100);
 }
@@ -749,110 +1127,170 @@ test "MULMOD: No intermediate overflow" {
 
 test "EXP (0x0A): Basic exponentiation" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x0A},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test: 2^8 = 256
-    try test_frame.pushStack(&[_]u256{2});
-    try test_frame.pushStack(&[_]u256{8});
-    
-    _ = try helpers.executeOpcode(0x0A, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(2);
+    try frame.stack.append(8);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x0A);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 256), value);
 }
 
 test "EXP: Zero exponent" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x0A},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test: 100^0 = 1
-    try test_frame.pushStack(&[_]u256{100});
-    try test_frame.pushStack(&[_]u256{0});
-    
-    _ = try helpers.executeOpcode(0x0A, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(100);
+    try frame.stack.append(0);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x0A);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), value);
 }
 
 test "EXP: Zero base with non-zero exponent" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x0A},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test: 0^10 = 0
-    try test_frame.pushStack(&[_]u256{0});
-    try test_frame.pushStack(&[_]u256{10});
-    
-    _ = try helpers.executeOpcode(0x0A, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(0);
+    try frame.stack.append(10);
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x0A);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
 }
 
 test "EXP: Gas consumption scales with exponent size" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        10000,
         &[_]u8{0x0A},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+
     // Test with large exponent
-    try test_frame.pushStack(&[_]u256{2});
-    try test_frame.pushStack(&[_]u256{0x10000}); // Large exponent
-    
-    const gas_before = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x0A, test_vm.evm, test_frame.frame);
-    const gas_used = gas_before - test_frame.frame.gas_remaining;
-    
+    try frame.stack.append(2);
+    try frame.stack.append(0x10000); // Large exponent
+
+    const gas_before = frame.gas_remaining;
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x0A);
+    const gas_used = gas_before - frame.gas_remaining;
+
     // EXP uses 10 + 50 * byte_size_of_exponent
     // 0x10000 = 65536, which is 3 bytes
     // Expected: 10 + 50 * 3 = 160
@@ -865,55 +1303,85 @@ test "EXP: Gas consumption scales with exponent size" {
 
 test "SIGNEXTEND (0x0B): Extend positive byte" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x0B},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test: sign extend 0x7F (positive) from byte 0
-    try test_frame.pushStack(&[_]u256{0x7F}); // value (pushed first, popped second)
-    try test_frame.pushStack(&[_]u256{0}); // byte position (pushed last, popped first)
-    
-    _ = try helpers.executeOpcode(0x0B, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(0x7F); // value (pushed first, popped second)
+    try frame.stack.append(0); // byte position (pushed last, popped first)
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x0B);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x7F), value);
 }
 
 test "SIGNEXTEND: Extend negative byte" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x0B},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test: sign extend 0xFF (negative) from byte 0
-    try test_frame.pushStack(&[_]u256{0xFF}); // value (pushed first, popped second)
-    try test_frame.pushStack(&[_]u256{0}); // byte position (pushed last, popped first)
-    
-    _ = try helpers.executeOpcode(0x0B, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(0xFF); // value (pushed first, popped second)
+    try frame.stack.append(0); // byte position (pushed last, popped first)
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x0B);
+
+    const value = try frame.stack.pop();
     // Should extend with 1s
     const expected = std.math.maxInt(u256); // All 1s
     try testing.expectEqual(expected, value);
@@ -921,57 +1389,87 @@ test "SIGNEXTEND: Extend negative byte" {
 
 test "SIGNEXTEND: Extend from higher byte position" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x0B},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test: sign extend 0x00FF from byte 1 (second byte)
-    try test_frame.pushStack(&[_]u256{0x00FF}); // value (pushed first, popped second)
-    try test_frame.pushStack(&[_]u256{1}); // byte position (pushed last, popped first)
-    
-    _ = try helpers.executeOpcode(0x0B, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(0x00FF); // value (pushed first, popped second)
+    try frame.stack.append(1); // byte position (pushed last, popped first)
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x0B);
+
+    const value = try frame.stack.pop();
     // Since bit 15 is 0, it's positive, no extension
     try testing.expectEqual(@as(u256, 0x00FF), value);
 }
 
 test "SIGNEXTEND: Byte position >= 31 returns value unchanged" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x0B},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
-    
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
     // Test: byte position >= 31 returns original value
     const test_value = 0x123456789ABCDEF;
-    try test_frame.pushStack(&[_]u256{test_value}); // value (pushed first, popped second)
-    try test_frame.pushStack(&[_]u256{31}); // byte position (pushed last, popped first)
-    
-    _ = try helpers.executeOpcode(0x0B, test_vm.evm, test_frame.frame);
-    
-    const value = try test_frame.popStack();
+    try frame.stack.append(test_value); // value (pushed first, popped second)
+    try frame.stack.append(31); // byte position (pushed last, popped first)
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x0B);
+
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, test_value), value);
 }
 
@@ -981,54 +1479,69 @@ test "SIGNEXTEND: Byte position >= 31 returns value unchanged" {
 
 test "Arithmetic opcodes: Gas consumption" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
     const test_cases = [_]struct {
         opcode: u8,
         expected_gas: u64,
-        setup: *const fn(*helpers.TestFrame) anyerror!void,
+        setup: *const fn(*Frame) anyerror!void,
     }{
         .{ .opcode = 0x01, .expected_gas = 3, .setup = struct { // ADD
-            fn setup(frame: *helpers.TestFrame) !void {
-                try frame.pushStack(&[_]u256{5});
-                try frame.pushStack(&[_]u256{10});
+            fn setup(frame: *Frame) !void {
+                try frame.stack.append(5);
+                try frame.stack.append(10);
             }
         }.setup },
         .{ .opcode = 0x02, .expected_gas = 5, .setup = struct { // MUL
-            fn setup(frame: *helpers.TestFrame) !void {
-                try frame.pushStack(&[_]u256{5});
-                try frame.pushStack(&[_]u256{10});
+            fn setup(frame: *Frame) !void {
+                try frame.stack.append(5);
+                try frame.stack.append(10);
             }
         }.setup },
         .{ .opcode = 0x08, .expected_gas = 8, .setup = struct { // ADDMOD
-            fn setup(frame: *helpers.TestFrame) !void {
-                try frame.pushStack(&[_]u256{10});
-                try frame.pushStack(&[_]u256{10});
-                try frame.pushStack(&[_]u256{8});
+            fn setup(frame: *Frame) !void {
+                try frame.stack.append(10);
+                try frame.stack.append(10);
+                try frame.stack.append(8);
             }
         }.setup },
     };
-    
+
     for (test_cases) |tc| {
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        const caller: Address.Address = [_]u8{0x11} ** 20;
+        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{tc.opcode},
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
-        
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-        defer test_frame.deinit();
-        
-        try tc.setup(&test_frame);
-        
-        const gas_before = test_frame.frame.gas_remaining;
-        _ = try helpers.executeOpcode(tc.opcode, test_vm.evm, test_frame.frame);
-        const gas_used = gas_before - test_frame.frame.gas_remaining;
-        
+
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 1000;
+
+        try tc.setup(&frame);
+
+        const gas_before = frame.gas_remaining;
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, tc.opcode);
+        const gas_used = gas_before - frame.gas_remaining;
+
         try testing.expectEqual(tc.expected_gas, gas_used);
     }
 }
@@ -1039,54 +1552,79 @@ test "Arithmetic opcodes: Gas consumption" {
 
 test "Arithmetic opcodes: Stack underflow" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
     const binary_ops = [_]u8{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07}; // ADD, MUL, SUB, DIV, SDIV, MOD, SMOD
     const ternary_ops = [_]u8{0x08, 0x09}; // ADDMOD, MULMOD
-    
+
     // Test binary operations with empty stack
     for (binary_ops) |opcode| {
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        const caller: Address.Address = [_]u8{0x11} ** 20;
+        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{opcode},
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
-        
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-        defer test_frame.deinit();
-        
+
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 1000;
+
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
         // Empty stack
-        const result = helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame);
-        try testing.expectError(helpers.ExecutionError.Error.StackUnderflow, result);
-        
+        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        try testing.expectError(ExecutionError.Error.StackUnderflow, result);
+
         // Only one item
-        try test_frame.pushStack(&[_]u256{10});
-        const result2 = helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame);
-        try testing.expectError(helpers.ExecutionError.Error.StackUnderflow, result2);
+        try frame.stack.append(10);
+        const result2 = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        try testing.expectError(ExecutionError.Error.StackUnderflow, result2);
     }
-    
+
     // Test ternary operations
     for (ternary_ops) |opcode| {
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        const caller: Address.Address = [_]u8{0x11} ** 20;
+        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{opcode},
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
-        
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-        defer test_frame.deinit();
-        
+
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 1000;
+
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
         // Only two items (need three)
-        try test_frame.pushStack(&[_]u256{10});
-        try test_frame.pushStack(&[_]u256{20});
-        const result = helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame);
-        try testing.expectError(helpers.ExecutionError.Error.StackUnderflow, result);
+        try frame.stack.append(10);
+        try frame.stack.append(20);
+        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        try testing.expectError(ExecutionError.Error.StackUnderflow, result);
     }
 }

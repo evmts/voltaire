@@ -1,7 +1,11 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers.zig");
+const Evm = @import("evm");
 const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
+const ExecutionError = Evm.ExecutionError;
 
 // ============================
 // 0xF0: CREATE opcode
@@ -11,8 +15,13 @@ const Address = @import("Address");
 
 test "CREATE (0xF0): Basic contract creation" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{
         0x60, 0x10, // PUSH1 0x10 (size = 16 bytes)
@@ -21,17 +30,24 @@ test "CREATE (0xF0): Basic contract creation" {
         0xF0, // CREATE
     };
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
 
     // Write init code to memory (simple bytecode that returns empty)
     const init_code = [_]u8{
@@ -39,37 +55,39 @@ test "CREATE (0xF0): Basic contract creation" {
         0x60, 0x00, // PUSH1 0x00
         0xF3, // RETURN
     } ++ ([_]u8{0} ** 11);
-    _ = try test_frame.frame.memory.set_data(0, &init_code);
+    _ = try frame.memory.set_data(0, &init_code);
 
     // Execute push operations
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     for (0..3) |i| {
-        test_frame.frame.pc = i * 2;
-        _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
+        frame.pc = i * 2;
+        _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
     }
-    test_frame.frame.pc = 6;
+    frame.pc = 6;
 
     // Debug: Print stack before CREATE
     std.debug.print("\nCREATE test - Stack before CREATE:\n", .{});
-    helpers.printStack(test_frame.frame);
+    std.debug.print("Stack size: {}\n", .{frame.stack.size});
 
-    const gas_before = test_frame.frame.gas_remaining;
-    const result = helpers.executeOpcode(0xF0, test_vm.evm, test_frame.frame) catch |err| {
+    const gas_before = frame.gas_remaining;
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0) catch |err| {
         std.debug.print("CREATE failed with error: {}\n", .{err});
         return err;
     };
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check gas consumption (VM consumes gas regardless of success/failure)
-    const gas_used = gas_before - test_frame.frame.gas_remaining;
+    const gas_used = gas_before - frame.gas_remaining;
     std.debug.print("Gas used: {}\n", .{gas_used});
     try testing.expect(gas_used > 0); // Should consume some gas for CREATE
 
     // Debug: Print stack after CREATE
     std.debug.print("Stack after CREATE:\n", .{});
-    helpers.printStack(test_frame.frame);
+    std.debug.print("Stack size: {}\n", .{frame.stack.size});
 
     // Check that result was pushed to stack
-    const created_address = try test_frame.popStack();
+    const created_address = try frame.stack.pop();
     std.debug.print("Created address: 0x{x}\n", .{created_address});
     // VM successfully creates a contract, so we should have a non-zero address
     try testing.expect(created_address != 0);
@@ -77,104 +95,146 @@ test "CREATE (0xF0): Basic contract creation" {
 
 test "CREATE: Static call protection" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xF0}; // CREATE
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
 
     // Set static mode
-    test_frame.frame.is_static = true;
+    frame.is_static = true;
 
     // Push parameters in reverse order (stack is LIFO)
     // CREATE pops: value, offset, size
     // So push: size, offset, value
-    try test_frame.pushStack(&[_]u256{0}); // size
-    try test_frame.pushStack(&[_]u256{0}); // offset
-    try test_frame.pushStack(&[_]u256{0}); // value
+    try frame.stack.append(0); // size
+    try frame.stack.append(0); // offset
+    try frame.stack.append(0); // value
 
-    const result = helpers.executeOpcode(0xF0, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.WriteProtection, result);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
 test "CREATE: EIP-3860 initcode size limit" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xF0}; // CREATE
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
 
     // Enable EIP-3860 (Shanghai)
-    test_vm.evm.chain_rules.IsEIP3860 = true;
+    evm.chain_rules.IsEIP3860 = true;
 
     // Push parameters in reverse order (stack is LIFO)
     // CREATE pops: value, offset, size
     // So push: size, offset, value
-    try test_frame.pushStack(&[_]u256{49153}); // size (exceeds limit)
-    try test_frame.pushStack(&[_]u256{0}); // offset
-    try test_frame.pushStack(&[_]u256{0}); // value
+    try frame.stack.append(49153); // size (exceeds limit)
+    try frame.stack.append(0); // offset
+    try frame.stack.append(0); // value
 
-    const result = helpers.executeOpcode(0xF0, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.MaxCodeSizeExceeded, result);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    try testing.expectError(ExecutionError.Error.MaxCodeSizeExceeded, result);
 }
 
 test "CREATE: Depth limit" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xF0}; // CREATE
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
 
     // Set depth to maximum
-    test_frame.frame.depth = 1024;
+    frame.depth = 1024;
 
     // Push parameters in reverse order (stack is LIFO)
     // CREATE pops: value, offset, size
     // So push: size, offset, value
-    try test_frame.pushStack(&[_]u256{0}); // size
-    try test_frame.pushStack(&[_]u256{0}); // offset
-    try test_frame.pushStack(&[_]u256{0}); // value
+    try frame.stack.append(0); // size
+    try frame.stack.append(0); // offset
+    try frame.stack.append(0); // value
 
-    const result = try helpers.executeOpcode(0xF0, test_vm.evm, test_frame.frame);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Should push 0 to stack (failure)
-    const created_address = try test_frame.popStack();
+    const created_address = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), created_address);
 }
 
@@ -184,8 +244,13 @@ test "CREATE: Depth limit" {
 
 test "CREATE2 (0xF5): Deterministic contract creation" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{
         0x60, 0x10, // PUSH1 0x10 (size = 16 bytes)
@@ -195,41 +260,48 @@ test "CREATE2 (0xF5): Deterministic contract creation" {
         0xF5, // CREATE2
     };
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
 
     // Write init code to memory
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 } ++ ([_]u8{0} ** 11);
-    _ = try test_frame.frame.memory.set_data(0, &init_code);
+    _ = try frame.memory.set_data(0, &init_code);
 
     // Execute push operations
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     for (0..4) |i| {
-        test_frame.frame.pc = i * 2;
-        _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
+        frame.pc = i * 2;
+        _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
     }
-    test_frame.frame.pc = 8;
+    frame.pc = 8;
 
-    // Remove mocking - VM handles CREATE2 with real behavior
-
-    const gas_before = test_frame.frame.gas_remaining;
-    const result = try helpers.executeOpcode(0xF5, test_vm.evm, test_frame.frame);
+    const gas_before = frame.gas_remaining;
+    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF5);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check gas consumption (VM consumes gas regardless of success/failure)
-    const gas_used = gas_before - test_frame.frame.gas_remaining;
+    const gas_used = gas_before - frame.gas_remaining;
     try testing.expect(gas_used > 0); // Should consume some gas for CREATE2
 
     // Check that result was pushed to stack (VM currently returns 0 for failed creation)
-    const created_address = try test_frame.popStack();
+    const created_address = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), created_address);
 }
 
@@ -239,120 +311,158 @@ test "CREATE2 (0xF5): Deterministic contract creation" {
 
 test "CALL (0xF1): Basic external call" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xF1}; // CALL
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
+        0,
         1000, // Give contract some balance
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
     // Push CALL parameters in reverse order (stack is LIFO)
     // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, value, to, gas
-    try test_frame.pushStack(&[_]u256{32}); // ret_size
-    try test_frame.pushStack(&[_]u256{0}); // ret_offset
-    try test_frame.pushStack(&[_]u256{0}); // args_size
-    try test_frame.pushStack(&[_]u256{0}); // args_offset
-    try test_frame.pushStack(&[_]u256{100}); // value
-    try test_frame.pushStack(&[_]u256{Address.to_u256(helpers.TestAddresses.BOB)}); // to
-    try test_frame.pushStack(&[_]u256{2000}); // gas
+    try frame.stack.append(32); // ret_size
+    try frame.stack.append(0); // ret_offset
+    try frame.stack.append(0); // args_size
+    try frame.stack.append(0); // args_offset
+    try frame.stack.append(100); // value
+    try frame.stack.append(Address.to_u256([_]u8{0x22} ** 20)); // to
+    try frame.stack.append(2000); // gas
 
-    // Remove mocking - VM handles external calls with real behavior
-
-    const result = try helpers.executeOpcode(0xF1, test_vm.evm, test_frame.frame);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check status pushed to stack (VM currently returns 0 for failed calls)
-    const success = try test_frame.popStack();
+    const success = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), success);
 }
 
 // WORKING: Fix InvalidOffset vs WriteProtection error (agent: fix-call-static-writeprotection)
 test "CALL: Value transfer in static context" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xF1}; // CALL
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
+        0,
         1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
     // Set static mode
-    test_frame.frame.is_static = true;
+    frame.is_static = true;
 
     // Push CALL parameters in reverse order (stack is LIFO)
     // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, value, to, gas
-    try test_frame.pushStack(&[_]u256{0}); // ret_size
-    try test_frame.pushStack(&[_]u256{0}); // ret_offset
-    try test_frame.pushStack(&[_]u256{0}); // args_size
-    try test_frame.pushStack(&[_]u256{0}); // args_offset
-    try test_frame.pushStack(&[_]u256{100}); // value (non-zero)
-    try test_frame.pushStack(&[_]u256{Address.to_u256(helpers.TestAddresses.BOB)}); // to
-    try test_frame.pushStack(&[_]u256{2000}); // gas
+    try frame.stack.append(0); // ret_size
+    try frame.stack.append(0); // ret_offset
+    try frame.stack.append(0); // args_size
+    try frame.stack.append(0); // args_offset
+    try frame.stack.append(100); // value (non-zero)
+    try frame.stack.append(Address.to_u256([_]u8{0x22} ** 20)); // to
+    try frame.stack.append(2000); // gas
 
-    const result = helpers.executeOpcode(0xF1, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.WriteProtection, result);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
 test "CALL: Cold address access (EIP-2929)" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xF1}; // CALL
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
+        0,
         0,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
     // Ensure address is cold
-    test_vm.evm.access_list.clear();
+    evm.access_list.clear();
 
     // Push CALL parameters in reverse order (stack is LIFO)
     // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, value, to, gas
-    try test_frame.pushStack(&[_]u256{0}); // ret_size
-    try test_frame.pushStack(&[_]u256{0}); // ret_offset
-    try test_frame.pushStack(&[_]u256{0}); // args_size
-    try test_frame.pushStack(&[_]u256{0}); // args_offset
-    try test_frame.pushStack(&[_]u256{0}); // value
-    try test_frame.pushStack(&[_]u256{Address.to_u256([_]u8{0xCC} ** 20)}); // cold address
-    try test_frame.pushStack(&[_]u256{1000}); // gas
+    try frame.stack.append(0); // ret_size
+    try frame.stack.append(0); // ret_offset
+    try frame.stack.append(0); // args_size
+    try frame.stack.append(0); // args_offset
+    try frame.stack.append(0); // value
+    try frame.stack.append(Address.to_u256([_]u8{0xCC} ** 20)); // cold address
+    try frame.stack.append(1000); // gas
 
-    // Remove mocking - VM handles cold address access with real behavior
-
-    const gas_before = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0xF1, test_vm.evm, test_frame.frame);
-    const gas_used = gas_before - test_frame.frame.gas_remaining;
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const gas_before = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    const gas_used = gas_before - frame.gas_remaining;
 
     // Should consume some gas for CALL operation
     try testing.expect(gas_used > 0);
@@ -364,41 +474,53 @@ test "CALL: Cold address access (EIP-2929)" {
 
 test "CALLCODE (0xF2): Execute external code with current storage" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xF2}; // CALLCODE
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
+        0,
         1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
     // Push CALLCODE parameters in reverse order (stack is LIFO)
     // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, value, to, gas
-    try test_frame.pushStack(&[_]u256{32}); // ret_size
-    try test_frame.pushStack(&[_]u256{0}); // ret_offset
-    try test_frame.pushStack(&[_]u256{0}); // args_size
-    try test_frame.pushStack(&[_]u256{0}); // args_offset
-    try test_frame.pushStack(&[_]u256{0}); // value
-    try test_frame.pushStack(&[_]u256{Address.to_u256(helpers.TestAddresses.BOB)}); // to
-    try test_frame.pushStack(&[_]u256{2000}); // gas
+    try frame.stack.append(32); // ret_size
+    try frame.stack.append(0); // ret_offset
+    try frame.stack.append(0); // args_size
+    try frame.stack.append(0); // args_offset
+    try frame.stack.append(0); // value
+    try frame.stack.append(Address.to_u256([_]u8{0x22} ** 20)); // to
+    try frame.stack.append(2000); // gas
 
-    // Remove mocking - VM handles CALLCODE with real behavior
-
-    const result = try helpers.executeOpcode(0xF2, test_vm.evm, test_frame.frame);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF2);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check status (VM currently returns 0 for failed calls)
-    const success = try test_frame.popStack();
+    const success = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), success);
 }
 
@@ -408,43 +530,55 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
 
 test "DELEGATECALL (0xF4): Execute with current context" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xF4}; // DELEGATECALL
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
+        0,
         0,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
     // Push DELEGATECALL parameters in reverse order (stack is LIFO, no value parameter)
     // EVM pops: gas, to, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, to, gas
-    try test_frame.pushStack(&[_]u256{32}); // ret_size
-    try test_frame.pushStack(&[_]u256{0}); // ret_offset
-    try test_frame.pushStack(&[_]u256{4}); // args_size
-    try test_frame.pushStack(&[_]u256{0}); // args_offset
-    try test_frame.pushStack(&[_]u256{Address.to_u256(helpers.TestAddresses.BOB)}); // to
-    try test_frame.pushStack(&[_]u256{2000}); // gas
+    try frame.stack.append(32); // ret_size
+    try frame.stack.append(0); // ret_offset
+    try frame.stack.append(4); // args_size
+    try frame.stack.append(0); // args_offset
+    try frame.stack.append(Address.to_u256([_]u8{0x22} ** 20)); // to
+    try frame.stack.append(2000); // gas
 
     // Write call data
-    _ = try test_frame.frame.memory.set_data(0, &[_]u8{ 0x11, 0x22, 0x33, 0x44 });
+    _ = try frame.memory.set_data(0, &[_]u8{ 0x11, 0x22, 0x33, 0x44 });
 
-    // Remove mocking - VM handles DELEGATECALL with real behavior
-
-    const result = try helpers.executeOpcode(0xF4, test_vm.evm, test_frame.frame);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF4);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check status (VM currently returns 0 for failed calls)
-    const success = try test_frame.popStack();
+    const success = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), success);
 }
 
@@ -454,40 +588,52 @@ test "DELEGATECALL (0xF4): Execute with current context" {
 
 test "STATICCALL (0xFA): Read-only external call" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xFA}; // STATICCALL
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
+        0,
         0,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
 
     // Push STATICCALL parameters in reverse order (stack is LIFO, no value parameter)
     // EVM pops: gas, to, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, to, gas
-    try test_frame.pushStack(&[_]u256{32}); // ret_size
-    try test_frame.pushStack(&[_]u256{0}); // ret_offset
-    try test_frame.pushStack(&[_]u256{0}); // args_size
-    try test_frame.pushStack(&[_]u256{0}); // args_offset
-    try test_frame.pushStack(&[_]u256{Address.to_u256(helpers.TestAddresses.BOB)}); // to
-    try test_frame.pushStack(&[_]u256{2000}); // gas
+    try frame.stack.append(32); // ret_size
+    try frame.stack.append(0); // ret_offset
+    try frame.stack.append(0); // args_size
+    try frame.stack.append(0); // args_offset
+    try frame.stack.append(Address.to_u256([_]u8{0x22} ** 20)); // to
+    try frame.stack.append(2000); // gas
 
-    // Remove mocking - VM handles STATICCALL with real behavior
-
-    const result = try helpers.executeOpcode(0xFA, test_vm.evm, test_frame.frame);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xFA);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check status (regular calls not implemented yet, so expect failure)
-    const success = try test_frame.popStack();
+    const success = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), success);
 }
 
@@ -497,42 +643,54 @@ test "STATICCALL (0xFA): Read-only external call" {
 
 test "System opcodes: Gas consumption" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xF0}; // CREATE
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
+        0,
         0,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
 
     // Test CREATE gas with EIP-3860
-    test_vm.evm.chain_rules.IsEIP3860 = true;
+    evm.chain_rules.IsEIP3860 = true;
 
     // Write 64 bytes of init code
     const init_code: [64]u8 = [_]u8{0xFF} ** 64;
-    _ = try test_frame.frame.memory.set_data(0, &init_code);
+    _ = try frame.memory.set_data(0, &init_code);
 
     // Push parameters in reverse order (stack is LIFO)
     // CREATE pops: value, offset, size
     // So push: size, offset, value
-    try test_frame.pushStack(&[_]u256{64}); // size
-    try test_frame.pushStack(&[_]u256{0}); // offset
-    try test_frame.pushStack(&[_]u256{0}); // value
+    try frame.stack.append(64); // size
+    try frame.stack.append(0); // offset
+    try frame.stack.append(0); // value
 
-    // Remove mocking - VM handles gas consumption with real behavior
-
-    const gas_before = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0xF0, test_vm.evm, test_frame.frame);
-    const gas_used = gas_before - test_frame.frame.gas_remaining;
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const gas_before = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    const gas_used = gas_before - frame.gas_remaining;
 
     // Should consume gas for CREATE operation regardless of success/failure
     try testing.expect(gas_used > 0);
@@ -544,89 +702,115 @@ test "System opcodes: Gas consumption" {
 
 test "CALL operations: Depth limit" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const opcodes = [_]u8{ 0xF1, 0xF2, 0xF4, 0xFA }; // CALL, CALLCODE, DELEGATECALL, STATICCALL
 
     for (opcodes) |opcode| {
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        const caller: Address.Address = [_]u8{0x11} ** 20;
+        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        var contract = Contract.init(
+            caller,
+            contract_addr,
+            0,
             0,
             &[_]u8{opcode},
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-        defer test_frame.deinit();
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 10000;
 
         // Set depth to maximum
-        test_frame.frame.depth = 1024;
+        frame.depth = 1024;
 
         // Push parameters based on opcode in reverse order (stack is LIFO)
         if (opcode == 0xF4 or opcode == 0xFA) { // DELEGATECALL, STATICCALL (6 params)
             // EVM pops: gas, to, args_offset, args_size, ret_offset, ret_size
             // So push: ret_size, ret_offset, args_size, args_offset, to, gas
-            try test_frame.pushStack(&[_]u256{0}); // ret_size
-            try test_frame.pushStack(&[_]u256{0}); // ret_offset
-            try test_frame.pushStack(&[_]u256{0}); // args_size
-            try test_frame.pushStack(&[_]u256{0}); // args_offset
-            try test_frame.pushStack(&[_]u256{0}); // to
-            try test_frame.pushStack(&[_]u256{1000}); // gas
+            try frame.stack.append(0); // ret_size
+            try frame.stack.append(0); // ret_offset
+            try frame.stack.append(0); // args_size
+            try frame.stack.append(0); // args_offset
+            try frame.stack.append(0); // to
+            try frame.stack.append(1000); // gas
         } else { // CALL, CALLCODE (7 params)
             // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size
             // So push: ret_size, ret_offset, args_size, args_offset, value, to, gas
-            try test_frame.pushStack(&[_]u256{0}); // ret_size
-            try test_frame.pushStack(&[_]u256{0}); // ret_offset
-            try test_frame.pushStack(&[_]u256{0}); // args_size
-            try test_frame.pushStack(&[_]u256{0}); // args_offset
-            try test_frame.pushStack(&[_]u256{0}); // value
-            try test_frame.pushStack(&[_]u256{0}); // to
-            try test_frame.pushStack(&[_]u256{1000}); // gas
+            try frame.stack.append(0); // ret_size
+            try frame.stack.append(0); // ret_offset
+            try frame.stack.append(0); // args_size
+            try frame.stack.append(0); // args_offset
+            try frame.stack.append(0); // value
+            try frame.stack.append(0); // to
+            try frame.stack.append(1000); // gas
         }
 
-        const result = try helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame);
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        const result = try evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
         try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
         // Should push 0 (failure)
-        const success = try test_frame.popStack();
+        const success = try frame.stack.pop();
         try testing.expectEqual(@as(u256, 0), success);
     }
 }
 
 test "CREATE/CREATE2: Failed creation scenarios" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0xF0}; // CREATE
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
+        0,
         0,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
 
     // Test failed creation - push parameters in reverse order (stack is LIFO)
     // CREATE pops: value, offset, size
     // So push: size, offset, value
-    try test_frame.pushStack(&[_]u256{0}); // size
-    try test_frame.pushStack(&[_]u256{0}); // offset
-    try test_frame.pushStack(&[_]u256{0}); // value
+    try frame.stack.append(0); // size
+    try frame.stack.append(0); // offset
+    try frame.stack.append(0); // value
 
-    // Remove mocking - VM handles creation with real behavior
-
-    _ = try helpers.executeOpcode(0xF0, test_vm.evm, test_frame.frame);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
 
     // VM actually succeeds in creating contracts with empty init code
-    const created_address = try test_frame.popStack();
+    const created_address = try frame.stack.pop();
     try testing.expect(created_address != 0); // VM creates valid contract address
 }

@@ -1,7 +1,11 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers.zig");
 const Evm = @import("evm");
+const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
+const ExecutionError = Evm.ExecutionError;
 
 // ============================
 // 0x45-0x4A Block Information (continued)
@@ -9,8 +13,13 @@ const Evm = @import("evm");
 
 test "GASLIMIT (0x45): Get block gas limit" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     const test_cases = [_]u64{
         0,                    // Zero (unusual but valid)
@@ -23,43 +32,59 @@ test "GASLIMIT (0x45): Get block gas limit" {
     for (test_cases) |gas_limit| {
         // Create context with test values
         const context = Evm.Context.init_with_values(
-            helpers.TestAddresses.ALICE,
-            0,
-            0,
-            0,
-            helpers.TestAddresses.ALICE,
-            0,
-            gas_limit,
-            1,
-            0,
-            &[_]u256{},
-            0
+            [_]u8{0x11} ** 20, // origin
+            0,                  // gas_price
+            0,                  // block_number
+            0,                  // timestamp
+            [_]u8{0x11} ** 20, // coinbase
+            0,                  // prev_randao
+            gas_limit,          // gas_limit
+            1,                  // chain_id
+            0,                  // base_fee
+            &[_]u256{},        // blob_hashes
+            0                   // blob_base_fee
         );
-        test_vm.evm.set_context(context);
+        evm.set_context(context);
         
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        const caller: Address.Address = [_]u8{0x11} ** 20;
+        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{},
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
         
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-        defer test_frame.deinit();
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 1000;
+        
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         
         // Execute GASLIMIT
-        _ = try helpers.executeOpcode(0x45, test_vm.evm, test_frame.frame);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x45);
         
-        try helpers.expectStackValue(test_frame.frame, 0, gas_limit);
+        const result = try frame.stack.pop();
+        try testing.expectEqual(@as(u256, gas_limit), result);
     }
 }
 
 test "CHAINID (0x46): Get chain ID" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     const test_cases = [_]u256{
         1,                    // Ethereum mainnet
@@ -75,43 +100,59 @@ test "CHAINID (0x46): Get chain ID" {
     for (test_cases) |chain_id| {
         // Create context with test values
         const context = Evm.Context.init_with_values(
-            helpers.TestAddresses.ALICE,
-            0,
-            0,
-            0,
-            helpers.TestAddresses.ALICE,
-            0,
-            0,
-            chain_id,
-            0,
-            &[_]u256{},
-            0
+            [_]u8{0x11} ** 20, // origin
+            0,                  // gas_price
+            0,                  // block_number
+            0,                  // timestamp
+            [_]u8{0x11} ** 20, // coinbase
+            0,                  // prev_randao
+            0,                  // gas_limit
+            chain_id,           // chain_id
+            0,                  // base_fee
+            &[_]u256{},        // blob_hashes
+            0                   // blob_base_fee
         );
-        test_vm.evm.set_context(context);
+        evm.set_context(context);
         
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        const caller: Address.Address = [_]u8{0x11} ** 20;
+        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{},
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
         
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-        defer test_frame.deinit();
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 1000;
+        
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         
         // Execute CHAINID
-        _ = try helpers.executeOpcode(0x46, test_vm.evm, test_frame.frame);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x46);
         
-        try helpers.expectStackValue(test_frame.frame, 0, chain_id);
+        const result = try frame.stack.pop();
+        try testing.expectEqual(chain_id, result);
     }
 }
 
 test "SELFBALANCE (0x47): Get contract's own balance" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     const test_cases = [_]u256{
         0,                              // No balance
@@ -122,32 +163,48 @@ test "SELFBALANCE (0x47): Get contract's own balance" {
     };
     
     for (test_cases) |balance| {
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        const caller: Address.Address = [_]u8{0x11} ** 20;
+        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{},
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
         
         // Set the contract's balance directly in the state
-        try test_vm.evm.state.set_balance(contract.address, balance);
+        try evm.state.set_balance(contract.address, balance);
         
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-        defer test_frame.deinit();
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 1000;
+        
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         
         // Execute SELFBALANCE
-        _ = try helpers.executeOpcode(0x47, test_vm.evm, test_frame.frame);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x47);
         
-        try helpers.expectStackValue(test_frame.frame, 0, balance);
+        const result = try frame.stack.pop();
+        try testing.expectEqual(balance, result);
     }
 }
 
 test "BASEFEE (0x48): Get block base fee" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     const test_cases = [_]u256{
         0,                      // Zero base fee (unlikely but valid)
@@ -161,43 +218,59 @@ test "BASEFEE (0x48): Get block base fee" {
     for (test_cases) |base_fee| {
         // Create context with test values
         const context = Evm.Context.init_with_values(
-            helpers.TestAddresses.ALICE,
-            0,
-            0,
-            0,
-            helpers.TestAddresses.ALICE,
-            0,
-            0,
-            1,
-            base_fee,
-            &[_]u256{},
-            0
+            [_]u8{0x11} ** 20, // origin
+            0,                  // gas_price
+            0,                  // block_number
+            0,                  // timestamp
+            [_]u8{0x11} ** 20, // coinbase
+            0,                  // prev_randao
+            0,                  // gas_limit
+            1,                  // chain_id
+            base_fee,           // base_fee
+            &[_]u256{},        // blob_hashes
+            0                   // blob_base_fee
         );
-        test_vm.evm.set_context(context);
+        evm.set_context(context);
         
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        const caller: Address.Address = [_]u8{0x11} ** 20;
+        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{},
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
         
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-        defer test_frame.deinit();
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 1000;
+        
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         
         // Execute BASEFEE
-        _ = try helpers.executeOpcode(0x48, test_vm.evm, test_frame.frame);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x48);
         
-        try helpers.expectStackValue(test_frame.frame, 0, base_fee);
+        const result = try frame.stack.pop();
+        try testing.expectEqual(base_fee, result);
     }
 }
 
 test "BLOBHASH (0x49): Get blob versioned hash" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Set up blob hashes
     const blob_hashes = [_]u256{
@@ -207,66 +280,82 @@ test "BLOBHASH (0x49): Get blob versioned hash" {
     };
     // Create context with test values
     const context = Evm.Context.init_with_values(
-        helpers.TestAddresses.ALICE,
-        0,
-        0,
-        0,
-        helpers.TestAddresses.ALICE,
-        0,
-        0,
-        1,
-        0,
-        &blob_hashes,
-        0
+        [_]u8{0x11} ** 20, // origin
+        0,                  // gas_price
+        0,                  // block_number
+        0,                  // timestamp
+        [_]u8{0x11} ** 20, // coinbase
+        0,                  // prev_randao
+        0,                  // gas_limit
+        1,                  // chain_id
+        0,                  // base_fee
+        &blob_hashes,       // blob_hashes
+        0                   // blob_base_fee
     );
-    test_vm.evm.set_context(context);
+    evm.set_context(context);
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        10000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+    
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: Get first blob hash
-    try test_frame.pushStack(&[_]u256{0});
-    _ = try helpers.executeOpcode(0x49, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, blob_hashes[0]);
-    _ = try test_frame.popStack();
+    try frame.stack.append(0);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    const result1 = try frame.stack.pop();
+    try testing.expectEqual(blob_hashes[0], result1);
     
     // Test 2: Get second blob hash
-    try test_frame.pushStack(&[_]u256{1});
-    _ = try helpers.executeOpcode(0x49, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, blob_hashes[1]);
-    _ = try test_frame.popStack();
+    try frame.stack.append(1);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    const result2 = try frame.stack.pop();
+    try testing.expectEqual(blob_hashes[1], result2);
     
     // Test 3: Get third blob hash
-    try test_frame.pushStack(&[_]u256{2});
-    _ = try helpers.executeOpcode(0x49, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, blob_hashes[2]);
-    _ = try test_frame.popStack();
+    try frame.stack.append(2);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    const result3 = try frame.stack.pop();
+    try testing.expectEqual(blob_hashes[2], result3);
     
     // Test 4: Index out of bounds (should return 0)
-    try test_frame.pushStack(&[_]u256{3});
-    _ = try helpers.executeOpcode(0x49, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0);
-    _ = try test_frame.popStack();
+    try frame.stack.append(3);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    const result4 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result4);
     
     // Test 5: Large index (should return 0)
-    try test_frame.pushStack(&[_]u256{1000});
-    _ = try helpers.executeOpcode(0x49, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0);
+    try frame.stack.append(1000);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    const result5 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result5);
 }
 
 test "BLOBBASEFEE (0x4A): Get blob base fee" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     const test_cases = [_]u256{
         0,                      // Zero blob base fee
@@ -280,36 +369,47 @@ test "BLOBBASEFEE (0x4A): Get blob base fee" {
     for (test_cases) |blob_base_fee| {
         // Create context with test values
         const context = Evm.Context.init_with_values(
-            helpers.TestAddresses.ALICE,
-            0,
-            0,
-            0,
-            helpers.TestAddresses.ALICE,
-            0,
-            0,
-            1,
-            0,
-            &[_]u256{},
-            blob_base_fee
+            [_]u8{0x11} ** 20, // origin
+            0,                  // gas_price
+            0,                  // block_number
+            0,                  // timestamp
+            [_]u8{0x11} ** 20, // coinbase
+            0,                  // prev_randao
+            0,                  // gas_limit
+            1,                  // chain_id
+            0,                  // base_fee
+            &[_]u256{},        // blob_hashes
+            blob_base_fee       // blob_base_fee
         );
-        test_vm.evm.set_context(context);
+        evm.set_context(context);
         
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        const caller: Address.Address = [_]u8{0x11} ** 20;
+        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{},
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
         
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-        defer test_frame.deinit();
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 1000;
+        
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         
         // Execute BLOBBASEFEE
-        _ = try helpers.executeOpcode(0x4A, test_vm.evm, test_frame.frame);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x4A);
         
-        try helpers.expectStackValue(test_frame.frame, 0, blob_base_fee);
+        const result = try frame.stack.pop();
+        try testing.expectEqual(blob_base_fee, result);
     }
 }
 
@@ -319,38 +419,53 @@ test "BLOBBASEFEE (0x4A): Get blob base fee" {
 
 test "Block info opcodes: Gas consumption" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Set up blob hashes for BLOBHASH test
     const blob_hashes = [_]u256{0x01};
     // Create context with test values
     const context = Evm.Context.init_with_values(
-        helpers.TestAddresses.ALICE,
-        0,
-        0,
-        0,
-        helpers.TestAddresses.ALICE,
-        0,
-        0,
-        1,
-        0,
-        &blob_hashes,
-        0
+        [_]u8{0x11} ** 20, // origin
+        0,                  // gas_price
+        0,                  // block_number
+        0,                  // timestamp
+        [_]u8{0x11} ** 20, // coinbase
+        0,                  // prev_randao
+        0,                  // gas_limit
+        1,                  // chain_id
+        0,                  // base_fee
+        &blob_hashes,       // blob_hashes
+        0                   // blob_base_fee
     );
-    test_vm.evm.set_context(context);
+    evm.set_context(context);
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        10000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+    
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     const opcodes = [_]struct {
         opcode: u8,
@@ -367,17 +482,17 @@ test "Block info opcodes: Gas consumption" {
     };
     
     for (opcodes) |op| {
-        test_frame.frame.stack.clear();
+        frame.stack.clear();
         if (op.needs_stack) {
-            try test_frame.pushStack(&[_]u256{0}); // Index for BLOBHASH
+            try frame.stack.append(0); // Index for BLOBHASH
         }
         
         const gas_before = 1000;
-        test_frame.frame.gas_remaining = gas_before;
+        frame.gas_remaining = gas_before;
         
-        _ = try helpers.executeOpcode(op.opcode, test_vm.evm, test_frame.frame);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, op.opcode);
         
-        const gas_used = gas_before - test_frame.frame.gas_remaining;
+        const gas_used = gas_before - frame.gas_remaining;
         try testing.expectEqual(op.expected_gas, gas_used);
     }
 }
@@ -388,35 +503,50 @@ test "Block info opcodes: Gas consumption" {
 
 test "Invalid opcodes 0x4B-0x4E: Should revert" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+    
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     const invalid_opcodes = [_]u8{ 0x4B, 0x4C, 0x4D, 0x4E };
     
     for (invalid_opcodes) |opcode| {
-        const gas_before = test_frame.frame.gas_remaining;
-        const result = helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame);
+        const gas_before = frame.gas_remaining;
+        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
         
         // Should fail with InvalidOpcode error
-        try testing.expectError(helpers.ExecutionError.Error.InvalidOpcode, result);
+        try testing.expectError(ExecutionError.Error.InvalidOpcode, result);
         
         // Should consume all gas
-        try testing.expectEqual(@as(u64, 0), test_frame.frame.gas_remaining);
+        try testing.expectEqual(@as(u64, 0), frame.gas_remaining);
         
         // Reset for next test
-        test_frame.frame.gas_remaining = gas_before;
+        frame.gas_remaining = gas_before;
     }
 }
 
@@ -426,153 +556,215 @@ test "Invalid opcodes 0x4B-0x4E: Should revert" {
 
 test "SELFBALANCE: Balance changes during execution" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        10000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+    
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Initial balance: 1000 wei - set directly in the state
-    try test_vm.evm.state.set_balance(contract.address, 1000);
+    try evm.state.set_balance(contract.address, 1000);
     
     // Check initial balance
-    _ = try helpers.executeOpcode(0x47, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 1000);
-    _ = try test_frame.popStack();
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x47);
+    const result1 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 1000), result1);
     
     // Simulate balance change (e.g., from a transfer) - set directly in the state
-    try test_vm.evm.state.set_balance(contract.address, 2500);
+    try evm.state.set_balance(contract.address, 2500);
     
     // Check updated balance
-    _ = try helpers.executeOpcode(0x47, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 2500);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x47);
+    const result2 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 2500), result2);
 }
 
 test "BLOBHASH: Empty blob list" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // No blob hashes set (empty slice)
     // Create context with test values
     const context = Evm.Context.init_with_values(
-        helpers.TestAddresses.ALICE,
-        0,
-        0,
-        0,
-        helpers.TestAddresses.ALICE,
-        0,
-        0,
-        1,
-        0,
-        &[_]u256{},
-        0
+        [_]u8{0x11} ** 20, // origin
+        0,                  // gas_price
+        0,                  // block_number
+        0,                  // timestamp
+        [_]u8{0x11} ** 20, // coinbase
+        0,                  // prev_randao
+        0,                  // gas_limit
+        1,                  // chain_id
+        0,                  // base_fee
+        &[_]u256{},        // blob_hashes (empty)
+        0                   // blob_base_fee
     );
-    test_vm.evm.set_context(context);
+    evm.set_context(context);
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+    
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Any index should return 0 when no blobs
-    try test_frame.pushStack(&[_]u256{0});
-    _ = try helpers.executeOpcode(0x49, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0);
+    try frame.stack.append(0);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    const result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result);
 }
 
 test "CHAINID: EIP-1344 behavior" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Test that CHAINID returns consistent value
     // Create context with test values
     const context = Evm.Context.init_with_values(
-        helpers.TestAddresses.ALICE,
-        0,
-        0,
-        0,
-        helpers.TestAddresses.ALICE,
-        0,
-        0,
-        1337,
-        0,
-        &[_]u256{},
-        0
+        [_]u8{0x11} ** 20, // origin
+        0,                  // gas_price
+        0,                  // block_number
+        0,                  // timestamp
+        [_]u8{0x11} ** 20, // coinbase
+        0,                  // prev_randao
+        0,                  // gas_limit
+        1337,               // chain_id
+        0,                  // base_fee
+        &[_]u256{},        // blob_hashes
+        0                   // blob_base_fee
     );
-    test_vm.evm.set_context(context);
+    evm.set_context(context);
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+    
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Execute CHAINID multiple times - should always return same value
     for (0..3) |_| {
-        _ = try helpers.executeOpcode(0x46, test_vm.evm, test_frame.frame);
-        try helpers.expectStackValue(test_frame.frame, 0, 1337);
-        _ = try test_frame.popStack();
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x46);
+        const result = try frame.stack.pop();
+        try testing.expectEqual(@as(u256, 1337), result);
     }
 }
 
 test "Stack operations: All opcodes push exactly one value" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Set up blob hash for BLOBHASH
     const blob_hashes = [_]u256{0x01};
     // Create context with test values
     const context = Evm.Context.init_with_values(
-        helpers.TestAddresses.ALICE,
-        0,
-        0,
-        0,
-        helpers.TestAddresses.ALICE,
-        0,
-        0,
-        1,
-        0,
-        &blob_hashes,
-        0
+        [_]u8{0x11} ** 20, // origin
+        0,                  // gas_price
+        0,                  // block_number
+        0,                  // timestamp
+        [_]u8{0x11} ** 20, // coinbase
+        0,                  // prev_randao
+        0,                  // gas_limit
+        1,                  // chain_id
+        0,                  // base_fee
+        &blob_hashes,       // blob_hashes
+        0                   // blob_base_fee
     );
-    test_vm.evm.set_context(context);
+    evm.set_context(context);
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        10000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+    
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     const opcodes = [_]struct {
         opcode: u8,
@@ -588,21 +780,21 @@ test "Stack operations: All opcodes push exactly one value" {
     
     for (opcodes) |op| {
         // Clear stack for clean test
-        test_frame.frame.stack.clear();
+        frame.stack.clear();
         
         if (op.needs_input) {
-            try test_frame.pushStack(&[_]u256{0}); // Input for BLOBHASH
+            try frame.stack.append(0); // Input for BLOBHASH
         }
         
-        const initial_stack_len = test_frame.frame.stack.size;
+        const initial_stack_len = frame.stack.size;
         
-        _ = try helpers.executeOpcode(op.opcode, test_vm.evm, test_frame.frame);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, op.opcode);
         
         // Check that exactly one value was pushed (or net zero for BLOBHASH which pops 1 and pushes 1)
         const expected_len = if (op.needs_input) 
             initial_stack_len  // BLOBHASH: pop 1, push 1 = net 0
         else 
             initial_stack_len + 1;     // Others: just push 1 = net +1
-        try testing.expectEqual(expected_len, test_frame.frame.stack.size);
+        try testing.expectEqual(expected_len, frame.stack.size);
     }
 }

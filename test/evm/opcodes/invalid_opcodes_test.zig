@@ -1,44 +1,68 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers.zig");
+const Evm = @import("evm");
+const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
+const ExecutionError = Evm.ExecutionError;
 
 // Test invalid opcodes in the 0x21-0x2F range
 test "Invalid Opcodes: 0x21-0x24 should fail" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create test addresses
+    const contract_address: Address.Address = [_]u8{0x12} ** 20;
+    const caller_address: Address.Address = [_]u8{0xab} ** 20;
+    
+    // Create contract
+    var contract = Contract.init(
+        caller_address,
+        contract_address,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    frame.gas_remaining = 1000;
+    defer frame.deinit();
+    frame.memory.finalize_root();
     
     // Test each invalid opcode from 0x21 to 0x24
     const invalid_opcodes = [_]u8{ 0x21, 0x22, 0x23, 0x24 };
     
     for (invalid_opcodes) |opcode| {
-        test_frame.frame.stack.clear();
-        test_frame.frame.gas_remaining = 1000;
+        frame.stack.clear();
+        frame.gas_remaining = 1000;
         
         // Push some dummy values on stack in case the opcode tries to pop
-        try test_frame.pushStack(&[_]u256{ 42, 100 });
+        try frame.stack.append(42);
+        try frame.stack.append(100);
         
-        // Executing an invalid opcode should fail
-        const result = helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame);
+        // Execute opcode directly through jump table
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
         
         // We expect an error (likely InvalidOpcode or similar)
-        try testing.expectError(helpers.ExecutionError.Error.InvalidOpcode, result);
+        try testing.expectError(ExecutionError.Error.InvalidOpcode, result);
         
         // All gas should be consumed
-        try testing.expectEqual(@as(u64, 0), test_frame.frame.gas_remaining);
+        try testing.expectEqual(@as(u64, 0), frame.gas_remaining);
     }
 }
 
@@ -46,35 +70,57 @@ test "Invalid Opcodes: 0x21-0x24 should fail" {
 test "Invalid Opcodes: Full 0x21-0x2F range" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create test addresses
+    const contract_address: Address.Address = [_]u8{0x12} ** 20;
+    const caller_address: Address.Address = [_]u8{0xab} ** 20;
+    
+    // Create contract
+    var contract = Contract.init(
+        caller_address,
+        contract_address,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    frame.gas_remaining = 1000;
+    defer frame.deinit();
+    frame.memory.finalize_root();
     
     // Test all opcodes from 0x21 to 0x2F
     var opcode: u8 = 0x21;
     while (opcode <= 0x2F) : (opcode += 1) {
-        test_frame.frame.stack.clear();
-        test_frame.frame.gas_remaining = 1000;
+        frame.stack.clear();
+        frame.gas_remaining = 1000;
         
         // Push some dummy values
-        try test_frame.pushStack(&[_]u256{ 1, 2, 3 });
+        try frame.stack.append(1);
+        try frame.stack.append(2);
+        try frame.stack.append(3);
+        
+        // Execute opcode directly through jump table
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
         
         // All these should be invalid
-        const result = helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame);
-        try testing.expectError(helpers.ExecutionError.Error.InvalidOpcode, result);
+        try testing.expectError(ExecutionError.Error.InvalidOpcode, result);
         
         // Verify gas consumption
-        try testing.expectEqual(@as(u64, 0), test_frame.frame.gas_remaining);
+        try testing.expectEqual(@as(u64, 0), frame.gas_remaining);
     }
 }

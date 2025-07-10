@@ -27,6 +27,7 @@ pub const CodeBitmapError = BitVecInitError;
 pub fn init(allocator: std.mem.Allocator, size: usize) BitVecInitError!BitVec {
     const u64_size = (size + 63) / 64; // Round up to nearest u64
     const bits = try allocator.alloc(u64, u64_size);
+    errdefer allocator.free(bits);
     @memset(bits, 0); // Initialize all bits to 0
     return BitVec{
         .bits = bits,

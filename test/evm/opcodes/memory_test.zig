@@ -1,28 +1,44 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const opcodes = Evm.opcodes;
-const test_helpers = @import("test_helpers.zig");
+const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
 const ExecutionError = Evm.ExecutionError;
 
 // Test MLOAD operation
 test "MLOAD: load 32 bytes from memory" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Write 32 bytes to memory
     var data: [32]u8 = undefined;
@@ -30,16 +46,16 @@ test "MLOAD: load 32 bytes from memory" {
     while (i < 32) : (i += 1) {
         data[i] = @intCast(i);
     }
-    try test_frame.setMemory(0, &data);
+    try frame.memory.set_data(0, &data);
     
     // Push offset 0
-    try test_frame.pushStack(&[_]u256{0});
+    try frame.stack.append(0);
     
     // Execute MLOAD
-    _ = try test_helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
     
     // Should load 32 bytes as u256 (big-endian)
-    const result = try test_frame.popStack();
+    const result = try frame.stack.pop();
     // First byte (0) should be in the most significant position
     try testing.expect((result >> 248) == 0);
     try testing.expect(((result >> 240) & 0xFF) == 1);
@@ -48,20 +64,34 @@ test "MLOAD: load 32 bytes from memory" {
 test "MLOAD: load with offset" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Write pattern to memory
     var data: [64]u8 = undefined;
@@ -69,16 +99,16 @@ test "MLOAD: load with offset" {
     while (i < 64) : (i += 1) {
         data[i] = @intCast(i + 0x10);
     }
-    try test_frame.setMemory(0, &data);
+    try frame.memory.set_data(0, &data);
     
     // Push offset 16
-    try test_frame.pushStack(&[_]u256{16});
+    try frame.stack.append(16);
     
     // Execute MLOAD
-    _ = try test_helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
     
     // Should load 32 bytes starting at offset 16
-    const result = try test_frame.popStack();
+    const result = try frame.stack.pop();
     // First byte should be 0x20 (16 + 0x10)
     try testing.expect((result >> 248) == 0x20);
 }
@@ -86,59 +116,88 @@ test "MLOAD: load with offset" {
 test "MLOAD: load from uninitialized memory returns zeros" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push offset to uninitialized area
-    try test_frame.pushStack(&[_]u256{1000});
+    try frame.stack.append(1000);
     
     // Execute MLOAD
-    _ = try test_helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
     
     // Should return all zeros
-    try testing.expectEqual(@as(u256, 0), try test_frame.popStack());
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
 
 // Test MSTORE operation
 test "MSTORE: store 32 bytes to memory" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push value and offset (stack is LIFO)
     const value: u256 = 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20;
-    try test_frame.pushStack(&[_]u256{value, 0}); // value first, then offset (offset on top)
+    try frame.stack.append(value);
+    try frame.stack.append(0);
     
     // Execute MSTORE
-    _ = try test_helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
     
     // Check memory contents
-    const mem = try test_frame.getMemory(0, 32);
+    const mem = try frame.memory.get_slice(0, 32);
     try testing.expectEqual(@as(u8, 0x01), mem[0]);
     try testing.expectEqual(@as(u8, 0x02), mem[1]);
     try testing.expectEqual(@as(u8, 0x20), mem[31]);
@@ -147,30 +206,45 @@ test "MSTORE: store 32 bytes to memory" {
 test "MSTORE: store with offset" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push value and offset (stack is LIFO)
     const value: u256 = 0xFFEEDDCCBBAA99887766554433221100;
-    try test_frame.pushStack(&[_]u256{value, 64}); // value first, then offset (offset on top)
+    try frame.stack.append(value);
+    try frame.stack.append(64);
     
     // Execute MSTORE
-    _ = try test_helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
     
     // Check memory contents at offset
-    const mem = try test_frame.getMemory(64, 32);
+    const mem = try frame.memory.get_slice(64, 32);
     // The value 0xFFEEDDCCBBAA99887766554433221100 is stored big-endian
     // Most significant bytes first: 00 00 ... 00 FF EE DD CC BB AA ...
     try testing.expectEqual(@as(u8, 0x00), mem[15]); // Byte 15 at offset 64+15=79
@@ -181,33 +255,48 @@ test "MSTORE: store with offset" {
 test "MSTORE8: store single byte to memory" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push value and offset (stack is LIFO)
-    try test_frame.pushStack(&[_]u256{0x1234, 10}); // value first, then offset (offset on top) - only lowest byte 0x34 will be stored
+    try frame.stack.append(0x1234);
+    try frame.stack.append(10);
     
     // Execute MSTORE8
-    _ = try test_helpers.executeOpcode(0x53, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x53);
     
     // Check memory contents
-    const mem = try test_frame.getMemory(10, 1);
+    const mem = try frame.memory.get_slice(10, 1);
     try testing.expectEqual(@as(u8, 0x34), mem[0]);
     // Adjacent bytes should be unaffected (zero)
-    const mem_before = try test_frame.getMemory(9, 1);
-    const mem_after = try test_frame.getMemory(11, 1);
+    const mem_before = try frame.memory.get_slice(9, 1);
+    const mem_after = try frame.memory.get_slice(11, 1);
     try testing.expectEqual(@as(u8, 0), mem_before[0]);
     try testing.expectEqual(@as(u8, 0), mem_after[0]);
 }
@@ -215,29 +304,44 @@ test "MSTORE8: store single byte to memory" {
 test "MSTORE8: store only lowest byte" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push value with all bytes set (stack is LIFO)
-    try test_frame.pushStack(&[_]u256{0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFAB, 0}); // value first, then offset (offset on top) - only 0xAB should be stored
+    try frame.stack.append(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFAB);
+    try frame.stack.append(0);
     
     // Execute MSTORE8
-    _ = try test_helpers.executeOpcode(0x53, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x53);
     
     // Check that only lowest byte was stored
-    const mem = try test_frame.getMemory(0, 1);
+    const mem = try frame.memory.get_slice(0, 1);
     try testing.expectEqual(@as(u8, 0xAB), mem[0]);
 }
 
@@ -245,80 +349,110 @@ test "MSTORE8: store only lowest byte" {
 test "MSIZE: get memory size" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Initially memory size should be 0
-    _ = try test_helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
-    try testing.expectEqual(@as(u256, 0), try test_frame.popStack());
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
     
     // Write to memory at offset 31 (should expand to 32 bytes)
-    try test_frame.setMemory(31, &[_]u8{0xFF});
+    try frame.memory.set_data(31, &[_]u8{0xFF});
     
     // Check size again
-    _ = try test_helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
-    try testing.expectEqual(@as(u256, 32), try test_frame.popStack());
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    try testing.expectEqual(@as(u256, 32), try frame.stack.pop());
     
     // Write to memory at offset 32 (should expand to 64 bytes - word aligned)
-    try test_frame.setMemory(32, &[_]u8{0xFF});
+    try frame.memory.set_data(32, &[_]u8{0xFF});
     
     // Check size again
-    _ = try test_helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
-    try testing.expectEqual(@as(u256, 64), try test_frame.popStack());
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    try testing.expectEqual(@as(u256, 64), try frame.stack.pop());
 }
 
 // Test MCOPY operation (EIP-5656)
 test "MCOPY: copy memory to memory" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Write source data
     const src_data = [_]u8{ 0xAA, 0xBB, 0xCC, 0xDD, 0xEE };
-    try test_frame.setMemory(10, &src_data);
+    try frame.memory.set_data(10, &src_data);
     
     // Push parameters in order for stack
     // MCOPY pops: size (first), src (second), dest (third)
     // So push: dest, src, size (size on top)
-    try test_frame.pushStack(&[_]u256{50, 10, 5}); // dest, src, size
+    try frame.stack.append(50);
+    try frame.stack.append(10);
+    try frame.stack.append(5);
     
     // Execute MCOPY
-    _ = try test_helpers.executeOpcode(0x5E, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
     
     // Check that data was copied
-    const dest_data = try test_frame.getMemory(50, 5);
+    const dest_data = try frame.memory.get_slice(50, 5);
     var i: usize = 0;
     while (i < src_data.len) : (i += 1) {
         try testing.expectEqual(src_data[i], dest_data[i]);
     }
     
     // Original data should still be there
-    const orig_data = try test_frame.getMemory(10, 5);
+    const orig_data = try frame.memory.get_slice(10, 5);
     i = 0;
     while (i < src_data.len) : (i += 1) {
         try testing.expectEqual(src_data[i], orig_data[i]);
@@ -328,34 +462,50 @@ test "MCOPY: copy memory to memory" {
 test "MCOPY: overlapping copy forward" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Write source data
     const src_data = [_]u8{ 0x11, 0x22, 0x33, 0x44, 0x55 };
-    try test_frame.setMemory(10, &src_data);
+    try frame.memory.set_data(10, &src_data);
     
     // Copy with overlap (forward)
     // MCOPY pops: size, src, dest
-    try test_frame.pushStack(&[_]u256{12, 10, 5}); // dest, src, size (overlaps by 3 bytes)
+    try frame.stack.append(12);
+    try frame.stack.append(10);
+    try frame.stack.append(5);
     
     // Execute MCOPY
-    _ = try test_helpers.executeOpcode(0x5E, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
     
     // Check result - should handle overlap correctly
-    const result = try test_frame.getMemory(12, 5);
+    const result = try frame.memory.get_slice(12, 5);
     try testing.expectEqual(@as(u8, 0x11), result[0]);
     try testing.expectEqual(@as(u8, 0x22), result[1]);
     try testing.expectEqual(@as(u8, 0x33), result[2]);
@@ -366,34 +516,50 @@ test "MCOPY: overlapping copy forward" {
 test "MCOPY: overlapping copy backward" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Write source data
     const src_data = [_]u8{ 0xAA, 0xBB, 0xCC, 0xDD, 0xEE };
-    try test_frame.setMemory(10, &src_data);
+    try frame.memory.set_data(10, &src_data);
     
     // Copy with overlap (backward)
     // MCOPY pops: size, src, dest
-    try test_frame.pushStack(&[_]u256{8, 10, 5}); // dest, src, size (overlaps by 3 bytes)
+    try frame.stack.append(8);
+    try frame.stack.append(10);
+    try frame.stack.append(5);
     
     // Execute MCOPY
-    _ = try test_helpers.executeOpcode(0x5E, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
     
     // Check result
-    const result = try test_frame.getMemory(8, 5);
+    const result = try frame.memory.get_slice(8, 5);
     try testing.expectEqual(@as(u8, 0xAA), result[0]);
     try testing.expectEqual(@as(u8, 0xBB), result[1]);
     try testing.expectEqual(@as(u8, 0xCC), result[2]);
@@ -404,126 +570,187 @@ test "MCOPY: overlapping copy backward" {
 test "MCOPY: zero length copy" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push length 0
     // MCOPY pops: size, src, dest
-    try test_frame.pushStack(&[_]u256{200, 100, 0}); // dest, src, size
+    try frame.stack.append(200);
+    try frame.stack.append(100);
+    try frame.stack.append(0);
     
     // Execute MCOPY
-    _ = try test_helpers.executeOpcode(0x5E, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
     
     // Should succeed without doing anything
-    try testing.expectEqual(@as(usize, 0), test_frame.stackSize());
+    try testing.expectEqual(@as(usize, 0), frame.stack.size);
 }
 
 // Test gas consumption
 test "MLOAD: memory expansion gas" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push offset that requires memory expansion
-    try test_frame.pushStack(&[_]u256{256}); // offset (requires 288 bytes = 9 words)
+    try frame.stack.append(256); // offset (requires 288 bytes = 9 words)
     
-    const gas_before = test_frame.gasRemaining();
+    const gas_before = frame.gas_remaining;
     
     // Execute MLOAD
-    _ = try test_helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
     
     // Should consume gas for memory expansion
-    const gas_used = gas_before - test_frame.gasRemaining();
+    const gas_used = gas_before - frame.gas_remaining;
     try testing.expect(gas_used > 0); // Memory expansion should cost gas
 }
 
 test "MSTORE: memory expansion gas" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push value and offset that requires expansion (stack is LIFO)
-    try test_frame.pushStack(&[_]u256{0x123456, 512}); // value, offset (requires 544 bytes)
+    try frame.stack.append(0x123456);
+    try frame.stack.append(512);
     
-    const gas_before = test_frame.gasRemaining();
+    const gas_before = frame.gas_remaining;
     
     // Execute MSTORE
-    _ = try test_helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
     
     // Should consume gas for memory expansion
-    const gas_used = gas_before - test_frame.gasRemaining();
+    const gas_used = gas_before - frame.gas_remaining;
     try testing.expect(gas_used > 0);
 }
 
 test "MCOPY: gas consumption" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push parameters for 32 byte copy
     // MCOPY pops: size, src, dest
-    try test_frame.pushStack(&[_]u256{100, 0, 32}); // dest, src, size
+    try frame.stack.append(100);
+    try frame.stack.append(0);
+    try frame.stack.append(32);
     
-    const gas_before = test_frame.gasRemaining();
+    const gas_before = frame.gas_remaining;
     
     // Execute MCOPY
-    _ = try test_helpers.executeOpcode(0x5E, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
     
     // MCOPY costs 3 gas per word
     // 32 bytes = 1 word = 3 gas
     // Plus memory expansion for destination
-    const gas_used = gas_before - test_frame.gasRemaining();
+    const gas_used = gas_before - frame.gas_remaining;
     try testing.expect(gas_used >= 3);
 }
 
@@ -531,78 +758,121 @@ test "MCOPY: gas consumption" {
 test "MLOAD: stack underflow" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Empty stack
     
     // Execute MLOAD - should fail
-    const result = test_helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
 test "MSTORE: stack underflow" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push only one value (need two)
-    try test_frame.pushStack(&[_]u256{0});
+    try frame.stack.append(0);
     
     // Execute MSTORE - should fail
-    const result = test_helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
 test "MCOPY: stack underflow" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push only two values (need three)
     // MCOPY needs: dest, src, size on stack
-    try test_frame.pushStack(&[_]u256{0, 10}); // only two values
+    try frame.stack.append(0);
+    try frame.stack.append(10);
     
     // Execute MCOPY - should fail
-    const result = test_helpers.executeOpcode(0x5E, test_vm.evm, test_frame.frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -610,52 +880,82 @@ test "MCOPY: stack underflow" {
 test "MLOAD: offset overflow" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push offset that would overflow when adding 32
-    try test_frame.pushStack(&[_]u256{std.math.maxInt(u256) - 10});
+    try frame.stack.append(std.math.maxInt(u256) - 10);
     
     // Execute MLOAD - should fail
-    const result = test_helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
     try testing.expectError(ExecutionError.Error.OutOfOffset, result);
 }
 
 test "MCOPY: source offset overflow" {
     const allocator = testing.allocator;
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try test_helpers.createTestContract(
-        allocator,
-        test_helpers.TestAddresses.CONTRACT,
-        test_helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try test_helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Push parameters that would overflow
     // MCOPY pops: size, src, dest
-    try test_frame.pushStack(&[_]u256{0, std.math.maxInt(u256), 100}); // dest, src (overflow), size
+    try frame.stack.append(0);
+    try frame.stack.append(std.math.maxInt(u256));
+    try frame.stack.append(100);
     
     // Execute MCOPY - should fail
-    const result = test_helpers.executeOpcode(0x5E, test_vm.evm, test_frame.frame);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
     try testing.expectError(ExecutionError.Error.OutOfOffset, result);
 }

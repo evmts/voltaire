@@ -1,7 +1,11 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const helpers = @import("test_helpers.zig");
+const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
+const ExecutionError = Evm.ExecutionError;
 
 // COMPLETED: Storage operations (SLOAD/SSTORE) - Fixed missing jump table mappings
 // Results: SLOAD/SSTORE now working correctly, tests passing, 365/401 opcodes working (+2 improvement)
@@ -13,127 +17,186 @@ const helpers = @import("test_helpers.zig");
 
 test "SLOAD (0x54): Load from storage" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0x54}; // SLOAD
-
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 3000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 3000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Set storage value
-    try test_vm.evm.state.set_storage(helpers.TestAddresses.CONTRACT, 0x42, 0x123456);
+    try evm.state.set_storage(contract_addr, 0x42, 0x123456);
 
     // Push storage slot
-    try test_frame.pushStack(&[_]u256{0x42});
+    try frame.stack.append(0x42);
 
-    const result = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
+    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
-    const value = try test_frame.popStack();
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x123456), value);
 }
 
 test "SLOAD: Load from uninitialized slot returns zero" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x54},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 3000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 3000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Load from slot that was never written
-    try test_frame.pushStack(&[_]u256{0x99});
+    try frame.stack.append(0x99);
 
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
 
-    const value = try test_frame.popStack();
+    const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
 }
 
 test "SLOAD: Multiple loads from same slot" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x54},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 6000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 6000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Set storage value
-    try test_vm.evm.state.set_storage(helpers.TestAddresses.CONTRACT, 0x10, 0xABCDEF);
+    try evm.state.set_storage(contract_addr, 0x10, 0xABCDEF);
 
     // Load same slot multiple times
     for (0..3) |_| {
-        try test_frame.pushStack(&[_]u256{0x10});
-        _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-        const value = try test_frame.popStack();
+        try frame.stack.append(0x10);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+        const value = try frame.stack.pop();
         try testing.expectEqual(@as(u256, 0xABCDEF), value);
     }
 }
 
 test "SLOAD: EIP-2929 cold/warm access" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x54},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // EIP-2929 is active in latest hardforks by default
 
     // Clear access list to ensure cold access
-    test_vm.evm.access_list.clear();
+    evm.access_list.clear();
 
     // First access (cold)
-    try test_frame.pushStack(&[_]u256{0x100});
-    const gas_before_cold = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    const gas_used_cold = gas_before_cold - test_frame.frame.gas_remaining;
+    try frame.stack.append(0x100);
+    const gas_before_cold = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    const gas_used_cold = gas_before_cold - frame.gas_remaining;
 
     // Should consume 2100 gas for cold access
     try testing.expectEqual(@as(u64, 2100), gas_used_cold);
 
     // Second access (warm)
-    try test_frame.pushStack(&[_]u256{0x100});
-    const gas_before_warm = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    const gas_used_warm = gas_before_warm - test_frame.frame.gas_remaining;
+    try frame.stack.append(0x100);
+    const gas_before_warm = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    const gas_used_warm = gas_before_warm - frame.gas_remaining;
 
     // Should consume 100 gas for warm access
     try testing.expectEqual(@as(u64, 100), gas_used_warm);
@@ -145,60 +208,89 @@ test "SLOAD: EIP-2929 cold/warm access" {
 
 test "SSTORE (0x55): Store to storage" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{0x55}; // SSTORE
-
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 30000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 30000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Push value first, then slot (SSTORE pops slot from top, then value)
-    try test_frame.pushStack(&[_]u256{0x999}); // value
-    try test_frame.pushStack(&[_]u256{0x42}); // slot
+    try frame.stack.append(0x999); // value
+    try frame.stack.append(0x42); // slot
 
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
 
     // Verify value was stored
-    const stored = test_vm.evm.state.get_storage(helpers.TestAddresses.CONTRACT, 0x42);
+    const stored = evm.state.get_storage(contract_addr, 0x42);
     try testing.expectEqual(@as(u256, 0x999), stored);
 }
 
 test "SSTORE: Static call protection" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x55},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Set static mode
-    test_frame.frame.is_static = true;
+    frame.is_static = true;
 
     // Try to store (push value first, then slot)
-    try test_frame.pushStack(&[_]u256{0x20}); // value
-    try test_frame.pushStack(&[_]u256{0x10}); // slot
+    try frame.stack.append(0x20); // value
+    try frame.stack.append(0x10); // slot
 
-    const result = helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.WriteProtection, result);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
 // test "SSTORE: Gas refund for clearing storage" {
@@ -237,41 +329,56 @@ test "SSTORE: Static call protection" {
 // TODO: Agent is working on fixing this test - EIP-2200 gas cost scenarios
 test "SSTORE: EIP-2200 gas cost scenarios" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x55},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // EIP-2200 is active in latest hardforks by default
 
     // Test 1: Fresh slot (0 -> non-zero)
-    try test_frame.pushStack(&[_]u256{0x111}); // value
-    try test_frame.pushStack(&[_]u256{0x60}); // slot
+    try frame.stack.append(0x111); // value
+    try frame.stack.append(0x60); // slot
 
-    const gas_before_fresh = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
-    const gas_fresh = gas_before_fresh - test_frame.frame.gas_remaining;
+    const gas_before_fresh = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    const gas_fresh = gas_before_fresh - frame.gas_remaining;
 
     // Should consume 20000 gas for fresh slot
     try testing.expect(gas_fresh >= 20000);
 
     // Test 2: Update existing value (non-zero -> different non-zero)
-    try test_frame.pushStack(&[_]u256{0x222}); // different value
-    try test_frame.pushStack(&[_]u256{0x60}); // same slot
+    try frame.stack.append(0x222); // different value
+    try frame.stack.append(0x60); // same slot
 
-    const gas_before_update = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
-    const gas_update = gas_before_update - test_frame.frame.gas_remaining;
+    const gas_before_update = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    const gas_update = gas_before_update - frame.gas_remaining;
 
     // Should consume less gas for update
     try testing.expect(gas_update < gas_fresh);
@@ -280,36 +387,51 @@ test "SSTORE: EIP-2200 gas cost scenarios" {
 // TODO: Claude is working on fixing this test - large value storage
 test "SSTORE: Large storage values" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{ 0x55, 0x54 }, // SSTORE, SLOAD
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 50000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 50000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Store maximum u256 value
     const max_value = std.math.maxInt(u256);
     // SSTORE pops slot first, then value - so push value first, then slot
-    try test_frame.pushStack(&[_]u256{max_value}); // value
-    try test_frame.pushStack(&[_]u256{0x80}); // slot (on top)
+    try frame.stack.append(max_value); // value
+    try frame.stack.append(0x80); // slot (on top)
 
-    test_frame.frame.pc = 0;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+    frame.pc = 0;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
 
     // Load it back
-    try test_frame.pushStack(&[_]u256{0x80}); // same slot
-    test_frame.frame.pc = 1;
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
+    try frame.stack.append(0x80); // same slot
+    frame.pc = 1;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
 
-    const loaded = try test_frame.popStack();
+    const loaded = try frame.stack.pop();
     try testing.expectEqual(max_value, loaded);
 }
 
@@ -320,41 +442,55 @@ test "SSTORE: Large storage values" {
 test "Storage opcodes: Gas consumption patterns" {
     const allocator = testing.allocator;
     // Use Istanbul hardfork (pre-Berlin) for 800 gas SLOAD cost
-    var test_vm = try helpers.TestVm.init_with_hardfork(allocator, Evm.Hardfork.Hardfork.ISTANBUL);
-    defer test_vm.deinit(allocator);
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init_with_hardfork(allocator, db_interface, Evm.Hardfork.Hardfork.ISTANBUL);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{ 0x54, 0x55 },
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // SLOAD base gas (pre-EIP-2929)
     // Test with older hardfork behavior where gas is different
-    try test_frame.pushStack(&[_]u256{0x90});
+    try frame.stack.append(0x90);
 
-    const gas_before_sload = test_frame.frame.gas_remaining;
-    test_frame.frame.pc = 0;
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    const gas_sload = gas_before_sload - test_frame.frame.gas_remaining;
+    const gas_before_sload = frame.gas_remaining;
+    frame.pc = 0;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    const gas_sload = gas_before_sload - frame.gas_remaining;
 
     // Pre-Berlin: 800 gas
     try testing.expectEqual(@as(u64, 800), gas_sload);
 
     // SSTORE to fresh slot (push value first, then slot)
-    try test_frame.pushStack(&[_]u256{0x123}); // value
-    try test_frame.pushStack(&[_]u256{0xA0}); // slot
+    try frame.stack.append(0x123); // value
+    try frame.stack.append(0xA0); // slot
 
-    const gas_before_sstore = test_frame.frame.gas_remaining;
-    test_frame.frame.pc = 1;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
-    const gas_sstore = gas_before_sstore - test_frame.frame.gas_remaining;
+    const gas_before_sstore = frame.gas_remaining;
+    frame.pc = 1;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    const gas_sstore = gas_before_sstore - frame.gas_remaining;
 
     // Fresh slot store is expensive
     try testing.expect(gas_sstore >= 20000);
@@ -366,46 +502,68 @@ test "Storage opcodes: Gas consumption patterns" {
 
 test "Storage opcodes: Stack underflow" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test SLOAD with empty stack
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x54},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
 
-    const result = helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.StackUnderflow, result);
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 
     // Test SSTORE with insufficient stack
-    var contract2 = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var contract2 = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x55},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract2.deinit(allocator, null);
 
-    var test_frame2 = try helpers.TestFrame.init(allocator, &contract2, 1000);
-    defer test_frame2.deinit();
+    var frame2 = try Frame.init(allocator, &contract2);
+    defer frame2.deinit();
+    frame2.memory.finalize_root();
+    frame2.gas_remaining = 1000;
+
+    const state_ptr2: *Evm.Operation.State = @ptrCast(&frame2);
 
     // Empty stack
-    const result2 = helpers.executeOpcode(0x55, test_vm.evm, test_frame2.frame);
-    try testing.expectError(helpers.ExecutionError.Error.StackUnderflow, result2);
+    const result2 = evm.table.execute(0, interpreter_ptr, state_ptr2, 0x55);
+    try testing.expectError(ExecutionError.Error.StackUnderflow, result2);
 
     // Only one item (need two)
-    try test_frame2.pushStack(&[_]u256{0x10});
-    const result3 = helpers.executeOpcode(0x55, test_vm.evm, test_frame2.frame);
-    try testing.expectError(helpers.ExecutionError.Error.StackUnderflow, result3);
+    try frame2.stack.append(0x10);
+    const result3 = evm.table.execute(0, interpreter_ptr, state_ptr2, 0x55);
+    try testing.expectError(ExecutionError.Error.StackUnderflow, result3);
 }
 
 // ============================
@@ -414,8 +572,13 @@ test "Storage opcodes: Stack underflow" {
 
 test "Storage: Multiple consecutive operations" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const code = [_]u8{
         0x60, 0x01, // PUSH1 0x01 (value1)
@@ -430,46 +593,56 @@ test "Storage: Multiple consecutive operations" {
         0x54, // SLOAD
     };
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Execute all operations
-    test_frame.frame.pc = 0;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 2;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 4;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+    frame.pc = 0;
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 2;
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 4;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
 
-    test_frame.frame.pc = 5;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 7;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 9;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+    frame.pc = 5;
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 7;
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 9;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
 
-    test_frame.frame.pc = 10;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 12;
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
+    frame.pc = 10;
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 12;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
 
-    test_frame.frame.pc = 13;
-    _ = try helpers.executeOpcode(0x60, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 15;
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
+    frame.pc = 13;
+    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    frame.pc = 15;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
 
     // Check loaded values
-    const value1 = try test_frame.popStack();
-    const value0 = try test_frame.popStack();
+    const value1 = try frame.stack.pop();
+    const value0 = try frame.stack.pop();
 
     try testing.expectEqual(@as(u256, 2), value1); // slot1
     try testing.expectEqual(@as(u256, 1), value0); // slot0
@@ -477,34 +650,49 @@ test "Storage: Multiple consecutive operations" {
 
 test "SSTORE: Overwriting values" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const slot = 0xBEEF;
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
 
     // Store and overwrite values using separate contracts and frames
     const values = [_]u256{ 0x111, 0x222, 0x333 };
     for (values) |value| {
         const code = [_]u8{0x55}; // SSTORE
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &code,
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 30000);
-        defer test_frame.deinit();
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 30000;
 
-        try test_frame.pushStack(&[_]u256{value}); // value
-        try test_frame.pushStack(&[_]u256{slot}); // slot
-        _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+        try frame.stack.append(value); // value
+        try frame.stack.append(slot); // slot
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
     }
 
     // Verify final value
-    const stored = test_vm.evm.state.get_storage(helpers.TestAddresses.CONTRACT, slot);
+    const stored = evm.state.get_storage(contract_addr, slot);
     try testing.expectEqual(@as(u256, 0x333), stored);
 }
 
@@ -514,50 +702,65 @@ test "SSTORE: Overwriting values" {
 
 test "SSTORE: EIP-2200 complete gas cost scenarios" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x55},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test Case 1: Fresh slot (0 -> non-zero) - SSTORE_SET
-    try test_frame.pushStack(&[_]u256{0x111}); // value
-    try test_frame.pushStack(&[_]u256{0x100}); // slot
+    try frame.stack.append(0x111); // value
+    try frame.stack.append(0x100); // slot
 
-    const gas_before_set = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
-    const gas_set = gas_before_set - test_frame.frame.gas_remaining;
+    const gas_before_set = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    const gas_set = gas_before_set - frame.gas_remaining;
 
     // Fresh slot: Cold SLOAD (2100) + SSTORE_SET (20000) = 22100
     try testing.expectEqual(@as(u64, 22100), gas_set);
 
     // Test Case 2: Update existing value (non-zero -> different non-zero) - SSTORE_RESET
-    try test_frame.pushStack(&[_]u256{0x222}); // different value
-    try test_frame.pushStack(&[_]u256{0x100}); // same slot (warm now)
+    try frame.stack.append(0x222); // different value
+    try frame.stack.append(0x100); // same slot (warm now)
 
-    const gas_before_reset = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
-    const gas_reset = gas_before_reset - test_frame.frame.gas_remaining;
+    const gas_before_reset = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    const gas_reset = gas_before_reset - frame.gas_remaining;
 
     // Warm slot: SSTORE_RESET (2900) only
     try testing.expectEqual(@as(u64, 2900), gas_reset);
 
     // Test Case 3: Clear slot (non-zero -> zero) - SSTORE_CLEAR with refund
-    try test_frame.pushStack(&[_]u256{0}); // zero value
-    try test_frame.pushStack(&[_]u256{0x100}); // same slot
+    try frame.stack.append(0); // zero value
+    try frame.stack.append(0x100); // same slot
 
-    const gas_before_clear = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
-    const gas_clear = gas_before_clear - test_frame.frame.gas_remaining;
+    const gas_before_clear = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    const gas_clear = gas_before_clear - frame.gas_remaining;
 
     // Warm slot clear: SSTORE_RESET (2900) only
     try testing.expectEqual(@as(u64, 2900), gas_clear);
@@ -565,75 +768,105 @@ test "SSTORE: EIP-2200 complete gas cost scenarios" {
 
 test "SSTORE: Zero value edge cases" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x55},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test Case 1: Store zero to empty slot (no-op)
-    try test_frame.pushStack(&[_]u256{0}); // zero value
-    try test_frame.pushStack(&[_]u256{0x200}); // fresh slot
+    try frame.stack.append(0); // zero value
+    try frame.stack.append(0x200); // fresh slot
 
-    const gas_before_noop = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
-    const gas_noop = gas_before_noop - test_frame.frame.gas_remaining;
+    const gas_before_noop = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    const gas_noop = gas_before_noop - frame.gas_remaining;
 
     // No-op: Cold SLOAD (2100) + no change (0) = 2100
     try testing.expectEqual(@as(u64, 2100), gas_noop);
 
     // Verify slot is still zero
-    const stored = test_vm.evm.state.get_storage(helpers.TestAddresses.CONTRACT, 0x200);
+    const stored = evm.state.get_storage(contract_addr, 0x200);
     try testing.expectEqual(@as(u256, 0), stored);
 }
 
 test "SSTORE: Same value edge cases" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x55},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // First set a value
-    try test_vm.evm.state.set_storage(helpers.TestAddresses.CONTRACT, 0x300, 0x999);
+    try evm.state.set_storage(contract_addr, 0x300, 0x999);
 
     // Warm up the slot first
-    try test_frame.pushStack(&[_]u256{0x999}); // same value
-    try test_frame.pushStack(&[_]u256{0x300}); // slot
+    try frame.stack.append(0x999); // same value
+    try frame.stack.append(0x300); // slot
 
-    const gas_before_same = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
-    const gas_same = gas_before_same - test_frame.frame.gas_remaining;
+    const gas_before_same = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    const gas_same = gas_before_same - frame.gas_remaining;
 
     // Same value: Cold SLOAD (2100) + no change (0) = 2100
     try testing.expectEqual(@as(u64, 2100), gas_same);
 
     // Second time should be warm
-    try test_frame.pushStack(&[_]u256{0x999}); // same value
-    try test_frame.pushStack(&[_]u256{0x300}); // slot (warm now)
+    try frame.stack.append(0x999); // same value
+    try frame.stack.append(0x300); // slot (warm now)
 
-    const gas_before_warm_same = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
-    const gas_warm_same = gas_before_warm_same - test_frame.frame.gas_remaining;
+    const gas_before_warm_same = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    const gas_warm_same = gas_before_warm_same - frame.gas_remaining;
 
     // Warm same value: no gas consumed for no-op
     try testing.expectEqual(@as(u64, 0), gas_warm_same);
@@ -645,8 +878,13 @@ test "SSTORE: Same value edge cases" {
 
 test "Storage: Boundary value testing" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const boundary_values = [_]u256{
         0, // Zero
@@ -659,41 +897,57 @@ test "Storage: Boundary value testing" {
         std.math.maxInt(u256), // u256 max
     };
 
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
     for (boundary_values, 0..) |value, i| {
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{ 0x55, 0x54 }, // SSTORE, SLOAD
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 50000);
-        defer test_frame.deinit();
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 50000;
+
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
         const slot = @as(u256, i);
 
         // Store boundary value
-        try test_frame.pushStack(&[_]u256{value});
-        try test_frame.pushStack(&[_]u256{slot});
-        test_frame.frame.pc = 0;
-        _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+        try frame.stack.append(value);
+        try frame.stack.append(slot);
+        frame.pc = 0;
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
 
         // Load it back
-        try test_frame.pushStack(&[_]u256{slot});
-        test_frame.frame.pc = 1;
-        _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
+        try frame.stack.append(slot);
+        frame.pc = 1;
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
 
-        const loaded = try test_frame.popStack();
+        const loaded = try frame.stack.pop();
         try testing.expectEqual(value, loaded);
     }
 }
 
 test "Storage: Large slot number testing" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const large_slots = [_]u256{
         0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF, // Max u256
@@ -702,33 +956,44 @@ test "Storage: Large slot number testing" {
         0x1000000000000000000000000000000000000000000000000000000000000000, // Large power of 2
     };
 
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
     for (large_slots, 0..) |slot, i| {
-        var contract = try helpers.createTestContract(
-            allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+        var contract = Contract.init(
+            caller,
+            contract_addr,
             0,
+            1000,
             &[_]u8{ 0x55, 0x54 }, // SSTORE, SLOAD
+            [_]u8{0} ** 32,
+            &[_]u8{},
+            false,
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 50000);
-        defer test_frame.deinit();
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = 50000;
+
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
         const value = @as(u256, 0x1000 + i);
 
         // Store to large slot
-        try test_frame.pushStack(&[_]u256{value});
-        try test_frame.pushStack(&[_]u256{slot});
-        test_frame.frame.pc = 0;
-        _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+        try frame.stack.append(value);
+        try frame.stack.append(slot);
+        frame.pc = 0;
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
 
         // Load it back
-        try test_frame.pushStack(&[_]u256{slot});
-        test_frame.frame.pc = 1;
-        _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
+        try frame.stack.append(slot);
+        frame.pc = 1;
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
 
-        const loaded = try test_frame.popStack();
+        const loaded = try frame.stack.pop();
         try testing.expectEqual(value, loaded);
     }
 }
@@ -739,73 +1004,103 @@ test "Storage: Large slot number testing" {
 
 test "Storage: Contract slot warming pattern" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x54},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     const slot: u256 = 0x500;
 
     // First access should be cold (2100 gas)
-    try test_frame.pushStack(&[_]u256{slot});
-    const gas_before_cold = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    const gas_used_cold = gas_before_cold - test_frame.frame.gas_remaining;
-    _ = try test_frame.popStack(); // Clear result
+    try frame.stack.append(slot);
+    const gas_before_cold = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    const gas_used_cold = gas_before_cold - frame.gas_remaining;
+    _ = try frame.stack.pop(); // Clear result
 
     try testing.expectEqual(@as(u64, 2100), gas_used_cold);
 
     // Second access should be warm (100 gas)
-    try test_frame.pushStack(&[_]u256{slot});
-    const gas_before_warm = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    const gas_used_warm = gas_before_warm - test_frame.frame.gas_remaining;
+    try frame.stack.append(slot);
+    const gas_before_warm = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    const gas_used_warm = gas_before_warm - frame.gas_remaining;
 
     try testing.expectEqual(@as(u64, 100), gas_used_warm);
 }
 
 test "Storage: Complex access patterns" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{ 0x54, 0x55 },
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Clear access list
-    test_vm.evm.access_list.clear();
+    evm.access_list.clear();
 
     const slots = [_]u256{ 0x1, 0x2, 0x3, 0x1, 0x4, 0x2 }; // Pattern with repeats
     const expected_costs = [_]u64{ 2100, 2100, 2100, 100, 2100, 100 }; // Cold, cold, cold, warm, cold, warm
 
     for (slots, 0..) |slot, i| {
-        try test_frame.pushStack(&[_]u256{slot});
-        const gas_before = test_frame.frame.gas_remaining;
-        test_frame.frame.pc = 0;
-        _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-        const gas_used = gas_before - test_frame.frame.gas_remaining;
+        try frame.stack.append(slot);
+        const gas_before = frame.gas_remaining;
+        frame.pc = 0;
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+        const gas_used = gas_before - frame.gas_remaining;
 
         try testing.expectEqual(expected_costs[i], gas_used);
-        _ = try test_frame.popStack(); // Clear loaded value
+        _ = try frame.stack.pop(); // Clear loaded value
     }
 }
 
@@ -816,46 +1111,75 @@ test "Storage: Complex access patterns" {
 test "SSTORE: EIP-1706 gas stipend protection" {
     const allocator = testing.allocator;
     // Use Istanbul hardfork for EIP-1706 support
-    var test_vm = try helpers.TestVm.init_with_hardfork(allocator, .ISTANBUL);
-    defer test_vm.deinit(allocator);
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init_with_hardfork(allocator, db_interface, .ISTANBUL);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{0x55},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
     // Set gas remaining to exactly the stipend limit (2300)
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 2300);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 2300;
 
-    try test_frame.pushStack(&[_]u256{0x123}); // value
-    try test_frame.pushStack(&[_]u256{0x456}); // slot
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    try frame.stack.append(0x123); // value
+    try frame.stack.append(0x456); // slot
 
     // Should fail with OutOfGas due to EIP-1706 protection
-    const result = helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.OutOfGas, result);
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    try testing.expectError(ExecutionError.Error.OutOfGas, result);
 }
 
 test "Storage: Rapid alternating operations" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{ 0x55, 0x54 },
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 200000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 200000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     const slot: u256 = 0x777;
     
@@ -864,69 +1188,91 @@ test "Storage: Rapid alternating operations" {
         const value = @as(u256, i + 1);
         
         // Store
-        try test_frame.pushStack(&[_]u256{value});
-        try test_frame.pushStack(&[_]u256{slot});
-        test_frame.frame.pc = 0;
-        _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+        try frame.stack.append(value);
+        try frame.stack.append(slot);
+        frame.pc = 0;
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
         
         // Load back immediately
-        try test_frame.pushStack(&[_]u256{slot});
-        test_frame.frame.pc = 1;
-        _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
+        try frame.stack.append(slot);
+        frame.pc = 1;
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
         
-        const loaded = try test_frame.popStack();
+        const loaded = try frame.stack.pop();
         try testing.expectEqual(value, loaded);
     }
 }
 
 test "Storage: Multiple contracts isolation" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Create two different contracts
-    var contract1 = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr1: Address.Address = [_]u8{0x33} ** 20;
+    const contract_addr2: Address.Address = [_]u8{0x44} ** 20;
+
+    var contract1 = Contract.init(
+        caller,
+        contract_addr1,
         0,
+        1000,
         &[_]u8{0x55},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract1.deinit(allocator, null);
 
-    var contract2 = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.BOB, // Different address
-        helpers.TestAddresses.ALICE,
+    var contract2 = Contract.init(
+        caller,
+        contract_addr2, // Different address
         0,
+        1000,
         &[_]u8{0x54},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract2.deinit(allocator, null);
 
-    var test_frame1 = try helpers.TestFrame.init(allocator, &contract1, 30000);
-    defer test_frame1.deinit();
+    var frame1 = try Frame.init(allocator, &contract1);
+    defer frame1.deinit();
+    frame1.memory.finalize_root();
+    frame1.gas_remaining = 30000;
 
-    var test_frame2 = try helpers.TestFrame.init(allocator, &contract2, 30000);
-    defer test_frame2.deinit();
+    var frame2 = try Frame.init(allocator, &contract2);
+    defer frame2.deinit();
+    frame2.memory.finalize_root();
+    frame2.gas_remaining = 30000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr1: *Evm.Operation.State = @ptrCast(&frame1);
 
     const slot: u256 = 0x888;
     const value1: u256 = 0xAAA;
     const value2: u256 = 0xBBB;
 
     // Store value1 in contract1
-    try test_frame1.pushStack(&[_]u256{value1});
-    try test_frame1.pushStack(&[_]u256{slot});
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame1.frame);
+    try frame1.stack.append(value1);
+    try frame1.stack.append(slot);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr1, 0x55);
 
     // Store value2 in contract2 (same slot, different contract)
-    try test_vm.evm.state.set_storage(helpers.TestAddresses.BOB, slot, value2);
+    try evm.state.set_storage(contract_addr2, slot, value2);
 
     // Load from contract1 - should get value1
-    const stored1 = test_vm.evm.state.get_storage(helpers.TestAddresses.CONTRACT, slot);
+    const stored1 = evm.state.get_storage(contract_addr1, slot);
     try testing.expectEqual(value1, stored1);
 
     // Load from contract2 - should get value2
-    const stored2 = test_vm.evm.state.get_storage(helpers.TestAddresses.BOB, slot);
+    const stored2 = evm.state.get_storage(contract_addr2, slot);
     try testing.expectEqual(value2, stored2);
 
     // Verify they're actually different

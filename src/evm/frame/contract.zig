@@ -753,8 +753,10 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
         Log.debug("Failed to allocate CodeAnalysis: {any}", .{err});
         return err;
     };
+    errdefer allocator.destroy(analysis);
 
     analysis.code_segments = try bitvec.code_bitmap(allocator, code);
+    errdefer analysis.code_segments.deinit(allocator);
 
     var jumpdests = std.ArrayList(u32).init(allocator);
     defer jumpdests.deinit();

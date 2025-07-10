@@ -1,26 +1,47 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers.zig");
+const Evm = @import("evm");
+const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
+const ExecutionError = Evm.ExecutionError;
 
 // ============================
 // SHL (0x1B) - Comprehensive Tests
 // ============================
 test "SHL: Comprehensive shift left edge cases" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     const test_cases = [_]struct {
         value: u256,
@@ -65,11 +86,13 @@ test "SHL: Comprehensive shift left edge cases" {
     };
 
     for (test_cases) |tc| {
-        test_frame.frame.stack.clear();
-        try test_frame.pushStack(&[_]u256{ tc.value, tc.shift });
-        _ = try helpers.executeOpcode(0x1B, test_vm.evm, test_frame.frame);
-        try helpers.expectStackValue(test_frame.frame, 0, tc.expected);
-        _ = try test_frame.popStack();
+        frame.stack.clear();
+        try frame.stack.append(tc.value); // value to shift (stays on stack, gets replaced)
+        try frame.stack.append(tc.shift); // shift amount (gets popped)
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1B);
+        const result = try frame.stack.peek_n(0);
+        try testing.expectEqual(tc.expected, result);
+        _ = try frame.stack.pop();
     }
 }
 
@@ -78,20 +101,36 @@ test "SHL: Comprehensive shift left edge cases" {
 // ============================
 test "SHR: Comprehensive logical shift right edge cases" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     const test_cases = [_]struct {
         value: u256,
@@ -131,11 +170,13 @@ test "SHR: Comprehensive logical shift right edge cases" {
     };
 
     for (test_cases) |tc| {
-        test_frame.frame.stack.clear();
-        try test_frame.pushStack(&[_]u256{ tc.value, tc.shift });
-        _ = try helpers.executeOpcode(0x1C, test_vm.evm, test_frame.frame);
-        try helpers.expectStackValue(test_frame.frame, 0, tc.expected);
-        _ = try test_frame.popStack();
+        frame.stack.clear();
+        try frame.stack.append(tc.value); // value to shift (stays on stack, gets replaced)
+        try frame.stack.append(tc.shift); // shift amount (gets popped)
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1C);
+        const result = try frame.stack.peek_n(0);
+        try testing.expectEqual(tc.expected, result);
+        _ = try frame.stack.pop();
     }
 }
 
@@ -144,20 +185,36 @@ test "SHR: Comprehensive logical shift right edge cases" {
 // ============================
 test "SAR: Comprehensive arithmetic shift right edge cases" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     const test_cases = [_]struct {
         value: u256,
@@ -195,11 +252,13 @@ test "SAR: Comprehensive arithmetic shift right edge cases" {
     };
 
     for (test_cases) |tc| {
-        test_frame.frame.stack.clear();
-        try test_frame.pushStack(&[_]u256{ tc.value, tc.shift });
-        _ = try helpers.executeOpcode(0x1D, test_vm.evm, test_frame.frame);
-        try helpers.expectStackValue(test_frame.frame, 0, tc.expected);
-        _ = try test_frame.popStack();
+        frame.stack.clear();
+        try frame.stack.append(tc.value); // value to shift (stays on stack, gets replaced)
+        try frame.stack.append(tc.shift); // shift amount (gets popped)
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1D);
+        const result = try frame.stack.peek_n(0);
+        try testing.expectEqual(tc.expected, result);
+        _ = try frame.stack.pop();
     }
 }
 
@@ -208,20 +267,36 @@ test "SAR: Comprehensive arithmetic shift right edge cases" {
 // ============================
 test "KECCAK256: Comprehensive hash edge cases" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test 1: Known hash values
     const known_hashes = [_]struct {
@@ -257,80 +332,101 @@ test "KECCAK256: Comprehensive hash edge cases" {
     };
 
     for (known_hashes) |kh| {
-        test_frame.frame.stack.clear();
+        frame.stack.clear();
         
         // Write data to memory
         if (kh.data.len > 0) {
             for (kh.data, 0..) |byte, i| {
-                try test_frame.frame.memory.set_data(kh.offset + i, &[_]u8{byte});
+                try frame.memory.set_data(kh.offset + i, &[_]u8{byte});
             }
         }
         
-        // Hash it (push size first, then offset, so offset is on top)
-        try test_frame.pushStack(&[_]u256{ kh.data.len, kh.offset });
-        _ = try helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame);
-        try helpers.expectStackValue(test_frame.frame, 0, kh.expected_hash);
-        _ = try test_frame.popStack();
+        // Hash it (size pushed first, offset on top for first pop)
+        try frame.stack.append(kh.data.len); // size (will be popped 2nd)
+        try frame.stack.append(kh.offset); // offset (will be popped 1st)
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
+        const result = try frame.stack.peek_n(0);
+        try testing.expectEqual(kh.expected_hash, result);
+        _ = try frame.stack.pop();
     }
 
     // Test 2: Different data lengths
     const test_lengths = [_]usize{ 1, 31, 32, 33, 63, 64, 65, 127, 128, 255, 256, 1023, 1024 };
     
     for (test_lengths) |length| {
-        test_frame.frame.stack.clear();
+        frame.stack.clear();
         
         // Fill memory with pattern
         for (0..length) |i| {
-            try test_frame.frame.memory.set_data(i, &[_]u8{@as(u8, @intCast(i & 0xFF))});
+            try frame.memory.set_data(i, &[_]u8{@as(u8, @intCast(i & 0xFF))});
         }
         
-        try test_frame.pushStack(&[_]u256{ length, 0 });
-        _ = try helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame);
+        try frame.stack.append(length); // size (will be popped 2nd)
+        try frame.stack.append(0); // offset (will be popped 1st)
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
         
         // Verify we got a hash (non-zero)
-        const hash = try test_frame.popStack();
+        const hash = try frame.stack.pop();
         try testing.expect(hash != 0);
     }
 
     // Test 3: Same data, different offsets should give same hash
-    test_frame.frame.stack.clear();
+    frame.stack.clear();
     const test_data = "test data for offset comparison";
     
     // Write at offset 0
     for (test_data, 0..) |byte, i| {
-        try test_frame.frame.memory.set_data(0 + i, &[_]u8{byte});
+        try frame.memory.set_data(0 + i, &[_]u8{byte});
     }
-    try test_frame.pushStack(&[_]u256{ test_data.len, 0 });
-    _ = try helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame);
-    const hash1 = try test_frame.popStack();
+    try frame.stack.append(test_data.len); // size (will be popped 2nd)
+    try frame.stack.append(0); // offset (will be popped 1st)
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
+    const hash1 = try frame.stack.pop();
     
     // Write at offset 1000
     for (test_data, 0..) |byte, i| {
-        try test_frame.frame.memory.set_data(1000 + i, &[_]u8{byte});
+        try frame.memory.set_data(1000 + i, &[_]u8{byte});
     }
-    try test_frame.pushStack(&[_]u256{ test_data.len, 1000 });
-    _ = try helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame);
-    const hash2 = try test_frame.popStack();
+    try frame.stack.append(test_data.len); // size (will be popped 2nd)
+    try frame.stack.append(1000); // offset (will be popped 1st)
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
+    const hash2 = try frame.stack.pop();
     
     try testing.expectEqual(hash1, hash2);
 }
 
 test "KECCAK256: Gas consumption patterns" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test gas consumption for different sizes
     const test_cases = [_]struct {
@@ -350,73 +446,93 @@ test "KECCAK256: Gas consumption patterns" {
     };
 
     for (test_cases) |tc| {
-        test_frame.frame.stack.clear();
+        frame.stack.clear();
         
         // Pre-expand memory to isolate hash gas cost
         if (tc.offset + tc.size > 0) {
-            _ = try test_frame.frame.memory.ensure_context_capacity(tc.offset + tc.size);
+            _ = try frame.memory.ensure_context_capacity(tc.offset + tc.size);
         }
         
-        const gas_before = test_frame.frame.gas_remaining;
-        try test_frame.pushStack(&[_]u256{ tc.size, tc.offset });
-        _ = try helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame);
-        const gas_after = test_frame.frame.gas_remaining;
+        const gas_before = frame.gas_remaining;
+        try frame.stack.append(tc.size); // size (will be popped 2nd)
+        try frame.stack.append(tc.offset); // offset (will be popped 1st)
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
+        const gas_after = frame.gas_remaining;
         
         const gas_used = gas_before - gas_after;
         // Gas should be 30 (base) + word_gas
         try testing.expectEqual(30 + tc.expected_word_gas, gas_used);
-        _ = try test_frame.popStack();
+        _ = try frame.stack.pop();
     }
 }
 
 test "KECCAK256: Memory expansion edge cases" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test 1: Hash requiring memory expansion
     const large_offset = 10000;
     const size = 32;
     
-    try test_frame.pushStack(&[_]u256{ size, large_offset });
-    _ = try helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame);
+    try frame.stack.append(size); // size (will be popped 2nd)
+    try frame.stack.append(large_offset); // offset (will be popped 1st)
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
     
     // Memory should have expanded
-    try testing.expect(test_frame.frame.memory.size() >= large_offset + size);
-    _ = try test_frame.popStack();
+    try testing.expect(frame.memory.size() >= large_offset + size);
+    _ = try frame.stack.pop();
 
     // Test 2: Offset + size overflow
-    test_frame.frame.stack.clear();
+    frame.stack.clear();
     const overflow_offset = std.math.maxInt(u256) - 10;
     const overflow_size = 20;
     
-    try test_frame.pushStack(&[_]u256{ overflow_size, overflow_offset });
+    try frame.stack.append(overflow_size); // size (will be popped 2nd)
+    try frame.stack.append(overflow_offset); // offset (will be popped 1st)
     try testing.expectError(
-        helpers.ExecutionError.Error.OutOfOffset,
-        helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame)
+        ExecutionError.Error.OutOfOffset,
+        evm.table.execute(0, interpreter_ptr, state_ptr, 0x20)
     );
 
     // Test 3: Size too large for available gas
-    test_frame.frame.stack.clear();
-    test_frame.frame.gas_remaining = 100; // Very limited gas
+    frame.stack.clear();
+    frame.gas_remaining = 100; // Very limited gas
     const huge_size = 100000; // Would require lots of gas
     
-    try test_frame.pushStack(&[_]u256{ huge_size, 0 });
+    try frame.stack.append(huge_size); // size (will be popped 2nd)
+    try frame.stack.append(0); // offset (will be popped 1st)
     try testing.expectError(
-        helpers.ExecutionError.Error.OutOfGas,
-        helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame)
+        ExecutionError.Error.OutOfGas,
+        evm.table.execute(0, interpreter_ptr, state_ptr, 0x20)
     );
 }
 
@@ -425,20 +541,36 @@ test "KECCAK256: Memory expansion edge cases" {
 // ============================
 test "Shifts: Combined operations and properties" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        10000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test: (x << n) >> n = x for n < 256 (if no overflow)
     const test_values = [_]u256{ 1, 42, 0xFF, 0x1234, 0xDEADBEEF };
@@ -446,19 +578,21 @@ test "Shifts: Combined operations and properties" {
     
     for (test_values) |val| {
         for (test_shifts) |shift| {
-            test_frame.frame.stack.clear();
+            frame.stack.clear();
             
             // Only test if value won't overflow
             if (@clz(val) >= shift) {
                 // Shift left
-                try test_frame.pushStack(&[_]u256{ val, shift });
-                _ = try helpers.executeOpcode(0x1B, test_vm.evm, test_frame.frame);
-                const shifted_left = try test_frame.popStack();
+                try frame.stack.append(val); // value (stays on stack, gets replaced)
+                try frame.stack.append(shift); // shift amount (gets popped)
+                _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1B);
+                const shifted_left = try frame.stack.pop();
                 
                 // Shift right
-                try test_frame.pushStack(&[_]u256{ shifted_left, shift });
-                _ = try helpers.executeOpcode(0x1C, test_vm.evm, test_frame.frame);
-                const result = try test_frame.popStack();
+                try frame.stack.append(shifted_left); // value (stays on stack, gets replaced)
+                try frame.stack.append(shift); // shift amount (gets popped)
+                _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1C);
+                const result = try frame.stack.pop();
                 
                 try testing.expectEqual(val, result);
             }
@@ -466,38 +600,41 @@ test "Shifts: Combined operations and properties" {
     }
 
     // Test: SAR preserves sign for negative numbers
-    test_frame.frame.stack.clear();
+    frame.stack.clear();
     
     // Create a negative number with pattern
     const negative_val = std.math.maxInt(u256) - 0xDEADBEEF;
     
     // SAR by 4
-    try test_frame.pushStack(&[_]u256{ negative_val, 4 });
-    _ = try helpers.executeOpcode(0x1D, test_vm.evm, test_frame.frame);
-    const sar_result = try test_frame.popStack();
+    try frame.stack.append(negative_val); // value (stays on stack, gets replaced)
+    try frame.stack.append(4); // shift amount (gets popped)
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1D);
+    const sar_result = try frame.stack.pop();
     
     // Check MSB is still 1 (negative)
     try testing.expect((sar_result >> 255) == 1);
     
     // Test: Shift by amount stored in memory (via hash)
-    test_frame.frame.stack.clear();
+    frame.stack.clear();
     
     // Store shift amount (8) in memory at offset 0
-    try test_frame.frame.memory.set_data(0, &[_]u8{8});
+    try frame.memory.set_data(0, &[_]u8{8});
     
     // Hash it to get a deterministic value
-    try test_frame.pushStack(&[_]u256{ 1, 0 });
-    _ = try helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame);
-    const hash_of_8 = try test_frame.popStack();
+    try frame.stack.append(0); // offset
+    try frame.stack.append(1); // size
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
+    const hash_of_8 = try frame.stack.pop();
     
     // Use lower bits as shift amount (should be non-zero)
     const shift_from_hash = hash_of_8 & 0xFF;
     try testing.expect(shift_from_hash != 0);
     
     // Perform shift with this amount
-    try test_frame.pushStack(&[_]u256{ 0xFF00, shift_from_hash });
-    _ = try helpers.executeOpcode(0x1C, test_vm.evm, test_frame.frame);
-    const shifted_by_hash = try test_frame.popStack();
+    try frame.stack.append(0xFF00); // value (stays on stack, gets replaced)
+    try frame.stack.append(shift_from_hash); // shift amount (gets popped)
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1C);
+    const shifted_by_hash = try frame.stack.pop();
     
     // Just verify we got a result, since the exact value depends on the hash
     try testing.expect(shifted_by_hash <= 0xFF00);
@@ -508,50 +645,66 @@ test "Shifts: Combined operations and properties" {
 // ============================
 test "Shift and Crypto: Stack underflow errors" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test all shift opcodes with empty stack
     const shift_opcodes = [_]u8{ 0x1B, 0x1C, 0x1D }; // SHL, SHR, SAR
     
     for (shift_opcodes) |opcode| {
-        test_frame.frame.stack.clear();
+        frame.stack.clear();
         try testing.expectError(
-            helpers.ExecutionError.Error.StackUnderflow,
-            helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame)
+            ExecutionError.Error.StackUnderflow,
+            evm.table.execute(0, interpreter_ptr, state_ptr, opcode)
         );
         
         // With only one item
-        try test_frame.pushStack(&[_]u256{42});
+        try frame.stack.append(42);
         try testing.expectError(
-            helpers.ExecutionError.Error.StackUnderflow,
-            helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame)
+            ExecutionError.Error.StackUnderflow,
+            evm.table.execute(0, interpreter_ptr, state_ptr, opcode)
         );
-        test_frame.frame.stack.clear();
+        frame.stack.clear();
     }
     
     // Test KECCAK256 with insufficient stack
     try testing.expectError(
-        helpers.ExecutionError.Error.StackUnderflow,
-        helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame)
+        ExecutionError.Error.StackUnderflow,
+        evm.table.execute(0, interpreter_ptr, state_ptr, 0x20)
     );
     
-    try test_frame.pushStack(&[_]u256{100});
+    try frame.stack.append(100);
     try testing.expectError(
-        helpers.ExecutionError.Error.StackUnderflow,
-        helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame)
+        ExecutionError.Error.StackUnderflow,
+        evm.table.execute(0, interpreter_ptr, state_ptr, 0x20)
     );
 }
 
@@ -560,45 +713,64 @@ test "Shift and Crypto: Stack underflow errors" {
 // ============================
 test "Performance: Rapid shift operations" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Perform many shift operations in sequence
     var value: u256 = 0xDEADBEEFCAFEBABE;
     
     var i: u32 = 0;
     while (i < 100) : (i += 1) {
-        test_frame.frame.stack.clear();
+        frame.stack.clear();
         
         // Shift left by i % 8
         const shift_amount = i % 8;
-        try test_frame.pushStack(&[_]u256{ value, shift_amount });
-        _ = try helpers.executeOpcode(0x1B, test_vm.evm, test_frame.frame);
-        value = try test_frame.popStack();
+        try frame.stack.append(value); // value (stays on stack, gets replaced)
+        try frame.stack.append(shift_amount); // shift amount (gets popped)
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1B);
+        value = try frame.stack.pop();
         
         // Shift right by (i + 1) % 8
         const shift_right = (i + 1) % 8;
-        try test_frame.pushStack(&[_]u256{ value, shift_right });
-        _ = try helpers.executeOpcode(0x1C, test_vm.evm, test_frame.frame);
-        value = try test_frame.popStack();
+        try frame.stack.append(value); // value (stays on stack, gets replaced)
+        try frame.stack.append(shift_right); // shift amount (gets popped)
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1C);
+        value = try frame.stack.pop();
         
         // SAR by i % 4
         const sar_amount = i % 4;
-        try test_frame.pushStack(&[_]u256{ value, sar_amount });
-        _ = try helpers.executeOpcode(0x1D, test_vm.evm, test_frame.frame);
-        value = try test_frame.popStack();
+        try frame.stack.append(value); // value (stays on stack, gets replaced)
+        try frame.stack.append(sar_amount); // shift amount (gets popped)
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1D);
+        value = try frame.stack.pop();
     }
     
     // Value should have changed
@@ -607,20 +779,36 @@ test "Performance: Rapid shift operations" {
 
 test "KECCAK256: Hash collision resistance" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Hash different inputs and verify they produce different outputs
     var hashes = std.AutoHashMap(u256, usize).init(allocator);
@@ -629,18 +817,19 @@ test "KECCAK256: Hash collision resistance" {
     // Test sequential values
     var i: u32 = 0;
     while (i < 100) : (i += 1) {
-        test_frame.frame.stack.clear();
+        frame.stack.clear();
         
         // Write i to memory
-        try test_frame.frame.memory.set_data(0, &[_]u8{@as(u8, @intCast(i & 0xFF))});
-        try test_frame.frame.memory.set_data(1, &[_]u8{@as(u8, @intCast((i >> 8) & 0xFF))});
-        try test_frame.frame.memory.set_data(2, &[_]u8{@as(u8, @intCast((i >> 16) & 0xFF))});
-        try test_frame.frame.memory.set_data(3, &[_]u8{@as(u8, @intCast((i >> 24) & 0xFF))});
+        try frame.memory.set_data(0, &[_]u8{@as(u8, @intCast(i & 0xFF))});
+        try frame.memory.set_data(1, &[_]u8{@as(u8, @intCast((i >> 8) & 0xFF))});
+        try frame.memory.set_data(2, &[_]u8{@as(u8, @intCast((i >> 16) & 0xFF))});
+        try frame.memory.set_data(3, &[_]u8{@as(u8, @intCast((i >> 24) & 0xFF))});
         
         // Hash 4 bytes
-        try test_frame.pushStack(&[_]u256{ 4, 0 });
-        _ = try helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame);
-        const hash = try test_frame.popStack();
+        try frame.stack.append(4); // size (will be popped 2nd)
+        try frame.stack.append(0); // offset (will be popped 1st)
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
+        const hash = try frame.stack.pop();
         
         // Check for collisions
         if (hashes.get(hash)) |existing| {

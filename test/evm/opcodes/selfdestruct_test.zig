@@ -1,140 +1,208 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers.zig");
 
 // Import opcodes to test
 const Evm = @import("evm");
 
 test "SELFDESTRUCT: Basic functionality" {
     const allocator = testing.allocator;
-
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-
-    var contract = try helpers.createTestContract(
+    
+    // Create memory database
+    var memory_db = Evm.Database.Memory.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create contract
+    const contract_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{2});
+    var contract = try Evm.Contract.init(
         allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+        null,
+        10000,
+        contract_address,
+        contract_address,
+        caller_address,
         0,
         &[_]u8{},
     );
     defer contract.deinit(allocator, null);
-
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
-
+    
+    // Create frame
+    var frame = try Evm.Frame.init(allocator, &contract, 10000, false, 0);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    
     // Set contract balance
-    try test_vm.evm.state.set_balance(helpers.TestAddresses.CONTRACT, 1000);
-
+    try evm.state.set_balance(contract_address, 1000);
+    
     // Push recipient address to stack
-    try test_frame.pushStack(&[_]u256{helpers.TestAddresses.to_u256(helpers.TestAddresses.BOB)});
-
+    const bob_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{3});
+    try frame.stack.push(bob_address.to_u256());
+    
     // Execute SELFDESTRUCT opcode - should halt execution
-    const result = helpers.executeOpcode(0xFF, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.STOP, result);
-
+    const interpreter_ptr: *Evm.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = evm.jump_table.get(0xFF).execute(interpreter_ptr, state_ptr);
+    try testing.expectError(Evm.ExecutionError.Error.STOP, result);
+    
     // Stack should be empty after consuming recipient address
-    try testing.expectEqual(@as(usize, 0), test_frame.stackSize());
-
+    try testing.expectEqual(@as(usize, 0), frame.stack.size);
+    
     // Contract should be marked for destruction
-    try testing.expect(test_vm.evm.state.is_marked_for_destruction(helpers.TestAddresses.CONTRACT));
-
+    try testing.expect(evm.state.is_marked_for_destruction(contract_address));
+    
     // Recipient should be correct
-    const recipient = test_vm.evm.state.get_destruction_recipient(helpers.TestAddresses.CONTRACT);
+    const recipient = evm.state.get_destruction_recipient(contract_address);
     try testing.expect(recipient != null);
-    try testing.expect(recipient.?.eql(helpers.TestAddresses.BOB));
+    try testing.expect(recipient.?.eql(bob_address));
 }
 
 test "SELFDESTRUCT: Forbidden in static call" {
     const allocator = testing.allocator;
-
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-
-    var contract = try helpers.createTestContract(
+    
+    // Create memory database
+    var memory_db = Evm.Database.Memory.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create contract
+    const contract_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{2});
+    var contract = try Evm.Contract.init(
         allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+        null,
+        10000,
+        contract_address,
+        contract_address,
+        caller_address,
         0,
         &[_]u8{},
     );
     defer contract.deinit(allocator, null);
-
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
-
-    // Set static call flag
-    test_frame.frame.is_static = true;
-
+    
+    // Create frame with static call flag
+    var frame = try Evm.Frame.init(allocator, &contract, 10000, true, 0);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    
     // Push recipient address to stack
-    try test_frame.pushStack(&[_]u256{helpers.TestAddresses.to_u256(helpers.TestAddresses.BOB)});
-
+    const bob_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{3});
+    try frame.stack.push(bob_address.to_u256());
+    
     // Execute SELFDESTRUCT opcode - should fail in static context
-    const result = helpers.executeOpcode(0xFF, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.WriteProtection, result);
-
+    const interpreter_ptr: *Evm.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    const result = evm.jump_table.get(0xFF).execute(interpreter_ptr, state_ptr);
+    try testing.expectError(Evm.ExecutionError.Error.WriteProtection, result);
+    
     // Contract should NOT be marked for destruction
-    try testing.expect(!test_vm.evm.state.is_marked_for_destruction(helpers.TestAddresses.CONTRACT));
+    try testing.expect(!evm.state.is_marked_for_destruction(contract_address));
 }
 
 test "SELFDESTRUCT: Gas costs by hardfork" {
     const allocator = testing.allocator;
-
+    
     // Test Frontier: 0 gas
     {
-        var test_vm = try helpers.TestVm.init(allocator);
-        test_vm.evm.hardfork = .FRONTIER;
-        defer test_vm.deinit(allocator);
-
-        var contract = try helpers.createTestContract(
+        // Create memory database
+        var memory_db = Evm.Database.Memory.init(allocator);
+        defer memory_db.deinit();
+        
+        // Create EVM instance with Frontier hardfork
+        const db_interface = memory_db.to_database_interface();
+        var evm = try Evm.init(allocator, db_interface, null, null);
+        defer evm.deinit();
+        evm.hardfork = .FRONTIER;
+        
+        // Create contract
+        const contract_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{1});
+        const caller_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{2});
+        var contract = try Evm.Contract.init(
             allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+            null,
+            10000,
+            contract_address,
+            contract_address,
+            caller_address,
             0,
             &[_]u8{},
         );
         defer contract.deinit(allocator, null);
-
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-        defer test_frame.deinit();
-
+        
+        // Create frame
+        var frame = try Evm.Frame.init(allocator, &contract, 10000, false, 0);
+        defer frame.deinit();
+        frame.memory.finalize_root();
+        
         // Push recipient address to stack
-        try test_frame.pushStack(&[_]u256{helpers.TestAddresses.to_u256(helpers.TestAddresses.BOB)});
-
-        const gas_before = test_frame.frame.gas_remaining;
-        _ = helpers.executeOpcode(0xFF, test_vm.evm, test_frame.frame);
+        const bob_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{3});
+        try frame.stack.push(bob_address.to_u256());
+        
+        const gas_before = frame.gas_remaining;
+        
+        // Execute SELFDESTRUCT
+        const interpreter_ptr: *Evm.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        _ = evm.jump_table.get(0xFF).execute(interpreter_ptr, state_ptr);
         
         // Should consume 0 gas in Frontier (plus any access list costs)
-        const gas_consumed = gas_before - test_frame.frame.gas_remaining;
+        const gas_consumed = gas_before - frame.gas_remaining;
         // Note: actual gas might include access list costs, so we check it's reasonable
         try testing.expect(gas_consumed < 3000); // Should be much less than Tangerine Whistle
     }
-
+    
     // Test Tangerine Whistle: 5000 gas base
     {
-        var test_vm = try helpers.TestVm.init(allocator);
-        test_vm.evm.hardfork = .TANGERINE_WHISTLE;
-        defer test_vm.deinit(allocator);
-
-        var contract = try helpers.createTestContract(
+        // Create memory database
+        var memory_db = Evm.Database.Memory.init(allocator);
+        defer memory_db.deinit();
+        
+        // Create EVM instance with Tangerine Whistle hardfork
+        const db_interface = memory_db.to_database_interface();
+        var evm = try Evm.init(allocator, db_interface, null, null);
+        defer evm.deinit();
+        evm.hardfork = .TANGERINE_WHISTLE;
+        
+        // Create contract
+        const contract_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{1});
+        const caller_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{2});
+        var contract = try Evm.Contract.init(
             allocator,
-            helpers.TestAddresses.CONTRACT,
-            helpers.TestAddresses.ALICE,
+            null,
+            50000,
+            contract_address,
+            contract_address,
+            caller_address,
             0,
             &[_]u8{},
         );
         defer contract.deinit(allocator, null);
-
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, 50000);
-        defer test_frame.deinit();
-
-        // Push recipient address to stack
-        try test_frame.pushStack(&[_]u256{helpers.TestAddresses.to_u256(helpers.TestAddresses.BOB)});
-
-        const gas_before = test_frame.frame.gas_remaining;
-        _ = helpers.executeOpcode(0xFF, test_vm.evm, test_frame.frame);
         
-        const gas_consumed = gas_before - test_frame.frame.gas_remaining;
+        // Create frame
+        var frame = try Evm.Frame.init(allocator, &contract, 50000, false, 0);
+        defer frame.deinit();
+        frame.memory.finalize_root();
+        
+        // Push recipient address to stack
+        const bob_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{3});
+        try frame.stack.push(bob_address.to_u256());
+        
+        const gas_before = frame.gas_remaining;
+        
+        // Execute SELFDESTRUCT
+        const interpreter_ptr: *Evm.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        _ = evm.jump_table.get(0xFF).execute(interpreter_ptr, state_ptr);
+        
+        const gas_consumed = gas_before - frame.gas_remaining;
         // Should consume 5000 base + access costs
         try testing.expect(gas_consumed >= 5000);
         try testing.expect(gas_consumed < 10000); // Reasonable upper bound
@@ -143,33 +211,54 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
 
 test "SELFDESTRUCT: Account creation cost (EIP-161)" {
     const allocator = testing.allocator;
-
-    var test_vm = try helpers.TestVm.init(allocator);
-    test_vm.evm.hardfork = .SPURIOUS_DRAGON; // First hardfork with EIP-161
-    defer test_vm.deinit(allocator);
-
-    var contract = try helpers.createTestContract(
+    
+    // Create memory database
+    var memory_db = Evm.Database.Memory.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance with Spurious Dragon hardfork
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    evm.hardfork = .SPURIOUS_DRAGON; // First hardfork with EIP-161
+    
+    // Create contract
+    const contract_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{2});
+    var contract = try Evm.Contract.init(
         allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+        null,
+        50000,
+        contract_address,
+        contract_address,
+        caller_address,
         0,
         &[_]u8{},
     );
     defer contract.deinit(allocator, null);
-
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 50000);
-    defer test_frame.deinit();
-
+    
+    // Create frame
+    var frame = try Evm.Frame.init(allocator, &contract, 50000, false, 0);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    
     // Use a fresh address that doesn't exist (no balance, code, or nonce)
-    const new_address = helpers.TestAddresses.random();
+    var rng = std.rand.DefaultPrng.init(@intCast(std.time.milliTimestamp()));
+    var new_address_bytes: [20]u8 = undefined;
+    rng.fill(&new_address_bytes);
+    const new_address = Evm.Address.fromBytes(new_address_bytes);
     
     // Push non-existent recipient address to stack
-    try test_frame.pushStack(&[_]u256{helpers.TestAddresses.to_u256(new_address)});
-
-    const gas_before = test_frame.frame.gas_remaining;
-    _ = helpers.executeOpcode(0xFF, test_vm.evm, test_frame.frame);
+    try frame.stack.push(new_address.to_u256());
     
-    const gas_consumed = gas_before - test_frame.frame.gas_remaining;
+    const gas_before = frame.gas_remaining;
+    
+    // Execute SELFDESTRUCT
+    const interpreter_ptr: *Evm.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    _ = evm.jump_table.get(0xFF).execute(interpreter_ptr, state_ptr);
+    
+    const gas_consumed = gas_before - frame.gas_remaining;
     // Should consume 5000 base + 25000 account creation + access costs
     try testing.expect(gas_consumed >= 30000);
     try testing.expect(gas_consumed < 35000); // Reasonable upper bound

@@ -110,6 +110,7 @@ pub fn borrow_access_map(self: *StoragePool) BorrowAccessMapError!*std.AutoHashM
     const map = self.allocator.create(std.AutoHashMap(u256, bool)) catch {
         return BorrowAccessMapError.OutOfAllocatorMemory;
     };
+    errdefer self.allocator.destroy(map);
     map.* = std.AutoHashMap(u256, bool).init(self.allocator);
     return map;
 }
@@ -160,6 +161,7 @@ pub fn borrow_storage_map(self: *StoragePool) BorrowStorageMapError!*std.AutoHas
     const map = self.allocator.create(std.AutoHashMap(u256, u256)) catch {
         return BorrowStorageMapError.OutOfAllocatorMemory;
     };
+    errdefer self.allocator.destroy(map);
     map.* = std.AutoHashMap(u256, u256).init(self.allocator);
     return map;
 }

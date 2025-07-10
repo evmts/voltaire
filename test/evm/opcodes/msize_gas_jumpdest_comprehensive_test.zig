@@ -1,6 +1,11 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers.zig");
+const Evm = @import("evm");
+const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
+const ExecutionError = Evm.ExecutionError;
 
 // ============================
 // 0x59-0x5B: MSIZE, GAS, JUMPDEST
@@ -8,71 +13,100 @@ const helpers = @import("test_helpers.zig");
 
 test "MSIZE (0x59): Get current memory size" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        10000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test 1: Initial memory size (should be 0)
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0);
-    _ = try test_frame.popStack();
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    try testing.expectEqual(@as(u256, 0), frame.stack.data[frame.stack.size - 1]);
+    _ = try frame.stack.pop();
 
     // Test 2: After storing 32 bytes
-    try test_frame.pushStack(&[_]u256{ 0xdeadbeef, 0 }); // value, offset
-    _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame); // MSTORE
+    try frame.stack.append(0xdeadbeef); // value
+    try frame.stack.append(0); // offset
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52); // MSTORE
 
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 32); // One word
-    _ = try test_frame.popStack();
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    try testing.expectEqual(@as(u256, 32), frame.stack.data[frame.stack.size - 1]); // One word
+    _ = try frame.stack.pop();
 
     // Test 3: After storing at offset 32
-    try test_frame.pushStack(&[_]u256{ 0xcafebabe, 32 }); // value, offset
-    _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame); // MSTORE
+    try frame.stack.append(0xcafebabe); // value
+    try frame.stack.append(32); // offset
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52); // MSTORE
 
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 64); // Two words
-    _ = try test_frame.popStack();
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    try testing.expectEqual(@as(u256, 64), frame.stack.data[frame.stack.size - 1]); // Two words
+    _ = try frame.stack.pop();
 
     // Test 4: After storing at offset 100 (should expand to word boundary)
-    try test_frame.pushStack(&[_]u256{ 0x12345678, 100 }); // value, offset
-    _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame); // MSTORE
+    try frame.stack.append(0x12345678); // value
+    try frame.stack.append(100); // offset
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52); // MSTORE
 
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
     // 100 + 32 = 132, rounded up to word boundary = 160 (5 words)
-    try helpers.expectStackValue(test_frame.frame, 0, 160);
-    _ = try test_frame.popStack();
+    try testing.expectEqual(@as(u256, 160), frame.stack.data[frame.stack.size - 1]);
+    _ = try frame.stack.pop();
 
     // Test 5: After MSTORE8 (single byte)
-    try test_frame.pushStack(&[_]u256{ 0xFF, 200 }); // value, offset
-    _ = try helpers.executeOpcode(0x53, test_vm.evm, test_frame.frame); // MSTORE8
+    try frame.stack.append(0xFF); // value
+    try frame.stack.append(200); // offset
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x53); // MSTORE8
 
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
     // 200 + 1 = 201, rounded up to word boundary = 224 (7 words)
-    try helpers.expectStackValue(test_frame.frame, 0, 224);
+    try testing.expectEqual(@as(u256, 224), frame.stack.data[frame.stack.size - 1]);
 }
 
 test "GAS (0x5A): Get remaining gas" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
@@ -87,38 +121,49 @@ test "GAS (0x5A): Get remaining gas" {
     };
 
     for (test_cases) |initial_gas| {
-        var test_frame = try helpers.TestFrame.init(allocator, &contract, initial_gas);
-        defer test_frame.deinit();
+        var frame = try Frame.init(allocator, &contract);
+        defer frame.deinit();
+    frame.memory.finalize_root();
+        frame.gas_remaining = initial_gas;
+
+        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
         // Execute GAS opcode
-        _ = try helpers.executeOpcode(0x5A, test_vm.evm, test_frame.frame);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5A);
 
         // The value pushed should be initial_gas minus the gas cost of GAS itself (2)
         const expected_gas = initial_gas - 2;
-        try helpers.expectStackValue(test_frame.frame, 0, expected_gas);
-        _ = try test_frame.popStack();
+        try testing.expectEqual(@as(u256, expected_gas), frame.stack.data[frame.stack.size - 1]);
+        _ = try frame.stack.pop();
 
         // Test 2: After consuming more gas
-        const gas_before = test_frame.frame.gas_remaining;
+        const gas_before = frame.gas_remaining;
 
         // Execute some operations to consume gas
-        try test_frame.pushStack(&[_]u256{ 5, 10 }); // Push two values
-        _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame); // ADD (costs 3)
-        _ = try test_frame.popStack();
+        try frame.stack.append(5); // Push value
+        try frame.stack.append(10); // Push value
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD (costs 3)
+        _ = try frame.stack.pop();
 
         // Execute GAS again
-        _ = try helpers.executeOpcode(0x5A, test_vm.evm, test_frame.frame);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5A);
 
         // Should have consumed gas for ADD (3) and GAS (2)
         const expected_remaining = gas_before - 3 - 2;
-        try helpers.expectStackValue(test_frame.frame, 0, expected_remaining);
+        try testing.expectEqual(@as(u256, expected_remaining), frame.stack.data[frame.stack.size - 1]);
     }
 }
 
 test "JUMPDEST (0x5B): Mark valid jump destination" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Create bytecode with multiple JUMPDESTs
     const code = [_]u8{
@@ -130,28 +175,38 @@ test "JUMPDEST (0x5B): Mark valid jump destination" {
         0x00, // STOP
     };
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        10000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test 1: Execute JUMPDEST - should be a no-op
-    const stack_size_before = test_frame.frame.stack.size;
-    const gas_before = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x5B, test_vm.evm, test_frame.frame);
+    const stack_size_before = frame.stack.size;
+    const gas_before = frame.gas_remaining;
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5B);
 
     // Stack should be unchanged
-    try testing.expectEqual(stack_size_before, test_frame.frame.stack.size);
+    try testing.expectEqual(stack_size_before, frame.stack.size);
 
     // Should consume only JUMPDEST gas (1)
-    try testing.expectEqual(@as(u64, gas_before - 1), test_frame.frame.gas_remaining);
+    try testing.expectEqual(@as(u64, gas_before - 1), frame.gas_remaining);
 
     // Test 2: Verify jump destinations are valid
     try testing.expect(contract.valid_jumpdest(allocator, 0)); // Position 0
@@ -176,20 +231,35 @@ test "JUMPDEST (0x5B): Mark valid jump destination" {
 
 test "MSIZE, GAS, JUMPDEST: Gas consumption" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        10000,
         &[_]u8{0x5B}, // Include JUMPDEST
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     const opcodes = [_]struct {
         opcode: u8,
@@ -202,13 +272,13 @@ test "MSIZE, GAS, JUMPDEST: Gas consumption" {
     };
 
     for (opcodes) |op| {
-        test_frame.frame.stack.clear();
+        frame.stack.clear();
         const gas_before = 1000;
-        test_frame.frame.gas_remaining = gas_before;
+        frame.gas_remaining = gas_before;
 
-        _ = try helpers.executeOpcode(op.opcode, test_vm.evm, test_frame.frame);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, op.opcode);
 
-        const gas_used = gas_before - test_frame.frame.gas_remaining;
+        const gas_used = gas_before - frame.gas_remaining;
         try testing.expectEqual(op.expected_gas, gas_used);
     }
 }
@@ -219,71 +289,108 @@ test "MSIZE, GAS, JUMPDEST: Gas consumption" {
 
 test "MSIZE: Memory expansion scenarios" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        100000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 100000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test expansion via MLOAD
-    try test_frame.pushStack(&[_]u256{64}); // offset
-    _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame); // MLOAD
-    _ = try test_frame.popStack();
+    try frame.stack.append(64); // offset
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51); // MLOAD
+    _ = try frame.stack.pop();
 
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame); // MSIZE
-    try helpers.expectStackValue(test_frame.frame, 0, 96); // 64 + 32 = 96
-    _ = try test_frame.popStack();
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59); // MSIZE
+    try testing.expectEqual(@as(u256, 96), frame.stack.data[frame.stack.size - 1]); // 64 + 32 = 96
+    _ = try frame.stack.pop();
 
     // Test expansion via CALLDATACOPY
-    test_frame.frame.input = &[_]u8{ 0x01, 0x02, 0x03, 0x04 };
-    try test_frame.pushStack(&[_]u256{ 4, 0, 200 }); // size, data_offset, mem_offset
-    _ = try helpers.executeOpcode(0x37, test_vm.evm, test_frame.frame); // CALLDATACOPY
+    frame.input = &[_]u8{ 0x01, 0x02, 0x03, 0x04 };
+    try frame.stack.append(4); // size
+    try frame.stack.append(0); // data_offset
+    try frame.stack.append(200); // mem_offset
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x37); // CALLDATACOPY
 
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame); // MSIZE
-    try helpers.expectStackValue(test_frame.frame, 0, 224); // 200 + 4 = 204, rounded to 224
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59); // MSIZE
+    try testing.expectEqual(@as(u256, 224), frame.stack.data[frame.stack.size - 1]); // 200 + 4 = 204, rounded to 224
 }
 
 test "GAS: Low gas scenarios" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
     // Test with exactly enough gas for GAS opcode
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 2);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 2;
 
-    _ = try helpers.executeOpcode(0x5A, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0); // All gas consumed
-    _ = try test_frame.popStack();
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5A);
+    try testing.expectEqual(@as(u256, 0), frame.stack.data[frame.stack.size - 1]); // All gas consumed
+    _ = try frame.stack.pop();
 
     // Test with not enough gas
-    test_frame.frame.gas_remaining = 1;
-    const result = helpers.executeOpcode(0x5A, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.OutOfGas, result);
+    frame.gas_remaining = 1;
+    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x5A);
+    try testing.expectError(ExecutionError.Error.OutOfGas, result);
 }
 
 test "JUMPDEST: Code analysis integration" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Complex bytecode with JUMPDEST in data section
     const code = [_]u8{
@@ -298,12 +405,17 @@ test "JUMPDEST: Code analysis integration" {
         0x00, // STOP
     };
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &code,
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
@@ -316,47 +428,67 @@ test "JUMPDEST: Code analysis integration" {
     // The JUMPDEST at position 8 should be valid
     try testing.expect(contract.valid_jumpdest(allocator, 8));
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Jump to valid JUMPDEST should succeed
-    try test_frame.pushStack(&[_]u256{8});
-    _ = try helpers.executeOpcode(0x56, test_vm.evm, test_frame.frame); // JUMP
-    try testing.expectEqual(@as(usize, 8), test_frame.frame.pc);
+    try frame.stack.append(8);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x56); // JUMP
+    try testing.expectEqual(@as(usize, 8), frame.pc);
 
     // Jump to position 5 should also succeed (it's a valid JUMPDEST)
-    test_frame.frame.pc = 0;
-    try test_frame.pushStack(&[_]u256{5});
-    _ = try helpers.executeOpcode(0x56, test_vm.evm, test_frame.frame); // JUMP
-    try testing.expectEqual(@as(usize, 5), test_frame.frame.pc);
+    frame.pc = 0;
+    try frame.stack.append(5);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x56); // JUMP
+    try testing.expectEqual(@as(usize, 5), frame.pc);
 }
 
 test "Stack operations: MSIZE and GAS push exactly one value" {
     const allocator = testing.allocator;
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        10000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 10000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     const opcodes = [_]u8{ 0x59, 0x5A }; // MSIZE, GAS
 
     for (opcodes) |opcode| {
-        test_frame.frame.stack.clear();
-        const initial_stack_len = test_frame.frame.stack.size;
+        frame.stack.clear();
+        const initial_stack_len = frame.stack.size;
 
-        _ = try helpers.executeOpcode(opcode, test_vm.evm, test_frame.frame);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
 
         // Check that exactly one value was pushed
-        try testing.expectEqual(initial_stack_len + 1, test_frame.frame.stack.size);
+        try testing.expectEqual(initial_stack_len + 1, frame.stack.size);
     }
 }

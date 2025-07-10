@@ -1,436 +1,612 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers.zig");
-
-// Import opcodes through evm module
 const Evm = @import("evm");
-const bitwise = Evm.opcodes.bitwise;
+const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
+const ExecutionError = Evm.ExecutionError;
 
 test "Bitwise: AND basic operations" {
     const allocator = testing.allocator;
     
-    // Set up test VM and frame
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: Simple AND
-    try test_frame.pushStack(&[_]u256{0xFF00, 0xF0F0});
-    _ = try helpers.executeOpcode(0x16, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0xF000);
+    try frame.stack.append(0xFF00);
+    try frame.stack.append(0xF0F0);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    const result1 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0xF000), result1);
     
     // Test 2: AND with zero
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0, 0xFFFF});
-    _ = try helpers.executeOpcode(0x16, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0);
+    frame.stack.clear();
+    try frame.stack.append(0);
+    try frame.stack.append(0xFFFF);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    const result2 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result2);
     
     // Test 3: AND with all ones
-    test_frame.frame.stack.clear();
+    frame.stack.clear();
     const max_u256 = std.math.maxInt(u256);
-    try test_frame.pushStack(&[_]u256{max_u256, 0x12345678});
-    _ = try helpers.executeOpcode(0x16, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0x12345678);
+    try frame.stack.append(max_u256);
+    try frame.stack.append(0x12345678);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    const result3 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0x12345678), result3);
     
-    // Test gas consumption - create a new frame with jump table
-    test_frame.frame.stack.clear();
-    test_frame.frame.gas_remaining = 1000;
-    try test_frame.pushStack(&[_]u256{0xFF00, 0xF0F0});
-    
-    // Create jump table for gas testing
-    const jump_table = helpers.JumpTable.init_from_hardfork(.FRONTIER);
-    _ = try helpers.executeOpcodeWithGas(&jump_table, 0x16, test_vm.evm, test_frame.frame); // 0x16 = AND
-    try helpers.expectGasUsed(test_frame.frame, 1000, 3); // AND costs GasFastestStep = 3
+    // Test gas consumption
+    frame.stack.clear();
+    frame.gas_remaining = 1000;
+    try frame.stack.append(0xFF00);
+    try frame.stack.append(0xF0F0);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    const gas_used = 1000 - frame.gas_remaining;
+    try testing.expectEqual(@as(u64, 3), gas_used); // GasFastestStep = 3
 }
 
 test "Bitwise: OR basic operations" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: Simple OR
-    try test_frame.pushStack(&[_]u256{0xFF00, 0x00FF});
-    _ = try helpers.executeOpcode(0x17, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0xFFFF);
+    try frame.stack.append(0xFF00);
+    try frame.stack.append(0x00FF);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x17);
+    const result1 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0xFFFF), result1);
     
     // Test 2: OR with zero
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0, 0xABCD});
-    _ = try helpers.executeOpcode(0x17, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0xABCD);
+    frame.stack.clear();
+    try frame.stack.append(0);
+    try frame.stack.append(0xABCD);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x17);
+    const result2 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0xABCD), result2);
     
     // Test 3: OR with all ones
-    test_frame.frame.stack.clear();
+    frame.stack.clear();
     const max_u256 = std.math.maxInt(u256);
-    try test_frame.pushStack(&[_]u256{max_u256, 0x12345678});
-    _ = try helpers.executeOpcode(0x17, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, max_u256);
+    try frame.stack.append(max_u256);
+    try frame.stack.append(0x12345678);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x17);
+    const result3 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, max_u256), result3);
 }
 
 test "Bitwise: XOR basic operations" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: Simple XOR
-    try test_frame.pushStack(&[_]u256{0xFF00, 0xF0F0});
-    _ = try helpers.executeOpcode(0x18, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0x0FF0);
+    try frame.stack.append(0xFF00);
+    try frame.stack.append(0xF0F0);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x18);
+    const result1 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0x0FF0), result1);
     
     // Test 2: XOR with itself (should be zero)
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0xABCD, 0xABCD});
-    _ = try helpers.executeOpcode(0x18, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0);
+    frame.stack.clear();
+    try frame.stack.append(0xABCD);
+    try frame.stack.append(0xABCD);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x18);
+    const result2 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result2);
     
     // Test 3: XOR with zero (identity)
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0, 0x1234});
-    _ = try helpers.executeOpcode(0x18, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0x1234);
+    frame.stack.clear();
+    try frame.stack.append(0);
+    try frame.stack.append(0x1234);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x18);
+    const result3 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0x1234), result3);
 }
 
 test "Bitwise: NOT basic operations" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: NOT of zero
-    try test_frame.pushStack(&[_]u256{0});
-    _ = try helpers.executeOpcode(0x19, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, std.math.maxInt(u256));
+    try frame.stack.append(0);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x19);
+    const result1 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, std.math.maxInt(u256)), result1);
     
     // Test 2: NOT of all ones
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{std.math.maxInt(u256)});
-    _ = try helpers.executeOpcode(0x19, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0);
+    frame.stack.clear();
+    try frame.stack.append(std.math.maxInt(u256));
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x19);
+    const result2 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result2);
     
     // Test 3: NOT of pattern
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0xFFFF0000FFFF0000});
-    _ = try helpers.executeOpcode(0x19, test_vm.evm, test_frame.frame);
+    frame.stack.clear();
+    try frame.stack.append(0xFFFF0000FFFF0000);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x19);
     const expected = std.math.maxInt(u256) ^ 0xFFFF0000FFFF0000;
-    try helpers.expectStackValue(test_frame.frame, 0, expected);
+    const result3 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, expected), result3);
 }
 
 test "Bitwise: BYTE extraction operations" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: Extract first byte (most significant)
     const test_value = 0xABCDEF1234567890;
-    try test_frame.pushStack(&[_]u256{test_value, 0}); // Push value first, then index (so index is on top)
-    _ = try helpers.executeOpcode(0x1A, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0); // Byte 0 is 0x00 in a 256-bit number
+    try frame.stack.append(test_value);
+    try frame.stack.append(0);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    const result1 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result1); // Byte 0 is 0x00 in a 256-bit number
     
     // Test 2: Extract last byte (least significant)
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{test_value, 31}); // Push value first, then index (so index is on top)
-    _ = try helpers.executeOpcode(0x1A, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0x90);
+    frame.stack.clear();
+    try frame.stack.append(test_value);
+    try frame.stack.append(31);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    const result2 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0x90), result2);
     
     // Test 3: Out of bounds index
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{test_value, 32}); // Push value first, then index (so index is on top)
-    _ = try helpers.executeOpcode(0x1A, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0); // Should return 0
+    frame.stack.clear();
+    try frame.stack.append(test_value);
+    try frame.stack.append(32);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    const result3 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result3); // Should return 0
     
     // Test 4: Extract from byte 24 
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{test_value, 24}); // Push value first, then index (so index is on top)
-    _ = try helpers.executeOpcode(0x1A, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0xAB); // Byte 24 is where 0xAB is located
+    frame.stack.clear();
+    try frame.stack.append(test_value);
+    try frame.stack.append(24);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    const result4 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0xAB), result4); // Byte 24 is where 0xAB is located
 }
 
 test "Bitwise: SHL (shift left) operations" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: Simple left shift
-    try test_frame.pushStack(&[_]u256{0xFF, 8}); // Shift 0xFF left by 8 bits
-    _ = try helpers.executeOpcode(0x1B, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0xFF00);
+    try frame.stack.append(0xFF);
+    try frame.stack.append(8);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1B);
+    const result1 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0xFF00), result1);
     
     // Test 2: Shift by zero
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0x1234, 0});
-    _ = try helpers.executeOpcode(0x1B, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0x1234);
+    frame.stack.clear();
+    try frame.stack.append(0x1234);
+    try frame.stack.append(0);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1B);
+    const result2 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0x1234), result2);
     
     // Test 3: Shift by >= 256 (should return 0)
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0xFFFF, 256});
-    _ = try helpers.executeOpcode(0x1B, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0);
+    frame.stack.clear();
+    try frame.stack.append(0xFFFF);
+    try frame.stack.append(256);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1B);
+    const result3 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result3);
     
     // Test 4: Large shift
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{1, 255}); // Shift 1 to the most significant position
-    _ = try helpers.executeOpcode(0x1B, test_vm.evm, test_frame.frame);
+    frame.stack.clear();
+    try frame.stack.append(1);
+    try frame.stack.append(255);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1B);
     const expected = @as(u256, 1) << 255;
-    try helpers.expectStackValue(test_frame.frame, 0, expected);
+    const result4 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, expected), result4);
 }
 
 test "Bitwise: SHR (logical shift right) operations" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: Simple right shift
-    try test_frame.pushStack(&[_]u256{0xFF00, 8}); // Shift 0xFF00 right by 8 bits
-    _ = try helpers.executeOpcode(0x1C, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0xFF);
+    try frame.stack.append(0xFF00);
+    try frame.stack.append(8);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1C);
+    const result1 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0xFF), result1);
     
     // Test 2: Shift by zero
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0x1234, 0});
-    _ = try helpers.executeOpcode(0x1C, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0x1234);
+    frame.stack.clear();
+    try frame.stack.append(0x1234);
+    try frame.stack.append(0);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1C);
+    const result2 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0x1234), result2);
     
     // Test 3: Shift by >= 256 (should return 0)
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0xFFFF, 256});
-    _ = try helpers.executeOpcode(0x1C, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0);
+    frame.stack.clear();
+    try frame.stack.append(0xFFFF);
+    try frame.stack.append(256);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1C);
+    const result3 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result3);
 }
 
 test "Bitwise: SAR (arithmetic shift right) operations" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: SAR with positive number (same as logical shift)
-    try test_frame.pushStack(&[_]u256{0xFF00, 8});
-    _ = try helpers.executeOpcode(0x1D, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0xFF);
+    try frame.stack.append(0xFF00);
+    try frame.stack.append(8);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1D);
+    const result1 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0xFF), result1);
     
     // Test 2: SAR with negative number (sign bit = 1)
-    test_frame.frame.stack.clear();
+    frame.stack.clear();
     const negative = @as(u256, 1) << 255 | 0xFF00; // Set sign bit
-    try test_frame.pushStack(&[_]u256{negative, 8});
-    _ = try helpers.executeOpcode(0x1D, test_vm.evm, test_frame.frame);
+    try frame.stack.append(negative);
+    try frame.stack.append(8);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1D);
     // Should fill with 1s from left
     const expected = ((@as(u256, 0xFF) << 248) | (negative >> 8));
-    try helpers.expectStackValue(test_frame.frame, 0, expected);
+    const result2 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, expected), result2);
     
     // Test 3: SAR by >= 256 with negative number (should return all 1s)
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{negative, 256});
-    _ = try helpers.executeOpcode(0x1D, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, std.math.maxInt(u256));
+    frame.stack.clear();
+    try frame.stack.append(negative);
+    try frame.stack.append(256);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1D);
+    const result3 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, std.math.maxInt(u256)), result3);
     
     // Test 4: SAR by >= 256 with positive number (should return 0)
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0x7FFF, 256}); // Positive number
-    _ = try helpers.executeOpcode(0x1D, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0);
+    frame.stack.clear();
+    try frame.stack.append(0x7FFF);
+    try frame.stack.append(256);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1D);
+    const result4 = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result4);
 }
 
 test "Bitwise: Stack underflow errors" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test AND with empty stack
     try testing.expectError(
-        helpers.ExecutionError.Error.StackUnderflow,
-        helpers.executeOpcode(0x16, test_vm.evm, test_frame.frame)
+        ExecutionError.Error.StackUnderflow,
+        evm.table.execute(0, interpreter_ptr, state_ptr, 0x16)
     );
     
     // Test NOT with empty stack
-    test_frame.frame.stack.clear();
+    frame.stack.clear();
     try testing.expectError(
-        helpers.ExecutionError.Error.StackUnderflow,
-        helpers.executeOpcode(0x19, test_vm.evm, test_frame.frame)
+        ExecutionError.Error.StackUnderflow,
+        evm.table.execute(0, interpreter_ptr, state_ptr, 0x19)
     );
     
     // Test BYTE with only one item
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{42});
+    frame.stack.clear();
+    try frame.stack.append(42);
     try testing.expectError(
-        helpers.ExecutionError.Error.StackUnderflow,
-        helpers.executeOpcode(0x1A, test_vm.evm, test_frame.frame)
+        ExecutionError.Error.StackUnderflow,
+        evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A)
     );
 }
 
 test "Bitwise: Gas consumption" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
-    
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+
+    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    var contract = Contract.init(
+        caller,
+        contract_addr,
         0,
+        1000,
         &[_]u8{},
+        [_]u8{0} ** 32,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
-    defer test_frame.deinit();
+
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000;
+
+    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // All bitwise operations cost 3 gas (GasFastestStep)
-    const operations = comptime [_]struct {
+    const operations = [_]struct {
         name: []const u8,
-        op: fn(usize, *helpers.OperationModule.Interpreter, *helpers.OperationModule.State) helpers.ExecutionError.Error!helpers.OperationModule.ExecutionResult,
+        opcode: u8,
         stack_items: u8,
     }{
-        .{ .name = "AND", .op = bitwise.op_and, .stack_items = 2 },
-        .{ .name = "OR", .op = bitwise.op_or, .stack_items = 2 },
-        .{ .name = "XOR", .op = bitwise.op_xor, .stack_items = 2 },
-        .{ .name = "NOT", .op = bitwise.op_not, .stack_items = 1 },
-        .{ .name = "BYTE", .op = bitwise.op_byte, .stack_items = 2 },
-        .{ .name = "SHL", .op = bitwise.op_shl, .stack_items = 2 },
-        .{ .name = "SHR", .op = bitwise.op_shr, .stack_items = 2 },
-        .{ .name = "SAR", .op = bitwise.op_sar, .stack_items = 2 },
+        .{ .name = "AND", .opcode = 0x16, .stack_items = 2 },
+        .{ .name = "OR", .opcode = 0x17, .stack_items = 2 },
+        .{ .name = "XOR", .opcode = 0x18, .stack_items = 2 },
+        .{ .name = "NOT", .opcode = 0x19, .stack_items = 1 },
+        .{ .name = "BYTE", .opcode = 0x1A, .stack_items = 2 },
+        .{ .name = "SHL", .opcode = 0x1B, .stack_items = 2 },
+        .{ .name = "SHR", .opcode = 0x1C, .stack_items = 2 },
+        .{ .name = "SAR", .opcode = 0x1D, .stack_items = 2 },
     };
     
-    // Create jump table for gas testing - use Cancun to include SHL/SHR/SAR
-    const jump_table = helpers.JumpTable.init_from_hardfork(.CANCUN);
-    
-    // Map operations to their opcodes
-    const opcode_map = [_]u8{
-        0x16, // AND
-        0x17, // OR
-        0x18, // XOR
-        0x19, // NOT
-        0x1A, // BYTE
-        0x1B, // SHL
-        0x1C, // SHR
-        0x1D, // SAR
-    };
-    
-    inline for (operations, 0..) |op_info, idx| {
-        test_frame.frame.stack.clear();
-        test_frame.frame.gas_remaining = 1000;
+    inline for (operations) |op_info| {
+        frame.stack.clear();
+        frame.gas_remaining = 1000;
         
         // Push required stack items
         var i: u8 = 0;
         while (i < op_info.stack_items) : (i += 1) {
-            try test_frame.pushStack(&[_]u256{0x42});
+            try frame.stack.append(0x42);
         }
         
-        _ = try helpers.executeOpcodeWithGas(&jump_table, opcode_map[idx], test_vm.evm, test_frame.frame);
-        try helpers.expectGasUsed(test_frame.frame, 1000, helpers.opcodes.gas_constants.GasFastestStep);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, op_info.opcode);
+        const gas_used = 1000 - frame.gas_remaining;
+        try testing.expectEqual(@as(u64, 3), gas_used); // GasFastestStep = 3
     }
 }

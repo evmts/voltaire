@@ -1,8 +1,11 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const test_helpers = @import("opcodes/test_helpers.zig");
 const Address = @import("Address");
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const MemoryDatabase = Evm.MemoryDatabase;
+const Operation = Evm.Operation;
 
 // Test allocator will be created per test to avoid conflicts
 
@@ -10,6 +13,15 @@ const Address = @import("Address");
 const DEPLOYER_ADDRESS = Address.from_u256(0x1111);
 const USER_ADDRESS = Address.from_u256(0x2222);
 const CONTRACT_ADDRESS = Address.from_u256(0x3333);
+
+// Helper to convert byte array to u256 (big-endian)
+fn bytesToU256(bytes: []const u8) u256 {
+    var value: u256 = 0;
+    for (bytes) |byte| {
+        value = (value << 8) | byte;
+    }
+    return value;
+}
 
 // Simple test to verify EVM functionality
 test "E2E: Basic EVM operations" {
@@ -22,11 +34,22 @@ test "E2E: Basic EVM operations" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create EVM instance
+    var evm_instance = try allocator.create(Evm.Evm);
+    defer allocator.destroy(evm_instance);
+    
+    var memory_db = try allocator.create(MemoryDatabase);
+    defer allocator.destroy(memory_db);
+    
+    memory_db.* = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
     
     // Set up deployer account with ETH
-    try test_vm.evm.state.set_balance(DEPLOYER_ADDRESS, 1000000);
+    try evm_instance.state.set_balance(DEPLOYER_ADDRESS, 1000000);
     
     // Test simple bytecode: PUSH1 42 PUSH1 0 MSTORE PUSH1 0 PUSH1 32 RETURN
     const simple_bytecode = [_]u8{
@@ -38,16 +61,23 @@ test "E2E: Basic EVM operations" {
         0xF3,       // RETURN
     };
     
-    const result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract and execute
+    var contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &simple_bytecode,
-        CONTRACT_ADDRESS,
-        100_000, // Gas limit
-        null,
-    ) catch |err| {
-        std.debug.print("Simple bytecode execution failed: {}\n", .{err});
-        return err;
-    };
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm_instance.state.set_code(CONTRACT_ADDRESS, &simple_bytecode);
+    
+    // Execute the contract
+    const result = try evm_instance.interpret(&contract, &[_]u8{});
     defer if (result.output) |output| allocator.free(output);
     
     // Verify execution success
@@ -58,7 +88,7 @@ test "E2E: Basic EVM operations" {
         try testing.expectEqual(@as(usize, 32), output.len);
         
         // Decode returned value (should be 42 in first 32 bytes)
-        const returned_value = test_helpers.bytesToU256(output);
+        const returned_value = bytesToU256(output);
         try testing.expectEqual(@as(u256, 42), returned_value);
     } else {
         // If no output, this test isn't validating return data correctly
@@ -78,50 +108,75 @@ test "E2E: Arithmetic operations" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create EVM instance
+    var evm_instance = try allocator.create(Evm.Evm);
+    defer allocator.destroy(evm_instance);
     
-    var test_contract = test_helpers.createTestContract(
-        allocator,
-        CONTRACT_ADDRESS,
-        DEPLOYER_ADDRESS,
-        0,
-        &[_]u8{},
-    ) catch unreachable;
+    var memory_db = try allocator.create(MemoryDatabase);
+    defer allocator.destroy(memory_db);
+    
+    memory_db.* = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
+    
+    // Create a contract at the specified address
+    var test_contract = Contract.init_at_address(
+        DEPLOYER_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address
+        0, // value
+        100_000, // gas
+        &[_]u8{}, // bytecode
+        &[_]u8{}, // input
+        false, // not static
+    );
     defer test_contract.deinit(allocator, null);
     
-    var test_frame = try test_helpers.TestFrame.init(allocator, &test_contract, 100_000);
-    defer test_frame.deinit();
+    // Create a frame for testing
+    var frame = try allocator.create(Frame);
+    defer allocator.destroy(frame);
+    
+    frame.* = try Frame.init(allocator, &test_contract);
+    defer frame.deinit();
+    
+    frame.gas_remaining = 100_000;
+    frame.input = test_contract.input;
+    frame.memory.finalize_root();
     
     // Test ADD operation: 25 + 17 = 42
-    try test_frame.pushStack(&[_]u256{25, 17});
+    try frame.stack.append(25);
+    try frame.stack.append(17);
     
-    const add_result = test_helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame) catch |err| {
-        std.debug.print("ADD operation failed: {}\n", .{err});
-        return err;
-    };
+    // Execute ADD operation
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
+    const state_ptr: *Operation.State = @ptrCast(frame);
+    const add_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD opcode
     
     try testing.expect(add_result.output.len == 0); // Continue means empty output
     
-    const sum = try test_frame.popStack();
+    const sum = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), sum);
     
     // Test SUB operation: 100 - 58 = 42
-    try test_frame.pushStack(&[_]u256{100, 58});
+    try frame.stack.append(100);
+    try frame.stack.append(58);
     
-    const sub_result = test_helpers.executeOpcode(0x03, test_vm.evm, test_frame.frame) catch unreachable; // SUB
+    const sub_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x03); // SUB
     try testing.expect(sub_result.output.len == 0);
     
-    const diff = try test_frame.popStack();
+    const diff = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), diff);
     
     // Test MUL operation: 6 * 7 = 42
-    try test_frame.pushStack(&[_]u256{6, 7});
+    try frame.stack.append(6);
+    try frame.stack.append(7);
     
-    const mul_result = test_helpers.executeOpcode(0x02, test_vm.evm, test_frame.frame) catch unreachable; // MUL
+    const mul_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x02); // MUL
     try testing.expect(mul_result.output.len == 0);
     
-    const product = try test_frame.popStack();
+    const product = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), product);
 }
 
@@ -136,47 +191,74 @@ test "E2E: Memory operations" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create EVM instance
+    var evm_instance = try allocator.create(Evm.Evm);
+    defer allocator.destroy(evm_instance);
     
-    var test_contract = test_helpers.createTestContract(
-        allocator,
-        CONTRACT_ADDRESS,
-        DEPLOYER_ADDRESS,
-        0,
-        &[_]u8{},
-    ) catch unreachable;
+    var memory_db = try allocator.create(MemoryDatabase);
+    defer allocator.destroy(memory_db);
+    
+    memory_db.* = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
+    
+    // Create a contract at the specified address
+    var test_contract = Contract.init_at_address(
+        DEPLOYER_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address
+        0, // value
+        100_000, // gas
+        &[_]u8{}, // bytecode
+        &[_]u8{}, // input
+        false, // not static
+    );
     defer test_contract.deinit(allocator, null);
     
-    var test_frame = try test_helpers.TestFrame.init(allocator, &test_contract, 100_000);
-    defer test_frame.deinit();
+    // Create a frame for testing
+    var frame = try allocator.create(Frame);
+    defer allocator.destroy(frame);
+    
+    frame.* = try Frame.init(allocator, &test_contract);
+    defer frame.deinit();
+    
+    frame.gas_remaining = 100_000;
+    frame.input = test_contract.input;
+    frame.memory.finalize_root();
     
     // Test MSTORE operation
-    try test_frame.pushStack(&[_]u256{0xDEADBEEF, 0});
+    try frame.stack.append(0xDEADBEEF);
+    try frame.stack.append(0);
     
-    const mstore_result = test_helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame) catch unreachable; // MSTORE
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
+    const state_ptr: *Operation.State = @ptrCast(frame);
+    
+    const mstore_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x52); // MSTORE
     try testing.expect(mstore_result.output.len == 0);
     
     // Test MLOAD operation
-    try test_frame.pushStack(&[_]u256{0});
+    try frame.stack.append(0);
     
-    const mload_result = test_helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame) catch unreachable; // MLOAD
+    const mload_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x51); // MLOAD
     try testing.expect(mload_result.output.len == 0);
     
-    const loaded_value = try test_frame.popStack();
+    const loaded_value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xDEADBEEF), loaded_value);
     
     // Test memory expansion
-    try test_frame.pushStack(&[_]u256{0xCAFEBABE, 1024});
+    try frame.stack.append(0xCAFEBABE);
+    try frame.stack.append(1024);
     
-    const expand_result = test_helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame) catch unreachable; // MSTORE at high offset
+    const expand_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x52); // MSTORE at high offset
     try testing.expect(expand_result.output.len == 0);
     
     // Verify the value at high offset
-    try test_frame.pushStack(&[_]u256{1024});
+    try frame.stack.append(1024);
     
-    _ = test_helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame) catch unreachable; // MLOAD
-    const high_value = try test_frame.popStack();
+    _ = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x51); // MLOAD
+    const high_value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xCAFEBABE), high_value);
 }
 
@@ -191,34 +273,60 @@ test "E2E: Storage operations" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create EVM instance
+    var evm_instance = try allocator.create(Evm.Evm);
+    defer allocator.destroy(evm_instance);
     
-    var test_contract = test_helpers.createTestContract(
-        allocator,
-        CONTRACT_ADDRESS,
-        DEPLOYER_ADDRESS,
-        0,
-        &[_]u8{},
-    ) catch unreachable;
+    var memory_db = try allocator.create(MemoryDatabase);
+    defer allocator.destroy(memory_db);
+    
+    memory_db.* = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
+    
+    // Create a contract at the specified address
+    var test_contract = Contract.init_at_address(
+        DEPLOYER_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address
+        0, // value
+        100_000, // gas
+        &[_]u8{}, // bytecode
+        &[_]u8{}, // input
+        false, // not static
+    );
     defer test_contract.deinit(allocator, null);
     
-    var test_frame = try test_helpers.TestFrame.init(allocator, &test_contract, 100_000);
-    defer test_frame.deinit();
+    // Create a frame for testing
+    var frame = try allocator.create(Frame);
+    defer allocator.destroy(frame);
+    
+    frame.* = try Frame.init(allocator, &test_contract);
+    defer frame.deinit();
+    
+    frame.gas_remaining = 100_000;
+    frame.input = test_contract.input;
+    frame.memory.finalize_root();
     
     // Test SSTORE operation
-    try test_frame.pushStack(&[_]u256{0x12345678, 5});
+    try frame.stack.append(0x12345678);
+    try frame.stack.append(5);
     
-    const sstore_result = test_helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame) catch unreachable; // SSTORE
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
+    const state_ptr: *Operation.State = @ptrCast(frame);
+    
+    const sstore_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x55); // SSTORE
     try testing.expect(sstore_result.output.len == 0);
     
     // Test SLOAD operation
-    try test_frame.pushStack(&[_]u256{5});
+    try frame.stack.append(5);
     
-    const sload_result = test_helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame) catch unreachable; // SLOAD
+    const sload_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x54); // SLOAD
     try testing.expect(sload_result.output.len == 0);
     
-    const stored_value = try test_frame.popStack();
+    const stored_value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x12345678), stored_value);
 }
 
@@ -233,46 +341,73 @@ test "E2E: Stack operations" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create EVM instance
+    var evm_instance = try allocator.create(Evm.Evm);
+    defer allocator.destroy(evm_instance);
     
-    var test_contract = test_helpers.createTestContract(
-        allocator,
-        CONTRACT_ADDRESS,
-        DEPLOYER_ADDRESS,
-        0,
-        &[_]u8{},
-    ) catch unreachable;
+    var memory_db = try allocator.create(MemoryDatabase);
+    defer allocator.destroy(memory_db);
+    
+    memory_db.* = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
+    
+    // Create a contract at the specified address
+    var test_contract = Contract.init_at_address(
+        DEPLOYER_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address
+        0, // value
+        100_000, // gas
+        &[_]u8{}, // bytecode
+        &[_]u8{}, // input
+        false, // not static
+    );
     defer test_contract.deinit(allocator, null);
     
-    var test_frame = try test_helpers.TestFrame.init(allocator, &test_contract, 100_000);
-    defer test_frame.deinit();
+    // Create a frame for testing
+    var frame = try allocator.create(Frame);
+    defer allocator.destroy(frame);
+    
+    frame.* = try Frame.init(allocator, &test_contract);
+    defer frame.deinit();
+    
+    frame.gas_remaining = 100_000;
+    frame.input = test_contract.input;
+    frame.memory.finalize_root();
     
     // Push some values
-    try test_frame.pushStack(&[_]u256{100, 200, 300});
+    try frame.stack.append(100);
+    try frame.stack.append(200);
+    try frame.stack.append(300);
+    
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
+    const state_ptr: *Operation.State = @ptrCast(frame);
     
     // Test DUP1 (duplicate top element)
-    const dup_result = test_helpers.executeOpcode(0x80, test_vm.evm, test_frame.frame) catch unreachable; // DUP1
+    const dup_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x80); // DUP1
     try testing.expect(dup_result.output.len == 0);
     
-    try testing.expectEqual(@as(usize, 4), test_frame.stackSize());
+    try testing.expectEqual(@as(usize, 4), frame.stack.size);
     
     // Top two elements should be the same
-    const top1 = try test_frame.popStack();
-    const top2 = try test_frame.popStack();
+    const top1 = try frame.stack.pop();
+    const top2 = try frame.stack.pop();
     try testing.expectEqual(top1, top2);
     try testing.expectEqual(@as(u256, 300), top1);
     
     // Test SWAP1 (swap top two elements)
-    try test_frame.pushStack(&[_]u256{400});
+    try frame.stack.append(400);
     // Stack is now: 100, 200, 400
     
-    const swap_result = test_helpers.executeOpcode(0x90, test_vm.evm, test_frame.frame) catch unreachable; // SWAP1
+    const swap_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x90); // SWAP1
     try testing.expect(swap_result.output.len == 0);
     
     // Stack should now be: 100, 400, 200
-    const after_swap1 = try test_frame.popStack();
-    const after_swap2 = try test_frame.popStack();
+    const after_swap1 = try frame.stack.pop();
+    const after_swap2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 200), after_swap1);
     try testing.expectEqual(@as(u256, 400), after_swap2);
 }
@@ -288,38 +423,65 @@ test "E2E: Gas consumption patterns" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create EVM instance
+    var evm_instance = try allocator.create(Evm.Evm);
+    defer allocator.destroy(evm_instance);
     
-    var test_contract = test_helpers.createTestContract(
-        allocator,
-        CONTRACT_ADDRESS,
-        DEPLOYER_ADDRESS,
-        0,
-        &[_]u8{},
-    ) catch unreachable;
+    var memory_db = try allocator.create(MemoryDatabase);
+    defer allocator.destroy(memory_db);
+    
+    memory_db.* = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
+    
+    // Create a contract at the specified address
+    var test_contract = Contract.init_at_address(
+        DEPLOYER_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address
+        0, // value
+        100_000, // gas
+        &[_]u8{}, // bytecode
+        &[_]u8{}, // input
+        false, // not static
+    );
     defer test_contract.deinit(allocator, null);
     
-    var test_frame = try test_helpers.TestFrame.init(allocator, &test_contract, 100_000);
-    defer test_frame.deinit();
+    // Create a frame for testing
+    var frame = try allocator.create(Frame);
+    defer allocator.destroy(frame);
     
-    const initial_gas = test_frame.gasRemaining();
+    frame.* = try Frame.init(allocator, &test_contract);
+    defer frame.deinit();
+    
+    frame.gas_remaining = 100_000;
+    frame.input = test_contract.input;
+    frame.memory.finalize_root();
+    
+    const initial_gas = frame.gas_remaining;
     
     // Execute a simple operation
-    try test_frame.pushStack(&[_]u256{42});
-    _ = test_helpers.executeOpcode(0x50, test_vm.evm, test_frame.frame) catch unreachable; // POP
+    try frame.stack.append(42);
     
-    const gas_after_pop = test_frame.gasRemaining();
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
+    const state_ptr: *Operation.State = @ptrCast(frame);
+    
+    _ = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x50); // POP
+    
+    const gas_after_pop = frame.gas_remaining;
     const pop_cost = initial_gas - gas_after_pop;
     
     // POP should cost 2 gas
     try testing.expectEqual(@as(u64, 2), pop_cost);
     
     // Test expensive operation (SSTORE)
-    try test_frame.pushStack(&[_]u256{100, 0});
-    _ = test_helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame) catch unreachable; // SSTORE
+    try frame.stack.append(100);
+    try frame.stack.append(0);
+    _ = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x55); // SSTORE
     
-    const gas_after_sstore = test_frame.gasRemaining();
+    const gas_after_sstore = frame.gas_remaining;
     const sstore_cost = gas_after_pop - gas_after_sstore;
     
     // SSTORE should cost much more than POP
