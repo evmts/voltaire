@@ -300,3 +300,6 @@ test "Contract module" {
 test "JumpTable module" {
     std.testing.refAllDecls(JumpTable);
 }
+test "Execution module" {
+    std.testing.refAllDecls(execution);
+}
