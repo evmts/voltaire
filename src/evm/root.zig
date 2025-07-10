@@ -38,7 +38,7 @@
 //! const evm = @import("evm");
 //!
 //! // Create a VM instance
-//! var vm = try evm.Vm.init(allocator, config);
+//! var vm = try evm.Evm.init(allocator, config);
 //! defer vm.deinit();
 //!
 //! // Execute bytecode
@@ -104,7 +104,7 @@ pub const stack_validation = @import("stack/stack_validation.zig");
 pub const StoragePool = @import("frame/storage_pool.zig");
 
 /// Main virtual machine implementation
-pub const Vm = @import("evm.zig");
+pub const Evm = @import("evm.zig");
 
 /// EVM state management (accounts, storage, logs)
 pub const EvmState = @import("state/state.zig");
@@ -202,38 +202,38 @@ pub const BlobTransaction = transaction.BlobTransaction;
 
 // VM error types
 /// Errors from VM contract creation operations
-pub const CreateContractError = Vm.CreateContractError;
-pub const CallContractError = Vm.CallContractError;
-pub const ConsumeGasError = Vm.ConsumeGasError;
-pub const Create2ContractError = Vm.Create2ContractError;
-pub const CallcodeContractError = Vm.CallcodeContractError;
-pub const DelegatecallContractError = Vm.DelegatecallContractError;
-pub const StaticcallContractError = Vm.StaticcallContractError;
-pub const EmitLogError = Vm.EmitLogError;
-pub const InitTransactionAccessListError = Vm.InitTransactionAccessListError;
-pub const PreWarmAddressesError = Vm.PreWarmAddressesError;
-pub const PreWarmStorageSlotsError = Vm.PreWarmStorageSlotsError;
-pub const GetAddressAccessCostError = Vm.GetAddressAccessCostError;
-pub const GetStorageAccessCostError = Vm.GetStorageAccessCostError;
-pub const GetCallCostError = Vm.GetCallCostError;
-pub const ValidateStaticContextError = Vm.ValidateStaticContextError;
-pub const SetStorageProtectedError = Vm.SetStorageProtectedError;
-pub const SetTransientStorageProtectedError = Vm.SetTransientStorageProtectedError;
-pub const SetBalanceProtectedError = Vm.SetBalanceProtectedError;
-pub const SetCodeProtectedError = Vm.SetCodeProtectedError;
-pub const EmitLogProtectedError = Vm.EmitLogProtectedError;
-pub const CreateContractProtectedError = Vm.CreateContractProtectedError;
-pub const Create2ContractProtectedError = Vm.Create2ContractProtectedError;
-pub const ValidateValueTransferError = Vm.ValidateValueTransferError;
-pub const SelfdestructProtectedError = Vm.SelfdestructProtectedError;
+pub const CreateContractError = Evm.CreateContractError;
+pub const CallContractError = Evm.CallContractError;
+pub const ConsumeGasError = Evm.ConsumeGasError;
+pub const Create2ContractError = Evm.Create2ContractError;
+pub const CallcodeContractError = Evm.CallcodeContractError;
+pub const DelegatecallContractError = Evm.DelegatecallContractError;
+pub const StaticcallContractError = Evm.StaticcallContractError;
+pub const EmitLogError = Evm.EmitLogError;
+pub const InitTransactionAccessListError = Evm.InitTransactionAccessListError;
+pub const PreWarmAddressesError = Evm.PreWarmAddressesError;
+pub const PreWarmStorageSlotsError = Evm.PreWarmStorageSlotsError;
+pub const GetAddressAccessCostError = Evm.GetAddressAccessCostError;
+pub const GetStorageAccessCostError = Evm.GetStorageAccessCostError;
+pub const GetCallCostError = Evm.GetCallCostError;
+pub const ValidateStaticContextError = Evm.ValidateStaticContextError;
+pub const SetStorageProtectedError = Evm.SetStorageProtectedError;
+pub const SetTransientStorageProtectedError = Evm.SetTransientStorageProtectedError;
+pub const SetBalanceProtectedError = Evm.SetBalanceProtectedError;
+pub const SetCodeProtectedError = Evm.SetCodeProtectedError;
+pub const EmitLogProtectedError = Evm.EmitLogProtectedError;
+pub const CreateContractProtectedError = Evm.CreateContractProtectedError;
+pub const Create2ContractProtectedError = Evm.Create2ContractProtectedError;
+pub const ValidateValueTransferError = Evm.ValidateValueTransferError;
+pub const SelfdestructProtectedError = Evm.SelfdestructProtectedError;
 
 // VM result types
 /// Result of running EVM bytecode
-pub const RunResult = Vm.RunResult;
+pub const RunResult = Evm.RunResult;
 /// Result of CREATE/CREATE2 operations
-pub const CreateResult = Vm.CreateResult;
+pub const CreateResult = Evm.CreateResult;
 /// Result of CALL/DELEGATECALL/STATICCALL operations
-pub const CallResult = Vm.CallResult;
+pub const CallResult = Evm.CallResult;
 
 // Memory error types
 /// Errors from memory operations (expansion, access)
@@ -279,8 +279,8 @@ pub const CalculateCreate2AddressError = Address.CalculateCreate2AddressError;
 /// Main execution error enumeration used throughout EVM
 pub const ExecutionErrorEnum = ExecutionError.Error;
 
-test "VM module" {
-    std.testing.refAllDecls(Vm);
+test "Evm module" {
+    std.testing.refAllDecls(Evm);
 }
 test "Frame module" {
     std.testing.refAllDecls(Frame);
