@@ -1,8 +1,9 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const test_helpers = @import("opcodes/test_helpers.zig");
 const Address = @import("Address");
+const MemoryDatabase = Evm.MemoryDatabase;
+const Contract = Evm.Contract;
 
 // Test addresses - use small simple values
 const DEPLOYER_ADDRESS = Address.from_u256(0x1111);
@@ -20,8 +21,13 @@ test "E2E: Revert conditions - require and revert opcodes" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Test REVERT opcode directly
     const revert_bytecode = [_]u8{
@@ -30,13 +36,23 @@ test "E2E: Revert conditions - require and revert opcodes" {
         0xFD,       // REVERT
     };
     
-    const revert_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create a contract at the specified address
+    var revert_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &revert_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer revert_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &revert_bytecode);
+    
+    // Execute the contract
+    const revert_result = try evm.interpret(&revert_contract, &[_]u8{});
     defer if (revert_result.output) |output| allocator.free(output);
     
     try testing.expect(revert_result.status == .Revert);
@@ -60,18 +76,31 @@ test "E2E: Revert conditions - require and revert opcodes" {
         0xFD,       // REVERT
     };
     
-    const conditional_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create a new contract for conditional test
+    var conditional_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &conditional_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer conditional_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &conditional_bytecode);
+    
+    // Execute the contract
+    const conditional_result = try evm.interpret(&conditional_contract, &[_]u8{});
     defer if (conditional_result.output) |output| allocator.free(output);
     
     try testing.expect(conditional_result.status == .Success);
     if (conditional_result.output) |output| {
-        const value = test_helpers.bytesToU256(output);
+        var value: u256 = 0;
+        for (output) |byte| {
+            value = (value << 8) | byte;
+        }
         try testing.expectEqual(@as(u256, 42), value);
     }
 }
@@ -87,8 +116,13 @@ test "E2E: Arithmetic overflow - EVM wraparound behavior" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Test MAX_UINT256 + 1 = 0 (wraparound)
     const overflow_test_bytecode = [_]u8{
@@ -107,20 +141,33 @@ test "E2E: Arithmetic overflow - EVM wraparound behavior" {
         0xF3,       // RETURN
     };
     
-    const overflow_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract for overflow test
+    var overflow_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &overflow_test_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer overflow_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &overflow_test_bytecode);
+    
+    // Execute the contract
+    const overflow_result = try evm.interpret(&overflow_contract, &[_]u8{});
     defer if (overflow_result.output) |output| allocator.free(output);
     
     try testing.expect(overflow_result.status == .Success);
     if (overflow_result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Should return 0 (MAX_UINT256 + 1 wraps to 0)
-        const result_value = test_helpers.bytesToU256(output);
+        var result_value: u256 = 0;
+        for (output) |byte| {
+            result_value = (result_value << 8) | byte;
+        }
         try testing.expectEqual(@as(u256, 0), result_value);
     }
     
@@ -136,18 +183,31 @@ test "E2E: Arithmetic overflow - EVM wraparound behavior" {
         0xF3,       // RETURN
     };
     
-    const underflow_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract for underflow test
+    var underflow_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &underflow_test_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer underflow_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &underflow_test_bytecode);
+    
+    // Execute the contract
+    const underflow_result = try evm.interpret(&underflow_contract, &[_]u8{});
     defer if (underflow_result.output) |output| allocator.free(output);
     
     try testing.expect(underflow_result.status == .Success);
     if (underflow_result.output) |output| {
-        const result_value = test_helpers.bytesToU256(output);
+        var result_value: u256 = 0;
+        for (output) |byte| {
+            result_value = (result_value << 8) | byte;
+        }
         try testing.expectEqual(std.math.maxInt(u256), result_value);
     }
 }
@@ -163,8 +223,13 @@ test "E2E: Gas limits - controlled consumption and out-of-gas" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Simple gas consumption test - just do some operations
     const gas_test_bytecode = [_]u8{
@@ -188,32 +253,52 @@ test "E2E: Gas limits - controlled consumption and out-of-gas" {
     };
     
     // Test with sufficient gas
-    const sufficient_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract for sufficient gas test
+    var sufficient_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        10_000, // gas
         &gas_test_bytecode,
-        CONTRACT_ADDRESS,
-        10_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer sufficient_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &gas_test_bytecode);
+    
+    // Execute the contract
+    const sufficient_result = try evm.interpret(&sufficient_contract, &[_]u8{});
     defer if (sufficient_result.output) |output| allocator.free(output);
     
     try testing.expect(sufficient_result.status == .Success);
     try testing.expect(sufficient_result.gas_used > 0);
     
     if (sufficient_result.output) |output| {
-        const result_value = test_helpers.bytesToU256(output);
+        var result_value: u256 = 0;
+        for (output) |byte| {
+            result_value = (result_value << 8) | byte;
+        }
         // Result should be: ((1 + 2) * 3 + 4) / 2 = (9 + 4) / 2 = 13 / 2 = 6
         try testing.expectEqual(@as(u256, 6), result_value);
     }
     
     // Test with insufficient gas
-    const insufficient_result = test_helpers.runBytecode(
-        test_vm.evm,
-        &gas_test_bytecode,
-        CONTRACT_ADDRESS,
+    // Create contract for insufficient gas test
+    var insufficient_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
         10, // Very low gas limit
-        null,
-    ) catch unreachable;
+        &gas_test_bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer insufficient_contract.deinit(allocator, null);
+    
+    // Execute the contract with insufficient gas
+    const insufficient_result = try evm.interpret(&insufficient_contract, &[_]u8{});
     defer if (insufficient_result.output) |output| allocator.free(output);
     
     std.debug.print("Insufficient gas test status: {}, gas used: {}\n", .{ insufficient_result.status, insufficient_result.gas_used });
@@ -231,21 +316,36 @@ test "E2E: Stack underflow - empty stack operations" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Test stack underflow - POP from empty stack
     const underflow_bytecode = [_]u8{
         0x50, // POP (from empty stack - should fail)
     };
     
-    const underflow_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract for underflow test
+    var underflow_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &underflow_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer underflow_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &underflow_bytecode);
+    
+    // Execute the contract
+    const underflow_result = try evm.interpret(&underflow_contract, &[_]u8{});
     defer if (underflow_result.output) |output| allocator.free(output);
     
     try testing.expect(underflow_result.status == .Invalid);
@@ -256,13 +356,23 @@ test "E2E: Stack underflow - empty stack operations" {
         0x01,       // ADD (needs two items - should fail)
     };
     
-    const insufficient_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract for insufficient stack test
+    var insufficient_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &insufficient_stack_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer insufficient_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &insufficient_stack_bytecode);
+    
+    // Execute the contract
+    const insufficient_result = try evm.interpret(&insufficient_contract, &[_]u8{});
     defer if (insufficient_result.output) |output| allocator.free(output);
     
     try testing.expect(insufficient_result.status == .Invalid);
@@ -279,8 +389,13 @@ test "E2E: Division by zero - EVM behavior" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Test division by zero (EVM returns 0)
     const div_zero_bytecode = [_]u8{
@@ -294,18 +409,31 @@ test "E2E: Division by zero - EVM behavior" {
         0xF3,       // RETURN
     };
     
-    const div_zero_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract for division by zero test
+    var div_zero_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &div_zero_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer div_zero_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &div_zero_bytecode);
+    
+    // Execute the contract
+    const div_zero_result = try evm.interpret(&div_zero_contract, &[_]u8{});
     defer if (div_zero_result.output) |output| allocator.free(output);
     
     try testing.expect(div_zero_result.status == .Success);
     if (div_zero_result.output) |output| {
-        const result_value = test_helpers.bytesToU256(output);
+        var result_value: u256 = 0;
+        for (output) |byte| {
+            result_value = (result_value << 8) | byte;
+        }
         try testing.expectEqual(@as(u256, 0), result_value); // Division by zero returns 0
     }
     
@@ -321,18 +449,31 @@ test "E2E: Division by zero - EVM behavior" {
         0xF3,       // RETURN
     };
     
-    const mod_zero_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract for modulo by zero test
+    var mod_zero_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &mod_zero_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer mod_zero_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &mod_zero_bytecode);
+    
+    // Execute the contract
+    const mod_zero_result = try evm.interpret(&mod_zero_contract, &[_]u8{});
     defer if (mod_zero_result.output) |output| allocator.free(output);
     
     try testing.expect(mod_zero_result.status == .Success);
     if (mod_zero_result.output) |output| {
-        const result_value = test_helpers.bytesToU256(output);
+        var result_value: u256 = 0;
+        for (output) |byte| {
+            result_value = (result_value << 8) | byte;
+        }
         try testing.expectEqual(@as(u256, 0), result_value); // Modulo by zero returns 0
     }
 }
@@ -348,8 +489,13 @@ test "E2E: Memory expansion - large offset testing" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Test memory expansion with reasonable large offset
     const memory_expansion_bytecode = [_]u8{
@@ -370,18 +516,31 @@ test "E2E: Memory expansion - large offset testing" {
         0xF3,       // RETURN
     };
     
-    const expansion_result = test_helpers.runBytecode(
-        test_vm.evm,
-        &memory_expansion_bytecode,
-        CONTRACT_ADDRESS,
+    // Create contract for memory expansion test
+    var expansion_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
         200_000, // More gas for memory expansion
-        null,
-    ) catch unreachable;
+        &memory_expansion_bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer expansion_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &memory_expansion_bytecode);
+    
+    // Execute the contract
+    const expansion_result = try evm.interpret(&expansion_contract, &[_]u8{});
     defer if (expansion_result.output) |output| allocator.free(output);
     
     try testing.expect(expansion_result.status == .Success);
     if (expansion_result.output) |output| {
-        const result_value = test_helpers.bytesToU256(output);
+        var result_value: u256 = 0;
+        for (output) |byte| {
+            result_value = (result_value << 8) | byte;
+        }
         try testing.expectEqual(@as(u256, 0x42), result_value);
     }
     
@@ -401,8 +560,13 @@ test "E2E: Invalid jumps - bad jump destinations" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Test jump to invalid destination (not JUMPDEST)
     const invalid_jump_bytecode = [_]u8{
@@ -412,13 +576,23 @@ test "E2E: Invalid jumps - bad jump destinations" {
         0x00,       // STOP
     };
     
-    const invalid_jump_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract for invalid jump test
+    var invalid_jump_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &invalid_jump_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer invalid_jump_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &invalid_jump_bytecode);
+    
+    // Execute the contract
+    const invalid_jump_result = try evm.interpret(&invalid_jump_contract, &[_]u8{});
     defer if (invalid_jump_result.output) |output| allocator.free(output);
     
     try testing.expect(invalid_jump_result.status == .Invalid);
@@ -437,18 +611,31 @@ test "E2E: Invalid jumps - bad jump destinations" {
         0xF3,       // RETURN
     };
     
-    const valid_jump_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract for valid jump test
+    var valid_jump_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &valid_jump_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer valid_jump_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &valid_jump_bytecode);
+    
+    // Execute the contract
+    const valid_jump_result = try evm.interpret(&valid_jump_contract, &[_]u8{});
     defer if (valid_jump_result.output) |output| allocator.free(output);
     
     try testing.expect(valid_jump_result.status == .Success);
     if (valid_jump_result.output) |output| {
-        const result_value = test_helpers.bytesToU256(output);
+        var result_value: u256 = 0;
+        for (output) |byte| {
+            result_value = (result_value << 8) | byte;
+        }
         try testing.expectEqual(@as(u256, 0x42), result_value); // 0x42 = 66 in decimal
     }
 }

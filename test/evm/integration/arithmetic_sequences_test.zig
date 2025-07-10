@@ -1,9 +1,13 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers");
 
 // Import opcodes through evm module
 const Evm = @import("evm");
+const Address = @import("Address");
+const MemoryDatabase = Evm.MemoryDatabase;
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const Operation = Evm.Operation;
 const arithmetic = Evm.opcodes.arithmetic;
 const stack = Evm.opcodes.stack;
 const comparison = Evm.opcodes.comparison;
@@ -13,33 +17,60 @@ test "Integration: Complex arithmetic calculation" {
     // Expected result: 75
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    const contract_address = Address.from_u256(0x3333);
+    const alice_address = Address.from_u256(0x1111);
+    
+    // Calculate proper code hash
+    const code_hash: [32]u8 = [_]u8{0} ** 32;
+    
+    var contract = Contract.init(
+        alice_address,
+        contract_address,
         0,
+        10000, // gas
         &[_]u8{},
+        code_hash,
+        &[_]u8{}, // Empty input
+        false, // Not static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    const frame_ptr = try allocator.create(Frame);
+    defer allocator.destroy(frame_ptr);
+    
+    frame_ptr.* = try Frame.init(allocator, &contract);
+    defer frame_ptr.deinit();
+    frame_ptr.gas_remaining = 10000;
+    frame_ptr.input = contract.input;
+    frame_ptr.memory.finalize_root();
     
     // Push values and execute: (10 + 20) * 3 - 15
-    try test_frame.pushStack(&[_]u256{10, 20}); // Push 20, then 10
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame); // 30
+    try frame_ptr.stack.append(20);
+    try frame_ptr.stack.append(10);
     
-    try test_frame.pushStack(&[_]u256{3}); // Push 3
-    _ = try helpers.executeOpcode(0x02, test_vm.evm, test_frame.frame); // 90
+    // Execute ADD opcode
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(frame_ptr);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD = 30
     
-    try test_frame.pushStack(&[_]u256{15}); // Push 15
-    _ = try helpers.executeOpcode(0x03, test_vm.evm, test_frame.frame); // 75
+    try frame_ptr.stack.append(3);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x02); // MUL = 90
     
-    try helpers.expectStackValue(test_frame.frame, 0, 75);
-    try testing.expectEqual(@as(usize, 1), test_frame.stackSize());
+    try frame_ptr.stack.append(15);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x03); // SUB = 75
+    
+    const result = try frame_ptr.stack.peek_n(0);
+    try testing.expectEqual(@as(u256, 75), result);
+    try testing.expectEqual(@as(usize, 1), frame_ptr.stack.size);
 }
 
 test "Integration: Modular arithmetic with overflow" {
@@ -47,31 +78,58 @@ test "Integration: Modular arithmetic with overflow" {
     // Expected: 5 (due to overflow wrapping)
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    const contract_address = Address.from_u256(0x3333);
+    const alice_address = Address.from_u256(0x1111);
+    
+    // Calculate proper code hash
+    const code_hash: [32]u8 = [_]u8{0} ** 32;
+    
+    var contract = Contract.init(
+        alice_address,
+        contract_address,
         0,
+        10000, // gas
         &[_]u8{},
+        code_hash,
+        &[_]u8{}, // Empty input
+        false, // Not static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    const frame_ptr = try allocator.create(Frame);
+    defer allocator.destroy(frame_ptr);
+    
+    frame_ptr.* = try Frame.init(allocator, &contract);
+    defer frame_ptr.deinit();
+    frame_ptr.gas_remaining = 10000;
+    frame_ptr.input = contract.input;
+    frame_ptr.memory.finalize_root();
     
     const max_u256 = std.math.maxInt(u256);
     
     // Calculate (MAX_U256 + 5) % 1000
-    try test_frame.pushStack(&[_]u256{max_u256, 5}); // Push 5, then MAX
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame); // Overflows to 4
+    try frame_ptr.stack.append(5);
+    try frame_ptr.stack.append(max_u256);
     
-    try test_frame.pushStack(&[_]u256{1000}); // Push modulus
-    _ = try helpers.executeOpcode(0x06, test_vm.evm, test_frame.frame); // 4 % 1000 = 4
+    // Execute ADD opcode (will overflow to 4)
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(frame_ptr);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD
     
-    try helpers.expectStackValue(test_frame.frame, 0, 4);
+    try frame_ptr.stack.append(1000); // Push modulus
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x06); // MOD = 4 % 1000 = 4
+    
+    const result = try frame_ptr.stack.peek_n(0);
+    try testing.expectEqual(@as(u256, 4), result);
 }
 
 
@@ -80,118 +138,158 @@ test "Integration: Fibonacci sequence calculation" {
     // 0, 1, 1, 2, 3
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    const contract_address = Address.from_u256(0x3333);
+    const alice_address = Address.from_u256(0x1111);
+    
+    // Calculate proper code hash
+    const code_hash: [32]u8 = [_]u8{0} ** 32;
+    
+    var contract = Contract.init(
+        alice_address,
+        contract_address,
         0,
+        10000, // gas
         &[_]u8{},
+        code_hash,
+        &[_]u8{}, // Empty input
+        false, // Not static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    const frame_ptr = try allocator.create(Frame);
+    defer allocator.destroy(frame_ptr);
+    
+    frame_ptr.* = try Frame.init(allocator, &contract);
+    defer frame_ptr.deinit();
+    frame_ptr.gas_remaining = 10000;
+    frame_ptr.input = contract.input;
+    frame_ptr.memory.finalize_root();
     
     // Initialize with 0, 1
-    try test_frame.pushStack(&[_]u256{0, 1}); // Stack: [1, 0]
+    try frame_ptr.stack.append(0); // fib(0)
+    try frame_ptr.stack.append(1); // fib(1), Stack: [0, 1] (top is 1)
     
-    // Fibonacci sequence: fib(n) = fib(n-1) + fib(n-2)
-    // Stack maintains [fib(n), fib(n-1)]
-    // Starting with [1, 0] representing fib(1)=1, fib(0)=0
+    // Setup for opcode execution
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(frame_ptr);
     
     // Calculate fib(2) = fib(1) + fib(0) = 1 + 0 = 1
-    _ = try helpers.executeOpcode(0x81, test_vm.evm, test_frame.frame); // DUP2: Stack: [0, 1, 0]
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame); // ADD: Stack: [1, 0] (fib(2)=1, fib(1)=0 is wrong!)
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x80); // DUP1: Stack: [0, 1, 1]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x82); // DUP3: Stack: [0, 1, 1, 0]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD: Stack: [0, 1, 1]
     
-    // Wait, this is wrong. After calculating fib(2), we should have [fib(2), fib(1)] = [1, 1]
-    // Let's fix the algorithm:
-    // We need: Stack [fib(n-1), fib(n-2)] -> [fib(n), fib(n-1)]
-    
-    // Starting fresh with correct algorithm
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0, 1}); // Stack: [1, 0] = [fib(1), fib(0)]
-    
-    // Calculate fib(2) = 1 + 0 = 1
-    // Need to: duplicate both values, add them, then swap to maintain [fib(n), fib(n-1)]
-    _ = try helpers.executeOpcode(0x81, test_vm.evm, test_frame.frame); // DUP2: Stack: [0, 1, 0]
-    _ = try helpers.executeOpcode(0x81, test_vm.evm, test_frame.frame); // DUP2: Stack: [1, 0, 1, 0]
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame); // ADD: Stack: [1, 1, 0]
-    _ = try helpers.executeOpcode(0x91, test_vm.evm, test_frame.frame); // SWAP2: Stack: [0, 1, 1]
-    _ = try helpers.executeOpcode(0x50, test_vm.evm, test_frame.frame); // POP: Stack: [1, 1] = [fib(2), fib(1)]
-    
-    // Calculate fib(3) = fib(2) + fib(1) = 1 + 1 = 2
-    _ = try helpers.executeOpcode(0x81, test_vm.evm, test_frame.frame); // DUP2: Stack: [1, 1, 1]
-    _ = try helpers.executeOpcode(0x81, test_vm.evm, test_frame.frame); // DUP2: Stack: [1, 1, 1, 1]
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame); // ADD: Stack: [2, 1, 1]
-    _ = try helpers.executeOpcode(0x91, test_vm.evm, test_frame.frame); // SWAP2: Stack: [1, 1, 2]
-    _ = try helpers.executeOpcode(0x50, test_vm.evm, test_frame.frame); // POP: Stack: [1, 2] = [fib(2), fib(3)]
+    // Calculate fib(3) = fib(2) + fib(1) = 1 + 1 = 2  
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x80); // DUP1: Stack: [0, 1, 1, 1]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x82); // DUP3: Stack: [0, 1, 1, 1, 1]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD: Stack: [0, 1, 1, 2]
     
     // Calculate fib(4) = fib(3) + fib(2) = 2 + 1 = 3
-    // Stack is currently [1, 2] = [fib(2), fib(3)]
-    _ = try helpers.executeOpcode(0x81, test_vm.evm, test_frame.frame); // DUP2: Stack: [1, 2, 1]
-    _ = try helpers.executeOpcode(0x81, test_vm.evm, test_frame.frame); // DUP2: Stack: [1, 2, 1, 2]
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame); // ADD: Stack: [1, 2, 3]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x80); // DUP1: Stack: [0, 1, 1, 2, 2]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x82); // DUP3: Stack: [0, 1, 1, 2, 2, 1]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD: Stack: [0, 1, 1, 2, 3]
     
     // Verify we have fib(4) = 3 on top
-    // Stack is [2, 1, 3] from bottom to top, or [3, 1, 2] from top to bottom
-    try helpers.expectStackValue(test_frame.frame, 0, 3); // fib(4)
-    try helpers.expectStackValue(test_frame.frame, 1, 1); // intermediate value
-    try helpers.expectStackValue(test_frame.frame, 2, 2); // intermediate value
+    const fib4 = try frame_ptr.stack.peek_n(0);
+    try testing.expectEqual(@as(u256, 3), fib4); // fib(4)
+    const fib3 = try frame_ptr.stack.peek_n(1);
+    try testing.expectEqual(@as(u256, 2), fib3); // fib(3)
+    const fib2 = try frame_ptr.stack.peek_n(2);
+    try testing.expectEqual(@as(u256, 1), fib2); // fib(2)
 }
 
 test "Integration: Conditional arithmetic based on comparison" {
     // Test: If a > b, calculate a - b, else calculate b - a
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    const contract_address = Address.from_u256(0x3333);
+    const alice_address = Address.from_u256(0x1111);
+    
+    // Calculate proper code hash
+    const code_hash: [32]u8 = [_]u8{0} ** 32;
+    
+    var contract = Contract.init(
+        alice_address,
+        contract_address,
         0,
+        10000, // gas
         &[_]u8{},
+        code_hash,
+        &[_]u8{}, // Empty input
+        false, // Not static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    const frame_ptr = try allocator.create(Frame);
+    defer allocator.destroy(frame_ptr);
+    
+    frame_ptr.* = try Frame.init(allocator, &contract);
+    defer frame_ptr.deinit();
+    frame_ptr.gas_remaining = 10000;
+    frame_ptr.input = contract.input;
+    frame_ptr.memory.finalize_root();
+    
+    // Setup for opcode execution
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(frame_ptr);
     
     // Test case 1: a=30, b=20 (a > b)
-    try test_frame.pushStack(&[_]u256{30, 20}); // Stack: [20, 30]
+    try frame_ptr.stack.append(20); // b
+    try frame_ptr.stack.append(30); // a, Stack: [20, 30] (top is a=30)
     
     // Duplicate values for comparison
-    _ = try helpers.executeOpcode(0x81, test_vm.evm, test_frame.frame); // Stack: [30, 20, 30]
-    _ = try helpers.executeOpcode(0x81, test_vm.evm, test_frame.frame); // Stack: [20, 30, 20, 30]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x80); // DUP1: Stack: [20, 30, 30]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x82); // DUP3: Stack: [20, 30, 30, 20]
     
-    // Compare a > b
-    _ = try helpers.executeOpcode(0x11, test_vm.evm, test_frame.frame); // Stack: [1, 20, 30] (30 > 20 = true)
+    // Compare a > b - GT pops b then a, returns 1 if a > b
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x11); // GT: Stack: [20, 30, 1] (30 > 20 = true)
     
     // If true (a > b), calculate a - b
     // Since we got 1 (true), we proceed with a - b
-    _ = try helpers.executeOpcode(0x50, test_vm.evm, test_frame.frame); // Stack: [20, 30]
-    _ = try helpers.executeOpcode(0x03, test_vm.evm, test_frame.frame); // Stack: [10] (30 - 20)
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x50); // POP: Stack: [20, 30]
     
-    try helpers.expectStackValue(test_frame.frame, 0, 10);
+    // SUB pops b then a, calculates a - b
+    // With [20, 30] on stack, SUB pops 30 (b) then 20 (a), calculates 20 - 30 which underflows
+    // We need to swap to get [30, 20] so SUB calculates 30 - 20 = 10
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x90); // SWAP1: Stack: [30, 20]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x03); // SUB: Stack: [10] (30 - 20)
+    
+    const result1 = try frame_ptr.stack.peek_n(0);
+    try testing.expectEqual(@as(u256, 10), result1);
     
     // Test case 2: a=15, b=25 (a < b)
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{15, 25}); // Stack: [25, 15]
+    frame_ptr.stack.clear();
+    try frame_ptr.stack.append(25); // b 
+    try frame_ptr.stack.append(15); // a, Stack: [25, 15] (top is a=15)
     
     // Duplicate values for comparison
-    _ = try helpers.executeOpcode(0x81, test_vm.evm, test_frame.frame); // Stack: [15, 25, 15]
-    _ = try helpers.executeOpcode(0x81, test_vm.evm, test_frame.frame); // Stack: [25, 15, 25, 15]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x80); // DUP1: Stack: [25, 15, 15]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x82); // DUP3: Stack: [25, 15, 15, 25]
     
-    // Compare a > b
-    _ = try helpers.executeOpcode(0x11, test_vm.evm, test_frame.frame); // Stack: [0, 25, 15] (15 > 25 = false)
+    // Compare a > b - GT pops b then a, returns 1 if a > b
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x11); // GT: Stack: [25, 15, 0] (15 > 25 = false)
     
     // If false (a <= b), we would calculate b - a
     // For this test, we'll just verify the comparison result
-    try helpers.expectStackValue(test_frame.frame, 0, 0); // Comparison was false
+    const comparison_result = try frame_ptr.stack.peek_n(0);
+    try testing.expectEqual(@as(u256, 0), comparison_result); // Comparison was false as expected
 }
 
 test "Integration: Calculate average of multiple values" {
@@ -199,80 +297,146 @@ test "Integration: Calculate average of multiple values" {
     // Expected: 150 / 5 = 30
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    const contract_address = Address.from_u256(0x3333);
+    const alice_address = Address.from_u256(0x1111);
+    
+    // Calculate proper code hash
+    const code_hash: [32]u8 = [_]u8{0} ** 32;
+    
+    var contract = Contract.init(
+        alice_address,
+        contract_address,
         0,
+        10000, // gas
         &[_]u8{},
+        code_hash,
+        &[_]u8{}, // Empty input
+        false, // Not static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    const frame_ptr = try allocator.create(Frame);
+    defer allocator.destroy(frame_ptr);
+    
+    frame_ptr.* = try Frame.init(allocator, &contract);
+    defer frame_ptr.deinit();
+    frame_ptr.gas_remaining = 10000;
+    frame_ptr.input = contract.input;
+    frame_ptr.memory.finalize_root();
+    
+    // Setup for opcode execution
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(frame_ptr);
     
     // Push all values
-    try test_frame.pushStack(&[_]u256{10, 20, 30, 40, 50});
+    try frame_ptr.stack.append(50);
+    try frame_ptr.stack.append(40);
+    try frame_ptr.stack.append(30);
+    try frame_ptr.stack.append(20);
+    try frame_ptr.stack.append(10);
     
     // Add them all together
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame); // 90
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame); // 60  
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame); // 30
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame); // 150
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD: 10+20=30
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD: 30+30=60  
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD: 60+40=100
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD: 100+50=150
     
     // Divide by count
-    try test_frame.pushStack(&[_]u256{5});
-    _ = try helpers.executeOpcode(0x04, test_vm.evm, test_frame.frame); // 30
+    try frame_ptr.stack.append(5);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x04); // DIV: 150/5=30
     
-    try helpers.expectStackValue(test_frame.frame, 0, 30);
+    const result = try frame_ptr.stack.peek_n(0);
+    try testing.expectEqual(@as(u256, 30), result);
 }
 
 test "Integration: Complex ADDMOD and MULMOD calculations" {
     // Test: Calculate (a + b) % n and (a * b) % n for large values
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    const contract_address = Address.from_u256(0x3333);
+    const alice_address = Address.from_u256(0x1111);
+    
+    // Calculate proper code hash
+    const code_hash: [32]u8 = [_]u8{0} ** 32;
+    
+    var contract = Contract.init(
+        alice_address,
+        contract_address,
         0,
+        10000, // gas
         &[_]u8{},
+        code_hash,
+        &[_]u8{}, // Empty input
+        false, // Not static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    const frame_ptr = try allocator.create(Frame);
+    defer allocator.destroy(frame_ptr);
+    
+    frame_ptr.* = try Frame.init(allocator, &contract);
+    defer frame_ptr.deinit();
+    frame_ptr.gas_remaining = 10000;
+    frame_ptr.input = contract.input;
+    frame_ptr.memory.finalize_root();
+    
+    // Setup for opcode execution
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(frame_ptr);
     
     // Test ADDMOD with values that would overflow
-    const a: u256 = std.math.maxInt(u256) - 10;
+    const a: u256 = std.math.maxInt(u256) - 10;  // MAX - 10
     const b: u256 = 20;
     const n: u256 = 100;
     
     // Calculate (a + b) % n
-    // Since a + b overflows, we expect ((MAX-10) + 20) % 100 = 9
-    try test_frame.pushStack(&[_]u256{a, b, n});
-    _ = try helpers.executeOpcode(0x08, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 9);
+    // ADDMOD pops n, b, then peeks a (and overwrites a with result)
+    // So we need stack: [a, b, n] (n on top)
+    // a = MAX_U256 - 10, b = 20, n = 100
+    // a + b wraps to 9, so result should be 9 % 100 = 9
+    try frame_ptr.stack.append(a);  // first addend (bottom)
+    try frame_ptr.stack.append(b);  // second addend (middle)
+    try frame_ptr.stack.append(n);  // modulus (top)
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x08); // ADDMOD
+    
+    const addmod_result = try frame_ptr.stack.peek_n(0);
+    // We calculated that (a + b) % n should be 9
+    // With overflow: (MAX_U256 - 10 + 20) wraps to 9, and 9 % 100 = 9
+    try testing.expectEqual(@as(u256, 9), addmod_result);
     
     // Test MULMOD with large values
-    test_frame.frame.stack.clear();
+    frame_ptr.stack.clear();
     const x: u256 = 1000000000000000000; // 10^18
     const y: u256 = 1000000000000000000; // 10^18  
     const m: u256 = 1000000007; // Large prime
     
     // Calculate (x * y) % m
-    try test_frame.pushStack(&[_]u256{x, y, m});
-    _ = try helpers.executeOpcode(0x09, test_vm.evm, test_frame.frame);
+    try frame_ptr.stack.append(m);
+    try frame_ptr.stack.append(y);
+    try frame_ptr.stack.append(x);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x09); // MULMOD
     
     // x * y = 10^36, which is much larger than u256 max
     // We expect a specific result based on modular arithmetic
-    const result = try test_frame.popStack();
+    const result = try frame_ptr.stack.pop();
     try testing.expect(result < m); // Result should be less than modulus
 }
 
@@ -280,29 +444,58 @@ test "Integration: Exponentiation chain" {
     // Calculate 2^3^2 (right associative, so 2^(3^2) = 2^9 = 512)
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    const contract_address = Address.from_u256(0x3333);
+    const alice_address = Address.from_u256(0x1111);
+    
+    // Calculate proper code hash
+    const code_hash: [32]u8 = [_]u8{0} ** 32;
+    
+    var contract = Contract.init(
+        alice_address,
+        contract_address,
         0,
+        50000, // More gas for EXP
         &[_]u8{},
+        code_hash,
+        &[_]u8{}, // Empty input
+        false, // Not static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 50000); // More gas for EXP
-    defer test_frame.deinit();
+    // Create frame
+    const frame_ptr = try allocator.create(Frame);
+    defer allocator.destroy(frame_ptr);
+    
+    frame_ptr.* = try Frame.init(allocator, &contract);
+    defer frame_ptr.deinit();
+    frame_ptr.gas_remaining = 50000;
+    frame_ptr.input = contract.input;
+    frame_ptr.memory.finalize_root();
+    
+    // Setup for opcode execution
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(frame_ptr);
     
     // First calculate 3^2
-    try test_frame.pushStack(&[_]u256{3, 2});
-    _ = try helpers.executeOpcode(0x0A, test_vm.evm, test_frame.frame); // 9
+    // EXP pops exponent then base, so for 3^2 we need [3, 2] on stack
+    try frame_ptr.stack.append(3); // base
+    try frame_ptr.stack.append(2); // exponent
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x0A); // EXP: 3^2 = 9
     
-    // Then calculate 2^9
-    try test_frame.pushStack(&[_]u256{2}); // Push base
-    _ = try helpers.executeOpcode(0x90, test_vm.evm, test_frame.frame); // Swap to get [2, 9]
-    _ = try helpers.executeOpcode(0x0A, test_vm.evm, test_frame.frame); // 512
+    // Then calculate 2^9  
+    // Stack currently has [9], we need [2, 9] for 2^9
+    try frame_ptr.stack.append(2); // Push base
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x90); // SWAP1 to get [2, 9]
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x0A); // EXP: 2^9 = 512
     
-    try helpers.expectStackValue(test_frame.frame, 0, 512);
+    const result = try frame_ptr.stack.peek_n(0);
+    try testing.expectEqual(@as(u256, 512), result);
 }

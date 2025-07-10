@@ -1,8 +1,9 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const test_helpers = @import("opcodes/test_helpers.zig");
 const Address = @import("Address");
+const MemoryDatabase = Evm.MemoryDatabase;
+const Contract = Evm.Contract;
 
 // Test addresses - use small simple values
 const DEPLOYER_ADDRESS = Address.from_u256(0x1111);
@@ -20,8 +21,13 @@ test "E2E: Dynamic arrays - push, pop, and indexing" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Simplified array simulation - just test storage operations
     // This tests the EVM's ability to handle basic storage patterns
@@ -56,20 +62,33 @@ test "E2E: Dynamic arrays - push, pop, and indexing" {
         0xF3,       // RETURN
     };
     
-    const array_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create a contract at the specified address
+    var contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        200_000, // gas
         &array_test_bytecode,
-        CONTRACT_ADDRESS,
-        200_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &array_test_bytecode);
+    
+    // Execute the contract
+    const array_result = try evm.interpret(&contract, &[_]u8{});
     defer if (array_result.output) |output| allocator.free(output);
     
     try testing.expect(array_result.status == .Success);
     if (array_result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Should return the array length (3)
-        const length = test_helpers.bytesToU256(output);
+        var length: u256 = 0;
+        for (output) |byte| {
+            length = (length << 8) | byte;
+        }
         try testing.expectEqual(@as(u256, 3), length);
     }
 }
@@ -85,8 +104,13 @@ test "E2E: Mappings - various key types and nested access" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Simplified mapping test - just use hash-based storage
     const mapping_test_bytecode = [_]u8{
@@ -108,20 +132,33 @@ test "E2E: Mappings - various key types and nested access" {
         0xF3,       // RETURN
     };
     
-    const mapping_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create a contract at the specified address
+    var contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        200_000, // gas
         &mapping_test_bytecode,
-        CONTRACT_ADDRESS,
-        200_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &mapping_test_bytecode);
+    
+    // Execute the contract
+    const mapping_result = try evm.interpret(&contract, &[_]u8{});
     defer if (mapping_result.output) |output| allocator.free(output);
     
     try testing.expect(mapping_result.status == .Success);
     if (mapping_result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Should return the stored balance (1000)
-        const balance = test_helpers.bytesToU256(output);
+        var balance: u256 = 0;
+        for (output) |byte| {
+            balance = (balance << 8) | byte;
+        }
         try testing.expectEqual(@as(u256, 1000), balance);
     }
 }
@@ -137,8 +174,13 @@ test "E2E: Struct simulation - packed and unpacked storage" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Simulate struct { uint128 a; uint128 b; } packed into one storage slot
     const struct_test_bytecode = [_]u8{
@@ -177,20 +219,33 @@ test "E2E: Struct simulation - packed and unpacked storage" {
         0xF3,       // RETURN
     };
     
-    const struct_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create a contract at the specified address
+    var contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        200_000, // gas
         &struct_test_bytecode,
-        CONTRACT_ADDRESS,
-        200_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &struct_test_bytecode);
+    
+    // Execute the contract
+    const struct_result = try evm.interpret(&contract, &[_]u8{});
     defer if (struct_result.output) |output| allocator.free(output);
     
     try testing.expect(struct_result.status == .Success);
     if (struct_result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Should return sum of the two values (0x1111 + 0x2222 = 0x3333)
-        const result = test_helpers.bytesToU256(output);
+        var result: u256 = 0;
+        for (output) |byte| {
+            result = (result << 8) | byte;
+        }
         try testing.expect(result > 0); // Basic validation that unpacking worked
     }
 }
@@ -206,8 +261,13 @@ test "E2E: String/Bytes operations - encoding and manipulation" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Test bytes manipulation and hashing
     const bytes_test_bytecode = [_]u8{
@@ -229,20 +289,33 @@ test "E2E: String/Bytes operations - encoding and manipulation" {
         0xF3,       // RETURN
     };
     
-    const bytes_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create a contract at the specified address
+    var contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        100_000, // gas
         &bytes_test_bytecode,
-        CONTRACT_ADDRESS,
-        100_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &bytes_test_bytecode);
+    
+    // Execute the contract
+    const bytes_result = try evm.interpret(&contract, &[_]u8{});
     defer if (bytes_result.output) |output| allocator.free(output);
     
     try testing.expect(bytes_result.status == .Success);
     if (bytes_result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Should return a non-zero hash
-        const hash = test_helpers.bytesToU256(output);
+        var hash: u256 = 0;
+        for (output) |byte| {
+            hash = (hash << 8) | byte;
+        }
         try testing.expect(hash != 0);
     }
 }
@@ -258,8 +331,13 @@ test "E2E: Nested structures - arrays of mappings simulation" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Simplified nested structure simulation - avoid complex memory operations
     const nested_test_bytecode = [_]u8{
@@ -291,20 +369,33 @@ test "E2E: Nested structures - arrays of mappings simulation" {
         0xF3,       // RETURN
     };
     
-    const nested_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create a contract at the specified address
+    var contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        300_000, // gas
         &nested_test_bytecode,
-        CONTRACT_ADDRESS,
-        300_000,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &nested_test_bytecode);
+    
+    // Execute the contract
+    const nested_result = try evm.interpret(&contract, &[_]u8{});
     defer if (nested_result.output) |output| allocator.free(output);
     
     try testing.expect(nested_result.status == .Success);
     if (nested_result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Should return the stored value (500)
-        const value = test_helpers.bytesToU256(output);
+        var value: u256 = 0;
+        for (output) |byte| {
+            value = (value << 8) | byte;
+        }
         try testing.expectEqual(@as(u256, 500), value);
     }
 }
@@ -320,8 +411,13 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
     }
     const allocator = gpa.allocator();
     
-    var test_vm = try test_helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create memory database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
     
     // Compare gas costs of memory vs storage operations
     const initial_gas: u64 = 100_000;
@@ -348,13 +444,23 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
         0x60, 0x00, 0x60, 0x20, 0xF3, // RETURN
     };
     
-    const memory_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create contract for memory operations
+    var memory_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        initial_gas, // gas
         &memory_ops_bytecode,
-        CONTRACT_ADDRESS,
-        initial_gas,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer memory_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &memory_ops_bytecode);
+    
+    // Execute the memory operations contract
+    const memory_result = try evm.interpret(&memory_contract, &[_]u8{});
     defer if (memory_result.output) |output| allocator.free(output);
     
     try testing.expect(memory_result.status == .Success);
@@ -382,13 +488,23 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
         0x60, 0x00, 0x60, 0x20, 0xF3, // RETURN
     };
     
-    const storage_result = test_helpers.runBytecode(
-        test_vm.evm,
+    // Create new contract for storage operations
+    var storage_contract = Contract.init_at_address(
+        CONTRACT_ADDRESS, // caller
+        CONTRACT_ADDRESS, // address where code executes
+        0, // value
+        initial_gas, // gas
         &storage_ops_bytecode,
-        CONTRACT_ADDRESS,
-        initial_gas,
-        null,
-    ) catch unreachable;
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer storage_contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(CONTRACT_ADDRESS, &storage_ops_bytecode);
+    
+    // Execute the storage operations contract
+    const storage_result = try evm.interpret(&storage_contract, &[_]u8{});
     defer if (storage_result.output) |output| allocator.free(output);
     
     try testing.expect(storage_result.status == .Success);
@@ -396,12 +512,18 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
     
     // Verify both return the same result (sum = 1+2+3+4 = 10)
     if (memory_result.output) |output| {
-        const memory_sum = test_helpers.bytesToU256(output);
+        var memory_sum: u256 = 0;
+        for (output) |byte| {
+            memory_sum = (memory_sum << 8) | byte;
+        }
         try testing.expectEqual(@as(u256, 10), memory_sum);
     }
     
     if (storage_result.output) |output| {
-        const storage_sum = test_helpers.bytesToU256(output);
+        var storage_sum: u256 = 0;
+        for (output) |byte| {
+            storage_sum = (storage_sum << 8) | byte;
+        }
         try testing.expectEqual(@as(u256, 10), storage_sum);
     }
     

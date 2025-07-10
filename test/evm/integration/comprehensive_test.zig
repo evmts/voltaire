@@ -1,71 +1,114 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers");
 const Evm = @import("evm");
 const opcodes = Evm.opcodes;
+const MemoryDatabase = Evm.MemoryDatabase;
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const Address = Evm.Address;
+const Operation = Evm.Operation;
+const ExecutionError = Evm.ExecutionError;
 
 // Comprehensive integration tests combining multiple opcode categories
 
 test "Integration: Complete ERC20 transfer simulation" {
     const allocator = testing.allocator;
 
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
 
     // Set up accounts
     const alice_balance: u256 = 1000;
     const bob_balance: u256 = 500;
+    
+    // Create addresses
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_address = Address.from_u256(0x2222222222222222222222222222222222222222);
 
     // Storage slots for balances (slot 0 for Alice, slot 1 for Bob)
-    try test_vm.setStorage(helpers.TestAddresses.CONTRACT, 0, alice_balance);
-    try test_vm.setStorage(helpers.TestAddresses.CONTRACT, 1, bob_balance);
+    try vm.setStorage(contract_address, 0, alice_balance);
+    try vm.setStorage(contract_address, 1, bob_balance);
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE, // Alice is calling
+    // Calculate code hash for empty code
+    var code_hash: [32]u8 = [_]u8{0} ** 32;
+    
+    var contract = Contract.init(
+        alice_address, // Alice is calling
+        contract_address,
         0,
+        1_000_000,
         &[_]u8{},
+        code_hash,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 100000;
+    frame.memory.finalize_root();
 
     // Transfer amount
     const transfer_amount: u256 = 100;
 
     // 1. Load Alice's balance
-    try test_frame.pushStack(&[_]u256{0}); // Alice's slot
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    const alice_initial = try test_frame.popStack();
+    try frame.stack.append(0); // Alice's slot
+    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr1: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0x54);
+    const alice_initial = try frame.stack.pop();
     try testing.expectEqual(alice_balance, alice_initial);
 
     // 2. Check if Alice has enough balance
-    try test_frame.pushStack(&[_]u256{ alice_initial, transfer_amount });
-    _ = try helpers.executeOpcode(0x10, test_vm.evm, test_frame.frame);
-    const insufficient = try test_frame.popStack();
+    try frame.stack.append(transfer_amount); // b
+    try frame.stack.append(alice_initial);   // a
+    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr2: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0x10);
+    const insufficient = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), insufficient); // Should be false (sufficient balance)
 
     // 3. Calculate new balances
-    try test_frame.pushStack(&[_]u256{ alice_initial, transfer_amount });
-    _ = try helpers.executeOpcode(0x03, test_vm.evm, test_frame.frame);
-    const alice_new = try test_frame.popStack();
+    try frame.stack.append(transfer_amount); // b
+    try frame.stack.append(alice_initial);   // a
+    const interpreter_ptr3: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr3: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr3, state_ptr3, 0x03);
+    const alice_new = try frame.stack.pop();
 
-    try test_frame.pushStack(&[_]u256{1}); // Bob's slot
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    const bob_initial = try test_frame.popStack();
+    try frame.stack.append(1); // Bob's slot
+    const interpreter_ptr4: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr4: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr4, state_ptr4, 0x54);
+    const bob_initial = try frame.stack.pop();
 
-    try test_frame.pushStack(&[_]u256{ bob_initial, transfer_amount });
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame);
-    const bob_new = try test_frame.popStack();
+    try frame.stack.append(transfer_amount); // b
+    try frame.stack.append(bob_initial);     // a
+    const interpreter_ptr5: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr5: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr5, state_ptr5, 0x01);
+    const bob_new = try frame.stack.pop();
 
     // 4. Update storage
-    try test_frame.pushStack(&[_]u256{ alice_new, 0 }); // value, slot
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+    try frame.stack.append(0);         // slot
+    try frame.stack.append(alice_new); // value
+    const interpreter_ptr6: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr6: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr6, state_ptr6, 0x55);
 
-    try test_frame.pushStack(&[_]u256{ bob_new, 1 }); // value, slot
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+    try frame.stack.append(1);       // slot
+    try frame.stack.append(bob_new); // value
+    const interpreter_ptr7: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr7: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr7, state_ptr7, 0x55);
 
     // 5. Emit Transfer event
     const transfer_sig: u256 = 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef;
@@ -73,20 +116,22 @@ test "Integration: Complete ERC20 transfer simulation" {
     // Store transfer amount in memory for event data
     var amount_bytes: [32]u8 = undefined;
     std.mem.writeInt(u256, &amount_bytes, transfer_amount, .big);
-    try test_frame.setMemory(0, &amount_bytes);
+    try frame.memory.set_data(0, &amount_bytes);
 
-    try test_frame.pushStack(&[_]u256{
-        helpers.toU256(helpers.TestAddresses.BOB), // to (indexed)
-        helpers.toU256(helpers.TestAddresses.ALICE), // from (indexed)
-        transfer_sig, // event signature
-        32, // data size
-        0, // data offset
-    });
-    _ = try helpers.executeOpcode(0xA3, test_vm.evm, test_frame.frame);
+    // Push values in reverse order for LOG3
+    try frame.stack.append(0);                             // data offset
+    try frame.stack.append(32);                            // data size
+    try frame.stack.append(transfer_sig);                  // event signature
+    try frame.stack.append(Address.to_u256(alice_address)); // from (indexed)
+    try frame.stack.append(Address.to_u256(bob_address));   // to (indexed)
+    
+    const interpreter_ptr8: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr8: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr8, state_ptr8, 0xA3);
 
     // 6. Verify final balances
-    const alice_final = try test_vm.getStorage(helpers.TestAddresses.CONTRACT, 0);
-    const bob_final = try test_vm.getStorage(helpers.TestAddresses.CONTRACT, 1);
+    const alice_final = try vm.getStorage(contract_address, 0);
+    const bob_final = try vm.getStorage(contract_address, 1);
 
     try testing.expectEqual(@as(u256, 900), alice_final);
     try testing.expectEqual(@as(u256, 600), bob_final);
@@ -95,20 +140,39 @@ test "Integration: Complete ERC20 transfer simulation" {
 test "Integration: Smart contract deployment flow" {
     const allocator = testing.allocator;
 
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
 
-    var deployer_contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
+
+    // Create addresses
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_address = Address.from_u256(0x2222222222222222222222222222222222222222);
+    
+    // Calculate code hash for empty code
+    var code_hash: [32]u8 = [_]u8{0} ** 32;
+    
+    var deployer_contract = Contract.init(
+        alice_address,
+        contract_address,
         10000, // Deployer has funds
+        1_000_000,
         &[_]u8{},
+        code_hash,
+        &[_]u8{},
+        false,
     );
     defer deployer_contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &deployer_contract, 200000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &deployer_contract);
+    defer frame.deinit();
+    frame.gas_remaining = 200000;
+    frame.memory.finalize_root();
 
     // Build constructor arguments
     const initial_supply: u256 = 1_000_000;
@@ -145,53 +209,61 @@ test "Integration: Smart contract deployment flow" {
     };
 
     // Copy constructor code to memory
-    var i: usize = 0;
-    while (i < constructor_code.len) : (i += 1) {
-        try test_frame.setMemory(i, &[_]u8{constructor_code[i]});
-    }
+    try frame.memory.set_data(0, &constructor_code);
 
     // Mock successful deployment
-    test_vm.evm.create_result = .{
+    vm.create_result = .{
         .success = true,
-        .address = helpers.TestAddresses.BOB,
+        .address = bob_address,
         .gas_left = 150000,
         .output = &[_]u8{0x00}, // Runtime code
     };
 
     // Deploy contract
-    try test_frame.pushStack(&[_]u256{
-        constructor_code.len, // size
-        0, // offset
-        0, // value
-    });
+    try frame.stack.append(0);                   // offset
+    try frame.stack.append(constructor_code.len); // size
+    try frame.stack.append(0);                   // value
 
-    _ = try helpers.executeOpcode(0xF0, test_vm.evm, test_frame.frame);
+    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr1: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0xF0);
 
-    const deployed_address = try test_frame.popStack();
-    try testing.expectEqual(helpers.toU256(helpers.TestAddresses.BOB), deployed_address);
+    const deployed_address = try frame.stack.pop();
+    try testing.expectEqual(Address.to_u256(bob_address), deployed_address);
 
     // Verify deployment by calling the contract
-    test_frame.frame.stack.clear();
-    test_vm.evm.call_result = .{
+    frame.stack.clear();
+    vm.call_result = .{
         .success = true,
         .gas_left = 90000,
         .output = null,
     };
 
-    try test_frame.pushStack(&[_]u256{
-        0,                0,     0, 0, 0,
-        deployed_address, 50000,
-    });
+    try frame.stack.append(50000);          // gas
+    try frame.stack.append(deployed_address); // to
+    try frame.stack.append(0);              // value
+    try frame.stack.append(0);              // args_offset
+    try frame.stack.append(0);              // args_size
+    try frame.stack.append(0);              // ret_offset
+    try frame.stack.append(0);              // ret_size
 
-    _ = try helpers.executeOpcode(0xF1, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 1); // Success
+    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr2: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0xF1);
+    const success = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 1), success); // Success
 }
 
 test "Integration: Complex control flow with nested conditions" {
     const allocator = testing.allocator;
 
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
 
     // Contract that implements:
     // if (value >= 100) {
@@ -244,221 +316,335 @@ test "Integration: Complex control flow with nested conditions" {
         0x00, // STOP
     };
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    // Create addresses
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    
+    // Calculate code hash
+    var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
+    hasher.update(&code);
+    var code_hash: [32]u8 = undefined;
+    hasher.final(&code_hash);
+
+    var contract = Contract.init(
+        alice_address,
+        contract_address,
         0,
+        1_000_000,
         &code,
+        code_hash,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
 
     // Execute the contract logic step by step
     // We'll test with value = 150, which should result in 300 (150 * 2)
 
     // Push 150
-    _ = try helpers.executeOpcodeAt(0x60, 0, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 2;
+    frame.pc = 0;
+    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr1: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr1, state_ptr1, 0x60);
+    frame.pc = 2;
 
     // DUP1
-    _ = try helpers.executeOpcode(0x80, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 3;
+    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr2: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr2, state_ptr2, 0x80);
+    frame.pc = 3;
 
     // Push 100
-    _ = try helpers.executeOpcodeAt(0x60, 3, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 5;
+    frame.pc = 3;
+    const interpreter_ptr3: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr3: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr3, state_ptr3, 0x60);
+    frame.pc = 5;
 
     // LT
-    _ = try helpers.executeOpcode(0x10, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 6;
+    const interpreter_ptr4: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr4: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr4, state_ptr4, 0x10);
+    frame.pc = 6;
 
     // ISZERO
-    _ = try helpers.executeOpcode(0x15, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 7;
+    const interpreter_ptr5: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr5: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr5, state_ptr5, 0x15);
+    frame.pc = 7;
 
     // Push jump destination
-    _ = try helpers.executeOpcodeAt(0x60, 7, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 9;
+    frame.pc = 7;
+    const interpreter_ptr6: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr6: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr6, state_ptr6, 0x60);
+    frame.pc = 9;
 
     // JUMPI (should jump to 14)
-    _ = try helpers.executeOpcode(0x57, test_vm.evm, test_frame.frame);
-    try testing.expectEqual(@as(usize, 14), test_frame.frame.pc);
+    const interpreter_ptr7: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr7: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr7, state_ptr7, 0x57);
+    try testing.expectEqual(@as(usize, 14), frame.pc);
 
     // Continue execution from JUMPDEST at 14
-    test_frame.frame.pc = 15; // Skip JUMPDEST
+    frame.pc = 15; // Skip JUMPDEST
 
     // DUP1
-    _ = try helpers.executeOpcode(0x80, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 16;
+    const interpreter_ptr8: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr8: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr8, state_ptr8, 0x80);
+    frame.pc = 16;
 
     // Push 200
-    _ = try helpers.executeOpcodeAt(0x60, 16, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 18;
+    frame.pc = 16;
+    const interpreter_ptr9: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr9: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr9, state_ptr9, 0x60);
+    frame.pc = 18;
 
     // GT
-    _ = try helpers.executeOpcode(0x11, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0); // 150 > 200 is false
-    test_frame.frame.pc = 19;
+    const interpreter_ptr10: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr10: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr10, state_ptr10, 0x11);
+    const gt_result = frame.stack.peek_n(0) catch unreachable;
+    try testing.expectEqual(@as(u256, 0), gt_result); // 150 > 200 is false
+    frame.pc = 19;
 
     // Push jump destination
-    _ = try helpers.executeOpcodeAt(0x60, 19, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 21;
+    frame.pc = 19;
+    const interpreter_ptr11: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr11: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr11, state_ptr11, 0x60);
+    frame.pc = 21;
 
     // JUMPI (should not jump)
-    _ = try helpers.executeOpcode(0x57, test_vm.evm, test_frame.frame);
-    try testing.expectEqual(@as(usize, 21), test_frame.frame.pc); // No jump
+    const interpreter_ptr12: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr12: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr12, state_ptr12, 0x57);
+    try testing.expectEqual(@as(usize, 21), frame.pc); // No jump
 
     // Continue with multiplication
-    test_frame.frame.pc = 22;
+    frame.pc = 22;
 
     // Push 2
-    _ = try helpers.executeOpcodeAt(0x60, 22, test_vm.evm, test_frame.frame);
-    test_frame.frame.pc = 24;
+    frame.pc = 22;
+    const interpreter_ptr13: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr13: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr13, state_ptr13, 0x60);
+    frame.pc = 24;
 
     // MUL
-    _ = try helpers.executeOpcode(0x02, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 300); // 150 * 2
+    const interpreter_ptr14: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr14: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr14, state_ptr14, 0x02);
+    const mul_result = frame.stack.peek_n(0) catch unreachable;
+    try testing.expectEqual(@as(u256, 300), mul_result); // 150 * 2
 
     // Store result
-    test_frame.frame.pc = 25;
-    try test_frame.pushStack(&[_]u256{0}); // offset
-    _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
+    frame.pc = 25;
+    try frame.stack.append(0); // offset
+    const interpreter_ptr15: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr15: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr15, state_ptr15, 0x52);
 
     // Verify result in memory
-    try test_frame.pushStack(&[_]u256{0});
-    _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 300);
+    try frame.stack.append(0);
+    const interpreter_ptr16: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr16: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(frame.pc, interpreter_ptr16, state_ptr16, 0x51);
+    const memory_result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 300), memory_result);
 }
 
 test "Integration: Gas metering across operations" {
     const allocator = testing.allocator;
 
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
+
+    // Create addresses
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const charlie_address = Address.from_u256(0x4444444444444444444444444444444444444444);
+    
+    // Calculate code hash for empty code
+    var code_hash: [32]u8 = [_]u8{0} ** 32;
+    
+    var contract = Contract.init(
+        alice_address,
+        contract_address,
         0,
+        1_000_000,
         &[_]u8{},
+        code_hash,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 100000;
+    frame.memory.finalize_root();
 
-    const initial_gas = test_frame.frame.gas_remaining;
+    const initial_gas = frame.gas_remaining;
     var total_gas_used: u64 = 0;
 
     // 1. Arithmetic operations
-    try test_frame.pushStack(&[_]u256{ 10, 20 });
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame);
-    total_gas_used += initial_gas - test_frame.frame.gas_remaining;
+    try frame.stack.append(20); // b
+    try frame.stack.append(10); // a
+    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr1: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0x01);
+    total_gas_used += initial_gas - frame.gas_remaining;
 
     // 2. Memory operation
-    try test_frame.pushStack(&[_]u256{0}); // offset
-    const gas_before_mstore = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
-    const mstore_gas = gas_before_mstore - test_frame.frame.gas_remaining;
+    try frame.stack.append(0); // offset
+    const gas_before_mstore = frame.gas_remaining;
+    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr2: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0x52);
+    const mstore_gas = gas_before_mstore - frame.gas_remaining;
     total_gas_used += mstore_gas;
     try testing.expect(mstore_gas > 3); // Should include memory expansion
 
     // 3. Storage operation (cold)
     const slot: u256 = 999;
-    try test_frame.pushStack(&[_]u256{slot});
-    const gas_before_sload = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    const sload_gas = gas_before_sload - test_frame.frame.gas_remaining;
+    try frame.stack.append(slot);
+    const gas_before_sload = frame.gas_remaining;
+    const interpreter_ptr3: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr3: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr3, state_ptr3, 0x54);
+    const sload_gas = gas_before_sload - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 2100), sload_gas); // Cold access
     total_gas_used += sload_gas;
 
     // 4. SHA3 with data
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{ 0, 32 }); // offset, size
-    const gas_before_sha3 = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x20, test_vm.evm, test_frame.frame);
-    const sha3_gas = gas_before_sha3 - test_frame.frame.gas_remaining;
+    frame.stack.clear();
+    try frame.stack.append(0);  // offset
+    try frame.stack.append(32); // size
+    const gas_before_sha3 = frame.gas_remaining;
+    const interpreter_ptr4: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr4: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr4, state_ptr4, 0x20);
+    const sha3_gas = gas_before_sha3 - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 30 + 6), sha3_gas); // Base + 1 word
     total_gas_used += sha3_gas;
 
     // 5. Environment operation (cold address)
-    test_frame.frame.stack.clear();
-    const cold_address = helpers.toU256(helpers.TestAddresses.CHARLIE);
-    try test_frame.pushStack(&[_]u256{cold_address});
-    const gas_before_balance = test_frame.frame.gas_remaining;
-    _ = try helpers.executeOpcode(0x31, test_vm.evm, test_frame.frame);
-    const balance_gas = gas_before_balance - test_frame.frame.gas_remaining;
+    frame.stack.clear();
+    const cold_address = Address.to_u256(charlie_address);
+    try frame.stack.append(cold_address);
+    const gas_before_balance = frame.gas_remaining;
+    const interpreter_ptr5: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr5: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr5, state_ptr5, 0x31);
+    const balance_gas = gas_before_balance - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 2600), balance_gas); // Cold address
     total_gas_used += balance_gas;
 
     // Verify total gas consumption
-    try testing.expectEqual(total_gas_used, initial_gas - test_frame.frame.gas_remaining);
+    try testing.expectEqual(total_gas_used, initial_gas - frame.gas_remaining);
 }
 
 test "Integration: Error propagation and recovery" {
     const allocator = testing.allocator;
 
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Create database and EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
 
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
+    const db_interface = memory_db.to_database_interface();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
+
+    // Create addresses
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    
+    // Calculate code hash for empty code
+    var code_hash: [32]u8 = [_]u8{0} ** 32;
+    
+    var contract = Contract.init(
+        alice_address,
+        contract_address,
         1000,
+        1_000_000,
         &[_]u8{},
+        code_hash,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
 
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
 
     // Test 1: Stack underflow recovery
-    const div_result = opcodes.arithmetic.op_div(0, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.StackUnderflow, div_result);
+    const div_result = opcodes.arithmetic.op_div(0, &vm, &frame);
+    try testing.expectError(ExecutionError.Error.StackUnderflow, div_result);
 
     // Stack should still be usable
-    try test_frame.pushStack(&[_]u256{ 10, 5 });
-    _ = try helpers.executeOpcode(0x04, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 2);
+    try frame.stack.append(5);  // b
+    try frame.stack.append(10); // a
+    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr1: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0x04);
+    const div_value = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 2), div_value);
 
     // Test 2: Out of gas recovery
-    test_frame.frame.stack.clear();
-    test_frame.frame.gas_remaining = 50; // Very low gas
+    frame.stack.clear();
+    frame.gas_remaining = 50; // Very low gas
 
     // Try expensive operation
-    try test_frame.pushStack(&[_]u256{999}); // Cold storage slot
-    const sload_result = opcodes.storage.op_sload(0, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.OutOfGas, sload_result);
+    try frame.stack.append(999); // Cold storage slot
+    const sload_result = opcodes.storage.op_sload(0, &vm, &frame);
+    try testing.expectError(ExecutionError.Error.OutOfGas, sload_result);
 
     // Test 3: Invalid jump recovery
-    test_frame.frame.stack.clear();
-    test_frame.frame.gas_remaining = 10000; // Reset gas
+    frame.stack.clear();
+    frame.gas_remaining = 10000; // Reset gas
 
-    try test_frame.pushStack(&[_]u256{999}); // Invalid jump destination
-    const jump_result = opcodes.control.op_jump(0, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.InvalidJump, jump_result);
+    try frame.stack.append(999); // Invalid jump destination
+    const jump_result = opcodes.control.op_jump(0, &vm, &frame);
+    try testing.expectError(ExecutionError.Error.InvalidJump, jump_result);
 
     // Test 4: Write protection in static context
-    test_frame.frame.stack.clear();
-    test_frame.frame.is_static = true;
+    frame.stack.clear();
+    frame.is_static = true;
 
-    try test_frame.pushStack(&[_]u256{ 42, 0 }); // value, slot
-    const sstore_result = opcodes.storage.op_sstore(0, test_vm.evm, test_frame.frame);
-    try testing.expectError(helpers.ExecutionError.Error.WriteProtection, sstore_result);
+    try frame.stack.append(0);  // slot
+    try frame.stack.append(42); // value
+    const sstore_result = opcodes.storage.op_sstore(0, &vm, &frame);
+    try testing.expectError(ExecutionError.Error.WriteProtection, sstore_result);
 
     // Reset static flag and verify normal operation works
-    test_frame.frame.is_static = false;
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{ 42, 0 });
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+    frame.is_static = false;
+    frame.stack.clear();
+    try frame.stack.append(0);  // slot
+    try frame.stack.append(42); // value
+    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr2: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0x55);
 
     // Verify storage was updated
-    const storage_key = helpers.Evm.StorageKey{ .address = helpers.TestAddresses.CONTRACT, .slot = 0 };
-    const stored_value = test_vm.evm.storage.get(storage_key) orelse 0;
+    const storage_key = Evm.Evm.StorageKey{ .address = contract_address, .slot = 0 };
+    const stored_value = vm.storage.get(storage_key) orelse 0;
     try testing.expectEqual(@as(u256, 42), stored_value);
 }

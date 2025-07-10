@@ -1,223 +1,339 @@
 const std = @import("std");
 const testing = std.testing;
-const helpers = @import("test_helpers");
 const Evm = @import("evm");
-const opcodes = Evm.opcodes;
+const Address = @import("Address");
+const MemoryDatabase = Evm.MemoryDatabase;
+const Frame = Evm.Frame;
+const Contract = Evm.Contract;
+const Operation = Evm.Operation;
+// Using raw opcode values directly
 
 // Integration tests for memory and storage operations
 
 test "Integration: Memory operations with arithmetic" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Initialize database and EVM
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
-        0,
-        &[_]u8{},
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create contract
+    const zero_address = Address.zero();
+    
+    var contract = Contract.init(
+        zero_address, // caller
+        zero_address, // addr
+        0, // value
+        0, // gas
+        &[_]u8{}, // code
+        [_]u8{0} ** 32, // code_hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    defer frame.deinit();
     
     // Store result of arithmetic operation in memory
     // Calculate 10 + 20 = 30, store at offset 0
-    try test_frame.pushStack(&[_]u256{10, 20});
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame);
+    try frame.stack.append(10);
+    try frame.stack.append(20);
+    
+    // Execute ADD opcode
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(&frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
     
     // Store result in memory
-    try test_frame.pushStack(&[_]u256{0}); // offset
-    _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
+    try frame.stack.append(0); // offset
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
     
     // Load from memory and verify
-    try test_frame.pushStack(&[_]u256{0}); // offset
-    _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 30);
+    try frame.stack.append(0); // offset
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
+    
+    const loaded_value = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 30), loaded_value);
     
     // Check memory size
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 32); // Should be 32 bytes
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    const memory_size = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 32), memory_size);
 }
 
 test "Integration: Storage with conditional updates" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Initialize database and EVM
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
-        0,
-        &[_]u8{},
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create contract
+    const zero_address = Address.zero();
+    
+    var contract = Contract.init(
+        zero_address, // caller
+        zero_address, // addr
+        0, // value
+        0, // gas
+        &[_]u8{}, // code
+        [_]u8{0} ** 32, // code_hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    defer frame.deinit();
     
     // Set initial storage value
     const slot: u256 = 42;
     const initial_value: u256 = 100;
-    const storage_key = helpers.StorageKey{ .address = helpers.TestAddresses.CONTRACT, .slot = slot };
-    try test_vm.evm.state.set_storage(storage_key.address, storage_key.slot, initial_value);
+    try evm.state.set_storage(zero_address, slot, initial_value);
     
     // Load value, add 50, store back if result > 120
-    try test_frame.pushStack(&[_]u256{slot});
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, initial_value);
+    try frame.stack.append(slot);
+    
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(&frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    
+    const loaded_value = try frame.stack.pop();
+    try testing.expectEqual(initial_value, loaded_value);
     
     // Add 50
-    try test_frame.pushStack(&[_]u256{50});
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 150);
+    try frame.stack.append(loaded_value);
+    try frame.stack.append(50);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
+    
+    const sum = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 150), sum);
     
     // Duplicate for comparison
-    _ = try helpers.executeOpcode(0x80, test_vm.evm, test_frame.frame);
+    try frame.stack.append(sum);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x80);
     
     // Compare with 120
-    try test_frame.pushStack(&[_]u256{120});
-    _ = try helpers.executeOpcode(0x11, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 1); // 150 > 120 is true
+    try frame.stack.append(120);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x11);
+    
+    const comparison_result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 1), comparison_result);
     
     // Since condition is true, store the value
-    // Stack: [150, 1] - need to remove condition and keep value
-    _ = try helpers.executeOpcode(0x50, test_vm.evm, test_frame.frame);
-    
-    // Store value
-    try test_frame.pushStack(&[_]u256{slot});
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+    // Stack has the value (150), need to store it
+    try frame.stack.append(slot);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
     
     // Verify storage was updated
-    const updated_value = test_vm.evm.state.get_storage(storage_key.address, storage_key.slot);
+    const updated_value = evm.state.get_storage(zero_address, slot);
     try testing.expectEqual(@as(u256, 150), updated_value);
 }
 
 test "Integration: Memory copy operations" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Initialize database and EVM
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
-        0,
-        &[_]u8{},
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create contract
+    const zero_address = Address.zero();
+    
+    var contract = Contract.init(
+        zero_address, // caller
+        zero_address, // addr
+        0, // value
+        0, // gas
+        &[_]u8{}, // code
+        [_]u8{0} ** 32, // code_hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    defer frame.deinit();
+    
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(&frame);
     
     // Store some data in memory
     const data1: u256 = 0xDEADBEEF;
     const data2: u256 = 0xCAFEBABE;
     
-    try test_frame.pushStack(&[_]u256{data1, 0}); // value, offset
-    _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
+    try frame.stack.append(data1);
+    try frame.stack.append(0); // offset
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
     
-    try test_frame.pushStack(&[_]u256{data2, 32}); // value, offset
-    _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
+    try frame.stack.append(data2);
+    try frame.stack.append(32); // offset
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
     
     // Copy 32 bytes from offset 0 to offset 64
-    try test_frame.pushStack(&[_]u256{64, 0, 32}); // dst, src, size
-    _ = try helpers.executeOpcode(0x5E, test_vm.evm, test_frame.frame);
+    try frame.stack.append(64); // dst
+    try frame.stack.append(0); // src
+    try frame.stack.append(32); // size
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
     
     // Verify copy
-    try test_frame.pushStack(&[_]u256{64}); // offset
-    _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, data1);
+    try frame.stack.append(64); // offset
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
+    
+    const copied_value = try frame.stack.pop();
+    try testing.expectEqual(data1, copied_value);
     
     // Check memory size expanded
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 96); // Should be 96 bytes
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    
+    const memory_size = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 96), memory_size);
 }
 
 test "Integration: Transient storage with arithmetic" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Initialize database and EVM
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
-        0,
-        &[_]u8{},
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create contract
+    const zero_address = Address.zero();
+    
+    var contract = Contract.init(
+        zero_address, // caller
+        zero_address, // addr
+        0, // value
+        0, // gas
+        &[_]u8{}, // code
+        [_]u8{0} ** 32, // code_hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    defer frame.deinit();
+    
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(&frame);
     
     const slot: u256 = 123;
     
     // Store initial value in transient storage
-    try test_frame.pushStack(&[_]u256{1000, slot});
-    _ = try helpers.executeOpcode(0x5D, test_vm.evm, test_frame.frame);
+    try frame.stack.append(1000);
+    try frame.stack.append(slot);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5D);
     
     // Load, double it, store back
-    try test_frame.pushStack(&[_]u256{slot});
-    _ = try helpers.executeOpcode(0x5C, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 1000);
+    try frame.stack.append(slot);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5C);
+    
+    const loaded_value = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 1000), loaded_value);
     
     // Double the value
-    _ = try helpers.executeOpcode(0x80, test_vm.evm, test_frame.frame);
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 2000);
+    try frame.stack.append(loaded_value);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x80);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
+    
+    const doubled = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 2000), doubled);
     
     // Store back
-    try test_frame.pushStack(&[_]u256{slot});
-    _ = try helpers.executeOpcode(0x5D, test_vm.evm, test_frame.frame);
+    try frame.stack.append(doubled);
+    try frame.stack.append(slot);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5D);
     
     // Verify
-    try test_frame.pushStack(&[_]u256{slot});
-    _ = try helpers.executeOpcode(0x5C, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 2000);
+    try frame.stack.append(slot);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5C);
+    
+    const final_value = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 2000), final_value);
 }
 
 test "Integration: MSTORE8 with bitwise operations" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Initialize database and EVM
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
-        0,
-        &[_]u8{},
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create contract
+    const zero_address = Address.zero();
+    
+    var contract = Contract.init(
+        zero_address, // caller
+        zero_address, // addr
+        0, // value
+        0, // gas
+        &[_]u8{}, // code
+        [_]u8{0} ** 32, // code_hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    defer frame.deinit();
+    
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(&frame);
     
     // Store individual bytes to build a word
     var offset: u256 = 0;
     const bytes = [_]u8{0xDE, 0xAD, 0xBE, 0xEF};
     
     for (bytes) |byte| {
-        try test_frame.pushStack(&[_]u256{byte, offset});
-        _ = try helpers.executeOpcode(0x53, test_vm.evm, test_frame.frame);
+        try frame.stack.append(byte);
+        try frame.stack.append(offset);
+        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x53);
         offset += 1;
     }
     
     // Load the full word
-    try test_frame.pushStack(&[_]u256{0});
-    _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
+    try frame.stack.append(0);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
     
     // The result should be 0xDEADBEEF0000...
-    const result = try test_frame.popStack();
+    const result = try frame.stack.pop();
     const expected = @as(u256, 0xDEADBEEF) << (28 * 8); // Shift to most significant bytes
     try testing.expectEqual(expected, result);
 }
@@ -225,20 +341,37 @@ test "Integration: MSTORE8 with bitwise operations" {
 test "Integration: Storage slot calculation" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Initialize database and EVM
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
-        0,
-        &[_]u8{},
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create contract
+    const zero_address = Address.zero();
+    
+    var contract = Contract.init(
+        zero_address, // caller
+        zero_address, // addr
+        0, // value
+        0, // gas
+        &[_]u8{}, // code
+        [_]u8{0} ** 32, // code_hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 30000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    frame.gas_remaining = 30000;
+    frame.memory.finalize_root();
+    defer frame.deinit();
+    
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(&frame);
     
     // Simulate array access: array[index] where base slot = 5
     const base_slot: u256 = 5;
@@ -246,112 +379,157 @@ test "Integration: Storage slot calculation" {
     
     // Calculate slot: keccak256(base_slot) + index
     // For this test, we'll use a simpler calculation: base_slot * 1000 + index
-    try test_frame.pushStack(&[_]u256{base_slot, 1000});
-    _ = try helpers.executeOpcode(0x02, test_vm.evm, test_frame.frame);
+    try frame.stack.append(base_slot);
+    try frame.stack.append(1000);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x02);
     
-    try test_frame.pushStack(&[_]u256{index});
-    _ = try helpers.executeOpcode(0x01, test_vm.evm, test_frame.frame);
+    try frame.stack.append(index);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
     
-    const calculated_slot = try test_frame.popStack();
+    const calculated_slot = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 5003), calculated_slot);
     
     // Store value at calculated slot
     const value: u256 = 999;
-    try test_frame.pushStack(&[_]u256{value, calculated_slot});
-    _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+    try frame.stack.append(value);
+    try frame.stack.append(calculated_slot);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
     
     // Load and verify
-    try test_frame.pushStack(&[_]u256{calculated_slot});
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, value);
+    try frame.stack.append(calculated_slot);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    
+    const loaded_value = try frame.stack.pop();
+    try testing.expectEqual(value, loaded_value);
 }
 
 // WORKING ON THIS: Fixing memory expansion tracking expectations
 test "Integration: Memory expansion tracking" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Initialize database and EVM
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
-        0,
-        &[_]u8{},
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create contract
+    const zero_address = Address.zero();
+    
+    var contract = Contract.init(
+        zero_address, // caller
+        zero_address, // addr
+        0, // value
+        0, // gas
+        &[_]u8{}, // code
+        [_]u8{0} ** 32, // code_hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    defer frame.deinit();
+    
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(&frame);
     
     // Track memory size as we expand
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 0); // Initially 0
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    const initial_size = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), initial_size);
     
     // Store at offset 0
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{42, 0});
-    _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
+    frame.stack.clear();
+    try frame.stack.append(42);
+    try frame.stack.append(0);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
     
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
-    try helpers.expectStackValue(test_frame.frame, 0, 32); // Expanded to 32
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    const size_after_first = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 32), size_after_first);
     
     // Store at offset 100 (forces expansion)
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{99, 100});
-    _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
+    frame.stack.clear();
+    try frame.stack.append(99);
+    try frame.stack.append(100);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
     
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    const size_after_second = try frame.stack.pop();
     // Memory expands in 32-byte words. Offset 100 + 32 bytes = 132 bytes needed
     // 132 bytes = 4.125 words, rounds up to 5 words = 160 bytes
-    try helpers.expectStackValue(test_frame.frame, 0, 160);
+    try testing.expectEqual(@as(u256, 160), size_after_second);
     
     // Store single byte at offset 200
-    test_frame.frame.stack.clear();
-    try test_frame.pushStack(&[_]u256{0xFF, 200});
-    _ = try helpers.executeOpcode(0x53, test_vm.evm, test_frame.frame);
+    frame.stack.clear();
+    try frame.stack.append(0xFF);
+    try frame.stack.append(200);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x53);
     
-    _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
+    const size_after_third = try frame.stack.pop();
     // MSTORE8 at offset 200 needs byte 200, which requires 201 bytes
     // 201 bytes = 6.28125 words, rounds up to 7 words = 224 bytes
-    try helpers.expectStackValue(test_frame.frame, 0, 224); // Memory expands to 7 words (224 bytes)
+    try testing.expectEqual(@as(u256, 224), size_after_third);
 }
 
 test "Integration: Cold/warm storage access patterns" {
     const allocator = testing.allocator;
     
-    var test_vm = try helpers.TestVm.init(allocator);
-    defer test_vm.deinit(allocator);
+    // Initialize database and EVM
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    var contract = try helpers.createTestContract(
-        allocator,
-        helpers.TestAddresses.CONTRACT,
-        helpers.TestAddresses.ALICE,
-        0,
-        &[_]u8{},
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
+    
+    // Create contract
+    const zero_address = Address.zero();
+    
+    var contract = Contract.init(
+        zero_address, // caller
+        zero_address, // addr
+        0, // value
+        0, // gas
+        &[_]u8{}, // code
+        [_]u8{0} ** 32, // code_hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
     
-    var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
-    defer test_frame.deinit();
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    defer frame.deinit();
+    
+    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
+    const state_ptr: *Operation.State = @ptrCast(&frame);
     
     const slot: u256 = 777;
     
     // First access - cold (should cost 2100 gas)
-    const gas_before_cold = test_frame.frame.gas_remaining;
-    try test_frame.pushStack(&[_]u256{slot});
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    const gas_after_cold = test_frame.frame.gas_remaining;
+    const gas_before_cold = frame.gas_remaining;
+    try frame.stack.append(slot);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    const gas_after_cold = frame.gas_remaining;
     const cold_gas_used = gas_before_cold - gas_after_cold;
     try testing.expectEqual(@as(u64, 2100), cold_gas_used);
     
     // Second access - warm (should cost 100 gas)
-    test_frame.frame.stack.clear();
-    const gas_before_warm = test_frame.frame.gas_remaining;
-    try test_frame.pushStack(&[_]u256{slot});
-    _ = try helpers.executeOpcode(0x54, test_vm.evm, test_frame.frame);
-    const gas_after_warm = test_frame.frame.gas_remaining;
+    frame.stack.clear();
+    const gas_before_warm = frame.gas_remaining;
+    try frame.stack.append(slot);
+    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    const gas_after_warm = frame.gas_remaining;
     const warm_gas_used = gas_before_warm - gas_after_warm;
     try testing.expectEqual(@as(u64, 100), warm_gas_used);
 }

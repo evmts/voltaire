@@ -1,11 +1,13 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const EVM = Evm.Evm;
 const Address = Evm.Address;
 const ExecutionError = Evm.ExecutionError;
 const opcodes = Evm.opcodes;
-const test_helpers = @import("../opcodes/test_helpers.zig");
+const MemoryDatabase = Evm.MemoryDatabase;
+const Contract = Evm.Contract;
+const Frame = Evm.Frame;
+const Operation = Evm.Operation;
 
 // Helper function to convert u256 to 32-byte big-endian array
 fn u256ToBytes32(value: u256) [32]u8 {
@@ -20,42 +22,17 @@ fn u256ToBytes32(value: u256) [32]u8 {
     return bytes;
 }
 
-// Helper function to create a test EVM with initial setup
-fn createTestEvm(allocator: std.mem.Allocator) !*Evm {
-    var evm = try allocator.create(Evm);
-    evm.* = try Evm.init(allocator);
-
-    // Set up basic context
-    // Use a simple test address
-    const tx_origin: Address.Address = [_]u8{0x12} ** 20;
-    const alice_address: Address.Address = [_]u8{0x01} ** 20;
-    
-    // Create context with test values
-    const context = Evm.Context.init_with_values(
-        tx_origin,
-        1000000000,
-        10000,
-        1234567890,
-        alice_address,
-        1000000,
-        30000000,
-        1,
-        100000000,
-        &[_]u256{},
-        0
-    );
-    evm.set_context(context);
-
-    return evm;
-}
-
 test "integration: simple arithmetic sequence" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test program: PUSH1 5, PUSH1 3, ADD, PUSH1 2, MUL
     // Expected result: (5 + 3) * 2 = 16
@@ -68,8 +45,29 @@ test "integration: simple arithmetic sequence" {
         0x00, // STOP
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, Address.zero(), 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        Address.zero(), // caller
+        Address.zero(), // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(Address.zero(), &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
     // For tests that end with STOP, we need to add MSTORE/RETURN to get output
@@ -79,11 +77,15 @@ test "integration: simple arithmetic sequence" {
 
 test "integration: memory operations sequence" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test program: Store 42 at memory position 0, then load it
     const bytecode = [_]u8{
@@ -99,8 +101,29 @@ test "integration: memory operations sequence" {
         0xF3, // RETURN
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, Address.zero(), 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        Address.zero(), // caller
+        Address.zero(), // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(Address.zero(), &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
     const expected_bytes = u256ToBytes32(42);
@@ -109,13 +132,17 @@ test "integration: memory operations sequence" {
 
 test "integration: storage operations sequence" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
-    const contract_address = Address.fromString("0xc0ffee000000000000000000000000000000cafe");
+    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Store 100 at slot 5, then load it
     const bytecode = [_]u8{
@@ -131,8 +158,29 @@ test "integration: storage operations sequence" {
         0xF3, // RETURN
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, contract_address, 50000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        contract_address, // caller
+        contract_address, // address where code executes
+        0, // value
+        50000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(contract_address, &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 50000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
     const expected_bytes = u256ToBytes32(100);
@@ -141,11 +189,15 @@ test "integration: storage operations sequence" {
 
 test "integration: control flow with jumps" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test program: conditional jump over invalid instruction
     const bytecode = [_]u8{
@@ -163,8 +215,29 @@ test "integration: control flow with jumps" {
         0xF3, // RETURN
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, Address.zero(), 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        Address.zero(), // caller
+        Address.zero(), // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(Address.zero(), &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
     const expected_bytes = u256ToBytes32(66);
@@ -173,13 +246,17 @@ test "integration: control flow with jumps" {
 
 test "integration: environment access sequence" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
-    const contract_address = Address.fromString("0xc0ffee000000000000000000000000000000cafe");
+    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Add some balance to the contract
     try evm.balances.put(contract_address, 1000000);
@@ -196,8 +273,29 @@ test "integration: environment access sequence" {
         0xF3, // RETURN
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, contract_address, 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        contract_address, // caller
+        contract_address, // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(contract_address, &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
     // balance (1000000) + chainid (1) = 1000001
@@ -207,11 +305,15 @@ test "integration: environment access sequence" {
 
 test "integration: stack operations sequence" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test program: Complex stack manipulation
     const bytecode = [_]u8{
@@ -230,8 +332,29 @@ test "integration: stack operations sequence" {
         0xF3, // RETURN
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, Address.zero(), 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        Address.zero(), // caller
+        Address.zero(), // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(Address.zero(), &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
     // Stack should have result: ((3 + 1) * 2) = 8
@@ -241,11 +364,15 @@ test "integration: stack operations sequence" {
 
 test "integration: return data handling" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test program: Return some data
     const bytecode = [_]u8{
@@ -257,8 +384,29 @@ test "integration: return data handling" {
         0xf3, // RETURN
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, Address.zero(), 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        Address.zero(), // caller
+        Address.zero(), // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(Address.zero(), &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
     try testing.expect(result.output != null);
@@ -272,11 +420,15 @@ test "integration: return data handling" {
 
 test "integration: revert with reason" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test program: Revert with error message
     const bytecode = [_]u8{
@@ -288,8 +440,29 @@ test "integration: revert with reason" {
         0xfd, // REVERT
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, Address.zero(), 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        Address.zero(), // caller
+        Address.zero(), // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(Address.zero(), &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Revert);
     try testing.expect(result.output != null);
@@ -303,11 +476,15 @@ test "integration: revert with reason" {
 
 test "integration: gas consumption tracking" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     const initial_gas: u64 = 10000;
 
@@ -319,8 +496,29 @@ test "integration: gas consumption tracking" {
         0x00, // STOP (0 gas)
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, Address.zero(), initial_gas, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        Address.zero(), // caller
+        Address.zero(), // address where code executes
+        0, // value
+        initial_gas, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(Address.zero(), &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = initial_gas;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
 
@@ -331,11 +529,15 @@ test "integration: gas consumption tracking" {
 
 test "integration: out of gas scenario" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test program: Try to execute with insufficient gas
     const bytecode = [_]u8{
@@ -345,19 +547,44 @@ test "integration: out of gas scenario" {
         0x00, // STOP
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, Address.zero(), 5, null); // Only 5 gas
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        Address.zero(), // caller
+        Address.zero(), // address where code executes
+        0, // value
+        5, // gas - only 5 gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(Address.zero(), &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 5;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .OutOfGas);
 }
 
 test "integration: invalid opcode handling" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test program: Execute invalid opcode
     const bytecode = [_]u8{
@@ -366,21 +593,46 @@ test "integration: invalid opcode handling" {
         0x00, // STOP (should not reach)
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, Address.zero(), 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        Address.zero(), // caller
+        Address.zero(), // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(Address.zero(), &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Invalid);
 }
 
 test "integration: transient storage operations" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
-    const contract_address = Address.fromString("0xc0ffee000000000000000000000000000000cafe");
+    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Store and load from transient storage
     const bytecode = [_]u8{
@@ -396,8 +648,29 @@ test "integration: transient storage operations" {
         0xF3, // RETURN
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, contract_address, 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        contract_address, // caller
+        contract_address, // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(contract_address, &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
     const expected_bytes = u256ToBytes32(153);
@@ -406,13 +679,17 @@ test "integration: transient storage operations" {
 
 test "integration: logging operations" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
-    const contract_address = Address.fromString("0xc0ffee000000000000000000000000000000cafe");
+    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Emit a LOG2 event
     const bytecode = [_]u8{
@@ -427,13 +704,34 @@ test "integration: logging operations" {
         0x00, // STOP
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, contract_address, 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        contract_address, // caller
+        contract_address, // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(contract_address, &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
     try testing.expectEqual(@as(usize, 1), evm.logs.items.len);
 
-    const log = Evm.logs.items[0];
+    const log = evm.logs.items[0];
     try testing.expectEqual(contract_address, log.address);
     try testing.expectEqual(@as(usize, 2), log.topics.len);
     try testing.expectEqual(@as(u256, 187), log.topics[0]);
@@ -443,13 +741,17 @@ test "integration: logging operations" {
 
 test "integration: cold/warm storage access (EIP-2929)" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
-    const contract_address = Address.fromString("0xc0ffee000000000000000000000000000000cafe");
+    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Access same storage slot twice (cold then warm)
     const bytecode = [_]u8{
@@ -462,8 +764,30 @@ test "integration: cold/warm storage access (EIP-2929)" {
     };
 
     const initial_gas: u64 = 10000;
-    const result = try test_helpers.runBytecode(evm, &bytecode, contract_address, initial_gas, null);
-    defer if (result.output) |output| allocator.free(output);
+
+    // Create contract
+    var contract = Contract.init_at_address(
+        contract_address, // caller
+        contract_address, // address where code executes
+        0, // value
+        initial_gas, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(contract_address, &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = initial_gas;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
 
@@ -474,11 +798,15 @@ test "integration: cold/warm storage access (EIP-2929)" {
 
 test "integration: push0 operation (Shanghai)" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test program: Use PUSH0 from Shanghai hardfork
     const bytecode = [_]u8{
@@ -492,8 +820,29 @@ test "integration: push0 operation (Shanghai)" {
         0xF3, // RETURN
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, Address.zero(), 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        Address.zero(), // caller
+        Address.zero(), // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(Address.zero(), &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
     const expected_bytes = u256ToBytes32(66);
@@ -502,15 +851,19 @@ test "integration: push0 operation (Shanghai)" {
 
 test "integration: mcopy operation (Cancun)" {
     const allocator = testing.allocator;
-    var evm = try createTestEvm(allocator);
-    defer {
-        evm.deinit();
-        allocator.destroy(evm);
-    }
+    
+    // Create memory database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    // Create EVM instance
+    const db_interface = memory_db.to_database_interface();
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm.deinit();
 
     // Test program: Copy memory using MCOPY
     const bytecode = [_]u8{
-0x7f, // PUSH32
+        0x7f, // PUSH32
         0x11,
         0x22,
         0x33,
@@ -551,15 +904,36 @@ test "integration: mcopy operation (Cancun)" {
         0x5e, // MCOPY
         0x60, 0x20, // PUSH1 32
         0x51, // MLOAD,
-0x60, 0x00, // PUSH1 0
-0x52, // MSTORE
-0x60, 0x20, // PUSH1 32
-0x60, 0x00, // PUSH1 0
-0xF3, // RETURN
+        0x60, 0x00, // PUSH1 0
+        0x52, // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3, // RETURN
     };
 
-    const result = try test_helpers.runBytecode(evm, &bytecode, Address.zero(), 10000, null);
-    defer if (result.output) |output| allocator.free(output);
+    // Create contract
+    var contract = Contract.init_at_address(
+        Address.zero(), // caller
+        Address.zero(), // address where code executes
+        0, // value
+        10000, // gas
+        &bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Set the code for the contract address in EVM state
+    try evm.state.set_code(Address.zero(), &bytecode);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.gas_remaining = 10000;
+    frame.memory.finalize_root();
+    
+    // Execute the contract
+    const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
 
