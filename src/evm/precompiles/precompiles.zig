@@ -114,8 +114,8 @@ pub fn execute_precompile(address: Address, input: []const u8, output: []u8, gas
         }, // RIPEMD160
         5 => {
             @branchHint(.likely);
-            // MODEXP - Unimplemented
-            return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
+            const modexp = @import("modexp.zig");
+            return modexp.execute(input, output, gas_limit);
         }, // MODEXP
         6 => {
             @branchHint(.cold);
@@ -174,7 +174,12 @@ pub fn estimate_gas(address: Address, input_size: usize, chain_rules: ChainRules
         1 => ecrecover.calculate_gas_checked(input_size), // ECRECOVER
         2 => sha256.calculate_gas_checked(input_size), // SHA256
         3 => ripemd160.calculate_gas_checked(input_size), // RIPEMD160
-        5 => error.InvalidInput, // MODEXP - TODO
+        5 => blk: {
+            // MODEXP gas calculation requires parsing the input
+            // For estimation, we return minimum gas
+            const modexp = @import("modexp.zig");
+            break :blk modexp.MODEXP_MIN_GAS;
+        }, // MODEXP
         6 => error.InvalidInput, // ECADD - TODO
         7 => error.InvalidInput, // ECMUL - TODO
         8 => error.InvalidInput, // ECPAIRING - TODO
@@ -214,8 +219,11 @@ pub fn get_output_size(address: Address, input_size: usize, chain_rules: ChainRu
         1 => ecrecover.get_output_size(input_size), // ECRECOVER
         2 => sha256.get_output_size(input_size), // SHA256
         3 => ripemd160.get_output_size(input_size), // RIPEMD160
-        // TODO we need to do this
-        5 => 420, // modexp.get_output_size(input_size), // MODEXP
+        5 => blk: {
+            // MODEXP output size depends on modulus length which requires parsing input
+            // For size estimation, return a reasonable default
+            break :blk 32;
+        }, // MODEXP
         6 => 64, // ECADD - fixed 64 bytes (point)
         7 => 64, // ECMUL - fixed 64 bytes (point)
         8 => 32, // ECPAIRING - fixed 32 bytes (boolean result)
