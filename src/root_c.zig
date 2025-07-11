@@ -20,8 +20,10 @@ const MemoryDatabase = evm_root.MemoryDatabase;
 const Address = @import("Address");
 
 // Global allocator for WASM environment
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const allocator = gpa.allocator();
+const allocator = if (builtin.target.cpu.arch == .wasm32) std.heap.wasm_allocator else blk: {
+    const gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    break :blk gpa.allocator();
+};
 
 // Global VM instance
 var vm_instance: ?*Evm = null;
