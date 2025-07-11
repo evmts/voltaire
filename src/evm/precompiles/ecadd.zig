@@ -28,7 +28,7 @@
 /// - Out of gas: Standard precompile error
 
 const std = @import("std");
-const mcl = @import("mcl_wrapper.zig");
+const bn254 = @import("bn254.zig");
 const gas_constants = @import("../constants/gas_constants.zig");
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
@@ -99,14 +99,8 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64, chain_rules: Cha
     const copy_len = @min(input.len, 128);
     @memcpy(padded_input[0..copy_len], input[0..copy_len]);
 
-    // Ensure MCL is initialized
-    mcl.init() catch {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-    };
-
     // Parse first point (bytes 0-63)
-    const point1 = mcl.G1Point.from_bytes(padded_input[0..64]) catch {
+    const point1 = bn254.G1Point.from_bytes(padded_input[0..64]) catch {
         @branchHint(.cold);
         // Invalid points result in point at infinity (0, 0)
         @memset(output[0..64], 0);
@@ -114,21 +108,18 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64, chain_rules: Cha
     };
 
     // Parse second point (bytes 64-127)
-    const point2 = mcl.G1Point.from_bytes(padded_input[64..128]) catch {
+    const point2 = bn254.G1Point.from_bytes(padded_input[64..128]) catch {
         @branchHint(.cold);
         // Invalid points result in point at infinity (0, 0)
         @memset(output[0..64], 0);
         return PrecompileOutput.success_result(gas_cost, 64);
     };
 
-    // Perform elliptic curve point addition using MCL
+    // Perform elliptic curve point addition using pure Zig implementation
     const result_point = point1.add(point2);
 
     // Convert result to bytes and write to output
-    result_point.to_bytes(output[0..64]) catch {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-    };
+    result_point.to_bytes(output[0..64]);
 
     return PrecompileOutput.success_result(gas_cost, 64);
 }
