@@ -301,6 +301,42 @@ pub const RIPEMD160_WORD_COST: u64 = 120;
 /// Fixed cost for elliptic curve signature recovery
 pub const ECRECOVER_COST: u64 = 3000;
 
+// ============================================================================
+// BN254 Elliptic Curve Precompile Costs (EIP-196, EIP-197, EIP-1108)
+// ============================================================================
+
+/// Gas cost for ECADD precompile (address 0x06) - Istanbul hardfork onwards
+/// EIP-1108: Reduced from 500 gas to make zkSNARK operations more affordable
+pub const ECADD_GAS_COST: u64 = 150;
+
+/// Gas cost for ECADD precompile (address 0x06) - Byzantium to Berlin
+/// Original cost before EIP-1108 optimization
+pub const ECADD_GAS_COST_BYZANTIUM: u64 = 500;
+
+/// Gas cost for ECMUL precompile (address 0x07) - Istanbul hardfork onwards
+/// EIP-1108: Reduced from 40,000 gas to make zkSNARK operations more affordable
+pub const ECMUL_GAS_COST: u64 = 6000;
+
+/// Gas cost for ECMUL precompile (address 0x07) - Byzantium to Berlin
+/// Original cost before EIP-1108 optimization
+pub const ECMUL_GAS_COST_BYZANTIUM: u64 = 40000;
+
+/// Base gas cost for ECPAIRING precompile (address 0x08) - Istanbul hardfork onwards
+/// EIP-1108: Reduced from 100,000 gas to make zkSNARK operations more affordable
+pub const ECPAIRING_BASE_GAS_COST: u64 = 45000;
+
+/// Per-pair gas cost for ECPAIRING precompile - Istanbul hardfork onwards
+/// EIP-1108: Reduced from 80,000 per pair to 34,000 per pair
+pub const ECPAIRING_PER_PAIR_GAS_COST: u64 = 34000;
+
+/// Base gas cost for ECPAIRING precompile (address 0x08) - Byzantium to Berlin
+/// Original cost before EIP-1108 optimization
+pub const ECPAIRING_BASE_GAS_COST_BYZANTIUM: u64 = 100000;
+
+/// Per-pair gas cost for ECPAIRING precompile - Byzantium to Berlin
+/// Original cost before EIP-1108 optimization
+pub const ECPAIRING_PER_PAIR_GAS_COST_BYZANTIUM: u64 = 80000;
+
 // MODEXP Precompile Costs (EIP-2565)
 // ============================================================================
 
