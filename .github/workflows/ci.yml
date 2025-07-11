@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup development environment
+        uses: ./.github/actions/setup
+
+      - name: Build executable
+        run: zig build -Doptimize=ReleaseFast
+
+      - name: Build WASM
+        run: zig build wasm
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            zig-out/bin/
+            zig-out/wasm/
+
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        test-suite:
+          - { name: "All Tests", cmd: "test" }
+          - { name: "EVM Core", cmd: "test-evm" }
+          - { name: "Memory", cmd: "test-memory" }
+          - { name: "Stack", cmd: "test-stack" }
+          - { name: "Stack Validation", cmd: "test-stack-validation" }
+          - { name: "Jump Table", cmd: "test-jump-table" }
+          - { name: "Opcodes", cmd: "test-opcodes" }
+          - { name: "VM Opcodes", cmd: "test-vm-opcodes" }
+          - { name: "Integration", cmd: "test-integration" }
+          - { name: "Gas Accounting", cmd: "test-gas" }
+          - { name: "Static Protection", cmd: "test-static-protection" }
+          - { name: "SHA256 Precompile", cmd: "test-sha256" }
+          - { name: "RIPEMD160 Precompile", cmd: "test-ripemd160" }
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup development environment
+        uses: ./.github/actions/setup
+
+      - name: Run ${{ matrix.test-suite.name }} tests
+        run: zig build ${{ matrix.test-suite.cmd }}
+
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        test-suite:
+          - { name: "All E2E", cmd: "test-e2e" }
+          - { name: "E2E Simple", cmd: "test-e2e-simple" }
+          - { name: "E2E Error Handling", cmd: "test-e2e-error" }
+          - { name: "E2E Data Structures", cmd: "test-e2e-data" }
+          - { name: "E2E Inheritance", cmd: "test-e2e-inheritance" }
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup development environment
+        uses: ./.github/actions/setup
+
+      - name: Run ${{ matrix.test-suite.name }} tests
+        run: zig build ${{ matrix.test-suite.cmd }}
+
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup development environment
+        uses: ./.github/actions/setup
+
+      - name: Check Zig formatting
+        run: zig fmt --check .
+
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: [test-unit, test-e2e]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup development environment
+        uses: ./.github/actions/setup
+
+      - name: Generate coverage report
+        run: |
+          # Run tests with coverage enabled
+          zig build test -Dtest-coverage=true || true
+          
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false

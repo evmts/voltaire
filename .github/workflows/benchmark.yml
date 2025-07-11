@@ -1,0 +1,50 @@
+name: Benchmark
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  deployments: write
+
+jobs:
+  benchmark:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup development environment
+        uses: ./.github/actions/setup
+
+      - name: Run benchmarks
+        run: |
+          # Create benchmarks directory if it doesn't exist
+          mkdir -p benchmarks
+          
+          # Run Zig benchmarks
+          zig build -Doptimize=ReleaseFast run 2>&1 | tee benchmarks/zig-bench.txt
+          
+          # Run any Rust benchmarks if they exist
+          if [ -f "Cargo.toml" ]; then
+            cargo bench --all-features | tee benchmarks/cargo-bench.txt
+          fi
+          
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'customBiggerIsBetter'
+          output-file-path: benchmarks/zig-bench.txt
+          benchmark-data-dir-path: 'dev/bench'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '150%'
+          comment-on-alert: true
+          fail-on-alert: false
+          alert-comment-cc-users: '@willcory10'
