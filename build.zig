@@ -56,6 +56,33 @@ pub fn build(b: *std.Build) void {
     });
     client_mod.addImport("Address", address_mod);
     
+    // BN254 Rust library integration for ECMUL and ECPAIRING precompiles
+    // Uses arkworks ecosystem for production-grade elliptic curve operations
+    const rust_profile = if (optimize == .ReleaseFast) "release-fast" else "release";
+    
+    const rust_build = b.addSystemCommand(&[_][]const u8{
+        "cargo", "build", "--release", 
+        "--profile", rust_profile,
+        "--manifest-path", "rust/bn254_wrapper/Cargo.toml"
+    });
+    
+    // Create static library artifact for the Rust BN254 wrapper
+    const bn254_lib = b.addStaticLibrary(.{
+        .name = "bn254_wrapper",
+        .target = target,
+        .optimize = optimize,
+    });
+    
+    // Link the compiled Rust library
+    bn254_lib.addObjectFile(b.path("target/release/libbn254_wrapper.a"));
+    bn254_lib.linkLibC();
+    
+    // Add include path for C header
+    bn254_lib.addIncludePath(b.path("rust/bn254_wrapper"));
+    
+    // Make the rust build a dependency
+    bn254_lib.step.dependOn(&rust_build.step);
+    
     // Create the main evm module that exports everything
     const evm_mod = b.createModule(.{
         .root_source_file = b.path("src/evm/root.zig"),
@@ -67,46 +94,8 @@ pub fn build(b: *std.Build) void {
     evm_mod.addImport("Address", address_mod);
     evm_mod.addImport("Rlp", rlp_mod);
     
-    // Add MCL (Herumi) library for alt_bn128 elliptic curve operations
-    // Build MCL as a static library
-    const mcl_lib = b.addStaticLibrary(.{
-        .name = "mcl",
-        .target = target,
-        .optimize = optimize,
-    });
-    
-    // Add MCL C++ source files
-    mcl_lib.addCSourceFiles(.{
-        .files = &[_][]const u8{
-            "third_party/mcl/src/fp.cpp",
-            "third_party/mcl/src/bn_c256.cpp",
-            "third_party/mcl/src/bn_c384_256.cpp",
-        },
-        .flags = &[_][]const u8{
-            "-std=c++17",
-            "-DMCL_DONT_USE_OPENSSL",
-            "-DMCL_DONT_USE_XBYAK", 
-            "-DMCL_USE_LLVM=1",
-            "-DMCL_VINT_FIXED_BUFFER",
-            "-DMCL_MAX_BIT_SIZE=384",
-            "-DMCL_SIZEOF_UNIT=8",
-            "-DMCL_USE_VINT",
-            "-DMCL_VINT_FIXED_BUFFER",
-            "-DCYBOZU_DONT_USE_EXCEPTION",
-            "-DCYBOZU_DONT_USE_STRING",
-        },
-    });
-    
-    // Add MCL include directories
-    mcl_lib.addIncludePath(b.path("third_party/mcl/include"));
-    mcl_lib.linkLibCpp();
-    
-    // Install MCL library
-    b.installArtifact(mcl_lib);
-    
-    // Link MCL to the EVM module
-    evm_mod.linkLibrary(mcl_lib);
-    evm_mod.addIncludePath(b.path("third_party/mcl/include"));
+    // Link BN254 Rust library to EVM module (native targets only)
+    evm_mod.linkLibrary(bn254_lib);
     
     // Add Rust Foundry wrapper integration
     // TODO: Fix Rust integration - needs proper zabi dependency
@@ -158,37 +147,72 @@ pub fn build(b: *std.Build) void {
     // step when running `zig build`).
     b.installArtifact(exe);
 
-    // WASM library build
+    // WASM library build optimized for size
     const wasm_target = b.resolveTargetQuery(.{
         .cpu_arch = .wasm32,
-        .os_tag = .wasi,
+        .os_tag = .freestanding,  // Use freestanding for minimal size
     });
+
+    // Force size optimization for WASM regardless of global optimize setting
+    const wasm_optimize = .ReleaseSmall;
+
+    // Create WASM-specific modules with minimal dependencies
+    // WASM-specific Address module
+    const wasm_address_mod = b.createModule(.{
+        .root_source_file = b.path("src/address/address.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+    });
+
+    // WASM-specific RLP module
+    const wasm_rlp_mod = b.createModule(.{
+        .root_source_file = b.path("src/rlp/rlp.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+    });
+
+    // Add RLP to address module for WASM
+    wasm_address_mod.addImport("Rlp", wasm_rlp_mod);
+
+    // Create WASM-specific EVM module without Rust dependencies
+    const wasm_evm_mod = b.createModule(.{
+        .root_source_file = b.path("src/evm/root.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+        .stack_check = false,
+        .single_threaded = true,
+    });
+    wasm_evm_mod.addImport("Address", wasm_address_mod);
+    wasm_evm_mod.addImport("Rlp", wasm_rlp_mod);
+    // Note: WASM build uses pure Zig implementations for BN254 operations
 
     const wasm_lib_mod = b.createModule(.{
         .root_source_file = b.path("src/root_c.zig"),
         .target = wasm_target,
-        .optimize = optimize,
+        .optimize = wasm_optimize,
         .single_threaded = true,
     });
-    wasm_lib_mod.addImport("Address", address_mod);
-    wasm_lib_mod.addImport("evm", evm_mod);
-    wasm_lib_mod.addImport("Rlp", rlp_mod);
+    wasm_lib_mod.addImport("Address", wasm_address_mod);
+    wasm_lib_mod.addImport("evm", wasm_evm_mod);  // Use WASM-specific EVM module
+    wasm_lib_mod.addImport("Rlp", wasm_rlp_mod);
 
-    const wasm_lib = b.addLibrary(.{
+    const wasm_lib = b.addExecutable(.{
         .name = "guillotine",
         .root_module = wasm_lib_mod,
-        .linkage = .static,
     });
 
     wasm_lib.entry = .disabled;
+    wasm_lib.rdynamic = true;
 
-    const wasm_install = b.addInstallArtifact(wasm_lib, .{});
+    const wasm_install = b.addInstallArtifact(wasm_lib, .{ 
+        .dest_sub_path = "guillotine.wasm" 
+    });
     
     // Add step to report WASM bundle size
     const wasm_size_step = b.addSystemCommand(&[_][]const u8{
         "sh", "-c", 
         "echo '\\n=== WASM Bundle Size Report ===' && " ++
-        "ls -lh zig-out/lib/libguillotine.a | awk '{print \"WASM Bundle Size: \" $5}' && " ++
+        "ls -lh zig-out/bin/guillotine.wasm | awk '{print \"WASM Bundle Size: \" $5}' && " ++
         "echo '=== End Report ===\\n'"
     });
     wasm_size_step.step.dependOn(&wasm_install.step);
@@ -427,22 +451,23 @@ pub fn build(b: *std.Build) void {
     const blake2f_test_step = b.step("test-blake2f", "Run BLAKE2f precompile tests");
     blake2f_test_step.dependOn(&run_blake2f_test.step);
 
-    // Add MCL BN254 tests
-    const mcl_bn254_test = b.addTest(.{
-        .name = "mcl-bn254-test",
-        .root_source_file = b.path("test/evm/precompiles/mcl_bn254_test.zig"),
+    // Add BN254 Rust wrapper tests
+    const bn254_rust_test = b.addTest(.{
+        .name = "bn254-rust-test",
+        .root_source_file = b.path("test/evm/precompiles/bn254_rust_test.zig"),
         .target = target,
         .optimize = optimize,
     });
-    mcl_bn254_test.root_module.stack_check = false;
-    mcl_bn254_test.root_module.addImport("Address", address_mod);
-    mcl_bn254_test.root_module.addImport("evm", evm_mod);
-    mcl_bn254_test.linkLibrary(mcl_lib);
-    mcl_bn254_test.addIncludePath(b.path("third_party/mcl/include"));
+    bn254_rust_test.root_module.stack_check = false;
+    bn254_rust_test.root_module.addImport("Address", address_mod);
+    bn254_rust_test.root_module.addImport("evm", evm_mod);
+    // Link BN254 Rust library to tests
+    bn254_rust_test.linkLibrary(bn254_lib);
+    bn254_rust_test.addIncludePath(b.path("rust/bn254_wrapper"));
     
-    const run_mcl_bn254_test = b.addRunArtifact(mcl_bn254_test);
-    const mcl_bn254_test_step = b.step("test-mcl-bn254", "Run MCL BN254 precompile tests");
-    mcl_bn254_test_step.dependOn(&run_mcl_bn254_test.step);
+    const run_bn254_rust_test = b.addRunArtifact(bn254_rust_test);
+    const bn254_rust_test_step = b.step("test-bn254-rust", "Run BN254 Rust wrapper precompile tests");
+    bn254_rust_test_step.dependOn(&run_bn254_rust_test.step);
 
     // Add E2E Simple tests
     const e2e_simple_test = b.addTest(.{
@@ -580,7 +605,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_sha256_test.step);
     test_step.dependOn(&run_ripemd160_test.step);
     test_step.dependOn(&run_blake2f_test.step);
-    test_step.dependOn(&run_mcl_bn254_test.step);
+    test_step.dependOn(&run_bn254_rust_test.step);
     test_step.dependOn(&run_e2e_simple_test.step);
     test_step.dependOn(&run_e2e_error_test.step);
     test_step.dependOn(&run_e2e_data_test.step);
