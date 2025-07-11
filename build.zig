@@ -32,6 +32,22 @@ pub fn build(b: *std.Build) void {
     // Add Rlp import to address module
     address_mod.addImport("Rlp", rlp_mod);
     
+    // Create utils module
+    const utils_mod = b.createModule(.{
+        .root_source_file = b.path("src/utils.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    
+    // Create the trie module
+    const trie_mod = b.createModule(.{
+        .root_source_file = b.path("src/trie/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    trie_mod.addImport("Rlp", rlp_mod);
+    trie_mod.addImport("utils", utils_mod);
+    
     // Create the client module
     const client_mod = b.createModule(.{
         .root_source_file = b.path("src/client/root.zig"),
@@ -51,10 +67,30 @@ pub fn build(b: *std.Build) void {
     evm_mod.addImport("Address", address_mod);
     evm_mod.addImport("Rlp", rlp_mod);
     
+    // Add Rust Foundry wrapper integration
+    // TODO: Fix Rust integration - needs proper zabi dependency
+    // const rust_build = @import("src/compilers/rust_build.zig");
+    // const rust_step = rust_build.add_rust_integration(b, target, optimize) catch |err| {
+    //     std.debug.print("Failed to add Rust integration: {}\n", .{err});
+    //     return;
+    // };
+    
+    // Create compilers module
+    const compilers_mod = b.createModule(.{
+        .root_source_file = b.path("src/compilers/package.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    compilers_mod.addImport("Address", address_mod);
+    compilers_mod.addImport("evm", evm_mod);
+    
     // Add Address to lib_mod so tests can access it
     lib_mod.addImport("Address", address_mod);
     lib_mod.addImport("evm", evm_mod);
     lib_mod.addImport("client", client_mod);
+    lib_mod.addImport("compilers", compilers_mod);
+    lib_mod.addImport("trie", trie_mod);
+    lib_mod.addImport("Rlp", rlp_mod);
 
     const exe_mod = b.createModule(.{ .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize });
     exe_mod.addImport("Guillotine_lib", lib_mod);
@@ -399,6 +435,52 @@ pub fn build(b: *std.Build) void {
     const run_e2e_inheritance_test = b.addRunArtifact(e2e_inheritance_test);
     const e2e_inheritance_test_step = b.step("test-e2e-inheritance", "Run E2E inheritance tests");
     e2e_inheritance_test_step.dependOn(&run_e2e_inheritance_test.step);
+    
+    // Add Compiler tests
+    const compiler_test = b.addTest(.{
+        .name = "compiler-test",
+        .root_source_file = b.path("src/compilers/compiler.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    compiler_test.root_module.addImport("Address", address_mod);
+    compiler_test.root_module.addImport("evm", evm_mod);
+    
+    // TODO: Re-enable when Rust integration is fixed
+    // // Make the compiler test depend on the Rust build
+    // compiler_test.step.dependOn(rust_step);
+    
+    // // Link the Rust library to the compiler test
+    // compiler_test.addObjectFile(b.path("zig-out/lib/libfoundry_wrapper.a"));
+    // compiler_test.linkLibC();
+    
+    // // Link system libraries required by Rust static lib
+    // if (target.result.os.tag == .linux) {
+    //     compiler_test.linkSystemLibrary("unwind");
+    //     compiler_test.linkSystemLibrary("gcc_s");
+    // } else if (target.result.os.tag == .macos) {
+    //     compiler_test.linkFramework("CoreFoundation");
+    //     compiler_test.linkFramework("Security");
+    // }
+    
+    const run_compiler_test = b.addRunArtifact(compiler_test);
+    const compiler_test_step = b.step("test-compiler", "Run Compiler tests");
+    compiler_test_step.dependOn(&run_compiler_test.step);
+    
+    // Add Snail Tracer test
+    const snail_tracer_test = b.addTest(.{
+        .name = "snail-tracer-test",
+        .root_source_file = b.path("src/solidity/snail_tracer_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    snail_tracer_test.root_module.addImport("Address", address_mod);
+    snail_tracer_test.root_module.addImport("evm", evm_mod);
+    snail_tracer_test.root_module.addImport("compilers", compilers_mod);
+    
+    const run_snail_tracer_test = b.addRunArtifact(snail_tracer_test);
+    const snail_tracer_test_step = b.step("test-snail-tracer", "Run Snail Tracer tests");
+    snail_tracer_test_step.dependOn(&run_snail_tracer_test.step);
 
     // Add combined E2E test step
     const e2e_all_test_step = b.step("test-e2e", "Run all E2E tests");
@@ -429,4 +511,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_e2e_error_test.step);
     test_step.dependOn(&run_e2e_data_test.step);
     test_step.dependOn(&run_e2e_inheritance_test.step);
+    // TODO: Re-enable when Rust integration is fixed
+    // test_step.dependOn(&run_compiler_test.step);
+    // test_step.dependOn(&run_snail_tracer_test.step);
 }
