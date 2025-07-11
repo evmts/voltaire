@@ -137,14 +137,11 @@ pub const precompiles = struct {
     pub const ecadd = @import("precompiles/ecadd.zig");
     pub const ecmul = @import("precompiles/ecmul.zig");
     pub const ecpairing = @import("precompiles/ecpairing.zig");
-    pub const mcl_wrapper = @import("precompiles/mcl_wrapper.zig");
     pub const precompile_result = @import("precompiles/precompile_result.zig");
     pub const PrecompileOutput = @import("precompiles/precompile_result.zig").PrecompileOutput;
     pub const PrecompileError = @import("precompiles/precompile_result.zig").PrecompileError;
 };
 
-/// MCL wrapper for BN254 elliptic curve operations
-pub const mcl_wrapper = @import("precompiles/mcl_wrapper.zig");
 
 /// ECADD precompile (0x06)
 pub const ecadd = @import("precompiles/ecadd.zig");
