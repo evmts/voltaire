@@ -196,7 +196,7 @@ fn blake2b_compress(state: *[8]u64, message: *const [16]u64, offset: [2]u64, fin
 /// @param d Index d
 /// @param x First input word
 /// @param y Second input word
-inline fn blake2b_g(v: *[16]u64, a: usize, b: usize, c: usize, d: usize, x: u64, y: u64) void {
+fn blake2b_g(v: *[16]u64, a: usize, b: usize, c: usize, d: usize, x: u64, y: u64) void {
     v[a] = v[a] +% v[b] +% x;
     v[d] = std.math.rotr(u64, v[d] ^ v[a], 32);
     v[c] = v[c] +% v[d];

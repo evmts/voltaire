@@ -220,7 +220,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     var jt = JumpTable.init();
     // With ALL_OPERATIONS sorted by hardfork, we can iterate once.
     // Each opcode will be set to the latest active version for the target hardfork.
-    inline for (operation_config.ALL_OPERATIONS) |spec| {
+    for (operation_config.ALL_OPERATIONS) |spec| {
         const op_hardfork = spec.variant orelse Hardfork.FRONTIER;
         // Most operations are included in hardforks (likely path)
         if (@intFromEnum(op_hardfork) <= @intFromEnum(hardfork)) {
@@ -243,7 +243,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         }
     } else {
         // For other modes, inline for performance
-        inline for (0..32) |i| {
+        for (0..32) |i| {
             const n = i + 1;
             jt.table[0x60 + i] = &Operation{
                 .execute = stack_ops.make_push(n),
@@ -266,7 +266,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         }
     } else {
         // For other modes, inline for performance
-        inline for (1..17) |n| {
+        for (1..17) |n| {
             jt.table[0x80 + n - 1] = &Operation{
                 .execute = stack_ops.make_dup(n),
                 .constant_gas = execution.gas_constants.GasFastestStep,
@@ -288,7 +288,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         }
     } else {
         // For other modes, inline for performance
-        inline for (1..17) |n| {
+        for (1..17) |n| {
             jt.table[0x90 + n - 1] = &Operation{
                 .execute = stack_ops.make_swap(n),
                 .constant_gas = execution.gas_constants.GasFastestStep,
@@ -310,7 +310,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         }
     } else {
         // For other modes, inline for performance
-        inline for (0..5) |n| {
+        for (0..5) |n| {
             jt.table[0xa0 + n] = &Operation{
                 .execute = log.make_log(n),
                 .constant_gas = execution.gas_constants.LogGas + execution.gas_constants.LogTopicGas * n,

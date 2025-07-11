@@ -108,7 +108,7 @@ pub const RIPEMD160 = struct {
 };
 
 // RIPEMD160 round functions
-inline fn f(round_num: u32, x: u32, y: u32, z: u32) u32 {
+fn f(round_num: u32, x: u32, y: u32, z: u32) u32 {
     return switch (round_num) {
         0 => x ^ y ^ z,
         1 => (x & y) | (~x & z),
@@ -120,7 +120,7 @@ inline fn f(round_num: u32, x: u32, y: u32, z: u32) u32 {
 }
 
 // Left rotate
-inline fn rol(x: u32, n: u5) u32 {
+fn rol(x: u32, n: u5) u32 {
     const shift: u5 = @intCast(32 -% @as(u32, n));
     return (x << n) | (x >> shift);
 }
@@ -333,7 +333,7 @@ fn transform(s: *[5]u32, chunk: *const [64]u8) void {
 }
 
 // RIPEMD160 round operation
-inline fn round(a: *u32, _: *u32, c: *u32, _: *u32, e: *u32, x: u32, s: u5) void {
+fn round(a: *u32, _: *u32, c: *u32, _: *u32, e: *u32, x: u32, s: u5) void {
     a.* = a.* +% x;
     a.* = rol(a.*, s) +% e.*;
     c.* = rol(c.*, 10);

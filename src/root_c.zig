@@ -4,7 +4,7 @@ const builtin = @import("builtin");
 const evm_root = @import("evm");
 
 // Simple inline logging that compiles out for freestanding WASM
-inline fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
+fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
     _ = scope;
     if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
         switch (level) {
@@ -50,26 +50,26 @@ const CExecutionResult = extern struct {
 /// @return Error code (0 = success)
 export fn guillotine_init() c_int {
     log(.info, .guillotine_c, "Initializing Guillotine EVM", .{});
-    
+
     if (vm_instance != null) {
         log(.warn, .guillotine_c, "VM already initialized", .{});
         return @intFromEnum(GuillotineError.GUILLOTINE_OK);
     }
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     const db_interface = memory_db.to_database_interface();
-    
+
     const vm = allocator.create(Evm) catch {
         log(.err, .guillotine_c, "Failed to allocate memory for VM", .{});
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_MEMORY);
     };
-    
+
     vm.* = Evm.init(allocator, db_interface, null, null) catch |err| {
         log(.err, .guillotine_c, "Failed to initialize VM: {}", .{err});
         allocator.destroy(vm);
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_MEMORY);
     };
-    
+
     vm_instance = vm;
     log(.info, .guillotine_c, "Guillotine EVM initialized successfully", .{});
     return @intFromEnum(GuillotineError.GUILLOTINE_OK);
@@ -78,7 +78,7 @@ export fn guillotine_init() c_int {
 /// Cleanup and destroy the Guillotine EVM
 export fn guillotine_deinit() void {
     log(.info, .guillotine_c, "Destroying Guillotine EVM", .{});
-    
+
     if (vm_instance) |vm| {
         vm.deinit();
         allocator.destroy(vm);
@@ -103,36 +103,30 @@ export fn guillotine_execute(
     result_ptr: *CExecutionResult,
 ) c_int {
     log(.info, .guillotine_c, "Executing bytecode: {} bytes, gas_limit: {}", .{ bytecode_len, gas_limit });
-    
+
     const vm = vm_instance orelse {
         log(.err, .guillotine_c, "VM not initialized", .{});
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_VM_NOT_INITIALIZED);
     };
-    
+
     // Validate inputs
     if (bytecode_len == 0) {
         log(.err, .guillotine_c, "Invalid bytecode", .{});
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_INVALID_BYTECODE);
     }
-    
+
     // Convert inputs
     const bytecode = bytecode_ptr[0..bytecode_len];
     const caller_bytes = caller_ptr[0..20];
     const caller_address: Address.Address = caller_bytes.*;
-    
+
     // Create contract for execution
     const target_address = Address.zero(); // Use zero address for contract execution
-    var contract = evm_root.Contract.init_at_address(
-        caller_address,
-        target_address,
-        @as(u256, value),
-        gas_limit,
-        bytecode,
-        &[_]u8{}, // empty input for now
+    var contract = evm_root.Contract.init_at_address(caller_address, target_address, @as(u256, value), gas_limit, bytecode, &[_]u8{}, // empty input for now
         false // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set bytecode in state
     vm.state.set_code(target_address, bytecode) catch |err| {
         log(.err, .guillotine_c, "Failed to set bytecode: {}", .{err});
@@ -140,7 +134,7 @@ export fn guillotine_execute(
         result_ptr.error_code = @intFromEnum(GuillotineError.GUILLOTINE_ERROR_EXECUTION_FAILED);
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_EXECUTION_FAILED);
     };
-    
+
     // Execute bytecode
     const run_result = vm.interpret(&contract, &[_]u8{}) catch |err| {
         log(.err, .guillotine_c, "Execution failed: {}", .{err});
@@ -148,7 +142,7 @@ export fn guillotine_execute(
         result_ptr.error_code = @intFromEnum(GuillotineError.GUILLOTINE_ERROR_EXECUTION_FAILED);
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_EXECUTION_FAILED);
     };
-    
+
     // Fill result structure
     result_ptr.success = if (run_result.status == .Success) 1 else 0;
     result_ptr.gas_used = run_result.gas_used;
@@ -160,7 +154,7 @@ export fn guillotine_execute(
         result_ptr.return_data_len = 0;
     }
     result_ptr.error_code = @intFromEnum(GuillotineError.GUILLOTINE_OK);
-    
+
     log(.info, .guillotine_c, "Execution completed: status={}, gas_used={}", .{ run_result.status, run_result.gas_used });
     return @intFromEnum(GuillotineError.GUILLOTINE_OK);
 }
