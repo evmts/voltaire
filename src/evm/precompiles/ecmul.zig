@@ -27,11 +27,18 @@
 /// - Out of gas: Standard precompile error
 
 const std = @import("std");
-const mcl = @import("mcl_wrapper.zig");
+const builtin = @import("builtin");
+const log = @import("../log.zig");
 const gas_constants = @import("../constants/gas_constants.zig");
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const ChainRules = @import("../hardforks/chain_rules.zig");
+
+// Conditional imports based on target
+const bn254_backend = if (builtin.target.cpu.arch == .wasm32) 
+    @import("bn254.zig")  // Pure Zig implementation for WASM
+else 
+    @import("bn254_rust_wrapper.zig");  // Rust implementation for native
 
 /// Calculate gas cost for ECMUL based on chain rules
 ///
@@ -93,41 +100,35 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64, chain_rules: Cha
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     }
 
-    // Ensure MCL is initialized
-    mcl.init() catch {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-    };
-
     // Pad input to exactly 96 bytes (zero-padding for shorter inputs)
     var padded_input: [96]u8 = [_]u8{0} ** 96;
     const copy_len = @min(input.len, 96);
     @memcpy(padded_input[0..copy_len], input[0..copy_len]);
 
-    // Parse point (bytes 0-63)
-    const point = mcl.G1Point.from_bytes(padded_input[0..64]) catch {
-        @branchHint(.cold);
-        // Invalid points result in point at infinity (0, 0)
+    if (builtin.target.cpu.arch == .wasm32) {
+        // WASM builds: Use limited pure Zig implementation
+        // TODO: Implement full scalar multiplication in pure Zig for WASM
+        // For now, return point at infinity for all scalar multiplications
         @memset(output[0..64], 0);
-        return PrecompileOutput.success_result(gas_cost, 64);
-    };
+        
+        // Log that this is a placeholder implementation
+        log.warn("ECMUL in WASM build: using placeholder implementation (returns point at infinity)", .{});
+    } else {
+        // Use Rust implementation for native targets
+        // Ensure BN254 Rust library is initialized
+        bn254_backend.init() catch {
+            @branchHint(.cold);
+            return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
+        };
 
-    // Parse scalar (bytes 64-95)
-    const scalar = padded_input[64..96];
-
-    // Perform elliptic curve scalar multiplication using MCL
-    const result_point = point.mul(scalar) catch {
-        @branchHint(.cold);
-        // Invalid scalar results in point at infinity (0, 0)
-        @memset(output[0..64], 0);
-        return PrecompileOutput.success_result(gas_cost, 64);
-    };
-
-    // Convert result to bytes and write to output
-    result_point.to_bytes(output[0..64]) catch {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-    };
+        // Perform elliptic curve scalar multiplication using Rust BN254 library
+        bn254_backend.ecmul(&padded_input, output[0..64]) catch {
+            @branchHint(.cold);
+            // Invalid input results in point at infinity (0, 0)
+            @memset(output[0..64], 0);
+            return PrecompileOutput.success_result(gas_cost, 64);
+        };
+    }
 
     return PrecompileOutput.success_result(gas_cost, 64);
 }

@@ -31,11 +31,18 @@
 /// - Out of gas: Standard precompile error
 
 const std = @import("std");
-const mcl = @import("mcl_wrapper.zig");
+const builtin = @import("builtin");
+const log = @import("../log.zig");
 const gas_constants = @import("../constants/gas_constants.zig");
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const ChainRules = @import("../hardforks/chain_rules.zig");
+
+// Conditional imports based on target
+const bn254_backend = if (builtin.target.cpu.arch == .wasm32) 
+    @import("bn254.zig")  // Pure Zig implementation for WASM (limited)
+else 
+    @import("bn254_rust_wrapper.zig");  // Rust implementation for native
 
 /// Calculate gas cost for ECPAIRING based on chain rules and number of pairs
 ///
@@ -118,67 +125,33 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64, chain_rules: Cha
         return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
     }
 
-    // Ensure MCL is initialized
-    mcl.init() catch {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-    };
-
-    // Handle empty input (k=0) - should return 1 (true)
-    if (num_pairs == 0) {
-        @memset(output[0..32], 0);
-        output[31] = 1; // Set to true (0x0000...0001)
-        return PrecompileOutput.success_result(gas_cost, 32);
-    }
-
-    // Parse and validate all points first
-    var g1_points = std.ArrayList(mcl.G1Point).init(std.heap.page_allocator);
-    defer g1_points.deinit();
-    var g2_points = std.ArrayList(mcl.G2Point).init(std.heap.page_allocator);
-    defer g2_points.deinit();
-
-    var i: usize = 0;
-    while (i < num_pairs) : (i += 1) {
-        const pair_offset = i * 192;
-        
-        // Parse G1 point (bytes 0-63 of this pair)
-        const g1_point = mcl.G1Point.from_bytes(input[pair_offset..pair_offset + 64]) catch {
+    if (builtin.target.cpu.arch == .wasm32) {
+        // WASM builds: Use limited pure Zig implementation
+        // TODO: Implement full pairing operations in pure Zig for WASM
+        // For now, handle empty input correctly but fail on non-empty input
+        if (num_pairs == 0) {
+            // Empty input should return true (identity pairing)
+            @memset(output[0..32], 0);
+            output[31] = 1;
+        } else {
+            // Non-empty input: return false (pairing fails)
+            @memset(output[0..32], 0);
+            log.warn("ECPAIRING in WASM build: using placeholder implementation (non-empty input returns false)", .{});
+        }
+    } else {
+        // Use Rust implementation for native targets
+        // Ensure BN254 Rust library is initialized
+        bn254_backend.init() catch {
             @branchHint(.cold);
             return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
         };
 
-        // Parse G2 point (bytes 64-191 of this pair)
-        const g2_point = mcl.G2Point.from_bytes(input[pair_offset + 64..pair_offset + 192]) catch {
-            @branchHint(.cold);
-            return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-        };
-
-        g1_points.append(g1_point) catch {
-            @branchHint(.cold);
-            return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-        };
-        
-        g2_points.append(g2_point) catch {
+        // Perform elliptic curve pairing check using Rust BN254 library
+        bn254_backend.ecpairing(input, output[0..32]) catch {
             @branchHint(.cold);
             return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
         };
     }
-
-    // Compute multi-pairing: ∏ e(G1ᵢ, G2ᵢ)
-    const pairing_result = mcl.multi_pairing(g1_points.items, g2_points.items) catch {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-    };
-
-    // Check if result equals 1 (identity element in GT)
-    const is_valid = pairing_result.is_one();
-
-    // Format output: 32 bytes with 1 if valid, 0 if invalid
-    @memset(output[0..32], 0);
-    if (is_valid) {
-        output[31] = 1; // Set to true (0x0000...0001)
-    }
-    // else remains 0 (false)
 
     return PrecompileOutput.success_result(gas_cost, 32);
 }
