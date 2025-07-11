@@ -1,10 +1,20 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-// Use WASM-specific logging when building for WASM
-const log = if (builtin.target.cpu.arch == .wasm32) @import("log_wasm.zig").log else std.log.scoped(.guillotine);
-
 const evm_root = @import("evm");
+
+// Simple inline logging that compiles out for freestanding WASM
+inline fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
+    _ = scope;
+    if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+        switch (level) {
+            .err => std.log.err("[guillotine_c] " ++ format, args),
+            .warn => std.log.warn("[guillotine_c] " ++ format, args),
+            .info => std.log.info("[guillotine_c] " ++ format, args),
+            .debug => std.log.debug("[guillotine_c] " ++ format, args),
+        }
+    }
+}
 const Evm = evm_root.Evm;
 const MemoryDatabase = evm_root.MemoryDatabase;
 const Address = @import("Address");
