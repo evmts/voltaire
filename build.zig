@@ -31,6 +31,15 @@ pub fn build(b: *std.Build) void {
     
     // Add Rlp import to address module
     address_mod.addImport("Rlp", rlp_mod);
+    
+    // Create the client module
+    const client_mod = b.createModule(.{
+        .root_source_file = b.path("src/client/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    client_mod.addImport("Address", address_mod);
+    
     // Create the main evm module that exports everything
     const evm_mod = b.createModule(.{
         .root_source_file = b.path("src/evm/root.zig"),
@@ -45,6 +54,7 @@ pub fn build(b: *std.Build) void {
     // Add Address to lib_mod so tests can access it
     lib_mod.addImport("Address", address_mod);
     lib_mod.addImport("evm", evm_mod);
+    lib_mod.addImport("client", client_mod);
 
     const exe_mod = b.createModule(.{ .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize });
     exe_mod.addImport("Guillotine_lib", lib_mod);

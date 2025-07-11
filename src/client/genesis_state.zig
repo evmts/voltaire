@@ -1,0 +1,1 @@
+const GenesisState = @This();
