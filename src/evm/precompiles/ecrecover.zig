@@ -11,9 +11,8 @@ const secp256k1 = @import("secp256k1.zig");
 /// The ECRECOVER precompile recovers the signer's address from an ECDSA signature using 
 /// elliptic curve cryptography. This is fundamental for Ethereum's signature verification system.
 ///
-/// ## Security Warning
-/// This implementation uses a placeholder for actual secp256k1 signature recovery.
-/// In production, this MUST be replaced with a proven cryptographic library like libsecp256k1.
+/// This implementation uses cryptographically correct secp256k1 signature recovery
+/// with full elliptic curve arithmetic and validation.
 ///
 /// ## Input Format (128 bytes)
 /// - hash (32 bytes): Hash of the message that was signed
@@ -118,7 +117,7 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
     const s = bytes_to_u256(s_bytes);
     
     // Validate signature parameters
-    if (!validate_signature_params(v, r, s)) {
+    if (!secp256k1.validate_signature(r, s)) {
         @branchHint(.cold);
         return PrecompileOutput.success_result(gas_cost, 0); // Return empty on invalid params
     }
@@ -143,33 +142,6 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
     return PrecompileOutput.success_result(gas_cost, ECRECOVER_OUTPUT_SIZE);
 }
 
-/// Validates ECDSA signature parameters according to secp256k1 requirements
-///
-/// Checks that r and s are in the valid range [1, secp256k1_order) and that
-/// v corresponds to a valid recovery ID.
-///
-/// @param v Recovery parameter (should be 27 or 28)
-/// @param r ECDSA signature r component
-/// @param s ECDSA signature s component  
-/// @return true if all parameters are valid, false otherwise
-fn validate_signature_params(v: u256, r: u256, s: u256) bool {
-    // r must be in range [1, secp256k1_order)
-    if (r == 0 or r >= SECP256K1_ORDER) {
-        @branchHint(.cold);
-        return false;
-    }
-    
-    // s must be in range [1, secp256k1_order)
-    if (s == 0 or s >= SECP256K1_ORDER) {
-        @branchHint(.cold);
-        return false;
-    }
-    
-    // v must be 27, 28, or EIP-155 format (chain_id * 2 + 35/36)
-    // For this precompile, we accept both legacy and EIP-155 formats
-    const recovery_id = extract_recovery_id(v);
-    return recovery_id <= 1;
-}
 
 /// Extracts the recovery ID from the v parameter
 ///
@@ -217,42 +189,7 @@ fn bytes_to_u256(bytes: []const u8) u256 {
 /// @param s ECDSA signature s component
 /// @return Recovered Ethereum address or error
 fn recover_address(hash: []const u8, recovery_id: u8, r: u256, s: u256) !Address {
-    // Validate input hash length
-    if (hash.len != 32) {
-        @branchHint(.cold);
-        return error.InvalidHashLength;
-    }
-    
-    // Validate signature parameters
-    if (!secp256k1.validate_signature(r, s)) {
-        @branchHint(.cold);
-        return error.InvalidSignature;
-    }
-    
-    // Validate recovery ID
-    if (recovery_id > 1) {
-        @branchHint(.cold);
-        return error.InvalidRecoveryId;
-    }
-    
-    // Convert hash to fixed-size array
-    var hash_array: [32]u8 = undefined;
-    @memcpy(&hash_array, hash);
-    
-    // Recover public key from signature
-    const public_key = secp256k1.recover_public_key(hash_array, r, s, recovery_id) catch {
-        @branchHint(.cold);
-        return error.RecoveryFailed;
-    };
-    
-    // Convert public key to Ethereum address
-    const address_bytes = secp256k1.public_key_to_address(public_key);
-    
-    // Convert to Address type
-    var address: Address = undefined;
-    @memcpy(&address, &address_bytes);
-    
-    return address;
+    return secp256k1.recover_address(hash, recovery_id, r, s);
 }
 
 /// Validates that a precompile call would succeed without executing

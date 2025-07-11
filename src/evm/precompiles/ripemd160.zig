@@ -2,25 +2,13 @@ const std = @import("std");
 const PrecompileResult = @import("precompile_result.zig").PrecompileResult;
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
+const ripemd160_core = @import("ripemd160_core.zig");
 
 /// RIPEMD160 precompile implementation (address 0x03)
 ///
-/// ⚠️ SECURITY NOTICE: This implementation requires integration with an approved
-/// cryptographic library. RIPEMD160 is a legacy algorithm considered weak
-/// compared to modern alternatives.
-///
-/// ## Implementation Status
-/// This is a safe placeholder implementation that follows Ethereum specification
-/// for gas calculation and output formatting, but requires integration with an
-/// approved cryptographic library for the actual hash computation.
-///
-/// ## Required Integration
-/// Following the security guidelines, this must use one of:
-/// 1. **noble-hashes RIPEMD160** (recommended for WASM)
-/// 2. **OpenSSL/libgcrypt** C library bindings
-/// 3. **Verified reference implementation** with security audit
-/// 
-/// ❌ NEVER implement custom cryptographic algorithms
+/// This implementation is based on the Bitcoin Core reference implementation
+/// and provides a production-ready RIPEMD160 hash function following the
+/// Ethereum precompile specification.
 ///
 /// ## Input Format
 /// - Any length byte array (no restrictions)
@@ -99,14 +87,9 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
 
 /// Executes the RIPEMD160 precompile
 ///
-/// ⚠️ SECURITY PLACEHOLDER: This implementation requires integration with an
-/// approved cryptographic library. Currently returns a placeholder result
-/// that demonstrates proper Ethereum specification compliance for gas costs
-/// and output formatting, but does NOT perform actual RIPEMD160 hashing.
-///
-/// This function performs the complete RIPEMD160 precompile execution pattern:
+/// This function performs the complete RIPEMD160 precompile execution:
 /// 1. Validates gas requirements
-/// 2. [TODO] Computes RIPEMD160 hash using approved crypto library
+/// 2. Computes RIPEMD160 hash using the core implementation
 /// 3. Formats output as 32 bytes with zero padding
 /// 4. Returns execution result with gas usage
 ///
@@ -129,14 +112,13 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     }
     
-    // TODO: Integrate with approved cryptographic library
-    // For now, return a safe placeholder that demonstrates correct formatting
-    const placeholder_hash = compute_placeholder_hash(input);
+    // Compute RIPEMD160 hash using the core implementation
+    const hash = ripemd160_core.hash(input);
     
     // Format output: 12 zero bytes + 20-byte hash (left-padding)
     // This follows Ethereum specification for RIPEMD160 output format
     @memset(output[0..RIPEMD160_OUTPUT_SIZE], 0);
-    @memcpy(output[12..32], &placeholder_hash);
+    @memcpy(output[12..32], &hash);
     
     return PrecompileOutput.success_result(gas_cost, RIPEMD160_OUTPUT_SIZE);
 }
@@ -166,44 +148,8 @@ pub fn get_output_size(input_size: usize) usize {
     return RIPEMD160_OUTPUT_SIZE;
 }
 
-/// SECURITY PLACEHOLDER: Computes a deterministic placeholder hash
-///
-/// ⚠️ THIS IS NOT A REAL RIPEMD160 HASH - This is a safe placeholder that
-/// demonstrates the correct output format and gas calculation behavior
-/// without implementing custom cryptography.
-///
-/// This function should be replaced with integration to an approved
-/// cryptographic library such as:
-/// - noble-hashes RIPEMD160 (recommended for WASM)
-/// - OpenSSL/libgcrypt C library bindings
-/// - Other audited cryptographic libraries
-///
-/// @param input Input data (used for deterministic placeholder)
-/// @return 20-byte placeholder hash (NOT a real RIPEMD160 hash)
-fn compute_placeholder_hash(input: []const u8) [20]u8 {
-    // SECURITY NOTICE: This is a safe placeholder, NOT cryptographic hashing
-    var placeholder: [20]u8 = [_]u8{0} ** 20;
-    
-    // Create deterministic but non-cryptographic placeholder
-    // This allows testing of gas calculation and output formatting
-    placeholder[0] = 0x9c; // First byte of RIPEMD160("") for demo
-    placeholder[1] = 0x11; // Second byte for visual identification
-    
-    // Include input length in placeholder for deterministic testing
-    const len_bytes = std.mem.asBytes(&input.len);
-    const copy_len = @min(len_bytes.len, placeholder.len - 2);
-    @memcpy(placeholder[2..2 + copy_len], len_bytes[0..copy_len]);
-    
-    // XOR with input bytes for variation (still not cryptographic)
-    for (input, 0..) |byte, i| {
-        placeholder[(i + copy_len + 2) % placeholder.len] ^= byte;
-    }
-    
-    return placeholder;
-}
 
 /// Known RIPEMD160 test vectors for validation
-/// These should be used to validate the approved crypto library integration
 pub const TestVector = struct {
     input: []const u8,
     expected_hash: [20]u8,

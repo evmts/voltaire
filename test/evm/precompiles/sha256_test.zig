@@ -25,7 +25,7 @@ const ABC_HASH = [_]u8{
 const LONG_INPUT = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
 const LONG_HASH = [_]u8{
     0x24, 0x8d, 0x6a, 0x61, 0xd2, 0x06, 0x38, 0xb8, 0xe5, 0xc0, 0x26, 0x93, 0x0c, 0x3e, 0x60, 0x39,
-    0xa3, 0x3c, 0xe4, 0x59, 0x64, 0xff, 0x21, 0x67, 0xf6, 0xa2, 0x7c, 0x14, 0xe5, 0xf3, 0x40, 0x90
+    0xa3, 0x3c, 0xe4, 0x59, 0x64, 0xff, 0x21, 0x67, 0xf6, 0xec, 0xed, 0xd4, 0x19, 0xdb, 0x06, 0xc1
 };
 
 test "sha256 gas calculation" {
@@ -97,9 +97,8 @@ test "sha256 execute with longer input" {
     try testing.expectEqual(@as(u64, 84), result.get_gas_used()); // 60 + 24 for 2 words
     try testing.expectEqual(@as(usize, 32), result.get_output_size());
     
-    // Verify output matches known hash (we'll fix this after implementation)
-    // For now, just verify we get a 32-byte output
-    try testing.expect(output_buffer.len == 32);
+    // Verify output matches known hash
+    try testing.expectEqualSlices(u8, &LONG_HASH, &output_buffer);
 }
 
 test "sha256 execute out of gas" {
