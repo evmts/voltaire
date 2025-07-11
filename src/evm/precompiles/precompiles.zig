@@ -118,21 +118,25 @@ pub fn execute_precompile(address: Address, input: []const u8, output: []u8, gas
             return modexp.execute(input, output, gas_limit);
         }, // MODEXP
         6 => {
-            @branchHint(.cold);
-            return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-        }, // ECADD - TODO
+            @branchHint(.likely);
+            const ecadd = @import("ecadd.zig");
+            return ecadd.execute(input, output, gas_limit, chain_rules);
+        }, // ECADD
         7 => {
-            @branchHint(.cold);
-            return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-        }, // ECMUL - TODO
+            @branchHint(.likely);
+            const ecmul = @import("ecmul.zig");
+            return ecmul.execute(input, output, gas_limit, chain_rules);
+        }, // ECMUL
         8 => {
-            @branchHint(.cold);
-            return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-        }, // ECPAIRING - TODO
+            @branchHint(.likely);
+            const ecpairing = @import("ecpairing.zig");
+            return ecpairing.execute(input, output, gas_limit, chain_rules);
+        }, // ECPAIRING
         9 => {
             @branchHint(.unlikely);
-            return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-        }, // BLAKE2F - TODO
+            const blake2f = @import("blake2f.zig");
+            return blake2f.execute(input, output, gas_limit);
+        }, // BLAKE2F
         10 => {
             @branchHint(.unlikely);
             return kzg_point_evaluation.execute(input, output, gas_limit);
@@ -180,10 +184,22 @@ pub fn estimate_gas(address: Address, input_size: usize, chain_rules: ChainRules
             const modexp = @import("modexp.zig");
             break :blk modexp.MODEXP_MIN_GAS;
         }, // MODEXP
-        6 => error.InvalidInput, // ECADD - TODO
-        7 => error.InvalidInput, // ECMUL - TODO
-        8 => error.InvalidInput, // ECPAIRING - TODO
-        9 => error.InvalidInput, // BLAKE2F - TODO
+        6 => blk: {
+            const ecadd = @import("ecadd.zig");
+            break :blk ecadd.calculate_gas_checked(input_size);
+        }, // ECADD
+        7 => blk: {
+            const ecmul = @import("ecmul.zig");
+            break :blk ecmul.calculate_gas_checked(input_size);
+        }, // ECMUL
+        8 => blk: {
+            const ecpairing = @import("ecpairing.zig");
+            break :blk ecpairing.calculate_gas_checked(input_size);
+        }, // ECPAIRING
+        9 => blk: {
+            const blake2f = @import("blake2f.zig");
+            break :blk blake2f.calculate_gas_checked(input_size);
+        }, // BLAKE2F
         10 => kzg_point_evaluation.calculate_gas_checked(input_size), // POINT_EVALUATION
 
         else => error.InvalidPrecompile,
@@ -227,7 +243,10 @@ pub fn get_output_size(address: Address, input_size: usize, chain_rules: ChainRu
         6 => 64, // ECADD - fixed 64 bytes (point)
         7 => 64, // ECMUL - fixed 64 bytes (point)
         8 => 32, // ECPAIRING - fixed 32 bytes (boolean result)
-        9 => 64, // BLAKE2F - fixed 64 bytes (hash)
+        9 => blk: {
+            const blake2f = @import("blake2f.zig");
+            break :blk blake2f.get_output_size(input_size);
+        }, // BLAKE2F
         10 => kzg_point_evaluation.get_output_size(input_size), // POINT_EVALUATION
 
         else => error.InvalidPrecompile,

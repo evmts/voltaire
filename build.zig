@@ -67,6 +67,47 @@ pub fn build(b: *std.Build) void {
     evm_mod.addImport("Address", address_mod);
     evm_mod.addImport("Rlp", rlp_mod);
     
+    // Add MCL (Herumi) library for alt_bn128 elliptic curve operations
+    // Build MCL as a static library
+    const mcl_lib = b.addStaticLibrary(.{
+        .name = "mcl",
+        .target = target,
+        .optimize = optimize,
+    });
+    
+    // Add MCL C++ source files
+    mcl_lib.addCSourceFiles(.{
+        .files = &[_][]const u8{
+            "third_party/mcl/src/fp.cpp",
+            "third_party/mcl/src/bn_c256.cpp",
+            "third_party/mcl/src/bn_c384_256.cpp",
+        },
+        .flags = &[_][]const u8{
+            "-std=c++17",
+            "-DMCL_DONT_USE_OPENSSL",
+            "-DMCL_DONT_USE_XBYAK", 
+            "-DMCL_USE_LLVM=1",
+            "-DMCL_VINT_FIXED_BUFFER",
+            "-DMCL_MAX_BIT_SIZE=384",
+            "-DMCL_SIZEOF_UNIT=8",
+            "-DMCL_USE_VINT",
+            "-DMCL_VINT_FIXED_BUFFER",
+            "-DCYBOZU_DONT_USE_EXCEPTION",
+            "-DCYBOZU_DONT_USE_STRING",
+        },
+    });
+    
+    // Add MCL include directories
+    mcl_lib.addIncludePath(b.path("third_party/mcl/include"));
+    mcl_lib.linkLibCpp();
+    
+    // Install MCL library
+    b.installArtifact(mcl_lib);
+    
+    // Link MCL to the EVM module
+    evm_mod.linkLibrary(mcl_lib);
+    evm_mod.addIncludePath(b.path("third_party/mcl/include"));
+    
     // Add Rust Foundry wrapper integration
     // TODO: Fix Rust integration - needs proper zabi dependency
     // const rust_build = @import("src/compilers/rust_build.zig");
@@ -372,6 +413,37 @@ pub fn build(b: *std.Build) void {
     const ripemd160_test_step = b.step("test-ripemd160", "Run RIPEMD160 precompile tests");
     ripemd160_test_step.dependOn(&run_ripemd160_test.step);
 
+    // Add BLAKE2f tests
+    const blake2f_test = b.addTest(.{
+        .name = "blake2f-test",
+        .root_source_file = b.path("test/evm/precompiles/blake2f_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    blake2f_test.root_module.stack_check = false;
+    blake2f_test.root_module.addImport("Address", address_mod);
+    blake2f_test.root_module.addImport("evm", evm_mod);
+    const run_blake2f_test = b.addRunArtifact(blake2f_test);
+    const blake2f_test_step = b.step("test-blake2f", "Run BLAKE2f precompile tests");
+    blake2f_test_step.dependOn(&run_blake2f_test.step);
+
+    // Add MCL BN254 tests
+    const mcl_bn254_test = b.addTest(.{
+        .name = "mcl-bn254-test",
+        .root_source_file = b.path("test/evm/precompiles/mcl_bn254_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    mcl_bn254_test.root_module.stack_check = false;
+    mcl_bn254_test.root_module.addImport("Address", address_mod);
+    mcl_bn254_test.root_module.addImport("evm", evm_mod);
+    mcl_bn254_test.linkLibrary(mcl_lib);
+    mcl_bn254_test.addIncludePath(b.path("third_party/mcl/include"));
+    
+    const run_mcl_bn254_test = b.addRunArtifact(mcl_bn254_test);
+    const mcl_bn254_test_step = b.step("test-mcl-bn254", "Run MCL BN254 precompile tests");
+    mcl_bn254_test_step.dependOn(&run_mcl_bn254_test.step);
+
     // Add E2E Simple tests
     const e2e_simple_test = b.addTest(.{
         .name = "e2e-simple-test",
@@ -507,6 +579,8 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_static_protection_test.step);
     test_step.dependOn(&run_sha256_test.step);
     test_step.dependOn(&run_ripemd160_test.step);
+    test_step.dependOn(&run_blake2f_test.step);
+    test_step.dependOn(&run_mcl_bn254_test.step);
     test_step.dependOn(&run_e2e_simple_test.step);
     test_step.dependOn(&run_e2e_error_test.step);
     test_step.dependOn(&run_e2e_data_test.step);
