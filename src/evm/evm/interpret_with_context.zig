@@ -41,6 +41,7 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
         @branchHint(.likely);
         const opcode = contract.get_op(pc);
         frame.pc = pc;
+        
 
         
         const result = self.table.execute(pc, interpreter_ptr, state_ptr, opcode) catch |err| {
@@ -58,6 +59,7 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
                     // all gas and stops execution.
                     return RunResult.init(initial_gas, 0, .OutOfGas, ExecutionError.Error.OutOfMemory, null);
                 };
+                Log.debug("VM.interpret_with_context: Duplicated return_data to output, size={}", .{output.?.len});
             }
 
             return switch (err) {
@@ -69,8 +71,10 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
                     return RunResult.init(initial_gas, 0, .Invalid, err, output);
                 },
                 ExecutionError.Error.STOP => {
-                    Log.debug("VM.interpret_with_context: STOP opcode, output_size={}", .{if (output) |o| o.len else 0});
-                    return RunResult.init(initial_gas, frame.gas_remaining, .Success, null, output);
+                    Log.debug("VM.interpret_with_context: STOP opcode, output_size={}, creating RunResult", .{if (output) |o| o.len else 0});
+                    const result = RunResult.init(initial_gas, frame.gas_remaining, .Success, null, output);
+                    Log.debug("VM.interpret_with_context: RunResult created, output={any}", .{result.output});
+                    return result;
                 },
                 ExecutionError.Error.REVERT => {
                     return RunResult.init(initial_gas, frame.gas_remaining, .Revert, err, output);
@@ -106,11 +110,13 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
     self.return_data = @constCast(frame.return_data.get());
 
     const return_data = frame.return_data.get();
+    Log.debug("VM.interpret_with_context: Normal completion, return_data_size={}", .{return_data.len});
     const output: ?[]const u8 = if (return_data.len > 0) try self.allocator.dupe(u8, return_data) else null;
     
-    Log.debug("VM.interpret_with_context: Execution completed, gas_used={}, output_size={}", .{
+    Log.debug("VM.interpret_with_context: Execution completed, gas_used={}, output_size={}, output_ptr={any}", .{
         initial_gas - frame.gas_remaining,
         if (output) |o| o.len else 0,
+        output,
     });
 
     return RunResult.init(

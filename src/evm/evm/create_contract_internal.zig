@@ -38,28 +38,21 @@ pub fn create_contract_internal(self: *Vm, creator: Address.Address, value: u256
         };
     }
 
-    var hasher = Keccak256.init(.{});
-    hasher.update(init_code);
-    var code_hash: [32]u8 = undefined;
-    hasher.final(&code_hash);
-
-    var init_contract = Contract.init(
+    var init_contract = Contract.init_deployment(
         creator, // caller (who is creating this contract)
-        new_address, // address (the new contract's address)
         value, // value being sent to this contract
         gas, // gas available for init code execution
         init_code, // the init code to execute
-        code_hash, // hash of the init code
-        &[_]u8{}, // no input data for init code
-        false, // not static
+        null, // no salt for CREATE (only for CREATE2)
     );
+    init_contract.address = new_address; // Set the computed address
     defer init_contract.deinit(self.allocator, null);
 
     // Analyze jump destinations before execution
     init_contract.analyze_jumpdests(self.allocator);
 
     // Execute the init code - this should return the deployment bytecode
-    Log.debug("Executing init code, size: {}", .{init_code.len});
+    Log.debug("create_contract_internal: Executing init code, size: {}", .{init_code.len});
     const init_result = self.interpret_with_context(&init_contract, &[_]u8{}, false) catch |err| {
         Log.debug("Init code execution failed with error: {}", .{err});
         if (err == ExecutionError.Error.REVERT) {
@@ -71,16 +64,19 @@ pub fn create_contract_internal(self: *Vm, creator: Address.Address, value: u256
         return CreateResult.initFailure(0, null);
     };
 
-    Log.debug("Init code execution completed: status={}, gas_used={}, output_size={}", .{
+    Log.debug("create_contract_internal: Init code execution completed: status={}, gas_used={}, output_size={}, output_ptr={any}", .{
         init_result.status,
         init_result.gas_used,
         if (init_result.output) |o| o.len else 0,
+        init_result.output,
     });
 
     const deployment_code = init_result.output orelse &[_]u8{};
     
     if (deployment_code.len == 0) {
-        Log.debug("WARNING: Init code returned empty deployment code!", .{});
+        Log.debug("create_contract_internal: WARNING: Init code returned empty deployment code! init_result.output={any}", .{init_result.output});
+    } else {
+        Log.debug("create_contract_internal: Got deployment code, size={}", .{deployment_code.len});
     }
 
     // Check EIP-170 MAX_CODE_SIZE limit on the returned bytecode (24,576 bytes)

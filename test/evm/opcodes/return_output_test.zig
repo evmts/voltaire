@@ -64,14 +64,13 @@ test "constructor returns runtime code" {
     // Simple constructor that returns "HELLO"
     const init_code = &[_]u8{
         // Constructor copies runtime code to memory and returns it
-        0x65, 0x48, 0x45, 0x4c, 0x4c, 0x4f, // PUSH5 "HELLO"
-        0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
-        0x60, 0x1b, // PUSH1 27 (offset to get last 5 bytes)
-        0x60, 0x05, // PUSH1 5 (size)
-        0xf3,       // RETURN
+        0x64, 0x48, 0x45, 0x4c, 0x4c, 0x4f, // PUSH5 "HELLO" (6 bytes) - 0x64 is PUSH5
+        0x60, 0x00, // PUSH1 0 (2 bytes)
+        0x52,       // MSTORE (1 byte)
+        0x60, 0x1b, // PUSH1 27 (offset to get last 5 bytes) (2 bytes)
+        0x60, 0x05, // PUSH1 5 (size) (2 bytes)
+        0xf3,       // RETURN (1 byte)
     };
-    
     const deployer: Address.Address = [_]u8{0x12} ** 20;
     
     const create_result = try vm.create_contract(

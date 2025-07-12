@@ -167,9 +167,10 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         // The VM should handle copying the data when needed. We just set the reference.
         try frame.return_data.set(data);
         
-        Log.debug("RETURN data set to frame.return_data, size: {}", .{frame.return_data.size()});
+        Log.debug("RETURN data set to frame.return_data, size: {}, frame.return_data.get()={any}", .{frame.return_data.size(), frame.return_data.get()});
     }
 
+    Log.debug("RETURN opcode complete, about to return STOP error", .{});
     return ExecutionError.Error.STOP; // RETURN ends execution normally
 }
 
