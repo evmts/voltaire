@@ -638,6 +638,32 @@ pub fn build(b: *std.Build) void {
     const solidity_constructor_test_step = b.step("test-solidity-constructor", "Run Solidity Constructor test");
     solidity_constructor_test_step.dependOn(&run_solidity_constructor_test.step);
     
+    const contract_call_test = b.addTest(.{
+        .name = "contract-call-test",
+        .root_source_file = b.path("test/evm/contract_call_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    contract_call_test.root_module.addImport("Address", address_mod);
+    contract_call_test.root_module.addImport("evm", evm_mod);
+    const run_contract_call_test = b.addRunArtifact(contract_call_test);
+    const contract_call_test_step = b.step("test-contract-call", "Run Contract Call tests");
+    contract_call_test_step.dependOn(&run_contract_call_test.step);
+    
+    const revert_debug_test = b.addTest(.{
+        .name = "revert-debug-test",
+        .root_source_file = b.path("test/evm/revert_debug_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    revert_debug_test.root_module.addImport("Address", address_mod);
+    revert_debug_test.root_module.addImport("evm", evm_mod);
+    const run_revert_debug_test = b.addRunArtifact(revert_debug_test);
+    const revert_debug_test_step = b.step("test-revert-debug", "Run Revert Debug test");
+    revert_debug_test_step.dependOn(&run_revert_debug_test.step);
+    
     snail_tracer_test.root_module.addImport("Address", address_mod);
     snail_tracer_test.root_module.addImport("evm", evm_mod);
     snail_tracer_test.root_module.addImport("compilers", compilers_mod);
