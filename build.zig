@@ -11,12 +11,20 @@ pub fn build(b: *std.Build) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
+    
+    // Custom build option to disable precompiles
+    const no_precompiles = b.option(bool, "no_precompiles", "Disable all EVM precompiles for minimal build") orelse false;
+    
+    // Create build options module
+    const build_options = b.addOptions();
+    build_options.addOption(bool, "no_precompiles", no_precompiles);
 
     const lib_mod = b.createModule(.{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .optimize = optimize,
     });
+    lib_mod.addIncludePath(b.path("rust/bn254_wrapper"));
     const address_mod = b.createModule(.{
         .root_source_file = b.path("src/address/address.zig"),
         .target = target,
@@ -61,7 +69,7 @@ pub fn build(b: *std.Build) void {
     const rust_profile = if (optimize == .ReleaseFast) "release-fast" else "release";
     
     const rust_build = b.addSystemCommand(&[_][]const u8{
-        "cargo", "build", "--release", 
+        "cargo", "build",
         "--profile", rust_profile,
         "--manifest-path", "rust/bn254_wrapper/Cargo.toml"
     });
@@ -74,7 +82,8 @@ pub fn build(b: *std.Build) void {
     });
     
     // Link the compiled Rust library
-    bn254_lib.addObjectFile(b.path("target/release/libbn254_wrapper.a"));
+    const rust_lib_path = b.fmt("target/{s}/libbn254_wrapper.a", .{rust_profile});
+    bn254_lib.addObjectFile(b.path(rust_lib_path));
     bn254_lib.linkLibC();
     
     // Add include path for C header
@@ -88,14 +97,14 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/evm/root.zig"),
         .target = target,
         .optimize = optimize,
-        .stack_check = false,
-        .single_threaded = true,
     });
     evm_mod.addImport("Address", address_mod);
     evm_mod.addImport("Rlp", rlp_mod);
+    evm_mod.addImport("build_options", build_options.createModule());
     
     // Link BN254 Rust library to EVM module (native targets only)
     evm_mod.linkLibrary(bn254_lib);
+    evm_mod.addIncludePath(b.path("rust/bn254_wrapper"));
     
     // Add Rust Foundry wrapper integration
     // TODO: Fix Rust integration - needs proper zabi dependency
@@ -129,6 +138,10 @@ pub fn build(b: *std.Build) void {
         .name = "Guillotine",
         .root_module = lib_mod,
     });
+    
+    // Link BN254 Rust library to the library artifact
+    lib.linkLibrary(bn254_lib);
+    lib.addIncludePath(b.path("rust/bn254_wrapper"));
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
@@ -153,8 +166,8 @@ pub fn build(b: *std.Build) void {
         .os_tag = .freestanding,  // Use freestanding for minimal size
     });
 
-    // Force size optimization for WASM regardless of global optimize setting
-    const wasm_optimize = .ReleaseSmall;
+    // Use the same optimization mode as specified by the user
+    const wasm_optimize = optimize;
 
     // Create WASM-specific modules with minimal dependencies
     // WASM-specific Address module
@@ -179,11 +192,10 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("src/evm/root.zig"),
         .target = wasm_target,
         .optimize = wasm_optimize,
-        .stack_check = false,
-        .single_threaded = true,
     });
     wasm_evm_mod.addImport("Address", wasm_address_mod);
     wasm_evm_mod.addImport("Rlp", wasm_rlp_mod);
+    wasm_evm_mod.addImport("build_options", build_options.createModule());
     // Note: WASM build uses pure Zig implementations for BN254 operations
 
     const wasm_lib_mod = b.createModule(.{
@@ -219,6 +231,32 @@ pub fn build(b: *std.Build) void {
     
     const wasm_step = b.step("wasm", "Build WASM library and show bundle size");
     wasm_step.dependOn(&wasm_size_step.step);
+    
+    // Debug WASM build for analysis
+    const wasm_debug_mod = b.createModule(.{
+        .root_source_file = b.path("src/root_c.zig"),
+        .target = wasm_target,
+        .optimize = .Debug,  // Debug mode for symbols
+        .single_threaded = true,
+    });
+    wasm_debug_mod.addImport("Address", wasm_address_mod);
+    wasm_debug_mod.addImport("evm", wasm_evm_mod);
+    wasm_debug_mod.addImport("Rlp", wasm_rlp_mod);
+    
+    const wasm_debug = b.addExecutable(.{
+        .name = "guillotine-debug",
+        .root_module = wasm_debug_mod,
+    });
+    
+    wasm_debug.entry = .disabled;
+    wasm_debug.rdynamic = true;
+    
+    const wasm_debug_install = b.addInstallArtifact(wasm_debug, .{ 
+        .dest_sub_path = "../bin/guillotine-debug.wasm" 
+    });
+    
+    const wasm_debug_step = b.step("wasm-debug", "Build debug WASM for analysis");
+    wasm_debug_step.dependOn(&wasm_debug_install.step);
 
     // This *creates* a Run step in the build graph, to be executed when another
     // step is evaluated that depends on it. The next line below will establish
