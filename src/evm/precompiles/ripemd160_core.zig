@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 /// RIPEMD160 implementation based on Bitcoin Core reference
 /// This implementation follows the RIPEMD160 specification and matches Bitcoin Core's implementation
@@ -125,6 +126,67 @@ fn rol(x: u32, n: u5) u32 {
     return (x << n) | (x >> shift);
 }
 
+// Lookup tables for dynamic version (ReleaseSmall mode)
+const LEFT_X_INDICES = [80]u8{
+    // Rounds 0-15
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+    // Rounds 16-31
+    7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8,
+    // Rounds 32-47
+    3, 10, 14, 4, 9, 15, 8, 1, 2, 7, 0, 6, 13, 11, 5, 12,
+    // Rounds 48-63
+    1, 9, 11, 10, 0, 8, 12, 4, 13, 3, 7, 15, 14, 5, 6, 2,
+    // Rounds 64-79
+    4, 0, 5, 9, 7, 12, 2, 10, 14, 1, 3, 8, 11, 6, 15, 13,
+};
+
+const RIGHT_X_INDICES = [80]u8{
+    // Rounds 0-15
+    5, 14, 7, 0, 9, 2, 11, 4, 13, 6, 15, 8, 1, 10, 3, 12,
+    // Rounds 16-31
+    6, 11, 3, 7, 0, 13, 5, 10, 14, 15, 8, 12, 4, 9, 1, 2,
+    // Rounds 32-47
+    15, 5, 1, 3, 7, 14, 6, 9, 11, 8, 12, 2, 10, 0, 4, 13,
+    // Rounds 48-63
+    8, 6, 4, 1, 3, 11, 15, 0, 5, 12, 2, 13, 9, 7, 10, 14,
+    // Rounds 64-79
+    12, 15, 10, 4, 1, 5, 8, 7, 6, 2, 13, 14, 0, 3, 9, 11,
+};
+
+const LEFT_ROTATIONS = [80]u5{
+    // Rounds 0-15
+    11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8,
+    // Rounds 16-31
+    7, 6, 8, 13, 11, 9, 7, 15, 7, 12, 15, 9, 11, 7, 13, 12,
+    // Rounds 32-47
+    11, 13, 6, 7, 14, 9, 13, 15, 14, 8, 13, 6, 5, 12, 7, 5,
+    // Rounds 48-63
+    11, 12, 14, 15, 14, 15, 9, 8, 9, 14, 5, 6, 8, 6, 5, 12,
+    // Rounds 64-79
+    9, 15, 5, 11, 6, 8, 13, 12, 5, 12, 13, 14, 11, 8, 5, 6,
+};
+
+const RIGHT_ROTATIONS = [80]u5{
+    // Rounds 0-15
+    8, 9, 9, 11, 13, 15, 15, 5, 7, 7, 8, 11, 14, 14, 12, 6,
+    // Rounds 16-31
+    9, 13, 15, 7, 12, 8, 9, 11, 7, 7, 12, 7, 6, 15, 13, 11,
+    // Rounds 32-47
+    9, 7, 15, 11, 8, 6, 6, 14, 12, 13, 5, 14, 13, 13, 7, 5,
+    // Rounds 48-63
+    15, 5, 8, 11, 14, 14, 6, 14, 6, 9, 12, 9, 12, 5, 15, 8,
+    // Rounds 64-79
+    8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11,
+};
+
+const ROUND_CONSTANTS = [5]u32{
+    0x00000000, 0x5A827999, 0x6ED9EBA1, 0x8F1BBCDC, 0xA953FD4E,
+};
+
+const RIGHT_ROUND_CONSTANTS = [5]u32{
+    0x50A28BE6, 0x5C4DD124, 0x6D703EF3, 0x7A6D76E9, 0x00000000,
+};
+
 // RIPEMD160 transform function
 fn transform(s: *[5]u32, chunk: *const [64]u8) void {
     // Load message block into array X (little-endian)
@@ -150,6 +212,60 @@ fn transform(s: *[5]u32, chunk: *const [64]u8) void {
     var cr = cl;
     var dr = dl;
     var er = el;
+    
+    if (comptime builtin.mode == .ReleaseSmall) {
+        // Dynamic version for size optimization
+        // Left line
+        var i: usize = 0;
+        while (i < 80) : (i += 1) {
+            const f_idx = i / 16;
+            const x_idx = LEFT_X_INDICES[i];
+            const rot = LEFT_ROTATIONS[i];
+            const k = ROUND_CONSTANTS[f_idx];
+            
+            round(&al, &bl, &cl, &dl, &el, f(@intCast(f_idx), bl, cl, dl) +% X[x_idx] +% k, rot);
+            
+            // Rotate variables: (al,bl,cl,dl,el) = (el,al,bl,cl,dl)
+            const temp = al;
+            al = el;
+            el = dl;
+            dl = cl;
+            cl = bl;
+            bl = temp;
+        }
+        
+        // Restore left line values and initialize right line
+        al = s[0];
+        bl = s[1];
+        cl = s[2];
+        dl = s[3];
+        el = s[4];
+        ar = al;
+        br = bl;
+        cr = cl;
+        dr = dl;
+        er = el;
+        
+        // Right line
+        i = 0;
+        while (i < 80) : (i += 1) {
+            const f_idx = 4 - (i / 16);  // Right line uses reverse order: 4,3,2,1,0
+            const x_idx = RIGHT_X_INDICES[i];
+            const rot = RIGHT_ROTATIONS[i];
+            const k = RIGHT_ROUND_CONSTANTS[i / 16];
+            
+            round(&ar, &br, &cr, &dr, &er, f(@intCast(f_idx), br, cr, dr) +% X[x_idx] +% k, rot);
+            
+            // Rotate variables
+            const temp = ar;
+            ar = er;
+            er = dr;
+            dr = cr;
+            cr = br;
+            br = temp;
+        }
+    } else {
+        // Original unrolled version for performance
     
     // Left line
     round(&al, &bl, &cl, &dl, &el, f(0, bl, cl, dl) +% X[0] +% 0x00000000, 11);
@@ -322,6 +438,7 @@ fn transform(s: *[5]u32, chunk: *const [64]u8) void {
     round(&dr, &er, &ar, &br, &cr, f(0, er, ar, br) +% X[3] +% 0x00000000, 13);
     round(&cr, &dr, &er, &ar, &br, f(0, dr, er, ar) +% X[9] +% 0x00000000, 11);
     round(&br, &cr, &dr, &er, &ar, f(0, cr, dr, er) +% X[11] +% 0x00000000, 11);
+    }
     
     // Combine results
     const t = s[1] +% cl +% dr;
