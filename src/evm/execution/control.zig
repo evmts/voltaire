@@ -62,9 +62,10 @@ pub fn op_jumpi(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     }
 
     // Use batch pop for performance - pop 2 values at once
+    // Stack order (top to bottom): [destination, condition]
     const values = frame.stack.pop2_unsafe();
-    const dest = values.b; // Second from top (was on top)
-    const condition = values.a; // Third from top (was second)
+    const dest = values.b; // Second popped (was second from top) 
+    const condition = values.a; // First popped (was on top)
 
     if (condition != 0) {
         @branchHint(.likely);
@@ -128,7 +129,6 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     const size = values.a; // First popped (was on top)
     const offset = values.b; // Second popped (was second from top)
     
-    // Debug logging
     Log.debug("RETURN opcode: offset={}, size={}", .{ offset, size });
 
     if (size == 0) {
@@ -156,7 +156,6 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         // Get data from memory
         const data = try frame.memory.get_slice(offset_usize, size_usize);
         
-        // Debug logging
         Log.debug("RETURN reading {} bytes from memory[{}..{}]", .{ size_usize, offset_usize, offset_usize + size_usize });
         if (size_usize <= 32) {
             Log.debug("RETURN data: {x}", .{std.fmt.fmtSliceHexLower(data)});
