@@ -44,6 +44,13 @@ pub fn call_contract(self: *Vm, caller: Address.Address, to: Address.Address, va
         return CallResult{ .success = false, .gas_left = gas, .output = null };
     }
     
+    // Check if static call tries to send value
+    if (is_static and value > 0) {
+        @branchHint(.unlikely);
+        Log.debug("VM.call_contract: Static call cannot transfer value", .{});
+        return CallResult{ .success = false, .gas_left = gas, .output = null };
+    }
+    
     // Get the contract code
     const code = self.state.get_code(to);
     Log.debug("VM.call_contract: Got code for {any}, len={}", .{to, code.len});
@@ -69,13 +76,6 @@ pub fn call_contract(self: *Vm, caller: Address.Address, to: Address.Address, va
         return CallResult{ .success = true, .gas_left = gas, .output = null };
     }
     
-    // Check if static call tries to send value
-    if (is_static and value > 0) {
-        @branchHint(.unlikely);
-        Log.debug("VM.call_contract: Static call cannot transfer value", .{});
-        return CallResult{ .success = false, .gas_left = gas, .output = null };
-    }
-    
     // Calculate intrinsic gas for the call
     // Base cost is 100 gas for CALL
     const intrinsic_gas: u64 = 100;
@@ -86,6 +86,7 @@ pub fn call_contract(self: *Vm, caller: Address.Address, to: Address.Address, va
     }
     
     const execution_gas = gas - intrinsic_gas;
+    Log.debug("VM.call_contract: Starting execution with gas={}, intrinsic_gas={}, execution_gas={}", .{gas, intrinsic_gas, execution_gas});
     
     // Transfer value before execution (if any)
     if (value > 0) {
@@ -143,7 +144,7 @@ pub fn call_contract(self: *Vm, caller: Address.Address, to: Address.Address, va
                 else null;
             return CallResult{ 
                 .success = false, 
-                .gas_left = contract.gas + intrinsic_gas, 
+                .gas_left = contract.gas, 
                 .output = output 
             };
         }
@@ -151,6 +152,7 @@ pub fn call_contract(self: *Vm, caller: Address.Address, to: Address.Address, va
         // Other errors consume all gas
         return CallResult{ .success = false, .gas_left = 0, .output = null };
     };
+    defer if (result.output) |out| self.allocator.free(out);
     
     Log.debug("VM.call_contract: Execution completed, status={}, gas_used={}, output_size={}", .{
         result.status, 
@@ -158,20 +160,38 @@ pub fn call_contract(self: *Vm, caller: Address.Address, to: Address.Address, va
         if (result.output) |o| o.len else 0
     });
     
-    // Success - prepare output
+    // Prepare output
     const output = if (result.output) |out| 
         try self.allocator.dupe(u8, out) 
         else null;
     
-    Log.debug("VM.call_contract: Call successful, gas_used={}, gas_left={}, output_size={}", .{
+    // Check execution status
+    const success = switch (result.status) {
+        .Success => true,
+        .Revert => false,
+        .Invalid => false,
+        .OutOfGas => false,
+    };
+    
+    // If execution failed, revert value transfer
+    if (!success and value > 0) {
+        const caller_balance = self.state.get_balance(caller);
+        try self.state.set_balance(caller, caller_balance + value);
+        const to_balance = self.state.get_balance(to);
+        try self.state.set_balance(to, to_balance - value);
+    }
+    
+    Log.debug("VM.call_contract: Call completed, success={}, gas_used={}, gas_left={}, output_size={}", .{
+        success,
         result.gas_used, 
         result.gas_left,
         if (output) |o| o.len else 0
     });
     
+    // The intrinsic gas is consumed, so we don't add it back to gas_left
     return CallResult{ 
-        .success = true, 
-        .gas_left = result.gas_left + intrinsic_gas, 
+        .success = success, 
+        .gas_left = result.gas_left, 
         .output = output 
     };
 }
