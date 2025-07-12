@@ -609,6 +609,21 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+
+    // Add Constructor Bug test
+    const constructor_bug_test = b.addTest(.{
+        .name = "constructor-bug-test",
+        .root_source_file = b.path("test/evm/constructor_bug_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    constructor_bug_test.root_module.addImport("Address", address_mod);
+    constructor_bug_test.root_module.addImport("evm", evm_mod);
+    const run_constructor_bug_test = b.addRunArtifact(constructor_bug_test);
+    const constructor_bug_test_step = b.step("test-constructor-bug", "Run Constructor Bug test");
+    constructor_bug_test_step.dependOn(&run_constructor_bug_test.step);
+    
     snail_tracer_test.root_module.addImport("Address", address_mod);
     snail_tracer_test.root_module.addImport("evm", evm_mod);
     snail_tracer_test.root_module.addImport("compilers", compilers_mod);
@@ -648,6 +663,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_e2e_error_test.step);
     test_step.dependOn(&run_e2e_data_test.step);
     test_step.dependOn(&run_e2e_inheritance_test.step);
+    test_step.dependOn(&run_constructor_bug_test.step);
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
