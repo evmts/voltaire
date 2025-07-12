@@ -4,8 +4,11 @@ const CallResult = @import("call_result.zig").CallResult;
 const precompiles = @import("../precompiles/precompiles.zig");
 const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
+const Contract = @import("../frame/contract.zig");
+const ExecutionError = @import("../execution/execution_error.zig");
+const Keccak256 = std.crypto.hash.sha3.Keccak256;
 
-pub const CallContractError = std.mem.Allocator.Error;
+pub const CallContractError = std.mem.Allocator.Error || ExecutionError.Error || @import("../state/database_interface.zig").DatabaseError;
 
 /// Execute a CALL operation to another contract or precompile.
 ///
@@ -31,10 +34,144 @@ pub fn call_contract(self: *Vm, caller: Address.Address, to: Address.Address, va
         return self.execute_precompile_call(to, input, gas, is_static);
     }
     
-    // Regular contract call - currently not implemented
-    // TODO: Implement value transfer, gas calculation, recursive execution, and return data handling
-    Log.debug("VM.call_contract: Regular contract call not implemented yet", .{});
-    _ = value;
+    // Regular contract call
+    Log.debug("VM.call_contract: Regular contract call to {any}", .{to});
     
-    return CallResult{ .success = false, .gas_left = gas, .output = null };
+    // Check call depth limit (1024)
+    if (self.depth >= 1024) {
+        @branchHint(.unlikely);
+        Log.debug("VM.call_contract: Call depth limit exceeded", .{});
+        return CallResult{ .success = false, .gas_left = gas, .output = null };
+    }
+    
+    // Get the contract code
+    const code = self.state.get_code(to);
+    Log.debug("VM.call_contract: Got code for {any}, len={}", .{to, code.len});
+    
+    if (code.len == 0) {
+        // Calling empty contract - this is actually successful
+        Log.debug("VM.call_contract: Calling empty contract", .{});
+        
+        // Transfer value if any
+        if (value > 0) {
+            const caller_balance = self.state.get_balance(caller);
+            if (caller_balance < value) {
+                @branchHint(.unlikely);
+                Log.debug("VM.call_contract: Insufficient balance for value transfer", .{});
+                return CallResult{ .success = false, .gas_left = gas, .output = null };
+            }
+            
+            try self.state.set_balance(caller, caller_balance - value);
+            const to_balance = self.state.get_balance(to);
+            try self.state.set_balance(to, to_balance + value);
+        }
+        
+        return CallResult{ .success = true, .gas_left = gas, .output = null };
+    }
+    
+    // Check if static call tries to send value
+    if (is_static and value > 0) {
+        @branchHint(.unlikely);
+        Log.debug("VM.call_contract: Static call cannot transfer value", .{});
+        return CallResult{ .success = false, .gas_left = gas, .output = null };
+    }
+    
+    // Calculate intrinsic gas for the call
+    // Base cost is 100 gas for CALL
+    const intrinsic_gas: u64 = 100;
+    if (gas < intrinsic_gas) {
+        @branchHint(.unlikely);
+        Log.debug("VM.call_contract: Insufficient gas for call", .{});
+        return CallResult{ .success = false, .gas_left = 0, .output = null };
+    }
+    
+    const execution_gas = gas - intrinsic_gas;
+    
+    // Transfer value before execution (if any)
+    if (value > 0) {
+        const caller_balance = self.state.get_balance(caller);
+        if (caller_balance < value) {
+            @branchHint(.unlikely);
+            Log.debug("VM.call_contract: Insufficient balance for value transfer", .{});
+            return CallResult{ .success = false, .gas_left = gas, .output = null };
+        }
+        
+        try self.state.set_balance(caller, caller_balance - value);
+        const to_balance = self.state.get_balance(to);
+        try self.state.set_balance(to, to_balance + value);
+    }
+    
+    // Calculate code hash
+    var hasher = Keccak256.init(.{});
+    hasher.update(code);
+    var code_hash: [32]u8 = undefined;
+    hasher.final(&code_hash);
+    
+    // Create contract context for execution
+    var contract = Contract.init(
+        caller,      // caller
+        to,          // address being called
+        value,       // value already transferred
+        execution_gas, // gas for execution
+        code,        // contract code
+        code_hash,   // code hash
+        input,       // call data
+        is_static,   // static flag
+    );
+    defer contract.deinit(self.allocator, null);
+    
+    // Analyze jump destinations before execution
+    contract.analyze_jumpdests(self.allocator);
+    
+    // Execute the contract
+    Log.debug("VM.call_contract: About to execute contract with gas={}", .{execution_gas});
+    const result = self.interpret_with_context(&contract, input, is_static) catch |err| {
+        Log.debug("VM.call_contract: Execution failed with error: {}", .{err});
+        
+        // On error, revert value transfer
+        if (value > 0) {
+            const caller_balance = self.state.get_balance(caller);
+            try self.state.set_balance(caller, caller_balance + value);
+            const to_balance = self.state.get_balance(to);
+            try self.state.set_balance(to, to_balance - value);
+        }
+        
+        // For REVERT, we return partial gas
+        if (err == ExecutionError.Error.REVERT) {
+            const output = if (self.return_data.len > 0) 
+                try self.allocator.dupe(u8, self.return_data) 
+                else null;
+            return CallResult{ 
+                .success = false, 
+                .gas_left = contract.gas + intrinsic_gas, 
+                .output = output 
+            };
+        }
+        
+        // Other errors consume all gas
+        return CallResult{ .success = false, .gas_left = 0, .output = null };
+    };
+    
+    Log.debug("VM.call_contract: Execution completed, status={}, gas_used={}, output_size={}", .{
+        result.status, 
+        result.gas_used,
+        if (result.output) |o| o.len else 0
+    });
+    
+    // Success - prepare output
+    const output = if (result.output) |out| 
+        try self.allocator.dupe(u8, out) 
+        else null;
+    
+    Log.debug("VM.call_contract: Call successful, gas_used={}, gas_left={}, output_size={}", .{
+        result.gas_used, 
+        result.gas_left,
+        if (output) |o| o.len else 0
+    });
+    
+    return CallResult{ 
+        .success = true, 
+        .gas_left = result.gas_left + intrinsic_gas, 
+        .output = output 
+    };
 }
