@@ -1,5 +1,6 @@
 const std = @import("std");
 const Operation = @import("../opcodes/operation.zig");
+const Log = @import("../log.zig");
 const ExecutionError = @import("execution_error.zig");
 const ExecutionResult = @import("execution_result.zig");
 const Stack = @import("../stack/stack.zig");
@@ -122,9 +123,13 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     }
 
     // Use batch pop for performance - pop 2 values at once
+    // Stack order (top to bottom): [size, offset]
     const values = frame.stack.pop2_unsafe();
-    const size = values.b; // Second from top (was on top)
-    const offset = values.a; // Third from top (was second)
+    const size = values.a; // First popped (was on top)
+    const offset = values.b; // Second popped (was second from top)
+    
+    // Debug logging
+    Log.debug("RETURN opcode: offset={}, size={}", .{ offset, size });
 
     if (size == 0) {
         @branchHint(.unlikely);
@@ -150,10 +155,20 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 
         // Get data from memory
         const data = try frame.memory.get_slice(offset_usize, size_usize);
+        
+        // Debug logging
+        Log.debug("RETURN reading {} bytes from memory[{}..{}]", .{ size_usize, offset_usize, offset_usize + size_usize });
+        if (size_usize <= 32) {
+            Log.debug("RETURN data: {x}", .{std.fmt.fmtSliceHexLower(data)});
+        } else {
+            Log.debug("RETURN data (first 32 bytes): {x}", .{std.fmt.fmtSliceHexLower(data[0..32])});
+        }
 
         // Note: The memory gas cost already protects against excessive memory use.
         // The VM should handle copying the data when needed. We just set the reference.
         try frame.return_data.set(data);
+        
+        Log.debug("RETURN data set to frame.return_data, size: {}", .{frame.return_data.size()});
     }
 
     return ExecutionError.Error.STOP; // RETURN ends execution normally
@@ -171,9 +186,10 @@ pub fn op_revert(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     }
 
     // Use batch pop for performance - pop 2 values at once
+    // Stack order (top to bottom): [size, offset]
     const values = frame.stack.pop2_unsafe();
-    const size = values.b; // Second from top (was on top)
-    const offset = values.a; // Third from top (was second)
+    const size = values.a; // First popped (was on top)
+    const offset = values.b; // Second popped (was second from top)
 
     if (size == 0) {
         @branchHint(.unlikely);

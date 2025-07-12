@@ -1,3 +1,6 @@
 [submodule "third_party/mcl"]
 	path = third_party/mcl
 	url = https://github.com/herumi/mcl.git
+[submodule "evm-bench"]
+	path = evm-bench
+	url = https://github.com/ziyadedher/evm-bench.git
