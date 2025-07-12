@@ -215,14 +215,25 @@ fn mod_sub(a: u256, b: u256) u256 {
 
 /// Modular multiplication: (a * b) mod FIELD_PRIME
 fn mod_mul(a: u256, b: u256) u256 {
-    // For efficiency, we could implement Montgomery multiplication
-    // For now, use basic approach with 512-bit intermediate
+    // Use the same approach as EVM MULMOD opcode - Russian peasant multiplication
+    var result: u256 = 0;
+    var x = a % FIELD_PRIME;
+    var y = b % FIELD_PRIME;
     
-    // Use Zig's built-in widening multiplication
-    const wide_result: u512 = @as(u512, a) * @as(u512, b);
+    while (y > 0) {
+        // If y is odd, add x to result (mod FIELD_PRIME)
+        if ((y & 1) == 1) {
+            const sum = result +% x;
+            result = sum % FIELD_PRIME;
+        }
+        
+        // Double x (mod FIELD_PRIME)
+        x = (x +% x) % FIELD_PRIME;
+        
+        y >>= 1;
+    }
     
-    // Perform modular reduction
-    return @intCast(wide_result % @as(u512, FIELD_PRIME));
+    return result;
 }
 
 /// Modular multiplicative inverse: a^(-1) mod FIELD_PRIME
@@ -233,22 +244,48 @@ fn mod_inverse(a: u256) u256 {
         unreachable;
     }
 
-    // Extended Euclidean algorithm
-    var old_r: u256 = FIELD_PRIME;
-    var r: u256 = a;
-    var old_s: i512 = 0;
-    var s: i512 = 1;
-
+    // Extended Euclidean algorithm using only u256
+    // We track the sign separately to avoid needing signed integers
+    var old_r = FIELD_PRIME;
+    var r = a % FIELD_PRIME;
+    var old_s: u256 = 0;
+    var s: u256 = 1;
+    var old_s_negative = false;
+    var s_negative = false;
+    
     while (r != 0) {
         const quotient = old_r / r;
         
+        // Update r
         const temp_r = r;
-        r = old_r - quotient * r;
+        r = old_r % r;
         old_r = temp_r;
-
+        
+        // Update s with sign tracking
         const temp_s = s;
-        s = old_s - @as(i512, quotient) * s;
+        const temp_s_negative = s_negative;
+        
+        // Calculate quotient * s
+        const q_times_s = mod_mul(quotient, s);
+        
+        // Update s = old_s - quotient * s
+        if (old_s_negative == temp_s_negative) {
+            // Same sign: |old_s| - |q*s| or -(|old_s| - |q*s|)
+            if (old_s >= q_times_s) {
+                s = old_s - q_times_s;
+                s_negative = old_s_negative;
+            } else {
+                s = q_times_s - old_s;
+                s_negative = !old_s_negative;
+            }
+        } else {
+            // Different signs: add magnitudes
+            s = (old_s +% q_times_s) % FIELD_PRIME;
+            s_negative = old_s_negative;
+        }
+        
         old_s = temp_s;
+        old_s_negative = temp_s_negative;
     }
 
     if (old_r > 1) {
@@ -257,11 +294,11 @@ fn mod_inverse(a: u256) u256 {
     }
 
     // Make sure result is positive
-    if (old_s < 0) {
-        return @intCast(@as(u512, @intCast(old_s + @as(i512, FIELD_PRIME))) % @as(u512, FIELD_PRIME));
-    } else {
-        return @intCast(@as(u512, @intCast(old_s)) % @as(u512, FIELD_PRIME));
+    if (old_s_negative) {
+        return FIELD_PRIME - old_s;
     }
+    
+    return old_s;
 }
 
 // Tests

@@ -248,11 +248,27 @@ fn submod(a: u256, b: u256, m: u256) u256 {
 }
 
 fn mulmod(a: u256, b: u256, m: u256) u256 {
-    const a_wide: u512 = a;
-    const b_wide: u512 = b;
-    const m_wide: u512 = m;
-    const product = a_wide * b_wide;
-    return @truncate(product % m_wide);
+    if (m == 0) return 0;
+    
+    // Use the same approach as EVM MULMOD opcode
+    var result: u256 = 0;
+    var x = a % m;
+    var y = b % m;
+    
+    while (y > 0) {
+        // If y is odd, add x to result (mod m)
+        if ((y & 1) == 1) {
+            const sum = result +% x;
+            result = sum % m;
+        }
+        
+        // Double x (mod m)
+        x = (x +% x) % m;
+        
+        y >>= 1;
+    }
+    
+    return result;
 }
 
 fn powmod(base: u256, exp: u256, m: u256) u256 {
@@ -273,33 +289,60 @@ fn powmod(base: u256, exp: u256, m: u256) u256 {
 }
 
 fn invmod(a: u256, m: u256) ?u256 {
-    if (a == 0) return null;
+    if (a == 0 or m <= 1) return null;
     
-    var old_r: i512 = @intCast(m);
-    var r: i512 = @intCast(a);
-    var old_s: i512 = 0;
-    var s: i512 = 1;
+    // Extended Euclidean algorithm using only u256
+    // We track the sign separately to avoid needing signed integers
+    var old_r = m;
+    var r = a % m;
+    var old_s: u256 = 0;
+    var s: u256 = 1;
+    var old_s_negative = false;
+    var s_negative = false;
     
     while (r != 0) {
-        const quotient = @divTrunc(old_r, r);
+        const quotient = old_r / r;
         
+        // Update r
         const temp_r = r;
-        r = old_r - quotient * r;
+        r = old_r % r;
         old_r = temp_r;
         
+        // Update s with sign tracking
         const temp_s = s;
-        s = old_s - quotient * s;
+        const temp_s_negative = s_negative;
+        
+        // Calculate quotient * s
+        const q_times_s = mulmod(quotient, s, m);
+        
+        // Update s = old_s - quotient * s
+        if (old_s_negative == temp_s_negative) {
+            // Same sign: |old_s| - |q*s| or -(|old_s| - |q*s|)
+            if (old_s >= q_times_s) {
+                s = old_s - q_times_s;
+                s_negative = old_s_negative;
+            } else {
+                s = q_times_s - old_s;
+                s_negative = !old_s_negative;
+            }
+        } else {
+            // Different signs: add magnitudes
+            s = (old_s +% q_times_s) % m;
+            s_negative = old_s_negative;
+        }
+        
         old_s = temp_s;
+        old_s_negative = temp_s_negative;
     }
     
     if (old_r != 1) return null;
     
-    if (old_s < 0) {
-        const m_i512: i512 = @intCast(m);
-        old_s += m_i512;
+    // Make sure result is positive
+    if (old_s_negative) {
+        return m - old_s;
     }
     
-    return @intCast(old_s);
+    return old_s;
 }
 
 // Tests
