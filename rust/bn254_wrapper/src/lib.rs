@@ -9,7 +9,7 @@
 use std::os::raw::{c_uchar, c_int, c_uint};
 use ark_bn254::{Bn254, G1Affine, G2Affine, G1Projective, G2Projective};
 use ark_ec::{AffineRepr, CurveGroup, pairing::Pairing};
-use ark_ff::{PrimeField, BigInteger};
+use ark_ff::{PrimeField, BigInteger, Zero};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 
 /// Result codes for BN254 operations
@@ -113,8 +113,8 @@ pub extern "C" fn bn254_ecmul(
     let x_result = result.x();
     let y_result = result.y();
     
-    let x_bytes = x_result.into_bigint().to_bytes_be();
-    let y_bytes = y_result.into_bigint().to_bytes_be();
+    let x_bytes = x_result.expect("x coordinate should exist").into_bigint().to_bytes_be();
+    let y_bytes = y_result.expect("y coordinate should exist").into_bigint().to_bytes_be();
     
     // Pad to 32 bytes and copy to output
     let x_start = 32 - x_bytes.len();
@@ -229,7 +229,7 @@ pub extern "C" fn bn254_ecpairing(
     let pairing_result = Bn254::multi_pairing(&g1_points, &g2_points);
     
     // Check if result equals 1 (identity element in GT)
-    let is_one = pairing_result.is_zero(); // In arkworks, GT identity is represented as zero
+    let is_one = pairing_result.0.is_zero(); // In arkworks, GT identity is represented as zero
     
     // Set output
     output_slice[..32].fill(0);
