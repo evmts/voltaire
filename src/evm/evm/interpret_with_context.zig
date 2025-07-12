@@ -42,6 +42,7 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
         const opcode = contract.get_op(pc);
         frame.pc = pc;
         
+        
 
         
         const result = self.table.execute(pc, interpreter_ptr, state_ptr, opcode) catch |err| {

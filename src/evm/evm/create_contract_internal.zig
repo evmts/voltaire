@@ -73,6 +73,7 @@ pub fn create_contract_internal(self: *Vm, creator: Address.Address, value: u256
 
     const deployment_code = init_result.output orelse &[_]u8{};
     
+    
     if (deployment_code.len == 0) {
         Log.debug("create_contract_internal: WARNING: Init code returned empty deployment code! init_result.output={any}", .{init_result.output});
     } else {

@@ -41,13 +41,14 @@ test "complex Solidity constructor returns full runtime code" {
         // Return runtime code
         0x60, 0x04, // PUSH1 0x04 (4 - size of runtime code)
         0x80, // DUP1
-        0x60, 0x1f, // PUSH1 0x1f (31 - offset of runtime code)
-        0x60, 0x00, // PUSH1 0x00
-        0x39, // CODECOPY
-        0x60, 0x00, // PUSH1 0x00
+        0x60, 0x21, // PUSH1 0x21 (33 - offset of runtime code)
+        0x60, 0x00, // PUSH1 0x00 (destination in memory)
+        0x39, // CODECOPY - copies code[31..35] to memory[0..4]
+        0x60, 0x00, // PUSH1 0x00 (offset in memory)
+        0x60, 0x04, // PUSH1 0x04 (size to return)
         0xf3, // RETURN
         
-        // Runtime code starts here (offset 31)
+        // Runtime code starts here (offset 33)
         0x60, 0x80, 0x60, 0x40, // 4 bytes of runtime code
     };
 
@@ -126,16 +127,16 @@ test "gas metering for KECCAK256 operations" {
         0x60, 0x0c, // PUSH1 12 (offset of runtime code in this bytecode)
         0x60, 0x00, // PUSH1 0 (destination in memory)
         0x39,       // CODECOPY
-        0x60, 0x0d, // PUSH1 13 (size to return)
         0x60, 0x00, // PUSH1 0 (offset in memory)
+        0x60, 0x0d, // PUSH1 13 (size to return)
         0xf3,       // RETURN
         
         // Simple runtime code that just returns 0x42
         0x60, 0x42, // PUSH1 0x42
         0x60, 0x00, // PUSH1 0
         0x52,       // MSTORE
-        0x60, 0x20, // PUSH1 32
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x20, // PUSH1 32 (size)
         0xf3,       // RETURN
     };
 
