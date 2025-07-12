@@ -12,7 +12,9 @@ const Vm = @import("../evm.zig");
 /// gas consumption and handling control flow changes.
 pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8, is_static: bool) ExecutionError.Error!RunResult {
     @branchHint(.likely);
-    Log.debug("VM.interpret_with_context: Starting execution, depth={}, gas={}, static={}", .{ self.depth, contract.gas, is_static });
+    Log.debug("VM.interpret_with_context: Starting execution, depth={}, gas={}, static={}, code_size={}, input_size={}", .{ 
+        self.depth, contract.gas, is_static, contract.code_size, input.len 
+    });
 
     self.depth += 1;
     defer self.depth -= 1;
@@ -47,6 +49,7 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
 
             var output: ?[]const u8 = null;
             const return_data = frame.return_data.get();
+            Log.debug("VM.interpret_with_context: Error occurred: {}, return_data_size={}", .{ err, return_data.len });
             if (return_data.len > 0) {
                 output = self.allocator.dupe(u8, return_data) catch {
                     // We are out of memory, which is a critical failure. The safest way to
@@ -65,6 +68,7 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
                     return RunResult.init(initial_gas, 0, .Invalid, err, output);
                 },
                 ExecutionError.Error.STOP => {
+                    Log.debug("VM.interpret_with_context: STOP opcode, output_size={}", .{if (output) |o| o.len else 0});
                     return RunResult.init(initial_gas, frame.gas_remaining, .Success, null, output);
                 },
                 ExecutionError.Error.REVERT => {
@@ -102,6 +106,11 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
 
     const return_data = frame.return_data.get();
     const output: ?[]const u8 = if (return_data.len > 0) try self.allocator.dupe(u8, return_data) else null;
+    
+    Log.debug("VM.interpret_with_context: Execution completed, gas_used={}, output_size={}", .{
+        initial_gas - frame.gas_remaining,
+        if (output) |o| o.len else 0,
+    });
 
     return RunResult.init(
         initial_gas,

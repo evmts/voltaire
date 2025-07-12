@@ -1,4 +1,5 @@
 const std = @import("std");
+const Log = @import("../log.zig");
 
 /// Return data buffer for EVM call operations
 /// 
@@ -77,6 +78,14 @@ pub const ReturnData = struct {
         
         // Append new data
         try self.data.appendSlice(new_data);
+        
+        // Debug logging
+        Log.debug("ReturnData.set: new size = {} bytes", .{new_data.len});
+        if (new_data.len > 0 and new_data.len <= 32) {
+            Log.debug("ReturnData.set: data = {x}", .{std.fmt.fmtSliceHexLower(new_data)});
+        } else if (new_data.len > 32) {
+            Log.debug("ReturnData.set: data (first 32 bytes) = {x}", .{std.fmt.fmtSliceHexLower(new_data[0..32])});
+        }
     }
     
     /// Get current return data

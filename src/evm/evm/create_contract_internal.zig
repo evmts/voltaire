@@ -56,7 +56,9 @@ pub fn create_contract_internal(self: *Vm, creator: Address.Address, value: u256
     defer init_contract.deinit(self.allocator, null);
 
     // Execute the init code - this should return the deployment bytecode
+    Log.debug("Executing init code, size: {}", .{init_code.len});
     const init_result = self.interpret_with_context(&init_contract, &[_]u8{}, false) catch |err| {
+        Log.debug("Init code execution failed with error: {}", .{err});
         if (err == ExecutionError.Error.REVERT) {
             // On revert, consume partial gas
             return CreateResult.initFailure(init_contract.gas, null);
@@ -66,7 +68,17 @@ pub fn create_contract_internal(self: *Vm, creator: Address.Address, value: u256
         return CreateResult.initFailure(0, null);
     };
 
+    Log.debug("Init code execution completed: status={}, gas_used={}, output_size={}", .{
+        init_result.status,
+        init_result.gas_used,
+        if (init_result.output) |o| o.len else 0,
+    });
+
     const deployment_code = init_result.output orelse &[_]u8{};
+    
+    if (deployment_code.len == 0) {
+        Log.debug("WARNING: Init code returned empty deployment code!", .{});
+    }
 
     // Check EIP-170 MAX_CODE_SIZE limit on the returned bytecode (24,576 bytes)
     if (deployment_code.len > constants.MAX_CODE_SIZE) {
@@ -80,9 +92,12 @@ pub fn create_contract_internal(self: *Vm, creator: Address.Address, value: u256
     }
 
     try self.state.set_code(new_address, deployment_code);
+    Log.debug("Contract code deployed at {any}, size: {}", .{ new_address, deployment_code.len });
 
     const gas_left = init_result.gas_left - deploy_code_gas;
 
+    Log.debug("Contract creation successful! Address: {any}, gas_left: {}", .{ new_address, gas_left });
+    
     return CreateResult{
         .success = true,
         .address = new_address,
