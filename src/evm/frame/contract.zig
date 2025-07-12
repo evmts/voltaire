@@ -451,21 +451,30 @@ pub fn valid_jumpdest(self: *Contract, allocator: std.mem.Allocator, dest: u256)
     // Ensure analysis is performed
     self.ensure_analysis(allocator);
 
-    // Binary search in sorted JUMPDEST positions
+    // Search for JUMPDEST position
     if (self.analysis) |analysis| {
         if (analysis.jumpdest_positions.len > 0) {
-            const Context = struct { target: u32 };
-            const found = std.sort.binarySearch(
-                u32,
-                analysis.jumpdest_positions,
-                Context{ .target = pos },
-                struct {
-                    fn compare(ctx: Context, item: u32) std.math.Order {
-                        return std.math.order(ctx.target, item);
-                    }
-                }.compare,
-            );
-            return found != null;
+            if (comptime builtin.mode == .ReleaseSmall) {
+                // Linear search in ReleaseSmall mode (saves ~49KB by avoiding sort)
+                for (analysis.jumpdest_positions) |jumpdest_pos| {
+                    if (jumpdest_pos == pos) return true;
+                }
+                return false;
+            } else {
+                // Binary search for performance in other modes
+                const Context = struct { target: u32 };
+                const found = std.sort.binarySearch(
+                    u32,
+                    analysis.jumpdest_positions,
+                    Context{ .target = pos },
+                    struct {
+                        fn compare(ctx: Context, item: u32) std.math.Order {
+                            return std.math.order(ctx.target, item);
+                        }
+                    }.compare,
+                );
+                return found != null;
+            }
         }
     }
     // Fallback: check if position is code and contains JUMPDEST opcode
@@ -780,8 +789,10 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
         }
     }
 
-    // Sort for binary search
-    std.mem.sort(u32, jumpdests.items, {}, comptime std.sort.asc(u32));
+    // Sort for binary search (skip in ReleaseSmall mode to save ~49KB)
+    if (comptime builtin.mode != .ReleaseSmall) {
+        std.mem.sort(u32, jumpdests.items, {}, comptime std.sort.asc(u32));
+    }
     analysis.jumpdest_positions = jumpdests.toOwnedSlice() catch |err| {
         Log.debug("Failed to convert jumpdests to owned slice: {any}", .{err});
         return err;
