@@ -99,7 +99,7 @@ test "BN254 precompile dispatcher integration" {
     const chain_rules = ChainRules.for_hardfork(.ISTANBUL);
 
     // Test ECMUL through the dispatcher
-    const ecmul_address = Address.from_u256(0x07);
+    const ecmul_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x07 };
     var input = [_]u8{0} ** 96;
     var output = [_]u8{0} ** 64;
 
@@ -108,7 +108,7 @@ test "BN254 precompile dispatcher integration" {
     try testing.expectEqual(@as(u64, 6000), result.get_gas_used());
 
     // Test ECPAIRING through the dispatcher
-    const ecpairing_address = Address.from_u256(0x08);
+    const ecpairing_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x08 };
     const pairing_input: []const u8 = &[_]u8{};
     var pairing_output = [_]u8{0} ** 32;
 
@@ -121,12 +121,12 @@ test "BN254 gas estimation" {
     const chain_rules = ChainRules.for_hardfork(.ISTANBUL);
 
     // Test ECMUL gas estimation
-    const ecmul_address = Address.from_u256(0x07);
+    const ecmul_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x07 };
     const ecmul_gas = precompiles.estimate_gas(ecmul_address, 96, chain_rules) catch unreachable;
     try testing.expectEqual(@as(u64, 6000), ecmul_gas);
 
     // Test ECPAIRING gas estimation
-    const ecpairing_address = Address.from_u256(0x08);
+    const ecpairing_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x08 };
     const ecpairing_gas = precompiles.estimate_gas(ecpairing_address, 0, chain_rules) catch unreachable;
     try testing.expectEqual(@as(u64, 45000), ecpairing_gas);
 
@@ -136,8 +136,8 @@ test "BN254 gas estimation" {
 }
 
 test "BN254 output size validation" {
-    const ecmul_address = Address.from_u256(0x07);
-    const ecpairing_address = Address.from_u256(0x08);
+    const ecmul_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x07 };
+    const ecpairing_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x08 };
     const chain_rules = ChainRules.for_hardfork(.ISTANBUL);
 
     // Test output sizes
