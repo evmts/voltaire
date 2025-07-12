@@ -51,13 +51,13 @@ test "E2E: Basic EVM operations" {
     // Set up deployer account with ETH
     try evm_instance.state.set_balance(DEPLOYER_ADDRESS, 1000000);
     
-    // Test simple bytecode: PUSH1 42 PUSH1 0 MSTORE PUSH1 0 PUSH1 32 RETURN
+    // Test simple bytecode: PUSH1 42 PUSH1 0 MSTORE PUSH1 32 PUSH1 0 RETURN
     const simple_bytecode = [_]u8{
         0x60, 0x2A, // PUSH1 42
         0x60, 0x00, // PUSH1 0
         0x52,       // MSTORE
-        0x60, 0x00, // PUSH1 0 (offset)
         0x60, 0x20, // PUSH1 32 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
         0xF3,       // RETURN
     };
     
