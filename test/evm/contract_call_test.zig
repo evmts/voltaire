@@ -154,16 +154,16 @@ test "contract call: simple contract execution" {
         0x60, 0x0c, // PUSH1 12 (offset)
         0x60, 0x00, // PUSH1 0 (dest)
         0x39,       // CODECOPY
-        0x60, 0x0d, // PUSH1 13 (size)
         0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x0d, // PUSH1 13 (size)
         0xf3,       // RETURN
         
         // Runtime code: return 42
         0x60, 0x42, // PUSH1 0x42
         0x60, 0x00, // PUSH1 0
         0x52,       // MSTORE
-        0x60, 0x20, // PUSH1 32
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x20, // PUSH1 32 (size)
         0xf3,       // RETURN
     };
     
@@ -226,8 +226,8 @@ test "contract call: gas consumption tracking" {
         0x60, 0x0c, // PUSH1 12 (offset)
         0x60, 0x00, // PUSH1 0
         0x39,       // CODECOPY
-        0x60, 0x18, // PUSH1 24
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x18, // PUSH1 24 (size)
         0xf3,       // RETURN
         
         // Runtime: do some operations then return
@@ -238,8 +238,8 @@ test "contract call: gas consumption tracking" {
         0x02,       // MUL
         0x60, 0x00, // PUSH1 0
         0x52,       // MSTORE
-        0x60, 0x20, // PUSH1 32
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x20, // PUSH1 32 (size)
         0xf3,       // RETURN
     };
     
@@ -306,16 +306,16 @@ test "contract call: revert handling" {
         0x60, 0x0c, // PUSH1 12 (offset)
         0x60, 0x00, // PUSH1 0
         0x39,       // CODECOPY
-        0x60, 0x0e, // PUSH1 14
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x0e, // PUSH1 14 (size)
         0xf3,       // RETURN
         
         // Runtime: store error code then revert
         0x61, 0xde, 0xad, // PUSH2 0xDEAD
         0x60, 0x00, // PUSH1 0
         0x52,       // MSTORE
-        0x60, 0x02, // PUSH1 2 (size)
         0x60, 0x1e, // PUSH1 30 (offset - last 2 bytes of word)
+        0x60, 0x02, // PUSH1 2 (size)
         0xfd,       // REVERT
     };
     
@@ -380,8 +380,8 @@ test "contract call: input data passing" {
         0x60, 0x0c, // PUSH1 12 (offset)
         0x60, 0x00, // PUSH1 0
         0x39,       // CODECOPY
-        0x60, 0x15, // PUSH1 21
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x15, // PUSH1 21 (size)
         0xf3,       // RETURN
         
         // Runtime: copy calldata to memory and return it
@@ -389,8 +389,8 @@ test "contract call: input data passing" {
         0x60, 0x00, // PUSH1 0 (offset)
         0x60, 0x00, // PUSH1 0 (dest)
         0x37,       // CALLDATACOPY
-        0x36,       // CALLDATASIZE
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x36,       // CALLDATASIZE (size)
         0xf3,       // RETURN
     };
     
@@ -497,8 +497,8 @@ test "contract call: value transfer rollback on failure" {
         0x60, 0x0c, // PUSH1 12 (offset)
         0x60, 0x00, // PUSH1 0
         0x39,       // CODECOPY
-        0x60, 0x05, // PUSH1 5
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x05, // PUSH1 5 (size)
         0xf3,       // RETURN
         
         // Runtime: always revert
