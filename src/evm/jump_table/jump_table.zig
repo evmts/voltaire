@@ -220,7 +220,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     var jt = JumpTable.init();
     // With ALL_OPERATIONS sorted by hardfork, we can iterate once.
     // Each opcode will be set to the latest active version for the target hardfork.
-    for (operation_config.ALL_OPERATIONS) |spec| {
+    inline for (operation_config.ALL_OPERATIONS) |spec| {
         const op_hardfork = spec.variant orelse Hardfork.FRONTIER;
         // Most operations are included in hardforks (likely path)
         if (@intFromEnum(op_hardfork) <= @intFromEnum(hardfork)) {

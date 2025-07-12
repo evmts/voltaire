@@ -632,7 +632,7 @@ pub fn for_hardfork(hardfork: Hardfork) ChainRules {
     var rules = ChainRules{}; // All fields default to true
     
     // Disable features that were introduced after the target hardfork
-    for (HARDFORK_RULES) |rule| {
+    inline for (HARDFORK_RULES) |rule| {
         // Use branch hint for the common case (later hardforks with more features)
         if (@intFromEnum(hardfork) < @intFromEnum(rule.introduced_in)) {
             @branchHint(.cold);

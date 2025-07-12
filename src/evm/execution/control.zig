@@ -64,24 +64,24 @@ pub fn op_jumpi(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     // Use batch pop for performance - pop 2 values at once
     // Stack order (top to bottom): [destination, condition]
     const values = frame.stack.pop2_unsafe();
-    const dest = values.b; // Second popped (was second from top) 
-    const condition = values.a; // First popped (was on top)
+    const destination = values.b; // Top
+    const condition = values.a; // Second from top
 
     if (condition != 0) {
         @branchHint(.likely);
         // Check if destination is a valid JUMPDEST (pass u256 directly)
-        if (!frame.contract.valid_jumpdest(frame.allocator, dest)) {
+        if (!frame.contract.valid_jumpdest(frame.allocator, destination)) {
             @branchHint(.unlikely);
             return ExecutionError.Error.InvalidJump;
         }
 
         // After validation, convert to usize for setting pc
-        if (dest > std.math.maxInt(usize)) {
+        if (destination > std.math.maxInt(usize)) {
             @branchHint(.unlikely);
             return ExecutionError.Error.InvalidJump;
         }
 
-        frame.pc = @as(usize, @intCast(dest));
+        frame.pc = @as(usize, @intCast(destination));
     }
 
     return ExecutionResult{};
@@ -126,8 +126,8 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     // Use batch pop for performance - pop 2 values at once
     // Stack order (top to bottom): [size, offset]
     const values = frame.stack.pop2_unsafe();
-    const size = values.a; // First popped (was on top)
-    const offset = values.b; // Second popped (was second from top)
+    const offset = values.a; // Second from top
+    const size = values.b; // Top
     
     Log.debug("RETURN opcode: offset={}, size={}", .{ offset, size });
 
@@ -187,8 +187,8 @@ pub fn op_revert(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     // Use batch pop for performance - pop 2 values at once
     // Stack order (top to bottom): [size, offset]
     const values = frame.stack.pop2_unsafe();
-    const size = values.a; // First popped (was on top)
-    const offset = values.b; // Second popped (was second from top)
+    const offset = values.a; // Second from top
+    const size = values.b; // Top
 
     if (size == 0) {
         @branchHint(.unlikely);
