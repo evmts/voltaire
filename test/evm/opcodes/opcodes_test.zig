@@ -35,4 +35,5 @@ test {
     _ = @import("storage_comprehensive_test.zig");
     _ = @import("memory_comprehensive_test.zig");
     _ = @import("control_flow_comprehensive_test.zig");
+    _ = @import("return_output_test.zig");
 }
