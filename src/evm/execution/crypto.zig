@@ -14,6 +14,7 @@ pub fn op_sha3(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
     const offset = try frame.stack.pop();
     const size = try frame.stack.pop();
 
+
     // Check bounds before anything else
     if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
         @branchHint(.unlikely);

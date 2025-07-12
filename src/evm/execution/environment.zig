@@ -337,6 +337,11 @@ pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     const code_offset = try frame.stack.pop();
     const size = try frame.stack.pop();
 
+    const Log = @import("../log.zig");
+    Log.debug("CODECOPY: mem_offset={}, code_offset={}, size={}, code_len={}", .{
+        mem_offset, code_offset, size, frame.contract.code.len
+    });
+
     if (size == 0) {
         @branchHint(.unlikely);
         return Operation.ExecutionResult{};
@@ -367,6 +372,10 @@ pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     // Use set_data_bounded to copy the code to memory
     // This handles partial copies and zero-padding automatically
     try frame.memory.set_data_bounded(mem_offset_usize, code, code_offset_usize, size_usize);
+
+    // Log what was copied
+    const copied_data = try frame.memory.get_slice(mem_offset_usize, @min(size_usize, 32));
+    Log.debug("CODECOPY copied to memory[{}]: {x}", .{ mem_offset_usize, std.fmt.fmtSliceHexLower(copied_data) });
 
     return Operation.ExecutionResult{};
 }
