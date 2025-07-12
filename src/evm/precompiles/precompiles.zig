@@ -1,14 +1,15 @@
 const std = @import("std");
+const builtin = @import("builtin");
+const build_options = @import("build_options");
 const Address = @import("Address").Address;
 const addresses = @import("precompile_addresses.zig");
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
-const ecrecover = @import("ecrecover.zig");
-const identity = @import("identity.zig");
-const sha256 = @import("sha256.zig");
-const ripemd160 = @import("ripemd160.zig");
-const kzg_point_evaluation = @import("kzg_point_evaluation.zig");
 const ChainRules = @import("../hardforks/chain_rules.zig");
+
+/// Compile-time flag to disable all precompiles
+/// Set via build options: -Dno_precompiles=true
+const no_precompiles = if (@hasDecl(build_options, "no_precompiles")) build_options.no_precompiles else false;
 
 /// Main precompile dispatcher module
 ///
@@ -32,6 +33,7 @@ const ChainRules = @import("../hardforks/chain_rules.zig");
 /// @param address The address to check
 /// @return true if the address is a known precompile, false otherwise
 pub fn is_precompile(address: Address) bool {
+    if (comptime no_precompiles) return false;
     return addresses.is_precompile(address);
 }
 
@@ -78,38 +80,46 @@ pub fn is_available(address: Address, chain_rules: ChainRules) bool {
 /// @param chain_rules Current chain rules for availability checking
 /// @return PrecompileOutput containing success/failure and gas usage
 pub fn execute_precompile(address: Address, input: []const u8, output: []u8, gas_limit: u64, chain_rules: ChainRules) PrecompileOutput {
-    // Check if this is a valid precompile address
-    if (!is_precompile(address)) {
-        @branchHint(.cold);
+    // When precompiles are disabled, always fail
+    if (comptime no_precompiles) {
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-    }
+    } else {
+        // Check if this is a valid precompile address
+        if (!is_precompile(address)) {
+            @branchHint(.cold);
+            return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
+        }
 
-    // Check if this precompile is available with the current chain rules
-    if (!is_available(address, chain_rules)) {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-    }
+        // Check if this precompile is available with the current chain rules
+        if (!is_available(address, chain_rules)) {
+            @branchHint(.cold);
+            return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
+        }
 
-    const precompile_id = addresses.get_precompile_id(address);
+        const precompile_id = addresses.get_precompile_id(address);
 
-    // Route to specific precompile implementation
-    return switch (precompile_id) {
+        // Route to specific precompile implementation
+        return switch (precompile_id) {
         4 => {
             @branchHint(.likely);
+            const identity = @import("identity.zig");
             return identity.execute(input, output, gas_limit);
         }, // IDENTITY
 
         // Placeholder implementations for future precompiles
         1 => {
             @branchHint(.likely);
+            const ecrecover = @import("ecrecover.zig");
             return ecrecover.execute(input, output, gas_limit);
         }, // ECRECOVER
         2 => {
             @branchHint(.likely);
+            const sha256 = @import("sha256.zig");
             return sha256.execute(input, output, gas_limit);
         }, // SHA256
         3 => {
             @branchHint(.likely);
+            const ripemd160 = @import("ripemd160.zig");
             return ripemd160.execute(input, output, gas_limit);
         }, // RIPEMD160
         5 => {
@@ -139,6 +149,7 @@ pub fn execute_precompile(address: Address, input: []const u8, output: []u8, gas
         }, // BLAKE2F
         10 => {
             @branchHint(.unlikely);
+            const kzg_point_evaluation = @import("kzg_point_evaluation.zig");
             return kzg_point_evaluation.execute(input, output, gas_limit);
         }, // POINT_EVALUATION
 
@@ -146,7 +157,8 @@ pub fn execute_precompile(address: Address, input: []const u8, output: []u8, gas
             @branchHint(.cold);
             return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
         },
-    };
+        };
+    }
 }
 
 /// Estimates the gas cost for a precompile call
@@ -159,6 +171,11 @@ pub fn execute_precompile(address: Address, input: []const u8, output: []u8, gas
 /// @param chain_rules Current chain rules
 /// @return Estimated gas cost or error if not available
 pub fn estimate_gas(address: Address, input_size: usize, chain_rules: ChainRules) !u64 {
+    // Early return if precompiles are disabled
+    if (comptime no_precompiles) {
+        return error.InvalidPrecompile;
+    }
+    
     if (!is_precompile(address)) {
         @branchHint(.cold);
         return error.InvalidPrecompile;
@@ -172,12 +189,24 @@ pub fn estimate_gas(address: Address, input_size: usize, chain_rules: ChainRules
     const precompile_id = addresses.get_precompile_id(address);
 
     return switch (precompile_id) {
-        4 => identity.calculate_gas_checked(input_size), // IDENTITY
+        4 => blk: {
+            const identity = @import("identity.zig");
+            break :blk identity.calculate_gas_checked(input_size);
+        }, // IDENTITY
 
         // Placeholder gas calculations for future precompiles
-        1 => ecrecover.calculate_gas_checked(input_size), // ECRECOVER
-        2 => sha256.calculate_gas_checked(input_size), // SHA256
-        3 => ripemd160.calculate_gas_checked(input_size), // RIPEMD160
+        1 => blk: {
+            const ecrecover = @import("ecrecover.zig");
+            break :blk ecrecover.calculate_gas_checked(input_size);
+        }, // ECRECOVER
+        2 => blk: {
+            const sha256 = @import("sha256.zig");
+            break :blk sha256.calculate_gas_checked(input_size);
+        }, // SHA256
+        3 => blk: {
+            const ripemd160 = @import("ripemd160.zig");
+            break :blk ripemd160.calculate_gas_checked(input_size);
+        }, // RIPEMD160
         5 => blk: {
             // MODEXP gas calculation requires parsing the input
             // For estimation, we return minimum gas
@@ -200,7 +229,10 @@ pub fn estimate_gas(address: Address, input_size: usize, chain_rules: ChainRules
             const blake2f = @import("blake2f.zig");
             break :blk blake2f.calculate_gas_checked(input_size);
         }, // BLAKE2F
-        10 => kzg_point_evaluation.calculate_gas_checked(input_size), // POINT_EVALUATION
+        10 => blk: {
+            const kzg_point_evaluation = @import("kzg_point_evaluation.zig");
+            break :blk kzg_point_evaluation.calculate_gas_checked(input_size);
+        }, // POINT_EVALUATION
 
         else => error.InvalidPrecompile,
     };
@@ -216,6 +248,11 @@ pub fn estimate_gas(address: Address, input_size: usize, chain_rules: ChainRules
 /// @param chain_rules Current chain rules
 /// @return Expected output size or error if not available
 pub fn get_output_size(address: Address, input_size: usize, chain_rules: ChainRules) !usize {
+    // Early return if precompiles are disabled
+    if (comptime no_precompiles) {
+        return error.InvalidPrecompile;
+    }
+    
     if (!is_precompile(address)) {
         @branchHint(.cold);
         return error.InvalidPrecompile;
@@ -229,12 +266,24 @@ pub fn get_output_size(address: Address, input_size: usize, chain_rules: ChainRu
     const precompile_id = addresses.get_precompile_id(address);
 
     return switch (precompile_id) {
-        4 => identity.get_output_size(input_size), // IDENTITY
+        4 => blk: {
+            const identity = @import("identity.zig");
+            break :blk identity.get_output_size(input_size);
+        }, // IDENTITY
 
         // Placeholder output sizes for future precompiles
-        1 => ecrecover.get_output_size(input_size), // ECRECOVER
-        2 => sha256.get_output_size(input_size), // SHA256
-        3 => ripemd160.get_output_size(input_size), // RIPEMD160
+        1 => blk: {
+            const ecrecover = @import("ecrecover.zig");
+            break :blk ecrecover.get_output_size(input_size);
+        }, // ECRECOVER
+        2 => blk: {
+            const sha256 = @import("sha256.zig");
+            break :blk sha256.get_output_size(input_size);
+        }, // SHA256
+        3 => blk: {
+            const ripemd160 = @import("ripemd160.zig");
+            break :blk ripemd160.get_output_size(input_size);
+        }, // RIPEMD160
         5 => blk: {
             // MODEXP output size depends on modulus length which requires parsing input
             // For size estimation, return a reasonable default
@@ -247,7 +296,10 @@ pub fn get_output_size(address: Address, input_size: usize, chain_rules: ChainRu
             const blake2f = @import("blake2f.zig");
             break :blk blake2f.get_output_size(input_size);
         }, // BLAKE2F
-        10 => kzg_point_evaluation.get_output_size(input_size), // POINT_EVALUATION
+        10 => blk: {
+            const kzg_point_evaluation = @import("kzg_point_evaluation.zig");
+            break :blk kzg_point_evaluation.get_output_size(input_size);
+        }, // POINT_EVALUATION
 
         else => error.InvalidPrecompile,
     };
