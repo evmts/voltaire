@@ -232,7 +232,6 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     }
     // 0x60s & 0x70s: Push operations
     if (comptime builtin.mode == .ReleaseSmall) {
-        // For size optimization, don't inline
         for (0..32) |i| {
             jt.table[0x60 + i] = &Operation{
                 .execute = stack_ops.push_n,
@@ -242,8 +241,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             };
         }
     } else {
-        // For other modes, inline for performance
-        for (0..32) |i| {
+        inline for (0..32) |i| {
             const n = i + 1;
             jt.table[0x60 + i] = &Operation{
                 .execute = stack_ops.make_push(n),
@@ -255,7 +253,6 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     }
     // 0x80s: Duplication Operations
     if (comptime builtin.mode == .ReleaseSmall) {
-        // For size optimization, don't inline
         for (1..17) |n| {
             jt.table[0x80 + n - 1] = &Operation{
                 .execute = stack_ops.dup_n,
@@ -265,8 +262,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             };
         }
     } else {
-        // For other modes, inline for performance
-        for (1..17) |n| {
+        inline for (1..17) |n| {
             jt.table[0x80 + n - 1] = &Operation{
                 .execute = stack_ops.make_dup(n),
                 .constant_gas = execution.gas_constants.GasFastestStep,
@@ -277,7 +273,6 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     }
     // 0x90s: Exchange Operations
     if (comptime builtin.mode == .ReleaseSmall) {
-        // For size optimization, don't inline
         for (1..17) |n| {
             jt.table[0x90 + n - 1] = &Operation{
                 .execute = stack_ops.swap_n,
@@ -287,8 +282,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             };
         }
     } else {
-        // For other modes, inline for performance
-        for (1..17) |n| {
+        inline for (1..17) |n| {
             jt.table[0x90 + n - 1] = &Operation{
                 .execute = stack_ops.make_swap(n),
                 .constant_gas = execution.gas_constants.GasFastestStep,
@@ -299,7 +293,6 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     }
     // 0xa0s: Logging Operations
     if (comptime builtin.mode == .ReleaseSmall) {
-        // For size optimization, don't inline
         for (0..5) |n| {
             jt.table[0xa0 + n] = &Operation{
                 .execute = log.log_n,
@@ -309,8 +302,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             };
         }
     } else {
-        // For other modes, inline for performance
-        for (0..5) |n| {
+        inline for (0..5) |n| {
             jt.table[0xa0 + n] = &Operation{
                 .execute = log.make_log(n),
                 .constant_gas = execution.gas_constants.LogGas + execution.gas_constants.LogTopicGas * n,
