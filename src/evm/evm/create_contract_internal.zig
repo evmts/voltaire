@@ -55,6 +55,9 @@ pub fn create_contract_internal(self: *Vm, creator: Address.Address, value: u256
     );
     defer init_contract.deinit(self.allocator, null);
 
+    // Analyze jump destinations before execution
+    init_contract.analyze_jumpdests(self.allocator);
+
     // Execute the init code - this should return the deployment bytecode
     Log.debug("Executing init code, size: {}", .{init_code.len});
     const init_result = self.interpret_with_context(&init_contract, &[_]u8{}, false) catch |err| {
