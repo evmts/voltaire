@@ -654,6 +654,19 @@ pub fn build(b: *std.Build) void {
     const contract_call_test_step = b.step("test-contract-call", "Run Contract Call tests");
     contract_call_test_step.dependOn(&run_contract_call_test.step);
     
+    // Add Hardfork tests
+    const hardfork_test = b.addTest(.{
+        .name = "hardfork-test",
+        .root_source_file = b.path("test/evm/hardfork_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    hardfork_test.root_module.addImport("Address", address_mod);
+    hardfork_test.root_module.addImport("evm", evm_mod);
+    const run_hardfork_test = b.addRunArtifact(hardfork_test);
+    const hardfork_test_step = b.step("test-hardfork", "Run Hardfork tests");
+    hardfork_test_step.dependOn(&run_hardfork_test.step);
+    
     snail_tracer_test.root_module.addImport("Address", address_mod);
     snail_tracer_test.root_module.addImport("evm", evm_mod);
     snail_tracer_test.root_module.addImport("compilers", compilers_mod);
@@ -696,6 +709,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_constructor_bug_test.step);
     test_step.dependOn(&run_solidity_constructor_test.step);
     test_step.dependOn(&run_contract_call_test.step);
+    test_step.dependOn(&run_hardfork_test.step);
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
