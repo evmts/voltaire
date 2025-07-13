@@ -657,14 +657,14 @@ test "Control flow interaction: Call with REVERT" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
 
-    // Check success status pushed to stack (regular calls not implemented yet)
+    // Check success status pushed to stack
     const success = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 0), success);
+    
+    // Calling an empty address should succeed per EVM specification
+    try testing.expectEqual(@as(u256, 1), success);
 
-    // Note: This test verifies CALL behavior - currently fails because
-    // regular contract calls are not fully implemented in the VM yet
-    // with empty return data.
-    // Note: The VM currently doesn't simulate the called contract reverting,
-    // so we can't check the revert reason in return_data.
-    // This test now just verifies that CALL executes and returns 0 (failure).
+    // Note: This test verifies CALL behavior when calling an empty address.
+    // Per EVM specification, calling an address with no code should succeed,
+    // transferring any value and returning success (1).
+    // The test has been updated to expect the correct behavior.
 }

@@ -7,10 +7,9 @@
 /// Based on arkworks algebra library for production-grade BN254 operations.
 
 use std::os::raw::{c_uchar, c_int, c_uint};
-use ark_bn254::{Bn254, G1Affine, G2Affine, G1Projective, G2Projective};
+use ark_bn254::{Bn254, G1Affine, G2Affine};
 use ark_ec::{AffineRepr, CurveGroup, pairing::Pairing};
-use ark_ff::{PrimeField, BigInteger, Zero};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use ark_ff::{PrimeField, BigInteger, Zero, One};
 
 /// Result codes for BN254 operations
 #[repr(C)]
@@ -118,7 +117,6 @@ pub extern "C" fn bn254_ecmul(
     
     // Pad to 32 bytes and copy to output
     let x_start = 32 - x_bytes.len();
-    let y_start = 64 - y_bytes.len();
     
     output_slice[..32].fill(0);
     output_slice[32..64].fill(0);
@@ -188,14 +186,20 @@ pub extern "C" fn bn254_ecpairing(
         let g1_x = Fq::from_be_bytes_mod_order(g1_x_bytes);
         let g1_y = Fq::from_be_bytes_mod_order(g1_y_bytes);
         
-        let g1_point = match G1Affine::new_unchecked(g1_x, g1_y) {
-            p if p.is_on_curve() && p.is_in_correct_subgroup_assuming_on_curve() => p,
-            _ => {
-                // Invalid G1 point
-                output_slice[..32].fill(0);
-                return Bn254Result::Success as c_int;
-            }
-        };
+        // Check if this is the point at infinity (both coordinates are zero)
+        if g1_x.is_zero() && g1_y.is_zero() {
+            g1_points.push(G1Affine::zero());
+        } else {
+            let g1_point = match G1Affine::new_unchecked(g1_x, g1_y) {
+                p if p.is_on_curve() && p.is_in_correct_subgroup_assuming_on_curve() => p,
+                _ => {
+                    // Invalid G1 point
+                    output_slice[..32].fill(0);
+                    return Bn254Result::Success as c_int;
+                }
+            };
+            g1_points.push(g1_point);
+        }
 
         // Parse G2 point (128 bytes)
         // G2 coordinates are in Fp2, represented as (a + b*i) where each component is 32 bytes
@@ -212,24 +216,31 @@ pub extern "C" fn bn254_ecpairing(
         let g2_x = Fq2::new(g2_x_c0, g2_x_c1);
         let g2_y = Fq2::new(g2_y_c0, g2_y_c1);
 
-        let g2_point = match G2Affine::new_unchecked(g2_x, g2_y) {
-            p if p.is_on_curve() && p.is_in_correct_subgroup_assuming_on_curve() => p,
-            _ => {
-                // Invalid G2 point
-                output_slice[..32].fill(0);
-                return Bn254Result::Success as c_int;
-            }
-        };
-
-        g1_points.push(g1_point);
-        g2_points.push(g2_point);
+        // Check if this is the point at infinity (both coordinates are zero)
+        if g2_x.is_zero() && g2_y.is_zero() {
+            g2_points.push(G2Affine::zero());
+        } else {
+            let g2_point = match G2Affine::new_unchecked(g2_x, g2_y) {
+                p if p.is_on_curve() && p.is_in_correct_subgroup_assuming_on_curve() => p,
+                _ => {
+                    // Invalid G2 point
+                    output_slice[..32].fill(0);
+                    return Bn254Result::Success as c_int;
+                }
+            };
+            g2_points.push(g2_point);
+        }
     }
 
     // Compute multi-pairing
     let pairing_result = Bn254::multi_pairing(&g1_points, &g2_points);
     
     // Check if result equals 1 (identity element in GT)
-    let is_one = pairing_result.0.is_zero(); // In arkworks, GT identity is represented as zero
+    // For the pairing check, we need to see if the result equals the identity element
+    // The identity element in GT for BN254 is represented as 1, not 0
+    use ark_ec::pairing::PairingOutput;
+    let identity = PairingOutput::<Bn254>(ark_bn254::Fq12::one());
+    let is_one = pairing_result == identity;
     
     // Set output
     output_slice[..32].fill(0);

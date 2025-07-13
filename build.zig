@@ -74,6 +74,9 @@ pub fn build(b: *std.Build) void {
         "--manifest-path", "rust/bn254_wrapper/Cargo.toml"
     });
     
+    // Fix for macOS linking issues
+    rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+    
     // Create static library artifact for the Rust BN254 wrapper
     const bn254_lib = b.addStaticLibrary(.{
         .name = "bn254_wrapper",
