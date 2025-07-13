@@ -280,6 +280,18 @@ Do NOT use:
 zig test src/file.zig                       # Wrong - will fail with import errors
 ```
 
+### Enabling Debug Logging in Tests
+
+To see `std.log.debug` output when running tests, add this to your test file:
+
+```zig
+test {
+    std.testing.log_level = .debug;
+}
+```
+
+This will enable all debug logging statements in the code being tested, which is essential for debugging EVM execution issues.
+
 ## Commenting Guidelines
 
 ### Comments Should Be Minimal and Purposeful
@@ -306,6 +318,12 @@ zig test src/file.zig                       # Wrong - will fail with import erro
 ### Ethereum Specifications
 - **Ethereum Yellow Paper**: Technical specification of the EVM
 - **EIP Repository**: Ethereum Improvement Proposals for protocol changes
+
+### Reference Implementation
+- **revm codebase**: The `revm/` directory contains a reference Rust implementation of the EVM
+  - Use this to verify correct behavior when implementing opcodes
+  - Check `revm/crates/interpreter/src/instructions/contract.rs` for CALL/DELEGATECALL/STATICCALL implementations
+  - DELEGATECALL preserves the original caller and value from the parent context
 
 ## Interactive Collaboration Requirements
 

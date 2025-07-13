@@ -126,8 +126,8 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     // Use batch pop for performance - pop 2 values at once
     // Stack order (top to bottom): [size, offset]
     const values = frame.stack.pop2_unsafe();
-    const offset = values.a; // Second from top
-    const size = values.b; // Top
+    const size = values.a; // First popped (was top of stack)
+    const offset = values.b; // Second popped (was second from top)
     
     Log.debug("RETURN opcode: offset={}, size={}", .{ offset, size });
 
@@ -188,8 +188,8 @@ pub fn op_revert(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     // Use batch pop for performance - pop 2 values at once
     // Stack order (top to bottom): [size, offset]
     const values = frame.stack.pop2_unsafe();
-    const offset = values.a; // Second from top
-    const size = values.b; // Top
+    const size = values.a; // First popped (was top of stack)
+    const offset = values.b; // Second popped (was second from top)
 
     if (size == 0) {
         @branchHint(.unlikely);

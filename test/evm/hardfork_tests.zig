@@ -2,6 +2,10 @@ const std = @import("std");
 const Evm = @import("evm");
 const Address = @import("Address");
 
+// test {
+//     std.testing.log_level = .debug;
+// }
+
 const Vm = Evm.Evm;
 const Frame = Evm.Frame;
 const Contract = Evm.Contract;

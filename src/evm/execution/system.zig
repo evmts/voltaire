@@ -553,6 +553,7 @@ pub fn op_call(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
 
     // Execute the call
     const result = try vm.call_contract(frame.contract.address, to_address, value, args, gas_for_call, frame.is_static);
+    defer if (result.output) |output| vm.allocator.free(output);
 
     // Update gas remaining
     frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;
@@ -651,6 +652,7 @@ pub fn op_callcode(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     // Execute the callcode (execute target's code with current storage context)
     // For callcode, we use the current contract's address as the execution context
     const result = try vm.callcode_contract(frame.contract.address, to_address, value, args, gas_for_call, frame.is_static);
+    defer if (result.output) |output| vm.allocator.free(output);
 
     // Update gas remaining
     frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;
@@ -749,7 +751,16 @@ pub fn op_delegatecall(pc: usize, interpreter: *Operation.Interpreter, state: *O
     // - Cannot transfer value (no value parameter)
 
     // Execute the delegatecall (execute target's code with current context)
-    const result = try vm.delegatecall_contract(frame.contract.address, to_address, args, gas_for_call, frame.is_static);
+    const result = try vm.delegatecall_contract(
+        frame.contract.address,      // current contract's address
+        to_address,                  // target code address
+        frame.contract.caller,       // preserve caller from current frame
+        frame.contract.value,        // preserve value from current frame
+        args,                        // input data
+        gas_for_call,                // gas limit
+        frame.is_static             // static flag
+    );
+    defer if (result.output) |output| vm.allocator.free(output);
 
     // Update gas remaining
     frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;
@@ -849,6 +860,7 @@ pub fn op_staticcall(pc: usize, interpreter: *Operation.Interpreter, state: *Ope
 
     // Execute the staticcall (read-only call with static restrictions)
     const result = try vm.staticcall_contract(frame.contract.address, to_address, args, gas_for_call);
+    defer if (result.output) |output| vm.allocator.free(output);
 
     // Update gas remaining
     frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;

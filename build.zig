@@ -667,6 +667,19 @@ pub fn build(b: *std.Build) void {
     const hardfork_test_step = b.step("test-hardfork", "Run Hardfork tests");
     hardfork_test_step.dependOn(&run_hardfork_test.step);
     
+    // Add DELEGATECALL test
+    const delegatecall_test = b.addTest(.{
+        .name = "delegatecall-test",
+        .root_source_file = b.path("test/evm/opcodes/delegatecall_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    delegatecall_test.root_module.addImport("Address", address_mod);
+    delegatecall_test.root_module.addImport("evm", evm_mod);
+    const run_delegatecall_test = b.addRunArtifact(delegatecall_test);
+    const delegatecall_test_step = b.step("test-delegatecall", "Run DELEGATECALL tests");
+    delegatecall_test_step.dependOn(&run_delegatecall_test.step);
+    
     snail_tracer_test.root_module.addImport("Address", address_mod);
     snail_tracer_test.root_module.addImport("evm", evm_mod);
     snail_tracer_test.root_module.addImport("compilers", compilers_mod);
@@ -710,6 +723,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_solidity_constructor_test.step);
     test_step.dependOn(&run_contract_call_test.step);
     test_step.dependOn(&run_hardfork_test.step);
+    test_step.dependOn(&run_delegatecall_test.step);
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
