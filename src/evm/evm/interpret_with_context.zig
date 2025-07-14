@@ -51,8 +51,9 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
             self.return_data = @constCast(frame.return_data.get());
 
             var output: ?[]const u8 = null;
-            const return_data = frame.return_data.get();
-            Log.debug("VM.interpret_with_context: Error occurred: {}, return_data_size={}", .{ err, return_data.len });
+            // Use frame.output for RETURN/REVERT data
+            const return_data = frame.output;
+            Log.debug("VM.interpret_with_context: Error occurred: {}, output_size={}", .{ err, return_data.len });
             if (return_data.len > 0) {
                 output = self.allocator.dupe(u8, return_data) catch {
                     // We are out of memory, which is a critical failure. The safest way to
@@ -60,7 +61,7 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
                     // all gas and stops execution.
                     return RunResult.init(initial_gas, 0, .OutOfGas, ExecutionError.Error.OutOfMemory, null);
                 };
-                Log.debug("VM.interpret_with_context: Duplicated return_data to output, size={}", .{output.?.len});
+                Log.debug("VM.interpret_with_context: Duplicated output, size={}", .{output.?.len});
             }
 
             return switch (err) {
@@ -110,9 +111,10 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
     contract.gas = frame.gas_remaining;
     self.return_data = @constCast(frame.return_data.get());
 
-    const return_data = frame.return_data.get();
-    Log.debug("VM.interpret_with_context: Normal completion, return_data_size={}", .{return_data.len});
-    const output: ?[]const u8 = if (return_data.len > 0) try self.allocator.dupe(u8, return_data) else null;
+    // Use frame.output for normal completion (no RETURN/REVERT was called)
+    const output_data = frame.output;
+    Log.debug("VM.interpret_with_context: Normal completion, output_size={}", .{output_data.len});
+    const output: ?[]const u8 = if (output_data.len > 0) try self.allocator.dupe(u8, output_data) else null;
     
     Log.debug("VM.interpret_with_context: Execution completed, gas_used={}, output_size={}, output_ptr={any}", .{
         initial_gas - frame.gas_remaining,

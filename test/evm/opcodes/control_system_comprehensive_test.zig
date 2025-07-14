@@ -179,8 +179,8 @@ test "REVERT (0xFD): Revert with data" {
     // REVERT should trigger REVERT error
     try testing.expectError(ExecutionError.Error.REVERT, result);
 
-    // Check revert data was set
-    try testing.expectEqualSlices(u8, revert_data[0..], frame.return_data.get());
+    // Check revert data was set in output
+    try testing.expectEqualSlices(u8, revert_data[0..], frame.output);
 }
 
 test "REVERT: Empty revert data" {
@@ -194,8 +194,8 @@ test "REVERT: Empty revert data" {
     defer evm.deinit();
 
     const code = [_]u8{
-        0x60, 0x00, // PUSH1 0x00 (size = 0)
         0x60, 0x00, // PUSH1 0x00 (offset = 0)
+        0x60, 0x00, // PUSH1 0x00 (size = 0)
         0xFD, // REVERT
     };
 
@@ -233,8 +233,8 @@ test "REVERT: Empty revert data" {
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFD);
     try testing.expectError(ExecutionError.Error.REVERT, result);
 
-    // Check empty revert data
-    try testing.expectEqual(@as(usize, 0), frame.return_data.size());
+    // Check empty revert data in output
+    try testing.expectEqual(@as(usize, 0), frame.output.len);
 }
 
 // ============================

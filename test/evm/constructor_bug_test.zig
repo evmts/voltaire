@@ -1,5 +1,9 @@
 const std = @import("std");
 const testing = std.testing;
+
+test {
+    std.testing.log_level = .debug;
+}
 const Evm = @import("evm");
 const Address = @import("Address");
 

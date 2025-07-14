@@ -124,10 +124,10 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     }
 
     // Use batch pop for performance - pop 2 values at once
-    // Stack order (top to bottom): [size, offset]
+    // Stack order (top to bottom): [offset, size] with size on top
     const values = frame.stack.pop2_unsafe();
-    const size = values.a; // First popped (was top of stack)
-    const offset = values.b; // Second popped (was second from top)
+    const offset = values.a; // Second from top
+    const size = values.b; // Top
     
     Log.debug("RETURN opcode: offset={}, size={}", .{ offset, size });
 
@@ -164,10 +164,10 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         }
 
         // Note: The memory gas cost already protects against excessive memory use.
-        // The VM should handle copying the data when needed. We just set the reference.
-        try frame.return_data.set(data);
+        // Set the output data that will be returned to the caller
+        frame.output = data;
         
-        Log.debug("RETURN data set to frame.return_data, size: {}, frame.return_data.get()={any}", .{frame.return_data.size(), frame.return_data.get()});
+        Log.debug("RETURN data set to frame.output, size: {}", .{data.len});
     }
 
     Log.debug("RETURN opcode complete, about to return STOP error", .{});
@@ -186,10 +186,10 @@ pub fn op_revert(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     }
 
     // Use batch pop for performance - pop 2 values at once
-    // Stack order (top to bottom): [size, offset]
+    // Stack order (top to bottom): [offset, size] with size on top
     const values = frame.stack.pop2_unsafe();
-    const size = values.a; // First popped (was top of stack)
-    const offset = values.b; // Second popped (was second from top)
+    const offset = values.a; // Second from top
+    const size = values.b; // Top
 
     if (size == 0) {
         @branchHint(.unlikely);
@@ -217,8 +217,8 @@ pub fn op_revert(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         const data = try frame.memory.get_slice(offset_usize, size_usize);
 
         // Note: The memory gas cost already protects against excessive memory use.
-        // The VM should handle copying the data when needed. We just set the reference.
-        try frame.return_data.set(data);
+        // Set the output data that will be returned to the caller
+        frame.output = data;
     }
 
     return ExecutionError.Error.REVERT;

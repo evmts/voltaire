@@ -319,18 +319,18 @@ test "Control: RETURN with data" {
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF3);
     try testing.expectError(ExecutionError.Error.STOP, result); // RETURN uses STOP error
 
-    // Check return data was set
-    try testing.expectEqualSlices(u8, &test_data, frame.return_data.get());
+    // Check output was set
+    try testing.expectEqualSlices(u8, &test_data, frame.output);
 
     // Test 2: Return with zero size
     frame.stack.clear();
-    try frame.return_data.set(&[_]u8{ 1, 2, 3 }); // Set some existing data
+    frame.output = &[_]u8{ 1, 2, 3 }; // Set some existing output
     try frame.stack.append(0);
     try frame.stack.append(0);
 
     const result2 = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF3);
     try testing.expectError(ExecutionError.Error.STOP, result2);
-    try testing.expectEqual(@as(usize, 0), frame.return_data.size());
+    try testing.expectEqual(@as(usize, 0), frame.output.len);
 
     // Test 3: Return with memory expansion
     frame.stack.clear();
@@ -386,8 +386,8 @@ test "Control: REVERT with data" {
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFD);
     try testing.expectError(ExecutionError.Error.REVERT, result);
 
-    // Check return data was set
-    try testing.expectEqualSlices(u8, &test_data, frame.return_data.get());
+    // Check output was set
+    try testing.expectEqualSlices(u8, &test_data, frame.output);
 
     // Test 2: Revert with zero size
     frame.stack.clear();
@@ -396,7 +396,7 @@ test "Control: REVERT with data" {
 
     const result2 = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFD);
     try testing.expectError(ExecutionError.Error.REVERT, result2);
-    try testing.expectEqual(@as(usize, 0), frame.return_data.size());
+    try testing.expectEqual(@as(usize, 0), frame.output.len);
 
     // Test 3: Revert with out of bounds offset
     frame.stack.clear();

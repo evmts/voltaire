@@ -1,6 +1,10 @@
 const std = @import("std");
 const testing = std.testing;
 
+test {
+    std.testing.log_level = .debug;
+}
+
 // Import EVM components directly
 const Evm = @import("evm");
 const Frame = Evm.Frame;
@@ -226,15 +230,16 @@ test "Integration: Return data handling" {
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x52); // MSTORE
 
     // Return 32 bytes from offset 0
-    try frame_ptr.stack.append(0); // offset
-    try frame_ptr.stack.append(32); // size
+    // Stack order: [offset, size] with size on top
+    try frame_ptr.stack.append(0); // offset (second from top)
+    try frame_ptr.stack.append(32); // size (top)
 
     // RETURN will throw an error (ExecutionError.STOP) which is expected
     const result = vm.table.execute(0, interpreter_ptr, state_ptr, 0xF3); // RETURN
     try testing.expectError(ExecutionError.Error.STOP, result);
 
-    // The return data would be available in frame.return_data_buffer
-    try testing.expectEqual(@as(usize, 32), frame_ptr.return_data.size());
+    // The output data is available in frame.output
+    try testing.expectEqual(@as(usize, 32), frame_ptr.output.len);
 }
 
 test "Integration: Revert with reason" {
@@ -284,16 +289,17 @@ test "Integration: Revert with reason" {
     try frame_ptr.memory.set_data(0, error_msg);
 
     // Revert with error message
-    try frame_ptr.stack.append(0); // offset
-    try frame_ptr.stack.append(error_msg.len); // size
+    // Stack order: [offset, size] with size on top
+    try frame_ptr.stack.append(0); // offset (second from top)
+    try frame_ptr.stack.append(error_msg.len); // size (top)
 
     // REVERT will throw an error (ExecutionError.REVERT) which is expected
     const result = vm.table.execute(0, interpreter_ptr, state_ptr, 0xFD); // REVERT
     try testing.expectError(ExecutionError.Error.REVERT, result);
 
-    // The revert data would be available in frame.return_data_buffer
-    try testing.expectEqual(@as(usize, error_msg.len), frame_ptr.return_data.size());
-    try testing.expectEqualSlices(u8, error_msg, frame_ptr.return_data.get());
+    // The revert data is available in frame.output
+    try testing.expectEqual(@as(usize, error_msg.len), frame_ptr.output.len);
+    try testing.expectEqualSlices(u8, error_msg, frame_ptr.output);
 }
 
 test "Integration: PC tracking through operations" {
