@@ -1,5 +1,127 @@
 const std = @import("std");
 
+// Asset generation step for devtool
+const GenerateAssetsStep = struct {
+    step: std.Build.Step,
+    dist_path: []const u8,
+    out_path: []const u8,
+
+    fn init(b: *std.Build, dist_path: []const u8, out_path: []const u8) *GenerateAssetsStep {
+        const self = b.allocator.create(GenerateAssetsStep) catch @panic("OOM");
+        self.* = GenerateAssetsStep{
+            .step = std.Build.Step.init(.{
+                .id = .custom,
+                .name = "generate assets",
+                .owner = b,
+                .makeFn = make,
+            }),
+            .dist_path = b.dupe(dist_path),
+            .out_path = b.dupe(out_path),
+        };
+        return self;
+    }
+
+    fn make(step: *std.Build.Step, options: std.Build.Step.MakeOptions) !void {
+        _ = options;
+        const self: *GenerateAssetsStep = @fieldParentPtr("step", step);
+        const b = step.owner;
+        const allocator = b.allocator;
+
+        var file = try std.fs.cwd().createFile(self.out_path, .{});
+        defer file.close();
+
+        var writer = file.writer();
+
+        try writer.writeAll("// This file is auto-generated. Do not edit manually.\n");
+        try writer.writeAll("const std = @import(\"std\");\n\n");
+        try writer.writeAll("const Self = @This();\n\n");
+        try writer.writeAll("path: []const u8,\n");
+        try writer.writeAll("content: []const u8,\n");
+        try writer.writeAll("mime_type: []const u8,\n");
+        try writer.writeAll("response: [:0]const u8,\n\n");
+
+        try writer.writeAll("pub fn init(\n");
+        try writer.writeAll("    comptime path: []const u8,\n");
+        try writer.writeAll("    comptime content: []const u8,\n");
+        try writer.writeAll("    comptime mime_type: []const u8,\n");
+        try writer.writeAll(") Self {\n");
+        try writer.writeAll("    var buf: [20]u8 = undefined;\n");
+        try writer.writeAll("    const n = std.fmt.bufPrint(&buf, \"{d}\", .{content.len}) catch unreachable;\n");
+        try writer.writeAll("    const content_length = buf[0..n.len];\n");
+        try writer.writeAll("    const response = \"HTTP/1.1 200 OK\\n\" ++\n");
+        try writer.writeAll("        \"Content-Type: \" ++ mime_type ++ \"\\n\" ++\n");
+        try writer.writeAll("        \"Content-Length: \" ++ content_length ++ \"\\n\" ++\n");
+        try writer.writeAll("        \"\\n\" ++\n");
+        try writer.writeAll("        content;\n");
+        try writer.writeAll("    return Self{\n");
+        try writer.writeAll("        .path = path,\n");
+        try writer.writeAll("        .content = content,\n");
+        try writer.writeAll("        .mime_type = mime_type,\n");
+        try writer.writeAll("        .response = response,\n");
+        try writer.writeAll("    };\n");
+        try writer.writeAll("}\n\n");
+
+        try writer.writeAll("pub const not_found_asset = Self.init(\n");
+        try writer.writeAll("    \"/notfound.html\",\n");
+        try writer.writeAll("    \"<div>Page not found</div>\",\n");
+        try writer.writeAll("    \"text/html\",\n");
+        try writer.writeAll(");\n\n");
+
+        try writer.writeAll("pub const assets = [_]Self{\n");
+
+        var dir = try std.fs.cwd().openDir(self.dist_path, .{ .iterate = true });
+        defer dir.close();
+
+        var walker = try dir.walk(allocator);
+        defer walker.deinit();
+
+        while (try walker.next()) |entry| {
+            if (entry.kind != .file) continue;
+
+            const mime_type = getMimeType(entry.basename);
+            const path = try std.fmt.allocPrint(allocator, "/{s}", .{entry.path});
+            defer allocator.free(path);
+
+            try writer.print("    Self.init(\n", .{});
+            try writer.print("        \"{s}\",\n", .{path});
+            try writer.print("        @embedFile(\"dist/{s}\"),\n", .{entry.path});
+            try writer.print("        \"{s}\",\n", .{mime_type});
+            try writer.print("    ),\n", .{});
+        }
+
+        try writer.writeAll("};\n\n");
+
+        try writer.writeAll("pub fn get_asset(path: []const u8) Self {\n");
+        try writer.writeAll("    for (assets) |asset| {\n");
+        try writer.writeAll("        if (std.mem.eql(u8, asset.path, path)) {\n");
+        try writer.writeAll("            return asset;\n");
+        try writer.writeAll("        }\n");
+        try writer.writeAll("    }\n");
+        try writer.writeAll("    return not_found_asset;\n");
+        try writer.writeAll("}\n");
+    }
+
+    fn getMimeType(filename: []const u8) []const u8 {
+        if (std.mem.endsWith(u8, filename, ".html")) return "text/html";
+        if (std.mem.endsWith(u8, filename, ".js")) return "application/javascript";
+        if (std.mem.endsWith(u8, filename, ".css")) return "text/css";
+        if (std.mem.endsWith(u8, filename, ".svg")) return "image/svg+xml";
+        if (std.mem.endsWith(u8, filename, ".png")) return "image/png";
+        if (std.mem.endsWith(u8, filename, ".jpg") or std.mem.endsWith(u8, filename, ".jpeg")) return "image/jpeg";
+        if (std.mem.endsWith(u8, filename, ".gif")) return "image/gif";
+        if (std.mem.endsWith(u8, filename, ".ico")) return "image/x-icon";
+        if (std.mem.endsWith(u8, filename, ".woff")) return "font/woff";
+        if (std.mem.endsWith(u8, filename, ".woff2")) return "font/woff2";
+        if (std.mem.endsWith(u8, filename, ".ttf")) return "font/ttf";
+        if (std.mem.endsWith(u8, filename, ".otf")) return "font/otf";
+        if (std.mem.endsWith(u8, filename, ".json")) return "application/json";
+        if (std.mem.endsWith(u8, filename, ".xml")) return "application/xml";
+        if (std.mem.endsWith(u8, filename, ".pdf")) return "application/pdf";
+        if (std.mem.endsWith(u8, filename, ".txt")) return "text/plain";
+        return "application/octet-stream";
+    }
+};
+
 pub fn build(b: *std.Build) void {
     // Standard target options allows the person running `zig build` to choose
     // what target to build for. Here we do not override the defaults, which
@@ -301,6 +423,106 @@ pub fn build(b: *std.Build) void {
     // This will evaluate the `run` step rather than the default, which is "install".
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
+
+    // Devtool executable
+    // Add webui dependency
+    const webui = b.dependency("webui", .{
+        .target = target,
+        .optimize = optimize,
+        .dynamic = false,
+        .@"enable-tls" = false,
+        .verbose = .err,
+    });
+    
+    // First, check if npm is installed and build the Solid app
+    const npm_check = b.addSystemCommand(&[_][]const u8{"which", "npm"});
+    npm_check.addCheck(.{ .expect_stdout_match = "npm" });
+    
+    // Install npm dependencies for devtool
+    const npm_install = b.addSystemCommand(&[_][]const u8{"npm", "install"});
+    npm_install.setCwd(b.path("src/devtool"));
+    npm_install.step.dependOn(&npm_check.step);
+    
+    // Build the Solid app
+    const npm_build = b.addSystemCommand(&[_][]const u8{"npm", "run", "build"});
+    npm_build.setCwd(b.path("src/devtool"));
+    npm_build.step.dependOn(&npm_install.step);
+    
+    // Generate assets from the built Solid app
+    const generate_assets = GenerateAssetsStep.init(
+        b,
+        "src/devtool/dist",
+        "src/devtool/assets.zig"
+    );
+    generate_assets.step.dependOn(&npm_build.step);
+    
+    const devtool_mod = b.createModule(.{
+        .root_source_file = b.path("src/devtool/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    devtool_mod.addImport("Guillotine_lib", lib_mod);
+    devtool_mod.addImport("evm", evm_mod);
+    devtool_mod.addImport("primitives", primitives_mod);
+    devtool_mod.addImport("provider", provider_mod);
+
+    const devtool_exe = b.addExecutable(.{
+        .name = "guillotine-devtool",
+        .root_module = devtool_mod,
+    });
+    
+    // Link webui library
+    devtool_exe.linkLibrary(webui.artifact("webui"));
+    
+    // Link external libraries if needed for WebUI
+    devtool_exe.linkLibC();
+    if (target.result.os.tag == .macos) {
+        devtool_exe.linkFramework("WebKit");
+    }
+    
+    // Make devtool build depend on asset generation
+    devtool_exe.step.dependOn(&generate_assets.step);
+    
+    b.installArtifact(devtool_exe);
+    
+    const run_devtool_cmd = b.addRunArtifact(devtool_exe);
+    run_devtool_cmd.step.dependOn(b.getInstallStep());
+    
+    const devtool_step = b.step("devtool", "Build and run the Ethereum devtool");
+    devtool_step.dependOn(&run_devtool_cmd.step);
+    
+    // Add build-only step for devtool
+    const build_devtool_step = b.step("build-devtool", "Build the Ethereum devtool (without running)");
+    build_devtool_step.dependOn(b.getInstallStep());
+    
+    // macOS app bundle creation
+    if (target.result.os.tag == .macos) {
+        // Create app bundle structure
+        const bundle_dir = "macos/GuillotineDevtool.app/Contents/MacOS";
+        const mkdir_bundle = b.addSystemCommand(&[_][]const u8{
+            "mkdir", "-p", bundle_dir,
+        });
+        
+        // Copy executable to app bundle
+        const copy_to_bundle = b.addSystemCommand(&[_][]const u8{
+            "cp", "-f", "zig-out/bin/guillotine-devtool", bundle_dir,
+        });
+        copy_to_bundle.step.dependOn(&devtool_exe.step);
+        copy_to_bundle.step.dependOn(&mkdir_bundle.step);
+        
+        // Create macOS app bundle step
+        const macos_app_step = b.step("macos-app", "Create macOS app bundle");
+        macos_app_step.dependOn(&copy_to_bundle.step);
+        
+        // Create DMG installer step
+        const create_dmg = b.addSystemCommand(&[_][]const u8{
+            "scripts/create-dmg-fancy.sh",
+        });
+        create_dmg.step.dependOn(&copy_to_bundle.step);
+        
+        const dmg_step = b.step("macos-dmg", "Create macOS DMG installer");
+        dmg_step.dependOn(&create_dmg.step);
+    }
 
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
