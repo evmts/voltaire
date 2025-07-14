@@ -31,7 +31,6 @@ const binding_mod = @import("binding.zig");
 const file_handler_mod = @import("file_handler.zig");
 const javascript_mod = @import("javascript.zig");
 const config_mod = @import("config.zig");
-const utils_mod = @import("utils.zig");
 
 // Use usingnamespace to include all methods from each module
 pub usingnamespace window_mod;
@@ -39,7 +38,6 @@ pub usingnamespace binding_mod;
 pub usingnamespace file_handler_mod;
 pub usingnamespace javascript_mod;
 pub usingnamespace config_mod;
-pub usingnamespace utils_mod;
 
 // Note: Global functions are already included via usingnamespace,
 // so we don't need to re-export them explicitly
