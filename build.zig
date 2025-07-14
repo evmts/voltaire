@@ -25,20 +25,32 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     lib_mod.addIncludePath(b.path("rust/bn254_wrapper"));
+    
+    // Create primitives module
+    const primitives_mod = b.createModule(.{
+        .root_source_file = b.path("src/primitives/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    
     const address_mod = b.createModule(.{
-        .root_source_file = b.path("src/address/address.zig"),
+        .root_source_file = b.path("src/primitives/address/address.zig"),
         .target = target,
         .optimize = optimize,
     });
     
     const rlp_mod = b.createModule(.{
-        .root_source_file = b.path("src/rlp/rlp.zig"),
+        .root_source_file = b.path("src/primitives/rlp/rlp.zig"),
         .target = target,
         .optimize = optimize,
     });
     
     // Add Rlp import to address module
     address_mod.addImport("Rlp", rlp_mod);
+    
+    // Add all primitives submodules to primitives module
+    primitives_mod.addImport("Address", address_mod);
+    primitives_mod.addImport("Rlp", rlp_mod);
     
     // Create utils module
     const utils_mod = b.createModule(.{
@@ -95,6 +107,14 @@ pub fn build(b: *std.Build) void {
     // Make the rust build a dependency
     bn254_lib.step.dependOn(&rust_build.step);
     
+    // Create provider module
+    const provider_mod = b.createModule(.{
+        .root_source_file = b.path("src/provider/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    provider_mod.addImport("primitives", primitives_mod);
+    
     // Create the main evm module that exports everything
     const evm_mod = b.createModule(.{
         .root_source_file = b.path("src/evm/root.zig"),
@@ -103,6 +123,7 @@ pub fn build(b: *std.Build) void {
     });
     evm_mod.addImport("Address", address_mod);
     evm_mod.addImport("Rlp", rlp_mod);
+    evm_mod.addImport("primitives", primitives_mod);
     evm_mod.addImport("build_options", build_options.createModule());
     
     // Link BN254 Rust library to EVM module (native targets only)
@@ -126,9 +147,11 @@ pub fn build(b: *std.Build) void {
     compilers_mod.addImport("Address", address_mod);
     compilers_mod.addImport("evm", evm_mod);
     
-    // Add Address to lib_mod so tests can access it
+    // Add modules to lib_mod so tests can access them
+    lib_mod.addImport("primitives", primitives_mod);
     lib_mod.addImport("Address", address_mod);
     lib_mod.addImport("evm", evm_mod);
+    lib_mod.addImport("provider", provider_mod);
     lib_mod.addImport("client", client_mod);
     lib_mod.addImport("compilers", compilers_mod);
     lib_mod.addImport("trie", trie_mod);
@@ -175,14 +198,14 @@ pub fn build(b: *std.Build) void {
     // Create WASM-specific modules with minimal dependencies
     // WASM-specific Address module
     const wasm_address_mod = b.createModule(.{
-        .root_source_file = b.path("src/address/address.zig"),
+        .root_source_file = b.path("src/primitives/address/address.zig"),
         .target = wasm_target,
         .optimize = wasm_optimize,
     });
 
     // WASM-specific RLP module
     const wasm_rlp_mod = b.createModule(.{
-        .root_source_file = b.path("src/rlp/rlp.zig"),
+        .root_source_file = b.path("src/primitives/rlp/rlp.zig"),
         .target = wasm_target,
         .optimize = wasm_optimize,
     });

@@ -32,7 +32,7 @@
 
 const std = @import("std");
 // Address type is [20]u8 as defined in the database interface
-const StorageKey = @import("storage_key.zig");
+const StorageKey = @import("primitives").StorageKey;
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 const DatabaseError = @import("database_interface.zig").DatabaseError;
 const Account = @import("database_interface.zig").Account;

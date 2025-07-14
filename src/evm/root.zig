@@ -186,7 +186,7 @@ pub const constants = @import("constants/constants.zig");
 pub const eip_7702_bytecode = @import("frame/eip_7702_bytecode.zig");
 
 /// Fee market calculations (EIP-1559)
-pub const fee_market = @import("fee_market.zig");
+pub const fee_market = @import("primitives").FeeMarket;
 
 /// Gas cost constants and calculations
 pub const gas_constants = @import("constants/gas_constants.zig");

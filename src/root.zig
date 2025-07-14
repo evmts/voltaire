@@ -2,6 +2,8 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 const evm_root = @import("evm");
+const primitives = @import("primitives");
+const provider = @import("provider");
 
 // Simple inline logging that compiles out for freestanding WASM
 fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
@@ -175,7 +177,10 @@ test "C interface compilation" {
     std.testing.refAllDecls(@This());
 }
 
+// Re-export modules  
 pub const Evm = evm_root.Evm;
+pub const Primitives = primitives;
+pub const Provider = provider;
 
 test "Evm module" {
     std.testing.refAllDecls(Evm);

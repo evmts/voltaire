@@ -33,7 +33,7 @@
 
 const std = @import("std");
 // Address type is [20]u8
-const StorageKey = @import("storage_key.zig");
+const StorageKey = @import("primitives").StorageKey;
 
 /// Database operation errors
 pub const DatabaseError = error{
