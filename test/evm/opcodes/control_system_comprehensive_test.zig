@@ -65,8 +65,8 @@ test "RETURN (0xF3): Return data from execution" {
     // RETURN should trigger STOP error with return data
     try testing.expectError(ExecutionError.Error.STOP, result);
 
-    // Check return data buffer was set
-    try testing.expectEqualSlices(u8, return_data[0..], frame.return_data.get());
+    // Check output was set
+    try testing.expectEqualSlices(u8, return_data[0..], frame.output);
 }
 
 test "RETURN: Empty return data" {
@@ -117,8 +117,8 @@ test "RETURN: Empty return data" {
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF3);
     try testing.expectError(ExecutionError.Error.STOP, result);
 
-    // Check empty return data
-    try testing.expectEqual(@as(usize, 0), frame.return_data.size());
+    // Check empty output
+    try testing.expectEqual(@as(usize, 0), frame.output.len);
 }
 
 // ============================

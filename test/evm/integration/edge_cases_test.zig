@@ -421,8 +421,7 @@ test "Integration: return data boundary conditions" {
     
     // Set return data
     const return_data = [_]u8{ 0x11, 0x22, 0x33, 0x44 };
-    try frame.return_data.resize(return_data.len);
-    @memcpy(frame.return_data.items, &return_data);
+    try frame.return_data.set(&return_data);
     
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);

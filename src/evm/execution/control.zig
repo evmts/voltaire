@@ -133,7 +133,7 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 
     if (size == 0) {
         @branchHint(.unlikely);
-        try frame.return_data.set(&[_]u8{});
+        frame.output = &[_]u8{};
     } else {
         if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
             @branchHint(.unlikely);
@@ -193,7 +193,7 @@ pub fn op_revert(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 
     if (size == 0) {
         @branchHint(.unlikely);
-        try frame.return_data.set(&[_]u8{});
+        frame.output = &[_]u8{};
     } else {
         if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
             @branchHint(.unlikely);
