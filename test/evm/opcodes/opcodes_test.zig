@@ -35,5 +35,6 @@ test {
     _ = @import("storage_comprehensive_test.zig");
     _ = @import("memory_comprehensive_test.zig");
     _ = @import("control_flow_comprehensive_test.zig");
+    // Move return_output_test to the beginning to see if order matters
     _ = @import("return_output_test.zig");
 }
