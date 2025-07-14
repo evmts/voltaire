@@ -22,7 +22,7 @@ Key features:
 ## Directory Structure
 
 ```
-src/ui/webui/
+src/devtool/webui/
 ├── webui.zig         # Main module that combines all functionality
 ├── types.zig         # Common types, enums, and constants
 ├── event.zig         # Event handling and event-related functions
