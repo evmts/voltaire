@@ -1,5 +1,6 @@
 const std = @import("std");
 const blob_types = @import("blob_types.zig");
+const primitives = @import("../../primitives/root.zig");
 
 /// KZG Verification Interface for EIP-4844
 ///
@@ -130,10 +131,8 @@ pub const KZGVerifier = struct {
         var commitment = blob_types.KZGCommitment.init();
 
         // Use SHA256 of blob as a placeholder commitment
-        const Sha256 = std.crypto.hash.sha2.Sha256;
-        var hasher = Sha256.init(.{});
-        hasher.update(&blob.data);
-        const hash = hasher.finalResult();
+        var hash: [32]u8 = undefined;
+        primitives.HashAlgorithms.SHA256.hash(&blob.data, &hash);
 
         // Copy hash to first 32 bytes of commitment
         @memcpy(commitment.data[0..32], &hash);

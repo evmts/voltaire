@@ -1,6 +1,6 @@
 const std = @import("std");
 const c = @cImport({
-    @cInclude("c_kzg_4844.h");
+    @cInclude("ckzg.h");
 });
 
 /// KZG module for EIP-4844 blob transaction support

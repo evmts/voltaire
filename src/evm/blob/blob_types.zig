@@ -1,5 +1,6 @@
 const std = @import("std");
 const Address = @import("Address");
+const primitives = @import("../../primitives/root.zig");
 
 /// EIP-4844 Blob Data Structures
 ///
@@ -234,10 +235,8 @@ pub const VersionedHash = struct {
     /// @param commitment The KZG commitment to hash
     /// @return VersionedHash with version prefix
     pub fn compute_versioned_hash(commitment: *const KZGCommitment) VersionedHash {
-        const Sha256 = std.crypto.hash.sha2.Sha256;
-        var hasher = Sha256.init(.{});
-        hasher.update(&commitment.data);
-        var hash = hasher.finalResult();
+        var hash: [32]u8 = undefined;
+        primitives.HashAlgorithms.SHA256.hash(&commitment.data, &hash);
 
         // Set version byte to 0x01 for KZG commitments
         hash[0] = VERSION_KZG;
