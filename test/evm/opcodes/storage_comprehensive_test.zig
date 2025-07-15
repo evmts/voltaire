@@ -27,8 +27,8 @@ test "SLOAD (0x54): Load from storage" {
     defer evm.deinit();
 
     const code = [_]u8{0x54}; // SLOAD
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -72,8 +72,8 @@ test "SLOAD: Load from uninitialized slot returns zero" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -113,8 +113,8 @@ test "SLOAD: Multiple loads from same slot" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -157,8 +157,8 @@ test "SLOAD: EIP-2929 cold/warm access" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -218,8 +218,8 @@ test "SSTORE (0x55): Store to storage" {
     defer evm.deinit();
 
     const code = [_]u8{0x55}; // SSTORE
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -261,8 +261,8 @@ test "SSTORE: Static call protection" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -338,8 +338,8 @@ test "SSTORE: EIP-2200 gas cost scenarios" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -396,8 +396,8 @@ test "SSTORE: Large storage values" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -450,8 +450,8 @@ test "Storage opcodes: Gas consumption patterns" {
     var evm = try Evm.Evm.init_with_hardfork(allocator, db_interface, Evm.Hardfork.Hardfork.ISTANBUL);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -512,8 +512,8 @@ test "Storage opcodes: Stack underflow" {
     defer evm.deinit();
 
     // Test SLOAD with empty stack
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -594,8 +594,8 @@ test "Storage: Multiple consecutive operations" {
         0x54, // SLOAD
     };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -660,8 +660,8 @@ test "SSTORE: Overwriting values" {
     defer evm.deinit();
 
     const slot = 0xBEEF;
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     // Store and overwrite values using separate contracts and frames
     const values = [_]u256{ 0x111, 0x222, 0x333 };
@@ -711,8 +711,8 @@ test "SSTORE: EIP-2200 complete gas cost scenarios" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -777,8 +777,8 @@ test "SSTORE: Zero value edge cases" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -825,8 +825,8 @@ test "SSTORE: Same value edge cases" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -898,8 +898,8 @@ test "Storage: Boundary value testing" {
         std.math.maxInt(u256), // u256 max
     };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     for (boundary_values, 0..) |value, i| {
         var contract = Contract.init(
@@ -957,8 +957,8 @@ test "Storage: Large slot number testing" {
         0x1000000000000000000000000000000000000000000000000000000000000000, // Large power of 2
     };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     for (large_slots, 0..) |slot, i| {
         var contract = Contract.init(
@@ -1013,8 +1013,8 @@ test "Storage: Contract slot warming pattern" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1065,8 +1065,8 @@ test "Storage: Complex access patterns" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1119,8 +1119,8 @@ test "SSTORE: EIP-1706 gas stipend protection" {
     var evm = try Evm.Evm.init_with_hardfork(allocator, db_interface, .ISTANBUL);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1160,8 +1160,8 @@ test "Storage: Rapid alternating operations" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1215,9 +1215,9 @@ test "Storage: Multiple contracts isolation" {
     defer evm.deinit();
 
     // Create two different contracts
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr1 = Address.init([_]u8{0x33} ** 20);
-    const contract_addr2 = Address.init([_]u8{0x44} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr1 = [_]u8{0x11} ** 20;
+    const contract_addr2 = [_]u8{0x11} ** 20;
 
     var contract1 = Contract.init(
         caller,

@@ -37,7 +37,7 @@ pub const COLD_CALL_EXTRA_COST: u64 = COLD_ACCOUNT_ACCESS_COST - WARM_ACCOUNT_AC
 
 allocator: std.mem.Allocator,
 /// Warm addresses - addresses that have been accessed
-addresses: std.AutoHashMap(primitives.Address, void),
+addresses: std.AutoHashMap(primitives.Address.Address, void),
 /// Warm storage slots - storage slots that have been accessed
 storage_slots: std.HashMap(AccessListStorageKey, void, AccessListStorageKeyContext, 80),
 /// Transaction and block context for pre-warming addresses
@@ -229,9 +229,9 @@ test "AccessList pre-warming from EIP-2930" {
     defer access_list.deinit();
 
     const addresses = [_]primitives.Address.Address{
+        primitives.Address.ZERO_ADDRESS,
         [_]u8{1} ** 20,
         [_]u8{2} ** 20,
-        [_]u8{3} ** 20,
     };
 
     try access_list.pre_warm_addresses(&addresses);

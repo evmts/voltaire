@@ -18,8 +18,8 @@ test "Crypto: KECCAK256 (SHA3) basic operations" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -105,8 +105,8 @@ test "Crypto: KECCAK256 memory expansion and gas" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -163,8 +163,8 @@ test "Crypto: KECCAK256 edge cases" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -214,8 +214,8 @@ test "Crypto: Stack underflow errors" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,

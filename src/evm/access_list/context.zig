@@ -61,7 +61,7 @@ const Context = @This();
 /// EOA → Contract A → Contract B → Contract C
 /// - tx.origin = EOA (same for all)
 /// - msg.sender differs at each level
-tx_origin: primitives.Address = primitives.Address.ZERO_ADDRESS,
+tx_origin: primitives.Address.Address = primitives.Address.ZERO_ADDRESS,
 /// The gas price for the current transaction in wei.
 ///
 /// ## GASPRICE Opcode (0x3A)
@@ -285,7 +285,7 @@ pub fn init() Context {
 /// );
 /// ```
 pub fn init_with_values(
-    tx_origin: primitives.Address,
+    tx_origin: primitives.Address.Address,
     gas_price: u256,
     block_number: u64,
     block_timestamp: u64,

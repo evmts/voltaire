@@ -19,8 +19,8 @@ test "PUSH0: append zero value" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -62,8 +62,8 @@ test "PUSH1: append 1 byte value" {
     // Set contract code with PUSH1 0xAB
     const code = [_]u8{ 0x60, 0xAB };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -111,8 +111,8 @@ test "PUSH2: append 2 byte value" {
     // Set contract code with PUSH2 0x1234
     const code = [_]u8{ 0x61, 0x12, 0x34 };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -163,8 +163,8 @@ test "PUSH32: append 32 byte value" {
         code[i + 1] = @intCast(i + 1); // 0x01, 0x02, ..., 0x20
     }
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -211,8 +211,8 @@ test "POP: remove top stack item" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -256,8 +256,8 @@ test "DUP1: duplicate top stack item" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -299,8 +299,8 @@ test "DUP2: duplicate second stack item" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -344,8 +344,8 @@ test "DUP16: duplicate 16th stack item" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -396,8 +396,8 @@ test "SWAP1: swap top two stack items" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -440,8 +440,8 @@ test "SWAP2: swap 1st and 3rd stack items" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -486,8 +486,8 @@ test "SWAP16: swap 1st and 17th stack items" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -544,8 +544,8 @@ test "PUSH1: at end of code" {
     // Set contract code with PUSH1 but no data byte
     const code = [_]u8{0x60}; // Just PUSH1 opcode
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -596,8 +596,8 @@ test "PUSH32: partial data available" {
         code[i + 1] = 0xFF;
     }
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -650,8 +650,8 @@ test "POP: stack underflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -689,8 +689,8 @@ test "DUP1: stack underflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -728,8 +728,8 @@ test "DUP16: insufficient stack items" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -771,8 +771,8 @@ test "SWAP1: stack underflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -814,8 +814,8 @@ test "PUSH1: stack overflow" {
     // Set contract code
     const code = [_]u8{ 0x60, 0x01 };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -859,8 +859,8 @@ test "DUP1: stack overflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,

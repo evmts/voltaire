@@ -3,7 +3,6 @@
 /// Tests for the BN254 Rust wrapper library integration with Zig.
 /// These tests verify that ECMUL and ECPAIRING precompiles work correctly
 /// with the arkworks-based implementation.
-
 const std = @import("std");
 const testing = std.testing;
 const evm = @import("evm");
@@ -39,7 +38,7 @@ test "BN254 ECMUL generator point by one" {
 
     // Test multiplying generator point (1, 2) by scalar 1
     var input = [_]u8{0} ** 96;
-    
+
     // Set point to (1, 2)
     input[31] = 1; // x = 1
     input[63] = 2; // y = 2
@@ -48,7 +47,7 @@ test "BN254 ECMUL generator point by one" {
 
     var output = [_]u8{0} ** 64;
     const result = ecmul.execute(&input, &output, 10000, chain_rules);
-    
+
     try testing.expect(result.is_success());
     try testing.expectEqual(@as(u64, 6000), result.get_gas_used());
 
@@ -85,7 +84,7 @@ test "BN254 ECPAIRING single pair - identity pairing" {
 
     const gas_needed = 45000 + 34000; // Base + 1 pair
     const result = ecpairing.execute(&input, &output, gas_needed, chain_rules);
-    
+
     try testing.expect(result.is_success());
     try testing.expectEqual(@as(u64, gas_needed), result.get_gas_used());
 

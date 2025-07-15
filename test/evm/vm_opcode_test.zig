@@ -2,8 +2,8 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address;
-const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
+const Address = primitives.Address.Address;
+const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
 const ExecutionError = Evm.ExecutionError;
 const Contract = Evm.Contract;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -688,6 +688,7 @@ test "VM: SUB large numbers" {
     const bytecode = [_]u8{
         0x7F, // PUSH32 (for 2^255)
         0x80,
+        0x00,
         0x00,
         0x00,
         0x00,

@@ -4,7 +4,7 @@ const ExecutionError = @import("../execution/execution_error.zig");
 const CreateResult = @import("create_result.zig").CreateResult;
 const Vm = @import("../evm.zig");
 
-pub const Create2ContractError = std.mem.Allocator.Error || primitives.Address.CalculateCreate2AddressError || @import("../state/database_interface.zig").DatabaseError || ExecutionError.Error;
+pub const Create2ContractError = std.mem.Allocator.Error || @import("../state/database_interface.zig").DatabaseError || ExecutionError.Error;
 
 /// Create a new contract using CREATE2 opcode semantics.
 ///

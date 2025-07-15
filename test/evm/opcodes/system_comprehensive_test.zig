@@ -975,7 +975,7 @@ test "RETURN (0xF3): Return data from execution" {
     frame.gas_remaining = 10000;
 
     // Write return data to memory
-    const return_data = "Hello World!" ++ ([_]u8{0} ** 20);
+    const return_data = "Hello World!" ++ ([_]u8{0x11} ** 20;
     _ = try frame.memory.set_data(0, return_data[0..]);
 
     // Push RETURN parameters: offset, size (RETURN expects size on top, offset below)
@@ -1112,7 +1112,7 @@ test "REVERT (0xFD): Revert with error data" {
     frame.gas_remaining = 10000;
 
     // Write revert reason to memory
-    const revert_data = "Insufficient balance" ++ ([_]u8{0} ** 12);
+    const revert_data = "Insufficient balance" ++ ([_]u8{0x11} ** 20;
     _ = try frame.memory.set_data(0, revert_data[0..]);
 
     // Push REVERT parameters: offset, size (REVERT expects size on top, offset below)

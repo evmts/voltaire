@@ -31,7 +31,7 @@
 
 const std = @import("std");
 const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
 const EvmLog = @import("evm_log.zig");
 const StorageKey = @import("primitives").StorageKey;
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
@@ -509,7 +509,7 @@ pub fn get_transient_storage(self: *const EvmState, address: primitives.Address.
 /// - Reentrancy locks
 /// - Temporary computation results
 /// - Cross-contract communication within a transaction
-pub fn set_transient_storage(self: *EvmState, address: primitives.Address, slot: u256, value: u256) std.mem.Allocator.Error!void {
+pub fn set_transient_storage(self: *EvmState, address: primitives.Address.Address, slot: u256, value: u256) std.mem.Allocator.Error!void {
     Log.debug("EvmState.set_transient_storage: addr={x}, slot={}, value={}", .{ primitives.Address.to_u256(address), slot, value });
 
     const key = StorageKey{ .address = address, .slot = slot };

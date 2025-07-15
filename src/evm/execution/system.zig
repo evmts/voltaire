@@ -751,14 +751,13 @@ pub fn op_delegatecall(pc: usize, interpreter: *Operation.Interpreter, state: *O
     // - Cannot transfer value (no value parameter)
 
     // Execute the delegatecall (execute target's code with current context)
-    const result = try vm.delegatecall_contract(
-        frame.contract.address,      // current contract's address
-        to_address,                  // target code address
-        frame.contract.caller,       // preserve caller from current frame
-        frame.contract.value,        // preserve value from current frame
-        args,                        // input data
-        gas_for_call,                // gas limit
-        frame.is_static             // static flag
+    const result = try vm.delegatecall_contract(frame.contract.address, // current contract's address
+        to_address, // target code address
+        frame.contract.caller, // preserve caller from current frame
+        frame.contract.value, // preserve value from current frame
+        args, // input data
+        gas_for_call, // gas limit
+        frame.is_static // static flag
     );
     defer if (result.output) |output| vm.allocator.free(output);
 
@@ -909,34 +908,34 @@ pub fn op_staticcall(pc: usize, interpreter: *Operation.Interpreter, state: *Ope
 /// Storage: Contract marked for destruction
 pub fn op_selfdestruct(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
-    
+
     const vm: *Vm = @ptrCast(interpreter);
     const frame: *Frame = @ptrCast(state);
-    
+
     // Static call protection - SELFDESTRUCT forbidden in static context
     if (frame.is_static) {
         @branchHint(.cold);
         return ExecutionError.Error.WriteProtection;
     }
-    
+
     // Pop recipient address from stack (bounds checking already done by jump table)
     const recipient_u256 = frame.stack.pop_unsafe();
     const recipient_address = from_u256(recipient_u256);
-    
+
     // Get hardfork rules for gas calculation
     const chain_rules = vm.chain_rules;
     var gas_cost: u64 = 0;
-    
+
     // Calculate base gas cost based on hardfork
     if (chain_rules.IsTangerineWhistle) {
         gas_cost += gas_constants.SelfdestructGas; // 5000 gas
     }
     // Before Tangerine Whistle: 0 gas cost
-    
+
     // EIP-161: Account creation cost if transferring to a non-existent account
     if (chain_rules.IsSpuriousDragon) {
         @branchHint(.likely);
-        
+
         // Check if the recipient account exists and is empty
         const recipient_exists = vm.state.account_exists(recipient_address);
         if (!recipient_exists) {
@@ -944,28 +943,28 @@ pub fn op_selfdestruct(pc: usize, interpreter: *Operation.Interpreter, state: *O
             gas_cost += gas_constants.CallNewAccountGas; // 25000 gas
         }
     }
-    
+
     // Account for access list gas costs (EIP-2929)
     if (chain_rules.IsBerlin) {
         @branchHint(.likely);
-        
+
         // Warm up recipient address access
         const access_cost = vm.state.warm_account_access(recipient_address);
         gas_cost += access_cost;
     }
-    
+
     // Check if we have enough gas
     if (gas_cost > frame.gas_remaining) {
         @branchHint(.cold);
         return ExecutionError.Error.OutOfGas;
     }
-    
+
     // Consume gas
     frame.gas_remaining -= gas_cost;
-    
+
     // Mark contract for destruction with recipient
     vm.state.mark_for_destruction(frame.contract.address, recipient_address);
-    
+
     // SELFDESTRUCT halts execution immediately
     return ExecutionError.Error.STOP;
 }

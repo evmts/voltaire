@@ -19,8 +19,8 @@ test "SLOAD: load value from storage" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -65,8 +65,8 @@ test "SLOAD: load from uninitialized slot returns zero" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -108,8 +108,8 @@ test "SLOAD: cold storage access costs more gas" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -167,8 +167,8 @@ test "SSTORE: store value to storage" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -211,8 +211,8 @@ test "SSTORE: overwrite existing value" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -258,8 +258,8 @@ test "SSTORE: write protection in static call" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -302,8 +302,8 @@ test "SSTORE: cold storage access costs more gas" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -360,8 +360,8 @@ test "TLOAD: load value from transient storage" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -406,8 +406,8 @@ test "TLOAD: load from uninitialized slot returns zero" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -449,8 +449,8 @@ test "TLOAD: transient storage is separate from regular storage" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -503,8 +503,8 @@ test "TSTORE: store value to transient storage" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -547,8 +547,8 @@ test "TSTORE: overwrite existing transient value" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -594,8 +594,8 @@ test "TSTORE: write protection in static call" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -638,8 +638,8 @@ test "TSTORE: does not affect regular storage" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -690,8 +690,8 @@ test "SLOAD: stack underflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -729,8 +729,8 @@ test "SSTORE: stack underflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -769,8 +769,8 @@ test "TLOAD: stack underflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -808,8 +808,8 @@ test "TSTORE: stack underflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -849,8 +849,8 @@ test "TLOAD: gas consumption" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -894,8 +894,8 @@ test "TSTORE: gas consumption" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,

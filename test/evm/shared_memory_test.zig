@@ -38,7 +38,7 @@ test "Memory: child context creation" {
     root.finalize_root();
     
     // Write some data to root
-    try root.set_word(0, [_]u8{0xFF} ** 32);
+    try root.set_word(0, [_]u8{0x11} ** 20;
     try testing.expectEqual(@as(usize, 32), root.context_size());
     
     // Create child context
@@ -84,14 +84,14 @@ test "Memory: child context isolation" {
     root.finalize_root();
     
     // Root writes data
-    try root.set_word(0, [_]u8{0xAA} ** 32);
+    try root.set_word(0, [_]u8{0x11} ** 20;
     try testing.expectEqual(@as(usize, 32), root.context_size());
     
     // Create child
     var child = try root.new_child_context();
     
     // Child writes data in its own space
-    try child.set_word(0, [_]u8{0xBB} ** 32);
+    try child.set_word(0, [_]u8{0x11} ** 20;
     try testing.expectEqual(@as(usize, 32), child.context_size());
     
     // Total buffer should be 64 bytes (32 from root + 32 from child)
@@ -112,12 +112,12 @@ test "Memory: revert child context" {
     root.finalize_root();
     
     // Root writes data
-    try root.set_word(0, [_]u8{0xAA} ** 32);
+    try root.set_word(0, [_]u8{0x11} ** 20;
     const root_size_before = root.total_shared_buffer_size();
     
     // Create child and write data
     var child = try root.new_child_context();
-    try child.set_data(0, &[_]u8{0xBB} ** 64);
+    try child.set_data(0, &[_]u8{0x11} ** 20;
     
     // Verify child's changes are visible in total buffer
     try testing.expectEqual(root_size_before + 64, root.total_shared_buffer_size());
@@ -141,11 +141,11 @@ test "Memory: commit child context" {
     root.finalize_root();
     
     // Root writes data
-    try root.set_word(0, [_]u8{0xAA} ** 32);
+    try root.set_word(0, [_]u8{0x11} ** 20;
     
     // Create child and write data
     var child = try root.new_child_context();
-    try child.set_data(0, &[_]u8{0xBB} ** 64);
+    try child.set_data(0, &[_]u8{0x11} ** 20;
     const total_size_with_child = root.total_shared_buffer_size();
     
     // Commit child
@@ -332,8 +332,8 @@ test "Memory: snapshot and restore" {
     mem.finalize_root();
     
     // Set up initial state
-    try mem.set_word(0, [_]u8{0xAA} ** 32);
-    try mem.set_word(32, [_]u8{0xBB} ** 32);
+    try mem.set_word(0, [_]u8{0x11} ** 20;
+    try mem.set_word(32, [_]u8{0x11} ** 20;
     
     // Take snapshot
     const snapshot = try mem.snapshot_context(allocator);
@@ -341,7 +341,7 @@ test "Memory: snapshot and restore" {
     try testing.expectEqual(@as(usize, 64), snapshot.len);
     
     // Modify memory
-    try mem.set_word(0, [_]u8{0xCC} ** 32);
+    try mem.set_word(0, [_]u8{0x11} ** 20;
     try mem.resize_context(128);
     
     // Restore from snapshot

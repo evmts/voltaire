@@ -128,7 +128,7 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     const values = frame.stack.pop2_unsafe();
     const offset = values.a; // Second from top
     const size = values.b; // Top
-    
+
     Log.debug("RETURN opcode: offset={}, size={}", .{ offset, size });
 
     if (size == 0) {
@@ -155,7 +155,7 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 
         // Get data from memory
         const data = try frame.memory.get_slice(offset_usize, size_usize);
-        
+
         Log.debug("RETURN reading {} bytes from memory[{}..{}]", .{ size_usize, offset_usize, offset_usize + size_usize });
         if (size_usize <= 32) {
             Log.debug("RETURN data: {x}", .{std.fmt.fmtSliceHexLower(data)});
@@ -166,7 +166,7 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         // Note: The memory gas cost already protects against excessive memory use.
         // Set the output data that will be returned to the caller
         frame.output = data;
-        
+
         Log.debug("RETURN data set to frame.output, size: {}", .{data.len});
     }
 

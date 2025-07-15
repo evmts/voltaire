@@ -29,8 +29,8 @@ test "KECCAK256 (0x20): Known test vectors" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     var contract = Contract.init(
         caller,
@@ -108,8 +108,8 @@ test "KECCAK256: Gas cost calculations" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     var contract = Contract.init(
         caller,
@@ -208,8 +208,8 @@ test "KECCAK256: Memory operations" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     var contract = Contract.init(
         caller,
@@ -284,8 +284,8 @@ test "KECCAK256: Variable input sizes" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     var contract = Contract.init(
         caller,
@@ -342,8 +342,8 @@ test "KECCAK256: Hash consistency" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     var contract = Contract.init(
         caller,
@@ -406,8 +406,8 @@ test "KECCAK256: Edge cases and limits" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     var contract = Contract.init(
         caller,
@@ -481,8 +481,8 @@ test "KECCAK256: Error conditions" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     var contract = Contract.init(
         caller,
@@ -546,8 +546,8 @@ test "KECCAK256: Stack behavior" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     var contract = Contract.init(
         caller,
@@ -606,8 +606,8 @@ test "KECCAK256: Memory access patterns" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
 
     var contract = Contract.init(
         caller,

@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -38,8 +38,8 @@ test "JUMP (0x56): Basic unconditional jump" {
     code[6] = 0x60; // PUSH1
     code[7] = 0x42; // 0x42
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -75,16 +75,16 @@ test "JUMP (0x56): Basic unconditional jump" {
 test "JUMP: Simple JUMPDEST validation" {
     const allocator = testing.allocator;
     defer Contract.clear_analysis_cache(allocator);
-    
+
     // Simple test: just verify that JUMPDEST validation works
     const code = [_]u8{
-        0x5B,       // JUMPDEST at position 0
+        0x5B, // JUMPDEST at position 0
         0x60, 0x00, // PUSH1 0
-        0x56,       // JUMP back to 0
+        0x56, // JUMP back to 0
     };
-    
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+
+    const caller: Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -96,14 +96,14 @@ test "JUMP: Simple JUMPDEST validation" {
         false,
     );
     defer contract.deinit(allocator, null);
-    
+
     // Analyze jumpdests
     contract.analyze_jumpdests(allocator);
-    
+
     // Test that position 0 is valid
     const is_valid = contract.valid_jumpdest(allocator, 0);
     try testing.expect(is_valid);
-    
+
     // Test that position 1 is invalid (it's a PUSH1 opcode)
     const is_invalid = contract.valid_jumpdest(allocator, 1);
     try testing.expect(!is_invalid);
@@ -122,23 +122,23 @@ test "JUMP: Jump to various valid destinations" {
 
     // Complex bytecode with multiple JUMPDESTs
     const code = [_]u8{
-        0x5B,       // JUMPDEST at position 0
+        0x5B, // JUMPDEST at position 0
         0x60, 0x05, // PUSH1 5 (positions 1-2)
-        0x5B,       // JUMPDEST at position 3
+        0x5B, // JUMPDEST at position 3
         0x60, 0x08, // PUSH1 8 (positions 4-5)
-        0x5B,       // JUMPDEST at position 6
+        0x5B, // JUMPDEST at position 6
         0x60, 0x0C, // PUSH1 12 (positions 7-8)
-        0x5B,       // JUMPDEST at position 9
+        0x5B, // JUMPDEST at position 9
         0x60, 0x0F, // PUSH1 15 (positions 10-11)
-        0x5B,       // JUMPDEST at position 12
+        0x5B, // JUMPDEST at position 12
         0x60, 0x10, // PUSH1 16 (positions 13-14)
-        0x00,       // STOP at position 15
-        0x5B,       // JUMPDEST at position 16
-        0x00,       // STOP at position 17
+        0x00, // STOP at position 15
+        0x5B, // JUMPDEST at position 16
+        0x00, // STOP at position 17
     };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -183,14 +183,14 @@ test "JUMP: Invalid jump destinations" {
 
     const code = [_]u8{
         0x60, 0x05, // PUSH1 5 - position 0,1
-        0x56,       // JUMP - position 2
-        0x00,       // STOP - position 3
-        0x5B,       // JUMPDEST - position 4
-        0x00,       // STOP - position 5
+        0x56, // JUMP - position 2
+        0x00, // STOP - position 3
+        0x5B, // JUMPDEST - position 4
+        0x00, // STOP - position 5
     };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -235,8 +235,8 @@ test "JUMP: Stack underflow" {
 
     const code = [_]u8{0x5B}; // Just a JUMPDEST
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -290,8 +290,8 @@ test "JUMPI (0x57): Conditional jump with true condition" {
     code[8] = 0x5B; // JUMPDEST at position 8
     code[9] = 0x60; // PUSH1
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -318,7 +318,7 @@ test "JUMPI (0x57): Conditional jump with true condition" {
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60); // PUSH1 1
-    
+
     // PUSH1 8 (destination)
     frame.pc = 2;
     _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60); // PUSH1 8
@@ -355,8 +355,8 @@ test "JUMPI: Conditional jump with false condition" {
     code[10] = 0x60; // PUSH1
     code[11] = 0x99; // 0x99 (should not execute)
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -405,8 +405,8 @@ test "JUMPI: Various condition values" {
         0x00, // STOP
     };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -421,7 +421,7 @@ test "JUMPI: Various condition values" {
 
     // Test true conditions (any non-zero value)
     const true_conditions = [_]u256{ 1, 255, 1000, std.math.maxInt(u256) };
-    
+
     for (true_conditions) |condition| {
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
@@ -466,8 +466,8 @@ test "JUMPI: Invalid destination with true condition" {
 
     const code = [_]u8{0x5B}; // JUMPDEST at position 0
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -506,8 +506,8 @@ test "JUMPI: Stack underflow" {
 
     const code = [_]u8{0x5B}; // JUMPDEST
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -559,15 +559,15 @@ test "PC (0x58): Get program counter at various positions" {
     defer evm.deinit();
 
     const code = [_]u8{
-        0x58,       // PC at position 0
-        0x58,       // PC at position 1
+        0x58, // PC at position 0
+        0x58, // PC at position 1
         0x60, 0x42, // PUSH1 0x42 at position 2-3
-        0x58,       // PC at position 4
-        0x00,       // STOP at position 5
+        0x58, // PC at position 4
+        0x00, // STOP at position 5
     };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -623,8 +623,8 @@ test "PC: Stack overflow protection" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -678,8 +678,8 @@ test "GAS (0x5A): Get remaining gas" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -722,8 +722,8 @@ test "GAS: After consuming gas with operations" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -775,8 +775,8 @@ test "GAS: Low gas scenarios" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -827,8 +827,8 @@ test "GAS: Stack overflow protection" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -874,14 +874,14 @@ test "JUMPDEST (0x5B): Basic operation" {
     defer evm.deinit();
 
     const code = [_]u8{
-        0x5B,       // JUMPDEST at position 0
+        0x5B, // JUMPDEST at position 0
         0x60, 0x42, // PUSH1 0x42
-        0x5B,       // JUMPDEST at position 3
-        0x00,       // STOP
+        0x5B, // JUMPDEST at position 3
+        0x00, // STOP
     };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -927,7 +927,7 @@ test "JUMPDEST: Jump destination validation" {
     // Create bytecode with JUMPDEST in various positions (like working test)
     var code = [_]u8{0} ** 12;
     code[0] = 0x5B; // JUMPDEST at position 0
-    code[1] = 0x60; // PUSH1 
+    code[1] = 0x60; // PUSH1
     code[2] = 0x05; // 5
     code[3] = 0x5B; // JUMPDEST at position 3
     code[4] = 0x60; // PUSH1
@@ -939,8 +939,8 @@ test "JUMPDEST: Jump destination validation" {
     code[10] = 0x60; // PUSH1
     code[11] = 0x42; // 0x42
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1001,8 +1001,8 @@ test "JUMPDEST: Code analysis edge cases" {
     code[5] = 0x42; // 0x42
     code[6] = 0x00; // STOP
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1051,12 +1051,12 @@ test "JUMPDEST: Empty code and no JUMPDEST scenarios" {
     const code_no_jumpdest = [_]u8{
         0x60, 0x42, // PUSH1 0x42
         0x60, 0x24, // PUSH1 0x24
-        0x01,       // ADD
-        0x00,       // STOP
+        0x01, // ADD
+        0x00, // STOP
     };
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1108,8 +1108,8 @@ test "Control Flow: Gas consumption verification" {
 
     const code = [_]u8{0x5B}; // Include JUMPDEST for JUMP/JUMPI tests
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1181,29 +1181,29 @@ test "Control Flow: Complex jump sequences" {
 
     // Create a program with complex control flow
     var code = [_]u8{0} ** 20;
-    code[0] = 0x5B;   // JUMPDEST at 0 - entry point
-    code[1] = 0x60;   // PUSH1
-    code[2] = 0x08;   // 8 - jump to subroutine
-    code[3] = 0x56;   // JUMP
-    code[4] = 0x60;   // PUSH1 0xFF (should not execute)
-    code[5] = 0xFF;   // 0xFF
-    code[6] = 0x00;   // STOP
-    code[7] = 0x00;   // padding
-    code[8] = 0x5B;   // JUMPDEST at 8 - subroutine
-    code[9] = 0x60;   // PUSH1
-    code[10] = 0x42;  // 0x42
-    code[11] = 0x60;  // PUSH1
-    code[12] = 0x01;  // 1 (true condition)
-    code[13] = 0x60;  // PUSH1
-    code[14] = 0x11;  // 17 (conditional jump target)
-    code[15] = 0x57;  // JUMPI
-    code[16] = 0x00;  // STOP (should not execute)
-    code[17] = 0x5B;  // JUMPDEST at 17 - conditional target
-    code[18] = 0x60;  // PUSH1
-    code[19] = 0x24;  // 0x24
+    code[0] = 0x5B; // JUMPDEST at 0 - entry point
+    code[1] = 0x60; // PUSH1
+    code[2] = 0x08; // 8 - jump to subroutine
+    code[3] = 0x56; // JUMP
+    code[4] = 0x60; // PUSH1 0xFF (should not execute)
+    code[5] = 0xFF; // 0xFF
+    code[6] = 0x00; // STOP
+    code[7] = 0x00; // padding
+    code[8] = 0x5B; // JUMPDEST at 8 - subroutine
+    code[9] = 0x60; // PUSH1
+    code[10] = 0x42; // 0x42
+    code[11] = 0x60; // PUSH1
+    code[12] = 0x01; // 1 (true condition)
+    code[13] = 0x60; // PUSH1
+    code[14] = 0x11; // 17 (conditional jump target)
+    code[15] = 0x57; // JUMPI
+    code[16] = 0x00; // STOP (should not execute)
+    code[17] = 0x5B; // JUMPDEST at 17 - conditional target
+    code[18] = 0x60; // PUSH1
+    code[19] = 0x24; // 0x24
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1266,12 +1266,12 @@ test "Control Flow: Complex jump sequences" {
 test "Control Flow: Simple JUMPDEST validation" {
     const allocator = testing.allocator;
     defer Contract.clear_analysis_cache(allocator); // Clean up cache after test
-    
+
     // Simple test: just validate that a JUMPDEST at position 0 is recognized
     const code = [_]u8{0x5B}; // Just a JUMPDEST
-    
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+
+    const caller: Address = [_]u8{0x11} ** 20;
+    const contract_addr: Address = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1283,14 +1283,14 @@ test "Control Flow: Simple JUMPDEST validation" {
         false,
     );
     defer contract.deinit(allocator, null);
-    
+
     // Analyze jumpdests
     contract.analyze_jumpdests(allocator);
-    
+
     // This should return true for position 0
     const is_valid = contract.valid_jumpdest(allocator, 0);
     try testing.expect(is_valid);
-    
+
     // This should return false for position 1 (out of bounds)
     const is_invalid = contract.valid_jumpdest(allocator, 1);
     try testing.expect(!is_invalid);
@@ -1308,17 +1308,17 @@ test "Control Flow: Stack operations validation" {
     defer evm.deinit();
 
     var code = [_]u8{0} ** 8;
-    code[0] = 0x58; // PC 
-    code[1] = 0x58; // PC  
+    code[0] = 0x58; // PC
+    code[1] = 0x58; // PC
     code[2] = 0x60; // PUSH1
     code[3] = 0x06; // 6 (data for PUSH1)
     code[4] = 0x56; // JUMP
-    code[5] = 0x58; // PC 
+    code[5] = 0x58; // PC
     code[6] = 0x5B; // JUMPDEST
     code[7] = 0x58; // PC
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1365,10 +1365,10 @@ test "Control Flow: Stack operations validation" {
     // Stack should be [0, 1, 6] (bottom to top)
     const top = try frame.stack.pop(); // Should be 6
     try testing.expectEqual(@as(u256, 6), top);
-    
-    const middle = try frame.stack.pop(); // Should be 1  
+
+    const middle = try frame.stack.pop(); // Should be 1
     try testing.expectEqual(@as(u256, 1), middle);
-    
+
     const bottom = try frame.stack.pop(); // Should be 0
     try testing.expectEqual(@as(u256, 0), bottom);
 }
@@ -1386,7 +1386,7 @@ test "Control Flow: Program counter tracking" {
 
     var code = [_]u8{0} ** 8;
     code[0] = 0x58; // PC (should push 0)
-    code[1] = 0x58; // PC (should push 1) 
+    code[1] = 0x58; // PC (should push 1)
     code[2] = 0x60; // PUSH1
     code[3] = 0x06; // 6 (jump to position 6)
     code[4] = 0x56; // JUMP
@@ -1394,8 +1394,8 @@ test "Control Flow: Program counter tracking" {
     code[6] = 0x5B; // JUMPDEST at position 6
     code[7] = 0x58; // PC (should push 6)
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1468,8 +1468,8 @@ test "Control Flow: Out of gas scenarios" {
 
     const code = [_]u8{0x5B}; // JUMPDEST
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1522,8 +1522,8 @@ test "Control Flow: Stack operations edge cases" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller = Address.init([_]u8{0x11} ** 20);
-    const contract_addr = Address.init([_]u8{0x33} ** 20);
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x11} ** 20;
     const bytecode = [_]u8{0x5B}; // JUMPDEST
     var contract = Contract.init(
         caller,

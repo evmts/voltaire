@@ -137,7 +137,7 @@ test "MODEXP gas calculation" {
     try testing.expect(gas1 >= modexp.MODEXP_MIN_GAS);
     
     // Larger inputs should cost more gas
-    const gas2 = modexp.calculate_gas(32, 32, 32, &[_]u8{0xFF} ** 32);
+    const gas2 = modexp.calculate_gas(32, 32, 32, &[_]u8{0x11} ** 20;
     try testing.expect(gas2 > gas1);
     
     // Very large exponent should cost more

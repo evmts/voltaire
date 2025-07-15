@@ -338,9 +338,7 @@ pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     const size = try frame.stack.pop();
 
     const Log = @import("../log.zig");
-    Log.debug("CODECOPY: mem_offset={}, code_offset={}, size={}, code_len={}", .{
-        mem_offset, code_offset, size, frame.contract.code.len
-    });
+    Log.debug("CODECOPY: mem_offset={}, code_offset={}, size={}, code_len={}", .{ mem_offset, code_offset, size, frame.contract.code.len });
 
     if (size == 0) {
         @branchHint(.unlikely);

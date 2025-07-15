@@ -20,7 +20,7 @@ fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), co
 const MemoryDatabase = evm_root.MemoryDatabase;
 const Address = primitives.Address.Address;
 
-// Global allocator for WASM environment  
+// Global allocator for WASM environment
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = if (builtin.target.cpu.arch == .wasm32) std.heap.wasm_allocator else gpa.allocator();
 
@@ -177,7 +177,7 @@ test "C interface compilation" {
     std.testing.refAllDecls(@This());
 }
 
-// Re-export modules  
+// Re-export modules
 pub const Evm = evm_root.Evm;
 pub const Primitives = primitives;
 pub const Provider = provider;

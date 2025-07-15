@@ -1,5 +1,5 @@
 const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
 
 /// EVM event log representation
 ///
