@@ -2,6 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 const evm_root = @import("evm");
+const primitives = @import("primitives");
 
 // Simple inline logging that compiles out for freestanding WASM
 fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
@@ -17,7 +18,7 @@ fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), co
 }
 const Evm = evm_root.Evm;
 const MemoryDatabase = evm_root.MemoryDatabase;
-const Address = @import("Address");
+const Address = primitives.Address;
 
 // Global allocator for WASM environment  
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};

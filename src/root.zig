@@ -18,7 +18,7 @@ fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), co
     }
 }
 const MemoryDatabase = evm_root.MemoryDatabase;
-const Address = @import("Address");
+const Address = primitives.Address;
 
 // Global allocator for WASM environment  
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
