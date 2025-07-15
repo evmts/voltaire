@@ -267,6 +267,25 @@ const Contract = @import("../frame/contract.zig");
 
 ## Build and Test Commands
 
+**CRITICAL REQUIREMENT**: ALWAYS run `zig build && zig build test` before committing ANY changes.
+
+### Why This is Critical
+- **Build and tests run very fast** (usually under 10 seconds)
+- **Regressions are unacceptable** - broken builds/tests block all development
+- **No exceptions** - even small changes can break imports or cause test failures
+- **Fast feedback loop** - catches issues immediately before they propagate
+
+### Required Workflow
+```bash
+# Before making ANY commit, ALWAYS run:
+zig build && zig build test
+
+# Only commit if both commands succeed
+git add ...
+git commit -m "..."
+```
+
+### Standard Commands
 **IMPORTANT**: Always use `zig build test`, never use `zig test` directly.
 
 ```bash
