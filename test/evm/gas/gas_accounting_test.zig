@@ -28,23 +28,23 @@ test "gas constants are correctly defined" {
 // Test memory expansion gas calculation
 test "memory expansion gas calculation" {
     // Test no expansion needed
-    try testing.expectEqual(@as(u64, 0), gas_constants.memory_gas_cost(100, 100));
-    try testing.expectEqual(@as(u64, 0), gas_constants.memory_gas_cost(100, 50));
+    try testing.expectEqual(@as(u64, 0), gas_constants.memoryGasCost(100, 100));
+    try testing.expectEqual(@as(u64, 0), gas_constants.memoryGasCost(100, 50));
     
     // Test basic expansion cases
     // Expanding from 0 to 32 bytes (1 word): 3 + 0 = 3 gas
-    try testing.expectEqual(@as(u64, 3), gas_constants.memory_gas_cost(0, 32));
+    try testing.expectEqual(@as(u64, 3), gas_constants.memoryGasCost(0, 32));
     
     // Expanding from 0 to 64 bytes (2 words): 6 + 0 = 6 gas
-    try testing.expectEqual(@as(u64, 6), gas_constants.memory_gas_cost(0, 64));
+    try testing.expectEqual(@as(u64, 6), gas_constants.memoryGasCost(0, 64));
     
     // Test expansion with existing memory
     // From 32 to 64 bytes: 6 - 3 = 3 gas
-    try testing.expectEqual(@as(u64, 3), gas_constants.memory_gas_cost(32, 64));
+    try testing.expectEqual(@as(u64, 3), gas_constants.memoryGasCost(32, 64));
     
     // Test larger expansion
     // From 0 to 1024 bytes (32 words): 3*32 + 32*32/512 = 96 + 2 = 98 gas
-    try testing.expectEqual(@as(u64, 98), gas_constants.memory_gas_cost(0, 1024));
+    try testing.expectEqual(@as(u64, 98), gas_constants.memoryGasCost(0, 1024));
 }
 
 // Test memory expansion lookup table
@@ -59,13 +59,13 @@ test "memory expansion lookup table" {
 // Test edge cases for memory expansion
 test "memory expansion edge cases" {
     // Test alignment - should round up to nearest word
-    try testing.expectEqual(@as(u64, 3), gas_constants.memory_gas_cost(0, 1));
-    try testing.expectEqual(@as(u64, 3), gas_constants.memory_gas_cost(0, 31));
-    try testing.expectEqual(@as(u64, 3), gas_constants.memory_gas_cost(0, 32));
-    try testing.expectEqual(@as(u64, 6), gas_constants.memory_gas_cost(0, 33));
+    try testing.expectEqual(@as(u64, 3), gas_constants.memoryGasCost(0, 1));
+    try testing.expectEqual(@as(u64, 3), gas_constants.memoryGasCost(0, 31));
+    try testing.expectEqual(@as(u64, 3), gas_constants.memoryGasCost(0, 32));
+    try testing.expectEqual(@as(u64, 6), gas_constants.memoryGasCost(0, 33));
     
     // Test that very large sizes don't cause overflow
-    const large_size = gas_constants.memory_gas_cost(0, 1024 * 1024); // 1MB
+    const large_size = gas_constants.memoryGasCost(0, 1024 * 1024); // 1MB
     try testing.expect(large_size > 1000000); // Should be very expensive
 }
 
