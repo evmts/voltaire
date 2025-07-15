@@ -1195,3 +1195,92 @@ test "BlockNumber conversions" {
     const json_val2 = block_tag.toJsonValue();
     try testing.expectEqualStrings("latest", try json_val2.toString());
 }
+
+// =============================================================================
+// Batch Request Support
+// =============================================================================
+
+pub const JsonRpcBatchRequest = struct {
+    requests: []JsonRpcRequest,
+    allocator: Allocator,
+
+    pub fn init(allocator: Allocator, requests: []JsonRpcRequest) JsonRpcBatchRequest {
+        return JsonRpcBatchRequest{
+            .requests = requests,
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: JsonRpcBatchRequest) void {
+        self.allocator.free(self.requests);
+    }
+
+    pub fn add(self: *JsonRpcBatchRequest, request: JsonRpcRequest) !void {
+        const new_requests = try self.allocator.realloc(self.requests, self.requests.len + 1);
+        new_requests[new_requests.len - 1] = request;
+        self.requests = new_requests;
+    }
+
+    pub fn len(self: JsonRpcBatchRequest) usize {
+        return self.requests.len;
+    }
+};
+
+pub const JsonRpcBatchResponse = struct {
+    responses: []JsonRpcResponse,
+    allocator: Allocator,
+
+    pub fn init(allocator: Allocator, responses: []JsonRpcResponse) JsonRpcBatchResponse {
+        return JsonRpcBatchResponse{
+            .responses = responses,
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: JsonRpcBatchResponse) void {
+        self.allocator.free(self.responses);
+    }
+
+    pub fn getResponse(self: JsonRpcBatchResponse, id: u64) ?JsonRpcResponse {
+        for (self.responses) |response| {
+            if (response.id == id) {
+                return response;
+            }
+        }
+        return null;
+    }
+
+    pub fn len(self: JsonRpcBatchResponse) usize {
+        return self.responses.len;
+    }
+};
+
+/// Utility function to create a batch request
+pub fn createBatchRequest(allocator: Allocator, requests: []JsonRpcRequest) JsonRpcBatchRequest {
+    return JsonRpcBatchRequest.init(allocator, requests);
+}
+
+test "JsonRpcBatchRequest creation" {
+    const allocator = testing.allocator;
+
+    const req1 = JsonRpcRequest{
+        .method = "eth_chainId",
+        .params = JsonValue{ .null = {} },
+        .id = 1,
+    };
+
+    const req2 = JsonRpcRequest{
+        .method = "eth_gasPrice",
+        .params = JsonValue{ .null = {} },
+        .id = 2,
+    };
+
+    const requests = try allocator.alloc(JsonRpcRequest, 2);
+    requests[0] = req1;
+    requests[1] = req2;
+
+    const batch = JsonRpcBatchRequest.init(allocator, requests);
+    try testing.expect(batch.len() == 2);
+
+    batch.deinit();
+}

@@ -505,12 +505,11 @@ pub const jsonrpc = struct {
 
     /// Get transaction receipt
     pub const getTransactionReceipt = struct {
-        pub fn request(transactionHash: Hash) JsonRpcRequest {
-            // TODO: Properly serialize parameters
-            _ = transactionHash;
+        pub fn request(allocator: Allocator, transactionHash: Hash) !JsonRpcRequest {
+            const params = try serializeSingleParam(allocator, transactionHash);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_getTransactionReceipt.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -526,12 +525,11 @@ pub const jsonrpc = struct {
 
     /// Send raw transaction
     pub const sendRawTransaction = struct {
-        pub fn request(data: Hex) JsonRpcRequest {
-            // TODO: Properly serialize parameters
-            _ = data;
+        pub fn request(allocator: Allocator, data: Hex) !JsonRpcRequest {
+            const params = try serializeSingleParam(allocator, data);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_sendRawTransaction.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -564,13 +562,11 @@ pub const jsonrpc = struct {
 
     /// Sign message
     pub const sign = struct {
-        pub fn request(address: Address, data: Hex) JsonRpcRequest {
-            // TODO: Properly serialize parameters
-            _ = address;
-            _ = data;
+        pub fn request(allocator: Allocator, address: Address, data: Hex) !JsonRpcRequest {
+            const params = try serializeTwoParams(allocator, address, data);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_sign.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -603,13 +599,11 @@ pub const jsonrpc = struct {
 
     /// Sign typed data (EIP-712)
     pub const signTypedData = struct {
-        pub fn request(address: Address, typedData: TypedData) JsonRpcRequest {
-            // TODO: Properly serialize parameters
-            _ = address;
-            _ = typedData;
+        pub fn request(allocator: Allocator, address: Address, typedData: TypedData) !JsonRpcRequest {
+            const params = try serializeTwoParams(allocator, address, typedData);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_signTypedData_v4.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -731,12 +725,11 @@ pub const jsonrpc = struct {
 
     /// Calculate Keccak-256 hash
     pub const web3Sha3 = struct {
-        pub fn request(data: Hex) JsonRpcRequest {
-            // TODO: Properly serialize parameters
-            _ = data;
+        pub fn request(allocator: Allocator, data: Hex) !JsonRpcRequest {
+            const params = try serializeSingleParam(allocator, data);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.web3_sha3.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -806,25 +799,21 @@ pub fn buildGetBalanceRequest(address: Address, block: BlockNumber, allocator: A
 
 /// Type-safe method builder for eth_call
 pub fn buildCallRequest(transaction: TransactionObject, block: BlockNumber, allocator: Allocator) !JsonRpcRequest {
-    // TODO: Properly serialize transaction object
-    _ = transaction;
-    const params = try createArrayParams(allocator, &[_][]const u8{
-        "{}", // Simplified transaction object
-        switch (block) {
-            .number => |n| try std.fmt.allocPrint(allocator, "0x{x}", .{n}),
-            .tag => |t| t.toString(),
-        },
-    });
+    const tx_json = try serializeTransactionObject(allocator, transaction);
+    const block_json = try serializeParam(allocator, block);
+
+    var array = std.ArrayList(JsonValue).init(allocator);
+    try array.append(tx_json);
+    try array.append(block_json);
+
+    const params = JsonValue{ .array = try array.toOwnedSlice() };
     return createRequest(JsonRpcMethod.eth_call, params);
 }
 
 /// Type-safe method builder for eth_sendTransaction
 pub fn buildSendTransactionRequest(transaction: TransactionObject, allocator: Allocator) !JsonRpcRequest {
-    // TODO: Properly serialize transaction object
-    _ = transaction;
-    const params = try createArrayParams(allocator, &[_][]const u8{
-        "{}", // Simplified transaction object
-    });
+    const tx_json = try serializeTransactionObject(allocator, transaction);
+    const params = try serializeSingleParam(allocator, tx_json);
     return createRequest(JsonRpcMethod.eth_sendTransaction, params);
 }
 

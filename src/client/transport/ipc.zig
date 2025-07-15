@@ -2,13 +2,13 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 const StringHashMap = std.StringHashMap;
+const net = std.net;
 
 // Import transport errors
 const TransportError = @import("errors.zig").TransportError;
 const ErrorContext = @import("errors.zig").ErrorContext;
-const HttpError = @import("errors.zig").HttpError;
 
-// Import JSON-RPC types (with fallback if not available)
+// Import JSON-RPC types
 const JsonRpcRequest = @import("../jsonrpc/types.zig").JsonRpcRequest;
 const JsonRpcResponse = @import("../jsonrpc/types.zig").JsonRpcResponse;
 const JsonValue = @import("../jsonrpc/types.zig").JsonValue;
@@ -16,114 +16,159 @@ const JsonRpcBatchRequest = @import("../jsonrpc/types.zig").JsonRpcBatchRequest;
 const JsonRpcBatchResponse = @import("../jsonrpc/types.zig").JsonRpcBatchResponse;
 
 // =============================================================================
-// HTTP Configuration
+// IPC Configuration
 // =============================================================================
 
-pub const HttpConfig = struct {
-    url: []const u8,
-    headers: ?StringHashMap([]const u8) = null,
+pub const IpcConfig = struct {
+    path: []const u8,
     timeout: u32 = 30000,
     retry_count: u8 = 3,
     retry_delay: u32 = 1000,
-    user_agent: []const u8 = "Guillotine-Ethereum-Client/1.0",
+    buffer_size: usize = 4096,
 
-    pub fn init(url: []const u8) HttpConfig {
-        return HttpConfig{
-            .url = url,
+    pub fn init(path: []const u8) IpcConfig {
+        return IpcConfig{
+            .path = path,
         };
     }
 
-    pub fn withTimeout(self: HttpConfig, timeout: u32) HttpConfig {
-        return HttpConfig{
-            .url = self.url,
-            .headers = self.headers,
+    pub fn withTimeout(self: IpcConfig, timeout: u32) IpcConfig {
+        return IpcConfig{
+            .path = self.path,
             .timeout = timeout,
             .retry_count = self.retry_count,
             .retry_delay = self.retry_delay,
-            .user_agent = self.user_agent,
+            .buffer_size = self.buffer_size,
         };
     }
 
-    pub fn withRetries(self: HttpConfig, retry_count: u8, retry_delay: u32) HttpConfig {
-        return HttpConfig{
-            .url = self.url,
-            .headers = self.headers,
+    pub fn withRetries(self: IpcConfig, retry_count: u8, retry_delay: u32) IpcConfig {
+        return IpcConfig{
+            .path = self.path,
             .timeout = self.timeout,
             .retry_count = retry_count,
             .retry_delay = retry_delay,
-            .user_agent = self.user_agent,
+            .buffer_size = self.buffer_size,
         };
     }
 };
 
 // =============================================================================
-// HTTP Transport
+// IPC Transport
 // =============================================================================
 
-pub const HttpTransport = struct {
+pub const IpcTransport = struct {
     allocator: Allocator,
-    url: []const u8,
-    headers: StringHashMap([]const u8),
+    path: []const u8,
     timeout: u32,
     retry_count: u8,
     retry_delay: u32,
-    user_agent: []const u8,
-    client: std.http.Client,
+    buffer_size: usize,
+    stream: ?net.Stream = null,
+    connected: bool = false,
 
-    /// Initialize HTTP transport
-    pub fn init(allocator: Allocator, config: HttpConfig) TransportError!HttpTransport {
-        var headers = StringHashMap([]const u8).init(allocator);
-
-        // Add default headers
-        try headers.put("Content-Type", "application/json");
-        try headers.put("User-Agent", config.user_agent);
-
-        // Add custom headers if provided
-        if (config.headers) |custom_headers| {
-            var iterator = custom_headers.iterator();
-            while (iterator.next()) |entry| {
-                try headers.put(entry.key_ptr.*, entry.value_ptr.*);
-            }
-        }
-
-        const client = std.http.Client{ .allocator = allocator };
-
-        return HttpTransport{
+    /// Initialize IPC transport
+    pub fn init(allocator: Allocator, config: IpcConfig) TransportError!IpcTransport {
+        return IpcTransport{
             .allocator = allocator,
-            .url = try allocator.dupe(u8, config.url),
-            .headers = headers,
+            .path = config.path,
             .timeout = config.timeout,
             .retry_count = config.retry_count,
             .retry_delay = config.retry_delay,
-            .user_agent = config.user_agent,
-            .client = client,
+            .buffer_size = config.buffer_size,
         };
     }
 
-    /// Clean up HTTP transport
-    pub fn deinit(self: *HttpTransport) void {
-        self.allocator.free(self.url);
-        self.headers.deinit();
-        self.client.deinit();
+    /// Clean up IPC transport resources
+    pub fn deinit(self: *IpcTransport) void {
+        self.disconnect();
     }
 
-    /// Send HTTP request with JSON-RPC
-    pub fn request(self: *HttpTransport, req: JsonRpcRequest) TransportError!JsonRpcResponse {
+    /// Connect to IPC endpoint
+    pub fn connect(self: *IpcTransport) TransportError!void {
+        if (self.connected) return;
+
+        // Connect to Unix domain socket
+        const address = net.Address.initUnix(self.path) catch {
+            return TransportError.InvalidUrl;
+        };
+
+        self.stream = net.tcpConnectToAddress(address) catch |err| {
+            return switch (err) {
+                error.ConnectionRefused => TransportError.ConnectionError,
+                error.FileNotFound => TransportError.ConnectionError,
+                error.PermissionDenied => TransportError.ConnectionError,
+                else => TransportError.NetworkError,
+            };
+        };
+
+        self.connected = true;
+    }
+
+    /// Disconnect from IPC endpoint
+    pub fn disconnect(self: *IpcTransport) void {
+        if (self.stream) |stream| {
+            stream.close();
+            self.stream = null;
+        }
+        self.connected = false;
+    }
+
+    /// Send JSON-RPC request over IPC
+    pub fn request(self: *IpcTransport, req: JsonRpcRequest) TransportError!JsonRpcResponse {
+        if (!self.connected) {
+            try self.connect();
+        }
+
         return self.retryRequest(req, 0);
     }
 
-    /// Add custom header
-    pub fn addHeader(self: *HttpTransport, key: []const u8, value: []const u8) TransportError!void {
-        try self.headers.put(key, value);
+    /// Send batch request over IPC
+    pub fn requestBatch(self: *IpcTransport, batch: JsonRpcBatchRequest) TransportError!JsonRpcBatchResponse {
+        if (!self.connected) {
+            try self.connect();
+        }
+
+        const json_string = try self.serializeBatchRequest(batch);
+        defer self.allocator.free(json_string);
+
+        const stream = self.stream orelse return TransportError.ConnectionError;
+
+        // Send request
+        stream.writeAll(json_string) catch {
+            self.disconnect();
+            return TransportError.NetworkError;
+        };
+
+        // Read response
+        var response_buffer = ArrayList(u8).init(self.allocator);
+        defer response_buffer.deinit();
+
+        var buffer: [4096]u8 = undefined;
+        var total_read: usize = 0;
+
+        while (true) {
+            const bytes_read = stream.read(buffer[0..]) catch {
+                self.disconnect();
+                return TransportError.NetworkError;
+            };
+
+            if (bytes_read == 0) break;
+
+            try response_buffer.appendSlice(buffer[0..bytes_read]);
+            total_read += bytes_read;
+
+            // Check if we have a complete JSON response
+            if (self.isCompleteJsonResponse(response_buffer.items)) {
+                break;
+            }
+        }
+
+        return self.parseBatchResponse(response_buffer.items);
     }
 
-    /// Remove header
-    pub fn removeHeader(self: *HttpTransport, key: []const u8) void {
-        _ = self.headers.remove(key);
-    }
-
-    /// Test connection
-    pub fn testConnection(self: *HttpTransport) TransportError!void {
+    /// Test IPC connection
+    pub fn testConnection(self: *IpcTransport) TransportError!void {
         // Create a simple eth_chainId request to test connection
         const test_req = JsonRpcRequest{
             .method = "eth_chainId",
@@ -134,48 +179,17 @@ pub const HttpTransport = struct {
         _ = try self.request(test_req);
     }
 
-    /// Send batch request
-    pub fn requestBatch(self: *HttpTransport, batch: JsonRpcBatchRequest) TransportError!JsonRpcBatchResponse {
-        const json_string = try self.serializeBatchRequest(batch);
-        defer self.allocator.free(json_string);
-
-        // Send HTTP POST request
-        var response_buffer = std.ArrayList(u8).init(self.allocator);
-        defer response_buffer.deinit();
-
-        const response = self.client.fetch(.{
-            .method = .POST,
-            .url = self.url,
-            .headers = .{
-                .content_type = .{ .override = "application/json" },
-                .user_agent = .{ .override = self.user_agent },
-            },
-            .payload = json_string,
-            .response_storage = .{ .dynamic = &response_buffer },
-        }) catch |err| {
-            return switch (err) {
-                error.ConnectionRefused => TransportError.ConnectionError,
-                error.NameResolutionFailed => TransportError.NetworkError,
-                error.ConnectionTimedOut => TransportError.Timeout,
-                else => TransportError.NetworkError,
-            };
-        };
-
-        // Check status code
-        if (response.status.class() != .success) {
-            return TransportError.HttpError;
-        }
-
-        // Parse the batch response
-        return self.parseBatchResponse(response_buffer.items);
+    /// Check if transport is connected
+    pub fn isConnected(self: IpcTransport) bool {
+        return self.connected;
     }
 
     // =============================================================================
     // Private Methods
     // =============================================================================
 
-    fn retryRequest(self: *HttpTransport, req: JsonRpcRequest, attempt: u8) TransportError!JsonRpcResponse {
-        const result = self.sendHttpRequest(req) catch |err| {
+    fn retryRequest(self: *IpcTransport, req: JsonRpcRequest, attempt: u8) TransportError!JsonRpcResponse {
+        const result = self.sendIpcRequest(req) catch |err| {
             if (attempt < self.retry_count) {
                 // Wait before retry
                 std.time.sleep(self.retry_delay * 1000 * 1000); // Convert ms to ns
@@ -187,44 +201,44 @@ pub const HttpTransport = struct {
         return result;
     }
 
-    fn sendHttpRequest(self: *HttpTransport, req: JsonRpcRequest) TransportError!JsonRpcResponse {
-        // 1. Serialize the JsonRpcRequest to JSON
+    fn sendIpcRequest(self: *IpcTransport, req: JsonRpcRequest) TransportError!JsonRpcResponse {
         const json_string = try self.serializeRequest(req);
         defer self.allocator.free(json_string);
 
-        // 2. Send HTTP POST request
-        var response_buffer = std.ArrayList(u8).init(self.allocator);
-        defer response_buffer.deinit();
+        const stream = self.stream orelse return TransportError.ConnectionError;
 
-        const response = self.client.fetch(.{
-            .method = .POST,
-            .url = self.url,
-            .headers = .{
-                .content_type = .{ .override = "application/json" },
-                .user_agent = .{ .override = self.user_agent },
-            },
-            .payload = json_string,
-            .response_storage = .{ .dynamic = &response_buffer },
-        }) catch |err| {
-            return switch (err) {
-                error.ConnectionRefused => TransportError.ConnectionError,
-                error.NameResolutionFailed => TransportError.NetworkError,
-                error.ConnectionTimedOut => TransportError.Timeout,
-                else => TransportError.NetworkError,
-            };
+        // Send request
+        stream.writeAll(json_string) catch {
+            self.disconnect();
+            return TransportError.NetworkError;
         };
 
-        // 4. Check status code
-        if (response.status.class() != .success) {
-            return TransportError.HttpError;
+        // Read response
+        var response_buffer = ArrayList(u8).init(self.allocator);
+        defer response_buffer.deinit();
+
+        var buffer: [4096]u8 = undefined;
+
+        while (true) {
+            const bytes_read = stream.read(buffer[0..]) catch {
+                self.disconnect();
+                return TransportError.NetworkError;
+            };
+
+            if (bytes_read == 0) break;
+
+            try response_buffer.appendSlice(buffer[0..bytes_read]);
+
+            // Check if we have a complete JSON response
+            if (self.isCompleteJsonResponse(response_buffer.items)) {
+                break;
+            }
         }
 
-        // 5. Parse the response
-        return self.parseHttpResponse(response_buffer.items);
+        return self.parseResponse(response_buffer.items);
     }
 
-    /// Serialize JsonRpcRequest to JSON string
-    fn serializeRequest(self: *HttpTransport, req: JsonRpcRequest) ![]u8 {
+    fn serializeRequest(self: *IpcTransport, req: JsonRpcRequest) ![]u8 {
         var json_obj = std.json.ObjectMap.init(self.allocator);
         defer json_obj.deinit();
 
@@ -245,11 +259,13 @@ pub const HttpTransport = struct {
         var json_string = std.ArrayList(u8).init(self.allocator);
         try std.json.stringify(json_obj, .{}, json_string.writer());
 
+        // Add newline delimiter for IPC
+        try json_string.append('\n');
+
         return json_string.toOwnedSlice();
     }
 
-    /// Convert JsonValue to std.json.Value
-    fn serializeJsonValue(self: *HttpTransport, value: JsonValue) !std.json.Value {
+    fn serializeJsonValue(self: *IpcTransport, value: JsonValue) !std.json.Value {
         return switch (value) {
             .null => .null,
             .boolean => |b| .{ .bool = b },
@@ -276,7 +292,7 @@ pub const HttpTransport = struct {
         };
     }
 
-    fn parseHttpResponse(self: *HttpTransport, response: []const u8) TransportError!JsonRpcResponse {
+    fn parseResponse(self: *IpcTransport, response: []const u8) TransportError!JsonRpcResponse {
         const parsed = std.json.parseFromSlice(std.json.Value, self.allocator, response, .{}) catch {
             return TransportError.InvalidResponse;
         };
@@ -322,8 +338,7 @@ pub const HttpTransport = struct {
         };
     }
 
-    /// Convert std.json.Value to JsonValue
-    fn parseJsonValue(self: *HttpTransport, value: std.json.Value) !JsonValue {
+    fn parseJsonValue(self: *IpcTransport, value: std.json.Value) !JsonValue {
         return switch (value) {
             .null => JsonValue{ .null = {} },
             .bool => |b| JsonValue{ .boolean = b },
@@ -350,8 +365,7 @@ pub const HttpTransport = struct {
         };
     }
 
-    /// Serialize JsonRpcBatchRequest to JSON string
-    fn serializeBatchRequest(self: *HttpTransport, batch: JsonRpcBatchRequest) ![]u8 {
+    fn serializeBatchRequest(self: *IpcTransport, batch: JsonRpcBatchRequest) ![]u8 {
         var json_array = std.json.Array.init(self.allocator);
 
         for (batch.requests) |req| {
@@ -377,11 +391,13 @@ pub const HttpTransport = struct {
         var json_string = std.ArrayList(u8).init(self.allocator);
         try std.json.stringify(json_array, .{}, json_string.writer());
 
+        // Add newline delimiter for IPC
+        try json_string.append('\n');
+
         return json_string.toOwnedSlice();
     }
 
-    /// Parse batch response from JSON string
-    fn parseBatchResponse(self: *HttpTransport, response: []const u8) TransportError!JsonRpcBatchResponse {
+    fn parseBatchResponse(self: *IpcTransport, response: []const u8) TransportError!JsonRpcBatchResponse {
         const parsed = std.json.parseFromSlice(std.json.Value, self.allocator, response, .{}) catch {
             return TransportError.InvalidResponse;
         };
@@ -436,6 +452,42 @@ pub const HttpTransport = struct {
 
         return JsonRpcBatchResponse.init(self.allocator, try responses.toOwnedSlice());
     }
+
+    fn isCompleteJsonResponse(self: *IpcTransport, data: []const u8) bool {
+        _ = self;
+
+        // Simple check for complete JSON by looking for balanced braces
+        var brace_count: i32 = 0;
+        var in_string = false;
+        var escape_next = false;
+
+        for (data) |char| {
+            if (escape_next) {
+                escape_next = false;
+                continue;
+            }
+
+            if (char == '\\') {
+                escape_next = true;
+                continue;
+            }
+
+            if (char == '"') {
+                in_string = !in_string;
+                continue;
+            }
+
+            if (in_string) continue;
+
+            if (char == '{' or char == '[') {
+                brace_count += 1;
+            } else if (char == '}' or char == ']') {
+                brace_count -= 1;
+            }
+        }
+
+        return brace_count == 0 and data.len > 0;
+    }
 };
 
 // =============================================================================
@@ -444,46 +496,45 @@ pub const HttpTransport = struct {
 
 const testing = std.testing;
 
-test "HttpConfig creation" {
-    const config = HttpConfig.init("https://mainnet.infura.io/v3/test");
-    try testing.expectEqualStrings("https://mainnet.infura.io/v3/test", config.url);
+test "IpcConfig creation" {
+    const config = IpcConfig.init("/tmp/ethereum.ipc");
+    try testing.expectEqualStrings("/tmp/ethereum.ipc", config.path);
     try testing.expect(config.timeout == 30000);
     try testing.expect(config.retry_count == 3);
 }
 
-test "HttpConfig with timeout" {
-    const config = HttpConfig.init("https://test.com").withTimeout(10000);
+test "IpcConfig with timeout" {
+    const config = IpcConfig.init("/tmp/test.ipc").withTimeout(10000);
     try testing.expect(config.timeout == 10000);
 }
 
-test "HttpConfig with retries" {
-    const config = HttpConfig.init("https://test.com").withRetries(5, 2000);
+test "IpcConfig with retries" {
+    const config = IpcConfig.init("/tmp/test.ipc").withRetries(5, 2000);
     try testing.expect(config.retry_count == 5);
     try testing.expect(config.retry_delay == 2000);
 }
 
-test "HttpTransport initialization" {
+test "IpcTransport initialization" {
     const allocator = testing.allocator;
-    const config = HttpConfig.init("https://mainnet.infura.io/v3/test");
+    const config = IpcConfig.init("/tmp/test.ipc");
 
-    var transport = try HttpTransport.init(allocator, config);
+    var transport = try IpcTransport.init(allocator, config);
     defer transport.deinit();
 
-    try testing.expectEqualStrings("https://mainnet.infura.io/v3/test", transport.url);
+    try testing.expectEqualStrings("/tmp/test.ipc", transport.path);
     try testing.expect(transport.timeout == 30000);
+    try testing.expect(!transport.isConnected());
 }
 
-test "HttpTransport headers" {
+test "JSON completeness checking" {
     const allocator = testing.allocator;
-    const config = HttpConfig.init("https://test.com");
-
-    var transport = try HttpTransport.init(allocator, config);
+    const config = IpcConfig.init("/tmp/test.ipc");
+    var transport = try IpcTransport.init(allocator, config);
     defer transport.deinit();
 
-    try transport.addHeader("Authorization", "Bearer token123");
-    try testing.expect(transport.headers.contains("Authorization"));
-    try testing.expect(transport.headers.contains("Content-Type"));
-
-    transport.removeHeader("Authorization");
-    try testing.expect(!transport.headers.contains("Authorization"));
+    try testing.expect(transport.isCompleteJsonResponse("{}"));
+    try testing.expect(transport.isCompleteJsonResponse("[]"));
+    try testing.expect(transport.isCompleteJsonResponse("{\"test\":\"value\"}"));
+    try testing.expect(!transport.isCompleteJsonResponse("{"));
+    try testing.expect(!transport.isCompleteJsonResponse("{\"test\":"));
 }

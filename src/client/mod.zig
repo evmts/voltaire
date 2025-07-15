@@ -106,6 +106,9 @@ test "Transport config creation" {
         .http => |http_config| {
             try testing.expectEqualStrings("https://test.com", http_config.url);
         },
+        .ipc => {
+            try testing.expect(false); // This test should create HTTP config
+        },
     }
 }
 

@@ -11,11 +11,17 @@ const JsonRpcResponse = @import("../jsonrpc/types.zig").JsonRpcResponse;
 
 pub const TransportConfig = union(enum) {
     http: @import("http.zig").HttpConfig,
-    // ipc: IpcConfig,  // TODO: Implement IPC config
+    ipc: @import("ipc.zig").IpcConfig,
 
     pub fn http_config(url: []const u8) TransportConfig {
         return TransportConfig{
             .http = @import("http.zig").HttpConfig.init(url),
+        };
+    }
+
+    pub fn ipc_config(path: []const u8) TransportConfig {
+        return TransportConfig{
+            .ipc = @import("ipc.zig").IpcConfig.init(path),
         };
     }
 };
@@ -26,7 +32,7 @@ pub const TransportConfig = union(enum) {
 
 pub const Transport = union(enum) {
     http: @import("http.zig").HttpTransport,
-    // ipc: IpcTransport,  // TODO: Implement IPC transport
+    ipc: @import("ipc.zig").IpcTransport,
 
     /// Initialize transport from config
     pub fn init(allocator: Allocator, config: TransportConfig) @import("errors.zig").TransportError!Transport {
@@ -35,7 +41,10 @@ pub const Transport = union(enum) {
                 const http_transport = try @import("http.zig").HttpTransport.init(allocator, http_config);
                 return Transport{ .http = http_transport };
             },
-            // TODO: Add IPC transport initialization
+            .ipc => |ipc_config| {
+                const ipc_transport = try @import("ipc.zig").IpcTransport.init(allocator, ipc_config);
+                return Transport{ .ipc = ipc_transport };
+            },
         };
     }
 
@@ -43,7 +52,7 @@ pub const Transport = union(enum) {
     pub fn deinit(self: *Transport) void {
         switch (self.*) {
             .http => |*http| http.deinit(),
-            // TODO: Add IPC transport cleanup
+            .ipc => |*ipc| ipc.deinit(),
         }
     }
 
@@ -51,7 +60,7 @@ pub const Transport = union(enum) {
     pub fn request(self: *Transport, req: JsonRpcRequest) @import("errors.zig").TransportError!JsonRpcResponse {
         return switch (self.*) {
             .http => |*http| http.request(req),
-            // TODO: Add IPC transport request
+            .ipc => |*ipc| ipc.request(req),
         };
     }
 
@@ -59,7 +68,7 @@ pub const Transport = union(enum) {
     pub fn getType(self: Transport) []const u8 {
         return switch (self) {
             .http => "http",
-            // TODO: Add IPC transport type
+            .ipc => "ipc",
         };
     }
 
@@ -67,7 +76,7 @@ pub const Transport = union(enum) {
     pub fn isConnected(self: Transport) bool {
         return switch (self) {
             .http => true, // HTTP is always "connected"
-            // TODO: Add IPC transport connection check
+            .ipc => |ipc| ipc.isConnected(),
         };
     }
 
@@ -75,7 +84,7 @@ pub const Transport = union(enum) {
     pub fn testConnection(self: *Transport) @import("errors.zig").TransportError!void {
         return switch (self.*) {
             .http => |*http| http.testConnection(),
-            // TODO: Add IPC transport test
+            .ipc => |*ipc| ipc.testConnection(),
         };
     }
 };
@@ -86,6 +95,8 @@ pub const Transport = union(enum) {
 
 pub const HttpTransport = @import("http.zig").HttpTransport;
 pub const HttpConfig = @import("http.zig").HttpConfig;
+pub const IpcTransport = @import("ipc.zig").IpcTransport;
+pub const IpcConfig = @import("ipc.zig").IpcConfig;
 pub const TransportError = @import("errors.zig").TransportError;
 pub const ErrorContext = @import("errors.zig").ErrorContext;
 
@@ -100,6 +111,9 @@ test "Transport config creation" {
     switch (config) {
         .http => |http_config| {
             try testing.expectEqualStrings("https://mainnet.infura.io/v3/test", http_config.url);
+        },
+        .ipc => {
+            try testing.expect(false); // This test should create HTTP config
         },
     }
 }
@@ -124,6 +138,28 @@ test "Transport type checking" {
 
     switch (transport) {
         .http => {},
+        .ipc => {},
         // This should match since we created an HTTP transport
     }
+}
+
+test "IPC transport config creation" {
+    const config = TransportConfig.ipc_config("/tmp/ethereum.ipc");
+    switch (config) {
+        .ipc => |ipc_config| {
+            try testing.expectEqualStrings("/tmp/ethereum.ipc", ipc_config.path);
+        },
+        else => try testing.expect(false),
+    }
+}
+
+test "IPC transport initialization" {
+    const allocator = testing.allocator;
+    const config = TransportConfig.ipc_config("/tmp/test.ipc");
+
+    var transport = try Transport.init(allocator, config);
+    defer transport.deinit();
+
+    try testing.expectEqualStrings("ipc", transport.getType());
+    try testing.expect(!transport.isConnected());
 }
