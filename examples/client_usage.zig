@@ -88,7 +88,7 @@ pub fn main() !void {
     // Example 1: Get balance with proper types
     const address: Address = "0x742d35Cc6634C0532925a3b844Bc9e7595f8fA82";
     const block = BlockNumber{ .tag = .latest };
-    const balance_req = jsonrpc.getBalance.request(address, block);
+    const balance_req = try jsonrpc.getBalance.request(allocator, address, block);
     print("   Get balance request: {s} for {s} at {s}\n", .{ balance_req.method, address, BlockTag.latest.toString() });
 
     // Example 2: Contract call with transaction object
@@ -97,7 +97,7 @@ pub fn main() !void {
         .to = "0xA0b86a33E6f8A7C7E2a7A67C8D4A8A8A8A8A8A8A",
         .data = "0x70a08231000000000000000000000000742d35cc6634c0532925a3b844bc9e7595f8fa82",
     };
-    const call_req = jsonrpc.call.request(transaction, block);
+    const call_req = try jsonrpc.call.request(allocator, transaction, block);
     print("   Contract call request: {s} (ID: {})\n", .{ call_req.method, call_req.id });
 
     // =============================================================================

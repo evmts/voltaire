@@ -29,6 +29,148 @@ const FeeHistoryResponse = @import("types.zig").FeeHistoryResponse;
 const SyncingResponse = @import("types.zig").SyncingResponse;
 const TypedData = @import("types.zig").TypedData;
 
+// =============================================================================
+// Parameter Serialization Utilities
+// =============================================================================
+
+/// Serialize a single parameter into JsonValue
+fn serializeParam(allocator: Allocator, param: anytype) !JsonValue {
+    const T = @TypeOf(param);
+    switch (T) {
+        []const u8 => return JsonValue{ .string = param },
+        bool => return JsonValue{ .boolean = param },
+        u64 => {
+            const hex_str = try std.fmt.allocPrint(allocator, "0x{x}", .{param});
+            return JsonValue{ .string = hex_str };
+        },
+        BlockNumber => {
+            return param.toJsonValue();
+        },
+        else => {
+            // For complex types, try to get string representation
+            if (@hasDecl(T, "toString")) {
+                return JsonValue{ .string = try param.toString() };
+            } else {
+                return JsonValue{ .string = param };
+            }
+        },
+    }
+}
+
+/// Serialize multiple parameters into JsonValue array
+fn serializeParams(allocator: Allocator, params: anytype) !JsonValue {
+    const params_info = @typeInfo(@TypeOf(params));
+    if (params_info != .Struct) {
+        @compileError("params must be a struct");
+    }
+
+    var array = std.ArrayList(JsonValue).init(allocator);
+
+    inline for (params_info.Struct.fields) |field| {
+        const param_value = @field(params, field.name);
+        const serialized = try serializeParam(allocator, param_value);
+        try array.append(serialized);
+    }
+
+    return JsonValue{ .array = array.items };
+}
+
+/// Serialize no parameters (empty array)
+fn serializeNoParams() JsonValue {
+    return JsonValue{ .array = &[_]JsonValue{} };
+}
+
+/// Serialize single parameter
+fn serializeSingleParam(allocator: Allocator, param: anytype) !JsonValue {
+    const serialized = try serializeParam(allocator, param);
+    var array = std.ArrayList(JsonValue).init(allocator);
+    try array.append(serialized);
+    return JsonValue{ .array = try array.toOwnedSlice() };
+}
+
+/// Serialize two parameters
+fn serializeTwoParams(allocator: Allocator, param1: anytype, param2: anytype) !JsonValue {
+    var array = std.ArrayList(JsonValue).init(allocator);
+    try array.append(try serializeParam(allocator, param1));
+    try array.append(try serializeParam(allocator, param2));
+    return JsonValue{ .array = try array.toOwnedSlice() };
+}
+
+/// Serialize three parameters
+fn serializeThreeParams(allocator: Allocator, param1: anytype, param2: anytype, param3: anytype) !JsonValue {
+    var array = std.ArrayList(JsonValue).init(allocator);
+    try array.append(try serializeParam(allocator, param1));
+    try array.append(try serializeParam(allocator, param2));
+    try array.append(try serializeParam(allocator, param3));
+    return JsonValue{ .array = try array.toOwnedSlice() };
+}
+
+/// Serialize optional parameter with fallback
+fn serializeOptionalParam(allocator: Allocator, param: anytype, fallback: JsonValue) !JsonValue {
+    if (param) |value| {
+        return try serializeParam(allocator, value);
+    } else {
+        return fallback;
+    }
+}
+
+/// Serialize TransactionObject to JsonValue
+fn serializeTransactionObject(allocator: Allocator, tx: TransactionObject) !JsonValue {
+    var obj = std.StringHashMap(JsonValue).init(allocator);
+
+    try obj.put("from", JsonValue{ .string = tx.from });
+    if (tx.to) |to| try obj.put("to", JsonValue{ .string = to });
+    if (tx.value) |value| try obj.put("value", JsonValue{ .string = value });
+    if (tx.data) |data| try obj.put("data", JsonValue{ .string = data });
+    if (tx.gas) |gas| try obj.put("gas", JsonValue{ .string = gas });
+    if (tx.gasPrice) |gasPrice| try obj.put("gasPrice", JsonValue{ .string = gasPrice });
+    if (tx.nonce) |nonce| try obj.put("nonce", JsonValue{ .string = nonce });
+
+    return JsonValue{ .object = obj };
+}
+
+/// Serialize LogFilter to JsonValue
+fn serializeLogFilter(allocator: Allocator, filter: LogFilter) !JsonValue {
+    var obj = std.StringHashMap(JsonValue).init(allocator);
+
+    if (filter.fromBlock) |fromBlock| try obj.put("fromBlock", fromBlock.toJsonValue());
+    if (filter.toBlock) |toBlock| try obj.put("toBlock", toBlock.toJsonValue());
+    if (filter.address) |address| {
+        switch (address) {
+            .single => |addr| try obj.put("address", JsonValue{ .string = addr }),
+            .multiple => |addrs| {
+                var addr_array = std.ArrayList(JsonValue).init(allocator);
+                for (addrs) |addr| {
+                    try addr_array.append(JsonValue{ .string = addr });
+                }
+                try obj.put("address", JsonValue{ .array = try addr_array.toOwnedSlice() });
+            },
+        }
+    }
+    if (filter.topics) |topics| {
+        var topics_array = std.ArrayList(JsonValue).init(allocator);
+        for (topics) |topic| {
+            if (topic) |t| {
+                switch (t) {
+                    .single => |hash| try topics_array.append(JsonValue{ .string = hash }),
+                    .multiple => |hashes| {
+                        var hash_array = std.ArrayList(JsonValue).init(allocator);
+                        for (hashes) |hash| {
+                            try hash_array.append(JsonValue{ .string = hash });
+                        }
+                        try topics_array.append(JsonValue{ .array = try hash_array.toOwnedSlice() });
+                    },
+                }
+            } else {
+                try topics_array.append(JsonValue{ .null = {} });
+            }
+        }
+        try obj.put("topics", JsonValue{ .array = try topics_array.toOwnedSlice() });
+    }
+
+    return JsonValue{ .object = obj };
+}
+
 // Import method type definitions
 const EthAccounts = @import("types.zig").EthAccounts;
 const EthBlockNumber = @import("types.zig").EthBlockNumber;
@@ -110,13 +252,17 @@ pub const jsonrpc = struct {
 
     /// Execute a contract call
     pub const call = struct {
-        pub fn request(transaction: TransactionObject, block: BlockNumber) JsonRpcRequest {
-            // TODO: Properly serialize transaction and block parameters
-            _ = transaction;
-            _ = block;
+        pub fn request(allocator: Allocator, transaction: TransactionObject, block: BlockNumber) !JsonRpcRequest {
+            const tx_json = try serializeTransactionObject(allocator, transaction);
+            const block_json = try serializeParam(allocator, block);
+
+            var array = std.ArrayList(JsonValue).init(allocator);
+            try array.append(tx_json);
+            try array.append(block_json);
+
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_call.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = JsonValue{ .array = try array.toOwnedSlice() },
                 .id = generateId(),
             };
         }
@@ -133,7 +279,7 @@ pub const jsonrpc = struct {
         pub fn request() JsonRpcRequest {
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_chainId.getMethodName(),
-                .params = JsonValue{ .null = {} },
+                .params = serializeNoParams(),
                 .id = generateId(),
             };
         }
@@ -164,13 +310,20 @@ pub const jsonrpc = struct {
 
     /// Estimate gas for a transaction
     pub const estimateGas = struct {
-        pub fn request(transaction: TransactionObject, block: ?BlockNumber) JsonRpcRequest {
-            // TODO: Properly serialize transaction and block parameters
-            _ = transaction;
-            _ = block;
+        pub fn request(allocator: Allocator, transaction: TransactionObject, block: ?BlockNumber) !JsonRpcRequest {
+            const tx_json = try serializeTransactionObject(allocator, transaction);
+
+            var array = std.ArrayList(JsonValue).init(allocator);
+            try array.append(tx_json);
+
+            if (block) |block_value| {
+                const block_json = try serializeParam(allocator, block_value);
+                try array.append(block_json);
+            }
+
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_estimateGas.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = JsonValue{ .array = try array.toOwnedSlice() },
                 .id = generateId(),
             };
         }
@@ -187,7 +340,7 @@ pub const jsonrpc = struct {
         pub fn request() JsonRpcRequest {
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_gasPrice.getMethodName(),
-                .params = JsonValue{ .null = {} },
+                .params = serializeNoParams(),
                 .id = generateId(),
             };
         }
@@ -201,13 +354,11 @@ pub const jsonrpc = struct {
 
     /// Get balance of an account
     pub const getBalance = struct {
-        pub fn request(address: Address, block: BlockNumber) JsonRpcRequest {
-            // TODO: Properly serialize parameters as array
-            _ = address;
-            _ = block;
+        pub fn request(allocator: Allocator, address: Address, block: BlockNumber) !JsonRpcRequest {
+            const params = try serializeTwoParams(allocator, address, block);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_getBalance.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -221,13 +372,11 @@ pub const jsonrpc = struct {
 
     /// Get block by hash
     pub const getBlockByHash = struct {
-        pub fn request(blockHash: Hash, fullTransactions: bool) JsonRpcRequest {
-            // TODO: Properly serialize parameters
-            _ = blockHash;
-            _ = fullTransactions;
+        pub fn request(allocator: Allocator, blockHash: Hash, fullTransactions: bool) !JsonRpcRequest {
+            const params = try serializeTwoParams(allocator, blockHash, fullTransactions);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_getBlockByHash.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -243,13 +392,11 @@ pub const jsonrpc = struct {
 
     /// Get block by number
     pub const getBlockByNumber = struct {
-        pub fn request(block: BlockNumber, fullTransactions: bool) JsonRpcRequest {
-            // TODO: Properly serialize parameters
-            _ = block;
-            _ = fullTransactions;
+        pub fn request(allocator: Allocator, block: BlockNumber, fullTransactions: bool) !JsonRpcRequest {
+            const params = try serializeTwoParams(allocator, block, fullTransactions);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_getBlockByNumber.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -265,13 +412,11 @@ pub const jsonrpc = struct {
 
     /// Get code at address
     pub const getCode = struct {
-        pub fn request(address: Address, block: BlockNumber) JsonRpcRequest {
-            // TODO: Properly serialize parameters
-            _ = address;
-            _ = block;
+        pub fn request(allocator: Allocator, address: Address, block: BlockNumber) !JsonRpcRequest {
+            const params = try serializeTwoParams(allocator, address, block);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_getCode.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -285,12 +430,12 @@ pub const jsonrpc = struct {
 
     /// Get logs
     pub const getLogs = struct {
-        pub fn request(filter: LogFilter) JsonRpcRequest {
-            // TODO: Properly serialize filter
-            _ = filter;
+        pub fn request(allocator: Allocator, filter: LogFilter) !JsonRpcRequest {
+            const filter_json = try serializeLogFilter(allocator, filter);
+            const params = try serializeSingleParam(allocator, filter_json);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_getLogs.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -304,14 +449,11 @@ pub const jsonrpc = struct {
 
     /// Get storage at position
     pub const getStorageAt = struct {
-        pub fn request(address: Address, position: U256Hex, block: BlockNumber) JsonRpcRequest {
-            // TODO: Properly serialize parameters
-            _ = address;
-            _ = position;
-            _ = block;
+        pub fn request(allocator: Allocator, address: Address, position: U256Hex, block: BlockNumber) !JsonRpcRequest {
+            const params = try serializeThreeParams(allocator, address, position, block);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_getStorageAt.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -325,12 +467,11 @@ pub const jsonrpc = struct {
 
     /// Get transaction by hash
     pub const getTransactionByHash = struct {
-        pub fn request(transactionHash: Hash) JsonRpcRequest {
-            // TODO: Properly serialize parameters
-            _ = transactionHash;
+        pub fn request(allocator: Allocator, transactionHash: Hash) !JsonRpcRequest {
+            const params = try serializeSingleParam(allocator, transactionHash);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_getTransactionByHash.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -346,13 +487,11 @@ pub const jsonrpc = struct {
 
     /// Get transaction count (nonce)
     pub const getTransactionCount = struct {
-        pub fn request(address: Address, block: BlockNumber) JsonRpcRequest {
-            // TODO: Properly serialize parameters
-            _ = address;
-            _ = block;
+        pub fn request(allocator: Allocator, address: Address, block: BlockNumber) !JsonRpcRequest {
+            const params = try serializeTwoParams(allocator, address, block);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_getTransactionCount.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -406,12 +545,12 @@ pub const jsonrpc = struct {
 
     /// Send transaction
     pub const sendTransaction = struct {
-        pub fn request(transaction: TransactionObject) JsonRpcRequest {
-            // TODO: Properly serialize transaction
-            _ = transaction;
+        pub fn request(allocator: Allocator, transaction: TransactionObject) !JsonRpcRequest {
+            const tx_json = try serializeTransactionObject(allocator, transaction);
+            const params = try serializeSingleParam(allocator, tx_json);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_sendTransaction.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }
@@ -445,12 +584,12 @@ pub const jsonrpc = struct {
 
     /// Sign transaction
     pub const signTransaction = struct {
-        pub fn request(transaction: TransactionObject) JsonRpcRequest {
-            // TODO: Properly serialize transaction
-            _ = transaction;
+        pub fn request(allocator: Allocator, transaction: TransactionObject) !JsonRpcRequest {
+            const tx_json = try serializeTransactionObject(allocator, transaction);
+            const params = try serializeSingleParam(allocator, tx_json);
             return JsonRpcRequest{
                 .method = JsonRpcMethod.eth_signTransaction.getMethodName(),
-                .params = JsonValue{ .null = {} }, // Simplified for now
+                .params = params,
                 .id = generateId(),
             };
         }

@@ -1058,7 +1058,7 @@ var global_id = std.atomic.Value(u64).init(0);
 
 /// Generate a unique ID for JSON-RPC requests
 pub fn generateId() u64 {
-    return global_id.fetchAdd(1, .monotonic);
+    return global_id.fetchAdd(1, .monotonic) + 1;
 }
 
 /// Create a JsonRpcRequest for a specific method

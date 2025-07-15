@@ -150,37 +150,165 @@ pub const HttpTransport = struct {
     }
 
     fn sendHttpRequest(self: *HttpTransport, req: JsonRpcRequest) TransportError!JsonRpcResponse {
-        // For now, create a minimal response
-        // TODO: Implement actual HTTP request using std.http.Client
-        _ = self;
-        _ = req;
-
-        // This is a placeholder implementation
-        // In a real implementation, you would:
         // 1. Serialize the JsonRpcRequest to JSON
-        // 2. Send HTTP POST to self.url
-        // 3. Parse the response
-        // 4. Return JsonRpcResponse
+        const json_string = try self.serializeRequest(req);
+        defer self.allocator.free(json_string);
 
-        var response = JsonRpcResponse{
-            .result = null,
-            .err = null,
-            .id = 1,
+        // 2. Send HTTP POST request
+        var response_buffer = std.ArrayList(u8).init(self.allocator);
+        defer response_buffer.deinit();
+
+        const response = self.client.fetch(.{
+            .method = .POST,
+            .url = self.url,
+            .headers = .{
+                .content_type = .{ .override = "application/json" },
+                .user_agent = .{ .override = self.user_agent },
+            },
+            .payload = json_string,
+            .response_storage = .{ .dynamic = &response_buffer },
+        }) catch |err| {
+            return switch (err) {
+                error.ConnectionRefused => TransportError.ConnectionError,
+                error.NameResolutionFailed => TransportError.NetworkError,
+                error.ConnectionTimedOut => TransportError.Timeout,
+                else => TransportError.NetworkError,
+            };
         };
-        response.result = JsonValue.fromString("0x1");
-        return response;
+
+        // 4. Check status code
+        if (response.status.class() != .success) {
+            return TransportError.HttpError;
+        }
+
+        // 5. Parse the response
+        return self.parseHttpResponse(response_buffer.items);
+    }
+
+    /// Serialize JsonRpcRequest to JSON string
+    fn serializeRequest(self: *HttpTransport, req: JsonRpcRequest) ![]u8 {
+        var json_obj = std.json.ObjectMap.init(self.allocator);
+        defer json_obj.deinit();
+
+        // Add method
+        try json_obj.put("method", .{ .string = req.method });
+
+        // Add params
+        const params_json = try self.serializeJsonValue(req.params);
+        try json_obj.put("params", params_json);
+
+        // Add id
+        try json_obj.put("id", .{ .integer = @as(i64, @intCast(req.id)) });
+
+        // Add jsonrpc version
+        try json_obj.put("jsonrpc", .{ .string = "2.0" });
+
+        // Serialize to string
+        var json_string = std.ArrayList(u8).init(self.allocator);
+        try std.json.stringify(json_obj, .{}, json_string.writer());
+
+        return json_string.toOwnedSlice();
+    }
+
+    /// Convert JsonValue to std.json.Value
+    fn serializeJsonValue(self: *HttpTransport, value: JsonValue) !std.json.Value {
+        return switch (value) {
+            .null => .null,
+            .boolean => |b| .{ .bool = b },
+            .string => |s| .{ .string = s },
+            .number => |n| .{ .float = n },
+            .integer => |i| .{ .integer = i },
+            .array => |arr| blk: {
+                var json_array = std.json.Array.init(self.allocator);
+                for (arr) |item| {
+                    const json_item = try self.serializeJsonValue(item);
+                    try json_array.append(json_item);
+                }
+                break :blk .{ .array = json_array };
+            },
+            .object => |obj| blk: {
+                var json_obj = std.json.ObjectMap.init(self.allocator);
+                var iterator = obj.iterator();
+                while (iterator.next()) |entry| {
+                    const json_value = try self.serializeJsonValue(entry.value_ptr.*);
+                    try json_obj.put(entry.key_ptr.*, json_value);
+                }
+                break :blk .{ .object = json_obj };
+            },
+        };
     }
 
     fn parseHttpResponse(self: *HttpTransport, response: []const u8) TransportError!JsonRpcResponse {
-        _ = self;
-        _ = response;
+        const parsed = std.json.parseFromSlice(std.json.Value, self.allocator, response, .{}) catch {
+            return TransportError.InvalidResponse;
+        };
+        defer parsed.deinit();
 
-        // TODO: Implement JSON parsing
-        // For now, return a placeholder
+        const root = parsed.value;
+        const obj = root.object;
+
+        // Parse ID
+        const id = if (obj.get("id")) |id_val| switch (id_val) {
+            .integer => |i| @as(u64, @intCast(i)),
+            .float => |f| @as(u64, @intCast(f)),
+            else => 0,
+        } else 0;
+
+        // Parse error
+        const error_value = if (obj.get("error")) |error_val| blk: {
+            const error_obj = error_val.object;
+            const code = if (error_obj.get("code")) |code_val| switch (code_val) {
+                .integer => |i| @as(i32, @intCast(i)),
+                .float => |f| @as(i32, @intCast(f)),
+                else => 0,
+            } else 0;
+
+            const message = if (error_obj.get("message")) |msg_val| switch (msg_val) {
+                .string => |s| s,
+                else => "Unknown error",
+            } else "Unknown error";
+
+            var error_map = std.StringHashMap(JsonValue).init(self.allocator);
+            try error_map.put("code", JsonValue{ .integer = code });
+            try error_map.put("message", JsonValue{ .string = message });
+            break :blk JsonValue{ .object = error_map };
+        } else null;
+
+        // Parse result
+        const result_value = if (obj.get("result")) |result_val| try self.parseJsonValue(result_val) else null;
+
         return JsonRpcResponse{
-            .result = .{ .string = "0x1" },
-            .err = null,
-            .id = 1,
+            .result = result_value,
+            .err = error_value,
+            .id = id,
+        };
+    }
+
+    /// Convert std.json.Value to JsonValue
+    fn parseJsonValue(self: *HttpTransport, value: std.json.Value) !JsonValue {
+        return switch (value) {
+            .null => JsonValue{ .null = {} },
+            .bool => |b| JsonValue{ .boolean = b },
+            .string => |s| JsonValue{ .string = s },
+            .float => |f| JsonValue{ .number = f },
+            .integer => |i| JsonValue{ .integer = i },
+            .array => |arr| blk: {
+                var json_array = std.ArrayList(JsonValue).init(self.allocator);
+                for (arr.items) |item| {
+                    const json_item = try self.parseJsonValue(item);
+                    try json_array.append(json_item);
+                }
+                break :blk JsonValue{ .array = json_array.items };
+            },
+            .object => |obj| blk: {
+                var json_obj = std.StringHashMap(JsonValue).init(self.allocator);
+                var iterator = obj.iterator();
+                while (iterator.next()) |entry| {
+                    const json_value = try self.parseJsonValue(entry.value_ptr.*);
+                    try json_obj.put(entry.key_ptr.*, json_value);
+                }
+                break :blk JsonValue{ .object = json_obj };
+            },
         };
     }
 };
