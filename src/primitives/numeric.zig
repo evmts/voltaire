@@ -24,6 +24,11 @@ pub const SZABO: u256 = 1_000_000_000_000;
 pub const FINNEY: u256 = 1_000_000_000_000_000;
 pub const ETHER: u256 = 1_000_000_000_000_000_000;
 
+// Alternative unit constant names for compatibility
+pub const WEI_PER_GWEI: u256 = GWEI;
+pub const WEI_PER_ETHER: u256 = ETHER;
+pub const GWEI_PER_ETHER: u256 = ETHER / GWEI;
+
 // Common unit names
 pub const Unit = enum {
     wei,
