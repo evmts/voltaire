@@ -3,6 +3,7 @@ const PrecompileResult = @import("precompile_result.zig").PrecompileResult;
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const primitives = @import("primitives");
+const crypto = @import("crypto");
 
 /// BLAKE2F precompile implementation (address 0x09)
 ///
@@ -87,7 +88,7 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
     }
     
     // Perform BLAKE2f compression using primitives
-    primitives.HashAlgorithms.BLAKE2F.compressEip152(input, output[0..BLAKE2F_OUTPUT_SIZE]) catch {
+    crypto.HashAlgorithms.BLAKE2F.compressEip152(input, output[0..BLAKE2F_OUTPUT_SIZE]) catch {
         @branchHint(.cold);
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     };

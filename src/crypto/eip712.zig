@@ -6,14 +6,15 @@ const ArrayList = std.ArrayList;
 
 // Import primitives
 const Hash = @import("hash_utils.zig");
-const Hex = @import("hex.zig");
+const primitives = @import("primitives");
+const Hex = primitives.Hex;
 const Crypto = @import("crypto.zig");
 const Address = [20]u8;
 const Signature = Crypto.Signature;
 const PrivateKey = Crypto.PrivateKey;
 
 // Import ABI for type encoding
-const ABI = @import("abi_encoding.zig");
+const ABI = primitives.AbiEncoding;
 
 // EIP-712 Error types
 pub const Eip712Error = error{

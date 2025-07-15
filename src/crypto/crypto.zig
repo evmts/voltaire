@@ -100,7 +100,8 @@ const std = @import("std");
 const crypto = std.crypto;
 const testing = std.testing;
 const Hash = @import("hash.zig");
-const hex = @import("hex.zig");
+const primitives = @import("primitives");
+const hex = primitives.Hex;
 
 // Import the local secp256k1 implementation
 const secp256k1 = @import("secp256k1.zig");

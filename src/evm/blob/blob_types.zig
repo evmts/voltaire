@@ -1,5 +1,6 @@
 const std = @import("std");
 const primitives = @import("primitives");
+const crypto = @import("crypto");
 
 /// EIP-4844 Blob Data Structures
 ///
@@ -235,7 +236,7 @@ pub const VersionedHash = struct {
     /// @return VersionedHash with version prefix
     pub fn compute_versioned_hash(commitment: *const KZGCommitment) VersionedHash {
         var hash: [32]u8 = undefined;
-        primitives.HashAlgorithms.SHA256.hash(&commitment.data, &hash);
+        crypto.HashAlgorithms.SHA256.hash(&commitment.data, &hash);
 
         // Set version byte to 0x01 for KZG commitments
         hash[0] = VERSION_KZG;

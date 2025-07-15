@@ -1,6 +1,7 @@
 const std = @import("std");
 const address = @import("address.zig");
-const hash = @import("hash.zig");
+const crypto_pkg = @import("crypto");
+const hash = crypto_pkg.Hash;
 
 pub const AbiError = error{
     InvalidLength,

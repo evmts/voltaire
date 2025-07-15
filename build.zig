@@ -155,6 +155,22 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     
+    // Create crypto module
+    const crypto_mod = b.createModule(.{
+        .root_source_file = b.path("src/crypto/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    crypto_mod.addImport("primitives", primitives_mod);
+    
+    // Create ens module
+    const ens_mod = b.createModule(.{
+        .root_source_file = b.path("src/ens/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    ens_mod.addImport("primitives", primitives_mod);
+    
     // Create utils module
     const utils_mod = b.createModule(.{
         .root_source_file = b.path("src/utils.zig"),
@@ -301,6 +317,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     evm_mod.addImport("primitives", primitives_mod);
+    evm_mod.addImport("crypto", crypto_mod);
     evm_mod.addImport("build_options", build_options.createModule());
     
     // Link BN254 Rust library to EVM module (native targets only)
@@ -332,6 +349,8 @@ pub fn build(b: *std.Build) void {
     
     // Add modules to lib_mod so tests can access them
     lib_mod.addImport("primitives", primitives_mod);
+    lib_mod.addImport("crypto", crypto_mod);
+    lib_mod.addImport("ens", ens_mod);
     lib_mod.addImport("evm", evm_mod);
     lib_mod.addImport("provider", provider_mod);
     lib_mod.addImport("compilers", compilers_mod);
@@ -389,6 +408,14 @@ pub fn build(b: *std.Build) void {
         .optimize = wasm_optimize,
     });
     // Note: WASM build excludes c-kzg-4844 (not available for WASM)
+    
+    // Create WASM-specific crypto module
+    const wasm_crypto_mod = b.createModule(.{
+        .root_source_file = b.path("src/crypto/root.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+    });
+    wasm_crypto_mod.addImport("primitives", wasm_primitives_mod);
 
     // Create WASM-specific EVM module without Rust dependencies
     const wasm_evm_mod = b.createModule(.{
@@ -397,6 +424,7 @@ pub fn build(b: *std.Build) void {
         .optimize = wasm_optimize,
     });
     wasm_evm_mod.addImport("primitives", wasm_primitives_mod);
+    wasm_evm_mod.addImport("crypto", wasm_crypto_mod);
     wasm_evm_mod.addImport("build_options", build_options.createModule());
     // Note: WASM build uses pure Zig implementations for BN254 operations
 

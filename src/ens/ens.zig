@@ -1,10 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
-const hash = @import("hash.zig");
-const address = @import("address.zig");
-const hex = @import("hex.zig");
-const Hash = hash.Hash;
-const Address = address.Address;
+const primitives = @import("primitives");
+const Hash = primitives.Hash;
+const Address = primitives.Address;
 const Allocator = std.mem.Allocator;
 
 // ENS error types
@@ -38,13 +36,13 @@ pub fn namehash(name: []const u8) Hash {
     // Split by dots and process in reverse order
     var iter = std.mem.tokenizeBackwards(u8, name, ".");
     while (iter.next()) |label| {
-        const labelHash = hash.keccak256(label);
+        const labelHash = primitives.Hash.keccak256(label);
         
         // node = keccak256(node || labelhash)
         var combined: [64]u8 = undefined;
         @memcpy(combined[0..32], &node.bytes);
         @memcpy(combined[32..64], &labelHash.bytes);
-        node = hash.keccak256(&combined);
+        node = primitives.Hash.keccak256(&combined);
     }
     
     return node;
@@ -52,7 +50,7 @@ pub fn namehash(name: []const u8) Hash {
 
 // ENS labelhash (single label)
 pub fn labelhash(label: []const u8) Hash {
-    return hash.keccak256(label);
+    return primitives.Hash.keccak256(label);
 }
 
 // Normalize ENS name (simplified version)
@@ -97,7 +95,7 @@ pub fn reverseNode(addr: Address) Hash {
     const allocator = std.heap.page_allocator;
     
     // Convert address to hex string (without 0x)
-    const hexStr = hex.toHex(allocator, &addr.bytes) catch unreachable;
+    const hexStr = primitives.Hex.toHex(allocator, &addr.bytes) catch unreachable;
     defer allocator.free(hexStr);
     
     // Remove 0x prefix and convert to lowercase
@@ -176,11 +174,11 @@ test "ENS namehash single label" {
     const h = namehash("eth");
     
     // eth = keccak256(0x00...00 || keccak256("eth"))
-    const labelHash = hash.keccak256("eth");
+    const labelHash = primitives.Hash.keccak256("eth");
     var expectedInput: [64]u8 = undefined;
     @memcpy(expectedInput[0..32], &Hash.ZERO.bytes);
     @memcpy(expectedInput[32..64], &labelHash.bytes);
-    const expected = hash.keccak256(&expectedInput);
+    const expected = primitives.Hash.keccak256(&expectedInput);
     
     try testing.expectEqual(expected, h);
 }
@@ -212,7 +210,7 @@ test "ENS namehash with subdomains" {
 
 test "ENS labelhash" {
     const ethLabel = labelhash("eth");
-    const expected = hash.keccak256("eth");
+    const expected = primitives.Hash.keccak256("eth");
     try testing.expectEqual(expected, ethLabel);
 }
 
