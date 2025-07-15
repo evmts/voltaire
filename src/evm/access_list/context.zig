@@ -61,7 +61,7 @@ const Context = @This();
 /// EOA → Contract A → Contract B → Contract C
 /// - tx.origin = EOA (same for all)
 /// - msg.sender differs at each level
-tx_origin: primitives.Address = primitives.Address.zero(),
+tx_origin: primitives.Address = primitives.Address.ZERO_ADDRESS,
 /// The gas price for the current transaction in wei.
 ///
 /// ## GASPRICE Opcode (0x3A)
@@ -120,7 +120,7 @@ block_timestamp: u64 = 0,
 /// ## MEV Considerations
 /// Searchers often send payments to block.coinbase for
 /// transaction inclusion guarantees.
-block_coinbase: primitives.Address = primitives.Address.zero(),
+block_coinbase: primitives.Address = primitives.Address.ZERO_ADDRESS,
 /// Block difficulty (pre-Merge) or PREVRANDAO (post-Merge).
 ///
 /// ## DIFFICULTY/PREVRANDAO Opcode (0x44)

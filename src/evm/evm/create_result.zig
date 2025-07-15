@@ -119,7 +119,7 @@ output: ?[]const u8,
 pub fn initFailure(gas_left: u64, output: ?[]const u8) CreateResult {
     return CreateResult{
         .success = false,
-        .address = primitives.Address.zero(),
+        .address = primitives.Address.ZERO_ADDRESS,
         .gas_left = gas_left,
         .output = output,
     };
