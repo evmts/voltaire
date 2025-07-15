@@ -216,6 +216,10 @@ test "Error handling validation" {
     const balance = try jsonrpc.getBalance.response(success_response);
     try testing.expectEqualStrings("0x1b1ae4d6e2ef500000", balance);
 
+    // Test that we can create a request (uses allocator)
+    const req = try jsonrpc.getBalance.request(allocator, "0x742d35Cc6634C0532925a3b8D78B8E0e5E5B8A73", BlockNumber{ .tag = .latest });
+    try testing.expect(req.id > 0);
+
     print("✓ Success response parsing works correctly\n", .{});
 }
 
