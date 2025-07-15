@@ -32,7 +32,7 @@
 //! ```
 
 const std = @import("std");
-const Address = @import("Address");
+const primitives = @import("primitives");
 const Log = @import("../log.zig");
 
 /// Journal entry types for different state modifications
@@ -43,12 +43,12 @@ const Log = @import("../log.zig");
 pub const JournalEntry = union(enum) {
     /// Account was touched (for EIP-158 empty account tracking)
     account_touched: struct {
-        address: Address.Address,
+        address: primitives.Address,
     },
 
     /// Account was loaded from external state
     account_loaded: struct {
-        address: Address.Address,
+        address: primitives.Address,
         /// Previous account state (null if account didn't exist)
         previous_balance: ?u256,
         previous_nonce: ?u64,
@@ -57,40 +57,40 @@ pub const JournalEntry = union(enum) {
 
     /// Storage slot was modified
     storage_changed: struct {
-        address: Address.Address,
+        address: primitives.Address,
         slot: u256,
         previous_value: u256,
     },
 
     /// Transient storage slot was modified (EIP-1153)
     transient_storage_changed: struct {
-        address: Address.Address,
+        address: primitives.Address,
         slot: u256,
         previous_value: u256,
     },
 
     /// Account balance was modified
     balance_changed: struct {
-        address: Address.Address,
+        address: primitives.Address,
         previous_balance: u256,
     },
 
     /// Account nonce was modified
     nonce_changed: struct {
-        address: Address.Address,
+        address: primitives.Address,
         previous_nonce: u64,
     },
 
     /// Contract code was modified
     code_changed: struct {
-        address: Address.Address,
+        address: primitives.Address,
         /// Previous code (null if no code existed)
         previous_code: ?[]const u8,
     },
 
     /// Account was destroyed (SELFDESTRUCT)
     account_destroyed: struct {
-        address: Address.Address,
+        address: primitives.Address,
         /// Account state before destruction
         previous_balance: u256,
         previous_nonce: u64,
@@ -99,7 +99,7 @@ pub const JournalEntry = union(enum) {
 
     /// Account was created
     account_created: struct {
-        address: Address.Address,
+        address: primitives.Address,
     },
 
     /// Log was emitted
@@ -392,14 +392,14 @@ pub const Journal = struct {
         
         switch (entry) {
             .account_touched => |touch| {
-                Log.debug("Journal.revert_entry: Reverting account_touched addr={x}", .{Address.to_u256(touch.address)});
+                Log.debug("Journal.revert_entry: Reverting account_touched addr={x}", .{primitives.Address.to_u256(touch.address)});
                 // For account touched, we may need to handle empty account deletion
                 // This depends on the specific EIP-158 implementation
                 // For now, this is a no-op as the touch itself doesn't change state
             },
 
             .account_loaded => |load| {
-                Log.debug("Journal.revert_entry: Reverting account_loaded addr={x}", .{Address.to_u256(load.address)});
+                Log.debug("Journal.revert_entry: Reverting account_loaded addr={x}", .{primitives.Address.to_u256(load.address)});
                 // Restore previous account state or remove if it didn't exist
                 if (load.previous_balance) |balance| {
                     try state.set_balance_direct(load.address, balance);
@@ -422,34 +422,34 @@ pub const Journal = struct {
 
             .storage_changed => |change| {
                 Log.debug("Journal.revert_entry: Reverting storage_changed addr={x}, slot={}, prev_value={}", .{
-                    Address.to_u256(change.address), change.slot, change.previous_value
+                    primitives.Address.to_u256(change.address), change.slot, change.previous_value
                 });
                 try state.set_storage_direct(change.address, change.slot, change.previous_value);
             },
 
             .transient_storage_changed => |change| {
                 Log.debug("Journal.revert_entry: Reverting transient_storage_changed addr={x}, slot={}, prev_value={}", .{
-                    Address.to_u256(change.address), change.slot, change.previous_value
+                    primitives.Address.to_u256(change.address), change.slot, change.previous_value
                 });
                 try state.set_transient_storage_direct(change.address, change.slot, change.previous_value);
             },
 
             .balance_changed => |change| {
                 Log.debug("Journal.revert_entry: Reverting balance_changed addr={x}, prev_balance={}", .{
-                    Address.to_u256(change.address), change.previous_balance
+                    primitives.Address.to_u256(change.address), change.previous_balance
                 });
                 try state.set_balance_direct(change.address, change.previous_balance);
             },
 
             .nonce_changed => |change| {
                 Log.debug("Journal.revert_entry: Reverting nonce_changed addr={x}, prev_nonce={}", .{
-                    Address.to_u256(change.address), change.previous_nonce
+                    primitives.Address.to_u256(change.address), change.previous_nonce
                 });
                 try state.set_nonce_direct(change.address, change.previous_nonce);
             },
 
             .code_changed => |change| {
-                Log.debug("Journal.revert_entry: Reverting code_changed addr={x}", .{Address.to_u256(change.address)});
+                Log.debug("Journal.revert_entry: Reverting code_changed addr={x}", .{primitives.Address.to_u256(change.address)});
                 if (change.previous_code) |code| {
                     try state.set_code_direct(change.address, code);
                 } else {
@@ -458,7 +458,7 @@ pub const Journal = struct {
             },
 
             .account_destroyed => |destroyed| {
-                Log.debug("Journal.revert_entry: Reverting account_destroyed addr={x}", .{Address.to_u256(destroyed.address)});
+                Log.debug("Journal.revert_entry: Reverting account_destroyed addr={x}", .{primitives.Address.to_u256(destroyed.address)});
                 // Restore the destroyed account
                 try state.set_balance_direct(destroyed.address, destroyed.previous_balance);
                 try state.set_nonce_direct(destroyed.address, destroyed.previous_nonce);
@@ -466,7 +466,7 @@ pub const Journal = struct {
             },
 
             .account_created => |created| {
-                Log.debug("Journal.revert_entry: Reverting account_created addr={x}", .{Address.to_u256(created.address)});
+                Log.debug("Journal.revert_entry: Reverting account_created addr={x}", .{primitives.Address.to_u256(created.address)});
                 // Remove the created account
                 _ = state.remove_balance(created.address);
                 _ = state.remove_nonce(created.address);

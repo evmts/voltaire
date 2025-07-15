@@ -1,4 +1,5 @@
-const Address = @import("Address");
+const primitives = @import("primitives");
+const Address = primitives.Address;
 
 /// EVM event log representation
 /// 
@@ -48,7 +49,7 @@ const Address = @import("Address");
 const EvmLog = @This();
 
 /// The address of the contract that emitted this log
-address: Address.Address,
+address: Address,
 
 /// Indexed topics for efficient log filtering
 /// 
