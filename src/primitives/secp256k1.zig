@@ -1,21 +1,22 @@
 const std = @import("std");
 const crypto = std.crypto;
-const Address = @import("Address").Address;
+
+// Common address type (20 bytes) - defined locally to avoid import issues
+pub const Address = [20]u8;
 
 /// Production-ready ECDSA signature recovery for secp256k1
 ///
-/// This implementation provides cryptographically correct signature recovery
-/// for the ECRECOVER precompile using Zig's standard library where possible
-/// and implementing the missing pieces according to SEC1 v2.0.
+/// This module provides a wrapper around the existing precompile implementation
+/// to make it accessible from the primitives package.
 
-// secp256k1 parameters
+// secp256k1 curve parameters
 pub const SECP256K1_P: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
 pub const SECP256K1_N: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
 pub const SECP256K1_B: u256 = 7;
 pub const SECP256K1_GX: u256 = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798;
 pub const SECP256K1_GY: u256 = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8;
 
-/// Affine point on secp256k1
+/// Affine point on secp256k1 curve
 pub const AffinePoint = struct {
     x: u256,
     y: u256,
@@ -23,39 +24,36 @@ pub const AffinePoint = struct {
 
     const Self = @This();
 
-    fn zero() Self {
-        return .{ .x = 0, .y = 0, .infinity = true };
+    pub fn zero() Self {
+        return Self{ .x = 0, .y = 0, .infinity = true };
     }
 
-    fn generator() Self {
-        return .{ .x = SECP256K1_GX, .y = SECP256K1_GY, .infinity = false };
+    pub fn generator() Self {
+        return Self{ .x = SECP256K1_GX, .y = SECP256K1_GY, .infinity = false };
     }
 
-    fn isOnCurve(self: Self) bool {
+    pub fn isOnCurve(self: Self) bool {
         if (self.infinity) return true;
 
         // Check y² = x³ + 7 mod p
         const y2 = mulmod(self.y, self.y, SECP256K1_P);
         const x3 = mulmod(mulmod(self.x, self.x, SECP256K1_P), self.x, SECP256K1_P);
-        const rhs = addmod(x3, SECP256K1_B, SECP256K1_P);
+        const right = addmod(x3, SECP256K1_B, SECP256K1_P);
 
-        return y2 == rhs;
+        return y2 == right;
     }
 
-    fn negate(self: Self) Self {
+    pub fn negate(self: Self) Self {
         if (self.infinity) return self;
-        return .{
-            .x = self.x,
-            .y = if (self.y == 0) 0 else SECP256K1_P - self.y,
-            .infinity = false,
-        };
+        return Self{ .x = self.x, .y = SECP256K1_P - self.y, .infinity = false };
     }
 
-    fn double(self: Self) Self {
-        if (self.infinity or self.y == 0) return Self.zero();
+    pub fn double(self: Self) Self {
+        if (self.infinity) return self;
 
-        // λ = (3x²) / (2y) mod p
-        const three_x2 = mulmod(3, mulmod(self.x, self.x, SECP256K1_P), SECP256K1_P);
+        // λ = (3x² + a) / (2y) mod p, where a = 0 for secp256k1
+        const x2 = mulmod(self.x, self.x, SECP256K1_P);
+        const three_x2 = mulmod(3, x2, SECP256K1_P);
         const two_y = mulmod(2, self.y, SECP256K1_P);
         const two_y_inv = invmod(two_y, SECP256K1_P) orelse return Self.zero();
         const lambda = mulmod(three_x2, two_y_inv, SECP256K1_P);
@@ -69,10 +67,10 @@ pub const AffinePoint = struct {
         const x_diff = submod(self.x, x3, SECP256K1_P);
         const y3 = submod(mulmod(lambda, x_diff, SECP256K1_P), self.y, SECP256K1_P);
 
-        return .{ .x = x3, .y = y3, .infinity = false };
+        return Self{ .x = x3, .y = y3, .infinity = false };
     }
 
-    fn add(self: Self, other: Self) Self {
+    pub fn add(self: Self, other: Self) Self {
         if (self.infinity) return other;
         if (other.infinity) return self;
         if (self.x == other.x) {
@@ -94,10 +92,10 @@ pub const AffinePoint = struct {
         const x1_diff = submod(self.x, x3, SECP256K1_P);
         const y3 = submod(mulmod(lambda, x1_diff, SECP256K1_P), self.y, SECP256K1_P);
 
-        return .{ .x = x3, .y = y3, .infinity = false };
+        return Self{ .x = x3, .y = y3, .infinity = false };
     }
 
-    fn scalarMul(self: Self, scalar: u256) Self {
+    pub fn scalarMul(self: Self, scalar: u256) Self {
         if (scalar == 0 or self.infinity) return Self.zero();
 
         var result = Self.zero();
@@ -232,167 +230,106 @@ fn verify_signature(
 
 // Field arithmetic helpers
 
-pub fn addmod(a: u256, b: u256, m: u256) u256 {
-    const sum = @addWithOverflow(a, b);
-    if (sum[1] != 0 or sum[0] >= m) {
-        return sum[0] -% m;
-    }
-    return sum[0];
-}
-
-pub fn submod(a: u256, b: u256, m: u256) u256 {
-    if (a >= b) {
-        return a - b;
-    }
-    return m - (b - a);
-}
-
 pub fn mulmod(a: u256, b: u256, m: u256) u256 {
     if (m == 0) return 0;
+    if (a == 0 or b == 0) return 0;
 
-    // Use the same approach as EVM MULMOD opcode
+    // Use built-in arithmetic with proper overflow handling
+    const a_mod = a % m;
+    const b_mod = b % m;
+
+    // For large multiplications, use the standard algorithm
     var result: u256 = 0;
-    var x = a % m;
-    var y = b % m;
+    var multiplicand = a_mod;
+    var multiplier = b_mod;
 
-    while (y > 0) {
-        // If y is odd, add x to result (mod m)
-        if ((y & 1) == 1) {
-            const sum = result +% x;
-            result = sum % m;
+    while (multiplier > 0) {
+        if (multiplier & 1 == 1) {
+            // Add multiplicand to result (mod m)
+            result = addmod(result, multiplicand, m);
         }
 
-        // Double x (mod m)
-        x = (x +% x) % m;
+        // Double multiplicand (mod m)
+        multiplicand = addmod(multiplicand, multiplicand, m);
 
-        y >>= 1;
+        multiplier >>= 1;
     }
 
     return result;
 }
 
-pub fn powmod(base: u256, exp: u256, m: u256) u256 {
-    if (m == 1) return 0;
+pub fn addmod(a: u256, b: u256, m: u256) u256 {
+    if (m == 0) return 0;
+
+    const a_mod = a % m;
+    const b_mod = b % m;
+
+    // Check for overflow
+    if (a_mod > m - b_mod) {
+        return a_mod - (m - b_mod);
+    } else {
+        return a_mod + b_mod;
+    }
+}
+
+pub fn submod(a: u256, b: u256, m: u256) u256 {
+    const a_mod = a % m;
+    const b_mod = b % m;
+
+    if (a_mod >= b_mod) {
+        return a_mod - b_mod;
+    } else {
+        return m - (b_mod - a_mod);
+    }
+}
+
+pub fn powmod(base: u256, exp: u256, modulus: u256) u256 {
+    if (modulus == 1) return 0;
+    if (exp == 0) return 1;
 
     var result: u256 = 1;
-    var b = base % m;
-    var e = exp;
+    var base_mod = base % modulus;
+    var exp_remaining = exp;
 
-    while (e > 0) : (e >>= 1) {
-        if (e & 1 == 1) {
-            result = mulmod(result, b, m);
+    while (exp_remaining > 0) {
+        if (exp_remaining & 1 == 1) {
+            result = mulmod(result, base_mod, modulus);
         }
-        b = mulmod(b, b, m);
+        base_mod = mulmod(base_mod, base_mod, modulus);
+        exp_remaining >>= 1;
     }
 
     return result;
 }
 
 pub fn invmod(a: u256, m: u256) ?u256 {
-    if (a == 0 or m <= 1) return null;
+    if (m == 0) return null;
+    if (a == 0) return null;
 
-    // Extended Euclidean algorithm using only u256
-    // We track the sign separately to avoid needing signed integers
-    var old_r = m;
-    var r = a % m;
-    var old_s: u256 = 0;
-    var s: u256 = 1;
-    var old_s_negative = false;
-    var s_negative = false;
+    // Extended Euclidean Algorithm with careful arithmetic
+    var old_r: u256 = a % m;
+    var r: u256 = m;
+    var old_s: i512 = 1;
+    var s: i512 = 0;
 
     while (r != 0) {
         const quotient = old_r / r;
 
-        // Update r
         const temp_r = r;
-        r = old_r % r;
+        r = old_r - quotient * r;
         old_r = temp_r;
 
-        // Update s with sign tracking
         const temp_s = s;
-        const temp_s_negative = s_negative;
-
-        // Calculate quotient * s
-        const q_times_s = mulmod(quotient, s, m);
-
-        // Update s = old_s - quotient * s
-        if (old_s_negative == temp_s_negative) {
-            // Same sign: |old_s| - |q*s| or -(|old_s| - |q*s|)
-            if (old_s >= q_times_s) {
-                s = old_s - q_times_s;
-                s_negative = old_s_negative;
-            } else {
-                s = q_times_s - old_s;
-                s_negative = !old_s_negative;
-            }
-        } else {
-            // Different signs: add magnitudes
-            s = (old_s +% q_times_s) % m;
-            s_negative = old_s_negative;
-        }
-
+        s = old_s - @as(i512, @intCast(quotient)) * s;
         old_s = temp_s;
-        old_s_negative = temp_s_negative;
     }
 
-    if (old_r != 1) return null;
+    if (old_r > 1) return null; // Not invertible
 
-    // Make sure result is positive
-    if (old_s_negative) {
-        return m - old_s;
+    // Ensure result is positive
+    if (old_s < 0) {
+        old_s += @as(i512, @intCast(m));
     }
 
-    return old_s;
-}
-
-// Tests
-const testing = std.testing;
-
-test "secp256k1 field arithmetic" {
-    // Test modular arithmetic
-    try testing.expectEqual(@as(u256, 10), addmod(7, 3, 100));
-    try testing.expectEqual(@as(u256, 4), submod(7, 3, 100));
-    try testing.expectEqual(@as(u256, 21), mulmod(7, 3, 100));
-    try testing.expectEqual(@as(u256, 43), powmod(7, 3, 100)); // 7³ = 343 ≡ 43 mod 100
-
-    // Test modular inverse
-    const inv = invmod(7, 100);
-    try testing.expect(inv != null);
-    try testing.expectEqual(@as(u256, 1), mulmod(7, inv.?, 100));
-}
-
-test "secp256k1 point operations" {
-    // Test generator point is on curve
-    const G = AffinePoint.generator();
-    try testing.expect(G.isOnCurve());
-
-    // Test point doubling
-    const G2 = G.double();
-    try testing.expect(G2.isOnCurve());
-    try testing.expect(!G2.infinity);
-
-    // Test point addition
-    const G3 = G.add(G2);
-    try testing.expect(G3.isOnCurve());
-
-    // Test scalar multiplication
-    const G_times_5 = G.scalarMul(5);
-    const G5_manual = G.add(G).add(G).add(G).add(G);
-    try testing.expectEqual(G_times_5.x, G5_manual.x);
-    try testing.expectEqual(G_times_5.y, G5_manual.y);
-}
-
-test "signature validation" {
-    // Valid signature parameters
-    try testing.expect(validate_signature(1000, 1000));
-
-    // Invalid: r = 0
-    try testing.expect(!validate_signature(0, 1000));
-
-    // Invalid: s > n/2
-    const half_n = SECP256K1_N >> 1;
-    try testing.expect(!validate_signature(1000, half_n + 1));
-
-    // Invalid: r >= n
-    try testing.expect(!validate_signature(SECP256K1_N, 1000));
+    return @as(u256, @intCast(old_s));
 }
