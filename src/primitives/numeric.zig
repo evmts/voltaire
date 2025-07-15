@@ -186,14 +186,11 @@ pub fn formatGasCost(allocator: std.mem.Allocator, gas_used: u64, gas_price_gwei
 // Helper functions
 fn parseInteger(str: []const u8) !u256 {
     if (str.len == 0) return 0;
-
-    var result: u256 = 0;
-    for (str) |c| {
-        if (c < '0' or c > '9') return NumericError.InvalidInput;
-        const digit = c - '0';
-        result = result * 10 + digit;
-    }
-    return result;
+    
+    return std.fmt.parseInt(u256, str, 10) catch |err| switch (err) {
+        error.Overflow => NumericError.ValueTooLarge,
+        error.InvalidCharacter => NumericError.InvalidInput,
+    };
 }
 
 fn parseDecimal(decimal_str: []const u8, unit: Unit) !u256 {

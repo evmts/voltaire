@@ -1,3 +1,94 @@
+//! RLP (Recursive Length Prefix) - Ethereum's serialization format
+//!
+//! This module provides a complete implementation of RLP encoding and decoding
+//! as specified in the Ethereum Yellow Paper. RLP is used throughout Ethereum
+//! for serializing transactions, blocks, state, and other data structures.
+//!
+//! ## RLP Specification Overview
+//!
+//! RLP is a serialization method that encodes arbitrarily nested arrays of
+//! binary data. It defines encoding rules for:
+//!
+//! ### String Encoding
+//! - **Single byte [0x00, 0x7f]**: Encoded as itself
+//! - **String [0-55 bytes]**: 0x80 + length, followed by string
+//! - **Long string [55+ bytes]**: 0xb7 + length_of_length + length + string
+//!
+//! ### List Encoding
+//! - **Short list [0-55 bytes]**: 0xc0 + length, followed by items
+//! - **Long list [55+ bytes]**: 0xf7 + length_of_length + length + items
+//!
+//! ## Key Features
+//!
+//! - **Canonical Encoding**: Ensures unique serialization of data
+//! - **Efficient Parsing**: Streaming decode with minimal allocations
+//! - **Memory Safety**: Comprehensive bounds checking
+//! - **Error Handling**: Detailed error types for debugging
+//! - **Flexible API**: Supports various input types and patterns
+//!
+//! ## Usage Examples
+//!
+//! ### Encoding Simple Data
+//! ```zig
+//! const rlp = @import("rlp.zig");
+//! 
+//! // Encode a string
+//! const encoded = try rlp.encode(allocator, "hello");
+//! defer allocator.free(encoded);
+//! 
+//! // Encode a list of strings
+//! const list = [_][]const u8{ "cat", "dog" };
+//! const encoded_list = try rlp.encode(allocator, list);
+//! defer allocator.free(encoded_list);
+//! ```
+//!
+//! ### Decoding RLP Data
+//! ```zig
+//! // Decode RLP data
+//! const decoded = try rlp.decode(allocator, encoded_data);
+//! defer decoded.data.deinit(allocator);
+//! 
+//! // Access decoded data
+//! switch (decoded.data) {
+//!     .String => |str| std.log.info("String: {s}", .{str}),
+//!     .List => |items| std.log.info("List with {} items", .{items.len}),
+//! }
+//! ```
+//!
+//! ### Working with Nested Structures
+//! ```zig
+//! // Encode nested list: [[], [[]]]
+//! const inner_list = [_][]const u8{};
+//! const nested_list = [_][]const []const u8{&inner_list};
+//! const encoded = try rlp.encode(allocator, nested_list);
+//! defer allocator.free(encoded);
+//! ```
+//!
+//! ## Error Handling
+//!
+//! The module provides comprehensive error types:
+//! - `InputTooShort`: Unexpected end of input
+//! - `InputTooLong`: Data exceeds expected length
+//! - `LeadingZeros`: Invalid number encoding
+//! - `NonCanonicalSize`: Non-minimal length encoding
+//! - `InvalidLength`: Malformed length field
+//! - `UnexpectedInput`: Invalid data format
+//!
+//! ## Performance Considerations
+//!
+//! - **Streaming**: Processes data incrementally
+//! - **Allocation Strategy**: Minimal allocations during encoding
+//! - **Memory Management**: Clear ownership semantics
+//! - **Validation**: Comprehensive but efficient error checking
+//!
+//! ## Design Principles
+//!
+//! 1. **Specification Compliance**: Exact adherence to Ethereum RLP spec
+//! 2. **Memory Safety**: Comprehensive bounds checking and validation
+//! 3. **Performance**: Efficient encoding/decoding with minimal allocations
+//! 4. **Error Transparency**: Clear error reporting for debugging
+//! 5. **Type Safety**: Strongly typed API prevents common mistakes
+
 const std = @import("std");
 const hex = @import("utils").hex;
 const Allocator = std.mem.Allocator;

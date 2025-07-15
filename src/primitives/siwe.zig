@@ -45,7 +45,7 @@ pub const SiweMessage = struct {
         try result.appendSlice(" wants you to sign in with your Ethereum account:\n");
         
         // Address
-        const addrHex = try hex.toHex(allocator, &self.address.bytes);
+        const addrHex = try hex.toHex(allocator, &self.address);
         defer allocator.free(addrHex);
         try result.appendSlice(addrHex);
         try result.appendSlice("\n\n");
@@ -193,7 +193,7 @@ pub fn parseSiweMessage(allocator: Allocator, text: []const u8) !SiweMessage {
     
     // Parse address
     const addrLine = lines.next() orelse return SiweError.InvalidFormat;
-    const addr = try Address.fromHex(addrLine);
+    const addr = try address.fromHex(addrLine);
     
     // Skip empty line
     _ = lines.next();
@@ -252,7 +252,7 @@ test "SIWE message formatting" {
     
     const message = SiweMessage{
         .domain = "example.com",
-        .address = try Address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
         .statement = "Sign in to Example",
         .uri = "https://example.com",
         .version = "1",
@@ -286,7 +286,7 @@ test "SIWE message with all fields" {
     
     const message = SiweMessage{
         .domain = "example.com",
-        .address = try Address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
         .statement = "Sign in to Example",
         .uri = "https://example.com",
         .version = "1",
@@ -313,7 +313,7 @@ test "SIWE message with all fields" {
 test "SIWE message validation" {
     var message = SiweMessage{
         .domain = "example.com",
-        .address = try Address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .address = try address.fromHex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
         .statement = null,
         .uri = "https://example.com",
         .version = "1",

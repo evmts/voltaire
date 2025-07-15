@@ -1,3 +1,101 @@
+//! Cryptographic Operations - Ethereum cryptography primitives and utilities
+//!
+//! This module provides the essential cryptographic functions used throughout
+//! Ethereum, including hash functions, digital signatures, key generation,
+//! and address derivation. It serves as the foundation for transaction
+//! signing, account management, and cryptographic verification.
+//!
+//! ## Core Cryptographic Primitives
+//!
+//! ### Hash Functions
+//! - **Keccak256**: Primary hash function used in Ethereum
+//! - **SHA256**: Used in precompiles and some legacy operations
+//! - **RIPEMD160**: Used in Bitcoin-compatible operations
+//! - **Blake2b**: High-performance alternative hash function
+//!
+//! ### Digital Signatures
+//! - **ECDSA**: Elliptic Curve Digital Signature Algorithm
+//! - **secp256k1**: Bitcoin/Ethereum curve for signatures
+//! - **Recovery**: Public key recovery from signatures
+//! - **Verification**: Signature validation and authenticity
+//!
+//! ### Key Management
+//! - **Private Keys**: 256-bit random values for signing
+//! - **Public Keys**: Derived from private keys via ECDSA
+//! - **Addresses**: 160-bit identifiers derived from public keys
+//! - **Deterministic Generation**: HD wallet support
+//!
+//! ## Usage Examples
+//!
+//! ### Hash Operations
+//! ```zig
+//! const crypto = @import("crypto.zig");
+//! 
+//! // Keccak256 hash (most common)
+//! const data = "Hello, Ethereum!";
+//! const hash = crypto.keccak256(data);
+//! 
+//! // SHA256 hash
+//! const sha_hash = crypto.sha256(data);
+//! ```
+//!
+//! ### Key Generation and Management
+//! ```zig
+//! // Generate a new private key
+//! const private_key = try crypto.generatePrivateKey();
+//! 
+//! // Derive public key from private key
+//! const public_key = try crypto.derivePublicKey(private_key);
+//! 
+//! // Derive Ethereum address from public key
+//! const address = crypto.deriveAddress(public_key);
+//! ```
+//!
+//! ### Digital Signatures
+//! ```zig
+//! // Sign a message hash
+//! const message_hash = crypto.keccak256("message");
+//! const signature = try crypto.sign(private_key, message_hash);
+//! 
+//! // Verify signature
+//! const valid = try crypto.verify(signature, message_hash, public_key);
+//! 
+//! // Recover public key from signature
+//! const recovered_pubkey = try crypto.recoverPublicKey(signature, message_hash);
+//! ```
+//!
+//! ### Address Operations
+//! ```zig
+//! // Check if address matches private key
+//! const matches = crypto.addressMatchesKey(address, private_key);
+//! 
+//! // Generate deterministic address
+//! const deterministic_addr = crypto.generateDeterministicAddress(seed, index);
+//! ```
+//!
+//! ## Security Considerations
+//!
+//! - **Private Key Security**: Never expose private keys in memory longer than necessary
+//! - **Random Number Generation**: Use cryptographically secure randomness
+//! - **Side-Channel Resistance**: Constant-time operations where possible
+//! - **Signature Malleability**: Use canonical signature validation
+//! - **Hash Function Security**: Keccak256 is quantum-resistant
+//!
+//! ## Performance Optimizations
+//!
+//! - **Batch Operations**: Efficient bulk signature verification
+//! - **Precomputed Tables**: Fast point multiplication for signatures
+//! - **SIMD Instructions**: Vectorized hash computations
+//! - **Memory Pools**: Reduced allocation overhead
+//!
+//! ## Design Principles
+//!
+//! 1. **Security First**: Constant-time operations and secure defaults
+//! 2. **Ethereum Compatibility**: Full compatibility with Ethereum standards
+//! 3. **Performance**: Optimized for high-throughput applications
+//! 4. **Type Safety**: Prevent cryptographic misuse through strong typing
+//! 5. **Auditability**: Clear, reviewable cryptographic implementations
+
 const std = @import("std");
 const crypto = std.crypto;
 const testing = std.testing;

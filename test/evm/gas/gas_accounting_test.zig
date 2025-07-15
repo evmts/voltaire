@@ -1,7 +1,7 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const gas_constants = @import("../../../src/evm/constants/gas_constants.zig");
+const gas_constants = Evm.gas_constants;
 
 
 // Test basic gas constants are defined correctly

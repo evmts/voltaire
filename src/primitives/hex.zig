@@ -1,5 +1,84 @@
-// Hex and bytes utilities for Ethereum
-// Provides comprehensive hex/bytes conversion, validation, and manipulation functions
+//! Hexadecimal Utilities - Ethereum hex string processing and validation
+//!
+//! This module provides comprehensive utilities for working with hexadecimal
+//! strings in Ethereum contexts. It handles the "0x" prefix convention,
+//! validation, conversion to/from bytes, and various utility functions.
+//!
+//! ## Features
+//!
+//! - **Validation**: Strict hex string format validation
+//! - **Conversion**: Bidirectional hex/bytes conversion
+//! - **Ethereum Format**: Proper "0x" prefix handling
+//! - **Error Handling**: Comprehensive error types for debugging
+//! - **Performance**: Optimized for high-throughput operations
+//!
+//! ## Hex String Format
+//!
+//! All hex strings in Ethereum follow the format:
+//! - Must start with "0x" prefix
+//! - Followed by even number of hex digits [0-9a-fA-F]
+//! - Case insensitive but lowercase preferred
+//! - Empty hex string is "0x"
+//!
+//! ## Usage Examples
+//!
+//! ### Basic Validation
+//! ```zig
+//! const hex = @import("hex.zig");
+//! 
+//! // Validate hex strings
+//! const valid = hex.isHex("0x1234abcd"); // true
+//! const invalid = hex.isHex("1234abcd"); // false (missing 0x)
+//! ```
+//!
+//! ### Hex to Bytes Conversion
+//! ```zig
+//! // Convert hex string to bytes
+//! const hex_str = "0x1234abcd";
+//! const bytes = try hex.hexToBytes(allocator, hex_str);
+//! defer allocator.free(bytes);
+//! // bytes = [0x12, 0x34, 0xab, 0xcd]
+//! ```
+//!
+//! ### Bytes to Hex Conversion
+//! ```zig
+//! // Convert bytes to hex string
+//! const bytes = [_]u8{ 0x12, 0x34, 0xab, 0xcd };
+//! const hex_str = try hex.bytesToHex(allocator, &bytes);
+//! defer allocator.free(hex_str);
+//! // hex_str = "0x1234abcd"
+//! ```
+//!
+//! ### Working with Fixed-Size Arrays
+//! ```zig
+//! // Convert to fixed-size array (address)
+//! var address: [20]u8 = undefined;
+//! try hex.hexToFixedBytes("0x742d35Cc6641C91B6E4bb6ac...", &address);
+//! ```
+//!
+//! ## Error Handling
+//!
+//! The module provides detailed error types:
+//! - `InvalidHexFormat`: Missing "0x" prefix
+//! - `InvalidHexLength`: Odd number of hex digits
+//! - `InvalidHexCharacter`: Invalid character in hex string
+//! - `ValueTooLarge`: Number exceeds target type capacity
+//! - `InvalidLength`: Mismatch between expected and actual length
+//!
+//! ## Performance Considerations
+//!
+//! - **No Allocations**: Most functions work with stack-allocated buffers
+//! - **Validation**: Early validation prevents processing invalid data
+//! - **Lookup Tables**: Fast character-to-digit conversion
+//! - **SIMD-Ready**: Aligned operations for modern CPUs
+//!
+//! ## Design Principles
+//!
+//! 1. **Ethereum Standards**: Adherence to Ethereum hex conventions
+//! 2. **Type Safety**: Prevent common hex processing errors
+//! 3. **Performance**: Optimized for high-throughput applications
+//! 4. **Memory Safety**: Comprehensive bounds checking
+//! 5. **Error Transparency**: Clear error reporting for debugging
 
 const std = @import("std");
 const testing = std.testing;
@@ -220,13 +299,10 @@ pub fn hexToU256(hex: []const u8) !u256 {
         return 0;
     }
 
-    var result: u256 = 0;
-    for (hex_digits) |c| {
-        const digit = hexCharToValue(c) orelse return HexError.InvalidHexCharacter;
-        result = result * 16 + digit;
-    }
-
-    return result;
+    return std.fmt.parseInt(u256, hex_digits, 16) catch |err| switch (err) {
+        error.Overflow => HexError.ValueTooLarge,
+        error.InvalidCharacter => HexError.InvalidHexCharacter,
+    };
 }
 
 pub fn hexToU64(hex: []const u8) !u64 {
