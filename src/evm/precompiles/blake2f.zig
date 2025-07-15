@@ -87,7 +87,7 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
     }
     
     // Perform BLAKE2f compression using primitives
-    primitives.HashAlgorithms.BLAKE2F.compress_eip152(input, output[0..BLAKE2F_OUTPUT_SIZE]) catch {
+    primitives.HashAlgorithms.BLAKE2F.compressEip152(input, output[0..BLAKE2F_OUTPUT_SIZE]) catch {
         @branchHint(.cold);
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     };

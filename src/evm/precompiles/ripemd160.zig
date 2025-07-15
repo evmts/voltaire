@@ -113,7 +113,7 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
     }
     
     // Compute RIPEMD160 hash using primitives
-    const hash = primitives.HashAlgorithms.RIPEMD160.hash_fixed(input);
+    const hash = primitives.HashAlgorithms.RIPEMD160.hashFixed(input);
     
     // Format output: 12 zero bytes + 20-byte hash (left-padding)
     // This follows Ethereum specification for RIPEMD160 output format

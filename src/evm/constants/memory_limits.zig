@@ -26,7 +26,7 @@ pub const CONSERVATIVE_MEMORY_LIMIT: u64 = 16 * 1024 * 1024;
 pub const PERMISSIVE_MEMORY_LIMIT: u64 = 64 * 1024 * 1024;
 
 /// Calculate the gas cost for a given memory size
-pub fn calculate_memory_gas_cost(size_bytes: u64) u64 {
+pub fn calculate_memoryGasCost(size_bytes: u64) u64 {
     const words = (size_bytes + 31) / 32;
     const linear_cost = 3 * words;
     const quadratic_cost = (words * words) / 512;
@@ -35,7 +35,7 @@ pub fn calculate_memory_gas_cost(size_bytes: u64) u64 {
 
 /// Check if a memory size would exceed reasonable gas limits
 pub fn is_memory_size_reasonable(size_bytes: u64, available_gas: u64) bool {
-    const gas_cost = calculate_memory_gas_cost(size_bytes);
+    const gas_cost = calculate_memoryGasCost(size_bytes);
     return gas_cost <= available_gas;
 }
 
@@ -43,19 +43,19 @@ test "memory gas costs" {
     const testing = std.testing;
     
     // Test small allocations
-    try testing.expectEqual(@as(u64, 3), calculate_memory_gas_cost(32)); // 1 word
-    try testing.expectEqual(@as(u64, 6), calculate_memory_gas_cost(64)); // 2 words
+    try testing.expectEqual(@as(u64, 3), calculate_memoryGasCost(32)); // 1 word
+    try testing.expectEqual(@as(u64, 6), calculate_memoryGasCost(64)); // 2 words
     
     // Test 1 KB
-    const kb_cost = calculate_memory_gas_cost(1024);
+    const kb_cost = calculate_memoryGasCost(1024);
     try testing.expect(kb_cost > 96); // Should be more than linear cost alone
     
     // Test 1 MB - should be very expensive
-    const mb_cost = calculate_memory_gas_cost(1024 * 1024);
+    const mb_cost = calculate_memoryGasCost(1024 * 1024);
     try testing.expect(mb_cost > 1_000_000); // Over 1 million gas
     
     // Test 32 MB - should be prohibitively expensive
-    const limit_cost = calculate_memory_gas_cost(MAX_MEMORY_SIZE);
+    const limit_cost = calculate_memoryGasCost(MAX_MEMORY_SIZE);
     try testing.expect(limit_cost > 2_000_000_000); // Over 2 billion gas
 }
 

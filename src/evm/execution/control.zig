@@ -147,7 +147,7 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         const current_size = frame.memory.context_size();
         const end = offset_usize + size_usize;
         if (end > offset_usize) { // Check for overflow
-            const memory_gas = gas_constants.memory_gas_cost(current_size, end);
+            const memory_gas = gas_constants.memoryGasCost(current_size, end);
             try frame.consume_gas(memory_gas);
 
             _ = try frame.memory.ensure_context_capacity(end);
@@ -207,7 +207,7 @@ pub fn op_revert(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         const current_size = frame.memory.context_size();
         const end = offset_usize + size_usize;
         if (end > offset_usize) { // Check for overflow
-            const memory_gas = gas_constants.memory_gas_cost(current_size, end);
+            const memory_gas = gas_constants.memoryGasCost(current_size, end);
             try frame.consume_gas(memory_gas);
 
             _ = try frame.memory.ensure_context_capacity(end);

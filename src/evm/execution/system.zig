@@ -352,7 +352,7 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         // Calculate memory expansion gas cost
         const current_size = frame.memory.total_size();
         const new_size = offset_usize + size_usize;
-        const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
+        const memory_gas = gas_constants.memoryGasCost(current_size, new_size);
         try frame.consume_gas(memory_gas);
 
         // Ensure memory is available and get the slice
@@ -436,7 +436,7 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
         // Calculate memory expansion gas cost
         const current_size = frame.memory.total_size();
         const new_size = offset_usize + size_usize;
-        const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
+        const memory_gas = gas_constants.memoryGasCost(current_size, new_size);
         try frame.consume_gas(memory_gas);
 
         // Ensure memory is available and get the slice

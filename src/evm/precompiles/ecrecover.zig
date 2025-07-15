@@ -117,7 +117,7 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
     const s = bytes_to_u256(s_bytes);
     
     // Validate signature parameters
-    if (!secp256k1.validate_signature(r, s)) {
+    if (!secp256k1.validateSignature(r, s)) {
         @branchHint(.cold);
         return PrecompileOutput.success_result(gas_cost, 0); // Return empty on invalid params
     }
@@ -189,7 +189,7 @@ fn bytes_to_u256(bytes: []const u8) u256 {
 /// @param s ECDSA signature s component
 /// @return Recovered Ethereum address or error
 fn recover_address(hash: []const u8, recovery_id: u8, r: u256, s: u256) !primitives.Address.Address {
-    return secp256k1.recover_address(hash, recovery_id, r, s);
+    return secp256k1.recoverAddress(hash, recovery_id, r, s);
 }
 
 /// Validates that a precompile call would succeed without executing
