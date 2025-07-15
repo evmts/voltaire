@@ -188,7 +188,7 @@ fn bytes_to_u256(bytes: []const u8) u256 {
 /// @param r ECDSA signature r component
 /// @param s ECDSA signature s component
 /// @return Recovered Ethereum address or error
-fn recover_address(hash: []const u8, recovery_id: u8, r: u256, s: u256) !primitives.Address {
+fn recover_address(hash: []const u8, recovery_id: u8, r: u256, s: u256) !primitives.Address.Address {
     return secp256k1.recover_address(hash, recovery_id, r, s);
 }
 
