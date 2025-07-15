@@ -13,7 +13,8 @@ const expectError = testing.expectError;
 // Import the modules we're testing
 const Journal = @import("../../../src/evm/state/journal.zig").Journal;
 const EvmState = @import("../../../src/evm/state/state.zig");
-const Address = @import("primitives");
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
 
 // Test helper to create a test address
 fn test_address(value: u160) Address.Address {
