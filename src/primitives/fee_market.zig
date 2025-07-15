@@ -12,7 +12,7 @@ const std = @import("std");
 // 3. Base fee adjustment based on block fullness
 
 /// Helper function to calculate fee delta safely avoiding overflow and division by zero
-fn calculate_fee_delta(fee: u64, gas_delta: u64, gas_target: u64, denominator: u64) u64 {
+fn calculateFeeDelta(fee: u64, gas_delta: u64, gas_target: u64, denominator: u64) u64 {
     // Using u128 for intermediate calculation to avoid overflow
     const intermediate: u128 = @as(u128, fee) * @as(u128, gas_delta);
     // Avoid division by zero
@@ -41,7 +41,7 @@ pub const BASE_FEE_CHANGE_DENOMINATOR: u64 = 8;
 /// - parent_gas_limit: Gas limit of the parent block
 ///
 /// Returns: The initial base fee (in wei)
-pub fn initial_base_fee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
+pub fn initialBaseFee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
     // Initializing base fee for first EIP-1559 block
     // Parent block gas used and gas limit used in calculation
 
@@ -63,7 +63,7 @@ pub fn initial_base_fee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
         else
             parent_gas_target - parent_gas_used;
 
-        const base_fee_delta = calculate_fee_delta(base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
+        const base_fee_delta = calculateFeeDelta(base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
 
         if (parent_gas_used > parent_gas_target) {
             base_fee = base_fee + base_fee_delta;
@@ -93,7 +93,7 @@ pub fn initial_base_fee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
 /// - parent_gas_target: Target gas usage of the parent block
 ///
 /// Returns: The next block's base fee (in wei)
-pub fn next_base_fee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_target: u64) u64 {
+pub fn nextBaseFee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_target: u64) u64 {
     // Calculating next block's base fee
     // Using parent block base fee and gas usage
 
@@ -117,7 +117,7 @@ pub fn next_base_fee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_targ
         const gas_used_delta = parent_gas_used - parent_gas_target;
 
         // Calculate the base fee delta (max 12.5% increase)
-        const base_fee_delta = calculate_fee_delta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
+        const base_fee_delta = calculateFeeDelta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
 
         // Increase the base fee
         // The overflow check is probably unnecessary given gas limits, but it's a good safety measure
@@ -131,7 +131,7 @@ pub fn next_base_fee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_targ
         const gas_used_delta = parent_gas_target - parent_gas_used;
 
         // Calculate the base fee delta (max 12.5% decrease)
-        const base_fee_delta = calculate_fee_delta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
+        const base_fee_delta = calculateFeeDelta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
 
         // Decrease the base fee, but don't go below the minimum
         new_base_fee = if (parent_base_fee > base_fee_delta)
@@ -161,7 +161,7 @@ pub fn next_base_fee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_targ
 /// - max_priority_fee_per_gas: Maximum tip the sender is willing to pay to the miner
 ///
 /// Returns: The effective gas price, and the miner's portion of the fee
-pub fn get_effective_gas_price(base_fee_per_gas: u64, max_fee_per_gas: u64, max_priority_fee_per_gas: u64) struct { effective_gas_price: u64, miner_fee: u64 } {
+pub fn getEffectiveGasPrice(base_fee_per_gas: u64, max_fee_per_gas: u64, max_priority_fee_per_gas: u64) struct { effective_gas_price: u64, miner_fee: u64 } {
     // Calculating effective gas price
     // Using base fee, max fee, and max priority fee
 
@@ -194,6 +194,6 @@ pub fn get_effective_gas_price(base_fee_per_gas: u64, max_fee_per_gas: u64, max_
 /// - gas_limit: The block's gas limit
 ///
 /// Returns: The gas target for the block
-pub fn get_gas_target(gas_limit: u64) u64 {
+pub fn getGasTarget(gas_limit: u64) u64 {
     return gas_limit / 2;
 }

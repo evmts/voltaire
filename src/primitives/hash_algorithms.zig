@@ -17,7 +17,7 @@ pub const SHA256 = struct {
     }
     
     /// Compute SHA256 hash and return as fixed-size array
-    pub fn hash_fixed(input: []const u8) [OUTPUT_SIZE]u8 {
+    pub fn hashFixed(input: []const u8) [OUTPUT_SIZE]u8 {
         var result: [OUTPUT_SIZE]u8 = undefined;
         hash(input, &result);
         return result;
@@ -41,9 +41,9 @@ test "SHA256 hash computation" {
     try std.testing.expectEqualSlices(u8, &expected, &output);
 }
 
-test "SHA256 hash_fixed function" {
+test "SHA256 hashFixed function" {
     const test_input = "hello world";
-    const result = SHA256.hash_fixed(test_input);
+    const result = SHA256.hashFixed(test_input);
     
     const expected = [_]u8{
         0xb9, 0x4d, 0x27, 0xb9, 0x93, 0x4d, 0x3e, 0x08,
@@ -69,7 +69,7 @@ pub const RIPEMD160 = struct {
     }
     
     /// Compute RIPEMD160 hash and return as fixed-size array
-    pub fn hash_fixed(input: []const u8) [OUTPUT_SIZE]u8 {
+    pub fn hashFixed(input: []const u8) [OUTPUT_SIZE]u8 {
         return ripemd160_impl.hash(input);
     }
 };
@@ -90,9 +90,9 @@ test "RIPEMD160 hash computation" {
     try std.testing.expectEqualSlices(u8, &expected, &output);
 }
 
-test "RIPEMD160 hash_fixed function" {
+test "RIPEMD160 hashFixed function" {
     const test_input = "";
-    const result = RIPEMD160.hash_fixed(test_input);
+    const result = RIPEMD160.hashFixed(test_input);
     
     // Known RIPEMD160 hash of empty string
     const expected = [_]u8{
@@ -118,13 +118,13 @@ pub const BLAKE2F = struct {
     /// @param f Final block flag
     /// @param rounds Number of rounds to perform
     pub fn compress(h: *[STATE_SIZE]u64, m: *const [MESSAGE_SIZE]u64, t: [2]u64, f: bool, rounds: u32) void {
-        blake2_impl.blake2f_compress(h, m, t, f, rounds);
+        blake2_impl.blake2fCompress(h, m, t, f, rounds);
     }
     
     /// Parse and compress from EIP-152 format input
     /// @param input 213-byte input (rounds + h + m + t + f)
     /// @param output 64-byte output buffer
-    pub fn compress_eip152(input: []const u8, output: []u8) !void {
+    pub fn compressEip152(input: []const u8, output: []u8) !void {
         if (input.len != 213) return error.InvalidInputLength;
         if (output.len < OUTPUT_SIZE) return error.OutputBufferTooSmall;
         

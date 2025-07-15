@@ -16,23 +16,23 @@ pub const CommonSelectors = mod.CommonSelectors;
 pub const CommonPatterns = mod.CommonPatterns;
 
 // Helper functions
-pub const uint256_value = mod.uint256_value;
-pub const bool_value = mod.bool_value;
-pub const address_value = mod.address_value;
-pub const string_value = mod.string_value;
-pub const bytes_value = mod.bytes_value;
+pub const uint256Value = mod.uint256Value;
+pub const boolValue = mod.boolValue;
+pub const addressValue = mod.addressValue;
+pub const stringValue = mod.stringValue;
+pub const bytesValue = mod.bytesValue;
 
 // Core encoding functions
-pub const encode_abi_parameters = mod.encode_abi_parameters;
-pub const encode_function_data = mod.encode_function_data;
-pub const encode_event_topics = mod.encode_event_topics;
-pub const encode_packed = mod.encode_packed;
+pub const encodeAbiParameters = mod.encodeAbiParameters;
+pub const encodeFunctionData = mod.encodeFunctionData;
+pub const encodeEventTopics = mod.encodeEventTopics;
+pub const encodePacked = mod.encodePacked;
 
 // Core decoding functions
-pub const decode_abi_parameters = mod.decode_abi_parameters;
-pub const decode_function_data = mod.decode_function_data;
+pub const decodeAbiParameters = mod.decodeAbiParameters;
+pub const decodeFunctionData = mod.decodeFunctionData;
 
 // Utility functions
-pub const compute_selector = mod.compute_selector;
-pub const create_function_signature = mod.create_function_signature;
-pub const estimate_gas_for_data = mod.estimate_gas_for_data;
+pub const computeSelector = mod.computeSelector;
+pub const createFunctionSignature = mod.createFunctionSignature;
+pub const estimateGasForData = mod.estimateGasForData;

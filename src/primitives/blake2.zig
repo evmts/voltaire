@@ -23,7 +23,7 @@ pub const BLAKE2B_SIGMA = [12][16]u8{
 };
 
 /// BLAKE2b mixing function (G function)
-pub fn blake2b_g(v: *[16]u64, a: usize, b: usize, c: usize, d: usize, x: u64, y: u64) void {
+pub fn blake2bG(v: *[16]u64, a: usize, b: usize, c: usize, d: usize, x: u64, y: u64) void {
     v[a] = v[a] +% v[b] +% x;
     v[d] = std.math.rotr(u64, v[d] ^ v[a], 32);
     v[c] = v[c] +% v[d];
@@ -35,25 +35,25 @@ pub fn blake2b_g(v: *[16]u64, a: usize, b: usize, c: usize, d: usize, x: u64, y:
 }
 
 /// BLAKE2b compression round
-pub fn blake2b_round(v: *[16]u64, message: *const [16]u64, round: u32) void {
+pub fn blake2bRound(v: *[16]u64, message: *const [16]u64, round: u32) void {
     const s = &BLAKE2B_SIGMA[round % 12];
     
     // Column mixing
-    blake2b_g(v, 0, 4, 8, 12, message[s[0]], message[s[1]]);
-    blake2b_g(v, 1, 5, 9, 13, message[s[2]], message[s[3]]);
-    blake2b_g(v, 2, 6, 10, 14, message[s[4]], message[s[5]]);
-    blake2b_g(v, 3, 7, 11, 15, message[s[6]], message[s[7]]);
+    blake2bG(v, 0, 4, 8, 12, message[s[0]], message[s[1]]);
+    blake2bG(v, 1, 5, 9, 13, message[s[2]], message[s[3]]);
+    blake2bG(v, 2, 6, 10, 14, message[s[4]], message[s[5]]);
+    blake2bG(v, 3, 7, 11, 15, message[s[6]], message[s[7]]);
     
     // Diagonal mixing
-    blake2b_g(v, 0, 5, 10, 15, message[s[8]], message[s[9]]);
-    blake2b_g(v, 1, 6, 11, 12, message[s[10]], message[s[11]]);
-    blake2b_g(v, 2, 7, 8, 13, message[s[12]], message[s[13]]);
-    blake2b_g(v, 3, 4, 9, 14, message[s[14]], message[s[15]]);
+    blake2bG(v, 0, 5, 10, 15, message[s[8]], message[s[9]]);
+    blake2bG(v, 1, 6, 11, 12, message[s[10]], message[s[11]]);
+    blake2bG(v, 2, 7, 8, 13, message[s[12]], message[s[13]]);
+    blake2bG(v, 3, 4, 9, 14, message[s[14]], message[s[15]]);
 }
 
 /// BLAKE2b compression function
 /// Performs the BLAKE2b compression function F as specified in RFC 7693
-pub fn blake2b_compress(state: *[8]u64, message: *const [16]u64, offset: [2]u64, final_block: bool, rounds: u32) void {
+pub fn blake2bCompress(state: *[8]u64, message: *const [16]u64, offset: [2]u64, final_block: bool, rounds: u32) void {
     // Working variables
     var v: [16]u64 = undefined;
     
@@ -74,7 +74,7 @@ pub fn blake2b_compress(state: *[8]u64, message: *const [16]u64, offset: [2]u64,
     
     // Perform compression rounds
     for (0..rounds) |round| {
-        blake2b_round(&v, message, @intCast(round));
+        blake2bRound(&v, message, @intCast(round));
     }
     
     // Finalize state
@@ -85,6 +85,6 @@ pub fn blake2b_compress(state: *[8]u64, message: *const [16]u64, offset: [2]u64,
 
 /// BLAKE2F compression function wrapper
 /// This is the interface used by EIP-152 for the BLAKE2F precompile
-pub fn blake2f_compress(h: *[8]u64, m: *const [16]u64, t: [2]u64, f: bool, rounds: u32) void {
-    blake2b_compress(h, m, t, f, rounds);
+pub fn blake2fCompress(h: *[8]u64, m: *const [16]u64, t: [2]u64, f: bool, rounds: u32) void {
+    blake2bCompress(h, m, t, f, rounds);
 }
