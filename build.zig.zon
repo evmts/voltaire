@@ -41,8 +41,7 @@
             .hash = "webui-2.5.0-beta.4-pxqD5esSNwCHzwq6ndnW-ShzC_nPNAzGu13l4Unk0rFl",
         },
         .@"c-kzg-4844" = .{
-            .url = "https://github.com/ethereum/c-kzg-4844/archive/refs/tags/v2.0.1.tar.gz",
-            .hash = "N-V-__8AAFsKDgUrFrUM-V7WikhzbabkJ3EVqf5yWSaCwqim",
+            .path = "./deps/c-kzg-4844",
         },
         // TODO: Add zabi dependency when fixing Rust integration
         // .zabi = .{

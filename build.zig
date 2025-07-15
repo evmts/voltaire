@@ -155,25 +155,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     
-    const address_mod = b.createModule(.{
-        .root_source_file = b.path("src/primitives/address/address.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    
-    const rlp_mod = b.createModule(.{
-        .root_source_file = b.path("src/primitives/rlp/rlp.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    
-    // Add Rlp import to address module
-    address_mod.addImport("Rlp", rlp_mod);
-    
-    // Add all primitives submodules to primitives module
-    primitives_mod.addImport("Address", address_mod);
-    primitives_mod.addImport("Rlp", rlp_mod);
-    
     // Create utils module
     const utils_mod = b.createModule(.{
         .root_source_file = b.path("src/utils.zig"),
@@ -187,7 +168,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    trie_mod.addImport("Rlp", rlp_mod);
+    trie_mod.addImport("primitives", primitives_mod);
     trie_mod.addImport("utils", utils_mod);
     
     // Create the client module
@@ -196,7 +177,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    client_mod.addImport("Address", address_mod);
+    client_mod.addImport("primitives", primitives_mod);
     
     // BN254 Rust library integration for ECMUL and ECPAIRING precompiles
     // Uses arkworks ecosystem for production-grade elliptic curve operations
@@ -235,8 +216,8 @@ pub fn build(b: *std.Build) void {
     // 1. Clone the repository with submodules: git clone --recursive https://github.com/ethereum/c-kzg-4844
     // 2. Use a pre-built version that includes blst
     // 3. Build blst separately and link it
-    // For now, this is disabled to allow the build to succeed
-    const enable_c_kzg = false;
+    // Now using local git submodule with blst included
+    const enable_c_kzg = true;
     
     const c_kzg_dep = if (enable_c_kzg) b.dependency("c-kzg-4844", .{
         .target = target,
@@ -267,7 +248,7 @@ pub fn build(b: *std.Build) void {
         
         for (c_kzg_sources) |src| {
             lib.addCSourceFile(.{
-                .file = c_kzg_dep.?.path(src),
+                .file = c_kzg_dep.path(src),
                 .flags = &.{
                     "-std=c99",
                     "-O3",
@@ -277,15 +258,29 @@ pub fn build(b: *std.Build) void {
             });
         }
         
-        // TODO: Add blst (BLS12-381 crypto library) when available
-        // The blst submodule might not be included in the package
+        // Add blst (BLS12-381 crypto library) source files
+        const blst_sources = [_][]const u8{
+            "blst/src/server.c",
+        };
         
-        // TODO: Add assembly optimizations for x86_64 when available
-        // The pre-built assembly might not be included in the package
+        for (blst_sources) |src| {
+            lib.addCSourceFile(.{
+                .file = c_kzg_dep.path(src),
+                .flags = &.{
+                    "-std=c99",
+                    "-O3",
+                    "-fno-exceptions",
+                    "-D__BLST_PORTABLE__",
+                },
+            });
+        }
+        
+        // Add blst include path
+        lib.addIncludePath(c_kzg_dep.path("blst/bindings"));
         
         // Include directories
-        lib.addIncludePath(c_kzg_dep.?.path("inc"));
-        lib.addIncludePath(c_kzg_dep.?.path("src"));
+        lib.addIncludePath(c_kzg_dep.path("inc"));
+        lib.addIncludePath(c_kzg_dep.path("src"));
         
         lib.linkLibC();
         
@@ -294,8 +289,8 @@ pub fn build(b: *std.Build) void {
     
     // Add c-kzg to primitives module (only if enabled)
     if (enable_c_kzg) {
-        primitives_mod.addIncludePath(c_kzg_dep.?.path("inc"));
-        primitives_mod.linkLibrary(c_kzg_lib.?);
+        primitives_mod.addIncludePath(c_kzg_dep.path("inc"));
+        primitives_mod.linkLibrary(c_kzg_lib);
     }
     
     // Create provider module
@@ -312,8 +307,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    evm_mod.addImport("Address", address_mod);
-    evm_mod.addImport("Rlp", rlp_mod);
     evm_mod.addImport("primitives", primitives_mod);
     evm_mod.addImport("build_options", build_options.createModule());
     
@@ -321,9 +314,11 @@ pub fn build(b: *std.Build) void {
     evm_mod.linkLibrary(bn254_lib);
     evm_mod.addIncludePath(b.path("rust/bn254_wrapper"));
     
-    // Link c-kzg-4844 to EVM module
-    evm_mod.linkLibrary(c_kzg_lib);
-    evm_mod.addIncludePath(c_kzg_dep.path("inc"));
+    // Link c-kzg-4844 to EVM module (only if enabled)
+    if (enable_c_kzg) {
+        evm_mod.linkLibrary(c_kzg_lib);
+        evm_mod.addIncludePath(c_kzg_dep.path("inc"));
+    }
     
     // Add Rust Foundry wrapper integration
     // TODO: Fix Rust integration - needs proper zabi dependency
@@ -339,18 +334,16 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    compilers_mod.addImport("Address", address_mod);
+    compilers_mod.addImport("primitives", primitives_mod);
     compilers_mod.addImport("evm", evm_mod);
     
     // Add modules to lib_mod so tests can access them
     lib_mod.addImport("primitives", primitives_mod);
-    lib_mod.addImport("Address", address_mod);
     lib_mod.addImport("evm", evm_mod);
     lib_mod.addImport("provider", provider_mod);
     lib_mod.addImport("client", client_mod);
     lib_mod.addImport("compilers", compilers_mod);
     lib_mod.addImport("trie", trie_mod);
-    lib_mod.addImport("Rlp", rlp_mod);
 
     const exe_mod = b.createModule(.{ .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize });
     exe_mod.addImport("Guillotine_lib", lib_mod);
@@ -364,9 +357,11 @@ pub fn build(b: *std.Build) void {
     lib.linkLibrary(bn254_lib);
     lib.addIncludePath(b.path("rust/bn254_wrapper"));
     
-    // Link c-kzg-4844 to the library artifact
-    lib.linkLibrary(c_kzg_lib);
-    lib.addIncludePath(c_kzg_dep.path("inc"));
+    // Link c-kzg-4844 to the library artifact (only if enabled)
+    if (enable_c_kzg) {
+        lib.linkLibrary(c_kzg_lib);
+        lib.addIncludePath(c_kzg_dep.path("inc"));
+    }
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
@@ -395,31 +390,12 @@ pub fn build(b: *std.Build) void {
     const wasm_optimize = optimize;
 
     // Create WASM-specific modules with minimal dependencies
-    // WASM-specific Address module
-    const wasm_address_mod = b.createModule(.{
-        .root_source_file = b.path("src/primitives/address/address.zig"),
-        .target = wasm_target,
-        .optimize = wasm_optimize,
-    });
-
-    // WASM-specific RLP module
-    const wasm_rlp_mod = b.createModule(.{
-        .root_source_file = b.path("src/primitives/rlp/rlp.zig"),
-        .target = wasm_target,
-        .optimize = wasm_optimize,
-    });
-
-    // Add RLP to address module for WASM
-    wasm_address_mod.addImport("Rlp", wasm_rlp_mod);
-    
     // Create WASM-specific primitives module without c-kzg
     const wasm_primitives_mod = b.createModule(.{
         .root_source_file = b.path("src/primitives/root.zig"),
         .target = wasm_target,
         .optimize = wasm_optimize,
     });
-    wasm_primitives_mod.addImport("Address", wasm_address_mod);
-    wasm_primitives_mod.addImport("Rlp", wasm_rlp_mod);
     // Note: WASM build excludes c-kzg-4844 (not available for WASM)
 
     // Create WASM-specific EVM module without Rust dependencies
@@ -428,8 +404,6 @@ pub fn build(b: *std.Build) void {
         .target = wasm_target,
         .optimize = wasm_optimize,
     });
-    wasm_evm_mod.addImport("Address", wasm_address_mod);
-    wasm_evm_mod.addImport("Rlp", wasm_rlp_mod);
     wasm_evm_mod.addImport("primitives", wasm_primitives_mod);
     wasm_evm_mod.addImport("build_options", build_options.createModule());
     // Note: WASM build uses pure Zig implementations for BN254 operations
@@ -440,9 +414,8 @@ pub fn build(b: *std.Build) void {
         .optimize = wasm_optimize,
         .single_threaded = true,
     });
-    wasm_lib_mod.addImport("Address", wasm_address_mod);
+    wasm_lib_mod.addImport("primitives", wasm_primitives_mod);
     wasm_lib_mod.addImport("evm", wasm_evm_mod);  // Use WASM-specific EVM module
-    wasm_lib_mod.addImport("Rlp", wasm_rlp_mod);
 
     const wasm_lib = b.addExecutable(.{
         .name = "guillotine",
@@ -475,9 +448,8 @@ pub fn build(b: *std.Build) void {
         .optimize = .Debug,  // Debug mode for symbols
         .single_threaded = true,
     });
-    wasm_debug_mod.addImport("Address", wasm_address_mod);
+    wasm_debug_mod.addImport("primitives", wasm_primitives_mod);
     wasm_debug_mod.addImport("evm", wasm_evm_mod);
-    wasm_debug_mod.addImport("Rlp", wasm_rlp_mod);
     
     const wasm_debug = b.addExecutable(.{
         .name = "guillotine-debug",
@@ -633,9 +605,8 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    evm_test.root_module.addImport("Address", address_mod);
+    evm_test.root_module.addImport("primitives", primitives_mod);
     evm_test.root_module.addImport("evm", evm_mod);
-    evm_test.root_module.addImport("Rlp", rlp_mod);
 
     const run_evm_test = b.addRunArtifact(evm_test);
     const evm_test_step = b.step("test-evm", "Run EVM tests");
@@ -649,7 +620,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     memory_test.root_module.addImport("evm", evm_mod);
-    memory_test.root_module.addImport("Address", address_mod);
+    memory_test.root_module.addImport("primitives", primitives_mod);
 
     const run_memory_test = b.addRunArtifact(memory_test);
     const memory_test_step = b.step("test-memory", "Run Memory tests");
@@ -692,9 +663,8 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     jump_table_test.root_module.stack_check = false;
-    jump_table_test.root_module.addImport("Address", address_mod);
+    jump_table_test.root_module.addImport("primitives", primitives_mod);
     jump_table_test.root_module.addImport("evm", evm_mod);
-    jump_table_test.root_module.addImport("Rlp", rlp_mod);
 
     const run_jump_table_test = b.addRunArtifact(jump_table_test);
     const jump_table_test_step = b.step("test-jump-table", "Run Jump table tests");
@@ -709,7 +679,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     opcodes_test.root_module.stack_check = false;
-    opcodes_test.root_module.addImport("Address", address_mod);
+    opcodes_test.root_module.addImport("primitives", primitives_mod);
     opcodes_test.root_module.addImport("evm", evm_mod);
 
     const run_opcodes_test = b.addRunArtifact(opcodes_test);
@@ -726,7 +696,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     vm_opcode_test.root_module.stack_check = false;
-    vm_opcode_test.root_module.addImport("Address", address_mod);
+    vm_opcode_test.root_module.addImport("primitives", primitives_mod);
     vm_opcode_test.root_module.addImport("evm", evm_mod);
 
     const run_vm_opcode_test = b.addRunArtifact(vm_opcode_test);
@@ -742,7 +712,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     integration_test.root_module.stack_check = false;
-    integration_test.root_module.addImport("Address", address_mod);
+    integration_test.root_module.addImport("primitives", primitives_mod);
     integration_test.root_module.addImport("evm", evm_mod);
 
     const run_integration_test = b.addRunArtifact(integration_test);
@@ -758,7 +728,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     gas_test.root_module.stack_check = false;
-    gas_test.root_module.addImport("Address", address_mod);
+    gas_test.root_module.addImport("primitives", primitives_mod);
     gas_test.root_module.addImport("evm", evm_mod);
 
     const run_gas_test = b.addRunArtifact(gas_test);
@@ -774,7 +744,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     static_protection_test.root_module.stack_check = false;
-    static_protection_test.root_module.addImport("Address", address_mod);
+    static_protection_test.root_module.addImport("primitives", primitives_mod);
     static_protection_test.root_module.addImport("evm", evm_mod);
 
     const run_static_protection_test = b.addRunArtifact(static_protection_test);
@@ -789,7 +759,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     sha256_test.root_module.stack_check = false;
-    sha256_test.root_module.addImport("Address", address_mod);
+    sha256_test.root_module.addImport("primitives", primitives_mod);
     sha256_test.root_module.addImport("evm", evm_mod);
 
     const run_sha256_test = b.addRunArtifact(sha256_test);
@@ -804,7 +774,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     ripemd160_test.root_module.stack_check = false;
-    ripemd160_test.root_module.addImport("Address", address_mod);
+    ripemd160_test.root_module.addImport("primitives", primitives_mod);
     ripemd160_test.root_module.addImport("evm", evm_mod);
 
     const run_ripemd160_test = b.addRunArtifact(ripemd160_test);
@@ -819,7 +789,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     blake2f_test.root_module.stack_check = false;
-    blake2f_test.root_module.addImport("Address", address_mod);
+    blake2f_test.root_module.addImport("primitives", primitives_mod);
     blake2f_test.root_module.addImport("evm", evm_mod);
     const run_blake2f_test = b.addRunArtifact(blake2f_test);
     const blake2f_test_step = b.step("test-blake2f", "Run BLAKE2f precompile tests");
@@ -833,7 +803,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     bn254_rust_test.root_module.stack_check = false;
-    bn254_rust_test.root_module.addImport("Address", address_mod);
+    bn254_rust_test.root_module.addImport("primitives", primitives_mod);
     bn254_rust_test.root_module.addImport("evm", evm_mod);
     // Link BN254 Rust library to tests
     bn254_rust_test.linkLibrary(bn254_lib);
@@ -852,7 +822,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     e2e_simple_test.root_module.stack_check = false;
-    e2e_simple_test.root_module.addImport("Address", address_mod);
+    e2e_simple_test.root_module.addImport("primitives", primitives_mod);
     e2e_simple_test.root_module.addImport("evm", evm_mod);
 
     const run_e2e_simple_test = b.addRunArtifact(e2e_simple_test);
@@ -868,7 +838,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     e2e_error_test.root_module.stack_check = false;
-    e2e_error_test.root_module.addImport("Address", address_mod);
+    e2e_error_test.root_module.addImport("primitives", primitives_mod);
     e2e_error_test.root_module.addImport("evm", evm_mod);
 
     const run_e2e_error_test = b.addRunArtifact(e2e_error_test);
@@ -884,7 +854,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     e2e_data_test.root_module.stack_check = false;
-    e2e_data_test.root_module.addImport("Address", address_mod);
+    e2e_data_test.root_module.addImport("primitives", primitives_mod);
     e2e_data_test.root_module.addImport("evm", evm_mod);
 
     const run_e2e_data_test = b.addRunArtifact(e2e_data_test);
@@ -900,7 +870,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     e2e_inheritance_test.root_module.stack_check = false;
-    e2e_inheritance_test.root_module.addImport("Address", address_mod);
+    e2e_inheritance_test.root_module.addImport("primitives", primitives_mod);
     e2e_inheritance_test.root_module.addImport("evm", evm_mod);
 
     const run_e2e_inheritance_test = b.addRunArtifact(e2e_inheritance_test);
@@ -914,7 +884,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    compiler_test.root_module.addImport("Address", address_mod);
+    compiler_test.root_module.addImport("primitives", primitives_mod);
     compiler_test.root_module.addImport("evm", evm_mod);
     
     // TODO: Re-enable when Rust integration is fixed
@@ -954,7 +924,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = true,
     });
-    constructor_bug_test.root_module.addImport("Address", address_mod);
+    constructor_bug_test.root_module.addImport("primitives", primitives_mod);
     constructor_bug_test.root_module.addImport("evm", evm_mod);
     const run_constructor_bug_test = b.addRunArtifact(constructor_bug_test);
     const constructor_bug_test_step = b.step("test-constructor-bug", "Run Constructor Bug test");
@@ -968,7 +938,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = true,
     });
-    solidity_constructor_test.root_module.addImport("Address", address_mod);
+    solidity_constructor_test.root_module.addImport("primitives", primitives_mod);
     solidity_constructor_test.root_module.addImport("evm", evm_mod);
     const run_solidity_constructor_test = b.addRunArtifact(solidity_constructor_test);
     const solidity_constructor_test_step = b.step("test-solidity-constructor", "Run Solidity Constructor test");
@@ -981,7 +951,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .single_threaded = true,
     });
-    contract_call_test.root_module.addImport("Address", address_mod);
+    contract_call_test.root_module.addImport("primitives", primitives_mod);
     contract_call_test.root_module.addImport("evm", evm_mod);
     const run_contract_call_test = b.addRunArtifact(contract_call_test);
     const contract_call_test_step = b.step("test-contract-call", "Run Contract Call tests");
@@ -994,7 +964,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    hardfork_test.root_module.addImport("Address", address_mod);
+    hardfork_test.root_module.addImport("primitives", primitives_mod);
     hardfork_test.root_module.addImport("evm", evm_mod);
     const run_hardfork_test = b.addRunArtifact(hardfork_test);
     const hardfork_test_step = b.step("test-hardfork", "Run Hardfork tests");
@@ -1007,13 +977,13 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    delegatecall_test.root_module.addImport("Address", address_mod);
+    delegatecall_test.root_module.addImport("primitives", primitives_mod);
     delegatecall_test.root_module.addImport("evm", evm_mod);
     const run_delegatecall_test = b.addRunArtifact(delegatecall_test);
     const delegatecall_test_step = b.step("test-delegatecall", "Run DELEGATECALL tests");
     delegatecall_test_step.dependOn(&run_delegatecall_test.step);
     
-    snail_tracer_test.root_module.addImport("Address", address_mod);
+    snail_tracer_test.root_module.addImport("primitives", primitives_mod);
     snail_tracer_test.root_module.addImport("evm", evm_mod);
     snail_tracer_test.root_module.addImport("compilers", compilers_mod);
     
