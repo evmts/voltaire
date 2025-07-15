@@ -4,7 +4,8 @@ const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const gas_constants = @import("../constants/gas_constants.zig");
 const Address = @import("Address").Address;
-const secp256k1 = @import("secp256k1.zig");
+const primitives = @import("../../primitives/root.zig");
+const secp256k1 = primitives.secp256k1;
 
 /// ECRECOVER precompile implementation (address 0x01)
 ///

@@ -2,7 +2,7 @@ const std = @import("std");
 const PrecompileResult = @import("precompile_result.zig").PrecompileResult;
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
-const ripemd160_core = @import("ripemd160_core.zig");
+const primitives = @import("../../primitives/root.zig");
 
 /// RIPEMD160 precompile implementation (address 0x03)
 ///
@@ -112,8 +112,8 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     }
     
-    // Compute RIPEMD160 hash using the core implementation
-    const hash = ripemd160_core.hash(input);
+    // Compute RIPEMD160 hash using primitives
+    const hash = primitives.HashAlgorithms.RIPEMD160.hash_fixed(input);
     
     // Format output: 12 zero bytes + 20-byte hash (left-padding)
     // This follows Ethereum specification for RIPEMD160 output format

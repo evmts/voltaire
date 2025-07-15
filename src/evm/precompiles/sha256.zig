@@ -2,6 +2,7 @@ const std = @import("std");
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const gas_utils = @import("../constants/gas_constants.zig");
+const primitives = @import("../../primitives/root.zig");
 
 /// SHA256 precompile implementation
 ///
@@ -34,7 +35,7 @@ const SHA256_BASE_COST: u64 = 60;
 const SHA256_WORD_COST: u64 = 12;
 
 /// SHA256 always outputs exactly 32 bytes
-const SHA256_OUTPUT_SIZE: usize = 32;
+const SHA256_OUTPUT_SIZE: usize = primitives.HashAlgorithms.SHA256.OUTPUT_SIZE;
 
 /// Calculate gas cost for SHA256 precompile
 ///
@@ -98,10 +99,8 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     }
     
-    // Compute SHA256 hash using Zig standard library
-    var hasher = std.crypto.hash.sha2.Sha256.init(.{});
-    hasher.update(input);
-    hasher.final(output[0..SHA256_OUTPUT_SIZE]);
+    // Compute SHA256 hash using primitives
+    primitives.HashAlgorithms.SHA256.hash(input, output[0..SHA256_OUTPUT_SIZE]);
     
     return PrecompileOutput.success_result(required_gas, SHA256_OUTPUT_SIZE);
 }

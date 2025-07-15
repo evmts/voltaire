@@ -2,6 +2,7 @@ const std = @import("std");
 const PrecompileResult = @import("precompile_result.zig").PrecompileResult;
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
+const primitives = @import("../../primitives/root.zig");
 
 /// ModExp precompile implementation (address 0x05)
 ///
@@ -22,9 +23,9 @@ const PrecompileError = @import("precompile_result.zig").PrecompileError;
 /// - Minimum cost: 200 gas
 
 /// Gas constants for ModExp precompile (per EIP-198)
-pub const MODEXP_MIN_GAS: u64 = 200;
-pub const MODEXP_QUADRATIC_THRESHOLD: usize = 64;
-pub const MODEXP_LINEAR_THRESHOLD: usize = 1024;
+pub const MODEXP_MIN_GAS: u64 = primitives.GasConstants.MODEXP_MIN_GAS;
+pub const MODEXP_QUADRATIC_THRESHOLD: usize = primitives.GasConstants.MODEXP_QUADRATIC_THRESHOLD;
+pub const MODEXP_LINEAR_THRESHOLD: usize = primitives.GasConstants.MODEXP_LINEAR_THRESHOLD;
 
 /// Calculates the gas cost for ModExp precompile execution
 ///
@@ -56,41 +57,12 @@ pub fn calculate_gas(base_len: usize, exp_len: usize, mod_len: usize, exp_bytes:
 
 /// Calculates multiplication complexity based on size
 fn calculate_multiplication_complexity(x: usize) u64 {
-    const x64: u64 = @intCast(x);
-    
-    if (x <= MODEXP_QUADRATIC_THRESHOLD) {
-        return x64 * x64;
-    } else if (x <= MODEXP_LINEAR_THRESHOLD) {
-        // x^2/4 + 96*x - 3072
-        return (x64 * x64) / 4 + 96 * x64 - 3072;
-    } else {
-        // x^2/16 + 480*x - 199680
-        return (x64 * x64) / 16 + 480 * x64 - 199680;
-    }
+    return primitives.ModExp.calculateMultiplicationComplexity(x);
 }
 
 /// Calculates adjusted exponent length based on leading zeros
 fn calculate_adjusted_exponent_length(exp_len: usize, exp_bytes: []const u8) u64 {
-    if (exp_len == 0) return 0;
-    
-    // Find first non-zero byte
-    var leading_zeros: usize = 0;
-    for (exp_bytes) |byte| {
-        if (byte != 0) break;
-        leading_zeros += 1;
-    }
-    
-    // If all zeros, adjusted length is 0
-    if (leading_zeros == exp_bytes.len) return 0;
-    
-    // Get the first non-zero byte and count its leading zero bits
-    const first_non_zero = exp_bytes[leading_zeros];
-    const bit_length = 8 - @clz(first_non_zero);
-    
-    // Adjusted length = (exp_len - leading_zeros - 1) * 8 + bit_length
-    const adj_len = (exp_len - leading_zeros - 1) * 8 + bit_length;
-    
-    return @intCast(adj_len);
+    return primitives.ModExp.calculateAdjustedExponentLength(exp_len, exp_bytes);
 }
 
 /// Executes the ModExp precompile
@@ -156,15 +128,7 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
     }
     
     // Check if modulus is zero
-    var mod_is_zero = true;
-    for (mod_bytes) |byte| {
-        if (byte != 0) {
-            mod_is_zero = false;
-            break;
-        }
-    }
-    
-    if (mod_is_zero) {
+    if (primitives.ModExp.isZero(mod_bytes)) {
         // Modulus is 0, result is 0
         @memset(output[0..mod_len], 0);
         return PrecompileOutput.success_result(gas_cost, mod_len);
@@ -176,91 +140,16 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     }
     
-    // Perform modular exponentiation
+    // Perform modular exponentiation using primitives
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
     
-    modexp_big_int(allocator, base_bytes, exp_bytes, mod_bytes, output[0..mod_len]) catch {
+    primitives.ModExp.modexp(allocator, base_bytes, exp_bytes, mod_bytes, output[0..mod_len]) catch {
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     };
     
     return PrecompileOutput.success_result(gas_cost, mod_len);
-}
-
-/// Performs modular exponentiation using Zig's big integer library
-/// This is a simplified implementation that handles basic cases
-fn modexp_big_int(allocator: std.mem.Allocator, base_bytes: []const u8, exp_bytes: []const u8, mod_bytes: []const u8, output: []u8) !void {
-    _ = allocator; // Not used in simplified implementation
-    // For now, implement a basic version that handles small numbers
-    // We'll convert bytes to u64 when possible for simplicity
-    
-    // Clear output first
-    @memset(output, 0);
-    
-    // Handle special cases
-    if (exp_bytes.len == 0 or isZero(exp_bytes)) {
-        // exp = 0, result = 1
-        if (output.len > 0) output[output.len - 1] = 1;
-        return;
-    }
-    
-    if (base_bytes.len == 0 or isZero(base_bytes)) {
-        // base = 0, result = 0 (already cleared)
-        return;
-    }
-    
-    // For simplicity, handle small numbers directly
-    if (base_bytes.len <= 8 and exp_bytes.len <= 8 and mod_bytes.len <= 8) {
-        const base = bytesToU64(base_bytes);
-        const exp = bytesToU64(exp_bytes);
-        const mod = bytesToU64(mod_bytes);
-        
-        if (mod == 0) return; // Division by zero
-        
-        var result: u64 = 1;
-        var base_mod = base % mod;
-        var exp_remaining = exp;
-        
-        // Square and multiply algorithm
-        while (exp_remaining > 0) {
-            if (exp_remaining & 1 == 1) {
-                result = (result * base_mod) % mod;
-            }
-            base_mod = (base_mod * base_mod) % mod;
-            exp_remaining >>= 1;
-        }
-        
-        // Write result to output (big-endian)
-        const result_bytes = @min(output.len, 8);
-        var i: usize = 0;
-        while (i < result_bytes) : (i += 1) {
-            const shift: u6 = @intCast((result_bytes - 1 - i) * 8);
-            output[output.len - result_bytes + i] = @intCast((result >> shift) & 0xFF);
-        }
-        return;
-    }
-    
-    // For larger numbers, we'll return an error for now
-    // This can be extended with proper BigInt implementation later
-    return error.NotImplemented;
-}
-
-/// Check if a byte array represents zero
-fn isZero(bytes: []const u8) bool {
-    for (bytes) |byte| {
-        if (byte != 0) return false;
-    }
-    return true;
-}
-
-/// Convert bytes to u64 (big-endian)
-fn bytesToU64(bytes: []const u8) u64 {
-    var result: u64 = 0;
-    for (bytes) |byte| {
-        result = (result << 8) | byte;
-    }
-    return result;
 }
 
 /// Parses a 32-byte big-endian value to usize
