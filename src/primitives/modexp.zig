@@ -9,6 +9,11 @@ pub const ModExpError = error{
     InvalidInput,
     AllocationFailed,
     NotImplemented,
+    OutOfMemory,
+    InvalidBase,
+    InvalidCharacter,
+    NoSpaceLeft,
+    InvalidLength,
 };
 
 /// Performs modular exponentiation: base^exponent mod modulus
@@ -19,8 +24,6 @@ pub const ModExpError = error{
 /// @param mod_bytes Modulus value as big-endian bytes
 /// @param output Output buffer (must be at least mod_bytes.len)
 pub fn modexp(allocator: std.mem.Allocator, base_bytes: []const u8, exp_bytes: []const u8, mod_bytes: []const u8, output: []u8) ModExpError!void {
-    _ = allocator; // Not used in simplified implementation
-    
     // Clear output first
     @memset(output, 0);
     
@@ -72,9 +75,68 @@ pub fn modexp(allocator: std.mem.Allocator, base_bytes: []const u8, exp_bytes: [
         return;
     }
     
-    // For larger numbers, we'll return an error for now
-    // This can be extended with proper BigInt implementation later
-    return ModExpError.NotImplemented;
+    // For larger numbers, use big integer implementation
+    const Managed = std.math.big.int.Managed;
+    
+    // Initialize big integers
+    var base = try Managed.init(allocator);
+    defer base.deinit();
+    var exp = try Managed.init(allocator);
+    defer exp.deinit();
+    var mod = try Managed.init(allocator);
+    defer mod.deinit();
+    
+    // Parse inputs from big-endian bytes
+    try readBigEndian(&base, base_bytes);
+    try readBigEndian(&exp, exp_bytes);
+    try readBigEndian(&mod, mod_bytes);
+    
+    // Check if modulus is zero
+    var zero = try Managed.init(allocator);
+    defer zero.deinit();
+    try zero.set(0);
+    if (mod.eql(zero)) {
+        return ModExpError.DivisionByZero;
+    }
+    
+    // Perform modular exponentiation using square-and-multiply
+    var result = try Managed.init(allocator);
+    defer result.deinit();
+    try result.set(1); // result = 1
+    
+    var base_mod = try Managed.init(allocator);
+    defer base_mod.deinit();
+    
+    // base_mod = base % mod
+    var quotient = try Managed.init(allocator);
+    defer quotient.deinit();
+    try quotient.divFloor(&base_mod, &base, &mod);
+    
+    // Temporary variables for operations
+    var temp = try Managed.init(allocator);
+    defer temp.deinit();
+    var exp_copy = try exp.clone();
+    defer exp_copy.deinit();
+    
+    // Square and multiply algorithm
+    while (!exp_copy.eql(zero)) {
+        // Check if exp is odd (exp & 1 == 1)
+        if (exp_copy.isOdd()) {
+            // result = (result * base_mod) % mod
+            try temp.mul(&result, &base_mod);
+            try quotient.divFloor(&result, &temp, &mod);
+        }
+        
+        // base_mod = (base_mod * base_mod) % mod
+        try temp.sqr(&base_mod);
+        try quotient.divFloor(&base_mod, &temp, &mod);
+        
+        // exp >>= 1
+        try exp_copy.shiftRight(&exp_copy, 1);
+    }
+    
+    // Write result to output (big-endian)
+    try writeBigEndian(&result, output);
 }
 
 /// Check if a byte array represents zero
@@ -192,4 +254,113 @@ test "modexp: division by zero" {
     var output: [1]u8 = undefined;
     
     try std.testing.expectError(ModExpError.DivisionByZero, modexp(allocator, &base, &exp, &mod, &output));
+}
+
+/// Read big-endian bytes into a Managed big integer
+fn readBigEndian(big: *std.math.big.int.Managed, bytes: []const u8) !void {
+    if (bytes.len == 0) {
+        try big.set(0);
+        return;
+    }
+    
+    // Convert bytes to hex string and use setString
+    const hex_string = try std.fmt.allocPrint(big.allocator, "{}", .{std.fmt.fmtSliceHexUpper(bytes)});
+    defer big.allocator.free(hex_string);
+    
+    try big.setString(16, hex_string);
+}
+
+/// Write a Managed big integer to big-endian bytes
+fn writeBigEndian(big: *const std.math.big.int.Managed, output: []u8) !void {
+    @memset(output, 0);
+    
+    // Check if the big integer is zero
+    if (big.bitCountTwosComp() == 0) {
+        return;
+    }
+    
+    // Convert to hex string and then to bytes
+    const hex_string = try big.toString(big.allocator, 16, .upper);
+    defer big.allocator.free(hex_string);
+    
+    // Parse hex string back to bytes
+    const hex_bytes = try big.allocator.alloc(u8, hex_string.len / 2);
+    defer big.allocator.free(hex_bytes);
+    _ = try std.fmt.hexToBytes(hex_bytes, hex_string);
+    
+    // Copy to output buffer (right-aligned)
+    const copy_len = @min(output.len, hex_bytes.len);
+    const offset = output.len - copy_len;
+    @memcpy(output[offset..], hex_bytes[0..copy_len]);
+}
+
+test "modexp: large numbers - 2^255 mod 2^128" {
+    const allocator = std.testing.allocator;
+    
+    // base = 2
+    const base = [_]u8{2};
+    
+    // exp = 255
+    const exp = [_]u8{0xFF};
+    
+    // mod = 2^128 = 0x100000000000000000000000000000000
+    const mod = [_]u8{1} ++ ([_]u8{0} ** 16);
+    
+    var output: [17]u8 = undefined;
+    
+    try modexp(allocator, &base, &exp, &mod, &output);
+    
+    // 2^255 mod 2^128 = 2^127
+    var expected: [17]u8 = .{0} ** 17;
+    expected[9] = 0x80; // 2^127 in big-endian
+    
+    try std.testing.expectEqualSlices(u8, &expected, &output);
+}
+
+test "modexp: large base and modulus" {
+    const allocator = std.testing.allocator;
+    
+    // base = 0xDEADBEEFDEADBEEFDEADBEEFDEADBEEF (16 bytes)
+    const base = [_]u8{0xDE, 0xAD, 0xBE, 0xEF} ** 4;
+    
+    // exp = 3
+    const exp = [_]u8{3};
+    
+    // mod = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF (16 bytes)
+    const mod = [_]u8{0xFF} ** 16;
+    
+    var output: [16]u8 = undefined;
+    
+    try modexp(allocator, &base, &exp, &mod, &output);
+    
+    // Verify the result is less than the modulus
+    for (output, 0..) |byte, i| {
+        if (byte < mod[i]) break;
+        if (byte > mod[i]) {
+            std.debug.print("Output greater than modulus at byte {}\n", .{i});
+            try std.testing.expect(false);
+        }
+    }
+}
+
+test "modexp: very large exponent" {
+    const allocator = std.testing.allocator;
+    
+    // base = 3
+    const base = [_]u8{3};
+    
+    // exp = 0x010000000000000000 (2^64)
+    const exp = [_]u8{1} ++ ([_]u8{0} ** 8);
+    
+    // mod = 1000000007 (large prime)
+    const mod = [_]u8{0x3B, 0x9A, 0xCA, 0x07};
+    
+    var output: [4]u8 = undefined;
+    
+    try modexp(allocator, &base, &exp, &mod, &output);
+    
+    // Verify result is less than modulus
+    const result = bytesToU64(&output);
+    const modulus = bytesToU64(&mod);
+    try std.testing.expect(result < modulus);
 }
