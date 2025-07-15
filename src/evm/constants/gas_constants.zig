@@ -3,7 +3,7 @@
 /// This module re-exports gas constants from the primitives package for
 /// backwards compatibility with existing EVM code.
 
-const primitives = @import("../../primitives/root.zig");
+const primitives = @import("primitives");
 const GasConstants = primitives.GasConstants;
 
 // Re-export all constants from primitives

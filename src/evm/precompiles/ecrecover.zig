@@ -3,8 +3,7 @@ const PrecompileResult = @import("precompile_result.zig").PrecompileResult;
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const gas_constants = @import("../constants/gas_constants.zig");
-const Address = @import("Address").Address;
-const primitives = @import("../../primitives/root.zig");
+const primitives = @import("primitives");
 const secp256k1 = primitives.secp256k1;
 
 /// ECRECOVER precompile implementation (address 0x01)
@@ -189,7 +188,7 @@ fn bytes_to_u256(bytes: []const u8) u256 {
 /// @param r ECDSA signature r component
 /// @param s ECDSA signature s component
 /// @return Recovered Ethereum address or error
-fn recover_address(hash: []const u8, recovery_id: u8, r: u256, s: u256) !Address {
+fn recover_address(hash: []const u8, recovery_id: u8, r: u256, s: u256) !primitives.Address {
     return secp256k1.recover_address(hash, recovery_id, r, s);
 }
 

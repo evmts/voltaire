@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const build_options = @import("build_options");
-const Address = @import("Address").Address;
+const primitives = @import("primitives");
 const addresses = @import("precompile_addresses.zig");
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
@@ -14,7 +14,7 @@ const no_precompiles = if (@hasDecl(build_options, "no_precompiles")) build_opti
 /// Main precompile dispatcher module
 ///
 /// This module provides the main interface for precompile execution. It handles:
-/// - Address-based precompile detection and routing
+/// - primitives.Address-based precompile detection and routing
 /// - Hardfork-based availability checks
 /// - Unified execution interface for all precompiles
 /// - Error handling and result management
@@ -32,7 +32,7 @@ const no_precompiles = if (@hasDecl(build_options, "no_precompiles")) build_opti
 ///
 /// @param address The address to check
 /// @return true if the address is a known precompile, false otherwise
-pub fn is_precompile(address: Address) bool {
+pub fn is_precompile(address: primitives.Address) bool {
     if (comptime no_precompiles) return false;
     return addresses.is_precompile(address);
 }
@@ -46,7 +46,7 @@ pub fn is_precompile(address: Address) bool {
 /// @param address The precompile address to check
 /// @param chain_rules The current chain rules configuration
 /// @return true if the precompile is available with these chain rules
-pub fn is_available(address: Address, chain_rules: ChainRules) bool {
+pub fn is_available(address: primitives.Address, chain_rules: ChainRules) bool {
     if (!is_precompile(address)) {
         @branchHint(.cold);
         return false;
@@ -79,7 +79,7 @@ pub fn is_available(address: Address, chain_rules: ChainRules) bool {
 /// @param gas_limit Maximum gas available for execution
 /// @param chain_rules Current chain rules for availability checking
 /// @return PrecompileOutput containing success/failure and gas usage
-pub fn execute_precompile(address: Address, input: []const u8, output: []u8, gas_limit: u64, chain_rules: ChainRules) PrecompileOutput {
+pub fn execute_precompile(address: primitives.Address, input: []const u8, output: []u8, gas_limit: u64, chain_rules: ChainRules) PrecompileOutput {
     // When precompiles are disabled, always fail
     if (comptime no_precompiles) {
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
@@ -170,7 +170,7 @@ pub fn execute_precompile(address: Address, input: []const u8, output: []u8, gas
 /// @param input_size Size of the input data
 /// @param chain_rules Current chain rules
 /// @return Estimated gas cost or error if not available
-pub fn estimate_gas(address: Address, input_size: usize, chain_rules: ChainRules) !u64 {
+pub fn estimate_gas(address: primitives.Address, input_size: usize, chain_rules: ChainRules) !u64 {
     // Early return if precompiles are disabled
     if (comptime no_precompiles) {
         return error.InvalidPrecompile;
@@ -247,7 +247,7 @@ pub fn estimate_gas(address: Address, input_size: usize, chain_rules: ChainRules
 /// @param input_size Size of the input data
 /// @param chain_rules Current chain rules
 /// @return Expected output size or error if not available
-pub fn get_output_size(address: Address, input_size: usize, chain_rules: ChainRules) !usize {
+pub fn get_output_size(address: primitives.Address, input_size: usize, chain_rules: ChainRules) !usize {
     // Early return if precompiles are disabled
     if (comptime no_precompiles) {
         return error.InvalidPrecompile;
@@ -315,7 +315,7 @@ pub fn get_output_size(address: Address, input_size: usize, chain_rules: ChainRu
 /// @param gas_limit Available gas limit
 /// @param chain_rules Current chain rules
 /// @return true if the call would succeed
-pub fn validate_call(address: Address, input_size: usize, gas_limit: u64, chain_rules: ChainRules) bool {
+pub fn validate_call(address: primitives.Address, input_size: usize, gas_limit: u64, chain_rules: ChainRules) bool {
     if (!is_precompile(address)) {
         @branchHint(.cold);
         return false;

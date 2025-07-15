@@ -1,5 +1,5 @@
 const std = @import("std");
-const Address = @import("Address");
+const primitives = @import("primitives");
 
 /// Execution context providing transaction and block information to the EVM.
 ///
@@ -61,7 +61,7 @@ const Context = @This();
 /// EOA → Contract A → Contract B → Contract C
 /// - tx.origin = EOA (same for all)
 /// - msg.sender differs at each level
-tx_origin: Address.Address = Address.zero(),
+tx_origin: primitives.Address = primitives.Address.zero(),
 /// The gas price for the current transaction in wei.
 ///
 /// ## GASPRICE Opcode (0x3A)
@@ -120,7 +120,7 @@ block_timestamp: u64 = 0,
 /// ## MEV Considerations
 /// Searchers often send payments to block.coinbase for
 /// transaction inclusion guarantees.
-block_coinbase: Address.Address = Address.zero(),
+block_coinbase: primitives.Address = primitives.Address.zero(),
 /// Block difficulty (pre-Merge) or PREVRANDAO (post-Merge).
 ///
 /// ## DIFFICULTY/PREVRANDAO Opcode (0x44)
@@ -285,11 +285,11 @@ pub fn init() Context {
 /// );
 /// ```
 pub fn init_with_values(
-    tx_origin: Address.Address,
+    tx_origin: primitives.Address,
     gas_price: u256,
     block_number: u64,
     block_timestamp: u64,
-    block_coinbase: Address.Address,
+    block_coinbase: primitives.Address,
     block_difficulty: u256,
     block_gas_limit: u64,
     chain_id: u256,

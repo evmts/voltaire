@@ -1,11 +1,11 @@
 const std = @import("std");
-const Address = @import("Address");
+const primitives = @import("primitives");
 
 /// Storage slot key combining address and slot for access list operations
 /// This version provides direct hash output for use with HashMap
 pub const AccessListStorageKey = @This();
 
-address: Address.Address,
+address: primitives.Address,
 slot: u256,
 
 pub fn hash(self: AccessListStorageKey) u64 {

@@ -2,7 +2,7 @@ const std = @import("std");
 const PrecompileResult = @import("precompile_result.zig").PrecompileResult;
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
-const primitives = @import("../../primitives/root.zig");
+const primitives = @import("primitives");
 
 /// BLAKE2F precompile implementation (address 0x09)
 ///

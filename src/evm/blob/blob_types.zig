@@ -1,6 +1,6 @@
 const std = @import("std");
 const Address = @import("Address");
-const primitives = @import("../../primitives/root.zig");
+const primitives = @import("primitives");
 
 /// EIP-4844 Blob Data Structures
 ///

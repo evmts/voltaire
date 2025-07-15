@@ -1,6 +1,6 @@
 const std = @import("std");
 const blob_types = @import("blob_types.zig");
-const primitives = @import("../../primitives/root.zig");
+const primitives = @import("primitives");
 
 /// KZG Verification Interface for EIP-4844
 ///

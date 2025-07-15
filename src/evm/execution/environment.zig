@@ -4,9 +4,9 @@ const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
-const Address = @import("Address");
-const to_u256 = Address.to_u256;
-const from_u256 = Address.from_u256;
+const primitives = @import("primitives");
+const to_u256 = primitives.Address.to_u256;
+const from_u256 = primitives.Address.from_u256;
 const gas_constants = @import("../constants/gas_constants.zig");
 const AccessList = @import("../access_list/access_list.zig").AccessList;
 
