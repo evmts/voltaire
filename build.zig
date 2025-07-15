@@ -229,6 +229,55 @@ pub fn build(b: *std.Build) void {
     // Make the rust build a dependency
     bn254_lib.step.dependOn(&rust_build.step);
     
+    // C-KZG-4844 library for EIP-4844 blob transactions
+    const c_kzg_dep = b.dependency("c-kzg-4844", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    
+    // Build c-kzg-4844 as a static library
+    const c_kzg_lib = b.addStaticLibrary(.{
+        .name = "c-kzg-4844",
+        .target = target,
+        .optimize = optimize,
+    });
+    
+    // Add c-kzg-4844 source file
+    c_kzg_lib.addCSourceFile(.{
+        .file = c_kzg_dep.path("src/c_kzg_4844.c"),
+        .flags = &.{
+            "-std=c99",
+            "-O3",
+            "-fno-exceptions",
+            "-DBLST_PORTABLE",
+        },
+    });
+    
+    // Add blst (BLS12-381 crypto library) source file
+    c_kzg_lib.addCSourceFile(.{
+        .file = c_kzg_dep.path("blst/src/server.c"),
+        .flags = &.{
+            "-std=c99",
+            "-O3",
+            "-fno-exceptions",
+            "-DBLST_PORTABLE",
+        },
+    });
+    
+    // TODO: Add assembly optimizations for x86_64 when available
+    // The pre-built assembly might not be included in the package
+    
+    // Include directories
+    c_kzg_lib.addIncludePath(c_kzg_dep.path("inc"));
+    c_kzg_lib.addIncludePath(c_kzg_dep.path("src"));
+    c_kzg_lib.addIncludePath(c_kzg_dep.path("blst/bindings"));
+    
+    c_kzg_lib.linkLibC();
+    
+    // Add c-kzg to primitives module
+    primitives_mod.addIncludePath(c_kzg_dep.path("inc"));
+    primitives_mod.linkLibrary(c_kzg_lib);
+    
     // Create provider module
     const provider_mod = b.createModule(.{
         .root_source_file = b.path("src/provider/root.zig"),
@@ -251,6 +300,10 @@ pub fn build(b: *std.Build) void {
     // Link BN254 Rust library to EVM module (native targets only)
     evm_mod.linkLibrary(bn254_lib);
     evm_mod.addIncludePath(b.path("rust/bn254_wrapper"));
+    
+    // Link c-kzg-4844 to EVM module
+    evm_mod.linkLibrary(c_kzg_lib);
+    evm_mod.addIncludePath(c_kzg_dep.path("inc"));
     
     // Add Rust Foundry wrapper integration
     // TODO: Fix Rust integration - needs proper zabi dependency
@@ -290,6 +343,10 @@ pub fn build(b: *std.Build) void {
     // Link BN254 Rust library to the library artifact
     lib.linkLibrary(bn254_lib);
     lib.addIncludePath(b.path("rust/bn254_wrapper"));
+    
+    // Link c-kzg-4844 to the library artifact
+    lib.linkLibrary(c_kzg_lib);
+    lib.addIncludePath(c_kzg_dep.path("inc"));
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
@@ -334,6 +391,16 @@ pub fn build(b: *std.Build) void {
 
     // Add RLP to address module for WASM
     wasm_address_mod.addImport("Rlp", wasm_rlp_mod);
+    
+    // Create WASM-specific primitives module without c-kzg
+    const wasm_primitives_mod = b.createModule(.{
+        .root_source_file = b.path("src/primitives/root.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+    });
+    wasm_primitives_mod.addImport("Address", wasm_address_mod);
+    wasm_primitives_mod.addImport("Rlp", wasm_rlp_mod);
+    // Note: WASM build excludes c-kzg-4844 (not available for WASM)
 
     // Create WASM-specific EVM module without Rust dependencies
     const wasm_evm_mod = b.createModule(.{
@@ -343,6 +410,7 @@ pub fn build(b: *std.Build) void {
     });
     wasm_evm_mod.addImport("Address", wasm_address_mod);
     wasm_evm_mod.addImport("Rlp", wasm_rlp_mod);
+    wasm_evm_mod.addImport("primitives", wasm_primitives_mod);
     wasm_evm_mod.addImport("build_options", build_options.createModule());
     // Note: WASM build uses pure Zig implementations for BN254 operations
 
