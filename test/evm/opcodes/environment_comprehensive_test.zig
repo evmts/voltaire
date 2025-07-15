@@ -1,7 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const Address = @import("primitives");
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -105,7 +106,7 @@ test "BALANCE (0x31): Get account balance" {
     try testing.expectEqual(test_balance * 2, result2);
     
     // Test 3: Check non-existent account (should return 0)
-    const zero_addr = Address.zero();
+    const zero_addr = primitives.Address.ZERO_ADDRESS;
     try frame.stack.append(primitives.Address.to_u256(zero_addr));
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
     const result3 = try frame.stack.pop();
