@@ -42,7 +42,7 @@
         },
         .@"c-kzg-4844" = .{
             .url = "https://github.com/ethereum/c-kzg-4844/archive/refs/tags/v2.0.1.tar.gz",
-            .hash = "12202b16b50cf95ed68a48736da6e4277115a9fe72592682c2a8a68f10870a0f408d",
+            .hash = "N-V-__8AAFsKDgUrFrUM-V7WikhzbabkJ3EVqf5yWSaCwqim",
         },
         // TODO: Add zabi dependency when fixing Rust integration
         // .zabi = .{

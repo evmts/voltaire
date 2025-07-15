@@ -230,53 +230,73 @@ pub fn build(b: *std.Build) void {
     bn254_lib.step.dependOn(&rust_build.step);
     
     // C-KZG-4844 library for EIP-4844 blob transactions
-    const c_kzg_dep = b.dependency("c-kzg-4844", .{
+    // NOTE: The c-kzg-4844 package from GitHub doesn't include the blst submodule
+    // To properly build c-kzg-4844, you need to either:
+    // 1. Clone the repository with submodules: git clone --recursive https://github.com/ethereum/c-kzg-4844
+    // 2. Use a pre-built version that includes blst
+    // 3. Build blst separately and link it
+    // For now, this is disabled to allow the build to succeed
+    const enable_c_kzg = false;
+    
+    const c_kzg_dep = if (enable_c_kzg) b.dependency("c-kzg-4844", .{
         .target = target,
         .optimize = optimize,
-    });
+    }) else null;
     
-    // Build c-kzg-4844 as a static library
-    const c_kzg_lib = b.addStaticLibrary(.{
-        .name = "c-kzg-4844",
-        .target = target,
-        .optimize = optimize,
-    });
+    // Build c-kzg-4844 as a static library (only if enabled)
+    const c_kzg_lib = if (enable_c_kzg) blk: {
+        const lib = b.addStaticLibrary(.{
+            .name = "c-kzg-4844",
+            .target = target,
+            .optimize = optimize,
+        });
+        
+        // Add c-kzg-4844 source files
+        const c_kzg_sources = [_][]const u8{
+            "src/ckzg.c",
+            "src/common/alloc.c",
+            "src/common/bytes.c",
+            "src/common/ec.c",
+            "src/common/fr.c",
+            "src/common/lincomb.c",
+            "src/common/utils.c",
+            "src/setup/setup.c",
+            "src/eip4844/blob.c",
+            "src/eip4844/eip4844.c",
+        };
+        
+        for (c_kzg_sources) |src| {
+            lib.addCSourceFile(.{
+                .file = c_kzg_dep.?.path(src),
+                .flags = &.{
+                    "-std=c99",
+                    "-O3",
+                    "-fno-exceptions",
+                    "-DBLST_PORTABLE",
+                },
+            });
+        }
+        
+        // TODO: Add blst (BLS12-381 crypto library) when available
+        // The blst submodule might not be included in the package
+        
+        // TODO: Add assembly optimizations for x86_64 when available
+        // The pre-built assembly might not be included in the package
+        
+        // Include directories
+        lib.addIncludePath(c_kzg_dep.?.path("inc"));
+        lib.addIncludePath(c_kzg_dep.?.path("src"));
+        
+        lib.linkLibC();
+        
+        break :blk lib;
+    } else null;
     
-    // Add c-kzg-4844 source file
-    c_kzg_lib.addCSourceFile(.{
-        .file = c_kzg_dep.path("src/c_kzg_4844.c"),
-        .flags = &.{
-            "-std=c99",
-            "-O3",
-            "-fno-exceptions",
-            "-DBLST_PORTABLE",
-        },
-    });
-    
-    // Add blst (BLS12-381 crypto library) source file
-    c_kzg_lib.addCSourceFile(.{
-        .file = c_kzg_dep.path("blst/src/server.c"),
-        .flags = &.{
-            "-std=c99",
-            "-O3",
-            "-fno-exceptions",
-            "-DBLST_PORTABLE",
-        },
-    });
-    
-    // TODO: Add assembly optimizations for x86_64 when available
-    // The pre-built assembly might not be included in the package
-    
-    // Include directories
-    c_kzg_lib.addIncludePath(c_kzg_dep.path("inc"));
-    c_kzg_lib.addIncludePath(c_kzg_dep.path("src"));
-    c_kzg_lib.addIncludePath(c_kzg_dep.path("blst/bindings"));
-    
-    c_kzg_lib.linkLibC();
-    
-    // Add c-kzg to primitives module
-    primitives_mod.addIncludePath(c_kzg_dep.path("inc"));
-    primitives_mod.linkLibrary(c_kzg_lib);
+    // Add c-kzg to primitives module (only if enabled)
+    if (enable_c_kzg) {
+        primitives_mod.addIncludePath(c_kzg_dep.?.path("inc"));
+        primitives_mod.linkLibrary(c_kzg_lib.?);
+    }
     
     // Create provider module
     const provider_mod = b.createModule(.{
