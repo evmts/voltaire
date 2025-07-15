@@ -15,7 +15,6 @@ pub const ModExp = @import("modexp.zig");
 
 // Utilities
 pub const Numeric = @import("numeric.zig");
-pub const Units = @import("units.zig");
 pub const GasConstants = @import("gas_constants.zig");
 pub const HashAlgorithms = @import("hash_algorithms.zig");
 
