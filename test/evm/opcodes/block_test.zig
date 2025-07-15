@@ -135,7 +135,7 @@ test "Block: COINBASE operations" {
     // Test: Push coinbase address to stack
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x41);
     const result = try frame.stack.pop();
-    const coinbase_as_u256 = Address.to_u256(evm.access_list.context.block_coinbase);
+    const coinbase_as_u256 = primitives.Address.to_u256(evm.access_list.context.block_coinbase);
     try testing.expectEqual(coinbase_as_u256, result);
 
     // Test gas consumption

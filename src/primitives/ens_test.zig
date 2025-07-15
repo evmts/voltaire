@@ -163,7 +163,7 @@ test "ENS DNS encoding" {
 }
 
 // Test reverse resolution (address to name)
-pub fn reverse_node(address: primitives.Address) Hash.Hash {
+pub fn reverse_node(address: primitives.Address.Address) Hash.Hash {
     const allocator = std.heap.page_allocator;
     
     // Convert address to hex string (without 0x)

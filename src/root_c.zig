@@ -18,7 +18,7 @@ fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), co
 }
 const Evm = evm_root.Evm;
 const MemoryDatabase = evm_root.MemoryDatabase;
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
 
 // Global allocator for WASM environment  
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -119,7 +119,7 @@ export fn guillotine_execute(
     // Convert inputs
     const bytecode = bytecode_ptr[0..bytecode_len];
     const caller_bytes = caller_ptr[0..20];
-    const caller_address: primitives.Address = caller_bytes.*;
+    const caller_address: primitives.Address.Address = caller_bytes.*;
 
     // Create contract for execution
     const target_address = primitives.Address.ZERO_ADDRESS; // Use zero address for contract execution

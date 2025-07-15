@@ -535,7 +535,7 @@ test "Security: Gas exhaustion in complex operations" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(1000000); // value (expensive transfer)
-    try frame.stack.append(Address.to_u256(bob)); // to
+    try frame.stack.append(primitives.Address.to_u256(bob)); // to
     try frame.stack.append(50000); // gas
 
     // Should either fail with OutOfGas or succeed with failure status
@@ -662,7 +662,7 @@ test "Security: Call depth limit enforcement at 1024 levels" {
                 try frame.stack.append(0); // args_size
                 try frame.stack.append(0); // args_offset
                 try frame.stack.append(0); // value
-                try frame.stack.append(Address.to_u256(bob)); // to
+                try frame.stack.append(primitives.Address.to_u256(bob)); // to
                 try frame.stack.append(50000); // gas
             },
             0xF4, 0xFA => { // DELEGATECALL, STATICCALL
@@ -670,7 +670,7 @@ test "Security: Call depth limit enforcement at 1024 levels" {
                 try frame.stack.append(0); // ret_offset
                 try frame.stack.append(0); // args_size
                 try frame.stack.append(0); // args_offset
-                try frame.stack.append(Address.to_u256(bob)); // to
+                try frame.stack.append(primitives.Address.to_u256(bob)); // to
                 try frame.stack.append(50000); // gas
             },
             0xF0 => { // CREATE
@@ -743,7 +743,7 @@ test "Security: Depth tracking in nested calls" {
         try frame.stack.append(0); // args_size
         try frame.stack.append(0); // args_offset
         try frame.stack.append(0); // value
-        try frame.stack.append(Address.to_u256(bob)); // to
+        try frame.stack.append(primitives.Address.to_u256(bob)); // to
         try frame.stack.append(50000); // gas
 
         // Execute CALL - should succeed if depth < 1024
@@ -993,7 +993,7 @@ test "Security: Zero-value transfer handling" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value = 0 (zero transfer)
-    try frame.stack.append(Address.to_u256(bob)); // to
+    try frame.stack.append(primitives.Address.to_u256(bob)); // to
     try frame.stack.append(50000); // gas
 
     // Zero-value transfers should be cheaper and succeed
@@ -1128,7 +1128,7 @@ test "Security: CALL to empty contract" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
-    try frame.stack.append(Address.to_u256(empty_address)); // to (empty contract)
+    try frame.stack.append(primitives.Address.to_u256(empty_address)); // to (empty contract)
     try frame.stack.append(50000); // gas
 
     // Should succeed (calling empty code succeeds but does nothing)
@@ -1179,7 +1179,7 @@ test "Security: Self-call detection and handling" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
-    try frame.stack.append(Address.to_u256(contract_addr)); // to (self)
+    try frame.stack.append(primitives.Address.to_u256(contract_addr)); // to (self)
     try frame.stack.append(50000); // gas
 
     // Self-calls should be allowed but may have depth limits
@@ -1229,7 +1229,7 @@ test "Security: Reentrancy with depth tracking" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
-    try frame.stack.append(Address.to_u256(contract_addr)); // to (self)
+    try frame.stack.append(primitives.Address.to_u256(contract_addr)); // to (self)
     try frame.stack.append(50000); // gas
 
     // Should succeed but not allow further deep recursion
@@ -1398,7 +1398,7 @@ test "Security: Static call protection for state modification" {
     }{
         .{ .name = "SSTORE in static", .opcode = 0x55, .setup_values = &[_]u256{0x42, 0} },
         .{ .name = "CREATE in static", .opcode = 0xF0, .setup_values = &[_]u256{0, 0, 0} },
-        .{ .name = "SELFDESTRUCT in static", .opcode = 0xFF, .setup_values = &[_]u256{Address.to_u256([_]u8{0x22} ** 20)} },
+        .{ .name = "SELFDESTRUCT in static", .opcode = 0xFF, .setup_values = &[_]u256{primitives.Address.to_u256([_]u8{0x22} ** 20)} },
         .{ .name = "LOG0 in static", .opcode = 0xA0, .setup_values = &[_]u256{32, 0} },
     };
 

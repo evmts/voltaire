@@ -28,7 +28,7 @@ pub const CreateContractError = std.mem.Allocator.Error || primitives.Address.Ca
 /// Memory: Allocates space for deployed bytecode
 ///
 /// See also: create2_contract() for deterministic addresses
-pub fn create_contract(self: *Vm, creator: primitives.Address, value: u256, init_code: []const u8, gas: u64) CreateContractError!CreateResult {
+pub fn create_contract(self: *Vm, creator: primitives.Address.Address, value: u256, init_code: []const u8, gas: u64) CreateContractError!CreateResult {
     const nonce = try self.state.increment_nonce(creator);
     const new_address = try primitives.Address.calculate_create_address(self.allocator, creator, nonce);
     return self.create_contract_internal(creator, value, init_code, gas, new_address);

@@ -37,8 +37,8 @@ test "Integration: Conditional jump patterns" {
     var code_hash: [32]u8 = undefined;
     std.crypto.hash.sha3.Keccak256.hash(&code, &code_hash, .{});
 
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
 
     var contract = Contract.init(
         alice_address,
@@ -122,8 +122,8 @@ test "Integration: Loop implementation with JUMP" {
     var code_hash: [32]u8 = undefined;
     std.crypto.hash.sha3.Keccak256.hash(&code, &code_hash, .{});
 
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
 
     var contract = Contract.init(
         alice_address,
@@ -193,8 +193,8 @@ test "Integration: Return data handling" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
 
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
 
     // Calculate proper code hash for empty code
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -254,8 +254,8 @@ test "Integration: Revert with reason" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
 
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
 
     // Calculate proper code hash for empty code
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -314,8 +314,8 @@ test "Integration: PC tracking through operations" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
 
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
 
     // Calculate proper code hash for empty code
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -379,8 +379,8 @@ test "Integration: Invalid opcode handling" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
 
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
 
     // Calculate proper code hash for empty code
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -441,8 +441,8 @@ test "Integration: Nested conditions with jumps" {
     var code_hash: [32]u8 = undefined;
     std.crypto.hash.sha3.Keccak256.hash(&code, &code_hash, .{});
 
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
 
     var contract = Contract.init(
         alice_address,
@@ -519,9 +519,9 @@ test "Integration: Self-destruct with beneficiary" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
 
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const bob_address = Address.from_u256(0x2222222222222222222222222222222222222222);
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_address = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
 
     // Set up contract with balance
     const contract_balance: u256 = 1000;
@@ -563,7 +563,7 @@ test "Integration: Self-destruct with beneficiary" {
     try testing.expectEqual(beneficiary_initial, initial_balance);
 
     // Execute selfdestruct with BOB as beneficiary
-    try frame_ptr.stack.append(Address.to_u256(bob_address));
+    try frame_ptr.stack.append(primitives.Address.to_u256(bob_address));
 
     // Note: Actual selfdestruct implementation would transfer balance and mark for deletion
     // For this test, we're just verifying the opcode executes

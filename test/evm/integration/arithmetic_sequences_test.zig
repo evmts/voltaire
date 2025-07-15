@@ -25,8 +25,8 @@ test "Integration: Complex arithmetic calculation" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
     
-    const contract_address = Address.from_u256(0x3333);
-    const alice_address = Address.from_u256(0x1111);
+    const contract_address = primitives.Address.from_u256(0x3333);
+    const alice_address = primitives.Address.from_u256(0x1111);
     
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -86,8 +86,8 @@ test "Integration: Modular arithmetic with overflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
     
-    const contract_address = Address.from_u256(0x3333);
-    const alice_address = Address.from_u256(0x1111);
+    const contract_address = primitives.Address.from_u256(0x3333);
+    const alice_address = primitives.Address.from_u256(0x1111);
     
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -146,8 +146,8 @@ test "Integration: Fibonacci sequence calculation" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
     
-    const contract_address = Address.from_u256(0x3333);
-    const alice_address = Address.from_u256(0x1111);
+    const contract_address = primitives.Address.from_u256(0x3333);
+    const alice_address = primitives.Address.from_u256(0x1111);
     
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -218,8 +218,8 @@ test "Integration: Conditional arithmetic based on comparison" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
     
-    const contract_address = Address.from_u256(0x3333);
-    const alice_address = Address.from_u256(0x1111);
+    const contract_address = primitives.Address.from_u256(0x3333);
+    const alice_address = primitives.Address.from_u256(0x1111);
     
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -305,8 +305,8 @@ test "Integration: Calculate average of multiple values" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
     
-    const contract_address = Address.from_u256(0x3333);
-    const alice_address = Address.from_u256(0x1111);
+    const contract_address = primitives.Address.from_u256(0x3333);
+    const alice_address = primitives.Address.from_u256(0x1111);
     
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -370,8 +370,8 @@ test "Integration: Complex ADDMOD and MULMOD calculations" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
     
-    const contract_address = Address.from_u256(0x3333);
-    const alice_address = Address.from_u256(0x1111);
+    const contract_address = primitives.Address.from_u256(0x3333);
+    const alice_address = primitives.Address.from_u256(0x1111);
     
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -452,8 +452,8 @@ test "Integration: Exponentiation chain" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
     
-    const contract_address = Address.from_u256(0x3333);
-    const alice_address = Address.from_u256(0x1111);
+    const contract_address = primitives.Address.from_u256(0x3333);
+    const alice_address = primitives.Address.from_u256(0x1111);
     
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;

@@ -6,7 +6,7 @@ const Hex = @import("hex.zig");
 const primitives = @import("primitives");
 
 // Contract address generation for CREATE opcode
-pub fn get_contract_address(deployer: primitives.Address, nonce: u64) primitives.Address {
+pub fn get_contract_address(deployer: primitives.Address.Address, nonce: u64) primitives.Address.Address {
     const allocator = std.heap.page_allocator;
     
     // RLP encode [deployer_address, nonce]
@@ -41,7 +41,7 @@ pub fn get_contract_address(deployer: primitives.Address, nonce: u64) primitives
     const hash = Hash.keccak256(rlp_list.items);
     
     // Take last 20 bytes as address
-    var address: primitives.Address = undefined;
+    var address: primitives.Address.Address = undefined;
     @memcpy(&address, hash[12..32]);
     
     return address;
@@ -49,10 +49,10 @@ pub fn get_contract_address(deployer: primitives.Address, nonce: u64) primitives
 
 // Contract address generation for CREATE2 opcode
 pub fn get_create2_address(
-    deployer: primitives.Address,
+    deployer: primitives.Address.Address,
     salt: [32]u8,
     init_code_hash: Hash.Hash,
-) primitives.Address {
+) primitives.Address.Address {
     // CREATE2 address = keccak256(0xff ++ deployer ++ salt ++ init_code_hash)[12:]
     var data: [85]u8 = undefined;
     data[0] = 0xff;
@@ -63,7 +63,7 @@ pub fn get_create2_address(
     const hash = Hash.keccak256(&data);
     
     // Take last 20 bytes as address
-    var address: primitives.Address = undefined;
+    var address: primitives.Address.Address = undefined;
     @memcpy(&address, hash[12..32]);
     
     return address;
@@ -220,7 +220,7 @@ test "CREATE2 deterministic deployment" {
 }
 
 // Helper function to predict minimal proxy (EIP-1167) addresses
-pub fn get_minimal_proxy_address(deployer: primitives.Address, nonce: u64, implementation: primitives.Address) primitives.Address {
+pub fn get_minimal_proxy_address(deployer: primitives.Address.Address, nonce: u64, implementation: primitives.Address.Address) primitives.Address.Address {
     // Minimal proxy bytecode
     var bytecode: [55]u8 = undefined;
     
@@ -262,7 +262,7 @@ test "factory pattern deployment addresses" {
     const factory = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
     
     // Simulate deploying multiple contracts from factory
-    var addresses: [5]primitives.Address = undefined;
+    var addresses: [5]primitives.Address.Address = undefined;
     
     for (0..5) |i| {
         addresses[i] = get_contract_address(factory, i);

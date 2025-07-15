@@ -23,8 +23,8 @@ test "Integration: SHA3 with dynamic data" {
     defer vm.deinit();
     
     // Create contract
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -108,8 +108,8 @@ test "Integration: Logging with topics and data" {
     defer vm.deinit();
     
     // Create contract
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -179,8 +179,8 @@ test "Integration: LOG operations with multiple topics" {
     defer vm.deinit();
     
     // Create contract
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -253,8 +253,8 @@ test "Integration: Hash-based address calculation" {
     defer vm.deinit();
     
     // Create contract
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -335,9 +335,9 @@ test "Integration: Event emission patterns" {
     defer vm.deinit();
     
     // Create contract
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const bob_address = Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_address = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -363,8 +363,8 @@ test "Integration: Event emission patterns" {
     // Simulate ERC20 Transfer event
     // Transfer(address indexed from, address indexed to, uint256 value)
     
-    const from_addr = Address.to_u256(alice_address);
-    const to_addr = Address.to_u256(bob_address);
+    const from_addr = primitives.Address.to_u256(alice_address);
+    const to_addr = primitives.Address.to_u256(bob_address);
     const value: u256 = 1000;
     
     // Store value in memory (non-indexed parameter)
@@ -391,8 +391,8 @@ test "Integration: Event emission patterns" {
     // Approval(address indexed owner, address indexed spender, uint256 value)
     vm.logs.clearRetainingCapacity();
     
-    const owner_addr = Address.to_u256(alice_address);
-    const spender_addr = Address.to_u256(contract_address);
+    const owner_addr = primitives.Address.to_u256(alice_address);
+    const spender_addr = primitives.Address.to_u256(contract_address);
     const allowance: u256 = 500;
     
     // Store allowance in memory
@@ -430,8 +430,8 @@ test "Integration: Dynamic log data with memory expansion" {
     defer vm.deinit();
     
     // Create contract
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -505,8 +505,8 @@ test "Integration: SHA3 for signature verification" {
     defer vm.deinit();
     
     // Create contract
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -565,8 +565,8 @@ test "Integration: Log in static context fails" {
     defer vm.deinit();
     
     // Create contract
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;

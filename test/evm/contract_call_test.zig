@@ -13,8 +13,8 @@ test "contract call: empty contract returns success" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const caller = Address.from_u256(0x1111);
-    const empty_contract = Address.from_u256(0x2222);
+    const caller = primitives.Address.from_u256(0x1111);
+    const empty_contract = primitives.Address.from_u256(0x2222);
     
     // Set up caller with balance
     try vm.state.set_balance(caller, 1000000);
@@ -45,8 +45,8 @@ test "contract call: value transfer to empty contract" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const caller = Address.from_u256(0x1111);
-    const recipient = Address.from_u256(0x2222);
+    const caller = primitives.Address.from_u256(0x1111);
+    const recipient = primitives.Address.from_u256(0x2222);
     const transfer_amount: u256 = 1000;
     
     // Set up caller with balance
@@ -78,8 +78,8 @@ test "contract call: insufficient balance for value transfer" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const caller = Address.from_u256(0x1111);
-    const recipient = Address.from_u256(0x2222);
+    const caller = primitives.Address.from_u256(0x1111);
+    const recipient = primitives.Address.from_u256(0x2222);
     
     // Caller has insufficient balance
     try vm.state.set_balance(caller, 500);
@@ -111,8 +111,8 @@ test "contract call: static call cannot transfer value" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const caller = Address.from_u256(0x1111);
-    const recipient = Address.from_u256(0x2222);
+    const caller = primitives.Address.from_u256(0x1111);
+    const recipient = primitives.Address.from_u256(0x2222);
     
     try vm.state.set_balance(caller, 10000);
     
@@ -141,8 +141,8 @@ test "contract call: simple contract execution" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const deployer = Address.from_u256(0x1111);
-    const caller = Address.from_u256(0x2222);
+    const deployer = primitives.Address.from_u256(0x1111);
+    const caller = primitives.Address.from_u256(0x2222);
     
     try vm.state.set_balance(deployer, 1000000);
     try vm.state.set_balance(caller, 1000000);
@@ -213,8 +213,8 @@ test "contract call: gas consumption tracking" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const deployer = Address.from_u256(0x1111);
-    const caller = Address.from_u256(0x2222);
+    const deployer = primitives.Address.from_u256(0x1111);
+    const caller = primitives.Address.from_u256(0x2222);
     
     try vm.state.set_balance(deployer, 1000000);
     try vm.state.set_balance(caller, 1000000);
@@ -293,8 +293,8 @@ test "contract call: revert handling" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const deployer = Address.from_u256(0x1111);
-    const caller = Address.from_u256(0x2222);
+    const deployer = primitives.Address.from_u256(0x1111);
+    const caller = primitives.Address.from_u256(0x2222);
     
     try vm.state.set_balance(deployer, 1000000);
     try vm.state.set_balance(caller, 1000000);
@@ -367,8 +367,8 @@ test "contract call: input data passing" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const deployer = Address.from_u256(0x1111);
-    const caller = Address.from_u256(0x2222);
+    const deployer = primitives.Address.from_u256(0x1111);
+    const caller = primitives.Address.from_u256(0x2222);
     
     try vm.state.set_balance(deployer, 1000000);
     try vm.state.set_balance(caller, 1000000);
@@ -435,8 +435,8 @@ test "contract call: call depth limit" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const caller = Address.from_u256(0x1111);
-    const contract = Address.from_u256(0x2222);
+    const caller = primitives.Address.from_u256(0x1111);
+    const contract = primitives.Address.from_u256(0x2222);
     
     try vm.state.set_balance(caller, 1000000);
     
@@ -484,8 +484,8 @@ test "contract call: value transfer rollback on failure" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const deployer = Address.from_u256(0x1111);
-    const caller = Address.from_u256(0x2222);
+    const deployer = primitives.Address.from_u256(0x1111);
+    const caller = primitives.Address.from_u256(0x2222);
     
     try vm.state.set_balance(deployer, 1000000);
     try vm.state.set_balance(caller, 1000000);

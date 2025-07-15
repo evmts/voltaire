@@ -24,8 +24,8 @@ test "Integration: arithmetic calculation sequence" {
     defer vm.deinit();
 
     // Create a test contract
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const caller_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     var contract = Contract.init(
         caller_addr,
@@ -88,8 +88,8 @@ test "Integration: stack manipulation with DUP and SWAP" {
     defer vm.deinit();
 
     // Create a test contract
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const caller_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     var contract = Contract.init(
         caller_addr,
@@ -158,8 +158,8 @@ test "Integration: memory to storage workflow" {
     defer vm.deinit();
 
     // Create a test contract
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const caller_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     var contract = Contract.init(
         caller_addr,
@@ -219,8 +219,8 @@ test "Integration: conditional branching" {
     defer vm.deinit();
 
     // Create a test contract with code
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const caller_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     // Set up contract code with jump destinations
     var code: [50]u8 = undefined;
@@ -303,8 +303,8 @@ test "Integration: hash and compare workflow" {
     defer vm.deinit();
 
     // Create a test contract
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const caller_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     var contract = Contract.init(
         caller_addr,
@@ -383,8 +383,8 @@ test "Integration: call data processing" {
     defer vm.deinit();
 
     // Create a test contract
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const caller_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     // Set up call data (function selector + parameters)
     const call_data = [_]u8{
@@ -468,8 +468,8 @@ test "Integration: gas tracking through operations" {
     defer vm.deinit();
 
     // Create a test contract
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const caller_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     var contract = Contract.init(
         caller_addr,
@@ -541,8 +541,8 @@ test "Integration: error handling in sequences" {
     defer vm.deinit();
 
     // Create a test contract
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const caller_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     var contract = Contract.init(
         caller_addr,
@@ -597,8 +597,8 @@ test "Integration: transient storage usage" {
     defer vm.deinit();
 
     // Create a test contract
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const caller_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     var contract = Contract.init(
         caller_addr,

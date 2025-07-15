@@ -20,7 +20,7 @@ pub const LegacyTransaction = struct {
     nonce: u64,
     gas_price: u256,
     gas_limit: u64,
-    to: ?primitives.Address, // null for contract creation
+    to: ?primitives.Address.Address, // null for contract creation
     value: u256,
     data: []const u8,
     v: u64,
@@ -35,7 +35,7 @@ pub const Eip1559Transaction = struct {
     max_priority_fee_per_gas: u256,
     max_fee_per_gas: u256,
     gas_limit: u64,
-    to: ?primitives.Address,
+    to: ?primitives.Address.Address,
     value: u256,
     data: []const u8,
     access_list: []const AccessListItem,
@@ -45,7 +45,7 @@ pub const Eip1559Transaction = struct {
 };
 
 pub const AccessListItem = struct {
-    address: primitives.Address,
+    address: primitives.Address.Address,
     storage_keys: []const [32]u8,
 };
 

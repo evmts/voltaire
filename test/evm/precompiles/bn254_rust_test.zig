@@ -8,7 +8,7 @@ const std = @import("std");
 const testing = std.testing;
 const evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
 
 // Import the precompile modules
 const ecmul = evm.precompiles.ecmul;

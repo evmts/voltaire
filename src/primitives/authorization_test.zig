@@ -8,13 +8,13 @@ const primitives = @import("primitives");
 // EIP-7702 Authorization List
 pub const Authorization = struct {
     chain_id: u64,
-    address: primitives.Address,
+    address: primitives.Address.Address,
     nonce: u64,
     v: u64,
     r: [32]u8,
     s: [32]u8,
     
-    pub fn authority(self: *const Authorization) !primitives.Address {
+    pub fn authority(self: *const Authorization) !primitives.Address.Address {
         // Recover the authority (signer) from the authorization
         const hash = try self.signing_hash();
         const signature = Crypto.Signature{
@@ -87,7 +87,7 @@ pub const Authorization = struct {
 pub fn create_authorization(
     allocator: std.mem.Allocator,
     chain_id: u64,
-    address: primitives.Address,
+    address: primitives.Address.Address,
     nonce: u64,
     private_key: Crypto.PrivateKey,
 ) !Authorization {
@@ -240,8 +240,8 @@ test "authorization list encoding" {
 
 // Delegation designation
 pub const DelegationDesignation = struct {
-    authority: primitives.Address,
-    delegated_address: primitives.Address,
+    authority: primitives.Address.Address,
+    delegated_address: primitives.Address.Address,
     
     pub fn is_active(self: *const DelegationDesignation) bool {
         // Delegation is active if delegated address is not zero

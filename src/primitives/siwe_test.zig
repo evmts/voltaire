@@ -8,7 +8,7 @@ const Hex = @import("hex.zig");
 // Sign-In with Ethereum (EIP-4361) Message
 pub const SiweMessage = struct {
     domain: []const u8,
-    address: primitives.Address,
+    address: primitives.Address.Address,
     statement: ?[]const u8,
     uri: []const u8,
     version: []const u8,

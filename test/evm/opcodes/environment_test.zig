@@ -44,7 +44,7 @@ test "Environment: ADDRESS opcode" {
 
     // Should push contract address to stack
     const result = try frame.stack.peek_n(0);
-    const expected = Address.to_u256(contract_addr);
+    const expected = primitives.Address.to_u256(contract_addr);
     try testing.expectEqual(expected, result);
     
     // Check gas consumption (ADDRESS costs 2 gas)
@@ -89,7 +89,7 @@ test "Environment: BALANCE opcode" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test 1: Get balance of existing account
-    const alice_u256 = Address.to_u256(alice_addr);
+    const alice_u256 = primitives.Address.to_u256(alice_addr);
     try frame.stack.append(alice_u256);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
 
@@ -99,7 +99,7 @@ test "Environment: BALANCE opcode" {
     // Test 2: Get balance of non-existent account (should return 0)
     frame.stack.clear();
     const random_addr: Address.Address = [_]u8{0xFF} ** 20;
-    const random_u256 = Address.to_u256(random_addr);
+    const random_u256 = primitives.Address.to_u256(random_addr);
     try frame.stack.append(random_u256);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
 
@@ -160,14 +160,14 @@ test "Environment: ORIGIN and CALLER opcodes" {
     // Test ORIGIN
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x32);
     const origin_result = try frame.stack.peek_n(0);
-    const expected_origin = Address.to_u256(tx_origin);
+    const expected_origin = primitives.Address.to_u256(tx_origin);
     try testing.expectEqual(expected_origin, origin_result);
 
     // Test CALLER
     frame.stack.clear();
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x33);
     const caller_result = try frame.stack.peek_n(0);
-    const expected_caller = Address.to_u256(caller_addr);
+    const expected_caller = primitives.Address.to_u256(caller_addr);
     try testing.expectEqual(expected_caller, caller_result);
 }
 
@@ -308,7 +308,7 @@ test "Environment: EXTCODESIZE opcode" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test 1: Get code size of account with code
-    const bob_u256 = Address.to_u256(bob_addr);
+    const bob_u256 = primitives.Address.to_u256(bob_addr);
     try frame.stack.append(bob_u256);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
 
@@ -318,7 +318,7 @@ test "Environment: EXTCODESIZE opcode" {
     // Test 2: Get code size of account without code
     frame.stack.clear();
     const alice_addr: Address.Address = [_]u8{0xAA} ** 20;
-    const alice_u256 = Address.to_u256(alice_addr);
+    const alice_u256 = primitives.Address.to_u256(alice_addr);
     try frame.stack.append(alice_u256);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
 
@@ -372,7 +372,7 @@ test "Environment: EXTCODECOPY opcode" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test 1: Copy entire code
-    const bob_u256 = Address.to_u256(bob_addr);
+    const bob_u256 = primitives.Address.to_u256(bob_addr);
     try frame.stack.append(test_code.len);    // size (will be popped 4th)
     try frame.stack.append(0);                // code offset (will be popped 3rd)
     try frame.stack.append(0);                // memory offset (will be popped 2nd)
@@ -459,7 +459,7 @@ test "Environment: EXTCODEHASH opcode" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test 1: Get hash of account with code
-    const bob_u256 = Address.to_u256(bob_addr);
+    const bob_u256 = primitives.Address.to_u256(bob_addr);
     try frame.stack.append(bob_u256);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3F);
 
@@ -469,7 +469,7 @@ test "Environment: EXTCODEHASH opcode" {
     // Test 2: Get hash of empty account (should return 0)
     frame.stack.clear();
     const alice_addr: Address.Address = [_]u8{0xAA} ** 20;
-    const alice_u256 = Address.to_u256(alice_addr);
+    const alice_u256 = primitives.Address.to_u256(alice_addr);
     try frame.stack.append(alice_u256);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3F);
 
@@ -618,7 +618,7 @@ test "Environment: Cold/Warm address access (EIP-2929)" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // First access should be cold (2600 gas)
-    const bob_u256 = Address.to_u256(bob_addr);
+    const bob_u256 = primitives.Address.to_u256(bob_addr);
     try frame.stack.append(bob_u256);
     const initial_gas = frame.gas_remaining;
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);

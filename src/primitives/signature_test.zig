@@ -198,7 +198,7 @@ test "signature with typed data (EIP-712)" {
 
 // Helper functions
 
-fn verify_message(allocator: std.mem.Allocator, message: []const u8, signature: Crypto.Signature, expected_address: primitives.Address) !bool {
+fn verify_message(allocator: std.mem.Allocator, message: []const u8, signature: Crypto.Signature, expected_address: primitives.Address.Address) !bool {
     const message_hash = try Hash.eip191_hash_message(message, allocator);
     
     const public_key = Crypto.recover_public_key(allocator, message_hash, signature) catch {

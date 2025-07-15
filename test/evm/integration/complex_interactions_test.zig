@@ -27,8 +27,8 @@ test "Integration: Token balance check pattern" {
     defer vm.deinit();
 
     // Create addresses
-    const contract_address = Evm.Address.from_u256(0x02);
-    const alice_address = Evm.Address.from_u256(0x01);
+    const contract_address = Evm.primitives.Address.from_u256(0x02);
+    const alice_address = Evm.primitives.Address.from_u256(0x01);
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -56,7 +56,7 @@ test "Integration: Token balance check pattern" {
     // Storage slot = keccak256(address . uint256(0))
 
     // Store Alice's address in memory at offset 0
-    const alice_addr = Evm.Address.to_u256(alice_address);
+    const alice_addr = Evm.primitives.Address.to_u256(alice_address);
     try frame.stack.append(alice_addr); // value
     try frame.stack.append(0); // offset
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
@@ -114,8 +114,8 @@ test "Integration: Packed struct storage" {
     defer vm.deinit();
 
     // Create addresses
-    const contract_address = Evm.Address.from_u256(0x02);
-    const alice_address = Evm.Address.from_u256(0x01);
+    const contract_address = Evm.primitives.Address.from_u256(0x02);
+    const alice_address = Evm.primitives.Address.from_u256(0x01);
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -196,8 +196,8 @@ test "Integration: Dynamic array length update" {
     defer vm.deinit();
 
     // Create addresses
-    const contract_address = Evm.Address.from_u256(0x02);
-    const alice_address = Evm.Address.from_u256(0x01);
+    const contract_address = Evm.primitives.Address.from_u256(0x02);
+    const alice_address = Evm.primitives.Address.from_u256(0x01);
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -260,8 +260,8 @@ test "Integration: Reentrancy guard pattern" {
     defer vm.deinit();
 
     // Create addresses
-    const contract_address = Evm.Address.from_u256(0x02);
-    const alice_address = Evm.Address.from_u256(0x01);
+    const contract_address = Evm.primitives.Address.from_u256(0x02);
+    const alice_address = Evm.primitives.Address.from_u256(0x01);
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -334,8 +334,8 @@ test "Integration: Bitfield manipulation" {
     defer vm.deinit();
 
     // Create addresses
-    const contract_address = Evm.Address.from_u256(0x02);
-    const alice_address = Evm.Address.from_u256(0x01);
+    const contract_address = Evm.primitives.Address.from_u256(0x02);
+    const alice_address = Evm.primitives.Address.from_u256(0x01);
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -424,8 +424,8 @@ test "Integration: Safe math operations" {
     defer vm.deinit();
 
     // Create addresses
-    const contract_address = Evm.Address.from_u256(0x02);
-    const alice_address = Evm.Address.from_u256(0x01);
+    const contract_address = Evm.primitives.Address.from_u256(0x02);
+    const alice_address = Evm.primitives.Address.from_u256(0x01);
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -504,8 +504,8 @@ test "Integration: Signature verification simulation" {
     defer vm.deinit();
 
     // Create addresses
-    const contract_address = Evm.Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Evm.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = Evm.primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Evm.primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -574,8 +574,8 @@ test "Integration: Multi-sig wallet threshold check" {
     defer vm.deinit();
 
     // Create addresses
-    const contract_address = Evm.Address.from_u256(0x02);
-    const caller_address = Evm.Address.from_u256(0x01);
+    const contract_address = Evm.primitives.Address.from_u256(0x02);
+    const caller_address = Evm.primitives.Address.from_u256(0x01);
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;

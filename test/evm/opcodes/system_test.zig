@@ -327,7 +327,7 @@ test "CALL: basic call behavior" {
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
     const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
-    try frame.stack.append(Address.to_u256(alice_address)); // to
+    try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(50000); // gas
     
     // Execute CALL
@@ -382,7 +382,7 @@ test "CALL: failed call" {
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
     const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
-    try frame.stack.append(Address.to_u256(alice_address)); // to
+    try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(50000); // gas
     
     // Execute CALL
@@ -437,7 +437,7 @@ test "CALL: cold address access costs more gas" {
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
     const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
-    try frame.stack.append(Address.to_u256(alice_address)); // to
+    try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(1000); // gas
     
     const gas_before = frame.gas_remaining;
@@ -494,7 +494,7 @@ test "CALL: value transfer in static call fails" {
     try frame.stack.append(0); // args_offset
     try frame.stack.append(100); // value (non-zero!)
     const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
-    try frame.stack.append(Address.to_u256(alice_address)); // to
+    try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(1000); // gas
     
     // Execute CALL - should fail
@@ -550,7 +550,7 @@ test "DELEGATECALL: execute code in current context" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
-    try frame.stack.append(Address.to_u256(alice_address)); // to
+    try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(50000); // gas
     
     // Execute DELEGATECALL
@@ -608,7 +608,7 @@ test "STATICCALL: read-only call" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
-    try frame.stack.append(Address.to_u256(alice_address)); // to
+    try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(50000); // gas
     
     // Execute STATICCALL
@@ -660,7 +660,7 @@ test "CALL: depth limit" {
     // Push parameters
     try frame.stack.append(1000); // gas
     const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
-    try frame.stack.append(Address.to_u256(alice_address)); // to
+    try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(0); // value
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // args_size

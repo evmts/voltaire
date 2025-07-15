@@ -84,7 +84,7 @@ const Contract = @This();
 /// - For regular calls: The callee's address
 /// - For DELEGATECALL: The current contract's address (code from elsewhere)
 /// - For CREATE/CREATE2: Initially zero, set after address calculation
-address: primitives.Address,
+address: primitives.Address.Address,
 
 /// The address that initiated this contract execution.
 ///
@@ -93,7 +93,7 @@ address: primitives.Address,
 /// - For CREATE/CREATE2: The creating contract's address
 ///
 /// Note: This is msg.sender in Solidity, not tx.origin
-caller: primitives.Address,
+caller: primitives.Address.Address,
 
 /// The amount of Wei sent with this contract call.
 ///
@@ -294,8 +294,8 @@ is_empty: bool,
 /// );
 /// ```
 pub fn init(
-    caller: primitives.Address,
-    addr: primitives.Address,
+    caller: primitives.Address.Address,
+    addr: primitives.Address.Address,
     value: u256,
     gas: u64,
     code: []const u8,
@@ -360,7 +360,7 @@ pub fn init(
 /// );
 /// ```
 pub fn init_deployment(
-    caller: primitives.Address,
+    caller: primitives.Address.Address,
     value: u256,
     gas: u64,
     code: []const u8,
@@ -850,8 +850,8 @@ pub fn analyze_jumpdests(self: *Contract, allocator: std.mem.Allocator) void {
 /// This is useful for testing or executing code that should be treated as if it's deployed at an address
 /// The caller must separately call vm.state.set_code(address, bytecode) to deploy the code
 pub fn init_at_address(
-    caller: primitives.Address,
-    address: primitives.Address,
+    caller: primitives.Address.Address,
+    address: primitives.Address.Address,
     value: u256,
     gas: u64,
     bytecode: []const u8,

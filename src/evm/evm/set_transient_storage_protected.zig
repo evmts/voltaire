@@ -7,7 +7,7 @@ pub const SetTransientStorageProtectedError = ValidateStaticContextError || std.
 
 /// Set a transient storage value with static context protection.
 /// Transient storage (EIP-1153) is cleared at the end of each transaction.
-pub fn set_transient_storage_protected(self: *Vm, address: primitives.Address, slot: u256, value: u256) SetTransientStorageProtectedError!void {
+pub fn set_transient_storage_protected(self: *Vm, address: primitives.Address.Address, slot: u256, value: u256) SetTransientStorageProtectedError!void {
     try self.validate_static_context();
     try self.state.set_transient_storage(address, slot, value);
 }

@@ -58,21 +58,21 @@ test "EXTCODESIZE (0x3B): Get external code size" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: Get code size of contract with code
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, test_code.len), result1);
     
     // Test 2: Get code size of EOA (should be 0)
     const alice_addr: Address.Address = [_]u8{0x11} ** 20;
-    try frame.stack.append(Address.to_u256(alice_addr));
+    try frame.stack.append(primitives.Address.to_u256(alice_addr));
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2);
     
     // Test 3: Get code size of non-existent account (should be 0)
     const zero_addr: Address.Address = [_]u8{0} ** 20;
-    try frame.stack.append(Address.to_u256(zero_addr));
+    try frame.stack.append(primitives.Address.to_u256(zero_addr));
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3);
@@ -122,7 +122,7 @@ test "EXTCODECOPY (0x3C): Copy external code to memory" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: Copy entire external code
-    const bob_addr_u256 = Address.to_u256(bob_addr);
+    const bob_addr_u256 = primitives.Address.to_u256(bob_addr);
     try frame.stack.append(external_code.len); // size
     try frame.stack.append(0); // code_offset
     try frame.stack.append(0); // mem_offset
@@ -146,7 +146,7 @@ test "EXTCODECOPY (0x3C): Copy external code to memory" {
     // Test 3: Copy from EOA (should get zeros)
     frame.memory.resize_context(0) catch unreachable;
     const alice_addr: Address.Address = [_]u8{0x11} ** 20;
-    const alice_addr_u256 = Address.to_u256(alice_addr);
+    const alice_addr_u256 = primitives.Address.to_u256(alice_addr);
     try frame.stack.append(32); // size
     try frame.stack.append(0); // code_offset
     try frame.stack.append(0); // mem_offset
@@ -316,7 +316,7 @@ test "EXTCODEHASH (0x3F): Get external code hash" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test 1: Get hash of contract with code
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3F);
     
     // Calculate expected hash
@@ -332,7 +332,7 @@ test "EXTCODEHASH (0x3F): Get external code hash" {
     
     // Test 2: Get hash of EOA (should be 0)
     const alice_addr: Address.Address = [_]u8{0x11} ** 20;
-    try frame.stack.append(Address.to_u256(alice_addr));
+    try frame.stack.append(primitives.Address.to_u256(alice_addr));
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3F);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2);
@@ -480,7 +480,7 @@ test "COINBASE (0x41): Get block coinbase" {
     // Execute COINBASE
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x41);
     
-    const expected = Address.to_u256(coinbase_addr);
+    const expected = primitives.Address.to_u256(coinbase_addr);
     const result = try frame.stack.pop();
     try testing.expectEqual(expected, result);
 }
@@ -721,7 +721,7 @@ test "EXTCODE* opcodes: Gas consumption with EIP-2929" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     
     // Test EXTCODESIZE - cold access
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
     const gas_before_cold = frame.gas_remaining;
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
     const gas_cold = gas_before_cold - frame.gas_remaining;
@@ -729,7 +729,7 @@ test "EXTCODE* opcodes: Gas consumption with EIP-2929" {
     _ = try frame.stack.pop();
     
     // Test EXTCODESIZE - warm access
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
     const gas_before_warm = frame.gas_remaining;
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
     const gas_warm = gas_before_warm - frame.gas_remaining;
@@ -904,7 +904,7 @@ test "Memory copy opcodes: Memory expansion" {
     
     // Test EXTCODECOPY with huge memory offset - should run out of gas
     const huge_offset = 1_000_000;
-    const bob_addr_u256 = Address.to_u256(bob_addr);
+    const bob_addr_u256 = primitives.Address.to_u256(bob_addr);
     try frame.stack.append(32); // size
     try frame.stack.append(0); // code_offset
     try frame.stack.append(huge_offset); // mem_offset

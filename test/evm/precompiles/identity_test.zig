@@ -6,7 +6,7 @@ const PrecompileOutput = @import("../../../src/evm/precompiles/precompile_result
 const PrecompileError = @import("../../../src/evm/precompiles/precompile_result.zig").PrecompileError;
 const ChainRules = @import("../../../src/evm/hardforks/chain_rules.zig");
 const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
 
 test "identity gas calculation" {
     // Empty input: 15 gas (base cost)

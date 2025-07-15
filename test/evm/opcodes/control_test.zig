@@ -484,7 +484,7 @@ test "Control: SELFDESTRUCT basic operation" {
 
     // Test 1: Selfdestruct to beneficiary
     const beneficiary_addr: Address.Address = [_]u8{0x22} ** 20;
-    const beneficiary_u256 = Address.to_u256(beneficiary_addr);
+    const beneficiary_u256 = primitives.Address.to_u256(beneficiary_addr);
     try frame.stack.append(beneficiary_u256);
 
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFF);

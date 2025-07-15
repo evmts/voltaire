@@ -4,7 +4,7 @@ const Evm = @import("evm");
 const ecrecover = Evm.precompiles.ecrecover;
 const PrecompileOutput = Evm.precompiles.PrecompileOutput;
 const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
 
 // Test vectors from Ethereum test suite and real transactions
 test "ECRECOVER production test vector 1" {

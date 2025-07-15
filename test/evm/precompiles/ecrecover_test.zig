@@ -278,7 +278,7 @@ test "ecrecover known test vector placeholder" {
 
 test "ecrecover precompile dispatcher integration" {
     const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
     const precompiles = @import("../../../src/evm/precompiles/precompiles.zig");
     
     const ecrecover_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01 };
@@ -299,7 +299,7 @@ const Address = primitives.Address;
 
 test "ecrecover precompile dispatcher execute" {
     const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
     const precompiles = @import("../../../src/evm/precompiles/precompiles.zig");
     const ChainRules = Evm.chain_rules.ChainRules;
     
@@ -330,7 +330,7 @@ const Address = primitives.Address;
 
 test "ecrecover precompile dispatcher estimate gas" {
     const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
     const precompiles = @import("../../../src/evm/precompiles/precompiles.zig");
     const ChainRules = Evm.chain_rules.ChainRules;
     
@@ -345,7 +345,7 @@ const Address = primitives.Address;
 
 test "ecrecover precompile dispatcher get output size" {
     const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
     const precompiles = @import("../../../src/evm/precompiles/precompiles.zig");
     const ChainRules = Evm.chain_rules.ChainRules;
     
@@ -359,7 +359,7 @@ const Address = primitives.Address;
 
 test "ecrecover precompile dispatcher validate call" {
     const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
     const precompiles = @import("../../../src/evm/precompiles/precompiles.zig");
     const ChainRules = Evm.chain_rules.ChainRules;
     

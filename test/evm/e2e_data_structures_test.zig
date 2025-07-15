@@ -6,9 +6,9 @@ const MemoryDatabase = Evm.MemoryDatabase;
 const Contract = Evm.Contract;
 
 // Test addresses - use small simple values
-const DEPLOYER_ADDRESS = Address.from_u256(0x1111);
-const USER_ADDRESS = Address.from_u256(0x2222);
-const CONTRACT_ADDRESS = Address.from_u256(0x3333);
+const DEPLOYER_ADDRESS = primitives.Address.from_u256(0x1111);
+const USER_ADDRESS = primitives.Address.from_u256(0x2222);
+const CONTRACT_ADDRESS = primitives.Address.from_u256(0x3333);
 
 // Test dynamic array operations and memory management
 test "E2E: Dynamic arrays - push, pop, and indexing" {

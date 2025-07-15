@@ -397,7 +397,7 @@ test "SELFDESTRUCT: Static call protection" {
 
     // Push beneficiary address
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
 
     // Execute SELFDESTRUCT
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -442,7 +442,7 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
 
     // Push cold beneficiary address
     const cold_address = [_]u8{0xDD} ** 20;
-    try frame.stack.append(Address.to_u256(cold_address));
+    try frame.stack.append(primitives.Address.to_u256(cold_address));
 
     const gas_before = frame.gas_remaining;
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -649,7 +649,7 @@ test "Control flow interaction: Call with REVERT" {
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr)); // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(2000); // gas
 
     // Execute the CALL (VM handles the actual call)

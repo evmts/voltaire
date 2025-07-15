@@ -30,7 +30,7 @@ test "DELEGATECALL basic functionality" {
     
     // Setup context
     const context = Context.init_with_values(
-        Address.from_u256(0x1111), // tx origin
+        primitives.Address.from_u256(0x1111), // tx origin
         1000000000,                 // gas price
         1,                          // block number
         1000,                       // timestamp
@@ -48,7 +48,7 @@ test "DELEGATECALL basic functionality" {
     // Contract code: CALLER PUSH1 0x00 MSTORE PUSH1 0x00 PUSH1 0x20 RETURN
     // Bytecode: 0x33 0x60 0x00 0x52 0x60 0x00 0x60 0x20 0xf3
     const callee_code = [_]u8{ 0x33, 0x60, 0x00, 0x52, 0x60, 0x00, 0x60, 0x20, 0xf3 };
-    const callee_addr = Address.from_u256(0x2222);
+    const callee_addr = primitives.Address.from_u256(0x2222);
     try vm.state.set_code(callee_addr, &callee_code);
     
     // Deploy caller contract that uses DELEGATECALL
@@ -83,11 +83,11 @@ test "DELEGATECALL basic functionality" {
         0xf3,        // RETURN
     });
     
-    const caller_addr = Address.from_u256(0x3333);
+    const caller_addr = primitives.Address.from_u256(0x3333);
     try vm.state.set_code(caller_addr, caller_code.items);
     
     // Execute call from EOA to caller contract
-    const eoa_addr = Address.from_u256(0x4444);
+    const eoa_addr = primitives.Address.from_u256(0x4444);
     try vm.state.set_balance(eoa_addr, 1000000);
     
     var contract = Contract.init_at_address(
@@ -143,7 +143,7 @@ test "DELEGATECALL preserves sender and value" {
         0x34, 0x60, 0x20, 0x52,      // CALLVALUE, PUSH1 0x20, MSTORE
         0x60, 0x00, 0x60, 0x40, 0xf3 // PUSH1 0x00, PUSH1 0x40, RETURN
     };
-    const callee_addr = Address.from_u256(0x5555);
+    const callee_addr = primitives.Address.from_u256(0x5555);
     try vm.state.set_code(callee_addr, &callee_code);
     
     // Create caller contract that delegates to callee
@@ -166,11 +166,11 @@ test "DELEGATECALL preserves sender and value" {
         0xf3,        // RETURN
     });
     
-    const caller_addr = Address.from_u256(0x6666);
+    const caller_addr = primitives.Address.from_u256(0x6666);
     try vm.state.set_code(caller_addr, caller_code.items);
     
     // Execute with value
-    const eoa_addr = Address.from_u256(0x7777);
+    const eoa_addr = primitives.Address.from_u256(0x7777);
     try vm.state.set_balance(eoa_addr, 1000000);
     
     var contract = Contract.init_at_address(
@@ -229,7 +229,7 @@ test "DELEGATECALL with storage access" {
         0x60, 0x00, 0x52,              // PUSH1 0x00, MSTORE
         0x60, 0x00, 0x60, 0x20, 0xf3   // PUSH1 0x00, PUSH1 0x20, RETURN
     };
-    const callee_addr = Address.from_u256(0x8888);
+    const callee_addr = primitives.Address.from_u256(0x8888);
     try vm.state.set_code(callee_addr, &callee_code);
     
     // Create caller contract
@@ -252,11 +252,11 @@ test "DELEGATECALL with storage access" {
         0xf3,        // RETURN
     });
     
-    const caller_addr = Address.from_u256(0x9999);
+    const caller_addr = primitives.Address.from_u256(0x9999);
     try vm.state.set_code(caller_addr, caller_code.items);
     
     // Execute
-    const eoa_addr = Address.from_u256(0xAAAA);
+    const eoa_addr = primitives.Address.from_u256(0xAAAA);
     var contract = Contract.init_at_address(
         eoa_addr,
         caller_addr,

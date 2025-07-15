@@ -10,9 +10,9 @@ const Operation = Evm.Operation;
 // Test allocator will be created per test to avoid conflicts
 
 // Test addresses - use small simple values
-const DEPLOYER_ADDRESS = Address.from_u256(0x1111);
-const USER_ADDRESS = Address.from_u256(0x2222);
-const CONTRACT_ADDRESS = Address.from_u256(0x3333);
+const DEPLOYER_ADDRESS = primitives.Address.from_u256(0x1111);
+const USER_ADDRESS = primitives.Address.from_u256(0x2222);
+const CONTRACT_ADDRESS = primitives.Address.from_u256(0x3333);
 
 // Helper to convert byte array to u256 (big-endian)
 fn bytesToU256(bytes: []const u8) u256 {

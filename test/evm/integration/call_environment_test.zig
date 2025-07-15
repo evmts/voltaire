@@ -24,8 +24,8 @@ test "Integration: Call with value transfer and balance check" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const alice_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const bob_addr = Address.from_u256(0x2222222222222222222222222222222222222222);
+    const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_addr = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
     
     // Set up accounts with balances
     try vm.state.set_balance(alice_addr, 1000);
@@ -59,7 +59,7 @@ test "Integration: Call with value transfer and balance check" {
     const state_ptr: *Operation.State = @ptrCast(&frame);
     
     // Check balance of BOB before call
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
     const balance_before = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 500), balance_before);
@@ -78,7 +78,7 @@ test "Integration: Call with value transfer and balance check" {
     try frame.stack.append(0);  // args_size
     try frame.stack.append(0);  // args_offset
     try frame.stack.append(value);  // value (100 wei)
-    try frame.stack.append(Address.to_u256(bob_addr));  // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));  // to
     try frame.stack.append(50000);  // gas
     
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
@@ -91,7 +91,7 @@ test "Integration: Call with value transfer and balance check" {
     try vm.state.set_balance(bob_addr, 600);
     
     // Check balance of BOB after call
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
     const balance_after = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 600), balance_after);
@@ -108,10 +108,10 @@ test "Integration: Environment opcodes in context" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const alice_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const bob_addr = Address.from_u256(0x2222222222222222222222222222222222222222);
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const charlie_addr = Address.from_u256(0x4444444444444444444444444444444444444444);
+    const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_addr = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const charlie_addr = primitives.Address.from_u256(0x4444444444444444444444444444444444444444);
     
     // Set up VM environment
     const context = Evm.Context.init_with_values(
@@ -159,17 +159,17 @@ test "Integration: Environment opcodes in context" {
     // Test ADDRESS
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x30);
     const address_result = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, Address.to_u256(contract_addr)), address_result);
+    try testing.expectEqual(@as(u256, primitives.Address.to_u256(contract_addr)), address_result);
     
     // Test ORIGIN
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x32);
     const origin_result = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, Address.to_u256(alice_addr)), origin_result);
+    try testing.expectEqual(@as(u256, primitives.Address.to_u256(alice_addr)), origin_result);
     
     // Test CALLER
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x33);
     const caller_result = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, Address.to_u256(bob_addr)), caller_result);
+    try testing.expectEqual(@as(u256, primitives.Address.to_u256(bob_addr)), caller_result);
     
     // Test CALLVALUE
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x34);
@@ -192,7 +192,7 @@ test "Integration: Environment opcodes in context" {
     
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x41);
     const coinbase_result = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, Address.to_u256(charlie_addr)), coinbase_result);
+    try testing.expectEqual(@as(u256, primitives.Address.to_u256(charlie_addr)), coinbase_result);
     
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x46);
     const chainid_result = try frame.stack.pop();
@@ -210,9 +210,9 @@ test "Integration: CREATE with init code from memory" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const alice_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const charlie_addr = Address.from_u256(0x4444444444444444444444444444444444444444);
+    const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const charlie_addr = primitives.Address.from_u256(0x4444444444444444444444444444444444444444);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = undefined;
@@ -294,9 +294,9 @@ test "Integration: DELEGATECALL preserves context" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const alice_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const bob_addr = Address.from_u256(0x2222222222222222222222222222222222222222);
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_addr = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     
     // Set up delegate contract with code
     const delegate_code = [_]u8{
@@ -343,7 +343,7 @@ test "Integration: DELEGATECALL preserves context" {
     try frame.stack.append(0);  // ret_offset
     try frame.stack.append(0);  // args_size
     try frame.stack.append(0);  // args_offset
-    try frame.stack.append(Address.to_u256(bob_addr));  // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));  // to
     try frame.stack.append(50000);  // gas
     
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0xF4);
@@ -365,9 +365,9 @@ test "Integration: STATICCALL prevents state changes" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const alice_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const bob_addr = Address.from_u256(0x2222222222222222222222222222222222222222);
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_addr = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = undefined;
@@ -406,7 +406,7 @@ test "Integration: STATICCALL prevents state changes" {
     try frame.stack.append(0);  // ret_offset
     try frame.stack.append(0);  // args_size
     try frame.stack.append(0);  // args_offset
-    try frame.stack.append(Address.to_u256(bob_addr));  // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));  // to
     try frame.stack.append(50000);  // gas
     
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0xFA);
@@ -428,9 +428,9 @@ test "Integration: Call depth limit handling" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const alice_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const bob_addr = Address.from_u256(0x2222222222222222222222222222222222222222);
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_addr = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = undefined;
@@ -480,7 +480,7 @@ test "Integration: Call depth limit handling" {
     try frame.stack.append(0);  // args_size
     try frame.stack.append(0);  // args_offset
     try frame.stack.append(0);  // value
-    try frame.stack.append(Address.to_u256(bob_addr));  // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));  // to
     try frame.stack.append(1000);  // gas
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
     const call_result = try frame.stack.pop();
@@ -498,9 +498,9 @@ test "Integration: Return data handling across calls" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const alice_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const bob_addr = Address.from_u256(0x2222222222222222222222222222222222222222);
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_addr = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = undefined;
@@ -540,7 +540,7 @@ test "Integration: Return data handling across calls" {
     try frame.stack.append(0);  // args_size
     try frame.stack.append(0);  // args_offset
     try frame.stack.append(0);  // value
-    try frame.stack.append(Address.to_u256(bob_addr));  // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));  // to
     try frame.stack.append(50000);  // gas
     
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
@@ -583,9 +583,9 @@ test "Integration: Gas forwarding in calls" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const alice_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const bob_addr = Address.from_u256(0x2222222222222222222222222222222222222222);
-    const contract_addr = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_addr = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = undefined;
@@ -627,7 +627,7 @@ test "Integration: Gas forwarding in calls" {
     try frame.stack.append(0);  // args_size
     try frame.stack.append(0);  // args_offset
     try frame.stack.append(0);  // value
-    try frame.stack.append(Address.to_u256(bob_addr));  // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));  // to
     try frame.stack.append(requested_gas);  // gas
     
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);

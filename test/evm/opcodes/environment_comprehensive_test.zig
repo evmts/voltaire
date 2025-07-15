@@ -48,7 +48,7 @@ test "ADDRESS (0x30): Push current contract address" {
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x30);
     
     // Check result - address should be zero-extended to u256
-    const expected = Address.to_u256(contract_addr);
+    const expected = primitives.Address.to_u256(contract_addr);
     const result = try frame.stack.pop();
     try testing.expectEqual(expected, result);
 }
@@ -93,20 +93,20 @@ test "BALANCE (0x31): Get account balance" {
     try evm.state.set_balance(bob_addr, test_balance * 2);
     
     // Test 1: Check ALICE's balance
-    try frame.stack.append(Address.to_u256(alice_addr));
+    try frame.stack.append(primitives.Address.to_u256(alice_addr));
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(test_balance, result1);
     
     // Test 2: Check BOB's balance
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(test_balance * 2, result2);
     
     // Test 3: Check non-existent account (should return 0)
     const zero_addr = Address.zero();
-    try frame.stack.append(Address.to_u256(zero_addr));
+    try frame.stack.append(primitives.Address.to_u256(zero_addr));
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3);
@@ -165,7 +165,7 @@ test "ORIGIN (0x32): Get transaction origin" {
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x32);
     
     // Should push tx_origin (ALICE), not caller (BOB)
-    const expected = Address.to_u256(alice_addr);
+    const expected = primitives.Address.to_u256(alice_addr);
     const result = try frame.stack.pop();
     try testing.expectEqual(expected, result);
 }
@@ -223,7 +223,7 @@ test "CALLER (0x33): Get immediate caller" {
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x33);
     
     // Should push caller (BOB), not origin (ALICE)
-    const expected = Address.to_u256(bob_addr);
+    const expected = primitives.Address.to_u256(bob_addr);
     const result = try frame.stack.pop();
     try testing.expectEqual(expected, result);
 }
@@ -877,14 +877,14 @@ test "BALANCE: EIP-2929 cold/warm account access" {
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
 
     // First access to an address should be cold (2600 gas)
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
     const gas_before_cold = frame.gas_remaining;
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
     const gas_cold = gas_before_cold - frame.gas_remaining;
     
     // Second access should be warm (100 gas)
     _ = try frame.stack.pop();
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
     const gas_before_warm = frame.gas_remaining;
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
     const gas_warm = gas_before_warm - frame.gas_remaining;

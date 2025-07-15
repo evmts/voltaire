@@ -623,7 +623,7 @@ test "CALL (0xF1): Basic external call" {
     try frame.stack.append(0); // args_offset
     try frame.stack.append(100); // value
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr)); // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -674,7 +674,7 @@ test "CALL: Value transfer in static context fails" {
     try frame.stack.append(0); // args_offset
     try frame.stack.append(100); // value (non-zero!)
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr)); // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
     // Should fail with WriteProtection
@@ -722,7 +722,7 @@ test "CALL: Cold address access (EIP-2929)" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
-    try frame.stack.append(Address.to_u256([_]u8{0xCC} ** 20)); // cold address
+    try frame.stack.append(primitives.Address.to_u256([_]u8{0xCC} ** 20)); // cold address
     try frame.stack.append(50000); // gas
 
     const gas_before = frame.gas_remaining;
@@ -774,7 +774,7 @@ test "CALL: Return data handling" {
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr)); // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -826,7 +826,7 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr)); // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -877,7 +877,7 @@ test "DELEGATECALL (0xF4): Execute with current context (no value transfer)" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr)); // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -928,7 +928,7 @@ test "STATICCALL (0xFA): Read-only external call" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr)); // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1296,7 +1296,7 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
 
     // Push beneficiary address
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
 
     // Execute SELFDESTRUCT - should trigger STOP
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1339,7 +1339,7 @@ test "SELFDESTRUCT: Static call protection" {
 
     // Push beneficiary address
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr));
+    try frame.stack.append(primitives.Address.to_u256(bob_addr));
 
     // Should fail with WriteProtection
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1382,7 +1382,7 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
 
     // Push cold beneficiary address
     const cold_address = [_]u8{0xDD} ** 20;
-    try frame.stack.append(Address.to_u256(cold_address));
+    try frame.stack.append(primitives.Address.to_u256(cold_address));
 
     const gas_before = frame.gas_remaining;
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1692,7 +1692,7 @@ test "System opcodes: Nested STATICCALL restrictions" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr)); // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
     // STATICCALL should succeed even within static context
@@ -1883,7 +1883,7 @@ test "System opcodes: Zero gas scenarios" {
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
-    try frame.stack.append(Address.to_u256(bob_addr)); // to
+    try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
     // Should either fail with OutOfGas or succeed with minimal gas
@@ -2088,7 +2088,7 @@ test "System opcodes: Gas optimization for warm addresses" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
-    try frame.stack.append(Address.to_u256(target_address)); // to (warm)
+    try frame.stack.append(primitives.Address.to_u256(target_address)); // to (warm)
     try frame.stack.append(50000); // gas
 
     const gas_before = frame.gas_remaining;

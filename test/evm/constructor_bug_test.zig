@@ -29,7 +29,7 @@ test "constructor should return runtime code" {
     defer vm.deinit();
 
     // Set up deployer account
-    const deployer = Address.from_u256(0x1111);
+    const deployer = primitives.Address.from_u256(0x1111);
     try vm.state.set_balance(deployer, 1000000000000000000); // 1 ETH
 
     // Minimal constructor bytecode that returns runtime code
@@ -114,7 +114,7 @@ test "manual constructor execution to debug" {
     defer vm.deinit();
 
     // Set up deployer account
-    const deployer = Address.from_u256(0x1111);
+    const deployer = primitives.Address.from_u256(0x1111);
     try vm.state.set_balance(deployer, 1000000000000000000);
 
     // Same init code as above

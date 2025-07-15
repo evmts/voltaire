@@ -43,12 +43,12 @@ const Log = @import("../log.zig");
 pub const JournalEntry = union(enum) {
     /// Account was touched (for EIP-158 empty account tracking)
     account_touched: struct {
-        address: primitives.Address,
+        address: primitives.Address.Address,
     },
 
     /// Account was loaded from external state
     account_loaded: struct {
-        address: primitives.Address,
+        address: primitives.Address.Address,
         /// Previous account state (null if account didn't exist)
         previous_balance: ?u256,
         previous_nonce: ?u64,
@@ -57,40 +57,40 @@ pub const JournalEntry = union(enum) {
 
     /// Storage slot was modified
     storage_changed: struct {
-        address: primitives.Address,
+        address: primitives.Address.Address,
         slot: u256,
         previous_value: u256,
     },
 
     /// Transient storage slot was modified (EIP-1153)
     transient_storage_changed: struct {
-        address: primitives.Address,
+        address: primitives.Address.Address,
         slot: u256,
         previous_value: u256,
     },
 
     /// Account balance was modified
     balance_changed: struct {
-        address: primitives.Address,
+        address: primitives.Address.Address,
         previous_balance: u256,
     },
 
     /// Account nonce was modified
     nonce_changed: struct {
-        address: primitives.Address,
+        address: primitives.Address.Address,
         previous_nonce: u64,
     },
 
     /// Contract code was modified
     code_changed: struct {
-        address: primitives.Address,
+        address: primitives.Address.Address,
         /// Previous code (null if no code existed)
         previous_code: ?[]const u8,
     },
 
     /// Account was destroyed (SELFDESTRUCT)
     account_destroyed: struct {
-        address: primitives.Address,
+        address: primitives.Address.Address,
         /// Account state before destruction
         previous_balance: u256,
         previous_nonce: u64,
@@ -99,7 +99,7 @@ pub const JournalEntry = union(enum) {
 
     /// Account was created
     account_created: struct {
-        address: primitives.Address,
+        address: primitives.Address.Address,
     },
 
     /// Log was emitted

@@ -11,7 +11,7 @@ pub const Create2ContractError = std.mem.Allocator.Error || primitives.Address.C
 /// Calculates a deterministic address using keccak256(0xff ++ sender ++ salt ++ keccak256(init_code))[12:],
 /// transfers value if specified, executes the initialization code, and deploys
 /// the resulting bytecode. Unlike CREATE, the address is predictable before deployment.
-pub fn create2_contract(self: *Vm, creator: primitives.Address, value: u256, init_code: []const u8, salt: u256, gas: u64) Create2ContractError!CreateResult {
+pub fn create2_contract(self: *Vm, creator: primitives.Address.Address, value: u256, init_code: []const u8, salt: u256, gas: u64) Create2ContractError!CreateResult {
     // Calculate the new contract address using CREATE2 formula:
     // address = keccak256(0xff ++ sender ++ salt ++ keccak256(init_code))[12:]
     const new_address = try primitives.Address.calculate_create2_address(self.allocator, creator, salt, init_code);

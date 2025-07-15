@@ -130,7 +130,7 @@ test "complex: storage-based counter with access patterns" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Increment a counter in storage multiple times
     // Tests: SLOAD, SSTORE, warm/cold access patterns
@@ -366,7 +366,7 @@ test "complex: event emission with multiple topics" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = Address.from_u256(0xdeadbeef00000000000000000000000000000000);
+    const contract_address = primitives.Address.from_u256(0xdeadbeef00000000000000000000000000000000);
 
     // Emit multiple events with different topics
     const bytecode = [_]u8{

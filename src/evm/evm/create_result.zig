@@ -71,7 +71,7 @@ success: bool,
 /// ## Address Collision
 /// If this address already contains a contract, creation fails.
 /// The probability of collision is negligible (2^-160).
-address: primitives.Address,
+address: primitives.Address.Address,
 
 /// Amount of gas remaining after the creation attempt.
 ///

@@ -31,7 +31,7 @@
 
 const std = @import("std");
 const primitives = @import("primitives");
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
 const EvmLog = @import("evm_log.zig");
 const StorageKey = @import("primitives").StorageKey;
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
@@ -97,7 +97,7 @@ pub fn init(allocator: std.mem.Allocator, database: DatabaseInterface) std.mem.A
     var logs = std.ArrayList(EvmLog).init(allocator);
     errdefer logs.deinit();
 
-    var selfdestructs = std.AutoHashMap(primitives.Address, primitives.Address).init(allocator);
+    var selfdestructs = std.AutoHashMap(primitives.Address.Address, primitives.Address.Address).init(allocator);
     errdefer selfdestructs.deinit();
 
     Log.debug("EvmState.init: EVM state initialization complete", .{});
@@ -154,7 +154,7 @@ pub fn deinit(self: *EvmState) void {
 /// 
 /// ## Gas Cost
 /// In real EVM: 100-2100 gas depending on cold/warm access
-pub fn get_storage(self: *const EvmState, address: primitives.Address, slot: u256) u256 {
+pub fn get_storage(self: *const EvmState, address: primitives.Address.Address, slot: u256) u256 {
     // Use database interface to get storage value
     const value = self.database.get_storage(address, slot) catch |err| {
         @branchHint(.cold);
@@ -182,7 +182,7 @@ pub fn get_storage(self: *const EvmState, address: primitives.Address, slot: u25
 /// 
 /// ## Gas Cost
 /// In real EVM: 2900-20000 gas depending on current/new value
-pub fn set_storage(self: *EvmState, address: primitives.Address, slot: u256, value: u256) DatabaseError!void {
+pub fn set_storage(self: *EvmState, address: primitives.Address.Address, slot: u256, value: u256) DatabaseError!void {
     Log.debug("EvmState.set_storage: addr={x}, slot={}, value={}", .{ primitives.Address.to_u256(address), slot, value });
     try self.database.set_storage(address, slot, value);
 }
@@ -197,7 +197,7 @@ pub fn set_storage(self: *EvmState, address: primitives.Address, slot: u256, val
 /// 
 /// ## Returns
 /// Balance in wei (0 for non-existent accounts or on error)
-pub fn get_balance(self: *const EvmState, address: primitives.Address) u256 {
+pub fn get_balance(self: *const EvmState, address: primitives.Address.Address) u256 {
     // Get account from database
     const account = self.database.get_account(address) catch |err| {
         @branchHint(.cold);
@@ -231,7 +231,7 @@ pub fn get_balance(self: *const EvmState, address: primitives.Address) u256 {
 /// 
 /// ## Note
 /// Balance can exceed total ETH supply in test scenarios
-pub fn set_balance(self: *EvmState, address: primitives.Address, balance: u256) DatabaseError!void {
+pub fn set_balance(self: *EvmState, address: primitives.Address.Address, balance: u256) DatabaseError!void {
     Log.debug("EvmState.set_balance: addr={x}, balance={}", .{ primitives.Address.to_u256(address), balance });
     
     // Get existing account or create new one
@@ -256,7 +256,7 @@ pub fn set_balance(self: *EvmState, address: primitives.Address, balance: u256) 
 /// ## Returns
 /// - Success: void
 /// - Error: DatabaseError if account operation fails
-pub fn remove_balance(self: *EvmState, address: primitives.Address) DatabaseError!void {
+pub fn remove_balance(self: *EvmState, address: primitives.Address.Address) DatabaseError!void {
     // Set balance to 0 instead of removing - database interface handles persistence
     try self.set_balance(address, 0);
 }
@@ -274,7 +274,7 @@ pub fn remove_balance(self: *EvmState, address: primitives.Address) DatabaseErro
 /// 
 /// ## Note
 /// The returned slice is owned by the database - do not free
-pub fn get_code(self: *const EvmState, address: primitives.Address) []const u8 {
+pub fn get_code(self: *const EvmState, address: primitives.Address.Address) []const u8 {
     // Get account to find code hash
     const account = self.database.get_account(address) catch |err| {
         @branchHint(.cold);
@@ -322,7 +322,7 @@ pub fn get_code(self: *const EvmState, address: primitives.Address) []const u8 {
 /// 
 /// ## Important
 /// The database interface handles code storage and copying
-pub fn set_code(self: *EvmState, address: primitives.Address, code: []const u8) DatabaseError!void {
+pub fn set_code(self: *EvmState, address: primitives.Address.Address, code: []const u8) DatabaseError!void {
     Log.debug("EvmState.set_code: addr={x}, code_len={}", .{ primitives.Address.to_u256(address), code.len });
     
     // Store code in database and get its hash
@@ -350,7 +350,7 @@ pub fn set_code(self: *EvmState, address: primitives.Address, code: []const u8) 
 /// ## Returns
 /// - Success: void
 /// - Error: DatabaseError if account operation fails
-pub fn remove_code(self: *EvmState, address: primitives.Address) DatabaseError!void {
+pub fn remove_code(self: *EvmState, address: primitives.Address.Address) DatabaseError!void {
     // Set empty code instead of removing - database interface handles persistence
     try self.set_code(address, &[_]u8{});
 }
@@ -368,7 +368,7 @@ pub fn remove_code(self: *EvmState, address: primitives.Address) DatabaseError!v
 /// 
 /// ## Note
 /// Nonce prevents transaction replay attacks
-pub fn get_nonce(self: *const EvmState, address: primitives.Address) u64 {
+pub fn get_nonce(self: *const EvmState, address: primitives.Address.Address) u64 {
     // Get account from database
     const account = self.database.get_account(address) catch |err| {
         @branchHint(.cold);
@@ -401,7 +401,7 @@ pub fn get_nonce(self: *const EvmState, address: primitives.Address) u64 {
 /// 
 /// ## Warning
 /// Setting nonce below current value can enable replay attacks
-pub fn set_nonce(self: *EvmState, address: primitives.Address, nonce: u64) DatabaseError!void {
+pub fn set_nonce(self: *EvmState, address: primitives.Address.Address, nonce: u64) DatabaseError!void {
     Log.debug("EvmState.set_nonce: addr={x}, nonce={}", .{ primitives.Address.to_u256(address), nonce });
     
     // Get existing account or create new one
@@ -426,7 +426,7 @@ pub fn set_nonce(self: *EvmState, address: primitives.Address, nonce: u64) Datab
 /// ## Returns
 /// - Success: void
 /// - Error: DatabaseError if account operation fails
-pub fn remove_nonce(self: *EvmState, address: primitives.Address) DatabaseError!void {
+pub fn remove_nonce(self: *EvmState, address: primitives.Address.Address) DatabaseError!void {
     // Set nonce to 0 instead of removing - database interface handles persistence
     try self.set_nonce(address, 0);
 }
@@ -450,7 +450,7 @@ pub fn remove_nonce(self: *EvmState, address: primitives.Address) DatabaseError!
 /// // tx_nonce is used for the transaction
 /// // account nonce is now tx_nonce + 1
 /// ```
-pub fn increment_nonce(self: *EvmState, address: primitives.Address) DatabaseError!u64 {
+pub fn increment_nonce(self: *EvmState, address: primitives.Address.Address) DatabaseError!u64 {
     const current_nonce = self.get_nonce(address);
     const new_nonce = current_nonce + 1;
     Log.debug("EvmState.increment_nonce: addr={x}, old_nonce={}, new_nonce={}", .{ primitives.Address.to_u256(address), current_nonce, new_nonce });
@@ -475,7 +475,7 @@ pub fn increment_nonce(self: *EvmState, address: primitives.Address) DatabaseErr
 /// 
 /// ## Gas Cost
 /// TLOAD: 100 gas (always warm)
-pub fn get_transient_storage(self: *const EvmState, address: primitives.Address, slot: u256) u256 {
+pub fn get_transient_storage(self: *const EvmState, address: primitives.Address.Address, slot: u256) u256 {
     const key = StorageKey{ .address = address, .slot = slot };
     // Hot path: transient storage hit
     if (self.transient_storage.get(key)) |value| {
@@ -511,7 +511,7 @@ pub fn get_transient_storage(self: *const EvmState, address: primitives.Address,
 /// - Reentrancy locks
 /// - Temporary computation results
 /// - Cross-contract communication within a transaction
-pub fn set_transient_storage(self: *EvmState, address: primitives.Address, slot: u256, value: u256) std.mem.Allocator.Error!void {
+pub fn set_transient_storage(self: *EvmState, address: primitives.Address.Address, slot: u256, value: u256) std.mem.Allocator.Error!void {
     Log.debug("EvmState.set_transient_storage: addr={x}, slot={}, value={}", .{ 
         primitives.Address.to_u256(address), slot, value
     });
@@ -551,7 +551,7 @@ pub fn set_transient_storage(self: *EvmState, address: primitives.Address, slot:
 /// const data = encode_u256(amount);
 /// try state.emit_log(contract_addr, &topics, data);
 /// ```
-pub fn emit_log(self: *EvmState, address: primitives.Address, topics: []const u256, data: []const u8) std.mem.Allocator.Error!void {
+pub fn emit_log(self: *EvmState, address: primitives.Address.Address, topics: []const u256, data: []const u8) std.mem.Allocator.Error!void {
     Log.debug("EvmState.emit_log: addr={x}, topics_len={}, data_len={}", .{ primitives.Address.to_u256(address), topics.len, data.len });
     
     // Clone the data to ensure it persists
@@ -626,7 +626,7 @@ pub fn remove_log(self: *EvmState, log_index: usize) !void {
 /// ## Note
 /// Multiple SELFDESTRUCT calls on the same contract only record
 /// the latest recipient address.
-pub fn mark_for_destruction(self: *EvmState, contract_address: primitives.Address, recipient: primitives.Address) std.mem.Allocator.Error!void {
+pub fn mark_for_destruction(self: *EvmState, contract_address: primitives.Address.Address, recipient: primitives.Address.Address) std.mem.Allocator.Error!void {
     Log.debug("EvmState.mark_for_destruction: contract={x}, recipient={x}", .{ primitives.Address.to_u256(contract_address), primitives.Address.to_u256(recipient) });
     try self.selfdestructs.put(contract_address, recipient);
 }
@@ -641,7 +641,7 @@ pub fn mark_for_destruction(self: *EvmState, contract_address: primitives.Addres
 /// 
 /// ## Returns
 /// true if marked for destruction, false otherwise
-pub fn is_marked_for_destruction(self: *const EvmState, address: primitives.Address) bool {
+pub fn is_marked_for_destruction(self: *const EvmState, address: primitives.Address.Address) bool {
     return self.selfdestructs.contains(address);
 }
 
@@ -656,7 +656,7 @@ pub fn is_marked_for_destruction(self: *const EvmState, address: primitives.Addr
 /// ## Returns
 /// - Some(recipient): If contract is marked for destruction
 /// - None: If contract is not marked for destruction
-pub fn get_destruction_recipient(self: *const EvmState, address: primitives.Address) ?primitives.Address {
+pub fn get_destruction_recipient(self: *const EvmState, address: primitives.Address.Address) ?primitives.Address.Address {
     return self.selfdestructs.get(address);
 }
 

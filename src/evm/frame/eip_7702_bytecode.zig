@@ -33,7 +33,7 @@ pub const EIP7702_MAGIC_BYTES = [2]u8{ 0xE7, 0x02 };
 const Eip7702Bytecode = @This();
 
 /// The contract address that this EOA delegates execution to
-address: primitives.Address,
+address: primitives.Address.Address,
 
 /// Creates a new EIP-7702 bytecode representation
 /// 
@@ -48,7 +48,7 @@ address: primitives.Address,
 /// const delegate_address = primitives.Address.from_hex("0x742d35Cc6634C0532925a3b844Bc9e7595f62d3c");
 /// const bytecode = EIP7702Bytecode.new(delegate_address);
 /// ```
-pub fn new(address: primitives.Address) Eip7702Bytecode {
+pub fn new(address: primitives.Address.Address) Eip7702Bytecode {
     return .{ .address = address };
 }
 
@@ -73,7 +73,7 @@ pub fn new(address: primitives.Address) Eip7702Bytecode {
 /// const bytecode = try EIP7702Bytecode.new_raw(raw_bytecode);
 /// ```
 pub fn new_raw(bytes: []const u8) !Eip7702Bytecode {
-    var address: primitives.Address = undefined;
+    var address: primitives.Address.Address = undefined;
     if (bytes.len > 20) {
         @memcpy(&address, bytes[2..22]);
     }

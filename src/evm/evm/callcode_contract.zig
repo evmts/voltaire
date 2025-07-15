@@ -9,7 +9,7 @@ pub const CallcodeContractError = std.mem.Allocator.Error;
 /// Execute a CALLCODE operation.
 /// NOT IMPLEMENTED - always returns failure.
 /// TODO: Execute target code in current contract's context while preserving caller information.
-pub fn callcode_contract(self: *Vm, current: primitives.Address, code_address: primitives.Address, value: u256, input: []const u8, gas: u64, is_static: bool) CallcodeContractError!CallResult {
+pub fn callcode_contract(self: *Vm, current: primitives.Address.Address, code_address: primitives.Address.Address, value: u256, input: []const u8, gas: u64, is_static: bool) CallcodeContractError!CallResult {
     _ = self;
     _ = current;
     _ = code_address;

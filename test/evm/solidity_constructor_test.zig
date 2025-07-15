@@ -14,7 +14,7 @@ test "complex Solidity constructor returns full runtime code" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
 
-    const deployer = Address.from_u256(0x1111);
+    const deployer = primitives.Address.from_u256(0x1111);
     try vm.state.set_balance(deployer, 1000000000000000000);
 
     // This is actual bytecode from compiling a minimal ERC20 contract
@@ -117,7 +117,7 @@ test "gas metering for KECCAK256 operations" {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
 
-    const caller = Address.from_u256(0x1111);
+    const caller = primitives.Address.from_u256(0x1111);
     try vm.state.set_balance(caller, 1000000000000000000);
 
     // Simple init code that deploys a minimal contract
@@ -150,7 +150,7 @@ test "gas metering for KECCAK256 operations" {
     defer if (create_result.output) |output| allocator.free(output);
 
     std.debug.print("\n=== Gas Metering Test ===\n", .{});
-    std.debug.print("Contract deployed at: 0x{x}\n", .{Address.to_u256(create_result.address)});
+    std.debug.print("Contract deployed at: 0x{x}\n", .{primitives.Address.to_u256(create_result.address)});
     std.debug.print("Deployment success: {}\n", .{create_result.success});
     
     // Check what code was actually deployed

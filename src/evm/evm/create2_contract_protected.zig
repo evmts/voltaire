@@ -8,7 +8,7 @@ pub const Create2ContractProtectedError = ValidateStaticContextError || Create2C
 
 /// Create a contract with CREATE2 and static context protection.
 /// Prevents contract creation during static calls.
-pub fn create2_contract_protected(self: *Vm, creator: primitives.Address, value: u256, init_code: []const u8, salt: u256, gas: u64) Create2ContractProtectedError!CreateResult {
+pub fn create2_contract_protected(self: *Vm, creator: primitives.Address.Address, value: u256, init_code: []const u8, salt: u256, gas: u64) Create2ContractProtectedError!CreateResult {
     try self.validate_static_context();
     return self.create2_contract(creator, value, init_code, salt, gas);
 }

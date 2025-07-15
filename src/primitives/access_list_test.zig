@@ -6,7 +6,7 @@ const primitives = @import("primitives");
 
 // EIP-2930 Access List
 pub const AccessListEntry = struct {
-    address: primitives.Address,
+    address: primitives.Address.Address,
     storage_keys: []const Hash.Hash,
 };
 
@@ -35,7 +35,7 @@ pub fn calculate_access_list_gas_cost(access_list: AccessList) u64 {
 }
 
 // Check if address is in access list
-pub fn is_address_in_access_list(access_list: AccessList, address: primitives.Address) bool {
+pub fn is_address_in_access_list(access_list: AccessList, address: primitives.Address.Address) bool {
     for (access_list) |entry| {
         if (Address.equal(entry.address, address)) {
             return true;
@@ -47,7 +47,7 @@ pub fn is_address_in_access_list(access_list: AccessList, address: primitives.Ad
 // Check if storage key is in access list
 pub fn is_storage_key_in_access_list(
     access_list: AccessList,
-    address: primitives.Address,
+    address: primitives.Address.Address,
     storage_key: Hash.Hash,
 ) bool {
     for (access_list) |entry| {

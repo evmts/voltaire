@@ -27,9 +27,9 @@ test "Integration: Complete ERC20 transfer simulation" {
     const bob_balance: u256 = 500;
     
     // Create addresses
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const bob_address = Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_address = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
 
     // Storage slots for balances (slot 0 for Alice, slot 1 for Bob)
     try vm.setStorage(contract_address, 0, alice_balance);
@@ -122,8 +122,8 @@ test "Integration: Complete ERC20 transfer simulation" {
     try frame.stack.append(0);                             // data offset
     try frame.stack.append(32);                            // data size
     try frame.stack.append(transfer_sig);                  // event signature
-    try frame.stack.append(Address.to_u256(alice_address)); // from (indexed)
-    try frame.stack.append(Address.to_u256(bob_address));   // to (indexed)
+    try frame.stack.append(primitives.Address.to_u256(alice_address)); // from (indexed)
+    try frame.stack.append(primitives.Address.to_u256(bob_address));   // to (indexed)
     
     const interpreter_ptr8: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr8: *Operation.State = @ptrCast(&frame);
@@ -149,9 +149,9 @@ test "Integration: Smart contract deployment flow" {
     defer vm.deinit();
 
     // Create addresses
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const bob_address = Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const bob_address = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -229,7 +229,7 @@ test "Integration: Smart contract deployment flow" {
     _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0xF0);
 
     const deployed_address = try frame.stack.pop();
-    try testing.expectEqual(Address.to_u256(bob_address), deployed_address);
+    try testing.expectEqual(primitives.Address.to_u256(bob_address), deployed_address);
 
     // Verify deployment by calling the contract
     frame.stack.clear();
@@ -317,8 +317,8 @@ test "Integration: Complex control flow with nested conditions" {
     };
 
     // Create addresses
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     // Calculate code hash
     var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
@@ -474,9 +474,9 @@ test "Integration: Gas metering across operations" {
     defer vm.deinit();
 
     // Create addresses
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
-    const charlie_address = Address.from_u256(0x4444444444444444444444444444444444444444);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const charlie_address = primitives.Address.from_u256(0x4444444444444444444444444444444444444444);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -545,7 +545,7 @@ test "Integration: Gas metering across operations" {
 
     // 5. Environment operation (cold address)
     frame.stack.clear();
-    const cold_address = Address.to_u256(charlie_address);
+    const cold_address = primitives.Address.to_u256(charlie_address);
     try frame.stack.append(cold_address);
     const gas_before_balance = frame.gas_remaining;
     const interpreter_ptr5: *Operation.Interpreter = @ptrCast(&vm);
@@ -571,8 +571,8 @@ test "Integration: Error propagation and recovery" {
     defer vm.deinit();
 
     // Create addresses
-    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;

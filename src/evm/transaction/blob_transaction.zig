@@ -42,7 +42,7 @@ pub const BlobTransaction = struct {
     max_priority_fee_per_gas: u256,
     max_fee_per_gas: u256,
     gas_limit: u64,
-    to: ?primitives.Address, // Blob transactions must have a recipient (cannot be contract creation)
+    to: ?primitives.Address.Address, // Blob transactions must have a recipient (cannot be contract creation)
     value: u256,
     data: []const u8,
     access_list: AccessList,

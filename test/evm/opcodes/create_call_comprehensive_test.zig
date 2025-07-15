@@ -348,7 +348,7 @@ test "CALL (0xF1): Basic external call" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(100); // value
-    try frame.stack.append(Address.to_u256([_]u8{0x22} ** 20)); // to
+    try frame.stack.append(primitives.Address.to_u256([_]u8{0x22} ** 20)); // to
     try frame.stack.append(2000); // gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -404,7 +404,7 @@ test "CALL: Value transfer in static context" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(100); // value (non-zero)
-    try frame.stack.append(Address.to_u256([_]u8{0x22} ** 20)); // to
+    try frame.stack.append(primitives.Address.to_u256([_]u8{0x22} ** 20)); // to
     try frame.stack.append(2000); // gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -455,7 +455,7 @@ test "CALL: Cold address access (EIP-2929)" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
-    try frame.stack.append(Address.to_u256([_]u8{0xCC} ** 20)); // cold address
+    try frame.stack.append(primitives.Address.to_u256([_]u8{0xCC} ** 20)); // cold address
     try frame.stack.append(1000); // gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -511,7 +511,7 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
-    try frame.stack.append(Address.to_u256([_]u8{0x22} ** 20)); // to
+    try frame.stack.append(primitives.Address.to_u256([_]u8{0x22} ** 20)); // to
     try frame.stack.append(2000); // gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -566,7 +566,7 @@ test "DELEGATECALL (0xF4): Execute with current context" {
     try frame.stack.append(0); // ret_offset
     try frame.stack.append(4); // args_size
     try frame.stack.append(0); // args_offset
-    try frame.stack.append(Address.to_u256([_]u8{0x22} ** 20)); // to
+    try frame.stack.append(primitives.Address.to_u256([_]u8{0x22} ** 20)); // to
     try frame.stack.append(2000); // gas
 
     // Write call data
@@ -626,7 +626,7 @@ test "STATICCALL (0xFA): Read-only external call" {
     try frame.stack.append(0); // ret_offset
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
-    try frame.stack.append(Address.to_u256([_]u8{0x22} ** 20)); // to
+    try frame.stack.append(primitives.Address.to_u256([_]u8{0x22} ** 20)); // to
     try frame.stack.append(2000); // gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

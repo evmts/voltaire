@@ -6,9 +6,9 @@ const MemoryDatabase = Evm.MemoryDatabase;
 const Contract = Evm.Contract;
 
 // Test addresses - use small simple values
-const DEPLOYER_ADDRESS = Address.from_u256(0x1111);
-const USER_ADDRESS = Address.from_u256(0x2222);
-const CONTRACT_ADDRESS = Address.from_u256(0x3333);
+const DEPLOYER_ADDRESS = primitives.Address.from_u256(0x1111);
+const USER_ADDRESS = primitives.Address.from_u256(0x2222);
+const CONTRACT_ADDRESS = primitives.Address.from_u256(0x3333);
 
 // Test revert conditions and error messages
 test "E2E: Revert conditions - require and revert opcodes" {

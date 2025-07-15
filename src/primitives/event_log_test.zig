@@ -7,7 +7,7 @@ const Hex = @import("hex.zig");
 
 // Event log structure
 pub const EventLog = struct {
-    address: primitives.Address,
+    address: primitives.Address.Address,
     topics: []const Hash.Hash,
     data: []const u8,
     block_number: ?u64,
@@ -410,7 +410,7 @@ fn parse_event_log(allocator: std.mem.Allocator, log: EventLog, sig: EventSignat
                 // For indexed parameters, decode based on type
                 switch (input.type) {
                     .address => {
-                        var addr: primitives.Address = undefined;
+                        var addr: primitives.Address.Address = undefined;
                         @memcpy(&addr, topic[12..32]);
                         try result.append(abi.address_value(addr));
                     },

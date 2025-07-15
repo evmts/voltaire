@@ -142,7 +142,7 @@ test "integration: storage operations sequence" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Store 100 at slot 5, then load it
     const bytecode = [_]u8{
@@ -256,7 +256,7 @@ test "integration: environment access sequence" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Add some balance to the contract
     try evm.balances.put(contract_address, 1000000);
@@ -632,7 +632,7 @@ test "integration: transient storage operations" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Store and load from transient storage
     const bytecode = [_]u8{
@@ -689,7 +689,7 @@ test "integration: logging operations" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Emit a LOG2 event
     const bytecode = [_]u8{
@@ -751,7 +751,7 @@ test "integration: cold/warm storage access (EIP-2929)" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Access same storage slot twice (cold then warm)
     const bytecode = [_]u8{
