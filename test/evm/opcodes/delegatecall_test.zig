@@ -5,7 +5,8 @@ test {
     std.testing.log_level = .debug;
 }
 const Evm = @import("evm");
-const Address = @import("primitives");
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
 
 // test {
 //     std.testing.log_level = .debug;
@@ -34,7 +35,7 @@ test "DELEGATECALL basic functionality" {
         1000000000,                 // gas price
         1,                          // block number
         1000,                       // timestamp
-        Address.zero(),             // coinbase
+        primitives.Address.ZERO_ADDRESS,             // coinbase
         0,                          // difficulty
         10000000,                   // gas limit
         1,                          // chain id
