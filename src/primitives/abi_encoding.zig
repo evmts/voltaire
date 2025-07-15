@@ -1,13 +1,7 @@
 const std = @import("std");
-const testing = std.testing;
-const crypto = std.crypto;
-const Allocator = std.mem.Allocator;
+const address = @import("address.zig");
+const hash = @import("hash.zig");
 
-// Simple type definitions that we need - avoiding complex imports
-pub const Address = [20]u8;
-pub const Hash = [32]u8;
-
-// Error types for ABI operations
 pub const AbiError = error{
     InvalidLength,
     InvalidType,
@@ -34,40 +28,38 @@ const Cursor = struct {
         };
     }
 
-    pub fn set_position(self: *Cursor, pos: usize) void {
+    pub fn setPosition(self: *Cursor, pos: usize) void {
         self.position = pos;
     }
 
-    pub fn read_bytes(self: *Cursor, len: usize) AbiError![]const u8 {
+    pub fn readBytes(self: *Cursor, len: usize) AbiError![]const u8 {
         if (self.position + len > self.data.len) return AbiError.OutOfBounds;
         const result = self.data[self.position .. self.position + len];
         self.position += len;
         return result;
     }
 
-    pub fn read_u32_word(self: *Cursor) AbiError!u32 {
-        const bytes = try self.read_bytes(32);
+    pub fn readU32Word(self: *Cursor) AbiError!u32 {
+        const bytes = try self.readBytes(32);
         return std.mem.readInt(u32, bytes[28..32], .big);
     }
 
-    pub fn read_u64_word(self: *Cursor) AbiError!u64 {
-        const bytes = try self.read_bytes(32);
+    pub fn readU64Word(self: *Cursor) AbiError!u64 {
+        const bytes = try self.readBytes(32);
         return std.mem.readInt(u64, bytes[24..32], .big);
     }
 
-    pub fn read_u256_word(self: *Cursor) AbiError!u256 {
-        const bytes = try self.read_bytes(32);
+    pub fn readU256Word(self: *Cursor) AbiError!u256 {
+        const bytes = try self.readBytes(32);
         return std.mem.readInt(u256, bytes[0..32], .big);
     }
 
-    pub fn read_word(self: *Cursor) AbiError![32]u8 {
-        const bytes = try self.read_bytes(32);
-        var result: [32]u8 = undefined;
-        @memcpy(&result, bytes);
-        return result;
+    pub fn readWord(self: *Cursor) AbiError![32]u8 {
+        const bytes = try self.readBytes(32);
+        return bytes[0..32].*;
     }
 
-    pub fn at_position(self: *const Cursor, pos: usize) Cursor {
+    pub fn atPosition(self: *const Cursor, pos: usize) Cursor {
         return Cursor{
             .data = self.data,
             .position = pos,
@@ -75,9 +67,7 @@ const Cursor = struct {
     }
 };
 
-// ABI Types
 pub const AbiType = enum {
-    // Elementary types
     uint8,
     uint16,
     uint32,
@@ -108,9 +98,9 @@ pub const AbiType = enum {
     address_array,
     string_array,
 
-    pub fn is_dynamic(self: AbiType) bool {
+    pub fn isDynamic(self: AbiType) bool {
         return switch (self) {
-            .bytes, .string, .uint256_array, .bytes32_array, .address_array, .string_array => true,
+            .string, .bytes, .array => true,
             else => false,
         };
     }
@@ -136,7 +126,7 @@ pub const AbiType = enum {
         };
     }
 
-    pub fn get_type(self: AbiType) []const u8 {
+    pub fn getType(self: AbiType) []const u8 {
         return switch (self) {
             .uint8 => "uint8",
             .uint16 => "uint16",
@@ -169,7 +159,6 @@ pub const AbiType = enum {
     }
 };
 
-// ABI Value union
 pub const AbiValue = union(AbiType) {
     uint8: u8,
     uint16: u16,
@@ -183,7 +172,7 @@ pub const AbiValue = union(AbiType) {
     int64: i64,
     int128: i128,
     int256: i256,
-    address: Address,
+    address: address.Address,
     bool: bool,
     bytes1: [1]u8,
     bytes2: [2]u8,
@@ -196,31 +185,26 @@ pub const AbiValue = union(AbiType) {
     string: []const u8,
     uint256_array: []const u256,
     bytes32_array: []const [32]u8,
-    address_array: []const Address,
+    address_array: []const address.Address,
     string_array: []const []const u8,
 
-    pub fn get_type(self: AbiValue) AbiType {
+    pub fn getType(self: AbiValue) AbiType {
         return switch (self) {
             .uint8 => .uint8,
             .uint16 => .uint16,
             .uint32 => .uint32,
             .uint64 => .uint64,
-            .uint128 => .uint128,
             .uint256 => .uint256,
             .int8 => .int8,
             .int16 => .int16,
             .int32 => .int32,
             .int64 => .int64,
-            .int128 => .int128,
             .int256 => .int256,
-            .address => .address,
             .bool => .bool,
+            .address => .address,
             .bytes1 => .bytes1,
-            .bytes2 => .bytes2,
-            .bytes3 => .bytes3,
             .bytes4 => .bytes4,
             .bytes8 => .bytes8,
-            .bytes16 => .bytes16,
             .bytes32 => .bytes32,
             .bytes => .bytes,
             .string => .string,
@@ -232,39 +216,31 @@ pub const AbiValue = union(AbiType) {
     }
 };
 
-// Helper functions to create AbiValue instances
-pub fn uint256_value(val: u256) AbiValue {
-    return AbiValue{ .uint256 = val };
+pub fn uint256Value(val: u256) AbiValue {
+    return .{ .uint256 = val };
+}
+pub fn boolValue(val: bool) AbiValue {
+    return .{ .bool = val };
+}
+pub fn addressValue(val: address.Address) AbiValue {
+    return .{ .address = val };
+}
+pub fn stringValue(val: []const u8) AbiValue {
+    return .{ .string = val };
+}
+pub fn bytesValue(val: []const u8) AbiValue {
+    return .{ .bytes = val };
 }
 
-pub fn bool_value(val: bool) AbiValue {
-    return AbiValue{ .bool = val };
-}
-
-pub fn address_value(val: Address) AbiValue {
-    return AbiValue{ .address = val };
-}
-
-pub fn string_value(val: []const u8) AbiValue {
-    return AbiValue{ .string = val };
-}
-
-pub fn bytes_value(val: []const u8) AbiValue {
-    return AbiValue{ .bytes = val };
-}
-
-// Function selector type
 pub const Selector = [4]u8;
 
-// Compute function selector from signature
-pub fn compute_selector(signature: []const u8) Selector {
-    var hash: [32]u8 = undefined;
-    crypto.hash.sha3.Keccak256.hash(signature, &hash, .{});
-    return hash[0..4].*;
+pub fn computeSelector(signature: []const u8) Selector {
+    var hashResult: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash(signature, &hashResult, .{});
+    return hashResult[0..4].*;
 }
 
-// Create function signature from name and types
-pub fn create_function_signature(allocator: Allocator, name: []const u8, types: []const AbiType) ![]u8 {
+pub fn createFunctionSignature(allocator: std.mem.Allocator, name: []const u8, types: []const AbiType) ![]u8 {
     var signature = std.ArrayList(u8).init(allocator);
     defer signature.deinit();
 
@@ -273,7 +249,7 @@ pub fn create_function_signature(allocator: Allocator, name: []const u8, types: 
 
     for (types, 0..) |abi_type, i| {
         if (i > 0) try signature.append(',');
-        try signature.appendSlice(abi_type.get_type());
+        try signature.appendSlice(abi_type.getType());
     }
 
     try signature.append(')');
@@ -282,11 +258,10 @@ pub fn create_function_signature(allocator: Allocator, name: []const u8, types: 
 
 // ABI Decoding Functions
 
-// Decode individual parameter types
 fn decode_uint(cursor: *Cursor, comptime T: type, comptime bits: u16) AbiError!T {
     if (bits > 256 or bits % 8 != 0) return AbiError.InvalidType;
 
-    const word = try cursor.read_word();
+    const word = try cursor.readWord();
     const bytes_len = bits / 8;
     const start_offset = 32 - bytes_len;
 
@@ -300,7 +275,7 @@ fn decode_uint(cursor: *Cursor, comptime T: type, comptime bits: u16) AbiError!T
 fn decode_int(cursor: *Cursor, comptime T: type, comptime bits: u16) AbiError!T {
     if (bits > 256 or bits % 8 != 0) return AbiError.InvalidType;
 
-    const word = try cursor.read_word();
+    const word = try cursor.readWord();
     const bytes_len = bits / 8;
     const start_offset = 32 - bytes_len;
 
@@ -313,30 +288,30 @@ fn decode_int(cursor: *Cursor, comptime T: type, comptime bits: u16) AbiError!T 
     }
 }
 
-fn decode_address(cursor: *Cursor) AbiError!Address {
-    const word = try cursor.read_word();
-    var address: Address = undefined;
-    @memcpy(&address, word[12..32]);
-    return address;
+fn decode_address(cursor: *Cursor) AbiError!address.Address {
+    const word = try cursor.readWord();
+    var addressResult: address.Address = undefined;
+    @memcpy(&addressResult, word[12..32]);
+    return addressResult;
 }
 
 fn decode_bool(cursor: *Cursor) AbiError!bool {
-    const word = try cursor.read_word();
+    const word = try cursor.readWord();
     return word[31] != 0;
 }
 
 fn decode_bytes_fixed(cursor: *Cursor, comptime size: usize) AbiError![size]u8 {
-    const word = try cursor.read_word();
+    const word = try cursor.readWord();
     var result: [size]u8 = undefined;
     @memcpy(&result, word[0..size]);
     return result;
 }
 
-fn decode_bytes_dynamic(allocator: Allocator, cursor: *Cursor, static_position: usize) AbiError![]u8 {
-    const offset = try cursor.read_u256_word();
-    var offset_cursor = cursor.at_position(static_position + @as(usize, @intCast(offset)));
+fn decode_bytes_dynamic(allocator: std.mem.Allocator, cursor: *Cursor, static_position: usize) AbiError![]u8 {
+    const offset = try cursor.readU256Word();
+    var offset_cursor = cursor.atPosition(static_position + @as(usize, @intCast(offset)));
 
-    const length = try offset_cursor.read_u256_word();
+    const length = try offset_cursor.readU256Word();
     const length_usize = @as(usize, @intCast(length));
 
     if (length_usize == 0) {
@@ -345,7 +320,7 @@ fn decode_bytes_dynamic(allocator: Allocator, cursor: *Cursor, static_position: 
 
     // Calculate padded length (round up to 32-byte boundary)
     const padded_length = ((length_usize + 31) / 32) * 32;
-    const data = try offset_cursor.read_bytes(padded_length);
+    const data = try offset_cursor.readBytes(padded_length);
 
     // Only return the actual data, not the padding
     const result = try allocator.alloc(u8, length_usize);
@@ -353,7 +328,7 @@ fn decode_bytes_dynamic(allocator: Allocator, cursor: *Cursor, static_position: 
     return result;
 }
 
-fn decode_string(allocator: Allocator, cursor: *Cursor, static_position: usize) AbiError![]u8 {
+fn decode_string(allocator: std.mem.Allocator, cursor: *Cursor, static_position: usize) AbiError![]u8 {
     const bytes = try decode_bytes_dynamic(allocator, cursor, static_position);
     // Validate UTF-8
     if (!std.unicode.utf8ValidateSlice(bytes)) {
@@ -363,11 +338,11 @@ fn decode_string(allocator: Allocator, cursor: *Cursor, static_position: usize) 
     return bytes;
 }
 
-fn decode_array(allocator: Allocator, cursor: *Cursor, element_type: AbiType, static_position: usize) AbiError![]AbiValue {
-    const offset = try cursor.read_u256_word();
-    var offset_cursor = cursor.at_position(static_position + @as(usize, @intCast(offset)));
+fn decode_array(allocator: std.mem.Allocator, cursor: *Cursor, element_type: AbiType, static_position: usize) AbiError![]AbiValue {
+    const offset = try cursor.readU256Word();
+    var offset_cursor = cursor.atPosition(static_position + @as(usize, @intCast(offset)));
 
-    const length = try offset_cursor.read_u256_word();
+    const length = try offset_cursor.readU256Word();
     const length_usize = @as(usize, @intCast(length));
 
     var result = try allocator.alloc(AbiValue, length_usize);
@@ -380,7 +355,7 @@ fn decode_array(allocator: Allocator, cursor: *Cursor, element_type: AbiType, st
     return result;
 }
 
-fn decode_parameter(allocator: Allocator, cursor: *Cursor, abi_type: AbiType, static_position: usize) AbiError!AbiValue {
+fn decode_parameter(allocator: std.mem.Allocator, cursor: *Cursor, abi_type: AbiType, static_position: usize) AbiError!AbiValue {
     return switch (abi_type) {
         .uint8 => AbiValue{ .uint8 = try decode_uint(cursor, u8, 8) },
         .uint16 => AbiValue{ .uint16 = try decode_uint(cursor, u16, 16) },
@@ -420,18 +395,21 @@ fn decode_parameter(allocator: Allocator, cursor: *Cursor, abi_type: AbiType, st
 }
 
 // Main ABI decoding function
-pub fn decode_abi_parameters(allocator: Allocator, data: []const u8, types: []const AbiType) ![]AbiValue {
-    if (data.len == 0 and types.len > 0) return AbiError.ZeroData;
-    if (data.len > 0 and data.len < 32) return AbiError.DataTooSmall;
-    if (types.len == 0) return try allocator.alloc(AbiValue, 0);
+pub fn decodeAbiParameters(allocator: std.mem.Allocator, data: []const u8, types: []const AbiType) ![]AbiValue {
+    if (data.len == 0 and types.len == 0) {
+        return try allocator.alloc(AbiValue, 0);
+    }
+
+    if (data.len < types.len * 32) {
+        return AbiError.DataTooSmall;
+    }
 
     var cursor = Cursor.init(data);
-    var result = try allocator.alloc(AbiValue, types.len);
-    errdefer allocator.free(result);
+    const result = try allocator.alloc(AbiValue, types.len);
 
     var consumed: usize = 0;
     for (types, 0..) |abi_type, i| {
-        cursor.set_position(consumed);
+        cursor.setPosition(consumed);
         result[i] = try decode_parameter(allocator, &cursor, abi_type, 0);
         consumed += 32; // Each parameter takes 32 bytes in the static part
     }
@@ -439,12 +417,14 @@ pub fn decode_abi_parameters(allocator: Allocator, data: []const u8, types: []co
     return result;
 }
 
-// Decode function data (selector + parameters)
-pub fn decode_function_data(allocator: Allocator, data: []const u8, types: []const AbiType) AbiError!struct { selector: Selector, parameters: []AbiValue } {
-    if (data.len < 4) return AbiError.InvalidLength;
+pub fn decodeFunctionData(allocator: std.mem.Allocator, data: []const u8, types: []const AbiType) AbiError!struct { selector: Selector, parameters: []AbiValue } {
+    if (data.len < 4) return AbiError.DataTooSmall;
 
     const selector: Selector = data[0..4].*;
-    const parameters = try decode_abi_parameters(allocator, data[4..], types);
+    const parameters = if (data.len > 4)
+        try decodeAbiParameters(allocator, data[4..], types)
+    else
+        try allocator.alloc(AbiValue, 0);
 
     return .{
         .selector = selector,
@@ -453,7 +433,7 @@ pub fn decode_function_data(allocator: Allocator, data: []const u8, types: []con
 }
 
 // Simple ABI encoding for basic types
-pub fn encode_abi_parameters(allocator: Allocator, values: []const AbiValue) ![]u8 {
+pub fn encodeAbiParameters(allocator: std.mem.Allocator, values: []const AbiValue) ![]u8 {
     if (values.len == 0) return try allocator.alloc(u8, 0);
 
     var result = std.ArrayList(u8).init(allocator);
@@ -507,26 +487,23 @@ pub fn encode_abi_parameters(allocator: Allocator, values: []const AbiValue) ![]
     return result.toOwnedSlice();
 }
 
-// Encode function data (selector + parameters)
-pub fn encode_function_data(allocator: Allocator, selector: Selector, parameters: []const AbiValue) ![]u8 {
-    const encoded_params = try encode_abi_parameters(allocator, parameters);
+pub fn encodeFunctionData(allocator: std.mem.Allocator, selector: Selector, parameters: []const AbiValue) ![]u8 {
+    const encoded_params = try encodeAbiParameters(allocator, parameters);
     defer allocator.free(encoded_params);
 
-    var result = try allocator.alloc(u8, 4 + encoded_params.len);
+    const result = try allocator.alloc(u8, 4 + encoded_params.len);
     @memcpy(result[0..4], &selector);
     @memcpy(result[4..], encoded_params);
-
     return result;
 }
 
-// Encode event topics
-pub fn encode_event_topics(allocator: Allocator, event_signature: []const u8, indexed_values: []const AbiValue) ![][]u8 {
+pub fn encodeEventTopics(allocator: std.mem.Allocator, event_signature: []const u8, indexed_values: []const AbiValue) ![][]u8 {
     var topics = std.ArrayList([]u8).init(allocator);
     defer topics.deinit();
 
     // First topic is the event signature hash
     var signature_hash: [32]u8 = undefined;
-    crypto.hash.sha3.Keccak256.hash(event_signature, &signature_hash, .{});
+    std.crypto.hash.sha3.Keccak256.hash(event_signature, &signature_hash, .{});
     const first_topic = try allocator.alloc(u8, 32);
     @memcpy(first_topic, &signature_hash);
     try topics.append(first_topic);
@@ -557,7 +534,7 @@ pub fn encode_event_topics(allocator: Allocator, event_signature: []const u8, in
 }
 
 // Simple packed encoding
-pub fn encode_packed(allocator: Allocator, values: []const AbiValue) ![]u8 {
+pub fn encodePacked(allocator: std.mem.Allocator, values: []const AbiValue) ![]u8 {
     var result = std.ArrayList(u8).init(allocator);
     defer result.deinit();
 
@@ -588,19 +565,14 @@ pub fn encode_packed(allocator: Allocator, values: []const AbiValue) ![]u8 {
     return result.toOwnedSlice();
 }
 
-// Gas estimation for call data
-pub fn estimate_gas_for_data(data: []const u8) u64 {
-    var gas: u64 = 21000; // Base transaction cost
+// Gas estimation for call data using std.mem.count for efficiency
+pub fn estimateGasForData(data: []const u8) u64 {
+    const base_gas: u64 = 21000; // Base transaction cost
 
-    for (data) |byte| {
-        if (byte == 0) {
-            gas += 4; // Zero bytes cost 4 gas
-        } else {
-            gas += 16; // Non-zero bytes cost 16 gas
-        }
-    }
+    const zero_bytes = std.mem.count(u8, data, &[_]u8{0});
+    const non_zero_bytes = data.len - zero_bytes;
 
-    return gas;
+    return base_gas + (zero_bytes * 4) + (non_zero_bytes * 16);
 }
 
 // Common selectors
@@ -618,10 +590,10 @@ pub const FunctionDefinition = struct {
     outputs: []const AbiType,
     stateMutability: StateMutability,
 
-    pub fn get_selector(self: FunctionDefinition, allocator: Allocator) !Selector {
-        const signature = try create_function_signature(allocator, self.name, self.inputs);
+    pub fn getSelector(self: FunctionDefinition, allocator: std.mem.Allocator) !Selector {
+        const signature = try createFunctionSignature(allocator, self.name, self.inputs);
         defer allocator.free(signature);
-        return compute_selector(signature);
+        return computeSelector(signature);
     }
 };
 
@@ -655,27 +627,27 @@ pub const CommonPatterns = struct {
 
 // Tests
 test "basic ABI encoding" {
-    const allocator = testing.allocator;
+    const allocator = std.testing.allocator;
 
     const values = [_]AbiValue{
-        uint256_value(42),
-        bool_value(true),
+        uint256Value(42),
+        boolValue(true),
     };
 
-    const encoded = try encode_abi_parameters(allocator, &values);
+    const encoded = try encodeAbiParameters(allocator, &values);
     defer allocator.free(encoded);
 
-    try testing.expectEqual(@as(usize, 64), encoded.len); // 2 * 32 bytes
+    try std.testing.expectEqual(@as(usize, 64), encoded.len); // 2 * 32 bytes
 }
 
 test "basic ABI decoding" {
-    const allocator = testing.allocator;
+    const allocator = std.testing.allocator;
 
     // Test decoding uint256
     const uint256_data = [_]u8{0} ** 28 ++ [_]u8{ 0x00, 0x00, 0x00, 0x2A }; // 42 in big-endian
     const types = [_]AbiType{.uint256};
 
-    const decoded = try decode_abi_parameters(allocator, &uint256_data, &types);
+    const decoded = try decodeAbiParameters(allocator, &uint256_data, &types);
     defer {
         for (decoded) |value| {
             switch (value) {
@@ -686,111 +658,110 @@ test "basic ABI decoding" {
         allocator.free(decoded);
     }
 
-    try testing.expectEqual(@as(usize, 1), decoded.len);
-    try testing.expectEqual(@as(u256, 42), decoded[0].uint256);
+    try std.testing.expectEqual(@as(usize, 1), decoded.len);
+    try std.testing.expectEqual(@as(u256, 42), decoded[0].uint256);
 }
 
 test "function selector computation" {
-    const selector = compute_selector("transfer(address,uint256)");
+    const selector = computeSelector("transfer(address,uint256)");
 
     // This should match the known ERC20 transfer selector
     const expected = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
-    try testing.expectEqualSlices(u8, &expected, &selector);
+    try std.testing.expectEqualSlices(u8, &expected, &selector);
 }
 
 test "function data encoding" {
-    const allocator = testing.allocator;
+    const allocator = std.testing.allocator;
 
-    const selector = compute_selector("transfer(address,uint256)");
+    const selector = computeSelector("transfer(address,uint256)");
     const params = [_]AbiValue{
-        address_value([_]u8{0x12} ** 20),
-        uint256_value(1000),
+        addressValue([_]u8{0x12} ** 20),
+        uint256Value(1000),
     };
 
-    const encoded = try encode_function_data(allocator, selector, &params);
+    const encoded = try encodeFunctionData(allocator, selector, &params);
     defer allocator.free(encoded);
 
-    try testing.expectEqual(@as(usize, 68), encoded.len); // 4 + 64 bytes
-    try testing.expectEqualSlices(u8, &selector, encoded[0..4]);
+    try std.testing.expectEqual(@as(usize, 68), encoded.len); // 4 + 64 bytes
+    try std.testing.expectEqualSlices(u8, &selector, encoded[0..4]);
 }
 
 test "packed encoding" {
-    const allocator = testing.allocator;
+    const allocator = std.testing.allocator;
 
     const values = [_]AbiValue{
         AbiValue{ .uint8 = 0x12 },
         AbiValue{ .uint16 = 0x3456 },
-        string_value("test"),
+        stringValue("test"),
     };
 
-    const packed_data = try encode_packed(allocator, &values);
+    const packed_data = try encodePacked(allocator, &values);
     defer allocator.free(packed_data);
 
-    try testing.expectEqual(@as(usize, 7), packed_data.len); // 1 + 2 + 4 bytes
-    try testing.expectEqual(@as(u8, 0x12), packed_data[0]);
-    try testing.expectEqual(@as(u8, 0x34), packed_data[1]);
-    try testing.expectEqual(@as(u8, 0x56), packed_data[2]);
-    try testing.expectEqualSlices(u8, "test", packed_data[3..7]);
+    try std.testing.expectEqual(@as(usize, 7), packed_data.len); // 1 + 2 + 4 bytes
+    try std.testing.expectEqual(@as(u8, 0x12), packed_data[0]);
+    try std.testing.expectEqual(@as(u8, 0x34), packed_data[1]);
+    try std.testing.expectEqual(@as(u8, 0x56), packed_data[2]);
+    try std.testing.expectEqualSlices(u8, "test", packed_data[3..7]);
 }
 
 test "gas estimation" {
     const data = &[_]u8{ 0x00, 0x01, 0x02, 0x00, 0x03 };
-    const gas = estimate_gas_for_data(data);
+    const gas = estimateGasForData(data);
 
     // 21000 + 4 + 16 + 16 + 4 + 16 = 21056
-    try testing.expectEqual(@as(u64, 21056), gas);
+    try std.testing.expectEqual(@as(u64, 21056), gas);
 }
 
 test "common selectors" {
     const transfer_selector = CommonSelectors.ERC20_TRANSFER;
     const expected_transfer = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
-    try testing.expectEqualSlices(u8, &expected_transfer, &transfer_selector);
+    try std.testing.expectEqualSlices(u8, &expected_transfer, &transfer_selector);
 
     const balance_selector = CommonSelectors.ERC20_BALANCE_OF;
     const expected_balance = [_]u8{ 0x70, 0xa0, 0x82, 0x31 };
-    try testing.expectEqualSlices(u8, &expected_balance, &balance_selector);
+    try std.testing.expectEqualSlices(u8, &expected_balance, &balance_selector);
 }
 
 // Encode function result (return values)
-pub fn encode_function_result(allocator: Allocator, return_values: []const AbiValue) ![]u8 {
-    return encode_abi_parameters(allocator, return_values);
+pub fn encodeFunctionResult(allocator: std.mem.Allocator, return_values: []const AbiValue) ![]u8 {
+    return encodeAbiParameters(allocator, return_values);
 }
 
 // Decode function result (return values)
-pub fn decode_function_result(allocator: Allocator, data: []const u8, output_types: []const AbiType) ![]AbiValue {
-    return decode_abi_parameters(allocator, data, output_types);
+pub fn decodeFunctionResult(allocator: std.mem.Allocator, data: []const u8, output_types: []const AbiType) ![]AbiValue {
+    return decodeAbiParameters(allocator, data, output_types);
 }
 
 // Encode error result (selector + error parameters)
-pub fn encode_error_result(allocator: Allocator, error_selector: Selector, error_params: []const AbiValue) ![]u8 {
-    const encoded_params = try encode_abi_parameters(allocator, error_params);
+pub fn encodeErrorResult(allocator: std.mem.Allocator, error_selector: Selector, error_params: []const AbiValue) ![]u8 {
+    const encoded_params = try encodeAbiParameters(allocator, error_params);
     defer allocator.free(encoded_params);
 
-    var result = try allocator.alloc(u8, 4 + encoded_params.len);
+    const result = try allocator.alloc(u8, 4 + encoded_params.len);
     @memcpy(result[0..4], &error_selector);
     @memcpy(result[4..], encoded_params);
 
     return result;
 }
 
-// Function result structure
+// Helper structs for function execution results
 pub const FunctionResult = struct {
     success: bool,
     return_data: []const u8,
     gas_used: ?u64 = null,
 
-    pub fn deinit(self: *FunctionResult, allocator: Allocator) void {
+    pub fn deinit(self: *FunctionResult, allocator: std.mem.Allocator) void {
         allocator.free(self.return_data);
     }
 };
 
-// Error result structure
 pub const ErrorResult = struct {
     selector: Selector,
     error_data: []const u8,
     decoded_params: ?[]AbiValue = null,
 
-    pub fn deinit(self: *ErrorResult, allocator: Allocator) void {
+    pub fn deinit(self: *ErrorResult, allocator: std.mem.Allocator) void {
         allocator.free(self.error_data);
         if (self.decoded_params) |params| {
             for (params) |param| {
@@ -811,129 +782,352 @@ pub const ErrorResult = struct {
     }
 };
 
-// Helper function to create a function result from raw data
-pub fn create_function_result(allocator: Allocator, success: bool, return_data: []const u8, gas_used: ?u64) !FunctionResult {
+// Helper functions for creating results
+pub fn createFunctionResult(allocator: std.mem.Allocator, success: bool, return_data: []const u8, gas_used: ?u64) !FunctionResult {
+    const owned_data = try allocator.dupe(u8, return_data);
     return FunctionResult{
         .success = success,
-        .return_data = try allocator.dupe(u8, return_data),
+        .return_data = owned_data,
         .gas_used = gas_used,
     };
 }
 
-// Helper function to decode a function result
-pub fn decode_function_result_with_types(allocator: Allocator, result: FunctionResult, output_types: []const AbiType) ![]AbiValue {
-    if (!result.success) {
-        return AbiError.InvalidData;
-    }
-
-    return decode_function_result(allocator, result.return_data, output_types);
+pub fn decodeFunctionResultWithTypes(allocator: std.mem.Allocator, result: FunctionResult, output_types: []const AbiType) ![]AbiValue {
+    return decodeFunctionResult(allocator, result.return_data, output_types);
 }
 
-// Helper function to create an error result
-pub fn create_error_result(allocator: Allocator, selector: Selector, error_data: []const u8) !ErrorResult {
+pub fn createErrorResult(allocator: std.mem.Allocator, selector: Selector, error_data: []const u8) !ErrorResult {
+    const owned_data = try allocator.dupe(u8, error_data);
     return ErrorResult{
         .selector = selector,
-        .error_data = try allocator.dupe(u8, error_data),
-        .decoded_params = null,
+        .error_data = owned_data,
     };
 }
 
-// Helper function to decode an error result
-pub fn decode_error_result_with_types(allocator: Allocator, error_result: *ErrorResult, error_types: []const AbiType) !void {
-    if (error_result.error_data.len < 4) return AbiError.InvalidLength;
+pub fn decodeErrorResultWithTypes(allocator: std.mem.Allocator, error_result: *ErrorResult, error_types: []const AbiType) !void {
+    error_result.decoded_params = try decodeAbiParameters(allocator, error_result.error_data[4..], error_types);
+}
 
-    const selector: Selector = error_result.error_data[0..4].*;
-    if (!std.mem.eql(u8, &selector, &error_result.selector)) {
-        return AbiError.InvalidSelector;
+// Test ABI encoding of uint types
+test "encode uint256" {
+    // Test encoding 69420n (0x10f2c)
+    const values = [_]AbiValue{
+        uint256Value(69420),
+    };
+
+    const encoded = try encodeAbiParameters(std.testing.allocator, &values);
+    defer std.testing.allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 32), encoded.len);
+
+    const expected = [_]u8{0} ** 28 ++ [_]u8{ 0x00, 0x00, 0x10, 0xf2, 0xc };
+    try std.testing.expectEqualSlices(u8, &expected, encoded);
+}
+
+test "encode uint8" {
+    // Test encoding 32
+    const values = [_]AbiValue{
+        .{ .uint8 = 32 },
+    };
+
+    const encoded = try encodeAbiParameters(std.testing.allocator, &values);
+    defer std.testing.allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 32), encoded.len);
+
+    const expected = [_]u8{0} ** 31 ++ [_]u8{0x20};
+    try std.testing.expectEqualSlices(u8, &expected, encoded);
+}
+
+test "encode multiple uint types" {
+    const values = [_]AbiValue{
+        .{ .uint8 = 255 },
+        .{ .uint32 = 69420 },
+        uint256Value(0xdeadbeef),
+    };
+
+    const encoded = try encodeAbiParameters(std.testing.allocator, &values);
+    defer std.testing.allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 96), encoded.len); // 3 * 32 bytes
+}
+
+// Test ABI encoding of int types with two's complement
+test "encode int32 positive" {
+    const values = [_]AbiValue{
+        .{ .int32 = 2147483647 }, // Max int32
+    };
+
+    const encoded = try encodeAbiParameters(std.testing.allocator, &values);
+    defer std.testing.allocator.free(encoded);
+
+    const expected = [_]u8{0} ** 28 ++ [_]u8{ 0x7f, 0xff, 0xff, 0xff };
+    try std.testing.expectEqualSlices(u8, &expected, encoded);
+}
+
+test "encode int32 negative two's complement" {
+    const values = [_]AbiValue{
+        .{ .int32 = -2147483648 }, // Min int32
+    };
+
+    const encoded = try encodeAbiParameters(std.testing.allocator, &values);
+    defer std.testing.allocator.free(encoded);
+
+    // Two's complement representation
+    const expected = [_]u8{0xff} ** 28 ++ [_]u8{ 0x80, 0x00, 0x00, 0x00 };
+    try std.testing.expectEqualSlices(u8, &expected, encoded);
+}
+
+// Test ABI encoding of addresses
+test "encode address" {
+    const addr: address.Address = [_]u8{
+        0x14, 0xdC, 0x79, 0x96, 0x4d, 0xa2, 0xC0, 0x8b,
+        0x23, 0x69, 0x8B, 0x3D, 0x3c, 0xc7, 0xCa, 0x32,
+        0x19, 0x3d, 0x99, 0x55,
+    };
+
+    const values = [_]AbiValue{
+        addressValue(addr),
+    };
+
+    const encoded = try encodeAbiParameters(std.testing.allocator, &values);
+    defer std.testing.allocator.free(encoded);
+
+    // Address should be right-padded with zeros
+    const expected = [_]u8{0} ** 12 ++ addr;
+    try std.testing.expectEqualSlices(u8, &expected, encoded);
+}
+
+// Test ABI encoding of bool
+test "encode bool" {
+    // Test true
+    {
+        const values = [_]AbiValue{
+            boolValue(true),
+        };
+
+        const encoded = try encodeAbiParameters(std.testing.allocator, &values);
+        defer std.testing.allocator.free(encoded);
+
+        const expected = [_]u8{0} ** 31 ++ [_]u8{0x01};
+        try std.testing.expectEqualSlices(u8, &expected, encoded);
     }
 
-    error_result.decoded_params = try decode_abi_parameters(allocator, error_result.error_data[4..], error_types);
+    // Test false
+    {
+        const values = [_]AbiValue{
+            boolValue(false),
+        };
+
+        const encoded = try encodeAbiParameters(std.testing.allocator, &values);
+        defer std.testing.allocator.free(encoded);
+
+        const expected = [_]u8{0} ** 32;
+        try std.testing.expectEqualSlices(u8, &expected, encoded);
+    }
 }
 
-test "encode function result" {
-    const allocator = testing.allocator;
+// Test ABI decoding
+test "decode uint256" {
+    const data = [_]u8{0} ** 28 ++ [_]u8{ 0x00, 0x00, 0x10, 0xf2, 0xc };
+    const types = [_]AbiType{.uint256};
 
-    const return_values = [_]AbiValue{
-        bool_value(true),
-        uint256_value(1000),
-    };
-
-    const encoded = try encode_function_result(allocator, &return_values);
-    defer allocator.free(encoded);
-
-    try testing.expectEqual(@as(usize, 64), encoded.len); // 2 * 32 bytes
-}
-
-test "decode function result" {
-    const allocator = testing.allocator;
-
-    // Encode first
-    const return_values = [_]AbiValue{
-        bool_value(true),
-        uint256_value(1000),
-    };
-
-    const encoded = try encode_function_result(allocator, &return_values);
-    defer allocator.free(encoded);
-
-    // Then decode
-    const output_types = [_]AbiType{ .bool, .uint256 };
-    const decoded = try decode_function_result(allocator, encoded, &output_types);
+    const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
     defer {
         for (decoded) |value| {
             switch (value) {
-                .string, .bytes => |slice| allocator.free(slice),
+                .string, .bytes => |slice| std.testing.allocator.free(slice),
+                .uint256_array => |arr| std.testing.allocator.free(arr),
+                .bytes32_array => |arr| std.testing.allocator.free(arr),
+                .address_array => |arr| std.testing.allocator.free(arr),
+                .string_array => |arr| {
+                    for (arr) |str| std.testing.allocator.free(str);
+                    std.testing.allocator.free(arr);
+                },
                 else => {},
             }
         }
-        allocator.free(decoded);
+        std.testing.allocator.free(decoded);
     }
 
-    try testing.expectEqual(@as(usize, 2), decoded.len);
-    try testing.expectEqual(true, decoded[0].bool);
-    try testing.expectEqual(@as(u256, 1000), decoded[1].uint256);
+    try std.testing.expectEqual(@as(usize, 1), decoded.len);
+    try std.testing.expectEqual(@as(u256, 69420), decoded[0].uint256);
 }
 
-test "encode error result" {
-    const allocator = testing.allocator;
+test "decode int32 negative" {
+    // Two's complement representation of -2147483648
+    const data = [_]u8{0xff} ** 28 ++ [_]u8{ 0x80, 0x00, 0x00, 0x00 };
+    const types = [_]AbiType{.int32};
 
-    const error_selector = compute_selector("InsufficientBalance(uint256,uint256)");
-    const error_params = [_]AbiValue{
-        uint256_value(100), // requested
-        uint256_value(50), // available
+    const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
+    defer std.testing.allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(usize, 1), decoded.len);
+    try std.testing.expectEqual(@as(i32, -2147483648), decoded[0].int32);
+}
+
+test "decode address" {
+    const expectedAddr: address.Address = [_]u8{
+        0x14, 0xdC, 0x79, 0x96, 0x4d, 0xa2, 0xC0, 0x8b,
+        0x23, 0x69, 0x8B, 0x3D, 0x3c, 0xc7, 0xCa, 0x32,
+        0x19, 0x3d, 0x99, 0x55,
     };
 
-    const encoded = try encode_error_result(allocator, error_selector, &error_params);
-    defer allocator.free(encoded);
+    const data = [_]u8{0} ** 12 ++ expectedAddr;
+    const types = [_]AbiType{.address};
 
-    try testing.expectEqual(@as(usize, 68), encoded.len); // 4 + 64 bytes
-    try testing.expectEqualSlices(u8, &error_selector, encoded[0..4]);
+    const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
+    defer std.testing.allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(usize, 1), decoded.len);
+    try std.testing.expectEqualSlices(u8, &expectedAddr, &decoded[0].address);
 }
 
-test "function result roundtrip" {
-    const allocator = testing.allocator;
+test "decode bool" {
+    // Test true
+    {
+        const data = [_]u8{0} ** 31 ++ [_]u8{0x01};
+        const types = [_]AbiType{.bool};
 
-    const return_data = "Hello, World!";
-    const result = try create_function_result(allocator, true, return_data, 21000);
-    defer {
-        var mut_result = result;
-        mut_result.deinit(allocator);
+        const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
+        defer std.testing.allocator.free(decoded);
+
+        try std.testing.expectEqual(@as(usize, 1), decoded.len);
+        try std.testing.expectEqual(true, decoded[0].bool);
     }
 
-    try testing.expect(result.success);
-    try testing.expectEqualSlices(u8, return_data, result.return_data);
-    try testing.expectEqual(@as(u64, 21000), result.gas_used.?);
+    // Test false
+    {
+        const data = [_]u8{0} ** 32;
+        const types = [_]AbiType{.bool};
+
+        const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
+        defer std.testing.allocator.free(decoded);
+
+        try std.testing.expectEqual(@as(usize, 1), decoded.len);
+        try std.testing.expectEqual(false, decoded[0].bool);
+    }
 }
 
-test "error result roundtrip" {
-    const allocator = testing.allocator;
+// Test function selector computation
+test "compute selector" {
+    // Test "transfer(address,uint256)" selector
+    const transferSig = "transfer(address,uint256)";
+    const selector = computeSelector(transferSig);
 
-    const error_selector = compute_selector("CustomError(string)");
-    const error_data = "Something went wrong";
+    // This should match the known ERC20 transfer selector
+    const expectedSelector = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
+    try std.testing.expectEqualSlices(u8, &expectedSelector, &selector);
+}
 
-    var error_result = try create_error_result(allocator, error_selector, error_data);
-    defer error_result.deinit(allocator);
+test "encode function data" {
+    const selector = computeSelector("transfer(address,uint256)");
 
-    try testing.expectEqualSlices(u8, &error_selector, &error_result.selector);
-    try testing.expectEqualSlices(u8, error_data, error_result.error_data);
+    const recipient: address.Address = [_]u8{0x12} ** 20;
+    const params = [_]AbiValue{
+        addressValue(recipient),
+        uint256Value(1000),
+    };
+
+    const encoded = try encodeFunctionData(std.testing.allocator, selector, &params);
+    defer std.testing.allocator.free(encoded);
+
+    try std.testing.expectEqual(@as(usize, 68), encoded.len); // 4 + 64 bytes
+    try std.testing.expectEqualSlices(u8, &selector, encoded[0..4]);
+}
+
+// Test dynamic types (strings and bytes)
+test "decode string" {
+    // Encoded "hello" string
+    // offset (32 bytes) + length (32 bytes) + data (32 bytes padded)
+    const data = [_]u8{
+        // Offset to string data (32)
+        0,   0,   0,   0,   0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0,   0,   0,   0,   0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x20,
+        // Length of string (5)
+        0,   0,   0,   0,   0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0,   0,   0,   0,   0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x05,
+        // String data "hello" padded to 32 bytes
+        'h', 'e', 'l', 'l', 'o', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0,   0,   0,   0,   0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    };
+
+    const types = [_]AbiType{.string};
+
+    const decoded = try decodeAbiParameters(std.testing.allocator, &data, &types);
+    defer {
+        std.testing.allocator.free(decoded[0].string);
+        std.testing.allocator.free(decoded);
+    }
+
+    try std.testing.expectEqual(@as(usize, 1), decoded.len);
+    try std.testing.expectEqualStrings("hello", decoded[0].string);
+}
+
+// Test packed encoding
+test "encode packed" {
+    const values = [_]AbiValue{
+        .{ .uint8 = 0x12 },
+        .{ .uint16 = 0x3456 },
+        stringValue("test"),
+    };
+
+    const packedData = try encodePacked(std.testing.allocator, &values);
+    defer std.testing.allocator.free(packedData);
+
+    try std.testing.expectEqual(@as(usize, 7), packedData.len); // 1 + 2 + 4 bytes
+    try std.testing.expectEqual(@as(u8, 0x12), packedData[0]);
+    try std.testing.expectEqual(@as(u8, 0x34), packedData[1]);
+    try std.testing.expectEqual(@as(u8, 0x56), packedData[2]);
+    try std.testing.expectEqualStrings("test", packedData[3..7]);
+}
+
+// Test gas estimation
+test "gas estimation for data" {
+    // Test with mix of zero and non-zero bytes
+    const data = &[_]u8{ 0x00, 0x01, 0x02, 0x00, 0x03 };
+    const gas = estimateGasForData(data);
+
+    // Base cost: 21000
+    // Zero bytes (2): 2 * 4 = 8
+    // Non-zero bytes (3): 3 * 16 = 48
+    // Total: 21000 + 8 + 48 = 21056
+    try std.testing.expectEqual(@as(u64, 21056), gas);
+}
+
+// Test edge cases
+test "decode empty parameters" {
+    const decoded = try decodeAbiParameters(std.testing.allocator, "", &[_]AbiType{});
+    defer std.testing.allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(usize, 0), decoded.len);
+}
+
+test "decode with insufficient data" {
+    const data = [_]u8{ 0x01, 0x02, 0x03 }; // Only 3 bytes
+    const types = [_]AbiType{.uint256}; // Expects 32 bytes
+
+    const result = decodeAbiParameters(std.testing.allocator, &data, &types);
+    try std.testing.expectError(AbiError.DataTooSmall, result);
+}
+
+// Test complex types
+test "encode and decode multiple types" {
+    const addr: address.Address = [_]u8{0xaa} ** 20;
+    const originalValues = [_]AbiValue{
+        uint256Value(42),
+        boolValue(true),
+        addressValue(addr),
+    };
+
+    const encoded = try encodeAbiParameters(std.testing.allocator, &originalValues);
+    defer std.testing.allocator.free(encoded);
+
+    const types = [_]AbiType{ .uint256, .bool, .address };
+    const decoded = try decodeAbiParameters(std.testing.allocator, encoded, &types);
+    defer std.testing.allocator.free(decoded);
+
+    try std.testing.expectEqual(@as(u256, 42), decoded[0].uint256);
+    try std.testing.expectEqual(true, decoded[1].bool);
+    try std.testing.expectEqualSlices(u8, &addr, &decoded[2].address);
 }
