@@ -8,7 +8,7 @@ const ExecutionError = @import("../execution/execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Contract = @import("../frame/contract.zig");
-const Address = @import("Address");
+const primitives = @import("primitives");
 const Log = @import("../log.zig");
 
 const execution = @import("../execution/package.zig");

@@ -41,7 +41,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 const constants = @import("../constants/constants.zig");
 const bitvec = @import("bitvec.zig");
-const Address = @import("Address");
+const primitives = @import("primitives");
 const ExecutionError = @import("../execution/execution_error.zig");
 const CodeAnalysis = @import("code_analysis.zig");
 const StoragePool = @import("storage_pool.zig");
@@ -84,7 +84,7 @@ const Contract = @This();
 /// - For regular calls: The callee's address
 /// - For DELEGATECALL: The current contract's address (code from elsewhere)
 /// - For CREATE/CREATE2: Initially zero, set after address calculation
-address: Address.Address,
+address: primitives.Address,
 
 /// The address that initiated this contract execution.
 ///
@@ -93,7 +93,7 @@ address: Address.Address,
 /// - For CREATE/CREATE2: The creating contract's address
 ///
 /// Note: This is msg.sender in Solidity, not tx.origin
-caller: Address.Address,
+caller: primitives.Address,
 
 /// The amount of Wei sent with this contract call.
 ///
@@ -294,8 +294,8 @@ is_empty: bool,
 /// );
 /// ```
 pub fn init(
-    caller: Address.Address,
-    addr: Address.Address,
+    caller: primitives.Address,
+    addr: primitives.Address,
     value: u256,
     gas: u64,
     code: []const u8,
@@ -360,14 +360,14 @@ pub fn init(
 /// );
 /// ```
 pub fn init_deployment(
-    caller: Address.Address,
+    caller: primitives.Address,
     value: u256,
     gas: u64,
     code: []const u8,
     salt: ?[32]u8,
 ) Contract {
     const contract = Contract{
-        .address = Address.zero(),
+        .address = primitives.Address.ZERO_ADDRESS,
         .caller = caller,
         .value = value,
         .gas = gas,
@@ -850,8 +850,8 @@ pub fn analyze_jumpdests(self: *Contract, allocator: std.mem.Allocator) void {
 /// This is useful for testing or executing code that should be treated as if it's deployed at an address
 /// The caller must separately call vm.state.set_code(address, bytecode) to deploy the code
 pub fn init_at_address(
-    caller: Address.Address,
-    address: Address.Address,
+    caller: primitives.Address,
+    address: primitives.Address,
     value: u256,
     gas: u64,
     bytecode: []const u8,
