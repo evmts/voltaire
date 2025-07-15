@@ -57,7 +57,7 @@ const std = @import("std");
 
 // Import external modules
 /// Address utilities for Ethereum addresses
-pub const Address = @import("Address");
+pub const primitives = @import("primitives");
 
 // Import all EVM modules
 
@@ -285,9 +285,9 @@ pub const GetCallCostAccessListError = AccessListModule.GetCallCostError;
 
 // Address error types
 /// Error calculating CREATE address
-pub const CalculateAddressError = Address.CalculateAddressError;
+pub const CalculateAddressError = primitives.Address.CalculateAddressError;
 /// Error calculating CREATE2 address
-pub const CalculateCreate2AddressError = Address.CalculateCreate2AddressError;
+pub const CalculateCreate2AddressError = primitives.Address.CalculateCreate2AddressError;
 
 // Execution error
 /// Main execution error enumeration used throughout EVM

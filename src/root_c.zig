@@ -119,10 +119,10 @@ export fn guillotine_execute(
     // Convert inputs
     const bytecode = bytecode_ptr[0..bytecode_len];
     const caller_bytes = caller_ptr[0..20];
-    const caller_address: Address.Address = caller_bytes.*;
+    const caller_address: primitives.Address = caller_bytes.*;
 
     // Create contract for execution
-    const target_address = Address.zero(); // Use zero address for contract execution
+    const target_address = primitives.Address.ZERO_ADDRESS; // Use zero address for contract execution
     var contract = evm_root.Contract.init_at_address(caller_address, target_address, @as(u256, value), gas_limit, bytecode, &[_]u8{}, // empty input for now
         false // not static
     );
