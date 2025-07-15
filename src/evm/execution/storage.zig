@@ -5,7 +5,7 @@ const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const gas_constants = @import("../constants/gas_constants.zig");
-const Address = @import("Address");
+const primitives = @import("primitives");
 const Log = @import("../log.zig");
 
 // EIP-3529 (London) gas costs for SSTORE

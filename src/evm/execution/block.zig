@@ -4,7 +4,7 @@ const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
-const Address = @import("Address");
+const primitives = @import("primitives");
 
 pub fn op_blockhash(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
@@ -41,7 +41,7 @@ pub fn op_coinbase(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     const frame = @as(*Frame, @ptrCast(@alignCast(state)));
     const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
 
-    try frame.stack.append(Address.to_u256(vm.context.block_coinbase));
+    try frame.stack.append(primitives.Address.to_u256(vm.context.block_coinbase));
 
     return Operation.ExecutionResult{};
 }

@@ -29,11 +29,11 @@ pub const CallType = enum {
 /// Contains all necessary information to execute a contract call including
 /// addresses, value, call data, gas limits, and context information.
 pub const CallInput = struct {
-    /// Address of the contract to call
-    contract_address: Address,
+    /// primitives.Address of the contract to call
+    contract_address: primitives.Address,
 
-    /// Address of the caller (msg.sender in the called contract)
-    caller: Address,
+    /// primitives.Address of the caller (msg.sender in the called contract)
+    caller: primitives.Address,
 
     /// Value to transfer (ETH amount in wei)
     value: u256,
@@ -51,15 +51,15 @@ pub const CallInput = struct {
     depth: u32,
 
     /// Original caller for DELEGATECALL context preservation (optional)
-    original_caller: ?Address = null,
+    original_caller: ?primitives.Address = null,
 
     /// Original value for DELEGATECALL context preservation (optional)
     original_value: ?u256 = null,
 
     /// Create CallInput for a CALL operation
     pub fn call(
-        contract_address: Address,
-        caller: Address,
+        contract_address: primitives.Address,
+        caller: primitives.Address,
         value: u256,
         input: []const u8,
         gas_limit: u64,
@@ -80,8 +80,8 @@ pub const CallInput = struct {
     /// Create CallInput for a DELEGATECALL operation
     /// Preserves original caller and value from parent context
     pub fn delegate_call(
-        contract_address: Address,
-        original_caller: Address,
+        contract_address: primitives.Address,
+        original_caller: primitives.Address,
         original_value: u256,
         input: []const u8,
         gas_limit: u64,
@@ -104,8 +104,8 @@ pub const CallInput = struct {
     /// Create CallInput for a STATICCALL operation
     /// Implicitly sets value to 0 and is_static to true
     pub fn static_call(
-        contract_address: Address,
-        caller: Address,
+        contract_address: primitives.Address,
+        caller: primitives.Address,
         input: []const u8,
         gas_limit: u64,
         depth: u32,

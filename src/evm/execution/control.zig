@@ -8,8 +8,8 @@ const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const gas_constants = @import("../constants/gas_constants.zig");
 const AccessList = @import("../access_list/access_list.zig").AccessList;
-const Address = @import("Address");
-const from_u256 = Address.from_u256;
+const primitives = @import("primitives");
+const from_u256 = primitives.Address.from_u256;
 
 pub fn op_stop(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!ExecutionResult {
     _ = pc;

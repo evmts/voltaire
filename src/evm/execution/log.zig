@@ -5,7 +5,7 @@ const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const gas_constants = @import("../constants/gas_constants.zig");
-const Address = @import("Address");
+const primitives = @import("primitives");
 
 // Compile-time verification that this file is being used
 const COMPILE_TIME_LOG_VERSION = "2024_LOG_FIX_V2";
