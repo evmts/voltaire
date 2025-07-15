@@ -1,5 +1,5 @@
 const std = @import("std");
-const Address = @import("Address");
+const primitives = @import("primitives");
 const AccessList = @import("../access_list/access_list.zig");
 const blob_types = @import("../blob/blob_types.zig");
 const blob_gas_market = @import("../blob/blob_gas_market.zig");
@@ -42,7 +42,7 @@ pub const BlobTransaction = struct {
     max_priority_fee_per_gas: u256,
     max_fee_per_gas: u256,
     gas_limit: u64,
-    to: ?Address.Address, // Blob transactions must have a recipient (cannot be contract creation)
+    to: ?primitives.Address, // Blob transactions must have a recipient (cannot be contract creation)
     value: u256,
     data: []const u8,
     access_list: AccessList,

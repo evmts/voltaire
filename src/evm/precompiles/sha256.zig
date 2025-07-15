@@ -2,7 +2,7 @@ const std = @import("std");
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const gas_utils = @import("../constants/gas_constants.zig");
-const primitives = @import("../../primitives/root.zig");
+const primitives = @import("primitives");
 
 /// SHA256 precompile implementation
 ///
