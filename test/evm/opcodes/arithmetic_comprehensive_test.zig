@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -22,8 +22,8 @@ test "STOP (0x00): Halt execution" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     const code = [_]u8{0x00}; // STOP
     var contract = Contract.init(
         caller,
@@ -66,8 +66,8 @@ test "ADD (0x01): Basic addition" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     const code = [_]u8{0x01}; // ADD
     var contract = Contract.init(
         caller,
@@ -110,8 +110,8 @@ test "ADD: Overflow wraps to zero" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -153,8 +153,8 @@ test "ADD: Large numbers" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -202,8 +202,8 @@ test "MUL (0x02): Basic multiplication" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -244,8 +244,8 @@ test "MUL: Multiplication by zero" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -286,8 +286,8 @@ test "MUL: Overflow behavior" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -334,8 +334,8 @@ test "SUB (0x03): Basic subtraction" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -376,8 +376,8 @@ test "SUB: Underflow wraps to max" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -422,8 +422,8 @@ test "DIV (0x04): Basic division" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -464,8 +464,8 @@ test "DIV: Division by zero returns zero" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -506,8 +506,8 @@ test "DIV: Integer division truncates" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -552,8 +552,8 @@ test "SDIV (0x05): Signed division positive" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -594,8 +594,8 @@ test "SDIV: Signed division negative" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -639,8 +639,8 @@ test "SDIV: Division by zero returns zero" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -681,8 +681,8 @@ test "SDIV: Edge case MIN / -1" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -729,8 +729,8 @@ test "MOD (0x06): Basic modulo" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -771,8 +771,8 @@ test "MOD: Modulo by zero returns zero" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -817,8 +817,8 @@ test "SMOD (0x07): Signed modulo positive" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -859,8 +859,8 @@ test "SMOD: Signed modulo negative" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -907,8 +907,8 @@ test "ADDMOD (0x08): Basic modular addition" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -950,8 +950,8 @@ test "ADDMOD: Modulo zero returns zero" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -993,8 +993,8 @@ test "ADDMOD: No intermediate overflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1044,8 +1044,8 @@ test "MULMOD (0x09): Basic modular multiplication" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1087,8 +1087,8 @@ test "MULMOD: No intermediate overflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1136,8 +1136,8 @@ test "EXP (0x0A): Basic exponentiation" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1178,8 +1178,8 @@ test "EXP: Zero exponent" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1220,8 +1220,8 @@ test "EXP: Zero base with non-zero exponent" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1262,8 +1262,8 @@ test "EXP: Gas consumption scales with exponent size" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1312,8 +1312,8 @@ test "SIGNEXTEND (0x0B): Extend positive byte" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1354,8 +1354,8 @@ test "SIGNEXTEND: Extend negative byte" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1398,8 +1398,8 @@ test "SIGNEXTEND: Extend from higher byte position" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1441,8 +1441,8 @@ test "SIGNEXTEND: Byte position >= 31 returns value unchanged" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -1515,8 +1515,8 @@ test "Arithmetic opcodes: Gas consumption" {
     };
 
     for (test_cases) |tc| {
-        const caller: Address.Address = [_]u8{0x11} ** 20;
-        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        const caller = Address.init([_]u8{0x11} ** 20);
+        const contract_addr = Address.init([_]u8{0x33} ** 20);
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -1566,8 +1566,8 @@ test "Arithmetic opcodes: Stack underflow" {
 
     // Test binary operations with empty stack
     for (binary_ops) |opcode| {
-        const caller: Address.Address = [_]u8{0x11} ** 20;
-        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        const caller = Address.init([_]u8{0x11} ** 20);
+        const contract_addr = Address.init([_]u8{0x33} ** 20);
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -1600,8 +1600,8 @@ test "Arithmetic opcodes: Stack underflow" {
 
     // Test ternary operations
     for (ternary_ops) |opcode| {
-        const caller: Address.Address = [_]u8{0x11} ** 20;
-        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        const caller = Address.init([_]u8{0x11} ** 20);
+        const contract_addr = Address.init([_]u8{0x33} ** 20);
         var contract = Contract.init(
             caller,
             contract_addr,

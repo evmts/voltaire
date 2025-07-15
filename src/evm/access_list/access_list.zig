@@ -5,13 +5,13 @@ const AccessListStorageKeyContext = @import("access_list_storage_key_context.zig
 const Context = @import("context.zig");
 
 /// EIP-2929 & EIP-2930: Access list management for gas cost calculation
-/// 
+///
 /// Tracks which addresses and storage slots have been accessed during transaction
 /// execution. First access (cold) costs more gas than subsequent accesses (warm).
-/// 
+///
 /// Gas costs:
 /// - Cold address access: 2600 gas
-/// - Warm address access: 100 gas  
+/// - Warm address access: 100 gas
 /// - Cold storage slot access: 2100 gas
 /// - Warm storage slot access: 100 gas
 
@@ -26,7 +26,6 @@ pub const GetCallCostError = Error;
 
 pub const AccessList = @This();
 
-
 // Gas costs defined by EIP-2929
 pub const COLD_ACCOUNT_ACCESS_COST: u64 = 2600;
 pub const WARM_ACCOUNT_ACCESS_COST: u64 = 100;
@@ -38,7 +37,7 @@ pub const COLD_CALL_EXTRA_COST: u64 = COLD_ACCOUNT_ACCESS_COST - WARM_ACCOUNT_AC
 
 allocator: std.mem.Allocator,
 /// Warm addresses - addresses that have been accessed
-addresses: std.AutoHashMap(primitives.Address.Address, void),
+addresses: std.AutoHashMap(primitives.Address, void),
 /// Warm storage slots - storage slots that have been accessed
 storage_slots: std.HashMap(AccessListStorageKey, void, AccessListStorageKeyContext, 80),
 /// Transaction and block context for pre-warming addresses
@@ -118,10 +117,10 @@ pub fn pre_warm_storage_slots(self: *AccessList, address: primitives.Address.Add
 pub fn init_transaction(self: *AccessList, to: ?primitives.Address.Address) std.mem.Allocator.Error!void {
     // Clear previous transaction data
     self.clear();
-    
+
     try self.addresses.put(self.context.tx_origin, {});
     try self.addresses.put(self.context.block_coinbase, {});
-    
+
     if (to) |to_address| {
         try self.addresses.put(to_address, {});
     }
@@ -145,20 +144,20 @@ test "AccessList basic operations" {
     const context = Context.init();
     var access_list = AccessList.init(testing.allocator, context);
     defer access_list.deinit();
-    
+
     const test_address = [_]u8{1} ** 20;
-    
+
     // First access should be cold
     const cost1 = try access_list.access_address(test_address);
     try testing.expectEqual(COLD_ACCOUNT_ACCESS_COST, cost1);
-    
+
     // Second access should be warm
     const cost2 = try access_list.access_address(test_address);
     try testing.expectEqual(WARM_ACCOUNT_ACCESS_COST, cost2);
-    
+
     // Check warmth
     try testing.expect(access_list.is_address_warm(test_address));
-    
+
     const cold_address = [_]u8{2} ** 20;
     try testing.expect(!access_list.is_address_warm(cold_address));
 }
@@ -167,23 +166,23 @@ test "AccessList storage slots" {
     const context = Context.init();
     var access_list = AccessList.init(testing.allocator, context);
     defer access_list.deinit();
-    
+
     const test_address = [_]u8{1} ** 20;
     const slot1: u256 = 42;
     const slot2: u256 = 100;
-    
+
     // First access to slot1 should be cold
     const cost1 = try access_list.access_storage_slot(test_address, slot1);
     try testing.expectEqual(COLD_SLOAD_COST, cost1);
-    
+
     // Second access to slot1 should be warm
     const cost2 = try access_list.access_storage_slot(test_address, slot1);
     try testing.expectEqual(WARM_SLOAD_COST, cost2);
-    
+
     // First access to slot2 should be cold
     const cost3 = try access_list.access_storage_slot(test_address, slot2);
     try testing.expectEqual(COLD_SLOAD_COST, cost3);
-    
+
     // Check warmth
     try testing.expect(access_list.is_storage_slot_warm(test_address, slot1));
     try testing.expect(access_list.is_storage_slot_warm(test_address, slot2));
@@ -194,7 +193,7 @@ test "AccessList transaction initialization" {
     const tx_origin = [_]u8{1} ** 20;
     const coinbase = [_]u8{2} ** 20;
     const to_address = [_]u8{3} ** 20;
-    
+
     const context = Context.init_with_values(
         tx_origin,
         0, // gas_price
@@ -210,14 +209,14 @@ test "AccessList transaction initialization" {
     );
     var access_list = AccessList.init(testing.allocator, context);
     defer access_list.deinit();
-    
+
     try access_list.init_transaction(to_address);
-    
+
     // All should be pre-warmed
     try testing.expect(access_list.is_address_warm(tx_origin));
     try testing.expect(access_list.is_address_warm(coinbase));
     try testing.expect(access_list.is_address_warm(to_address));
-    
+
     // Accessing them should return warm cost
     try testing.expectEqual(WARM_ACCOUNT_ACCESS_COST, try access_list.access_address(tx_origin));
     try testing.expectEqual(WARM_ACCOUNT_ACCESS_COST, try access_list.access_address(coinbase));
@@ -228,27 +227,27 @@ test "AccessList pre-warming from EIP-2930" {
     const context = Context.init();
     var access_list = AccessList.init(testing.allocator, context);
     defer access_list.deinit();
-    
+
     const addresses = [_]primitives.Address.Address{
         [_]u8{1} ** 20,
         [_]u8{2} ** 20,
         [_]u8{3} ** 20,
     };
-    
+
     try access_list.pre_warm_addresses(&addresses);
-    
+
     // All should be warm
     for (addresses) |address| {
         try testing.expect(access_list.is_address_warm(address));
         try testing.expectEqual(WARM_ACCOUNT_ACCESS_COST, try access_list.access_address(address));
     }
-    
+
     // Test storage slot pre-warming
     const contract_address = [_]u8{4} ** 20;
     const slots = [_]u256{ 1, 2, 3, 100 };
-    
+
     try access_list.pre_warm_storage_slots(contract_address, &slots);
-    
+
     for (slots) |slot| {
         try testing.expect(access_list.is_storage_slot_warm(contract_address, slot));
         try testing.expectEqual(WARM_SLOAD_COST, try access_list.access_storage_slot(contract_address, slot));
@@ -259,19 +258,19 @@ test "AccessList call costs" {
     const context = Context.init();
     var access_list = AccessList.init(testing.allocator, context);
     defer access_list.deinit();
-    
+
     const cold_address = [_]u8{1} ** 20;
     const warm_address = [_]u8{2} ** 20;
-    
+
     // Pre-warm one address
     try access_list.pre_warm_addresses(&[_]primitives.Address.Address{warm_address});
-    
+
     // Cold address should have extra cost
     try testing.expectEqual(COLD_CALL_EXTRA_COST, try access_list.get_call_cost(cold_address));
-    
+
     // Warm address should have no extra cost
     try testing.expectEqual(@as(u64, 0), try access_list.get_call_cost(warm_address));
-    
+
     // After getting cost, cold address should now be warm
     try testing.expect(access_list.is_address_warm(cold_address));
 }

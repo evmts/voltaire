@@ -1,4 +1,6 @@
-pub const Address = @import("address.zig");
+const address = @import("address.zig");
+pub const Address = address.Address;
+pub const ZERO_ADDRESS = address.ZERO_ADDRESS;
 pub const Hash = @import("hash.zig");
 pub const Hex = @import("hex.zig");
 pub const Numeric = @import("numeric.zig");

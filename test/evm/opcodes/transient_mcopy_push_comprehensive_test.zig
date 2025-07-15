@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -22,8 +22,8 @@ test "TLOAD (0x5C): Load from transient storage" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -91,8 +91,8 @@ test "TSTORE (0x5D): Store to transient storage" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     const bytecode = [_]u8{ 0x5D, 0x5C }; // TSTORE at 0, TLOAD at 1
     var contract = Contract.init(
         caller,
@@ -166,8 +166,8 @@ test "MCOPY (0x5E): Memory to memory copy" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -262,8 +262,8 @@ test "PUSH0 (0x5F): Push zero onto stack" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -332,8 +332,8 @@ test "PUSH1 (0x60): Push 1 byte onto stack" {
         0x60, 0x7F, // PUSH1 0x7F
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -387,8 +387,8 @@ test "PUSH2 (0x61): Push 2 bytes onto stack" {
         0x61, 0xAB, 0xCD, // PUSH2 0xABCD
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -441,8 +441,8 @@ test "PUSH3 (0x62): Push 3 bytes onto stack" {
         0x62, 0xAB, 0xCD, 0xEF, // PUSH3 0xABCDEF
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -493,8 +493,8 @@ test "Transient storage and memory opcodes: Gas consumption" {
     defer evm.deinit();
 
     const code = [_]u8{ 0x60, 0x42 }; // PUSH1 data for testing
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -584,8 +584,8 @@ test "MCOPY: Edge cases" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -624,9 +624,9 @@ test "Transient storage: Isolation between addresses" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr1: Address.Address = [_]u8{0x33} ** 20;
-    const contract_addr2: Address.Address = [_]u8{0x44} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr1 = [_]u8{0x33} ** 20;
+    const contract_addr2 = Address.init([_]u8{0x44} ** 20);
 
     var contract1 = Contract.init(
         caller,
@@ -696,8 +696,8 @@ test "PUSH operations: Boundary conditions" {
         0x61, 0x12, // Incomplete PUSH2 (missing 1 byte)
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,

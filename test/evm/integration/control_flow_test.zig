@@ -7,9 +7,10 @@ test {
 
 // Import EVM components directly
 const Evm = @import("evm");
+const primitives = @import("primitives");
 const Frame = Evm.Frame;
 const Contract = Evm.Contract;
-const Address = Evm.Address;
+const Address = primitives.Address;
 const Operation = Evm.Operation;
 const ExecutionError = Evm.ExecutionError;
 const MemoryDatabase = Evm.MemoryDatabase;

@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -28,8 +28,8 @@ test "LOG0 (0xA0): Emit log with no topics" {
         0xA0, // LOG0
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -122,8 +122,8 @@ test "LOG1 (0xA1): Emit log with one topic" {
         0xA1, // LOG1
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -204,8 +204,8 @@ test "LOG2-LOG4: Multiple topics" {
         0xA4, // LOG4
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -308,8 +308,8 @@ test "LOG0-LOG4: Gas consumption" {
 
     const code = [_]u8{ 0xA0, 0xA1, 0xA2, 0xA3, 0xA4 }; // LOG0-LOG4
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -393,8 +393,8 @@ test "LOG operations: Static call protection" {
         0xA0, // LOG0
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -459,8 +459,8 @@ test "LOG operations: Stack underflow" {
 
     const code = [_]u8{ 0xA0, 0xA1, 0xA2, 0xA3, 0xA4 }; // All LOG opcodes
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -517,8 +517,8 @@ test "LOG operations: Empty data" {
         0xA1, // LOG1
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -569,8 +569,8 @@ test "LOG operations: Large memory offset" {
 
     const code = [_]u8{0xA0}; // LOG0
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -701,8 +701,8 @@ test "LOG operations: ERC20 Transfer event pattern" {
         0xA3, // LOG3
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -787,8 +787,8 @@ test "LOG operations: Multiple logs in sequence" {
         0xA0, // LOG0
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,

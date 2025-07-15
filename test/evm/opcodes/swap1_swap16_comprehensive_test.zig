@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -28,8 +28,8 @@ test "SWAP1 (0x90): Swap top two stack items" {
         0x90, // SWAP1
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -86,8 +86,8 @@ test "SWAP2 (0x91): Swap 1st and 3rd stack items" {
 
     const code = [_]u8{0x91}; // SWAP2
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -136,8 +136,8 @@ test "SWAP3-SWAP5: Various swaps" {
 
     const code = [_]u8{ 0x92, 0x93, 0x94 }; // SWAP3, SWAP4, SWAP5
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -220,8 +220,8 @@ test "SWAP6-SWAP10: Mid-range swaps" {
 
     const code = [_]u8{ 0x95, 0x96, 0x97, 0x98, 0x99 }; // SWAP6-SWAP10
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -287,8 +287,8 @@ test "SWAP11-SWAP16: High-range swaps" {
 
     const code = [_]u8{ 0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F }; // SWAP11-SWAP16
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -359,8 +359,8 @@ test "SWAP16 (0x9F): Swap with 16th position (maximum)" {
 
     const code = [_]u8{0x9F}; // SWAP16
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -417,8 +417,8 @@ test "SWAP1-SWAP16: Gas consumption" {
         0x98, 0x99, 0x9A, 0x9B, 0x9C, 0x9D, 0x9E, 0x9F,
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -477,8 +477,8 @@ test "SWAP operations: Stack underflow" {
 
     const code = [_]u8{ 0x90, 0x91, 0x95, 0x9F }; // SWAP1, SWAP2, SWAP6, SWAP16
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -557,8 +557,8 @@ test "SWAP operations: Sequential swaps" {
         0x90, // SWAP1
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -622,8 +622,8 @@ test "SWAP operations: Pattern verification" {
 
     const code = [_]u8{ 0x90, 0x94, 0x98, 0x9C, 0x9F }; // SWAP1, SWAP5, SWAP9, SWAP13, SWAP16
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -696,8 +696,8 @@ test "SWAP operations: Boundary test with exact stack size" {
 
     const code = [_]u8{ 0x90, 0x9F }; // SWAP1, SWAP16
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -761,8 +761,8 @@ test "SWAP operations: No side effects" {
 
     const code = [_]u8{0x92}; // SWAP3
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,

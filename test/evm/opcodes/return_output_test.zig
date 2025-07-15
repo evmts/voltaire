@@ -6,7 +6,7 @@ test {
 }
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 
 test "RETURN sets output correctly" {
     const allocator = testing.allocator;

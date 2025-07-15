@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -18,8 +18,8 @@ test "Environment: ADDRESS opcode" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -63,12 +63,12 @@ test "Environment: BALANCE opcode" {
     defer evm.deinit();
 
     // Set up accounts with balances
-    const alice_addr: Address.Address = [_]u8{0xAA} ** 20;
+    const alice_addr = Address.init([_]u8{0xAA} ** 20);
     const test_balance: u256 = 1000000;
     try evm.state.set_balance(alice_addr, test_balance);
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -99,7 +99,7 @@ test "Environment: BALANCE opcode" {
 
     // Test 2: Get balance of non-existent account (should return 0)
     frame.stack.clear();
-    const random_addr: Address.Address = [_]u8{0xFF} ** 20;
+    const random_addr = Address.init([_]u8{0xFF} ** 20);
     const random_u256 = primitives.Address.to_u256(random_addr);
     try frame.stack.append(random_u256);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
@@ -119,8 +119,8 @@ test "Environment: ORIGIN and CALLER opcodes" {
     defer evm.deinit();
 
     // Set transaction origin
-    const tx_origin: Address.Address = [_]u8{0xAA} ** 20;
-    const block_coinbase: Address.Address = [_]u8{0x00} ** 20;
+    const tx_origin = Address.init([_]u8{0xAA} ** 20);
+    const block_coinbase = Address.init([_]u8{0x00} ** 20);
     const context = Evm.Context.init_with_values(
         tx_origin,      // tx_origin
         0,              // gas_price
@@ -136,8 +136,8 @@ test "Environment: ORIGIN and CALLER opcodes" {
     );
     evm.set_context(context);
 
-    const caller_addr: Address.Address = [_]u8{0xBB} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller_addr = Address.init([_]u8{0xBB} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller_addr,
         contract_addr,
@@ -183,8 +183,8 @@ test "Environment: CALLVALUE opcode" {
     defer evm.deinit();
 
     const call_value: u256 = 500000;
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -224,8 +224,8 @@ test "Environment: GASPRICE opcode" {
 
     // Set gas price
     const gas_price: u256 = 20_000_000_000; // 20 gwei
-    const tx_origin: Address.Address = [_]u8{0x11} ** 20;
-    const block_coinbase: Address.Address = [_]u8{0x00} ** 20;
+    const tx_origin = Address.init([_]u8{0x11} ** 20);
+    const block_coinbase = Address.init([_]u8{0x00} ** 20);
     const context = Evm.Context.init_with_values(
         tx_origin,      // tx_origin
         gas_price,      // gas_price
@@ -241,8 +241,8 @@ test "Environment: GASPRICE opcode" {
     );
     evm.set_context(context);
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -281,13 +281,13 @@ test "Environment: EXTCODESIZE opcode" {
     defer evm.deinit();
 
     // Set up account with code
-    const bob_addr: Address.Address = [_]u8{0xBB} ** 20;
+    const bob_addr = Address.init([_]u8{0xBB} ** 20);
     const test_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0x00 }; // PUSH1 0 PUSH1 0 STOP
     try evm.state.set_balance(bob_addr, 0);
     try evm.state.set_code(bob_addr, &test_code);
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -318,7 +318,7 @@ test "Environment: EXTCODESIZE opcode" {
 
     // Test 2: Get code size of account without code
     frame.stack.clear();
-    const alice_addr: Address.Address = [_]u8{0xAA} ** 20;
+    const alice_addr = Address.init([_]u8{0xAA} ** 20);
     const alice_u256 = primitives.Address.to_u256(alice_addr);
     try frame.stack.append(alice_u256);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
@@ -338,7 +338,7 @@ test "Environment: EXTCODECOPY opcode" {
     defer evm.deinit();
 
     // Set up account with code
-    const bob_addr: Address.Address = [_]u8{0xBB} ** 20;
+    const bob_addr = Address.init([_]u8{0xBB} ** 20);
     const test_code = [_]u8{
         0x60, 0x01, // PUSH1 1
         0x60, 0x02, // PUSH1 2
@@ -350,8 +350,8 @@ test "Environment: EXTCODECOPY opcode" {
     try evm.state.set_balance(bob_addr, 0);
     try evm.state.set_code(bob_addr, &test_code);
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -432,13 +432,13 @@ test "Environment: EXTCODEHASH opcode" {
     defer evm.deinit();
 
     // Set up account with code
-    const bob_addr: Address.Address = [_]u8{0xBB} ** 20;
+    const bob_addr = Address.init([_]u8{0xBB} ** 20);
     const test_code = [_]u8{ 0x60, 0x00, 0x00 }; // PUSH1 0 STOP
     try evm.state.set_balance(bob_addr, 0);
     try evm.state.set_code(bob_addr, &test_code);
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -469,7 +469,7 @@ test "Environment: EXTCODEHASH opcode" {
 
     // Test 2: Get hash of empty account (should return 0)
     frame.stack.clear();
-    const alice_addr: Address.Address = [_]u8{0xAA} ** 20;
+    const alice_addr = Address.init([_]u8{0xAA} ** 20);
     const alice_u256 = primitives.Address.to_u256(alice_addr);
     try frame.stack.append(alice_u256);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3F);
@@ -489,11 +489,11 @@ test "Environment: SELFBALANCE opcode (Istanbul)" {
     defer evm.deinit();
 
     // Set balance for contract
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     const contract_balance: u256 = 2_000_000;
     try evm.state.set_balance(contract_addr, contract_balance);
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -536,8 +536,8 @@ test "Environment: CHAINID opcode (Istanbul)" {
 
     // Set chain ID
     const chain_id: u256 = 1; // Mainnet
-    const tx_origin: Address.Address = [_]u8{0x11} ** 20;
-    const block_coinbase: Address.Address = [_]u8{0x00} ** 20;
+    const tx_origin = Address.init([_]u8{0x11} ** 20);
+    const block_coinbase = Address.init([_]u8{0x00} ** 20);
     const context = Evm.Context.init_with_values(
         tx_origin,      // tx_origin
         0,              // gas_price
@@ -553,8 +553,8 @@ test "Environment: CHAINID opcode (Istanbul)" {
     );
     evm.set_context(context);
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -593,11 +593,11 @@ test "Environment: Cold/Warm address access (EIP-2929)" {
     defer evm.deinit();
 
     // Set up account
-    const bob_addr: Address.Address = [_]u8{0xBB} ** 20;
+    const bob_addr = Address.init([_]u8{0xBB} ** 20);
     try evm.state.set_balance(bob_addr, 1000);
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -645,8 +645,8 @@ test "Environment: Stack underflow errors" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,

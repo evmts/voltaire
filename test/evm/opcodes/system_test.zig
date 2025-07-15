@@ -1,9 +1,10 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
+const primitives = @import("primitives");
 const opcodes = Evm.opcodes;
 const ExecutionError = Evm.ExecutionError;
-const Address = Evm.Address;
+const Address = primitives.Address;
 const gas_constants = Evm.gas_constants;
 const Hardfork = Evm.Hardfork.Hardfork;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -24,8 +25,8 @@ test "CREATE: create new contract" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -82,8 +83,8 @@ test "CREATE: empty init code creates empty contract" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -130,8 +131,8 @@ test "CREATE: write protection in static call" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -176,8 +177,8 @@ test "CREATE: depth limit" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -227,8 +228,8 @@ test "CREATE2: create with deterministic address" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -287,8 +288,8 @@ test "CALL: basic call behavior" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -326,7 +327,7 @@ test "CALL: basic call behavior" {
     try frame.stack.append(4); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
-    const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const alice_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(50000); // gas
     
@@ -352,8 +353,8 @@ test "CALL: failed call" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -381,7 +382,7 @@ test "CALL: failed call" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
-    const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const alice_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(50000); // gas
     
@@ -407,8 +408,8 @@ test "CALL: cold address access costs more gas" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -436,7 +437,7 @@ test "CALL: cold address access costs more gas" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
-    const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const alice_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(1000); // gas
     
@@ -466,8 +467,8 @@ test "CALL: value transfer in static call fails" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -493,7 +494,7 @@ test "CALL: value transfer in static call fails" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(100); // value (non-zero!)
-    const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const alice_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(1000); // gas
     
@@ -518,8 +519,8 @@ test "DELEGATECALL: execute code in current context" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -549,7 +550,7 @@ test "DELEGATECALL: execute code in current context" {
     try frame.stack.append(50); // ret_offset
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
-    const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const alice_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(50000); // gas
     
@@ -576,8 +577,8 @@ test "STATICCALL: read-only call" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -607,7 +608,7 @@ test "STATICCALL: read-only call" {
     try frame.stack.append(200); // ret_offset
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
-    const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const alice_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(50000); // gas
     
@@ -634,8 +635,8 @@ test "CALL: depth limit" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -659,7 +660,7 @@ test "CALL: depth limit" {
     
     // Push parameters
     try frame.stack.append(1000); // gas
-    const alice_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const alice_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     try frame.stack.append(primitives.Address.to_u256(alice_address)); // to
     try frame.stack.append(0); // value
     try frame.stack.append(0); // args_offset
@@ -690,8 +691,8 @@ test "CREATE: gas consumption" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -747,8 +748,8 @@ test "CREATE2: additional gas for hashing" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -806,8 +807,8 @@ test "CREATE: stack underflow" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -850,8 +851,8 @@ test "CALL: stack underflow" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -899,8 +900,8 @@ test "CREATE: memory expansion for init code" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -959,8 +960,8 @@ test "CREATE: EIP-3860 initcode size limit" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -1004,8 +1005,8 @@ test "CREATE: EIP-3860 initcode word gas" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,
@@ -1063,8 +1064,8 @@ test "CREATE2: EIP-3860 initcode size limit" {
     defer evm.deinit();
     
     // Create contract
-    const contract_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{1};
-    const caller_address: Address.Address = [_]u8{0} ** 19 ++ [_]u8{2};
+    const contract_address = Address.init([_]u8{0} ** 19 ++ [_]u8{1});
+    const caller_address = Address.init([_]u8{0} ** 19 ++ [_]u8{2});
     var contract = Contract.init(
         caller_address,
         contract_address,

@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -28,8 +28,8 @@ test "RETURN (0xF3): Return data from execution" {
         0xF3, // RETURN
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -86,8 +86,8 @@ test "RETURN: Empty return data" {
         0xF3, // RETURN
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -142,8 +142,8 @@ test "REVERT (0xFD): Revert with data" {
         0xFD, // REVERT
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -200,8 +200,8 @@ test "REVERT: Empty revert data" {
         0xFD, // REVERT
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -254,8 +254,8 @@ test "INVALID (0xFE): Consume all gas and fail" {
 
     const code = [_]u8{0xFE}; // INVALID
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -329,8 +329,8 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
         0xFF, // SELFDESTRUCT
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -374,8 +374,8 @@ test "SELFDESTRUCT: Static call protection" {
 
     const code = [_]u8{0xFF}; // SELFDESTRUCT
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -397,7 +397,7 @@ test "SELFDESTRUCT: Static call protection" {
     frame.is_static = true;
 
     // Push beneficiary address
-    const bob_addr: Address.Address = [_]u8{0x22} ** 20;
+    const bob_addr = Address.init([_]u8{0x22} ** 20);
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
 
     // Execute SELFDESTRUCT
@@ -419,8 +419,8 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
 
     const code = [_]u8{0xFF}; // SELFDESTRUCT
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -474,8 +474,8 @@ test "Control opcodes: Gas consumption" {
     // Test RETURN gas consumption (memory expansion)
     const return_code = [_]u8{0xF3}; // RETURN
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -525,8 +525,8 @@ test "RETURN/REVERT: Large memory offset" {
     const opcodes = [_]u8{ 0xF3, 0xFD }; // RETURN, REVERT
 
     for (opcodes) |opcode| {
-        const caller: Address.Address = [_]u8{0x11} ** 20;
-        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        const caller = Address.init([_]u8{0x11} ** 20);
+        const contract_addr = Address.init([_]u8{0x33} ** 20);
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -578,8 +578,8 @@ test "RETURN/REVERT: Stack underflow" {
     const opcodes = [_]u8{ 0xF3, 0xFD }; // RETURN, REVERT
 
     for (opcodes) |opcode| {
-        const caller: Address.Address = [_]u8{0x11} ** 20;
-        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        const caller = Address.init([_]u8{0x11} ** 20);
+        const contract_addr = Address.init([_]u8{0x33} ** 20);
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -622,8 +622,8 @@ test "Control flow interaction: Call with REVERT" {
 
     const code = [_]u8{0xF1}; // CALL
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -649,7 +649,7 @@ test "Control flow interaction: Call with REVERT" {
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // value
-    const bob_addr: Address.Address = [_]u8{0x22} ** 20;
+    const bob_addr = Address.init([_]u8{0x22} ** 20);
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(2000); // gas
 

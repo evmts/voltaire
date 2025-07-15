@@ -61,7 +61,7 @@ const Context = @This();
 /// EOA → Contract A → Contract B → Contract C
 /// - tx.origin = EOA (same for all)
 /// - msg.sender differs at each level
-tx_origin: primitives.Address.Address = primitives.Address.ZERO_ADDRESS,
+tx_origin: primitives.Address = primitives.Address.ZERO_ADDRESS,
 /// The gas price for the current transaction in wei.
 ///
 /// ## GASPRICE Opcode (0x3A)
@@ -188,7 +188,7 @@ chain_id: u256 = 1,
 ///
 /// ## Typical Values
 /// - Low congestion: 5-10 gwei
-/// - Normal: 15-30 gwei  
+/// - Normal: 15-30 gwei
 /// - High congestion: 100+ gwei
 block_base_fee: u256 = 0,
 /// List of blob hashes for EIP-4844 blob transactions.
@@ -209,7 +209,7 @@ block_base_fee: u256 = 0,
 blob_hashes: []const u256 = &[_]u256{},
 /// The base fee per blob gas for the current block (EIP-4844).
 ///
-/// ## BLOBBASEFEE Opcode (0x4A)  
+/// ## BLOBBASEFEE Opcode (0x4A)
 /// Returns the current base fee for blob gas, which uses
 /// a separate fee market from regular transaction gas.
 ///
@@ -285,7 +285,7 @@ pub fn init() Context {
 /// );
 /// ```
 pub fn init_with_values(
-    tx_origin: primitives.Address.Address,
+    tx_origin: primitives.Address,
     gas_price: u256,
     block_number: u64,
     block_timestamp: u64,

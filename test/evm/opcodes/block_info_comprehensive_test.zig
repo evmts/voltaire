@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -47,8 +47,8 @@ test "GASLIMIT (0x45): Get block gas limit" {
         );
         evm.set_context(context);
         
-        const caller: Address.Address = [_]u8{0x11} ** 20;
-        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        const caller = Address.init([_]u8{0x11} ** 20);
+        const contract_addr = Address.init([_]u8{0x33} ** 20);
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -115,8 +115,8 @@ test "CHAINID (0x46): Get chain ID" {
         );
         evm.set_context(context);
         
-        const caller: Address.Address = [_]u8{0x11} ** 20;
-        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        const caller = Address.init([_]u8{0x11} ** 20);
+        const contract_addr = Address.init([_]u8{0x33} ** 20);
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -164,8 +164,8 @@ test "SELFBALANCE (0x47): Get contract's own balance" {
     };
     
     for (test_cases) |balance| {
-        const caller: Address.Address = [_]u8{0x11} ** 20;
-        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        const caller = Address.init([_]u8{0x11} ** 20);
+        const contract_addr = Address.init([_]u8{0x33} ** 20);
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -233,8 +233,8 @@ test "BASEFEE (0x48): Get block base fee" {
         );
         evm.set_context(context);
         
-        const caller: Address.Address = [_]u8{0x11} ** 20;
-        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        const caller = Address.init([_]u8{0x11} ** 20);
+        const contract_addr = Address.init([_]u8{0x33} ** 20);
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -295,8 +295,8 @@ test "BLOBHASH (0x49): Get blob versioned hash" {
     );
     evm.set_context(context);
     
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -384,8 +384,8 @@ test "BLOBBASEFEE (0x4A): Get blob base fee" {
         );
         evm.set_context(context);
         
-        const caller: Address.Address = [_]u8{0x11} ** 20;
-        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        const caller = Address.init([_]u8{0x11} ** 20);
+        const contract_addr = Address.init([_]u8{0x33} ** 20);
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -446,8 +446,8 @@ test "Block info opcodes: Gas consumption" {
     );
     evm.set_context(context);
     
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -512,8 +512,8 @@ test "Invalid opcodes 0x4B-0x4E: Should revert" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
     
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -565,8 +565,8 @@ test "SELFBALANCE: Balance changes during execution" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
     
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -631,8 +631,8 @@ test "BLOBHASH: Empty blob list" {
     );
     evm.set_context(context);
     
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -687,8 +687,8 @@ test "CHAINID: EIP-1344 behavior" {
     );
     evm.set_context(context);
     
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -745,8 +745,8 @@ test "Stack operations: All opcodes push exactly one value" {
     );
     evm.set_context(context);
     
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,

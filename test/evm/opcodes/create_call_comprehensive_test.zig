@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -31,8 +31,8 @@ test "CREATE (0xF0): Basic contract creation" {
         0xF0, // CREATE
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -106,8 +106,8 @@ test "CREATE: Static call protection" {
 
     const code = [_]u8{0xF0}; // CREATE
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -153,8 +153,8 @@ test "CREATE: EIP-3860 initcode size limit" {
 
     const code = [_]u8{0xF0}; // CREATE
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -200,8 +200,8 @@ test "CREATE: Depth limit" {
 
     const code = [_]u8{0xF0}; // CREATE
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -261,8 +261,8 @@ test "CREATE2 (0xF5): Deterministic contract creation" {
         0xF5, // CREATE2
     };
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -322,8 +322,8 @@ test "CALL (0xF1): Basic external call" {
 
     const code = [_]u8{0xF1}; // CALL
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -375,8 +375,8 @@ test "CALL: Value transfer in static context" {
 
     const code = [_]u8{0xF1}; // CALL
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -426,8 +426,8 @@ test "CALL: Cold address access (EIP-2929)" {
 
     const code = [_]u8{0xF1}; // CALL
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -485,8 +485,8 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
 
     const code = [_]u8{0xF2}; // CALLCODE
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -541,8 +541,8 @@ test "DELEGATECALL (0xF4): Execute with current context" {
 
     const code = [_]u8{0xF4}; // DELEGATECALL
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -601,8 +601,8 @@ test "STATICCALL (0xFA): Read-only external call" {
 
     const code = [_]u8{0xFA}; // STATICCALL
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -656,8 +656,8 @@ test "System opcodes: Gas consumption" {
 
     const code = [_]u8{0xF0}; // CREATE
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -716,8 +716,8 @@ test "CALL operations: Depth limit" {
     const opcodes = [_]u8{ 0xF1, 0xF2, 0xF4, 0xFA }; // CALL, CALLCODE, DELEGATECALL, STATICCALL
 
     for (opcodes) |opcode| {
-        const caller: Address.Address = [_]u8{0x11} ** 20;
-        const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+        const caller = Address.init([_]u8{0x11} ** 20);
+        const contract_addr = Address.init([_]u8{0x33} ** 20);
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -783,8 +783,8 @@ test "CREATE/CREATE2: Failed creation scenarios" {
 
     const code = [_]u8{0xF0}; // CREATE
 
-    const caller: Address.Address = [_]u8{0x11} ** 20;
-    const contract_addr: Address.Address = [_]u8{0x33} ** 20;
+    const caller = Address.init([_]u8{0x11} ** 20);
+    const contract_addr = Address.init([_]u8{0x33} ** 20);
     var contract = Contract.init(
         caller,
         contract_addr,
