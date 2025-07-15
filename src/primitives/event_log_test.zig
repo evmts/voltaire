@@ -7,7 +7,7 @@ const Hex = @import("hex.zig");
 
 // Event log structure
 pub const EventLog = struct {
-    address: Address.Address,
+    address: primitives.Address,
     topics: []const Hash.Hash,
     data: []const u8,
     block_number: ?u64,
@@ -47,8 +47,8 @@ test "parse event log with no indexed parameters" {
     const topic0 = Hash.keccak256("Transfer(address,address,uint256)");
     
     // Log data contains all parameters
-    const from_addr = try Address.from_hex("0x0000000000000000000000000000000000000001");
-    const to_addr = try Address.from_hex("0x0000000000000000000000000000000000000002");
+    const from_addr = try primitives.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const to_addr = try primitives.Address.from_hex("0x0000000000000000000000000000000000000002");
     const value: u256 = 1000;
     
     const values = [_]abi.AbiValue{
@@ -61,7 +61,7 @@ test "parse event log with no indexed parameters" {
     defer allocator.free(data);
     
     const log = EventLog{
-        .address = try Address.from_hex("0x0000000000000000000000000000000000000000"),
+        .address = try primitives.Address.from_hex("0x0000000000000000000000000000000000000000"),
         .topics = &[_]Hash.Hash{topic0},
         .data = data,
         .block_number = 12345,
@@ -98,8 +98,8 @@ test "parse event log with indexed parameters" {
     const topic0 = Hash.keccak256("Transfer(address,address,uint256)");
     
     // Indexed parameters as topics
-    const from_addr = try Address.from_hex("0x0000000000000000000000000000000000000001");
-    const to_addr = try Address.from_hex("0x0000000000000000000000000000000000000002");
+    const from_addr = try primitives.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const to_addr = try primitives.Address.from_hex("0x0000000000000000000000000000000000000002");
     
     // Create topics for indexed parameters
     var topic1 = Hash.ZERO_HASH;
@@ -118,7 +118,7 @@ test "parse event log with indexed parameters" {
     defer allocator.free(data);
     
     const log = EventLog{
-        .address = try Address.from_hex("0x0000000000000000000000000000000000000000"),
+        .address = try primitives.Address.from_hex("0x0000000000000000000000000000000000000000"),
         .topics = &[_]Hash.Hash{ topic0, topic1, topic2 },
         .data = data,
         .block_number = 12345,
@@ -156,7 +156,7 @@ test "parse event log with dynamic indexed parameter" {
     const message = "Hello, Ethereum!";
     const message_hash = Hash.keccak256(message);
     
-    const sender = try Address.from_hex("0x0000000000000000000000000000000000000001");
+    const sender = try primitives.Address.from_hex("0x0000000000000000000000000000000000000001");
     const values = [_]abi.AbiValue{
         abi.address_value(sender),
     };
@@ -165,7 +165,7 @@ test "parse event log with dynamic indexed parameter" {
     defer allocator.free(data);
     
     const log = EventLog{
-        .address = try Address.from_hex("0x0000000000000000000000000000000000000000"),
+        .address = try primitives.Address.from_hex("0x0000000000000000000000000000000000000000"),
         .topics = &[_]Hash.Hash{ topic0, message_hash },
         .data = data,
         .block_number = 12345,
@@ -195,8 +195,8 @@ test "parse anonymous event" {
     };
     
     // No topic0 for anonymous events
-    const from_addr = try Address.from_hex("0x0000000000000000000000000000000000000001");
-    const to_addr = try Address.from_hex("0x0000000000000000000000000000000000000002");
+    const from_addr = try primitives.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const to_addr = try primitives.Address.from_hex("0x0000000000000000000000000000000000000002");
     
     var topic0 = Hash.ZERO_HASH;
     @memcpy(topic0[12..32], &from_addr);
@@ -213,7 +213,7 @@ test "parse anonymous event" {
     defer allocator.free(data);
     
     const log = EventLog{
-        .address = try Address.from_hex("0x0000000000000000000000000000000000000000"),
+        .address = try primitives.Address.from_hex("0x0000000000000000000000000000000000000000"),
         .topics = &[_]Hash.Hash{ topic0, topic1 }, // Only indexed parameters
         .data = data,
         .block_number = 12345,
@@ -244,8 +244,8 @@ test "parse ERC20 Transfer event" {
     // Real Transfer event signature
     const topic0 = Hash.from_hex_comptime("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef");
     
-    const from_addr = try Address.from_hex("0x1234567890123456789012345678901234567890");
-    const to_addr = try Address.from_hex("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
+    const from_addr = try primitives.Address.from_hex("0x1234567890123456789012345678901234567890");
+    const to_addr = try primitives.Address.from_hex("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
     
     var topic1 = Hash.ZERO_HASH;
     @memcpy(topic1[12..32], &from_addr);
@@ -262,7 +262,7 @@ test "parse ERC20 Transfer event" {
     defer allocator.free(data);
     
     const log = EventLog{
-        .address = try Address.from_hex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"), // WETH address
+        .address = try primitives.Address.from_hex("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"), // WETH address
         .topics = &[_]Hash.Hash{ topic0, topic1, topic2 },
         .data = data,
         .block_number = 17000000,
@@ -299,8 +299,8 @@ test "parse event with multiple data parameters" {
     
     const topic0 = Hash.keccak256("Swap(address,uint256,uint256,uint256,uint256,address)");
     
-    const sender = try Address.from_hex("0x0000000000000000000000000000000000000001");
-    const to = try Address.from_hex("0x0000000000000000000000000000000000000002");
+    const sender = try primitives.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const to = try primitives.Address.from_hex("0x0000000000000000000000000000000000000002");
     
     var topic1 = Hash.ZERO_HASH;
     @memcpy(topic1[12..32], &sender);
@@ -319,7 +319,7 @@ test "parse event with multiple data parameters" {
     defer allocator.free(data);
     
     const log = EventLog{
-        .address = try Address.from_hex("0x0000000000000000000000000000000000000000"),
+        .address = try primitives.Address.from_hex("0x0000000000000000000000000000000000000000"),
         .topics = &[_]Hash.Hash{ topic0, topic1, topic2 },
         .data = data,
         .block_number = 12345,
@@ -410,7 +410,7 @@ fn parse_event_log(allocator: std.mem.Allocator, log: EventLog, sig: EventSignat
                 // For indexed parameters, decode based on type
                 switch (input.type) {
                     .address => {
-                        var addr: Address.Address = undefined;
+                        var addr: primitives.Address = undefined;
                         @memcpy(&addr, topic[12..32]);
                         try result.append(abi.address_value(addr));
                     },

@@ -3,10 +3,10 @@ const testing = std.testing;
 const Hash = @import("hash_utils.zig");
 const Address = @import("address/address.zig");
 const Hex = @import("hex.zig");
-const Rlp = @import("Rlp");
+const primitives = @import("primitives");
 
 // Contract address generation for CREATE opcode
-pub fn get_contract_address(deployer: Address.Address, nonce: u64) Address.Address {
+pub fn get_contract_address(deployer: primitives.Address, nonce: u64) primitives.Address {
     const allocator = std.heap.page_allocator;
     
     // RLP encode [deployer_address, nonce]
@@ -14,13 +14,13 @@ pub fn get_contract_address(deployer: Address.Address, nonce: u64) Address.Addre
     defer list.deinit();
     
     // Encode deployer address (20 bytes)
-    Rlp.encode_bytes(allocator, &deployer, &list) catch unreachable;
+    primitives.Rlp.encode_bytes(allocator, &deployer, &list) catch unreachable;
     
     // Encode nonce
     if (nonce == 0) {
         list.append(0x80) catch unreachable; // Empty string for 0
     } else {
-        Rlp.encode_uint(allocator, nonce, &list) catch unreachable;
+        primitives.Rlp.encode_uint(allocator, nonce, &list) catch unreachable;
     }
     
     // Wrap in list
@@ -31,7 +31,7 @@ pub fn get_contract_address(deployer: Address.Address, nonce: u64) Address.Addre
         rlp_list.append(@as(u8, @intCast(0xc0 + list.items.len))) catch unreachable;
     } else {
         // Long list encoding
-        const len_bytes = Rlp.encode_length(list.items.len);
+        const len_bytes = primitives.Rlp.encode_length(list.items.len);
         rlp_list.append(@as(u8, @intCast(0xf7 + len_bytes.len))) catch unreachable;
         rlp_list.appendSlice(len_bytes) catch unreachable;
     }
@@ -41,7 +41,7 @@ pub fn get_contract_address(deployer: Address.Address, nonce: u64) Address.Addre
     const hash = Hash.keccak256(rlp_list.items);
     
     // Take last 20 bytes as address
-    var address: Address.Address = undefined;
+    var address: primitives.Address = undefined;
     @memcpy(&address, hash[12..32]);
     
     return address;
@@ -49,10 +49,10 @@ pub fn get_contract_address(deployer: Address.Address, nonce: u64) Address.Addre
 
 // Contract address generation for CREATE2 opcode
 pub fn get_create2_address(
-    deployer: Address.Address,
+    deployer: primitives.Address,
     salt: [32]u8,
     init_code_hash: Hash.Hash,
-) Address.Address {
+) primitives.Address {
     // CREATE2 address = keccak256(0xff ++ deployer ++ salt ++ init_code_hash)[12:]
     var data: [85]u8 = undefined;
     data[0] = 0xff;
@@ -63,7 +63,7 @@ pub fn get_create2_address(
     const hash = Hash.keccak256(&data);
     
     // Take last 20 bytes as address
-    var address: Address.Address = undefined;
+    var address: primitives.Address = undefined;
     @memcpy(&address, hash[12..32]);
     
     return address;
@@ -76,27 +76,27 @@ pub fn get_init_code_hash(init_code: []const u8) Hash.Hash {
 
 // Test CREATE address generation
 test "CREATE address generation with nonce 0" {
-    const deployer = Address.from_hex_comptime("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
+    const deployer = primitives.Address.from_hex_comptime("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
     const nonce: u64 = 0;
     
     const address = get_contract_address(deployer, nonce);
-    const expected = Address.from_hex_comptime("0xcd234a471b72ba2f1ccf0a70fcaba648a5eecd8d");
+    const expected = primitives.Address.from_hex_comptime("0xcd234a471b72ba2f1ccf0a70fcaba648a5eecd8d");
     
     try testing.expectEqual(expected, address);
 }
 
 test "CREATE address generation with nonce 1" {
-    const deployer = Address.from_hex_comptime("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
+    const deployer = primitives.Address.from_hex_comptime("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
     const nonce: u64 = 1;
     
     const address = get_contract_address(deployer, nonce);
-    const expected = Address.from_hex_comptime("0x343c43a37d37dff08ae8c4a11544c718abb4fcf8");
+    const expected = primitives.Address.from_hex_comptime("0x343c43a37d37dff08ae8c4a11544c718abb4fcf8");
     
     try testing.expectEqual(expected, address);
 }
 
 test "CREATE address generation with various nonces" {
-    const deployer = Address.from_hex_comptime("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
+    const deployer = primitives.Address.from_hex_comptime("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
     
     // Test multiple nonces
     const test_cases = [_]struct { nonce: u64, expected: []const u8 }{
@@ -108,13 +108,13 @@ test "CREATE address generation with various nonces" {
     
     for (test_cases) |tc| {
         const address = get_contract_address(deployer, tc.nonce);
-        const expected = try Address.from_hex(tc.expected);
+        const expected = try primitives.Address.from_hex(tc.expected);
         try testing.expectEqual(expected, address);
     }
 }
 
 test "CREATE address with high nonce" {
-    const deployer = Address.from_hex_comptime("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
+    const deployer = primitives.Address.from_hex_comptime("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
     const nonce: u64 = 100;
     
     const address = get_contract_address(deployer, nonce);
@@ -124,7 +124,7 @@ test "CREATE address with high nonce" {
 }
 
 test "CREATE address with max nonce" {
-    const deployer = Address.from_hex_comptime("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
+    const deployer = primitives.Address.from_hex_comptime("0x6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0");
     const nonce: u64 = std.math.maxInt(u64);
     
     const address = get_contract_address(deployer, nonce);
@@ -134,19 +134,19 @@ test "CREATE address with max nonce" {
 }
 
 test "CREATE2 address generation" {
-    const deployer = Address.from_hex_comptime("0x0000000000000000000000000000000000000000");
+    const deployer = primitives.Address.from_hex_comptime("0x0000000000000000000000000000000000000000");
     const salt = [32]u8{0x00} ** 32;
     const init_code = [_]u8{0x00};
     const init_code_hash = get_init_code_hash(&init_code);
     
     const address = get_create2_address(deployer, salt, init_code_hash);
-    const expected = Address.from_hex_comptime("0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38");
+    const expected = primitives.Address.from_hex_comptime("0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38");
     
     try testing.expectEqual(expected, address);
 }
 
 test "CREATE2 with ERC-20 bytecode" {
-    const deployer = Address.from_hex_comptime("0x0000000000000000000000000000000000000000");
+    const deployer = primitives.Address.from_hex_comptime("0x0000000000000000000000000000000000000000");
     const salt = [32]u8{0x00} ** 32;
     
     // Simplified ERC-20 init code (just for testing)
@@ -161,7 +161,7 @@ test "CREATE2 with ERC-20 bytecode" {
 }
 
 test "CREATE2 with different salts" {
-    const deployer = Address.from_hex_comptime("0x0000000000000000000000000000000000000000");
+    const deployer = primitives.Address.from_hex_comptime("0x0000000000000000000000000000000000000000");
     const init_code = [_]u8{0x00};
     const init_code_hash = get_init_code_hash(&init_code);
     
@@ -179,8 +179,8 @@ test "CREATE2 with different salts" {
 }
 
 test "CREATE2 from different deployers" {
-    const deployer1 = Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
-    const deployer2 = Address.from_hex_comptime("0x2222222222222222222222222222222222222222");
+    const deployer1 = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
+    const deployer2 = primitives.Address.from_hex_comptime("0x2222222222222222222222222222222222222222");
     const salt = [32]u8{0x00} ** 32;
     const init_code = [_]u8{0x00};
     const init_code_hash = get_init_code_hash(&init_code);
@@ -194,9 +194,9 @@ test "CREATE2 from different deployers" {
 
 test "CREATE2 deterministic deployment" {
     // Uniswap V2 Pair init code hash (real example)
-    const factory = Address.from_hex_comptime("0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f");
-    const token0 = Address.from_hex_comptime("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"); // USDC
-    const token1 = Address.from_hex_comptime("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"); // WETH
+    const factory = primitives.Address.from_hex_comptime("0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f");
+    const token0 = primitives.Address.from_hex_comptime("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"); // USDC
+    const token1 = primitives.Address.from_hex_comptime("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"); // WETH
     
     // Compute salt from token addresses (sorted)
     var salt_data: [40]u8 = undefined;
@@ -220,7 +220,7 @@ test "CREATE2 deterministic deployment" {
 }
 
 // Helper function to predict minimal proxy (EIP-1167) addresses
-pub fn get_minimal_proxy_address(deployer: Address.Address, nonce: u64, implementation: Address.Address) Address.Address {
+pub fn get_minimal_proxy_address(deployer: primitives.Address, nonce: u64, implementation: primitives.Address) primitives.Address {
     // Minimal proxy bytecode
     var bytecode: [55]u8 = undefined;
     
@@ -244,8 +244,8 @@ pub fn get_minimal_proxy_address(deployer: Address.Address, nonce: u64, implemen
 }
 
 test "minimal proxy address prediction" {
-    const deployer = Address.from_hex_comptime("0x1234567890123456789012345678901234567890");
-    const implementation = Address.from_hex_comptime("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
+    const deployer = primitives.Address.from_hex_comptime("0x1234567890123456789012345678901234567890");
+    const implementation = primitives.Address.from_hex_comptime("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd");
     const nonce: u64 = 5;
     
     const proxy_address = get_minimal_proxy_address(deployer, nonce, implementation);
@@ -259,10 +259,10 @@ test "minimal proxy address prediction" {
 
 // Test factory pattern deployments
 test "factory pattern deployment addresses" {
-    const factory = Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
+    const factory = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
     
     // Simulate deploying multiple contracts from factory
-    var addresses: [5]Address.Address = undefined;
+    var addresses: [5]primitives.Address = undefined;
     
     for (0..5) |i| {
         addresses[i] = get_contract_address(factory, i);
@@ -278,7 +278,7 @@ test "factory pattern deployment addresses" {
 
 // Test CREATE2 factory with predictable addresses
 test "CREATE2 factory predictable addresses" {
-    const factory = Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
+    const factory = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xf3 }; // STOP, STOP, RETURN
     const init_code_hash = get_init_code_hash(&init_code);
     

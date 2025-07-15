@@ -20,7 +20,7 @@ pub const LegacyTransaction = struct {
     nonce: u64,
     gas_price: u256,
     gas_limit: u64,
-    to: ?Address.Address, // null for contract creation
+    to: ?primitives.Address, // null for contract creation
     value: u256,
     data: []const u8,
     v: u64,
@@ -35,7 +35,7 @@ pub const Eip1559Transaction = struct {
     max_priority_fee_per_gas: u256,
     max_fee_per_gas: u256,
     gas_limit: u64,
-    to: ?Address.Address,
+    to: ?primitives.Address,
     value: u256,
     data: []const u8,
     access_list: []const AccessListItem,
@@ -45,7 +45,7 @@ pub const Eip1559Transaction = struct {
 };
 
 pub const AccessListItem = struct {
-    address: Address.Address,
+    address: primitives.Address,
     storage_keys: []const [32]u8,
 };
 
@@ -58,7 +58,7 @@ test "encode legacy transaction" {
         .nonce = 0,
         .gas_price = 20_000_000_000, // 20 gwei
         .gas_limit = 21000,
-        .to = try Address.from_hex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .to = try primitives.Address.from_hex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
         .value = 1_000_000_000_000_000, // 0.001 ETH
         .data = &[_]u8{},
         .v = 37, // mainnet with EIP-155
@@ -91,7 +91,7 @@ test "legacy transaction signature" {
         .nonce = 0,
         .gas_price = 20_000_000_000,
         .gas_limit = 21000,
-        .to = try Address.from_hex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .to = try primitives.Address.from_hex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
         .value = 1_000_000_000_000_000,
         .data = &[_]u8{},
         .v = 0,
@@ -118,7 +118,7 @@ test "encode eip1559 transaction" {
         .max_priority_fee_per_gas = 1_000_000_000, // 1 gwei
         .max_fee_per_gas = 20_000_000_000, // 20 gwei
         .gas_limit = 21000,
-        .to = try Address.from_hex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .to = try primitives.Address.from_hex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
         .value = 1_000_000_000_000_000,
         .data = &[_]u8{},
         .access_list = &[_]AccessListItem{},
@@ -144,7 +144,7 @@ test "eip1559 with access list" {
     
     const access_list = [_]AccessListItem{
         .{
-            .address = try Address.from_hex("0x0000000000000000000000000000000000000000"),
+            .address = try primitives.Address.from_hex("0x0000000000000000000000000000000000000000"),
             .storage_keys = &storage_keys,
         },
     };
@@ -155,7 +155,7 @@ test "eip1559 with access list" {
         .max_priority_fee_per_gas = 1_000_000_000,
         .max_fee_per_gas = 20_000_000_000,
         .gas_limit = 30000, // Higher for access list
-        .to = try Address.from_hex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .to = try primitives.Address.from_hex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
         .value = 0,
         .data = &[_]u8{},
         .access_list = &access_list,
@@ -178,7 +178,7 @@ test "compute transaction hash" {
         .nonce = 0,
         .gas_price = 20_000_000_000,
         .gas_limit = 21000,
-        .to = try Address.from_hex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        .to = try primitives.Address.from_hex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
         .value = 1_000_000_000_000_000,
         .data = &[_]u8{},
         .v = 37,

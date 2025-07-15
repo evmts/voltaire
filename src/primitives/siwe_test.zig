@@ -8,7 +8,7 @@ const Hex = @import("hex.zig");
 // Sign-In with Ethereum (EIP-4361) Message
 pub const SiweMessage = struct {
     domain: []const u8,
-    address: Address.Address,
+    address: primitives.Address,
     statement: ?[]const u8,
     uri: []const u8,
     version: []const u8,
@@ -172,7 +172,7 @@ test "SIWE message formatting" {
     
     const message = SiweMessage{
         .domain = "example.com",
-        .address = Address.from_hex_comptime("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .address = primitives.Address.from_hex_comptime("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
         .statement = "Sign in to Example",
         .uri = "https://example.com",
         .version = "1",
@@ -206,7 +206,7 @@ test "SIWE message with all fields" {
     
     const message = SiweMessage{
         .domain = "example.com",
-        .address = Address.from_hex_comptime("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .address = primitives.Address.from_hex_comptime("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
         .statement = "Sign in to Example",
         .uri = "https://example.com",
         .version = "1",
@@ -233,7 +233,7 @@ test "SIWE message with all fields" {
 test "SIWE message validation" {
     var message = SiweMessage{
         .domain = "example.com",
-        .address = Address.from_hex_comptime("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
+        .address = primitives.Address.from_hex_comptime("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"),
         .statement = null,
         .uri = "https://example.com",
         .version = "1",
@@ -326,7 +326,7 @@ pub fn parse_siwe_message(allocator: std.mem.Allocator, text: []const u8) !SiweM
     
     // Parse address
     const addr_line = lines.next() orelse return error.InvalidFormat;
-    const address = try Address.from_hex(addr_line);
+    const address = try primitives.Address.from_hex(addr_line);
     
     // Skip empty line
     _ = lines.next();

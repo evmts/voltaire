@@ -3,18 +3,18 @@ const testing = std.testing;
 const Address = @import("address/address.zig");
 const Hash = @import("hash_utils.zig");
 const Crypto = @import("crypto.zig");
-const Rlp = @import("Rlp");
+const primitives = @import("primitives");
 
 // EIP-7702 Authorization List
 pub const Authorization = struct {
     chain_id: u64,
-    address: Address.Address,
+    address: primitives.Address,
     nonce: u64,
     v: u64,
     r: [32]u8,
     s: [32]u8,
     
-    pub fn authority(self: *const Authorization) !Address.Address {
+    pub fn authority(self: *const Authorization) !primitives.Address {
         // Recover the authority (signer) from the authorization
         const hash = try self.signing_hash();
         const signature = Crypto.Signature{
@@ -36,13 +36,13 @@ pub const Authorization = struct {
         defer list.deinit();
         
         // Encode chain_id
-        try Rlp.encode_uint(allocator, self.chain_id, &list);
+        try primitives.Rlp.encode_uint(allocator, self.chain_id, &list);
         
         // Encode address
-        try Rlp.encode_bytes(allocator, &self.address, &list);
+        try primitives.Rlp.encode_bytes(allocator, &self.address, &list);
         
         // Encode nonce
-        try Rlp.encode_uint(allocator, self.nonce, &list);
+        try primitives.Rlp.encode_uint(allocator, self.nonce, &list);
         
         // Wrap in RLP list
         var rlp_list = std.ArrayList(u8).init(allocator);
@@ -51,7 +51,7 @@ pub const Authorization = struct {
         if (list.items.len <= 55) {
             try rlp_list.append(@as(u8, @intCast(0xc0 + list.items.len)));
         } else {
-            const len_bytes = Rlp.encode_length(list.items.len);
+            const len_bytes = primitives.Rlp.encode_length(list.items.len);
             try rlp_list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try rlp_list.appendSlice(len_bytes);
         }
@@ -87,7 +87,7 @@ pub const Authorization = struct {
 pub fn create_authorization(
     allocator: std.mem.Allocator,
     chain_id: u64,
-    address: Address.Address,
+    address: primitives.Address,
     nonce: u64,
     private_key: Crypto.PrivateKey,
 ) !Authorization {
@@ -119,7 +119,7 @@ test "authorization creation and recovery" {
     };
     
     const signer_address = try Crypto.get_address(allocator, private_key);
-    const target_address = Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
+    const target_address = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
     
     const auth = try create_authorization(
         allocator,
@@ -140,7 +140,7 @@ test "authorization creation and recovery" {
 test "authorization validation" {
     var auth = Authorization{
         .chain_id = 1,
-        .address = Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
+        .address = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
         .r = [_]u8{0x12} ** 32,
@@ -173,18 +173,18 @@ pub fn encode_authorization_list(allocator: std.mem.Allocator, auth_list: Author
         defer auth_fields.deinit();
         
         // Encode fields: [chain_id, address, nonce, v, r, s]
-        try Rlp.encode_uint(allocator, auth.chain_id, &auth_fields);
-        try Rlp.encode_bytes(allocator, &auth.address, &auth_fields);
-        try Rlp.encode_uint(allocator, auth.nonce, &auth_fields);
-        try Rlp.encode_uint(allocator, auth.v, &auth_fields);
-        try Rlp.encode_bytes(allocator, &auth.r, &auth_fields);
-        try Rlp.encode_bytes(allocator, &auth.s, &auth_fields);
+        try primitives.Rlp.encode_uint(allocator, auth.chain_id, &auth_fields);
+        try primitives.Rlp.encode_bytes(allocator, &auth.address, &auth_fields);
+        try primitives.Rlp.encode_uint(allocator, auth.nonce, &auth_fields);
+        try primitives.Rlp.encode_uint(allocator, auth.v, &auth_fields);
+        try primitives.Rlp.encode_bytes(allocator, &auth.r, &auth_fields);
+        try primitives.Rlp.encode_bytes(allocator, &auth.s, &auth_fields);
         
         // Wrap authorization in RLP list
         if (auth_fields.items.len <= 55) {
             try list.append(@as(u8, @intCast(0xc0 + auth_fields.items.len)));
         } else {
-            const len_bytes = Rlp.encode_length(auth_fields.items.len);
+            const len_bytes = primitives.Rlp.encode_length(auth_fields.items.len);
             try list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try list.appendSlice(len_bytes);
         }
@@ -196,7 +196,7 @@ pub fn encode_authorization_list(allocator: std.mem.Allocator, auth_list: Author
     if (list.items.len <= 55) {
         try result.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const len_bytes = Rlp.encode_length(list.items.len);
+        const len_bytes = primitives.Rlp.encode_length(list.items.len);
         try result.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try result.appendSlice(len_bytes);
     }
@@ -215,7 +215,7 @@ test "authorization list encoding" {
     const auth1 = try create_authorization(
         allocator,
         1,
-        Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
+        primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
         0,
         private_key,
     );
@@ -223,7 +223,7 @@ test "authorization list encoding" {
     const auth2 = try create_authorization(
         allocator,
         1,
-        Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
+        primitives.Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
         1,
         private_key,
     );
@@ -240,8 +240,8 @@ test "authorization list encoding" {
 
 // Delegation designation
 pub const DelegationDesignation = struct {
-    authority: Address.Address,
-    delegated_address: Address.Address,
+    authority: primitives.Address,
+    delegated_address: primitives.Address,
     
     pub fn is_active(self: *const DelegationDesignation) bool {
         // Delegation is active if delegated address is not zero
@@ -255,8 +255,8 @@ pub const DelegationDesignation = struct {
 
 test "delegation designation" {
     var delegation = DelegationDesignation{
-        .authority = Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
-        .delegated_address = Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
+        .authority = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
+        .delegated_address = primitives.Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
     };
     
     // Should be active
@@ -306,7 +306,7 @@ test "batch authorization processing" {
     const auth1 = try create_authorization(
         allocator,
         1,
-        Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
+        primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
         0,
         private_key1,
     );
@@ -314,7 +314,7 @@ test "batch authorization processing" {
     const auth2 = try create_authorization(
         allocator,
         1,
-        Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
+        primitives.Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
         0,
         private_key2,
     );
@@ -343,7 +343,7 @@ test "authorization gas cost calculation" {
     const auth_list = [_]Authorization{
         .{
             .chain_id = 1,
-            .address = Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
+            .address = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
             .nonce = 0,
             .v = 27,
             .r = [_]u8{0x12} ** 32,
@@ -351,7 +351,7 @@ test "authorization gas cost calculation" {
         },
         .{
             .chain_id = 1,
-            .address = Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
+            .address = primitives.Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
             .nonce = 0,
             .v = 27,
             .r = [_]u8{0x56} ** 32,

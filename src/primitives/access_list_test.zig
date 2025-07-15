@@ -2,11 +2,11 @@ const std = @import("std");
 const testing = std.testing;
 const Address = @import("address/address.zig");
 const Hash = @import("hash_utils.zig");
-const Rlp = @import("Rlp");
+const primitives = @import("primitives");
 
 // EIP-2930 Access List
 pub const AccessListEntry = struct {
-    address: Address.Address,
+    address: primitives.Address,
     storage_keys: []const Hash.Hash,
 };
 
@@ -35,7 +35,7 @@ pub fn calculate_access_list_gas_cost(access_list: AccessList) u64 {
 }
 
 // Check if address is in access list
-pub fn is_address_in_access_list(access_list: AccessList, address: Address.Address) bool {
+pub fn is_address_in_access_list(access_list: AccessList, address: primitives.Address) bool {
     for (access_list) |entry| {
         if (Address.equal(entry.address, address)) {
             return true;
@@ -47,7 +47,7 @@ pub fn is_address_in_access_list(access_list: AccessList, address: Address.Addre
 // Check if storage key is in access list
 pub fn is_storage_key_in_access_list(
     access_list: AccessList,
-    address: Address.Address,
+    address: primitives.Address,
     storage_key: Hash.Hash,
 ) bool {
     for (access_list) |entry| {
@@ -73,21 +73,21 @@ pub fn encode_access_list(allocator: std.mem.Allocator, access_list: AccessList)
         defer entry_list.deinit();
         
         // Encode address
-        try Rlp.encode_bytes(allocator, &entry.address, &entry_list);
+        try primitives.Rlp.encode_bytes(allocator, &entry.address, &entry_list);
         
         // Encode storage keys as list
         var keys_list = std.ArrayList(u8).init(allocator);
         defer keys_list.deinit();
         
         for (entry.storage_keys) |key| {
-            try Rlp.encode_bytes(allocator, &key, &keys_list);
+            try primitives.Rlp.encode_bytes(allocator, &key, &keys_list);
         }
         
         // Wrap keys in RLP list
         if (keys_list.items.len <= 55) {
             try entry_list.append(@as(u8, @intCast(0xc0 + keys_list.items.len)));
         } else {
-            const len_bytes = Rlp.encode_length(keys_list.items.len);
+            const len_bytes = primitives.Rlp.encode_length(keys_list.items.len);
             try entry_list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try entry_list.appendSlice(len_bytes);
         }
@@ -97,7 +97,7 @@ pub fn encode_access_list(allocator: std.mem.Allocator, access_list: AccessList)
         if (entry_list.items.len <= 55) {
             try list.append(@as(u8, @intCast(0xc0 + entry_list.items.len)));
         } else {
-            const len_bytes = Rlp.encode_length(entry_list.items.len);
+            const len_bytes = primitives.Rlp.encode_length(entry_list.items.len);
             try list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
             try list.appendSlice(len_bytes);
         }
@@ -109,7 +109,7 @@ pub fn encode_access_list(allocator: std.mem.Allocator, access_list: AccessList)
     if (list.items.len <= 55) {
         try result.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const len_bytes = Rlp.encode_length(list.items.len);
+        const len_bytes = primitives.Rlp.encode_length(list.items.len);
         try result.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
         try result.appendSlice(len_bytes);
     }
@@ -129,11 +129,11 @@ test "access list gas calculation" {
     
     const access_list = [_]AccessListEntry{
         .{
-            .address = Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
+            .address = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
             .storage_keys = &storage_keys,
         },
         .{
-            .address = Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
+            .address = primitives.Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
             .storage_keys = &.{},
         },
     };
@@ -152,14 +152,14 @@ test "access list membership checks" {
     
     const access_list = [_]AccessListEntry{
         .{
-            .address = Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
+            .address = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
             .storage_keys = &storage_keys,
         },
     };
     
     // Test address membership
-    const addr1 = Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
-    const addr2 = Address.from_hex_comptime("0x2222222222222222222222222222222222222222");
+    const addr1 = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
+    const addr2 = primitives.Address.from_hex_comptime("0x2222222222222222222222222222222222222222");
     
     try testing.expect(is_address_in_access_list(&access_list, addr1));
     try testing.expect(!is_address_in_access_list(&access_list, addr2));
@@ -179,7 +179,7 @@ test "empty access list" {
     const gas_cost = calculate_access_list_gas_cost(access_list);
     try testing.expectEqual(@as(u64, 0), gas_cost);
     
-    const addr = Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
+    const addr = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111");
     try testing.expect(!is_address_in_access_list(access_list, addr));
 }
 
@@ -192,7 +192,7 @@ test "access list RLP encoding" {
     
     const access_list = [_]AccessListEntry{
         .{
-            .address = Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
+            .address = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
             .storage_keys = &storage_keys,
         },
     };
@@ -230,7 +230,7 @@ test "access list gas savings" {
     
     const access_list = [_]AccessListEntry{
         .{
-            .address = Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
+            .address = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
             .storage_keys = &storage_keys,
         },
     };
@@ -261,15 +261,15 @@ test "complex access list" {
     
     const access_list = [_]AccessListEntry{
         .{
-            .address = Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
+            .address = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
             .storage_keys = &keys1,
         },
         .{
-            .address = Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
+            .address = primitives.Address.from_hex_comptime("0x2222222222222222222222222222222222222222"),
             .storage_keys = &keys2,
         },
         .{
-            .address = Address.from_hex_comptime("0x3333333333333333333333333333333333333333"),
+            .address = primitives.Address.from_hex_comptime("0x3333333333333333333333333333333333333333"),
             .storage_keys = &.{}, // No storage keys
         },
     };
@@ -355,11 +355,11 @@ test "deduplicate access list" {
     
     const access_list = [_]AccessListEntry{
         .{
-            .address = Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
+            .address = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"),
             .storage_keys = &keys1,
         },
         .{
-            .address = Address.from_hex_comptime("0x1111111111111111111111111111111111111111"), // Same address
+            .address = primitives.Address.from_hex_comptime("0x1111111111111111111111111111111111111111"), // Same address
             .storage_keys = &keys2,
         },
     };

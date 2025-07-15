@@ -163,7 +163,7 @@ test "ENS DNS encoding" {
 }
 
 // Test reverse resolution (address to name)
-pub fn reverse_node(address: Address.Address) Hash.Hash {
+pub fn reverse_node(address: primitives.Address) Hash.Hash {
     const allocator = std.heap.page_allocator;
     
     // Convert address to hex string (without 0x)
@@ -184,7 +184,7 @@ pub fn reverse_node(address: Address.Address) Hash.Hash {
 }
 
 test "ENS reverse resolution node" {
-    const address = try Address.from_hex("0x1234567890123456789012345678901234567890");
+    const address = try primitives.Address.from_hex("0x1234567890123456789012345678901234567890");
     const node = reverse_node(address);
     
     // Should produce a deterministic hash
