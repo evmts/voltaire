@@ -1,9 +1,9 @@
 const std = @import("std");
 const testing = std.testing;
 
-test {
-    std.testing.log_level = .debug;
-}
+// test {
+//     std.testing.log_level = .debug;
+// }
 
 // Import EVM components directly
 const Evm = @import("evm");
