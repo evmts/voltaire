@@ -3,7 +3,8 @@ const testing = std.testing;
 
 // Import opcodes through evm module
 const Evm = @import("evm");
-const Address = @import("primitives");
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
 const MemoryDatabase = Evm.MemoryDatabase;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;

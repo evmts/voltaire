@@ -47,8 +47,8 @@ test "integration: simple arithmetic sequence" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -58,7 +58,7 @@ test "integration: simple arithmetic sequence" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -103,8 +103,8 @@ test "integration: memory operations sequence" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -114,7 +114,7 @@ test "integration: memory operations sequence" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -217,8 +217,8 @@ test "integration: control flow with jumps" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -228,7 +228,7 @@ test "integration: control flow with jumps" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -334,8 +334,8 @@ test "integration: stack operations sequence" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -345,7 +345,7 @@ test "integration: stack operations sequence" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -386,8 +386,8 @@ test "integration: return data handling" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -397,7 +397,7 @@ test "integration: return data handling" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -442,8 +442,8 @@ test "integration: revert with reason" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -453,7 +453,7 @@ test "integration: revert with reason" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -498,8 +498,8 @@ test "integration: gas consumption tracking" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         initial_gas, // gas
         &bytecode,
@@ -509,7 +509,7 @@ test "integration: gas consumption tracking" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -549,8 +549,8 @@ test "integration: out of gas scenario" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         5, // gas - only 5 gas
         &bytecode,
@@ -560,7 +560,7 @@ test "integration: out of gas scenario" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -595,8 +595,8 @@ test "integration: invalid opcode handling" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -606,7 +606,7 @@ test "integration: invalid opcode handling" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -822,8 +822,8 @@ test "integration: push0 operation (Shanghai)" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -833,7 +833,7 @@ test "integration: push0 operation (Shanghai)" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -913,8 +913,8 @@ test "integration: mcopy operation (Cancun)" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -924,7 +924,7 @@ test "integration: mcopy operation (Cancun)" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);

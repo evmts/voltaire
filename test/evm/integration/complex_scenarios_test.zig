@@ -90,8 +90,8 @@ test "complex: fibonacci calculation" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -101,7 +101,7 @@ test "complex: fibonacci calculation" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -234,8 +234,8 @@ test "complex: memory expansion with large offsets" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -245,7 +245,7 @@ test "complex: memory expansion with large offsets" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -325,8 +325,8 @@ test "complex: nested conditionals with multiple jumps" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -336,7 +336,7 @@ test "complex: nested conditionals with multiple jumps" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -462,8 +462,8 @@ test "complex: keccak256 hash computation" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -473,7 +473,7 @@ test "complex: keccak256 hash computation" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -529,7 +529,7 @@ test "complex: call depth limit enforcement" {
     //     0x00,        // STOP
     // };
     //
-    // const result = try test_helpers.runBytecode(vm, &bytecode, Address.zero(), 100000, null);
+    // const result = try test_helpers.runBytecode(vm, &bytecode, primitives.Address.ZERO_ADDRESS, 100000, null);
     // defer if (result.output) |output| allocator.free(output);
     //
     // try testing.expect(result.status == .Success);
@@ -540,7 +540,7 @@ test "complex: call depth limit enforcement" {
     // evm.last_frame.?.depth = 1024;
     // evm.last_frame.?.stack.size = 0; // Reset stack
     //
-    // const result2 = try test_helpers.runBytecode(vm, &bytecode, Address.zero(), 100000, null);
+    // const result2 = try test_helpers.runBytecode(vm, &bytecode, primitives.Address.ZERO_ADDRESS, 100000, null);
     // defer if (result2.output) |output| allocator.free(output);
     //
     // try testing.expect(result2.status == .Success);
@@ -619,8 +619,8 @@ test "complex: bit manipulation operations" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -630,7 +630,7 @@ test "complex: bit manipulation operations" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -766,8 +766,8 @@ test "complex: modular arithmetic edge cases" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        Address.zero(), // caller
-        Address.zero(), // address where code executes
+        primitives.Address.ZERO_ADDRESS, // caller
+        primitives.Address.ZERO_ADDRESS, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -777,7 +777,7 @@ test "complex: modular arithmetic edge cases" {
     defer contract.deinit(allocator, null);
     
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(Address.zero(), &bytecode);
+    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
     
     // Create frame
     var frame = try Frame.init(allocator, &contract);

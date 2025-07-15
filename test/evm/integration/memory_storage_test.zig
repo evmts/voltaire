@@ -1,7 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const Address = @import("primitives");
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
 const MemoryDatabase = Evm.MemoryDatabase;
 const Frame = Evm.Frame;
 const Contract = Evm.Contract;
@@ -22,7 +23,7 @@ test "Integration: Memory operations with arithmetic" {
     defer evm.deinit();
     
     // Create contract
-    const zero_address = Address.zero();
+    const zero_address = primitives.Address.ZERO_ADDRESS;
     
     var contract = Contract.init(
         zero_address, // caller
@@ -81,7 +82,7 @@ test "Integration: Storage with conditional updates" {
     defer evm.deinit();
     
     // Create contract
-    const zero_address = Address.zero();
+    const zero_address = primitives.Address.ZERO_ADDRESS;
     
     var contract = Contract.init(
         zero_address, // caller
@@ -157,7 +158,7 @@ test "Integration: Memory copy operations" {
     defer evm.deinit();
     
     // Create contract
-    const zero_address = Address.zero();
+    const zero_address = primitives.Address.ZERO_ADDRESS;
     
     var contract = Contract.init(
         zero_address, // caller
@@ -224,7 +225,7 @@ test "Integration: Transient storage with arithmetic" {
     defer evm.deinit();
     
     // Create contract
-    const zero_address = Address.zero();
+    const zero_address = primitives.Address.ZERO_ADDRESS;
     
     var contract = Contract.init(
         zero_address, // caller
@@ -294,7 +295,7 @@ test "Integration: MSTORE8 with bitwise operations" {
     defer evm.deinit();
     
     // Create contract
-    const zero_address = Address.zero();
+    const zero_address = primitives.Address.ZERO_ADDRESS;
     
     var contract = Contract.init(
         zero_address, // caller
@@ -350,7 +351,7 @@ test "Integration: Storage slot calculation" {
     defer evm.deinit();
     
     // Create contract
-    const zero_address = Address.zero();
+    const zero_address = primitives.Address.ZERO_ADDRESS;
     
     var contract = Contract.init(
         zero_address, // caller
@@ -416,7 +417,7 @@ test "Integration: Memory expansion tracking" {
     defer evm.deinit();
     
     // Create contract
-    const zero_address = Address.zero();
+    const zero_address = primitives.Address.ZERO_ADDRESS;
     
     var contract = Contract.init(
         zero_address, // caller
@@ -491,7 +492,7 @@ test "Integration: Cold/warm storage access patterns" {
     defer evm.deinit();
     
     // Create contract
-    const zero_address = Address.zero();
+    const zero_address = primitives.Address.ZERO_ADDRESS;
     
     var contract = Contract.init(
         zero_address, // caller
