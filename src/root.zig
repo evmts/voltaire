@@ -1,3 +1,77 @@
+//! Guillotine - High-Performance Ethereum Virtual Machine in Zig
+//!
+//! This is the main entry point for the Guillotine EVM implementation, providing
+//! both a Zig API and a C-compatible interface for external integration.
+//!
+//! ## Architecture Overview
+//!
+//! Guillotine is structured into several key modules:
+//!
+//! ### Core EVM (`evm`)
+//! - **Virtual Machine**: Complete EVM implementation with bytecode execution
+//! - **Stack & Memory**: 256-bit stack and byte-addressable memory
+//! - **State Management**: Account state, storage, and code management
+//! - **Opcode Dispatch**: Efficient jump table for instruction execution
+//! - **Gas Accounting**: Precise gas cost calculations per EVM specification
+//!
+//! ### Primitives (`primitives`)
+//! - **Address Operations**: Ethereum address utilities and validation
+//! - **Cryptographic Functions**: Hash functions, signature verification
+//! - **Data Encoding**: RLP, ABI, and hex encoding/decoding
+//! - **Transaction Types**: Support for all Ethereum transaction formats
+//!
+//! ### Provider (`provider`)
+//! - **RPC Interface**: JSON-RPC client for Ethereum nodes
+//! - **Network Transport**: HTTP/WebSocket communication
+//! - **Blockchain Queries**: Block, transaction, and state queries
+//!
+//! ## Usage Examples
+//!
+//! ### Zig API
+//! ```zig
+//! const guillotine = @import("guillotine");
+//! 
+//! // Initialize EVM
+//! var vm = try guillotine.Evm.init(allocator, database, null, null);
+//! defer vm.deinit();
+//! 
+//! // Execute bytecode
+//! const result = try vm.interpret(contract, input);
+//! ```
+//!
+//! ### C API
+//! ```c
+//! // Initialize EVM
+//! if (guillotine_init() != 0) {
+//!     // Handle error
+//! }
+//! 
+//! // Execute bytecode
+//! CExecutionResult result;
+//! guillotine_execute(bytecode, len, caller, value, gas, &result);
+//! 
+//! // Cleanup
+//! guillotine_deinit();
+//! ```
+//!
+//! ## Design Principles
+//!
+//! 1. **Correctness**: Strict adherence to Ethereum Yellow Paper specification
+//! 2. **Performance**: Minimal allocations, efficient memory management
+//! 3. **Safety**: Strong typing, comprehensive error handling
+//! 4. **Compatibility**: Full EVM specification compliance
+//! 5. **Modularity**: Clear separation of concerns and testability
+//!
+//! ## Memory Management
+//!
+//! The C API uses a global allocator suitable for WASM environments,
+//! while the Zig API allows custom allocator injection for maximum flexibility.
+//!
+//! ## Error Handling
+//!
+//! The C API provides error codes compatible with external systems,
+//! while the Zig API uses typed error unions for precise error handling.
+
 const std = @import("std");
 const builtin = @import("builtin");
 
