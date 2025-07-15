@@ -47,28 +47,27 @@ pub const assets = [_]Self{
         "image/svg+xml",
     ),
     Self.init(
-        "/assets/index-g0-s2jNV.js",
-        @embedFile("dist/assets/index-g0-s2jNV.js"),
-        "application/javascript",
+        "/assets/index-_UQWOD7Y.css",
+        @embedFile("dist/assets/index-_UQWOD7Y.css"),
+        "text/css",
     ),
     Self.init(
-        "/assets/index-BG_JvFUn.css",
-        @embedFile("dist/assets/index-BG_JvFUn.css"),
-        "text/css",
+        "/assets/index-B7X5OICm.js",
+        @embedFile("dist/assets/index-B7X5OICm.js"),
+        "application/javascript",
     ),
     Self.init(
         "/tauri.svg",
         @embedFile("dist/tauri.svg"),
         "image/svg+xml",
     ),
-    not_found_asset,
 };
 
-pub fn get_asset(filename: []const u8) ?Self {
+pub fn get_asset(path: []const u8) Self {
     for (assets) |asset| {
-        if (std.mem.eql(u8, asset.path, filename)) {
+        if (std.mem.eql(u8, asset.path, path)) {
             return asset;
         }
     }
-    return null;
+    return not_found_asset;
 }

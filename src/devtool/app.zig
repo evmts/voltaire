@@ -17,7 +17,7 @@ pub fn deinit() void {
 }
 
 pub fn handler(filename: []const u8) ?[]const u8 {
-    const asset = assets.get_asset(filename) orelse assets.not_found_asset;
+    const asset = assets.get_asset(filename);
     return asset.response;
 }
 
