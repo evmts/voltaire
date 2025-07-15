@@ -5,7 +5,7 @@ test {
     std.testing.log_level = .debug;
 }
 const Evm = @import("evm");
-const Address = @import("Address");
+const Address = @import("primitives");
 
 // test {
 //     std.testing.log_level = .debug;
