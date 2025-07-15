@@ -38,7 +38,7 @@ pub const COLD_CALL_EXTRA_COST: u64 = COLD_ACCOUNT_ACCESS_COST - WARM_ACCOUNT_AC
 
 allocator: std.mem.Allocator,
 /// Warm addresses - addresses that have been accessed
-addresses: std.AutoHashMap(primitives.Address, void),
+addresses: std.AutoHashMap(primitives.Address.Address, void),
 /// Warm storage slots - storage slots that have been accessed
 storage_slots: std.HashMap(AccessListStorageKey, void, AccessListStorageKeyContext, 80),
 /// Transaction and block context for pre-warming addresses
@@ -47,7 +47,7 @@ context: Context,
 pub fn init(allocator: std.mem.Allocator, context: Context) AccessList {
     return .{
         .allocator = allocator,
-        .addresses = std.AutoHashMap(primitives.Address, void).init(allocator),
+        .addresses = std.AutoHashMap(primitives.Address.Address, void).init(allocator),
         .storage_slots = std.HashMap(AccessListStorageKey, void, AccessListStorageKeyContext, 80).init(allocator),
         .context = context,
     };
@@ -66,7 +66,7 @@ pub fn clear(self: *AccessList) void {
 
 /// Mark an address as accessed and return the gas cost
 /// Returns COLD_ACCOUNT_ACCESS_COST if first access, WARM_ACCOUNT_ACCESS_COST if already accessed
-pub fn access_address(self: *AccessList, address: primitives.Address) std.mem.Allocator.Error!u64 {
+pub fn access_address(self: *AccessList, address: primitives.Address.Address) std.mem.Allocator.Error!u64 {
     const result = try self.addresses.getOrPut(address);
     if (result.found_existing) {
         @branchHint(.likely);
@@ -77,7 +77,7 @@ pub fn access_address(self: *AccessList, address: primitives.Address) std.mem.Al
 
 /// Mark a storage slot as accessed and return the gas cost
 /// Returns COLD_SLOAD_COST if first access, WARM_SLOAD_COST if already accessed
-pub fn access_storage_slot(self: *AccessList, address: primitives.Address, slot: u256) std.mem.Allocator.Error!u64 {
+pub fn access_storage_slot(self: *AccessList, address: primitives.Address.Address, slot: u256) std.mem.Allocator.Error!u64 {
     const key = AccessListStorageKey{ .address = address, .slot = slot };
     const result = try self.storage_slots.getOrPut(key);
     if (result.found_existing) {
@@ -88,25 +88,25 @@ pub fn access_storage_slot(self: *AccessList, address: primitives.Address, slot:
 }
 
 /// Check if an address is warm (has been accessed)
-pub fn is_address_warm(self: *const AccessList, address: primitives.Address) bool {
+pub fn is_address_warm(self: *const AccessList, address: primitives.Address.Address) bool {
     return self.addresses.contains(address);
 }
 
 /// Check if a storage slot is warm (has been accessed)
-pub fn is_storage_slot_warm(self: *const AccessList, address: primitives.Address, slot: u256) bool {
+pub fn is_storage_slot_warm(self: *const AccessList, address: primitives.Address.Address, slot: u256) bool {
     const key = AccessListStorageKey{ .address = address, .slot = slot };
     return self.storage_slots.contains(key);
 }
 
 /// Pre-warm addresses from EIP-2930 access list
-pub fn pre_warm_addresses(self: *AccessList, addresses: []const primitives.Address) std.mem.Allocator.Error!void {
+pub fn pre_warm_addresses(self: *AccessList, addresses: []const primitives.Address.Address) std.mem.Allocator.Error!void {
     for (addresses) |address| {
         try self.addresses.put(address, {});
     }
 }
 
 /// Pre-warm storage slots from EIP-2930 access list
-pub fn pre_warm_storage_slots(self: *AccessList, address: primitives.Address, slots: []const u256) std.mem.Allocator.Error!void {
+pub fn pre_warm_storage_slots(self: *AccessList, address: primitives.Address.Address, slots: []const u256) std.mem.Allocator.Error!void {
     for (slots) |slot| {
         const key = AccessListStorageKey{ .address = address, .slot = slot };
         try self.storage_slots.put(key, {});
@@ -115,7 +115,7 @@ pub fn pre_warm_storage_slots(self: *AccessList, address: primitives.Address, sl
 
 /// Initialize transaction access list with pre-warmed addresses
 /// According to EIP-2929, tx.origin and block.coinbase are always pre-warmed
-pub fn init_transaction(self: *AccessList, to: ?primitives.Address) std.mem.Allocator.Error!void {
+pub fn init_transaction(self: *AccessList, to: ?primitives.Address.Address) std.mem.Allocator.Error!void {
     // Clear previous transaction data
     self.clear();
     
@@ -129,7 +129,7 @@ pub fn init_transaction(self: *AccessList, to: ?primitives.Address) std.mem.Allo
 
 /// Get the extra gas cost for accessing an address (for CALL operations)
 /// Returns 0 if warm, COLD_CALL_EXTRA_COST if cold
-pub fn get_call_cost(self: *AccessList, address: primitives.Address) std.mem.Allocator.Error!u64 {
+pub fn get_call_cost(self: *AccessList, address: primitives.Address.Address) std.mem.Allocator.Error!u64 {
     const result = try self.addresses.getOrPut(address);
     if (result.found_existing) {
         @branchHint(.likely);
@@ -229,7 +229,7 @@ test "AccessList pre-warming from EIP-2930" {
     var access_list = AccessList.init(testing.allocator, context);
     defer access_list.deinit();
     
-    const addresses = [_]primitives.Address{
+    const addresses = [_]primitives.Address.Address{
         [_]u8{1} ** 20,
         [_]u8{2} ** 20,
         [_]u8{3} ** 20,
@@ -264,7 +264,7 @@ test "AccessList call costs" {
     const warm_address = [_]u8{2} ** 20;
     
     // Pre-warm one address
-    try access_list.pre_warm_addresses(&[_]primitives.Address{warm_address});
+    try access_list.pre_warm_addresses(&[_]primitives.Address.Address{warm_address});
     
     // Cold address should have extra cost
     try testing.expectEqual(COLD_CALL_EXTRA_COST, try access_list.get_call_cost(cold_address));

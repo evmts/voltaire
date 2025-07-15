@@ -5,7 +5,7 @@ const primitives = @import("primitives");
 /// This version provides direct hash output for use with HashMap
 pub const AccessListStorageKey = @This();
 
-address: primitives.Address,
+address: primitives.Address.Address,
 slot: u256,
 
 pub fn hash(self: AccessListStorageKey) u64 {
