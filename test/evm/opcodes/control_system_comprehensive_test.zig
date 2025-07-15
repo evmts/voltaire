@@ -48,7 +48,7 @@ test "RETURN (0xF3): Return data from execution" {
     frame.gas_remaining = 1000;
 
     // Write data to memory
-    const return_data = "Hello from RETURN!" ++ [_]u8{0x11} ** 20;
+    const return_data = "Hello from RETURN!" ++ ([_]u8{0} ** 14);
     _ = try frame.memory.set_data(0, return_data[0..]);
 
     // Execute push operations
@@ -162,7 +162,7 @@ test "REVERT (0xFD): Revert with data" {
     frame.gas_remaining = 1000;
 
     // Write revert reason to memory
-    const revert_data = "Revert reason!" ++ [_]u8{0x11} ** 20;
+    const revert_data = "Revert reason!" ++ ([_]u8{0} ** 2);
     _ = try frame.memory.set_data(0, revert_data[0..]);
 
     // Execute push operations

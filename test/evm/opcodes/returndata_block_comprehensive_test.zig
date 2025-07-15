@@ -31,13 +31,13 @@ test "EXTCODESIZE (0x3B): Get external code size" {
     };
     
     // Set code directly in the state
-    const bob_addr = [_]u8{0x11} ** 20;
+    const bob_addr = [_]u8{0xBB} ** 20;
     try evm.state.set_code(bob_addr, &test_code);
     // Set balance directly in the state
     try evm.state.set_balance(bob_addr, 1000);
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -72,7 +72,7 @@ test "EXTCODESIZE (0x3B): Get external code size" {
     try testing.expectEqual(@as(u256, 0), result2);
     
     // Test 3: Get code size of non-existent account (should be 0)
-    const zero_addr = [_]u8{0x11} ** 20;
+    const zero_addr = [_]u8{0xFF} ** 20;
     try frame.stack.append(primitives.Address.to_u256(zero_addr));
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
     const result3 = try frame.stack.pop();
@@ -97,11 +97,11 @@ test "EXTCODECOPY (0x3C): Copy external code to memory" {
     };
     
     // Set code directly in the state
-    const bob_addr = [_]u8{0x11} ** 20;
+    const bob_addr = [_]u8{0xBB} ** 20;
     try evm.state.set_code(bob_addr, &external_code);
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -170,7 +170,7 @@ test "RETURNDATASIZE (0x3D): Get return data size" {
     defer evm.deinit();
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -224,7 +224,7 @@ test "RETURNDATACOPY (0x3E): Copy return data to memory" {
     defer evm.deinit();
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -290,12 +290,12 @@ test "EXTCODEHASH (0x3F): Get external code hash" {
     
     // Set up contract with known code
     const test_code = [_]u8{0x60, 0x00, 0x60, 0x01, 0x01}; // PUSH1 0, PUSH1 1, ADD
-    const bob_addr = [_]u8{0x11} ** 20;
+    const bob_addr = [_]u8{0xBB} ** 20;
     // Set code using tracked allocation
     try evm.state.set_code(bob_addr, &test_code);
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -367,7 +367,7 @@ test "BLOCKHASH (0x40): Get block hash" {
     evm.set_context(context);
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -457,7 +457,7 @@ test "COINBASE (0x41): Get block coinbase" {
     evm.set_context(context);
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -521,7 +521,7 @@ test "TIMESTAMP (0x42): Get block timestamp" {
         evm.set_context(context);
         
         const caller = [_]u8{0x11} ** 20;
-        const contract_addr = [_]u8{0x11} ** 20;
+        const contract_addr = [_]u8{0x33} ** 20;
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -586,7 +586,7 @@ test "NUMBER (0x43): Get block number" {
         evm.set_context(context);
         
         const caller = [_]u8{0x11} ** 20;
-        const contract_addr = [_]u8{0x11} ** 20;
+        const contract_addr = [_]u8{0x33} ** 20;
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -650,7 +650,7 @@ test "PREVRANDAO (0x44): Get previous RANDAO" {
         evm.set_context(context);
         
         const caller = [_]u8{0x11} ** 20;
-        const contract_addr = [_]u8{0x11} ** 20;
+        const contract_addr = [_]u8{0x33} ** 20;
         var contract = Contract.init(
             caller,
             contract_addr,
@@ -695,12 +695,12 @@ test "EXTCODE* opcodes: Gas consumption with EIP-2929" {
     
     // Set up external code
     const code = [_]u8{0x60, 0x42};
-    const bob_addr = [_]u8{0x11} ** 20;
+    const bob_addr = [_]u8{0xBB} ** 20;
     // Set code using tracked allocation
     try evm.state.set_code(bob_addr, &code);
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -748,7 +748,7 @@ test "Block opcodes: Gas consumption" {
     defer evm.deinit();
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -818,7 +818,7 @@ test "RETURNDATACOPY: Out of bounds access" {
     defer evm.deinit();
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -877,12 +877,12 @@ test "Memory copy opcodes: Memory expansion" {
     
     // Set up external code
     const code = [_]u8{0xFF} ** 32;
-    const bob_addr = [_]u8{0x11} ** 20;
+    const bob_addr = [_]u8{0xBB} ** 20;
     // Set code using tracked allocation
     try evm.state.set_code(bob_addr, &code);
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -942,7 +942,7 @@ test "BLOCKHASH: Edge cases" {
     evm.set_context(context);
     
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
+    const contract_addr = [_]u8{0x33} ** 20;
     var contract = Contract.init(
         caller,
         contract_addr,

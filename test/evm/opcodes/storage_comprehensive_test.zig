@@ -1216,8 +1216,8 @@ test "Storage: Multiple contracts isolation" {
 
     // Create two different contracts
     const caller = [_]u8{0x11} ** 20;
-    const contract_addr1 = [_]u8{0x11} ** 20;
-    const contract_addr2 = [_]u8{0x11} ** 20;
+    const contract_addr1 = [_]u8{0x22} ** 20;
+    const contract_addr2 = [_]u8{0x33} ** 20;
 
     var contract1 = Contract.init(
         caller,
