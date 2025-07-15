@@ -1,7 +1,7 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const Address = @import("Address");
+const Address = @import("primitives");
 
 test "contract call: empty contract returns success" {
     const allocator = testing.allocator;

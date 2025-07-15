@@ -6,7 +6,7 @@ const OperationModule = Evm.OperationModule;
 const Stack = Evm.Stack;
 const Frame = Evm.Frame;
 const Contract = Evm.Contract;
-const Address = @import("Address");
+const Address = @import("primitives");
 const execution = Evm.execution;
 const gas_constants = Evm.gas_constants;
 

@@ -1,7 +1,7 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const Address = @import("Address");
+const Address = @import("primitives");
 
 test "complex Solidity constructor returns full runtime code" {
     const allocator = testing.allocator;
