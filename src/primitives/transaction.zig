@@ -1,3 +1,94 @@
+//! Ethereum Transaction Types - Complete transaction format support
+//!
+//! This module provides comprehensive support for all Ethereum transaction types,
+//! from legacy transactions to the latest EIP-4844 blob transactions and
+//! EIP-7702 authorization lists.
+//!
+//! ## Transaction Types Overview
+//!
+//! ### Legacy Transactions (Type 0)
+//! - Original Ethereum transaction format
+//! - Fixed gas price model
+//! - Simple structure with nonce, gas, value, data, and signature
+//!
+//! ### EIP-2930 Transactions (Type 1)
+//! - Access list support for gas optimization
+//! - Explicit chain ID for replay protection
+//! - Backward compatible with legacy transactions
+//!
+//! ### EIP-1559 Transactions (Type 2)
+//! - Priority fee and max fee per gas model
+//! - Base fee adjustment mechanism
+//! - Dynamic fee market for better UX
+//!
+//! ### EIP-4844 Blob Transactions (Type 3)
+//! - Blob data for layer 2 scaling
+//! - Temporary blob storage (4096 slots)
+//! - Separate blob gas market
+//!
+//! ### EIP-7702 Authorization Transactions (Type 4)
+//! - EOA delegation to smart contracts
+//! - Authorization list for permission management
+//! - Backward compatible execution
+//!
+//! ## Key Features
+//!
+//! - **Type Safety**: Strongly typed transaction structures
+//! - **Serialization**: RLP encoding/decoding support
+//! - **Validation**: Comprehensive transaction validation
+//! - **Signature Handling**: ECDSA signature verification
+//! - **Gas Calculations**: Accurate gas cost estimation
+//!
+//! ## Usage Examples
+//!
+//! ### Creating a Legacy Transaction
+//! ```zig
+//! const tx = LegacyTransaction{
+//!     .nonce = 42,
+//!     .gasPrice = 20_000_000_000, // 20 gwei
+//!     .gasLimit = 21_000,
+//!     .to = some_address,
+//!     .value = 1_000_000_000_000_000_000, // 1 ether
+//!     .data = &[_]u8{},
+//!     .v = 27,
+//!     .r = signature_r,
+//!     .s = signature_s,
+//! };
+//! ```
+//!
+//! ### Creating an EIP-1559 Transaction
+//! ```zig
+//! const tx = Eip1559Transaction{
+//!     .chainId = 1, // Mainnet
+//!     .nonce = 42,
+//!     .maxPriorityFeePerGas = 2_000_000_000, // 2 gwei
+//!     .maxFeePerGas = 20_000_000_000, // 20 gwei
+//!     .gasLimit = 21_000,
+//!     .to = some_address,
+//!     .value = 1_000_000_000_000_000_000, // 1 ether
+//!     .data = &[_]u8{},
+//!     .accessList = &[_]AccessListItem{},
+//! };
+//! ```
+//!
+//! ### Working with Access Lists
+//! ```zig
+//! const access_list = [_]AccessListItem{
+//!     .{
+//!         .address = contract_address,
+//!         .storageKeys = &[_]Hash{storage_key1, storage_key2},
+//!     },
+//! };
+//! ```
+//!
+//! ## Design Principles
+//!
+//! 1. **Specification Compliance**: Exact adherence to EIP specifications
+//! 2. **Forward Compatibility**: Extensible design for future transaction types
+//! 3. **Memory Efficiency**: Minimal allocations with clear ownership
+//! 4. **Type Safety**: Prevent common transaction construction errors
+//! 5. **Performance**: Optimized for high-throughput transaction processing
+
 const std = @import("std");
 const testing = std.testing;
 const rlp = @import("rlp.zig");

@@ -38,6 +38,37 @@ pub fn from_u256(value: u256) Address {
     return addr;
 }
 
+pub fn fromHex(hex_str: []const u8) !Address {
+    if (hex_str.len != 42 or !startsWith(u8, hex_str, "0x")) {
+        return error.InvalidHexFormat;
+    }
+    
+    var addr: Address = undefined;
+    _ = hexToBytes(&addr, hex_str[2..]) catch return error.InvalidHexString;
+    return addr;
+}
+
+pub fn fromPublicKey(public_key_x: u256, public_key_y: u256) Address {
+    var pub_key_bytes: [64]u8 = undefined;
+    std.mem.writeInt(u256, pub_key_bytes[0..32], public_key_x, .big);
+    std.mem.writeInt(u256, pub_key_bytes[32..64], public_key_y, .big);
+    
+    var hash: [32]u8 = undefined;
+    Keccak256.hash(&pub_key_bytes, &hash, .{});
+    
+    var address: Address = undefined;
+    @memcpy(&address, hash[12..32]);
+    return address;
+}
+
+pub fn toHex(address: Address) [42]u8 {
+    return address_to_hex(address);
+}
+
+pub fn toChecksumHex(address: Address) [42]u8 {
+    return address_to_checksum_hex(address);
+}
+
 pub fn address_from_hex(comptime hex: [42]u8) Address {
     if (!startsWith(u8, &hex, "0x"))
         @compileError("hex must start with '0x'");
@@ -288,17 +319,17 @@ pub fn getCreate2Address(creator: Address, salt: [32]u8, init_code_hash: [32]u8)
     // Build the data to hash: 0xff ++ creator ++ salt ++ init_code_hash
     var data: [85]u8 = undefined;
     data[0] = 0xff;
-    @memcpy(data[1..21], &creator.bytes);
+    @memcpy(data[1..21], &creator);
     @memcpy(data[21..53], &salt);
     @memcpy(data[53..85], &init_code_hash);
     
     // Hash the data
     var hash: [32]u8 = undefined;
-    std.crypto.hash.sha3.Keccak256.hash(&data, &hash, .{});
+    Keccak256.hash(&data, &hash, .{});
     
     // Take last 20 bytes as address
     var address: Address = undefined;
-    @memcpy(&address.bytes, hash[12..32]);
+    @memcpy(&address, hash[12..32]);
     
     return address;
 }

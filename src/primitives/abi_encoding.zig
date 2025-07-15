@@ -1460,12 +1460,8 @@ test "encodeAbiParameters - comprehensive test cases from ox and viem" {
         defer allocator.free(encoded);
 
         const expected = "0000000000000000000000000000000000000000000000000000000000010f2c";
-        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
         defer allocator.free(actual_hex);
-
-        for (encoded, 0..) |byte, i| {
-            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
-        }
 
         try std.testing.expectEqualStrings(expected, actual_hex);
     }
@@ -1477,12 +1473,8 @@ test "encodeAbiParameters - comprehensive test cases from ox and viem" {
         defer allocator.free(encoded);
 
         const expected = "0000000000000000000000000000000000000000000000000000000000000020";
-        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        const actual_hex = try std.fmt.allocPrint(allocator, "{}", .{std.fmt.fmtSliceHexLower(encoded)});
         defer allocator.free(actual_hex);
-
-        for (encoded, 0..) |byte, i| {
-            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
-        }
 
         try std.testing.expectEqualStrings(expected, actual_hex);
     }
