@@ -277,7 +277,8 @@ test "ecrecover known test vector placeholder" {
 // ============================================================================
 
 test "ecrecover precompile dispatcher integration" {
-    const Address = @import("Address").Address;
+    const primitives = @import("primitives");
+const Address = primitives.Address;
     const precompiles = @import("../../../src/evm/precompiles/precompiles.zig");
     
     const ecrecover_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01 };
@@ -297,7 +298,8 @@ test "ecrecover precompile dispatcher integration" {
 }
 
 test "ecrecover precompile dispatcher execute" {
-    const Address = @import("Address").Address;
+    const primitives = @import("primitives");
+const Address = primitives.Address;
     const precompiles = @import("../../../src/evm/precompiles/precompiles.zig");
     const ChainRules = Evm.chain_rules.ChainRules;
     
@@ -327,7 +329,8 @@ test "ecrecover precompile dispatcher execute" {
 }
 
 test "ecrecover precompile dispatcher estimate gas" {
-    const Address = @import("Address").Address;
+    const primitives = @import("primitives");
+const Address = primitives.Address;
     const precompiles = @import("../../../src/evm/precompiles/precompiles.zig");
     const ChainRules = Evm.chain_rules.ChainRules;
     
@@ -341,7 +344,8 @@ test "ecrecover precompile dispatcher estimate gas" {
 }
 
 test "ecrecover precompile dispatcher get output size" {
-    const Address = @import("Address").Address;
+    const primitives = @import("primitives");
+const Address = primitives.Address;
     const precompiles = @import("../../../src/evm/precompiles/precompiles.zig");
     const ChainRules = Evm.chain_rules.ChainRules;
     
@@ -354,7 +358,8 @@ test "ecrecover precompile dispatcher get output size" {
 }
 
 test "ecrecover precompile dispatcher validate call" {
-    const Address = @import("Address").Address;
+    const primitives = @import("primitives");
+const Address = primitives.Address;
     const precompiles = @import("../../../src/evm/precompiles/precompiles.zig");
     const ChainRules = Evm.chain_rules.ChainRules;
     

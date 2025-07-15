@@ -6,7 +6,8 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const Address = @import("Address").Address;
+const primitives = @import("primitives");
+const Address = primitives.Address;
 
 // ECADD precompile address (0x06)
 const ECADD_ADDRESS: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x06 };

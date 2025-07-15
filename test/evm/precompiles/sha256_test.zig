@@ -1,7 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const Address = @import("Address").Address;
+const primitives = @import("primitives");
+const Address = primitives.Address;
 
 // Convenience aliases
 const sha256 = Evm.precompiles.sha256;
