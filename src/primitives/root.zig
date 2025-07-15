@@ -30,7 +30,6 @@ pub const Authorization = @import("authorization.zig");
 pub const Blob = @import("blob.zig");
 
 // Contract utilities
-pub const ContractAddress = @import("contract_address.zig");
 pub const EventLog = @import("event_log.zig");
 
 // Standards

@@ -141,7 +141,7 @@ pub fn encode(allocator: Allocator, input: anytype) EncodeError![]u8 {
 }
 
 /// Encodes a byte array or slice according to RLP rules
-fn encodeBytes(allocator: Allocator, bytes: []const u8) ![]u8 {
+pub fn encodeBytes(allocator: Allocator, bytes: []const u8) ![]u8 {
     // If a single byte less than 0x80, return as is
     if (bytes.len == 1 and bytes[0] < 0x80) {
         const result = try allocator.alloc(u8, 1);
@@ -170,7 +170,7 @@ fn encodeBytes(allocator: Allocator, bytes: []const u8) ![]u8 {
 }
 
 /// Encodes an integer length as bytes
-fn encodeLength(allocator: Allocator, length: usize) ![]u8 {
+pub fn encodeLength(allocator: Allocator, length: usize) ![]u8 {
     var len_bytes = std.ArrayList(u8).init(allocator);
     defer len_bytes.deinit();
     

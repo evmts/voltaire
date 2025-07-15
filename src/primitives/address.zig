@@ -275,6 +275,34 @@ pub fn calculate_create2_address(allocator: std.mem.Allocator, creator: Address,
     return address;
 }
 
+// Convenience function for CREATE address calculation without allocator
+// Uses a fixed buffer for the RLP encoding
+pub fn getContractAddress(creator: Address, nonce: u64) Address {
+    const allocator = std.heap.page_allocator;
+    return calculate_create_address(allocator, creator, nonce) catch unreachable;
+}
+
+// Convenience function for CREATE2 address calculation without allocator
+// Expects pre-hashed init code
+pub fn getCreate2Address(creator: Address, salt: [32]u8, init_code_hash: [32]u8) Address {
+    // Build the data to hash: 0xff ++ creator ++ salt ++ init_code_hash
+    var data: [85]u8 = undefined;
+    data[0] = 0xff;
+    @memcpy(data[1..21], &creator.bytes);
+    @memcpy(data[21..53], &salt);
+    @memcpy(data[53..85], &init_code_hash);
+    
+    // Hash the data
+    var hash: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash(&data, &hash, .{});
+    
+    // Take last 20 bytes as address
+    var address: Address = undefined;
+    @memcpy(&address.bytes, hash[12..32]);
+    
+    return address;
+}
+
 test "PublicKey.from_hex" {
     const serialized = "0x048318535b54105d4a7aae60c08fc45f9687181b4fdfc625bd1a753fa7397fed753547f11ca8696646f2f3acb08e31016afac23e630c5d11f59f61fef57b0d2aa5";
     const publicKey = try PublicKey.from_hex(serialized);
@@ -361,4 +389,89 @@ test "Address - equality" {
     try std.testing.expectError(error.InvalidAddress, are_addresses_equal("0xa5cc3c03994db5b0d9a5eEdD10Cabab0813678az", "0xa5cc3c03994db5b0d9a5eEdD10Cabab0813678ac"));
 
     try std.testing.expectError(error.InvalidAddress, are_addresses_equal("0xa5cc3c03994db5b0d9a5eEdD10Cabab0813678ac", "0xa5cc3c03994db5b0d9a5eEdD10Cabab0813678aff"));
+}
+
+test "contract address generation - CREATE" {
+    const deployer = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const nonce: u64 = 0;
+    
+    const addr = getContractAddress(deployer, nonce);
+    const expected = try Address.fromHex("0xcd234a471b72ba2f1ccf0a70fcaba648a5eecd8d");
+    try std.testing.expectEqual(expected, addr);
+}
+
+test "contract address generation - CREATE with nonce 1" {
+    const deployer = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    const nonce: u64 = 1;
+    
+    const addr = getContractAddress(deployer, nonce);
+    const expected = try Address.fromHex("0x343c43a37d37dff08ae8c4a11544c718abb4fcf8");
+    try std.testing.expectEqual(expected, addr);
+}
+
+test "contract address generation - CREATE multiple nonces" {
+    const deployer = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    
+    const testCases = [_]struct {
+        nonce: u64,
+        expected: []const u8,
+    }{
+        .{ .nonce = 0, .expected = "0xcd234a471b72ba2f1ccf0a70fcaba648a5eecd8d" },
+        .{ .nonce = 1, .expected = "0x343c43a37d37dff08ae8c4a11544c718abb4fcf8" },
+        .{ .nonce = 2, .expected = "0xf778b86fa74e846c4f0a1fbd1335fe81c00a0c91" },
+        .{ .nonce = 3, .expected = "0xfffd933a0bc612844eaf0c6fe3e5b8e9b6c1d19c" },
+    };
+    
+    for (testCases) |tc| {
+        const addr = getContractAddress(deployer, tc.nonce);
+        const expected = try Address.fromHex(tc.expected);
+        try std.testing.expectEqual(expected, addr);
+    }
+}
+
+test "contract address generation - CREATE2" {
+    const deployer = try Address.fromHex("0x0000000000000000000000000000000000000000");
+    const salt = [_]u8{0} ** 32;
+    const initCodeHash = [_]u8{0} ** 32;
+    
+    const addr = getCreate2Address(deployer, salt, initCodeHash);
+    const expected = try Address.fromHex("0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38");
+    try std.testing.expectEqual(expected, addr);
+}
+
+test "contract address generation - CREATE2 deterministic" {
+    const deployer = try Address.fromHex("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+    const salt: [32]u8 = .{ 0x12, 0x34, 0x56, 0x78 } ++ .{0} ** 28;
+    const initCodeHash: [32]u8 = .{ 0xab, 0xcd, 0xef } ++ .{0} ** 29;
+    
+    const addr = getCreate2Address(deployer, salt, initCodeHash);
+    
+    // Should generate deterministic address
+    const addr2 = getCreate2Address(deployer, salt, initCodeHash);
+    try std.testing.expectEqual(addr, addr2);
+}
+
+test "calculate_create_address with allocator" {
+    const allocator = std.testing.allocator;
+    const deployer = try Address.fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
+    
+    const addr = try calculate_create_address(allocator, deployer, 0);
+    const expected = try Address.fromHex("0xcd234a471b72ba2f1ccf0a70fcaba648a5eecd8d");
+    try std.testing.expectEqual(expected, addr);
+}
+
+test "calculate_create2_address with allocator" {
+    const allocator = std.testing.allocator;
+    const deployer = try Address.fromHex("0x0000000000000000000000000000000000000000");
+    const salt: u256 = 0;
+    const init_code: []const u8 = "";
+    
+    const addr = try calculate_create2_address(allocator, deployer, salt, init_code);
+    
+    // Hash of empty init code
+    var expected_hash: [32]u8 = undefined;
+    Keccak256.hash(init_code, &expected_hash, .{});
+    
+    const expected_addr = getCreate2Address(deployer, @bitCast(salt), expected_hash);
+    try std.testing.expectEqual(expected_addr, addr);
 }

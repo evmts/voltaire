@@ -432,59 +432,376 @@ pub fn decodeFunctionData(allocator: std.mem.Allocator, data: []const u8, types:
     };
 }
 
-// Simple ABI encoding for basic types
+// ABI Encoding Functions
+
+// Helper to determine if a type is dynamic
+fn isDynamic(abi_type: AbiType) bool {
+    return switch (abi_type) {
+        .string, .bytes, .uint256_array, .bytes32_array, .address_array, .string_array => true,
+        else => false,
+    };
+}
+
+// Helper to get static size for static types
+fn getStaticSize(abi_type: AbiType) ?usize {
+    return switch (abi_type) {
+        .uint8, .uint16, .uint32, .uint64, .uint128, .uint256, .int8, .int16, .int32, .int64, .int128, .int256, .address, .bool, .bytes1, .bytes2, .bytes3, .bytes4, .bytes8, .bytes16, .bytes32 => 32,
+        .string, .bytes, .uint256_array, .bytes32_array, .address_array, .string_array => null,
+    };
+}
+
+// Encode a single static parameter
+fn encodeStaticParameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8 {
+    var result = try allocator.alloc(u8, 32);
+    @memset(result, 0);
+
+    switch (value) {
+        .uint8 => |val| {
+            result[31] = val;
+        },
+        .uint16 => |val| {
+            var bytes: [2]u8 = undefined;
+            std.mem.writeInt(u16, &bytes, val, .big);
+            @memcpy(result[30..32], &bytes);
+        },
+        .uint32 => |val| {
+            var bytes: [4]u8 = undefined;
+            std.mem.writeInt(u32, &bytes, val, .big);
+            @memcpy(result[28..32], &bytes);
+        },
+        .uint64 => |val| {
+            var bytes: [8]u8 = undefined;
+            std.mem.writeInt(u64, &bytes, val, .big);
+            @memcpy(result[24..32], &bytes);
+        },
+        .uint128 => |val| {
+            var bytes: [16]u8 = undefined;
+            std.mem.writeInt(u128, &bytes, val, .big);
+            @memcpy(result[16..32], &bytes);
+        },
+        .uint256 => |val| {
+            var bytes: [32]u8 = undefined;
+            std.mem.writeInt(u256, &bytes, val, .big);
+            @memcpy(result, &bytes);
+        },
+        .int8 => |val| {
+            const unsigned = @as(u8, @bitCast(val));
+            result[31] = unsigned;
+            // Sign extend for negative numbers
+            if (val < 0) {
+                @memset(result[0..31], 0xff);
+            }
+        },
+        .int16 => |val| {
+            const unsigned = @as(u16, @bitCast(val));
+            var bytes: [2]u8 = undefined;
+            std.mem.writeInt(u16, &bytes, unsigned, .big);
+            @memcpy(result[30..32], &bytes);
+            // Sign extend for negative numbers
+            if (val < 0) {
+                @memset(result[0..30], 0xff);
+            }
+        },
+        .int32 => |val| {
+            const unsigned = @as(u32, @bitCast(val));
+            var bytes: [4]u8 = undefined;
+            std.mem.writeInt(u32, &bytes, unsigned, .big);
+            @memcpy(result[28..32], &bytes);
+            // Sign extend for negative numbers
+            if (val < 0) {
+                @memset(result[0..28], 0xff);
+            }
+        },
+        .int64 => |val| {
+            const unsigned = @as(u64, @bitCast(val));
+            var bytes: [8]u8 = undefined;
+            std.mem.writeInt(u64, &bytes, unsigned, .big);
+            @memcpy(result[24..32], &bytes);
+            // Sign extend for negative numbers
+            if (val < 0) {
+                @memset(result[0..24], 0xff);
+            }
+        },
+        .int128 => |val| {
+            const unsigned = @as(u128, @bitCast(val));
+            var bytes: [16]u8 = undefined;
+            std.mem.writeInt(u128, &bytes, unsigned, .big);
+            @memcpy(result[16..32], &bytes);
+            // Sign extend for negative numbers
+            if (val < 0) {
+                @memset(result[0..16], 0xff);
+            }
+        },
+        .int256 => {
+            return AbiError.NotImplemented; // i256 not supported in Zig
+        },
+        .address => |val| {
+            // Address is 20 bytes, right-aligned (left-padded with zeros)
+            @memcpy(result[12..32], &val);
+        },
+        .bool => |val| {
+            result[31] = if (val) 1 else 0;
+        },
+        .bytes1 => |val| {
+            @memcpy(result[0..1], &val);
+        },
+        .bytes2 => |val| {
+            @memcpy(result[0..2], &val);
+        },
+        .bytes3 => |val| {
+            @memcpy(result[0..3], &val);
+        },
+        .bytes4 => |val| {
+            @memcpy(result[0..4], &val);
+        },
+        .bytes8 => |val| {
+            @memcpy(result[0..8], &val);
+        },
+        .bytes16 => |val| {
+            @memcpy(result[0..16], &val);
+        },
+        .bytes32 => |val| {
+            @memcpy(result, &val);
+        },
+        else => {
+            allocator.free(result);
+            return AbiError.InvalidType;
+        },
+    }
+
+    return result;
+}
+
+// Encode a dynamic parameter
+fn encodeDynamicParameter(allocator: std.mem.Allocator, value: AbiValue) ![]u8 {
+    switch (value) {
+        .string => |val| {
+            // Length + data, padded to 32-byte boundary
+            const length = val.len;
+            const padded_length = ((length + 31) / 32) * 32;
+
+            var result = try allocator.alloc(u8, 32 + padded_length);
+            @memset(result, 0);
+
+            // Encode length
+            var length_bytes: [32]u8 = undefined;
+            @memset(length_bytes, 0);
+            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            @memcpy(result[0..32], &length_bytes);
+
+            // Encode data
+            @memcpy(result[32 .. 32 + length], val);
+
+            return result;
+        },
+        .bytes => |val| {
+            // Same as string
+            const length = val.len;
+            const padded_length = ((length + 31) / 32) * 32;
+
+            var result = try allocator.alloc(u8, 32 + padded_length);
+            @memset(result, 0);
+
+            // Encode length
+            var length_bytes: [32]u8 = undefined;
+            @memset(length_bytes, 0);
+            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            @memcpy(result[0..32], &length_bytes);
+
+            // Encode data
+            @memcpy(result[32 .. 32 + length], val);
+
+            return result;
+        },
+        .uint256_array => |val| {
+            // Length + array elements
+            const length = val.len;
+
+            var result = try allocator.alloc(u8, 32 + (length * 32));
+            @memset(result, 0);
+
+            // Encode length
+            var length_bytes: [32]u8 = undefined;
+            @memset(length_bytes, 0);
+            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            @memcpy(result[0..32], &length_bytes);
+
+            // Encode elements
+            for (val, 0..) |elem, i| {
+                var elem_bytes: [32]u8 = undefined;
+                std.mem.writeInt(u256, &elem_bytes, elem, .big);
+                @memcpy(result[32 + (i * 32) .. 32 + ((i + 1) * 32)], &elem_bytes);
+            }
+
+            return result;
+        },
+        .address_array => |val| {
+            const length = val.len;
+
+            var result = try allocator.alloc(u8, 32 + (length * 32));
+            @memset(result, 0);
+
+            // Encode length
+            var length_bytes: [32]u8 = undefined;
+            @memset(length_bytes, 0);
+            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            @memcpy(result[0..32], &length_bytes);
+
+            // Encode elements
+            for (val, 0..) |elem, i| {
+                @memcpy(result[32 + (i * 32) + 12 .. 32 + ((i + 1) * 32)], &elem);
+            }
+
+            return result;
+        },
+        .string_array => |val| {
+            const length = val.len;
+
+            // First pass: calculate total size needed
+            var total_size: usize = 32; // For array length
+            total_size += length * 32; // For offset pointers
+
+            var string_sizes = try allocator.alloc(usize, length);
+            defer allocator.free(string_sizes);
+
+            for (val, 0..) |str, i| {
+                const str_len = str.len;
+                const padded_len = ((str_len + 31) / 32) * 32;
+                string_sizes[i] = 32 + padded_len; // Length + data
+                total_size += string_sizes[i];
+            }
+
+            var result = try allocator.alloc(u8, total_size);
+            @memset(result, 0);
+
+            // Encode array length
+            var length_bytes: [32]u8 = undefined;
+            @memset(length_bytes, 0);
+            std.mem.writeInt(u64, length_bytes[24..32], @as(u64, @intCast(length)), .big);
+            @memcpy(result[0..32], &length_bytes);
+
+            // Calculate offsets and encode offset pointers
+            var current_offset: usize = length * 32;
+            for (0..length) |i| {
+                var offset_bytes: [32]u8 = undefined;
+                @memset(offset_bytes, 0);
+                std.mem.writeInt(u64, offset_bytes[24..32], @as(u64, @intCast(current_offset)), .big);
+                @memcpy(result[32 + (i * 32) .. 32 + ((i + 1) * 32)], &offset_bytes);
+                current_offset += string_sizes[i];
+            }
+
+            // Encode string data
+            var data_offset: usize = 32 + (length * 32);
+            for (val, 0..) |str, i| {
+                const str_len = str.len;
+
+                // String length
+                var str_length_bytes: [32]u8 = undefined;
+                @memset(str_length_bytes, 0);
+                std.mem.writeInt(u64, str_length_bytes[24..32], @as(u64, @intCast(str_len)), .big);
+                @memcpy(result[data_offset .. data_offset + 32], &str_length_bytes);
+
+                // String data
+                @memcpy(result[data_offset + 32 .. data_offset + 32 + str_len], str);
+
+                data_offset += string_sizes[i];
+            }
+
+            return result;
+        },
+        else => {
+            return AbiError.InvalidType;
+        },
+    }
+}
+
+// Main ABI encoding function
 pub fn encodeAbiParameters(allocator: std.mem.Allocator, values: []const AbiValue) ![]u8 {
     if (values.len == 0) return try allocator.alloc(u8, 0);
 
-    var result = std.ArrayList(u8).init(allocator);
-    defer result.deinit();
-
-    // Simple implementation - just encode each value as 32 bytes
-    for (values) |value| {
-        var encoded_value = try allocator.alloc(u8, 32);
-        defer allocator.free(encoded_value);
-        @memset(encoded_value, 0);
-
-        switch (value) {
-            .uint256 => |val| {
-                // Convert u256 to bytes (big-endian)
-                var bytes: [32]u8 = undefined;
-                std.mem.writeInt(u256, &bytes, val, .big);
-                @memcpy(encoded_value, &bytes);
-            },
-            .uint64 => |val| {
-                // Convert u64 to bytes (big-endian, padded to 32 bytes)
-                var bytes: [8]u8 = undefined;
-                std.mem.writeInt(u64, &bytes, val, .big);
-                @memcpy(encoded_value[24..32], &bytes);
-            },
-            .uint32 => |val| {
-                // Convert u32 to bytes (big-endian, padded to 32 bytes)
-                var bytes: [4]u8 = undefined;
-                std.mem.writeInt(u32, &bytes, val, .big);
-                @memcpy(encoded_value[28..32], &bytes);
-            },
-            .bool => |val| {
-                encoded_value[31] = if (val) 1 else 0;
-            },
-            .address => |val| {
-                // Address is 20 bytes, padded to 32 bytes
-                @memcpy(encoded_value[12..32], &val);
-            },
-            .string => |val| {
-                // For strings, we'll just copy the first 32 bytes
-                const copy_len = @min(val.len, 32);
-                @memcpy(encoded_value[0..copy_len], val[0..copy_len]);
-            },
-            else => {
-                // For other types, leave as zeros
-            },
+    var static_parts = std.ArrayList([]u8).init(allocator);
+    defer {
+        for (static_parts.items) |part| {
+            allocator.free(part);
         }
-
-        try result.appendSlice(encoded_value);
+        static_parts.deinit();
     }
 
-    return result.toOwnedSlice();
+    var dynamic_parts = std.ArrayList([]u8).init(allocator);
+    defer {
+        for (dynamic_parts.items) |part| {
+            allocator.free(part);
+        }
+        dynamic_parts.deinit();
+    }
+
+    // First pass: compute static size and prepare static/dynamic parts
+    var static_size: usize = 0;
+    var dynamic_size: usize = 0;
+
+    for (values) |value| {
+        const abi_type = value.getType();
+
+        if (isDynamic(abi_type)) {
+            // Dynamic type: add 32 bytes for offset pointer in static part
+            static_size += 32;
+
+            // Encode the dynamic data
+            const dynamic_data = try encodeDynamicParameter(allocator, value);
+            try dynamic_parts.append(dynamic_data);
+            dynamic_size += dynamic_data.len;
+
+            // Create offset pointer for static part
+            const offset_pointer = try allocator.alloc(u8, 32);
+            @memset(offset_pointer, 0);
+            // Offset will be calculated in second pass
+            try static_parts.append(offset_pointer);
+        } else {
+            // Static type: encode directly
+            const static_data = try encodeStaticParameter(allocator, value);
+            try static_parts.append(static_data);
+            static_size += 32;
+        }
+    }
+
+    // Second pass: update offset pointers
+    var current_dynamic_offset: usize = static_size;
+    var dynamic_index: usize = 0;
+
+    for (values, 0..) |value, i| {
+        const abi_type = value.getType();
+
+        if (isDynamic(abi_type)) {
+            // Update the offset pointer
+            var offset_bytes: [32]u8 = undefined;
+            @memset(offset_bytes, 0);
+            std.mem.writeInt(u64, offset_bytes[24..32], @as(u64, @intCast(current_dynamic_offset)), .big);
+            @memcpy(static_parts.items[i], &offset_bytes);
+
+            current_dynamic_offset += dynamic_parts.items[dynamic_index].len;
+            dynamic_index += 1;
+        }
+    }
+
+    // Concatenate all parts
+    const total_size = static_size + dynamic_size;
+    var result = try allocator.alloc(u8, total_size);
+
+    var offset: usize = 0;
+
+    // Copy static parts
+    for (static_parts.items) |part| {
+        @memcpy(result[offset .. offset + part.len], part);
+        offset += part.len;
+    }
+
+    // Copy dynamic parts
+    for (dynamic_parts.items) |part| {
+        @memcpy(result[offset .. offset + part.len], part);
+        offset += part.len;
+    }
+
+    return result;
 }
 
 pub fn encodeFunctionData(allocator: std.mem.Allocator, selector: Selector, parameters: []const AbiValue) ![]u8 {
@@ -1130,4 +1447,197 @@ test "encode and decode multiple types" {
     try std.testing.expectEqual(@as(u256, 42), decoded[0].uint256);
     try std.testing.expectEqual(true, decoded[1].bool);
     try std.testing.expectEqualSlices(u8, &addr, &decoded[2].address);
+}
+
+// Test ABI encoding with ox and viem test cases
+test "encodeAbiParameters - comprehensive test cases from ox and viem" {
+    const allocator = std.testing.allocator;
+
+    // Test uint256 (value 69420n)
+    {
+        const values = [_]AbiValue{uint256Value(69420)};
+        const encoded = try encodeAbiParameters(allocator, &values);
+        defer allocator.free(encoded);
+
+        const expected = "0000000000000000000000000000000000000000000000000000000000010f2c";
+        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        defer allocator.free(actual_hex);
+
+        for (encoded, 0..) |byte, i| {
+            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
+        }
+
+        try std.testing.expectEqualStrings(expected, actual_hex);
+    }
+
+    // Test uint8 (value 32)
+    {
+        const values = [_]AbiValue{AbiValue{ .uint8 = 32 }};
+        const encoded = try encodeAbiParameters(allocator, &values);
+        defer allocator.free(encoded);
+
+        const expected = "0000000000000000000000000000000000000000000000000000000000000020";
+        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        defer allocator.free(actual_hex);
+
+        for (encoded, 0..) |byte, i| {
+            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
+        }
+
+        try std.testing.expectEqualStrings(expected, actual_hex);
+    }
+
+    // Test address
+    {
+        const addr: address.Address = [_]u8{
+            0x14, 0xdC, 0x79, 0x96, 0x4d, 0xa2, 0xC0, 0x8b,
+            0x23, 0x69, 0x8B, 0x3D, 0x3c, 0xc7, 0xCa, 0x32,
+            0x19, 0x3d, 0x99, 0x55,
+        };
+        const values = [_]AbiValue{addressValue(addr)};
+        const encoded = try encodeAbiParameters(allocator, &values);
+        defer allocator.free(encoded);
+
+        const expected = "00000000000000000000000014dc79964da2c08b23698b3d3cc7ca32193d9955";
+        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        defer allocator.free(actual_hex);
+
+        for (encoded, 0..) |byte, i| {
+            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
+        }
+
+        try std.testing.expectEqualStrings(expected, actual_hex);
+    }
+
+    // Test bool true
+    {
+        const values = [_]AbiValue{boolValue(true)};
+        const encoded = try encodeAbiParameters(allocator, &values);
+        defer allocator.free(encoded);
+
+        const expected = "0000000000000000000000000000000000000000000000000000000000000001";
+        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        defer allocator.free(actual_hex);
+
+        for (encoded, 0..) |byte, i| {
+            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
+        }
+
+        try std.testing.expectEqualStrings(expected, actual_hex);
+    }
+
+    // Test bool false
+    {
+        const values = [_]AbiValue{boolValue(false)};
+        const encoded = try encodeAbiParameters(allocator, &values);
+        defer allocator.free(encoded);
+
+        const expected = "0000000000000000000000000000000000000000000000000000000000000000";
+        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        defer allocator.free(actual_hex);
+
+        for (encoded, 0..) |byte, i| {
+            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
+        }
+
+        try std.testing.expectEqualStrings(expected, actual_hex);
+    }
+
+    // Test int32 positive
+    {
+        const values = [_]AbiValue{AbiValue{ .int32 = 2147483647 }};
+        const encoded = try encodeAbiParameters(allocator, &values);
+        defer allocator.free(encoded);
+
+        const expected = "000000000000000000000000000000000000000000000000000000007fffffff";
+        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        defer allocator.free(actual_hex);
+
+        for (encoded, 0..) |byte, i| {
+            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
+        }
+
+        try std.testing.expectEqualStrings(expected, actual_hex);
+    }
+
+    // Test int32 negative (two's complement)
+    {
+        const values = [_]AbiValue{AbiValue{ .int32 = -2147483648 }};
+        const encoded = try encodeAbiParameters(allocator, &values);
+        defer allocator.free(encoded);
+
+        const expected = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffff80000000";
+        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        defer allocator.free(actual_hex);
+
+        for (encoded, 0..) |byte, i| {
+            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
+        }
+
+        try std.testing.expectEqualStrings(expected, actual_hex);
+    }
+
+    // Test multiple static types (uint256, bool, address)
+    {
+        const addr: address.Address = [_]u8{
+            0xc9, 0x61, 0x14, 0x5a, 0x54, 0xC9, 0x6E, 0x3a,
+            0xE9, 0xbA, 0xA0, 0x48, 0xc4, 0xF4, 0xD6, 0xb0,
+            0x4C, 0x13, 0x91, 0x6b,
+        };
+        const values = [_]AbiValue{
+            uint256Value(420),
+            boolValue(true),
+            addressValue(addr),
+        };
+        const encoded = try encodeAbiParameters(allocator, &values);
+        defer allocator.free(encoded);
+
+        const expected = "00000000000000000000000000000000000000000000000000000000000001a40000000000000000000000000000000000000000000000000000000000000001000000000000000000000000c961145a54c96e3ae9baa048c4f4d6b04c13916b";
+        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        defer allocator.free(actual_hex);
+
+        for (encoded, 0..) |byte, i| {
+            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
+        }
+
+        try std.testing.expectEqualStrings(expected, actual_hex);
+    }
+
+    // Test string encoding
+    {
+        const values = [_]AbiValue{stringValue("wagmi")};
+        const encoded = try encodeAbiParameters(allocator, &values);
+        defer allocator.free(encoded);
+
+        const expected = "000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000057761676d69000000000000000000000000000000000000000000000000000000";
+        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        defer allocator.free(actual_hex);
+
+        for (encoded, 0..) |byte, i| {
+            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
+        }
+
+        try std.testing.expectEqualStrings(expected, actual_hex);
+    }
+
+    // Test mixed static and dynamic types (string, uint256, bool)
+    {
+        const values = [_]AbiValue{
+            stringValue("wagmi"),
+            uint256Value(420),
+            boolValue(true),
+        };
+        const encoded = try encodeAbiParameters(allocator, &values);
+        defer allocator.free(encoded);
+
+        const expected = "000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000001a4000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000057761676d69000000000000000000000000000000000000000000000000000000";
+        var actual_hex = try allocator.alloc(u8, encoded.len * 2);
+        defer allocator.free(actual_hex);
+
+        for (encoded, 0..) |byte, i| {
+            _ = std.fmt.bufPrint(actual_hex[i * 2 .. i * 2 + 2], "{x:0>2}", .{byte}) catch unreachable;
+        }
+
+        try std.testing.expectEqualStrings(expected, actual_hex);
+    }
 }

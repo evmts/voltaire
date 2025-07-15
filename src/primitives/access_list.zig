@@ -72,58 +72,46 @@ pub fn isStorageKeyInAccessList(
 
 // RLP encode access list
 pub fn encodeAccessList(allocator: Allocator, accessList: AccessList) ![]u8 {
-    var list = std.ArrayList(u8).init(allocator);
-    defer list.deinit();
+    // First, encode each entry as a list of [address, [storageKeys...]]
+    var entries = std.ArrayList([]const u8).init(allocator);
+    defer {
+        for (entries.items) |item| {
+            allocator.free(item);
+        }
+        entries.deinit();
+    }
     
-    // Encode each entry
     for (accessList) |entry| {
-        var entryList = std.ArrayList(u8).init(allocator);
-        defer entryList.deinit();
+        // Encode the address
+        const encodedAddress = try rlp.encodeBytes(allocator, &entry.address.bytes);
+        defer allocator.free(encodedAddress);
         
-        // Encode address
-        try rlp.encodeBytes(allocator, &entry.address.bytes, &entryList);
-        
-        // Encode storage keys as list
-        var keysList = std.ArrayList(u8).init(allocator);
-        defer keysList.deinit();
+        // Encode storage keys
+        var encodedKeys = std.ArrayList([]const u8).init(allocator);
+        defer {
+            for (encodedKeys.items) |item| {
+                allocator.free(item);
+            }
+            encodedKeys.deinit();
+        }
         
         for (entry.storageKeys) |key| {
-            try rlp.encodeBytes(allocator, &key.bytes, &keysList);
+            const encodedKey = try rlp.encodeBytes(allocator, &key.bytes);
+            try encodedKeys.append(encodedKey);
         }
         
-        // Wrap keys in RLP list
-        if (keysList.items.len <= 55) {
-            try entryList.append(@as(u8, @intCast(0xc0 + keysList.items.len)));
-        } else {
-            const lenBytes = rlp.encodeLength(keysList.items.len);
-            try entryList.append(@as(u8, @intCast(0xf7 + lenBytes.len)));
-            try entryList.appendSlice(lenBytes);
-        }
-        try entryList.appendSlice(keysList.items);
+        // Encode the list of storage keys
+        const keysListEncoded = try rlp.encode(allocator, encodedKeys.items);
+        defer allocator.free(keysListEncoded);
         
-        // Add entry to main list
-        if (entryList.items.len <= 55) {
-            try list.append(@as(u8, @intCast(0xc0 + entryList.items.len)));
-        } else {
-            const lenBytes = rlp.encodeLength(entryList.items.len);
-            try list.append(@as(u8, @intCast(0xf7 + lenBytes.len)));
-            try list.appendSlice(lenBytes);
-        }
-        try list.appendSlice(entryList.items);
+        // Create entry as [address, storageKeysList]
+        var entryItems = [_][]const u8{ encodedAddress, keysListEncoded };
+        const entryEncoded = try rlp.encode(allocator, &entryItems);
+        try entries.append(entryEncoded);
     }
     
-    // Wrap entire access list
-    var result = std.ArrayList(u8).init(allocator);
-    if (list.items.len <= 55) {
-        try result.append(@as(u8, @intCast(0xc0 + list.items.len)));
-    } else {
-        const lenBytes = rlp.encodeLength(list.items.len);
-        try result.append(@as(u8, @intCast(0xf7 + lenBytes.len)));
-        try result.appendSlice(lenBytes);
-    }
-    try result.appendSlice(list.items);
-    
-    return result.toOwnedSlice();
+    // Encode the entire access list
+    return try rlp.encode(allocator, entries.items);
 }
 
 // Calculate gas savings from access list
