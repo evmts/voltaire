@@ -41,6 +41,9 @@ Example Response: "I detected potential sensitive information in your prompt (AP
 - **Single word variables**: Prefer single word variable names where possible (e.g., `n` over `number`, `i` over `index`)
 - **Defer patterns**: Always use defer for cleanup immediately after allocation
 - **Memory consciousness**: Always think about memory ownership and lifecycle
+- **camelCase naming**: Use camelCase for all function names, variable names, and identifiers (e.g., `parseData` not `parse_data`)
+- **Tests in source files**: Always include tests in the same file as the source code, not in separate test files
+- **Direct imports**: Import modules directly without creating unnecessary aliases (e.g., use `address.Address` not `Address = address.Address`)
 
 ### Function Design
 ```zig
@@ -104,6 +107,28 @@ All tests in this codebase should be written with **zero abstractions or indirec
 1. **No test helper functions** - Copy and paste setup code directly in each test
 2. **No shared test utilities** - Each test should be completely self-contained
 3. **Explicit is better than DRY** - Readability and clarity over code reuse in tests
+
+### CRITICAL: Test Failures Are Always Regressions You Caused
+
+**FUNDAMENTAL PRINCIPLE**: If tests were passing before your changes and failing after, YOU caused a regression. There are NO pre-existing test failures in this codebase.
+
+**Never assume**:
+- "These tests were probably already broken"
+- "This looks like a pre-existing issue"
+- "The test failure might be unrelated to my changes"
+
+**Always assume**:
+- Your changes broke something that was working
+- You need to fix the regression you introduced
+- The codebase was in a working state before your modifications
+
+**When tests fail after your changes**:
+1. **STOP** - Don't continue with additional changes
+2. **Fix the regression** - Debug and resolve the failing tests
+3. **Verify the fix** - Ensure all tests pass again
+4. **Only then proceed** - Continue with your work after restoring functionality
+
+This principle ensures code quality and prevents the accumulation of broken functionality.
 
 ### Why This Approach?
 - **Tests are documentation** - A developer should understand what's being tested without jumping between files
