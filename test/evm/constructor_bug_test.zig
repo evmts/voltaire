@@ -5,7 +5,8 @@ test {
     std.testing.log_level = .debug;
 }
 const Evm = @import("evm");
-const Address = @import("primitives");
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
 
 // Enable debug logging for tests
 pub const std_options = struct {

@@ -1,6 +1,7 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
+const primitives = @import("primitives");
 const Address = Evm.Address;
 const ExecutionError = Evm.ExecutionError;
 const Contract = Evm.Contract;
@@ -37,7 +38,7 @@ fn createTestEvm(allocator: std.mem.Allocator) !struct { evm: *Evm.Evm, memory_d
         1000000000, // gas_price: 1 gwei
         10000, // block_number
         1234567890, // block_timestamp
-        Address.zero(), // block_coinbase
+        primitives.Address.ZERO_ADDRESS, // block_coinbase
         1000000, // block_difficulty
         30000000, // block_gas_limit
         1, // chain_id
@@ -94,7 +95,7 @@ test "VM: STOP opcode halts execution" {
     defer destroyTestEvm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{0x00}; // STOP
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 1000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 1000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -122,7 +123,7 @@ test "VM: JUMPDEST and JUMP sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     // First check if execution was successful
@@ -162,7 +163,7 @@ test "VM: JUMPI conditional jump taken" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -192,7 +193,7 @@ test "VM: JUMPI conditional jump not taken" {
         0x00, // STOP
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -217,7 +218,7 @@ test "VM: PC opcode returns current program counter" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -252,7 +253,7 @@ test "VM: ADD opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -302,7 +303,7 @@ test "VM: ADD opcode overflow" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -329,7 +330,7 @@ test "VM: ADD complex sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -353,7 +354,7 @@ test "VM: MUL opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -404,7 +405,7 @@ test "VM: MUL opcode overflow" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -432,7 +433,7 @@ test "VM: MUL by zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -458,7 +459,7 @@ test "VM: MUL by one" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -486,7 +487,7 @@ test "VM: MUL complex sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -531,7 +532,7 @@ test "VM: MUL large numbers" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -558,7 +559,7 @@ test "VM: SUB opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -586,7 +587,7 @@ test "VM: SUB opcode underflow" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -613,7 +614,7 @@ test "VM: SUB from zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -639,7 +640,7 @@ test "VM: SUB identity" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -667,7 +668,7 @@ test "VM: SUB complex sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -754,7 +755,7 @@ test "VM: SUB large numbers" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -782,7 +783,7 @@ test "VM: DIV opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -807,7 +808,7 @@ test "VM: DIV by zero returns zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -833,7 +834,7 @@ test "VM: DIV with remainder" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -859,7 +860,7 @@ test "VM: DIV by one" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -885,7 +886,7 @@ test "VM: DIV zero dividend" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -913,7 +914,7 @@ test "VM: DIV complex sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -950,7 +951,7 @@ test "VM: DIV large numbers" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -977,7 +978,7 @@ test "VM: MOD opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1002,7 +1003,7 @@ test "VM: MOD by zero returns zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1027,7 +1028,7 @@ test "VM: MOD perfect division" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1052,7 +1053,7 @@ test "VM: MOD by one" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1104,7 +1105,7 @@ test "VM: SDIV opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1131,7 +1132,7 @@ test "VM: SDIV by zero returns zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1220,7 +1221,7 @@ test "VM: SDIV overflow case MIN_I256 / -1" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1281,7 +1282,7 @@ test "VM: SDIV positive by negative" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1373,7 +1374,7 @@ test "VM: SDIV negative by negative" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1432,7 +1433,7 @@ test "VM: SDIV truncation behavior" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1493,7 +1494,7 @@ test "VM: SMOD opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1520,7 +1521,7 @@ test "VM: SMOD by zero returns zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1546,7 +1547,7 @@ test "VM: SMOD positive by positive" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1605,7 +1606,7 @@ test "VM: SMOD positive by negative" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1664,7 +1665,7 @@ test "VM: SMOD large negative number" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1692,7 +1693,7 @@ test "VM: ADDMOD opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1718,7 +1719,7 @@ test "VM: MULMOD opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1743,7 +1744,7 @@ test "VM: EXP opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1773,7 +1774,7 @@ test "VM: LT opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1801,7 +1802,7 @@ test "VM: GT opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1827,7 +1828,7 @@ test "VM: EQ opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1852,7 +1853,7 @@ test "VM: ISZERO opcode with non-zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1877,7 +1878,7 @@ test "VM: ISZERO opcode with zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1901,7 +1902,7 @@ test "VM: CALLER opcode" {
     };
 
     // Set up a frame with a specific caller
-    const contract_address = Address.zero();
+    const contract_address = primitives.Address.ZERO_ADDRESS;
     const input_data = [_]u8{};
 
     // For this test, we'll need to set up the EVM state properly
@@ -1932,7 +1933,7 @@ test "VM: NUMBER opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1955,7 +1956,7 @@ test "VM: TIMESTAMP opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1978,7 +1979,7 @@ test "VM: CHAINID opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -2010,7 +2011,7 @@ test "VM: Complex arithmetic sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -2044,7 +2045,7 @@ test "VM: Conditional logic with comparison" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -2069,7 +2070,7 @@ test "VM: Invalid JUMP destination" {
         0x60, 0x42, // PUSH1 66
     };
 
-    const result = runBytecode(evm, &bytecode, Address.zero(), 10000, null) catch {
+    const result = runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null) catch {
         // InvalidJump is not a direct error from run, it would be wrapped
         // We expect the EVM to handle this and return an Invalid status
         unreachable;
@@ -2092,7 +2093,7 @@ test "VM: Stack underflow" {
         0x00, // STOP
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10000, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     // Stack underflow should result in Invalid status
@@ -2113,7 +2114,7 @@ test "VM: Out of gas" {
         0x00, // STOP
     };
 
-    const result = try runBytecode(evm, &bytecode, Address.zero(), 10, null);
+    const result = try runBytecode(evm, &bytecode, primitives.Address.ZERO_ADDRESS, 10, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .OutOfGas);

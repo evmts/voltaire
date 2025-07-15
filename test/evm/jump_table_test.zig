@@ -6,7 +6,8 @@ const OperationModule = Evm.OperationModule;
 const Stack = Evm.Stack;
 const Frame = Evm.Frame;
 const Contract = Evm.Contract;
-const Address = @import("primitives");
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
 const execution = Evm.execution;
 const gas_constants = Evm.gas_constants;
 
@@ -64,7 +65,7 @@ test "JumpTable execute consumes gas before opcode execution" {
 
     // Create a test frame with some gas
     const test_allocator = std.testing.allocator;
-    const zero_address = Address.zero();
+    const zero_address = primitives.Address.ZERO_ADDRESS;
     const test_code = [_]u8{0x01}; // ADD opcode
     var test_contract = Contract.init(
         zero_address, // caller

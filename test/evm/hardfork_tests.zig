@@ -1,6 +1,7 @@
 const std = @import("std");
 const Evm = @import("evm");
-const Address = @import("primitives");
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
 
 // test {
 //     std.testing.log_level = .debug;
@@ -393,7 +394,7 @@ fn executeTransaction(allocator: std.mem.Allocator, vm: *Vm, tx: TestTransaction
         tx.gasPrice,
         block.number,
         block.timestamp,
-        Address.zero(),
+        primitives.Address.ZERO_ADDRESS,
         0,
         block.gasLimit,
         1,

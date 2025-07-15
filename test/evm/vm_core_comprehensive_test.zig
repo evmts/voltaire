@@ -1,7 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const Address = @import("primitives");
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
@@ -38,11 +39,11 @@ test "VMCore: Context initialization with default values" {
     const context = Context.init();
     
     // Verify default values match Ethereum specifications
-    try testing.expectEqual(Address.zero(), context.tx_origin);
+    try testing.expectEqual(primitives.Address.ZERO_ADDRESS, context.tx_origin);
     try testing.expectEqual(@as(u256, 0), context.gas_price);
     try testing.expectEqual(@as(u64, 0), context.block_number);
     try testing.expectEqual(@as(u64, 0), context.block_timestamp);
-    try testing.expectEqual(Address.zero(), context.block_coinbase);
+    try testing.expectEqual(primitives.Address.ZERO_ADDRESS, context.block_coinbase);
     try testing.expectEqual(@as(u256, 0), context.block_difficulty);
     try testing.expectEqual(@as(u64, 0), context.block_gas_limit);
     try testing.expectEqual(@as(u256, 1), context.chain_id); // Default mainnet
