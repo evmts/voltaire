@@ -1,6 +1,6 @@
 const std = @import("std");
 const Evm = @import("evm");
-const Address = @import("Address");
+const Address = @import("primitives");
 
 // test {
 //     std.testing.log_level = .debug;
