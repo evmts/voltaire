@@ -1,7 +1,17 @@
 const std = @import("std");
 const http = std.http;
 const Allocator = std.mem.Allocator;
-const TransportError = @import("errors.zig").TransportError;
+// Define transport errors locally since we removed the errors.zig file
+const TransportError = error{
+    NetworkError,
+    Timeout,
+    InvalidResponse,
+    InvalidRequest,
+    OutOfMemory,
+    ConnectionFailed,
+    TlsError,
+    AuthenticationFailed,
+};
 const json_rpc = @import("json_rpc.zig");
 
 pub const HttpTransport = struct {
