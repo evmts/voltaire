@@ -1,4 +1,4 @@
-const Address = @import("Address");
+const primitives = @import("primitives");
 
 /// Result structure for contract creation operations in the EVM.
 ///
@@ -71,7 +71,7 @@ success: bool,
 /// ## Address Collision
 /// If this address already contains a contract, creation fails.
 /// The probability of collision is negligible (2^-160).
-address: Address.Address,
+address: primitives.Address,
 
 /// Amount of gas remaining after the creation attempt.
 ///
@@ -119,7 +119,7 @@ output: ?[]const u8,
 pub fn initFailure(gas_left: u64, output: ?[]const u8) CreateResult {
     return CreateResult{
         .success = false,
-        .address = Address.zero(),
+        .address = primitives.Address.zero(),
         .gas_left = gas_left,
         .output = output,
     };

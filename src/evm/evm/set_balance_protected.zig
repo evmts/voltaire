@@ -1,5 +1,5 @@
 const std = @import("std");
-const Address = @import("Address");
+const primitives = @import("primitives");
 const Vm = @import("../evm.zig");
 const ValidateStaticContextError = @import("validate_static_context.zig").ValidateStaticContextError;
 
@@ -7,7 +7,7 @@ pub const SetBalanceProtectedError = ValidateStaticContextError || std.mem.Alloc
 
 /// Set an account balance with static context protection.
 /// Prevents balance modifications during static calls.
-pub fn set_balance_protected(self: *Vm, address: Address.Address, balance: u256) SetBalanceProtectedError!void {
+pub fn set_balance_protected(self: *Vm, address: primitives.Address, balance: u256) SetBalanceProtectedError!void {
     try self.validate_static_context();
     try self.state.set_balance(address, balance);
 }

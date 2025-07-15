@@ -1,10 +1,10 @@
 const std = @import("std");
-const Address = @import("Address");
+const primitives = @import("primitives");
 const ExecutionError = @import("../execution/execution_error.zig");
 const CreateResult = @import("create_result.zig").CreateResult;
 const Vm = @import("../evm.zig");
 
-pub const CreateContractError = std.mem.Allocator.Error || Address.CalculateAddressError || @import("../state/database_interface.zig").DatabaseError || ExecutionError.Error;
+pub const CreateContractError = std.mem.Allocator.Error || primitives.Address.CalculateAddressError || @import("../state/database_interface.zig").DatabaseError || ExecutionError.Error;
 
 /// Create a new contract using CREATE opcode semantics.
 ///
@@ -28,8 +28,8 @@ pub const CreateContractError = std.mem.Allocator.Error || Address.CalculateAddr
 /// Memory: Allocates space for deployed bytecode
 ///
 /// See also: create2_contract() for deterministic addresses
-pub fn create_contract(self: *Vm, creator: Address.Address, value: u256, init_code: []const u8, gas: u64) CreateContractError!CreateResult {
+pub fn create_contract(self: *Vm, creator: primitives.Address, value: u256, init_code: []const u8, gas: u64) CreateContractError!CreateResult {
     const nonce = try self.state.increment_nonce(creator);
-    const new_address = try Address.calculate_create_address(self.allocator, creator, nonce);
+    const new_address = try primitives.Address.calculate_create_address(self.allocator, creator, nonce);
     return self.create_contract_internal(creator, value, init_code, gas, new_address);
 }

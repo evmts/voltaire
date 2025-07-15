@@ -1,5 +1,5 @@
 const std = @import("std");
-const Address = @import("Address");
+const primitives = @import("primitives");
 const CallResult = @import("call_result.zig").CallResult;
 const precompiles = @import("../precompiles/precompiles.zig");
 const Log = @import("../log.zig");
@@ -23,7 +23,7 @@ pub const CallContractError = std.mem.Allocator.Error || ExecutionError.Error ||
 /// @param gas Gas limit available for the call
 /// @param is_static Whether this is a static call (no state changes allowed)
 /// @return CallResult indicating success/failure and return data
-pub fn call_contract(self: *Vm, caller: Address.Address, to: Address.Address, value: u256, input: []const u8, gas: u64, is_static: bool) CallContractError!CallResult {
+pub fn call_contract(self: *Vm, caller: primitives.Address, to: primitives.Address, value: u256, input: []const u8, gas: u64, is_static: bool) CallContractError!CallResult {
     @branchHint(.likely);
     
     Log.debug("VM.call_contract: Call from {any} to {any}, gas={}, static={}", .{ caller, to, gas, is_static });

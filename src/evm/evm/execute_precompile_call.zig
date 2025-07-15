@@ -1,5 +1,5 @@
 const std = @import("std");
-const Address = @import("Address");
+const primitives = @import("primitives");
 const CallResult = @import("call_result.zig").CallResult;
 const precompiles = @import("../precompiles/precompiles.zig");
 const Log = @import("../log.zig");
@@ -22,7 +22,7 @@ const CallContractError = std.mem.Allocator.Error;
 /// @param gas Gas limit available for execution
 /// @param is_static Whether this is a static call (doesn't affect precompiles)
 /// @return CallResult with success/failure, gas usage, and output data
-pub fn execute_precompile_call(self: *Vm, address: Address.Address, input: []const u8, gas: u64, is_static: bool) CallContractError!CallResult {
+pub fn execute_precompile_call(self: *Vm, address: primitives.Address, input: []const u8, gas: u64, is_static: bool) CallContractError!CallResult {
     _ = is_static; // Precompiles are inherently stateless, so static flag doesn't matter
     
     Log.debug("VM.execute_precompile_call: Executing precompile at {any}, input_size={}, gas={}", .{ address, input.len, gas });

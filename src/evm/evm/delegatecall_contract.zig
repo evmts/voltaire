@@ -1,5 +1,5 @@
 const std = @import("std");
-const Address = @import("Address");
+const primitives = @import("primitives");
 const CallResult = @import("call_result.zig").CallResult;
 const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
@@ -24,7 +24,7 @@ pub const DelegatecallContractError = std.mem.Allocator.Error || ExecutionError.
 /// @param input The input data for the call
 /// @param gas The gas limit for the execution
 /// @param is_static Whether this is part of a static call chain
-pub fn delegatecall_contract(self: *Vm, current: Address.Address, code_address: Address.Address, caller: Address.Address, value: u256, input: []const u8, gas: u64, is_static: bool) DelegatecallContractError!CallResult {
+pub fn delegatecall_contract(self: *Vm, current: primitives.Address, code_address: primitives.Address, caller: primitives.Address, value: u256, input: []const u8, gas: u64, is_static: bool) DelegatecallContractError!CallResult {
     @branchHint(.likely);
     
     Log.debug("VM.delegatecall_contract: DELEGATECALL from {any} to {any}, caller={any}, value={}, gas={}, static={}", .{ current, code_address, caller, value, gas, is_static });
