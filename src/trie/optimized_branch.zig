@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const trie = @import("trie.zig");
-const rlp = @import("Rlp");
+const primitives = @import("primitives");
 
 const TrieMask = trie.TrieMask;
 const HashValue = trie.HashValue;
@@ -193,16 +193,16 @@ pub const CompactBranchNode = struct {
                 const child = self.get_child(@intCast(i)).?;
                 switch (child) {
                     .Raw => |data| {
-                        const encoded = try rlp.encode(allocator, data);
+                        const encoded = try primitives.Rlp.encode(allocator, data);
                         try encoded_children.append(encoded);
                     },
                     .Hash => |hash| {
-                        const encoded = try rlp.encode(allocator, &hash);
+                        const encoded = try primitives.Rlp.encode(allocator, &hash);
                         try encoded_children.append(encoded);
                     },
                 }
             } else {
-                const empty = try rlp.encode(allocator, "");
+                const empty = try primitives.Rlp.encode(allocator, "");
                 try encoded_children.append(empty);
             }
         }
@@ -211,21 +211,21 @@ pub const CompactBranchNode = struct {
         if (self.value) |value| {
             switch (value) {
                 .Raw => |data| {
-                    const encoded = try rlp.encode(allocator, data);
+                    const encoded = try primitives.Rlp.encode(allocator, data);
                     try encoded_children.append(encoded);
                 },
                 .Hash => |hash| {
-                    const encoded = try rlp.encode(allocator, &hash);
+                    const encoded = try primitives.Rlp.encode(allocator, &hash);
                     try encoded_children.append(encoded);
                 },
             }
         } else {
-            const empty = try rlp.encode(allocator, "");
+            const empty = try primitives.Rlp.encode(allocator, "");
             try encoded_children.append(empty);
         }
 
         // Encode the entire node as a list
-        return try rlp.encode(allocator, encoded_children.items);
+        return try primitives.Rlp.encode(allocator, encoded_children.items);
     }
 };
 

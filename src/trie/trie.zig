@@ -1,6 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const rlp = @import("Rlp");
+const primitives = @import("primitives");
 const utils = @import("utils");
 
 /// Error type for trie operations
@@ -77,7 +77,7 @@ pub const HashValue = union(enum) {
             .Hash => |h| return h,
             .Raw => |data| {
                 // RLP encode the data first
-                const encoded = try rlp.encode(allocator, data);
+                const encoded = try primitives.Rlp.encode(allocator, data);
                 defer allocator.free(encoded);
                 
                 // Then calculate the hash
@@ -173,16 +173,16 @@ pub const BranchNode = struct {
             if (child) |value| {
                 switch (value) {
                     .Raw => |data| {
-                        const encoded = try rlp.encode(allocator, data);
+                        const encoded = try primitives.Rlp.encode(allocator, data);
                         try encoded_children.append(encoded);
                     },
                     .Hash => |hash| {
-                        const encoded = try rlp.encode(allocator, &hash);
+                        const encoded = try primitives.Rlp.encode(allocator, &hash);
                         try encoded_children.append(encoded);
                     },
                 }
             } else {
-                const empty = try rlp.encode(allocator, "");
+                const empty = try primitives.Rlp.encode(allocator, "");
                 try encoded_children.append(empty);
             }
         }
@@ -191,21 +191,21 @@ pub const BranchNode = struct {
         if (self.value) |value| {
             switch (value) {
                 .Raw => |data| {
-                    const encoded = try rlp.encode(allocator, data);
+                    const encoded = try primitives.Rlp.encode(allocator, data);
                     try encoded_children.append(encoded);
                 },
                 .Hash => |hash| {
-                    const encoded = try rlp.encode(allocator, &hash);
+                    const encoded = try primitives.Rlp.encode(allocator, &hash);
                     try encoded_children.append(encoded);
                 },
             }
         } else {
-            const empty = try rlp.encode(allocator, "");
+            const empty = try primitives.Rlp.encode(allocator, "");
             try encoded_children.append(empty);
         }
 
         // Encode the entire node as a list
-        return try rlp.encode(allocator, encoded_children.items);
+        return try primitives.Rlp.encode(allocator, encoded_children.items);
     }
 };
 
@@ -242,13 +242,13 @@ pub const ExtensionNode = struct {
 
         // Encode the next node
         const encoded_next = switch (self.next) {
-            .Raw => |data| try rlp.encode(allocator, data),
-            .Hash => |hash| try rlp.encode(allocator, &hash),
+            .Raw => |data| try primitives.Rlp.encode(allocator, data),
+            .Hash => |hash| try primitives.Rlp.encode(allocator, &hash),
         };
         try items.append(encoded_next);
 
         // Encode as a list
-        return try rlp.encode(allocator, items.items);
+        return try primitives.Rlp.encode(allocator, items.items);
     }
 };
 
@@ -285,13 +285,13 @@ pub const LeafNode = struct {
 
         // Encode the value
         const encoded_value = switch (self.value) {
-            .Raw => |data| try rlp.encode(allocator, data),
-            .Hash => |hash| try rlp.encode(allocator, &hash),
+            .Raw => |data| try primitives.Rlp.encode(allocator, data),
+            .Hash => |hash| try primitives.Rlp.encode(allocator, &hash),
         };
         try items.append(encoded_value);
 
         // Encode as a list
-        return try rlp.encode(allocator, items.items);
+        return try primitives.Rlp.encode(allocator, items.items);
     }
 };
 
@@ -313,7 +313,7 @@ pub const TrieNode = union(NodeType) {
 
     pub fn encode(self: TrieNode, allocator: Allocator) ![]u8 {
         return switch (self) {
-            .Empty => try rlp.encode(allocator, ""),
+            .Empty => try primitives.Rlp.encode(allocator, ""),
             .Branch => |branch| try branch.encode(allocator),
             .Extension => |extension| try extension.encode(allocator),
             .Leaf => |leaf| try leaf.encode(allocator),
@@ -568,7 +568,7 @@ test "BranchNode encoding" {
     
     // With RLP, we can only verify encoding-decoding roundtrip because
     // the exact encoding layout is complex to predict
-    const decoded = try rlp.decode(allocator, encoded, false);
+    const decoded = try primitives.Rlp.decode(allocator, encoded, false);
     defer decoded.data.deinit(allocator);
     
     switch (decoded.data) {
@@ -595,7 +595,7 @@ test "LeafNode encoding" {
     defer allocator.free(encoded);
     
     // Verify it's a list with 2 items (path and value)
-    const decoded = try rlp.decode(allocator, encoded, false);
+    const decoded = try primitives.Rlp.decode(allocator, encoded, false);
     defer decoded.data.deinit(allocator);
     
     switch (decoded.data) {
@@ -622,7 +622,7 @@ test "ExtensionNode encoding" {
     defer allocator.free(encoded);
     
     // Verify it's a list with 2 items (path and next node)
-    const decoded = try rlp.decode(allocator, encoded, false);
+    const decoded = try primitives.Rlp.decode(allocator, encoded, false);
     defer decoded.data.deinit(allocator);
     
     switch (decoded.data) {

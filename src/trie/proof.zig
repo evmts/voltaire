@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const trie = @import("trie.zig");
-const rlp = @import("Rlp");
+const primitives = @import("primitives");
 
 const TrieNode = trie.TrieNode;
 const HashValue = trie.HashValue;
@@ -98,14 +98,14 @@ pub const ProofNodes = struct {
         }
 
         // Begin verification with the root node
-        const decoded = try rlp.decode(allocator, root_node_data, false);
+        const decoded = try primitives.Rlp.decode(allocator, root_node_data, false);
         defer decoded.data.deinit(allocator);
 
         return try self.verify_path(allocator, decoded.data, nibbles, expected_value);
     }
 
     /// Verify a path in the proof
-    fn verify_path(self: *const ProofNodes, allocator: Allocator, node_data: rlp.Data, remaining_path: []const u8, expected_value: ?[]const u8) !bool {
+    fn verify_path(self: *const ProofNodes, allocator: Allocator, node_data: primitives.Rlp.Data, remaining_path: []const u8, expected_value: ?[]const u8) !bool {
         switch (node_data) {
             .String => {
                 // Empty node or single byte - shouldn't happen at this point
@@ -136,7 +136,7 @@ pub const ProofNodes = struct {
                                 switch (items[1]) {
                                     .String => |value| {
                                         // The value is RLP-encoded, so we need to decode it
-                                        const decoded_value = try rlp.decode(allocator, value, false);
+                                        const decoded_value = try primitives.Rlp.decode(allocator, value, false);
                                         defer decoded_value.data.deinit(allocator);
 
                                         switch (decoded_value.data) {
@@ -193,7 +193,7 @@ pub const ProofNodes = struct {
                                         }
 
                                         // Decode the next node
-                                        const next_decoded = try rlp.decode(allocator, next_node_data, false);
+                                        const next_decoded = try primitives.Rlp.decode(allocator, next_node_data, false);
                                         defer next_decoded.data.deinit(allocator);
 
                                         // Continue verification
@@ -259,7 +259,7 @@ pub const ProofNodes = struct {
                                     }
 
                                     // Decode the next node
-                                    const next_decoded = try rlp.decode(allocator, next_node_data, false);
+                                    const next_decoded = try primitives.Rlp.decode(allocator, next_node_data, false);
                                     defer next_decoded.data.deinit(allocator);
 
                                     // Continue verification

@@ -3,7 +3,7 @@ const Allocator = std.mem.Allocator;
 const trie = @import("trie.zig");
 const hash_builder = @import("hash_builder_complete.zig");
 const proof_module = @import("proof.zig");
-const rlp = @import("Rlp");
+const primitives = @import("primitives");
 const utils = @import("utils");
 
 const TrieNode = trie.TrieNode;
