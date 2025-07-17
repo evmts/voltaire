@@ -41,4 +41,4 @@ pub const Ripemd160 = @import("ripemd160.zig");
 pub const Eip712 = @import("eip712.zig");
 
 // KZG commitments for EIP-4844
-pub const Kzg = @import("kzg.zig");
+pub const c_kzg = @import("c_kzg");

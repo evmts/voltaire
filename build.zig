@@ -218,88 +218,14 @@ pub fn build(b: *std.Build) void {
     // Make the rust build a dependency
     bn254_lib.step.dependOn(&rust_build.step);
     
-    // C-KZG-4844 library for EIP-4844 blob transactions
-    // NOTE: The c-kzg-4844 package from GitHub doesn't include the blst submodule
-    // To properly build c-kzg-4844, you need to either:
-    // 1. Clone the repository with submodules: git clone --recursive https://github.com/ethereum/c-kzg-4844
-    // 2. Use a pre-built version that includes blst
-    // 3. Build blst separately and link it
-    // Now using local git submodule with blst included
-    const enable_c_kzg = true;
-    
-    const c_kzg_dep = if (enable_c_kzg) b.dependency("c-kzg-4844", .{
+    // C-KZG-4844 Zig bindings from evmts/c-kzg-4844
+    const c_kzg_dep = b.dependency("c_kzg_4844", .{
         .target = target,
         .optimize = optimize,
-    }) else null;
+    });
     
-    // Build c-kzg-4844 as a static library (only if enabled)
-    const c_kzg_lib = if (enable_c_kzg) blk: {
-        const lib = b.addStaticLibrary(.{
-            .name = "c-kzg-4844",
-            .target = target,
-            .optimize = optimize,
-        });
-        
-        // Add c-kzg-4844 source files
-        const c_kzg_sources = [_][]const u8{
-            "src/ckzg.c",
-            "src/common/alloc.c",
-            "src/common/bytes.c",
-            "src/common/ec.c",
-            "src/common/fr.c",
-            "src/common/lincomb.c",
-            "src/common/utils.c",
-            "src/setup/setup.c",
-            "src/eip4844/blob.c",
-            "src/eip4844/eip4844.c",
-        };
-        
-        for (c_kzg_sources) |src| {
-            lib.addCSourceFile(.{
-                .file = c_kzg_dep.path(src),
-                .flags = &.{
-                    "-std=c99",
-                    "-O3",
-                    "-fno-exceptions",
-                    "-DBLST_PORTABLE",
-                },
-            });
-        }
-        
-        // Add blst (BLS12-381 crypto library) source files
-        const blst_sources = [_][]const u8{
-            "blst/src/server.c",
-        };
-        
-        for (blst_sources) |src| {
-            lib.addCSourceFile(.{
-                .file = c_kzg_dep.path(src),
-                .flags = &.{
-                    "-std=c99",
-                    "-O3",
-                    "-fno-exceptions",
-                    "-D__BLST_PORTABLE__",
-                },
-            });
-        }
-        
-        // Add blst include path
-        lib.addIncludePath(c_kzg_dep.path("blst/bindings"));
-        
-        // Include directories
-        lib.addIncludePath(c_kzg_dep.path("inc"));
-        lib.addIncludePath(c_kzg_dep.path("src"));
-        
-        lib.linkLibC();
-        
-        break :blk lib;
-    } else null;
-    
-    // Add c-kzg to primitives module (only if enabled)
-    if (enable_c_kzg) {
-        primitives_mod.addIncludePath(c_kzg_dep.path("inc"));
-        primitives_mod.linkLibrary(c_kzg_lib);
-    }
+    const c_kzg_lib = c_kzg_dep.artifact("c_kzg_4844");
+    primitives_mod.linkLibrary(c_kzg_lib);
     
     
     // Create the main evm module that exports everything
@@ -316,11 +242,8 @@ pub fn build(b: *std.Build) void {
     evm_mod.linkLibrary(bn254_lib);
     evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
     
-    // Link c-kzg-4844 to EVM module (only if enabled)
-    if (enable_c_kzg) {
-        evm_mod.linkLibrary(c_kzg_lib);
-        evm_mod.addIncludePath(c_kzg_dep.path("inc"));
-    }
+    // Link c-kzg library to EVM module
+    evm_mod.linkLibrary(c_kzg_lib);
     
     // Add Rust Foundry wrapper integration
     // TODO: Fix Rust integration - needs proper zabi dependency
@@ -359,11 +282,7 @@ pub fn build(b: *std.Build) void {
     lib.linkLibrary(bn254_lib);
     lib.addIncludePath(b.path("src/bn254_wrapper"));
     
-    // Link c-kzg-4844 to the library artifact (only if enabled)
-    if (enable_c_kzg) {
-        lib.linkLibrary(c_kzg_lib);
-        lib.addIncludePath(c_kzg_dep.path("inc"));
-    }
+    // Note: c-kzg is now available as a module import, no need to link to main library
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
