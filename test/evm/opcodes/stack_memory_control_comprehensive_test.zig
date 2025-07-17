@@ -291,15 +291,12 @@ test "SLOAD (0x54): Load from storage" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test 1: Load from empty slot (should return 0)
-    std.debug.print("Test 1: Loading from empty slot 42\n", .{});
     try frame.stack.append(42); // slot
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
     try testing.expectEqual(@as(u256, 0), frame.stack.data[frame.stack.size - 1]);
     _ = try frame.stack.pop();
-    std.debug.print("Test 1: PASSED\n", .{});
 
     // Test 2: Load from populated slot
-    std.debug.print("Test 2: Loading from populated slot\n", .{});
     const slot: u256 = 100;
     const value: u256 = 0xdeadbeef;
     // Set storage value directly in the state
@@ -309,10 +306,8 @@ test "SLOAD (0x54): Load from storage" {
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
     try testing.expectEqual(value, frame.stack.data[frame.stack.size - 1]);
     _ = try frame.stack.pop();
-    std.debug.print("Test 2: PASSED\n", .{});
 
     // Test 3: Load multiple different slots
-    std.debug.print("Test 3: Loading multiple different slots\n", .{});
     const test_slots = [_]struct { slot: u256, value: u256 }{
         .{ .slot = 0, .value = 1 },
         .{ .slot = 1, .value = 1000 },
@@ -320,22 +315,16 @@ test "SLOAD (0x54): Load from storage" {
     };
 
     for (test_slots, 0..) |ts, i| {
-        std.debug.print("  Test 3.{}: slot={}, value={}\n", .{ i, ts.slot, ts.value });
+        _ = i;
         // Set storage value directly in the state
         try evm.state.set_storage(contract.address, ts.slot, ts.value);
         try frame.stack.append(ts.slot);
         _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
-        const stack_value = frame.stack.peek() catch |err| {
-            std.debug.print("  Test 3.{}: Failed to peek stack: {}\n", .{ i, err });
-            return err;
-        };
-        std.debug.print("  Test 3.{}: Stack value after SLOAD: {}\n", .{ i, stack_value });
+        const stack_value = try frame.stack.peek();
+        _ = stack_value;
         try testing.expectEqual(ts.value, frame.stack.data[frame.stack.size - 1]);
         _ = try frame.stack.pop();
-        std.debug.print("  Test 3.{}: PASSED\n", .{i});
     }
-    std.debug.print("Test 3: PASSED\n", .{});
-    std.debug.print("\n=== SLOAD test completed successfully ===\n\n", .{});
 }
 
 test "SSTORE (0x55): Store to storage" {

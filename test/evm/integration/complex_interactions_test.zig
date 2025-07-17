@@ -670,7 +670,7 @@ test "Integration: Multi-sig wallet threshold check" {
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x54); // SLOAD - loads required confirmations (3)
     const required = try frame.stack.pop();
     
-    std.debug.print("\nMulti-sig test: confirmations = {}, required = {}\n", .{confirmations, required});
+    // Multi-sig test: check confirmations vs required
     
     // Put them back on stack for comparison
     try frame.stack.append(confirmations);
@@ -680,13 +680,13 @@ test "Integration: Multi-sig wallet threshold check" {
     // Stack is [confirmations, required], LT computes confirmations < required
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x10); // LT: confirmations < required
     const lt_result = try frame.stack.pop();
-    std.debug.print("Multi-sig test: LT result = {}\n", .{lt_result});
+    // LT result
     
     try frame.stack.append(lt_result);
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x15); // ISZERO: NOT(confirmations < required) = confirmations >= required
 
     // Should be 1 (true) since 3 >= 3 is true, so NOT(3 < 3) = NOT(false) = true
     const result2 = try frame.stack.pop();
-    std.debug.print("Multi-sig test: ISZERO result = {}\n", .{result2});
+    // ISZERO result
     try testing.expectEqual(@as(u256, 1), result2);
 }

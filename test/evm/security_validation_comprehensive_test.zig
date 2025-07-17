@@ -693,7 +693,6 @@ test "Security: Call depth limit enforcement at 1024 levels" {
         // All call operations should push 0 (failure) when depth limit is reached
         const result = try frame.stack.pop();
         testing.expectEqual(@as(u256, 0), result) catch |err| {
-            std.debug.print("Failed {s} depth limit test\n", .{call_test.name});
             return err;
         };
     }
@@ -818,7 +817,6 @@ test "Security: Arithmetic operations handle integer overflow correctly" {
         
         const result = try frame.stack.pop();
         testing.expectEqual(test_case.expected_result, result) catch |err| {
-            std.debug.print("Failed {s}: expected {}, got {}\n", .{ test_case.name, test_case.expected_result, result });
             return err;
         };
     }
@@ -877,7 +875,6 @@ test "Security: Division by zero handling" {
         
         const result = try frame.stack.pop();
         testing.expectEqual(test_case.expected_result, result) catch |err| {
-            std.debug.print("Failed {s}: expected {}, got {}\n", .{ test_case.name, test_case.expected_result, result });
             return err;
         };
     }
@@ -1299,7 +1296,6 @@ test "Security: Invalid jump destination handling" {
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         const result = evm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
         testing.expectError(test_case.expected_error, result) catch |err| {
-            std.debug.print("Failed {s} test\n", .{test_case.name});
             return err;
         };
     }
@@ -1432,7 +1428,6 @@ test "Security: Static call protection for state modification" {
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         const result = evm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
         testing.expectError(ExecutionError.Error.WriteProtection, result) catch |err| {
-            std.debug.print("Failed {s} static protection test\n", .{test_case.name});
             return err;
         };
     }

@@ -834,7 +834,8 @@ test "KECCAK256: Hash collision resistance" {
         
         // Check for collisions
         if (hashes.get(hash)) |existing| {
-            std.debug.print("Collision found: input {} and {} produce same hash\n", .{ existing, i });
+            // Collision found
+            _ = existing;
             try testing.expect(false);
         }
         

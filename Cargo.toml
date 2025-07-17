@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["src/compilers", "rust/bn254_wrapper"]
+members = ["src/compilers", "src/bn254_wrapper"]
 
 [workspace.package]
 version = "0.1.0"

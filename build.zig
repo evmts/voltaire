@@ -146,7 +146,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    lib_mod.addIncludePath(b.path("rust/bn254_wrapper"));
+    lib_mod.addIncludePath(b.path("src/bn254_wrapper"));
     
     // Create primitives module
     const primitives_mod = b.createModule(.{
@@ -162,14 +162,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     crypto_mod.addImport("primitives", primitives_mod);
-    
-    // Create ens module
-    const ens_mod = b.createModule(.{
-        .root_source_file = b.path("src/ens/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    ens_mod.addImport("primitives", primitives_mod);
     
     // Create utils module
     const utils_mod = b.createModule(.{
@@ -202,7 +194,7 @@ pub fn build(b: *std.Build) void {
     const rust_build = b.addSystemCommand(&[_][]const u8{
         "cargo", "build",
         "--profile", rust_profile,
-        "--manifest-path", "rust/bn254_wrapper/Cargo.toml"
+        "--manifest-path", "src/bn254_wrapper/Cargo.toml"
     });
     
     // Fix for macOS linking issues
@@ -221,7 +213,7 @@ pub fn build(b: *std.Build) void {
     bn254_lib.linkLibC();
     
     // Add include path for C header
-    bn254_lib.addIncludePath(b.path("rust/bn254_wrapper"));
+    bn254_lib.addIncludePath(b.path("src/bn254_wrapper"));
     
     // Make the rust build a dependency
     bn254_lib.step.dependOn(&rust_build.step);
@@ -322,7 +314,7 @@ pub fn build(b: *std.Build) void {
     
     // Link BN254 Rust library to EVM module (native targets only)
     evm_mod.linkLibrary(bn254_lib);
-    evm_mod.addIncludePath(b.path("rust/bn254_wrapper"));
+    evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
     
     // Link c-kzg-4844 to EVM module (only if enabled)
     if (enable_c_kzg) {
@@ -350,7 +342,6 @@ pub fn build(b: *std.Build) void {
     // Add modules to lib_mod so tests can access them
     lib_mod.addImport("primitives", primitives_mod);
     lib_mod.addImport("crypto", crypto_mod);
-    lib_mod.addImport("ens", ens_mod);
     lib_mod.addImport("evm", evm_mod);
     lib_mod.addImport("provider", provider_mod);
     lib_mod.addImport("compilers", compilers_mod);
@@ -366,7 +357,7 @@ pub fn build(b: *std.Build) void {
     
     // Link BN254 Rust library to the library artifact
     lib.linkLibrary(bn254_lib);
-    lib.addIncludePath(b.path("rust/bn254_wrapper"));
+    lib.addIncludePath(b.path("src/bn254_wrapper"));
     
     // Link c-kzg-4844 to the library artifact (only if enabled)
     if (enable_c_kzg) {
@@ -827,7 +818,7 @@ pub fn build(b: *std.Build) void {
     bn254_rust_test.root_module.addImport("evm", evm_mod);
     // Link BN254 Rust library to tests
     bn254_rust_test.linkLibrary(bn254_lib);
-    bn254_rust_test.addIncludePath(b.path("rust/bn254_wrapper"));
+    bn254_rust_test.addIncludePath(b.path("src/bn254_wrapper"));
     
     const run_bn254_rust_test = b.addRunArtifact(bn254_rust_test);
     const bn254_rust_test_step = b.step("test-bn254-rust", "Run BN254 Rust wrapper precompile tests");

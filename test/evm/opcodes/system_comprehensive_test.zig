@@ -1457,7 +1457,6 @@ test "System opcodes: Stack underflow validation" {
         const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
         const result = evm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
         testing.expectError(ExecutionError.Error.StackUnderflow, result) catch |err| {
-            std.debug.print("Failed stack underflow test for {s} (0x{X:0>2})\n", .{ test_case.name, test_case.opcode });
             return err;
         };
     }

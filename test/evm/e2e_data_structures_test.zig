@@ -530,5 +530,5 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
     
     // Storage operations should use significantly more gas than memory operations
     try testing.expect(storage_gas_used > memory_gas_used);
-    std.debug.print("Memory gas used: {}, Storage gas used: {}\n", .{ memory_gas_used, storage_gas_used });
+    // Compare gas usage
 }

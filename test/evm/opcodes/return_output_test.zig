@@ -59,8 +59,6 @@ test "RETURN sets output correctly" {
 test "constructor returns runtime code" {
     const allocator = testing.allocator;
     
-    std.debug.print("\n=== Starting constructor returns runtime code test ===\n", .{});
-    
     var memory_db = Evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
@@ -80,14 +78,6 @@ test "constructor returns runtime code" {
     };
     const deployer: Address.Address = [_]u8{0x12} ** 20;
     
-    std.debug.print("Init code: ", .{});
-    for (init_code) |byte| {
-        std.debug.print("{x:0>2} ", .{byte});
-    }
-    std.debug.print("\n", .{});
-    
-    std.debug.print("About to call create_contract\n", .{});
-    
     const create_result = try vm.create_contract(
         deployer,
         0,
@@ -96,23 +86,10 @@ test "constructor returns runtime code" {
     );
     defer if (create_result.output) |output| allocator.free(output);
     
-    std.debug.print("create_contract returned: success={}, output={any}\n", .{
-        create_result.success,
-        if (create_result.output) |o| o else null
-    });
-    
     try testing.expect(create_result.success);
     try testing.expect(create_result.output != null);
     
     if (create_result.output) |output| {
-        std.debug.print("Output length: expected=5, actual={}\n", .{output.len});
-        if (output.len != 5) {
-            std.debug.print("Output data: ", .{});
-            for (output) |byte| {
-                std.debug.print("{x:0>2} ", .{byte});
-            }
-            std.debug.print("\n", .{});
-        }
         try testing.expectEqual(@as(usize, 5), output.len);
         try testing.expectEqualSlices(u8, "HELLO", output);
     }

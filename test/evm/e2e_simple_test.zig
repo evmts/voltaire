@@ -93,7 +93,7 @@ test "E2E: Basic EVM operations" {
         try testing.expectEqual(@as(u256, 42), returned_value);
     } else {
         // If no output, this test isn't validating return data correctly
-        std.debug.print("No output returned from bytecode execution\n", .{});
+        // No output returned from bytecode execution
         return error.TestFailed;
     }
 }

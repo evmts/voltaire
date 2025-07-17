@@ -175,10 +175,7 @@ test "Integration: Loop implementation with JUMP" {
     }
 
     // Counter should be 0
-    const result = frame_ptr.stack.peek_n(0) catch |err| {
-        std.debug.print("Failed to peek stack at position 0: {any}\n", .{err});
-        return err;
-    };
+    const result = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0), result);
 }
 
@@ -351,20 +348,14 @@ test "Integration: PC tracking through operations" {
     // Get current PC - PC opcode uses frame's pc value
     _ = try vm.table.execute(frame_ptr.pc, interpreter_ptr, state_ptr, 0x58); // PC
     
-    const result1 = frame_ptr.stack.peek_n(0) catch |err| {
-        std.debug.print("Failed to peek stack: {any}\n", .{err});
-        return err;
-    };
+    const result1 = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 42), result1);
 
     // Change PC and get again
     frame_ptr.pc = 100;
     _ = try vm.table.execute(frame_ptr.pc, interpreter_ptr, state_ptr, 0x58); // PC
     
-    const result2 = frame_ptr.stack.peek_n(0) catch |err| {
-        std.debug.print("Failed to peek stack: {any}\n", .{err});
-        return err;
-    };
+    const result2 = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 100), result2);
 }
 
@@ -411,9 +402,9 @@ test "Integration: Invalid opcode handling" {
     const state_ptr: *Operation.State = @ptrCast(frame_ptr);
 
     // Execute INVALID opcode
-    std.debug.print("\nInvalid opcode test: Gas before execution: {}\n", .{frame_ptr.gas_remaining});
+    // Check gas before execution
     const result = vm.table.execute(0, interpreter_ptr, state_ptr, 0xFE); // INVALID
-    std.debug.print("Invalid opcode test: Gas after execution: {}\n", .{frame_ptr.gas_remaining});
+    // Check gas after execution
     try testing.expectError(ExecutionError.Error.InvalidOpcode, result);
 
     // All gas should be consumed
@@ -501,10 +492,7 @@ test "Integration: Nested conditions with jumps" {
     // AND the conditions
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x02); // MUL (using as AND for 0/1 values)
 
-    const result = frame_ptr.stack.peek_n(0) catch |err| {
-        std.debug.print("Failed to peek stack: {any}\n", .{err});
-        return err;
-    };
+    const result = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 1), result); // Both conditions true
 }
 

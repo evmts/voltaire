@@ -302,7 +302,7 @@ test "E2E: Gas limits - controlled consumption and out-of-gas" {
     const insufficient_result = try evm.interpret(&insufficient_contract, &[_]u8{});
     defer if (insufficient_result.output) |output| allocator.free(output);
     
-    std.debug.print("Insufficient gas test status: {}, gas used: {}\n", .{ insufficient_result.status, insufficient_result.gas_used });
+    // Check status
     try testing.expect(insufficient_result.status == .OutOfGas);
 }
 
@@ -546,7 +546,7 @@ test "E2E: Memory expansion - large offset testing" {
     }
     
     // Verify memory expansion consumed extra gas
-    std.debug.print("Memory expansion gas used: {}\n", .{expansion_result.gas_used});
+    // Memory expansion consumed gas
     try testing.expect(expansion_result.gas_used > 100); // Should use some gas for expansion
 }
 
