@@ -8,11 +8,6 @@ const Evm = @import("evm");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 
-// Enable debug logging for tests
-pub const std_options = struct {
-    pub const log_level = .debug;
-    pub const log_scope_levels = &[_]std.log.ScopeLevel{};
-};
 
 test "constructor should return runtime code" {
     const allocator = testing.allocator;
@@ -58,42 +53,20 @@ test "constructor should return runtime code" {
         0xf3,       // RETURN
     };
 
-    std.debug.print("\n=== Constructor Bug Test ===\n", .{});
-    std.debug.print("Init code size: {}\n", .{init_code.len});
-    std.debug.print("Expected runtime code size: 10\n", .{});
-    
     // Deploy contract using CREATE
-    std.debug.print("\n[TRACE] About to call vm.create_contract\n", .{});
     const create_result = try vm.create_contract(
         deployer,
         0, // value
         init_code,
         1000000 // gas
     );
-    std.debug.print("[TRACE] create_contract returned, success={}, output_size={}\n", .{
-        create_result.success, if (create_result.output) |o| o.len else 0
-    });
     defer if (create_result.output) |output| allocator.free(output);
-
-    std.debug.print("Create success: {}\n", .{create_result.success});
-    std.debug.print("Create output size: {}\n", .{if (create_result.output) |o| o.len else 0});
-    std.debug.print("Gas left: {}\n", .{create_result.gas_left});
     
     // Check deployment
     try testing.expect(create_result.success);
     
     // Get deployed code
     const deployed_code = vm.state.get_code(create_result.address);
-    std.debug.print("Deployed code size: {}\n", .{deployed_code.len});
-    
-    // Print deployed code bytes
-    if (deployed_code.len > 0) {
-        std.debug.print("Deployed code: ", .{});
-        for (deployed_code) |byte| {
-            std.debug.print("{x:0>2} ", .{byte});
-        }
-        std.debug.print("\n", .{});
-    }
     
     // This should pass but currently fails
     try testing.expectEqual(@as(usize, 10), deployed_code.len);
@@ -131,10 +104,6 @@ test "manual constructor execution to debug" {
         0x60, 0x2a, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3,
     };
 
-    std.debug.print("\n=== Manual Constructor Execution ===\n", .{});
-    std.debug.print("Init code breakdown:\n", .{});
-    std.debug.print("  Bytes 0-11: Constructor logic\n", .{});
-    std.debug.print("  Bytes 12-21: Runtime code to be deployed\n", .{});
     
     // Create a contract for deployment
     var contract = Evm.Contract.init_deployment(
@@ -150,18 +119,6 @@ test "manual constructor execution to debug" {
     const result = try vm.interpret(&contract, &.{});
     defer if (result.output) |output| allocator.free(output);
 
-    std.debug.print("Execution status: {}\n", .{result.status});
-    std.debug.print("Gas used: {}\n", .{result.gas_used});
-    std.debug.print("Output size: {}\n", .{if (result.output) |o| o.len else 0});
-    
-    // Print output bytes
-    if (result.output) |output| {
-        std.debug.print("Output bytes: ", .{});
-        for (output) |byte| {
-            std.debug.print("{x:0>2} ", .{byte});
-        }
-        std.debug.print("\n", .{});
-    }
     
     // Verify constructor executed successfully
     try testing.expectEqual(Evm.RunResult.Status.Success, result.status);

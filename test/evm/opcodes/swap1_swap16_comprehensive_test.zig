@@ -165,18 +165,8 @@ test "SWAP3-SWAP5: Various swaps" {
 
     // Execute SWAP3 (swap top with 4th)
     frame.pc = 0;
-    std.debug.print("Before SWAP3:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{X}\n", .{ i, frame.stack.data[idx] });
-    }
     var result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x92);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
-    std.debug.print("After SWAP3:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{X}\n", .{ i, frame.stack.data[idx] });
-    }
     // Stack was: [0x10, 0x20, 0x30, 0x40, 0x50, 0x60]
     // SWAP3 swaps top (0x60) with 4th from top (0x30)
     // Now: [0x10, 0x20, 0x60, 0x40, 0x50, 0x30]
@@ -790,20 +780,8 @@ test "SWAP operations: No side effects" {
     try frame.stack.append(0x44);
     try frame.stack.append(0x55);
 
-    std.debug.print("Before SWAP3:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{X}\n", .{ i, frame.stack.data[idx] });
-    }
-
     // Execute SWAP3
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x92);
-
-    std.debug.print("After SWAP3:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{X}\n", .{ i, frame.stack.data[idx] });
-    }
 
     // Verify only positions 0 and 3 were swapped
     try testing.expectEqual(@as(u256, 0x22), frame.stack.data[frame.stack.size - 1]); // Was at position 3

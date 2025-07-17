@@ -67,29 +67,16 @@ test "CREATE (0xF0): Basic contract creation" {
     }
     frame.pc = 6;
 
-    // Debug: Print stack before CREATE
-    std.debug.print("\nCREATE test - Stack before CREATE:\n", .{});
-    std.debug.print("Stack size: {}\n", .{frame.stack.size});
-
     const gas_before = frame.gas_remaining;
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0) catch |err| {
-        std.debug.print("CREATE failed with error: {}\n", .{err});
-        return err;
-    };
+    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check gas consumption (VM consumes gas regardless of success/failure)
     const gas_used = gas_before - frame.gas_remaining;
-    std.debug.print("Gas used: {}\n", .{gas_used});
     try testing.expect(gas_used > 0); // Should consume some gas for CREATE
-
-    // Debug: Print stack after CREATE
-    std.debug.print("Stack after CREATE:\n", .{});
-    std.debug.print("Stack size: {}\n", .{frame.stack.size});
 
     // Check that result was pushed to stack
     const created_address = try frame.stack.pop();
-    std.debug.print("Created address: 0x{x}\n", .{created_address});
     // VM successfully creates a contract, so we should have a non-zero address
     try testing.expect(created_address != 0);
 }

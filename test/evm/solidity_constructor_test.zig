@@ -53,8 +53,6 @@ test "complex Solidity constructor returns full runtime code" {
         0x60, 0x80, 0x60, 0x40, // 4 bytes of runtime code
     };
 
-    std.debug.print("\n=== Complex Solidity Constructor Test ===\n", .{});
-    std.debug.print("Init code size: {}\n", .{erc20_init_code.len});
     
     const create_result = try vm.create_contract(
         deployer,
@@ -64,35 +62,7 @@ test "complex Solidity constructor returns full runtime code" {
     );
     defer if (create_result.output) |output| allocator.free(output);
 
-    std.debug.print("Create success: {}\n", .{create_result.success});
-    std.debug.print("Output size: {}\n", .{if (create_result.output) |o| o.len else 0});
-    
-    // Print the output bytes to see what's being returned
-    if (create_result.output) |output| {
-        std.debug.print("Output bytes (first 64): ", .{});
-        for (output, 0..) |byte, i| {
-            if (i < 64) {
-                std.debug.print("{x:0>2} ", .{byte});
-                if ((i + 1) % 16 == 0) std.debug.print("\n                         ", .{});
-            }
-        }
-        std.debug.print("\n", .{});
-    }
-    
     const deployed_code = vm.state.get_code(create_result.address);
-    std.debug.print("Deployed code size: {}\n", .{deployed_code.len});
-    
-    // Print deployed code bytes
-    if (deployed_code.len > 0) {
-        std.debug.print("Deployed code bytes: ", .{});
-        for (deployed_code, 0..) |byte, i| {
-            if (i < 64) {
-                std.debug.print("{x:0>2} ", .{byte});
-                if ((i + 1) % 16 == 0) std.debug.print("\n                     ", .{});
-            }
-        }
-        std.debug.print("\n", .{});
-    }
     
     // This test will likely fail - showing only 36 bytes deployed
     // instead of the expected runtime code size
@@ -150,18 +120,9 @@ test "gas metering for KECCAK256 operations" {
     );
     defer if (create_result.output) |output| allocator.free(output);
 
-    std.debug.print("\n=== Gas Metering Test ===\n", .{});
-    std.debug.print("Contract deployed at: 0x{x}\n", .{primitives.Address.to_u256(create_result.address)});
-    std.debug.print("Deployment success: {}\n", .{create_result.success});
-    
     // Check what code was actually deployed
     const deployed_code = vm.state.get_code(create_result.address);
-    std.debug.print("Deployed code size: {} bytes\n", .{deployed_code.len});
-    std.debug.print("Deployed code: ", .{});
-    for (deployed_code) |byte| {
-        std.debug.print("{x:0>2} ", .{byte});
-    }
-    std.debug.print("\n", .{});
+    _ = deployed_code;
     
     // Call the contract
     const initial_gas: u64 = 1000000;
@@ -176,20 +137,6 @@ test "gas metering for KECCAK256 operations" {
     defer if (call_result.output) |output| allocator.free(output);
 
     const gas_used = initial_gas - call_result.gas_left;
-    std.debug.print("Call success: {}\n", .{call_result.success});
-    std.debug.print("Initial gas: {}\n", .{initial_gas});
-    std.debug.print("Gas remaining: {}\n", .{call_result.gas_left});
-    std.debug.print("Gas used: {}\n", .{gas_used});
-    std.debug.print("Expected: some gas for PUSH/MSTORE/RETURN\n", .{});
-    if (call_result.output) |output| {
-        std.debug.print("Output size: {} bytes\n", .{output.len});
-        if (output.len >= 32) {
-            const value = bytesToU256(output[0..32]);
-            std.debug.print("Output value: 0x{x}\n", .{value});
-        }
-    } else {
-        std.debug.print("No output returned\n", .{});
-    }
     
     // This should use some gas for the operations
     try testing.expect(gas_used > 0);

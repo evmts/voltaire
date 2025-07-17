@@ -170,19 +170,9 @@ test "DUP3-DUP5: Various duplications" {
 
     // Execute DUP3 (should duplicate 0x33)
     frame.pc = 0;
-    std.debug.print("Before DUP3:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     var result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x82);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
     try testing.expectEqual(@as(usize, 6), frame.stack.size);
-    std.debug.print("After DUP3:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     try testing.expectEqual(@as(u256, 0x33), frame.stack.data[frame.stack.size - 1]); // Duplicated value on top
 
     // Execute DUP4 (should duplicate 0x33 again, as it's now 4th from top)
@@ -194,19 +184,9 @@ test "DUP3-DUP5: Various duplications" {
 
     // Execute DUP5 (should duplicate 0x22)
     frame.pc = 2;
-    std.debug.print("Before DUP5:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x84);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
     try testing.expectEqual(@as(usize, 8), frame.stack.size);
-    std.debug.print("After DUP5:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     try testing.expectEqual(@as(u256, 0x33), frame.stack.data[frame.stack.size - 1]); // DUP5 duplicates the 5th element which is 0x33
 }
 
@@ -251,57 +231,28 @@ test "DUP6-DUP10: Mid-range duplications" {
 
     // Execute DUP6 (should duplicate 0x50)
     frame.pc = 0;
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     const result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x85);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
-    std.debug.print("After DUP6:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     try testing.expectEqual(@as(u256, 0x50), frame.stack.data[frame.stack.size - 1]);
 
     // Execute DUP7 (should duplicate 0x50 again, as it's now 7th)
     frame.pc = 1;
     _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x86);
-    std.debug.print("After DUP7:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     try testing.expectEqual(@as(u256, 0x50), frame.stack.data[frame.stack.size - 1]);
 
     // Execute DUP8 (should duplicate 0x40)
     frame.pc = 2;
     _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x87);
-    std.debug.print("After DUP8:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     try testing.expectEqual(@as(u256, 0x50), frame.stack.data[frame.stack.size - 1]); // DUP8 duplicates position 8 which is 0x50
 
     // Execute DUP9 (should duplicate 0x30)
     frame.pc = 3;
     _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x88);
-    std.debug.print("After DUP9:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     try testing.expectEqual(@as(u256, 0x50), frame.stack.data[frame.stack.size - 1]); // DUP9 duplicates position 9 which is 0x50
 
     // Execute DUP10 (should duplicate 0x20)
     frame.pc = 4;
     _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x89);
-    std.debug.print("After DUP10:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     try testing.expectEqual(@as(u256, 0x50), frame.stack.data[frame.stack.size - 1]); // DUP10 duplicates position 10 which is 0x50
 }
 
@@ -527,9 +478,7 @@ test "DUP operations: Stack underflow" {
 
     // Empty stack - DUP1 should fail
     frame.pc = 0;
-    std.debug.print("\nDUP underflow test: Empty stack size = {}\n", .{frame.stack.size});
     var result = evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x80);
-    std.debug.print("DUP1 on empty stack result: {any}\n", .{result});
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 
     // Push 1 value
@@ -723,28 +672,12 @@ test "DUP operations: Pattern verification" {
 
     // DUP5 should duplicate 5th from top (now 0xCC)
     frame.pc = 1;
-    std.debug.print("\nBefore DUP5, stack size={}, looking for 5th from top:\n", .{frame.stack.size});
-    for (0..@min(10, frame.stack.size)) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Position {} from top (index {}): 0x{x}\n", .{ i + 1, idx, frame.stack.data[idx] });
-    }
     _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x84);
-    std.debug.print("After DUP5, top of stack: 0x{x}\n", .{frame.stack.peek() catch 0});
     try testing.expectEqual(@as(u256, 0xDD), frame.stack.data[frame.stack.size - 1]); // After DUP1, positions shift
 
     // DUP9 should duplicate 9th from top (now 0x99)
     frame.pc = 2;
-    std.debug.print("Before DUP9:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x88);
-    std.debug.print("After DUP9:\n", .{});
-    for (0..frame.stack.size) |i| {
-        const idx = frame.stack.size - 1 - i;
-        std.debug.print("  Stack[{}]: 0x{x}\n", .{ i, frame.stack.data[idx] });
-    }
     try testing.expectEqual(@as(u256, 0xAA), frame.stack.data[frame.stack.size - 1]); // DUP9 gets 9th from top which is 0xAA
 
     // DUP13 should duplicate 13th from top (now 0x77 after 3 DUPs)

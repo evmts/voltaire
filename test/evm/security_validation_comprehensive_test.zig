@@ -85,7 +85,6 @@ test "Security: Stack overflow protection across all operation types" {
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         const result = evm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
         testing.expectError(test_case.expected_error, result) catch |err| {
-            std.debug.print("Failed {s} overflow test\n", .{test_case.name});
             return err;
         };
     }
@@ -168,7 +167,6 @@ test "Security: Stack underflow protection across all operation types" {
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         const result = evm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
         testing.expectError(ExecutionError.Error.StackUnderflow, result) catch |err| {
-            std.debug.print("Failed {s} underflow test\n", .{test_case.name});
             return err;
         };
     }
@@ -494,7 +492,6 @@ test "Security: Gas limit enforcement across operation categories" {
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         const result = evm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
         testing.expectError(ExecutionError.Error.OutOfGas, result) catch |err| {
-            std.debug.print("Failed {s} test\n", .{test_case.name});
             return err;
         };
     }
