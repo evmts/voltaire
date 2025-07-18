@@ -210,7 +210,7 @@ pub fn build(b: *std.Build) void {
     const rust_lib_path = b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
     bn254_lib.addObjectFile(b.path(rust_lib_path));
     bn254_lib.linkLibC();
-    
+
     // Link additional system libraries that Rust might need
     if (target.result.os.tag == .linux) {
         bn254_lib.linkSystemLibrary("dl");
@@ -224,7 +224,7 @@ pub fn build(b: *std.Build) void {
     // Add a step to verify the library exists
     const verify_lib = b.addSystemCommand(&[_][]const u8{ "ls", "-la", rust_lib_path });
     verify_lib.step.dependOn(&rust_build.step);
-    
+
     // Make the rust build a dependency
     bn254_lib.step.dependOn(&verify_lib.step);
 
