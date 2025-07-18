@@ -271,6 +271,21 @@ pub fn build(b: *std.Build) void {
     compilers_mod.addImport("primitives", primitives_mod);
     compilers_mod.addImport("evm", evm_mod);
 
+    // Create bench module
+    const zbench_dep = b.dependency("zbench", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    
+    const bench_mod = b.createModule(.{
+        .root_source_file = b.path("bench/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bench_mod.addImport("primitives", primitives_mod);
+    bench_mod.addImport("evm", evm_mod);
+    bench_mod.addImport("zbench", zbench_dep.module("zbench"));
+
     // Add modules to lib_mod so tests can access them
     lib_mod.addImport("primitives", primitives_mod);
     lib_mod.addImport("crypto", crypto_mod);
@@ -278,6 +293,7 @@ pub fn build(b: *std.Build) void {
     lib_mod.addImport("provider", provider_mod);
     lib_mod.addImport("compilers", compilers_mod);
     lib_mod.addImport("trie", trie_mod);
+    lib_mod.addImport("bench", bench_mod);
 
     const exe_mod = b.createModule(.{ .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize });
     exe_mod.addImport("Guillotine_lib", lib_mod);
@@ -415,6 +431,24 @@ pub fn build(b: *std.Build) void {
     // This will evaluate the `run` step rather than the default, which is "install".
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
+
+    // Benchmark executable
+    const bench_exe = b.addExecutable(.{
+        .name = "guillotine-bench",
+        .root_source_file = b.path("bench/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bench_exe.root_module.addImport("bench", bench_mod);
+    bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+    
+    b.installArtifact(bench_exe);
+    
+    const run_bench_cmd = b.addRunArtifact(bench_exe);
+    run_bench_cmd.step.dependOn(b.getInstallStep());
+    
+    const bench_step = b.step("bench", "Run benchmarks");
+    bench_step.dependOn(&run_bench_cmd.step);
 
     // Devtool executable
     // Add webui dependency

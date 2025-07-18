@@ -44,6 +44,10 @@
             .url = "git+https://github.com/evmts/c-kzg-4844#d231873d5c815af6f1ab2e315f038fa5cb8c5294",
             .hash = "c_kzg_4844-0.0.0-UbJ7acpiHQBNlbFymCuO9OTLut3UtdHz4OiDZBc5pCAd",
         },
+        .zbench = .{
+            .url = "https://github.com/hendriknielaender/zBench/archive/refs/heads/master.tar.gz",
+            .hash = "1220cee254c73272258d81cf679bffb0d4ecc3be6f0263b5a724fe969a9566802020",
+        },
     },
 
     // Specifies the set of files and directories that are included in this package.

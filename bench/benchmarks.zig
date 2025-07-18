@@ -1,0 +1,348 @@
+const std = @import("std");
+const Allocator = std.mem.Allocator;
+const timing = @import("timing.zig");
+const BenchmarkSuite = timing.BenchmarkSuite;
+const BenchmarkConfig = timing.BenchmarkConfig;
+
+pub fn runAllBenchmarks(allocator: Allocator) !void {
+    var suite = BenchmarkSuite.init(allocator);
+    defer suite.deinit();
+    
+    // Simple hello world benchmark
+    const HelloWorldBench = struct {
+        fn helloWorld() void {
+            std.debug.print("Hello World from Guillotine benchmarks!\n", .{});
+        }
+        
+        fn simpleComputation() u64 {
+            var sum: u64 = 0;
+            var i: u32 = 0;
+            while (i < 1000) : (i += 1) {
+                sum += i * i;
+            }
+            return sum;
+        }
+        
+        fn memoryAllocation() !void {
+            var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+            defer _ = gpa.deinit();
+            const alloc = gpa.allocator();
+            
+            const data = try alloc.alloc(u8, 1024);
+            defer alloc.free(data);
+            
+            for (data, 0..) |*byte, idx| {
+                byte.* = @as(u8, @intCast(idx % 256));
+            }
+        }
+    };
+    
+    try suite.benchmark(BenchmarkConfig{
+        .name = "hello_world",
+        .iterations = 10,
+        .warmup_iterations = 2,
+    }, HelloWorldBench.helloWorld);
+    
+    try suite.benchmark(BenchmarkConfig{
+        .name = "simple_computation",
+        .iterations = 100,
+        .warmup_iterations = 10,
+    }, HelloWorldBench.simpleComputation);
+    
+    try suite.benchmark(BenchmarkConfig{
+        .name = "memory_allocation",
+        .iterations = 50,
+        .warmup_iterations = 5,
+    }, HelloWorldBench.memoryAllocation);
+    
+    suite.printResults();
+}
+
+fn addEvmBenchmarks(suite: *BenchmarkSuite) !void {
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_evm_basic",
+        .command = "zig build && echo 'Basic EVM execution test' | ./zig-out/bin/Guillotine",
+        .warmup_runs = 3,
+        .min_runs = 10,
+        .max_runs = 50,
+        .export_json = true,
+        .export_markdown = true,
+        .show_output = false,
+    });
+    
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_evm_comprehensive",
+        .command = "zig build test-evm",
+        .warmup_runs = 2,
+        .min_runs = 5,
+        .max_runs = 20,
+        .export_json = true,
+        .export_markdown = true,
+        .show_output = false,
+    });
+}
+
+fn addArithmeticBenchmarks(suite: *BenchmarkSuite) !void {
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_arithmetic_ops",
+        .command = "zig build test-opcodes",
+        .warmup_runs = 2,
+        .min_runs = 10,
+        .max_runs = 30,
+        .export_json = true,
+        .export_csv = true,
+        .show_output = false,
+    });
+    
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_arithmetic_fuzz",
+        .command = "zig build fuzz-arithmetic",
+        .warmup_runs = 1,
+        .min_runs = 5,
+        .max_runs = 15,
+        .export_json = true,
+        .show_output = false,
+    });
+}
+
+fn addMemoryBenchmarks(suite: *BenchmarkSuite) !void {
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_memory_ops",
+        .command = "zig build test-memory",
+        .warmup_runs = 2,
+        .min_runs = 10,
+        .max_runs = 30,
+        .export_json = true,
+        .export_csv = true,
+        .show_output = false,
+    });
+    
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_memory_fuzz",
+        .command = "zig build fuzz-memory",
+        .warmup_runs = 1,
+        .min_runs = 5,
+        .max_runs = 15,
+        .export_json = true,
+        .show_output = false,
+    });
+    
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_stack_ops",
+        .command = "zig build test-stack",
+        .warmup_runs = 2,
+        .min_runs = 10,
+        .max_runs = 30,
+        .export_json = true,
+        .export_csv = true,
+        .show_output = false,
+    });
+}
+
+fn addCryptoBenchmarks(suite: *BenchmarkSuite) !void {
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_crypto_sha256",
+        .command = "zig build test-sha256",
+        .warmup_runs = 2,
+        .min_runs = 10,
+        .max_runs = 30,
+        .export_json = true,
+        .export_csv = true,
+        .show_output = false,
+    });
+    
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_crypto_ripemd160",
+        .command = "zig build test-ripemd160",
+        .warmup_runs = 2,
+        .min_runs = 10,
+        .max_runs = 30,
+        .export_json = true,
+        .export_csv = true,
+        .show_output = false,
+    });
+    
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_crypto_blake2f",
+        .command = "zig build test-blake2f",
+        .warmup_runs = 2,
+        .min_runs = 10,
+        .max_runs = 30,
+        .export_json = true,
+        .export_csv = true,
+        .show_output = false,
+    });
+    
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_crypto_bn254",
+        .command = "zig build test-bn254-rust",
+        .warmup_runs = 1,
+        .min_runs = 5,
+        .max_runs = 15,
+        .export_json = true,
+        .show_output = false,
+    });
+}
+
+pub fn runComparisonBenchmarks(allocator: Allocator) !void {
+    var suite = BenchmarkSuite.init(allocator);
+    defer suite.deinit();
+    
+    try addExternalEvmBenchmarks(&suite);
+    try addGuillotineBenchmarks(&suite);
+    
+    suite.printResults();
+    
+    // TODO: Add comparisons when external benchmarks are available
+}
+
+fn addExternalEvmBenchmarks(suite: *BenchmarkSuite) !void {
+    // TODO: Add external EVM benchmarks when available
+    _ = suite;
+}
+
+fn addGuillotineBenchmarks(suite: *BenchmarkSuite) !void {
+    // TODO: Add Guillotine EVM benchmarks
+    _ = suite;
+}
+
+pub fn runParameterizedBenchmarks(allocator: Allocator) !void {
+    try hyperfine.ensureHyperfineInstalled(allocator);
+    
+    var suite = BenchmarkSuite.init(allocator);
+    defer suite.deinit();
+    
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_gas_limit_scaling",
+        .command = "",
+        .warmup_runs = 2,
+        .min_runs = 5,
+        .max_runs = 20,
+        .export_json = true,
+        .export_csv = true,
+        .parameter_scan = hyperfine.ParameterScan{
+            .parameter_name = "gas_limit",
+            .values = &[_][]const u8{ "100000", "500000", "1000000", "5000000", "10000000" },
+            .command_template = "echo 'Testing with gas limit: {gas_limit}' && zig build test-gas",
+        },
+    });
+    
+    try suite.addBenchmark(BenchmarkConfig{
+        .name = "guillotine_memory_scaling",
+        .command = "",
+        .warmup_runs = 2,
+        .min_runs = 5,
+        .max_runs = 20,
+        .export_json = true,
+        .export_csv = true,
+        .parameter_scan = hyperfine.ParameterScan{
+            .parameter_name = "memory_size",
+            .values = &[_][]const u8{ "1024", "4096", "16384", "65536", "262144" },
+            .command_template = "echo 'Testing with memory size: {memory_size}' && zig build test-memory",
+        },
+    });
+    
+    try suite.run();
+    suite.printSummary();
+}
+
+pub fn generateBenchmarkReport(allocator: Allocator) !void {
+    const report_content =
+        \\# Guillotine EVM Benchmark Report
+        \\
+        \\This report contains performance benchmarks for the Guillotine EVM implementation.
+        \\
+        \\## Test Environment
+        \\- Platform: {s}
+        \\- Architecture: {s}
+        \\- Date: {s}
+        \\
+        \\## Benchmark Categories
+        \\
+        \\### Core EVM Operations
+        \\- Basic EVM execution
+        \\- Comprehensive EVM test suite
+        \\
+        \\### Arithmetic Operations
+        \\- Arithmetic opcodes
+        \\- Fuzz testing of arithmetic operations
+        \\
+        \\### Memory Operations
+        \\- Memory opcodes
+        \\- Stack operations
+        \\- Fuzz testing of memory operations
+        \\
+        \\### Cryptographic Operations
+        \\- SHA256 precompile
+        \\- RIPEMD160 precompile
+        \\- BLAKE2f precompile
+        \\- BN254 elliptic curve operations
+        \\
+        \\## How to Run
+        \\
+        \\```bash
+        \\# Run all benchmarks
+        \\zig build bench
+        \\
+        \\# Run comparison benchmarks
+        \\zig build bench-compare
+        \\
+        \\# Run parameterized benchmarks
+        \\zig build bench-params
+        \\
+        \\# Generate benchmark report
+        \\zig build bench-report
+        \\```
+        \\
+        \\## Results
+        \\
+        \\Results are exported to:
+        \\- JSON format: `bench-*.json`
+        \\- CSV format: `bench-*.csv`
+        \\- Markdown format: `bench-*.md`
+        \\
+        \\## External EVM Implementations
+        \\
+        \\To compare against external EVM implementations, install and configure:
+        \\
+        \\1. **REVM**: Rust EVM implementation
+        \\2. **Geth EVM**: Go Ethereum EVM
+        \\3. **evmone**: C++ EVM implementation
+        \\
+        \\Update the benchmark commands in `bench/benchmarks.zig` to point to actual binaries.
+        \\
+    ;
+    
+    const file = try std.fs.cwd().createFile("bench/README.md", .{});
+    defer file.close();
+    
+    const platform = @tagName(std.Target.current.os.tag);
+    const arch = @tagName(std.Target.current.cpu.arch);
+    const date = "2024-01-01"; // TODO: Get actual date
+    
+    const formatted_report = try std.fmt.allocPrint(allocator, report_content, .{ platform, arch, date });
+    defer allocator.free(formatted_report);
+    
+    try file.writeAll(formatted_report);
+    
+    std.log.info("Benchmark report generated: bench/README.md", .{});
+}
+
+test "benchmark configuration" {
+    const allocator = std.testing.allocator;
+    
+    var suite = BenchmarkSuite.init(allocator);
+    defer suite.deinit();
+    
+    try addEvmBenchmarks(&suite);
+    
+    try std.testing.expect(suite.configs.items.len > 0);
+    
+    for (suite.configs.items) |config| {
+        try std.testing.expect(config.name.len > 0);
+        try std.testing.expect(config.command.len > 0);
+        try std.testing.expect(config.warmup_runs > 0);
+        try std.testing.expect(config.min_runs > 0);
+        try std.testing.expect(config.max_runs >= config.min_runs);
+    }
+}
