@@ -1019,11 +1019,67 @@ pub fn build(b: *std.Build) void {
     const fuzz_arithmetic_test_step = b.step("fuzz-arithmetic", "Run arithmetic fuzz tests");
     fuzz_arithmetic_test_step.dependOn(&run_fuzz_arithmetic_test.step);
 
+    const fuzz_bitwise_test = b.addTest(.{
+        .name = "fuzz-bitwise-test",
+        .root_source_file = b.path("src/evm/execution/bitwise.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_bitwise_test.root_module.addImport("evm", evm_mod);
+    fuzz_bitwise_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_bitwise_test = b.addRunArtifact(fuzz_bitwise_test);
+    const fuzz_bitwise_test_step = b.step("fuzz-bitwise", "Run bitwise fuzz tests");
+    fuzz_bitwise_test_step.dependOn(&run_fuzz_bitwise_test.step);
+
+    const fuzz_comparison_test = b.addTest(.{
+        .name = "fuzz-comparison-test",
+        .root_source_file = b.path("src/evm/execution/comparison.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_comparison_test.root_module.addImport("evm", evm_mod);
+    fuzz_comparison_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_comparison_test = b.addRunArtifact(fuzz_comparison_test);
+    const fuzz_comparison_test_step = b.step("fuzz-comparison", "Run comparison fuzz tests");
+    fuzz_comparison_test_step.dependOn(&run_fuzz_comparison_test.step);
+
+    const fuzz_control_test = b.addTest(.{
+        .name = "fuzz-control-test",
+        .root_source_file = b.path("src/evm/execution/control.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_control_test.root_module.addImport("evm", evm_mod);
+    fuzz_control_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_control_test = b.addRunArtifact(fuzz_control_test);
+    const fuzz_control_test_step = b.step("fuzz-control", "Run control fuzz tests");
+    fuzz_control_test_step.dependOn(&run_fuzz_control_test.step);
+
+    const fuzz_crypto_test = b.addTest(.{
+        .name = "fuzz-crypto-test",
+        .root_source_file = b.path("src/evm/execution/crypto.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_crypto_test.root_module.addImport("evm", evm_mod);
+    fuzz_crypto_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_crypto_test = b.addRunArtifact(fuzz_crypto_test);
+    const fuzz_crypto_test_step = b.step("fuzz-crypto", "Run crypto fuzz tests");
+    fuzz_crypto_test_step.dependOn(&run_fuzz_crypto_test.step);
+
     // Combined fuzz test step
     const fuzz_test_step = b.step("fuzz", "Run all fuzz tests");
     fuzz_test_step.dependOn(&run_fuzz_stack_test.step);
     fuzz_test_step.dependOn(&run_fuzz_memory_test.step);
     fuzz_test_step.dependOn(&run_fuzz_arithmetic_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_bitwise_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_comparison_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_control_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_crypto_test.step);
 
     // Documentation generation step
     const docs_step = b.step("docs", "Generate and install documentation");

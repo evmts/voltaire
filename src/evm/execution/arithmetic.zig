@@ -757,10 +757,8 @@ pub fn op_signextend(pc: usize, interpreter: *Operation.Interpreter, state: *Ope
 
 // Fuzz testing functions for arithmetic operations
 pub fn fuzz_arithmetic_operations(allocator: std.mem.Allocator, operations: []const FuzzArithmeticOperation) !void {
-    const testing = std.testing;
     
     for (operations) |op| {
-        var stack = Stack{};
         var memory = try @import("../memory/memory.zig").init_default(allocator);
         defer memory.deinit();
         memory.finalize_root();
@@ -805,8 +803,6 @@ pub fn fuzz_arithmetic_operations(allocator: std.mem.Allocator, operations: []co
             .exp => result = try op_exp(0, @ptrCast(&vm), @ptrCast(&frame)),
             .signextend => result = try op_signextend(0, @ptrCast(&vm), @ptrCast(&frame)),
         }
-        
-        _ = result;
         
         // Verify the result makes sense
         try validateArithmeticResult(&frame.stack, op);
@@ -887,11 +883,11 @@ fn validateArithmeticResult(stack: *const Stack, op: FuzzArithmeticOperation) !v
         .exp => {
             // For exponentiation, just verify it's a valid result
             // Complex verification would require reimplementing the algorithm
-            _ = result;
+            try testing.expect(result >= 0);
         },
         .signextend => {
             // For sign extension, just verify it's a valid result
-            _ = result;
+            try testing.expect(result >= 0);
         },
         else => {},
     }

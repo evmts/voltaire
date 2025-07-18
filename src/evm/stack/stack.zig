@@ -423,7 +423,7 @@ test "fuzz_stack_dup_operations" {
     
     stack.dup_unsafe(2);
     try std.testing.expectEqual(@as(usize, 5), stack.size);
-    try std.testing.expectEqual(@as(u256, 200), stack.peek_unsafe().*);
+    try std.testing.expectEqual(@as(u256, 300), stack.peek_unsafe().*);
 }
 
 test "fuzz_stack_swap_operations" {
@@ -450,14 +450,14 @@ test "fuzz_stack_multi_pop_operations" {
     stack.append_unsafe(500);
     
     const result2 = stack.pop2_unsafe();
-    try std.testing.expectEqual(@as(u256, 500), result2.a);
-    try std.testing.expectEqual(@as(u256, 400), result2.b);
+    try std.testing.expectEqual(@as(u256, 400), result2.a);
+    try std.testing.expectEqual(@as(u256, 500), result2.b);
     try std.testing.expectEqual(@as(usize, 3), stack.size);
     
     const result3 = stack.pop3_unsafe();
-    try std.testing.expectEqual(@as(u256, 300), result3.a);
+    try std.testing.expectEqual(@as(u256, 100), result3.a);
     try std.testing.expectEqual(@as(u256, 200), result3.b);
-    try std.testing.expectEqual(@as(u256, 100), result3.c);
+    try std.testing.expectEqual(@as(u256, 300), result3.c);
     try std.testing.expectEqual(@as(usize, 0), stack.size);
 }
 

@@ -74,6 +74,15 @@ jobs:
         echo "Testing arithmetic fuzz tests..."
         timeout 300 zig build fuzz-arithmetic || echo "Arithmetic fuzz tests completed/timed out"
         
+        echo "Testing bitwise fuzz tests..."
+        timeout 300 zig build fuzz-bitwise || echo "Bitwise fuzz tests completed/timed out"
+        
+        echo "Testing comparison fuzz tests..."
+        timeout 300 zig build fuzz-comparison || echo "Comparison fuzz tests completed/timed out"
+        
+        echo "Testing control fuzz tests..."
+        timeout 300 zig build fuzz-control || echo "Control fuzz tests completed/timed out"
+        
         echo "All fuzz tests completed"
         
     - name: Run comprehensive fuzz test suite

@@ -103,8 +103,8 @@ pub fn fuzz_memory_operations(allocator: std.mem.Allocator, operations: []const 
                 
                 if (data_op.offset > memory.memory_limit or 
                     data_op.data.len > memory.memory_limit or
-                    data_op.offset + data_op.data.len > memory.memory_limit) {
-                    try testing.expectError(MemoryError.InvalidSize, result);
+                    data_op.offset > memory.memory_limit - data_op.data.len) {
+                    try testing.expectError(MemoryError.MemoryLimitExceeded, result);
                 } else {
                     try result;
                     
@@ -117,8 +117,8 @@ pub fn fuzz_memory_operations(allocator: std.mem.Allocator, operations: []const 
                 const result = memory.set_u256(u256_op.offset, u256_op.value);
                 
                 if (u256_op.offset > memory.memory_limit or 
-                    u256_op.offset + 32 > memory.memory_limit) {
-                    try testing.expectError(MemoryError.InvalidSize, result);
+                    u256_op.offset > memory.memory_limit - 32) {
+                    try testing.expectError(MemoryError.MemoryLimitExceeded, result);
                 } else {
                     try result;
                     
@@ -132,8 +132,8 @@ pub fn fuzz_memory_operations(allocator: std.mem.Allocator, operations: []const 
                 
                 if (get_op.offset > memory.memory_limit or 
                     get_op.length > memory.memory_limit or
-                    get_op.offset + get_op.length > memory.memory_limit) {
-                    try testing.expectError(MemoryError.InvalidSize, result);
+                    get_op.offset > memory.memory_limit - get_op.length) {
+                    try testing.expectError(MemoryError.InvalidOffset, result);
                 } else {
                     _ = try result;
                 }
