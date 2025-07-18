@@ -33,7 +33,7 @@ jobs:
 
       - name: Generate Zig documentation
         run: |
-          zig build-docs
+          zig build docs
           mkdir -p ./docs-output
           cp -r zig-out/docs/* ./docs-output/ || true
 

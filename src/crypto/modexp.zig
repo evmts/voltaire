@@ -1,7 +1,7 @@
 const std = @import("std");
 
 /// ⚠️ UNAUDITED CUSTOM CRYPTO IMPLEMENTATION - NOT SECURITY AUDITED ⚠️
-/// 
+///
 /// This module contains CUSTOM modular exponentiation implementations
 /// that have NOT been security audited or verified against known attacks.
 /// These implementations are provided for educational/testing purposes only.

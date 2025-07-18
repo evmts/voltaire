@@ -194,8 +194,10 @@ pub fn build(b: *std.Build) void {
 
     const rust_build = b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml" });
 
-    // Fix for macOS linking issues
-    rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+    // Fix for macOS linking issues (only on macOS)
+    if (target.result.os.tag == .macos) {
+        rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+    }
 
     // Create static library artifact for the Rust BN254 wrapper
     const bn254_lib = b.addStaticLibrary(.{

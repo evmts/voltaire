@@ -2,7 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 /// ⚠️ UNAUDITED CUSTOM CRYPTO IMPLEMENTATION - NOT SECURITY AUDITED ⚠️
-/// 
+///
 /// This module contains a CUSTOM RIPEMD160 hash function implementation
 /// that has NOT been security audited or verified against known attacks.
 /// These implementations are provided for educational/testing purposes only.

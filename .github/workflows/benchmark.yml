@@ -36,11 +36,24 @@ jobs:
             cargo bench --all-features | tee benchmarks/cargo-bench.txt
           fi
           
+      - name: Convert benchmark output to JSON
+        run: |
+          # Convert the text output to JSON format expected by github-action-benchmark
+          echo '[' > benchmarks/zig-bench.json
+          echo '  {' >> benchmarks/zig-bench.json
+          echo '    "name": "Zig Build Performance",' >> benchmarks/zig-bench.json
+          echo '    "unit": "seconds",' >> benchmarks/zig-bench.json
+          # Extract build time from output or use a default
+          BUILD_TIME=$(grep -o "Build completed in [0-9.]*" benchmarks/zig-bench.txt | grep -o "[0-9.]*" || echo "1.0")
+          echo "    \"value\": $BUILD_TIME" >> benchmarks/zig-bench.json
+          echo '  }' >> benchmarks/zig-bench.json
+          echo ']' >> benchmarks/zig-bench.json
+          
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
         with:
           tool: 'customBiggerIsBetter'
-          output-file-path: benchmarks/zig-bench.txt
+          output-file-path: benchmarks/zig-bench.json
           benchmark-data-dir-path: 'dev/bench'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true

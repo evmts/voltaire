@@ -4,7 +4,7 @@ const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 
 /// ⚠️ UNAUDITED CUSTOM CRYPTO IMPLEMENTATION - NOT SECURITY AUDITED ⚠️
-/// 
+///
 /// This module contains CUSTOM elliptic curve cryptography implementations
 /// that have NOT been security audited or verified against known attacks.
 /// These implementations are provided for educational/testing purposes only.
@@ -12,7 +12,7 @@ const Address = primitives.Address.Address;
 ///
 /// Known risks:
 /// - Potential timing attacks in modular arithmetic
-/// - Unvalidated against known ECC vulnerabilities  
+/// - Unvalidated against known ECC vulnerabilities
 /// - Custom point arithmetic may have edge case bugs
 /// - Memory safety not guaranteed under all conditions
 ///
@@ -279,7 +279,7 @@ pub fn unaudited_mulmod(a: u256, b: u256, m: u256) u256 {
 }
 
 /// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
-/// Custom modular addition implementation  
+/// Custom modular addition implementation
 /// WARNING: Potential timing attack vulnerabilities - not constant time
 pub fn unaudited_addmod(a: u256, b: u256, m: u256) u256 {
     if (m == 0) return 0;
