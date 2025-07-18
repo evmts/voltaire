@@ -289,11 +289,6 @@ Run the test suite:
 zig build test-foundry
 ```
 
-Run the example SnailTracer compilation:
-
-```bash
-zig build run-snailtracer
-```
 
 ## Architecture
 

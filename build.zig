@@ -913,13 +913,6 @@ pub fn build(b: *std.Build) void {
     const delegatecall_test_step = b.step("test-delegatecall", "Run DELEGATECALL tests");
     delegatecall_test_step.dependOn(&run_delegatecall_test.step);
 
-    snail_tracer_test.root_module.addImport("primitives", primitives_mod);
-    snail_tracer_test.root_module.addImport("evm", evm_mod);
-    snail_tracer_test.root_module.addImport("compilers", compilers_mod);
-
-    const run_snail_tracer_test = b.addRunArtifact(snail_tracer_test);
-    const snail_tracer_test_step = b.step("test-snail-tracer", "Run Snail Tracer tests");
-    snail_tracer_test_step.dependOn(&run_snail_tracer_test.step);
 
     // Add combined E2E test step
     const e2e_all_test_step = b.step("test-e2e", "Run all E2E tests");
