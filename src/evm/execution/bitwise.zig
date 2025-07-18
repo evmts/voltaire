@@ -3,6 +3,7 @@ const Operation = @import("../opcodes/operation.zig");
 const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
+const primitives = @import("primitives");
 
 pub fn op_and(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
@@ -214,23 +215,22 @@ pub fn op_sar(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
 
 // Fuzz testing functions for bitwise operations
 pub fn fuzz_bitwise_operations(allocator: std.mem.Allocator, operations: []const FuzzBitwiseOperation) !void {
-    const Vm = @import("../evm.zig");
+    const Vm = @import("evm").Evm;
     
     for (operations) |op| {
-        var memory = try @import("../memory/memory.zig").init_default(allocator);
+        var memory = try @import("evm").Memory.init_default(allocator);
         defer memory.deinit();
-        memory.finalize_root();
         
-        var db = @import("../state/memory_database.zig").init(allocator);
+        var db = @import("evm").MemoryDatabase.init(allocator);
         defer db.deinit();
         
         var vm = try Vm.init(allocator, db.to_database_interface(), null, null);
         defer vm.deinit();
         
-        var contract = try @import("../frame/contract.zig").init(allocator, &[_]u8{0x01}, .{});
+        var contract = try @import("evm").Contract.init(allocator, &[_]u8{0x01}, .{});
         defer contract.deinit(allocator, null);
         
-        var frame = try Frame.init(allocator, &vm, 1000000, contract, @import("../../Address.zig").ZERO, &.{});
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
         defer frame.deinit();
         
         // Setup stack with test values based on operation type

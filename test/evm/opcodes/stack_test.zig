@@ -35,7 +35,6 @@ test "PUSH0: append zero value" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -78,7 +77,6 @@ test "PUSH1: append 1 byte value" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -127,7 +125,6 @@ test "PUSH2: append 2 byte value" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -179,7 +176,6 @@ test "PUSH32: append 32 byte value" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -227,7 +223,6 @@ test "POP: remove top stack item" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -272,7 +267,6 @@ test "DUP1: duplicate top stack item" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -315,7 +309,6 @@ test "DUP2: duplicate second stack item" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -360,7 +353,6 @@ test "DUP16: duplicate 16th stack item" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -412,7 +404,6 @@ test "SWAP1: swap top two stack items" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -456,7 +447,6 @@ test "SWAP2: swap 1st and 3rd stack items" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -502,7 +492,6 @@ test "SWAP16: swap 1st and 17th stack items" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -560,7 +549,6 @@ test "PUSH1: at end of code" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -612,7 +600,6 @@ test "PUSH32: partial data available" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -666,7 +653,6 @@ test "POP: stack underflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -705,7 +691,6 @@ test "DUP1: stack underflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -744,7 +729,6 @@ test "DUP16: insufficient stack items" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -787,7 +771,6 @@ test "SWAP1: stack underflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -830,7 +813,6 @@ test "PUSH1: stack overflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -875,7 +857,6 @@ test "DUP1: stack overflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

@@ -6,19 +6,19 @@ const context = @import("context.zig");
 
 /// Write arbitrary data at context-relative offset.
 pub fn set_data(self: *Memory, relative_offset: usize, data: []const u8) MemoryError!void {
-    Log.debug("Memory.set_data: Writing data at relative_offset={}, data_len={}", .{ relative_offset, data.len });
+    // Debug logging removed for fuzz testing compatibility
     if (data.len == 0) return;
 
     const end = std.math.add(usize, relative_offset, data.len) catch {
-        Log.debug("Memory.set_data: Invalid size overflow, offset={}, data_len={}", .{ relative_offset, data.len });
+        // Debug logging removed for fuzz testing compatibility
         return MemoryError.InvalidSize;
     };
     _ = try self.ensure_context_capacity(end);
 
     const abs_offset = self.my_checkpoint + relative_offset;
     const abs_end = abs_offset + data.len;
-    Log.debug("Memory.set_data: Writing to buffer [{}..{}]", .{ abs_offset, abs_end });
-    @memcpy(self.root_ptr.shared_buffer.items[abs_offset..abs_end], data);
+    // Debug logging removed for fuzz testing compatibility
+    @memcpy(self.shared_buffer_ref.items[abs_offset..abs_end], data);
 }
 
 /// Write data with source offset and length (handles partial copies and zero-fills).
@@ -39,7 +39,7 @@ pub fn set_data_bounded(
 
     // If source offset is beyond data bounds, fill with zeros
     if (data_offset >= data.len) {
-        @memset(self.root_ptr.shared_buffer.items[abs_offset..abs_end], 0);
+        @memset(self.shared_buffer_ref.items[abs_offset..abs_end], 0);
         return;
     }
 
@@ -50,20 +50,20 @@ pub fn set_data_bounded(
     // Copy available data
     if (copy_len > 0) {
         @memcpy(
-            self.root_ptr.shared_buffer.items[abs_offset .. abs_offset + copy_len],
+            self.shared_buffer_ref.items[abs_offset .. abs_offset + copy_len],
             data[data_offset..data_end],
         );
     }
 
     // Zero-fill the rest
     if (copy_len < len) {
-        @memset(self.root_ptr.shared_buffer.items[abs_offset + copy_len .. abs_end], 0);
+        @memset(self.shared_buffer_ref.items[abs_offset + copy_len .. abs_end], 0);
     }
 }
 
 /// Write u256 value at context-relative offset (for test compatibility)
 pub fn set_u256(self: *Memory, relative_offset: usize, value: u256) MemoryError!void {
-    Log.debug("Memory.set_u256: Writing u256 value={} at relative_offset={}", .{ value, relative_offset });
+    // Debug logging removed for fuzz testing compatibility
     _ = try self.ensure_context_capacity(relative_offset + 32);
     const abs_offset = self.my_checkpoint + relative_offset;
 
@@ -77,6 +77,6 @@ pub fn set_u256(self: *Memory, relative_offset: usize, value: u256) MemoryError!
         val >>= 8;
     }
 
-    Log.debug("Memory.set_u256: Writing bytes to buffer at abs_offset={}", .{abs_offset});
-    @memcpy(self.root_ptr.shared_buffer.items[abs_offset .. abs_offset + 32], &bytes);
+    // Debug logging removed for fuzz testing compatibility
+    @memcpy(self.shared_buffer_ref.items[abs_offset .. abs_offset + 32], &bytes);
 }

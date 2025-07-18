@@ -27,7 +27,6 @@ test "fuzz_comparison_lt_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test LT operation: 5 < 10
@@ -66,7 +65,6 @@ test "fuzz_comparison_eq_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test EQ operation: 42 == 42
@@ -105,7 +103,6 @@ test "fuzz_comparison_iszero_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test ISZERO operation with zero

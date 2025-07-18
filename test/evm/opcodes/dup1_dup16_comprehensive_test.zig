@@ -44,7 +44,6 @@ test "DUP1 (0x80): Duplicate 1st stack item" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -105,7 +104,6 @@ test "DUP2 (0x81): Duplicate 2nd stack item" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -155,7 +153,6 @@ test "DUP3-DUP5: Various duplications" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -218,7 +215,6 @@ test "DUP6-DUP10: Mid-range duplications" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -284,7 +280,6 @@ test "DUP11-DUP16: High-range duplications" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -355,7 +350,6 @@ test "DUP16 (0x8F): Duplicate 16th stack item (maximum)" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -410,7 +404,6 @@ test "DUP1-DUP16: Gas consumption" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -470,7 +463,6 @@ test "DUP operations: Stack underflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -537,7 +529,6 @@ test "DUP operations: Stack overflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -588,7 +579,6 @@ test "DUP operations: Sequential duplications" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -654,7 +644,6 @@ test "DUP operations: Pattern verification" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -722,7 +711,6 @@ test "DUP operations: Boundary test with exact stack size" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

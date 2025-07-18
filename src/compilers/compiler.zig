@@ -1,6 +1,6 @@
 const std = @import("std");
-const zabi = @import("zabi");
-const zabi_abitypes = zabi.abi.abitypes;
+const primitives = @import("primitives");
+const Abi = primitives.Abi;
 const c = @cImport({
     @cInclude("foundry_wrapper.h");
 });

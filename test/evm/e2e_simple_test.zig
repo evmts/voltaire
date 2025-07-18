@@ -144,7 +144,6 @@ test "E2E: Arithmetic operations" {
 
     frame.gas_remaining = 100_000;
     frame.input = test_contract.input;
-    frame.memory.finalize_root();
 
     // Test ADD operation: 25 + 17 = 42
     try frame.stack.append(25);
@@ -227,7 +226,6 @@ test "E2E: Memory operations" {
 
     frame.gas_remaining = 100_000;
     frame.input = test_contract.input;
-    frame.memory.finalize_root();
 
     // Test MSTORE operation
     try frame.stack.append(0xDEADBEEF);
@@ -309,7 +307,6 @@ test "E2E: Storage operations" {
 
     frame.gas_remaining = 100_000;
     frame.input = test_contract.input;
-    frame.memory.finalize_root();
 
     // Test SSTORE operation
     try frame.stack.append(0x12345678);
@@ -377,7 +374,6 @@ test "E2E: Stack operations" {
 
     frame.gas_remaining = 100_000;
     frame.input = test_contract.input;
-    frame.memory.finalize_root();
 
     // Push some values
     try frame.stack.append(100);
@@ -459,7 +455,6 @@ test "E2E: Gas consumption patterns" {
 
     frame.gas_remaining = 100_000;
     frame.input = test_contract.input;
-    frame.memory.finalize_root();
 
     const initial_gas = frame.gas_remaining;
 

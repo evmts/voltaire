@@ -38,7 +38,6 @@ test "TLOAD (0x5C): Load from transient storage" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -108,7 +107,6 @@ test "TSTORE (0x5D): Store to transient storage" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -182,7 +180,6 @@ test "MCOPY (0x5E): Memory to memory copy" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -278,7 +275,6 @@ test "PUSH0 (0x5F): Push zero onto stack" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 3000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -348,7 +344,6 @@ test "PUSH1 (0x60): Push 1 byte onto stack" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -403,7 +398,6 @@ test "PUSH2 (0x61): Push 2 bytes onto stack" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -457,7 +451,6 @@ test "PUSH3 (0x62): Push 3 bytes onto stack" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -509,7 +502,6 @@ test "Transient storage and memory opcodes: Gas consumption" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -600,7 +592,6 @@ test "MCOPY: Edge cases" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100; // Limited gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -654,12 +645,10 @@ test "Transient storage: Isolation between addresses" {
 
     var frame1 = try Frame.init(allocator, &contract1);
     defer frame1.deinit();
-    frame1.memory.finalize_root();
     frame1.gas_remaining = 10000;
 
     var frame2 = try Frame.init(allocator, &contract2);
     defer frame2.deinit();
-    frame2.memory.finalize_root();
     frame2.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -712,7 +701,6 @@ test "PUSH operations: Boundary conditions" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

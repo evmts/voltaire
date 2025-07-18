@@ -6,7 +6,7 @@ const constants = @import("constants.zig");
 
 /// Returns the size of the memory region visible to the current context.
 pub fn context_size(self: *const Memory) usize {
-    const total_len = self.root_ptr.shared_buffer.items.len;
+    const total_len = self.shared_buffer_ref.items.len;
     if (total_len < self.my_checkpoint) {
         // This indicates a bug or inconsistent state
         return 0;
@@ -26,8 +26,8 @@ pub fn ensure_context_capacity(self: *Memory, min_context_size: usize) MemoryErr
         return MemoryError.MemoryLimitExceeded;
     }
 
-    const root = self.root_ptr;
-    const old_total_buffer_len = root.shared_buffer.items.len;
+    const shared_buffer = self.shared_buffer_ref;
+    const old_total_buffer_len = shared_buffer.items.len;
     const old_total_words = constants.calculate_num_words(old_total_buffer_len);
 
     if (required_total_len <= old_total_buffer_len) {
@@ -40,8 +40,8 @@ pub fn ensure_context_capacity(self: *Memory, min_context_size: usize) MemoryErr
     const new_total_len = required_total_len;
     Log.debug("Memory.ensure_context_capacity: Expanding buffer from {} to {} bytes", .{ old_total_buffer_len, new_total_len });
 
-    if (new_total_len > root.shared_buffer.capacity) {
-        var new_capacity = root.shared_buffer.capacity;
+    if (new_total_len > shared_buffer.capacity) {
+        var new_capacity = shared_buffer.capacity;
         if (new_capacity == 0) new_capacity = 1; // Handle initial zero capacity
         while (new_capacity < new_total_len) {
             const doubled = @mulWithOverflow(new_capacity, 2);
@@ -56,12 +56,12 @@ pub fn ensure_context_capacity(self: *Memory, min_context_size: usize) MemoryErr
             new_capacity = @intCast(self.memory_limit);
         }
         if (new_total_len > new_capacity) return MemoryError.MemoryLimitExceeded;
-        try root.shared_buffer.ensureTotalCapacity(new_capacity);
+        try shared_buffer.ensureTotalCapacity(new_capacity);
     }
 
     // Set new length and zero-initialize the newly added part
-    root.shared_buffer.items.len = new_total_len;
-    @memset(root.shared_buffer.items[old_total_buffer_len..new_total_len], 0);
+    shared_buffer.items.len = new_total_len;
+    @memset(shared_buffer.items[old_total_buffer_len..new_total_len], 0);
 
     const new_total_words = constants.calculate_num_words(new_total_len);
     const words_added = if (new_total_words > old_total_words) new_total_words - old_total_words else 0;

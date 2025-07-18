@@ -27,7 +27,6 @@ test "fuzz_control_pc_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test PC operation
@@ -63,7 +62,6 @@ test "fuzz_control_gas_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     const initial_gas = frame.gas_remaining;
@@ -101,7 +99,6 @@ test "fuzz_control_jumpdest_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test JUMPDEST operation (should be a no-op)

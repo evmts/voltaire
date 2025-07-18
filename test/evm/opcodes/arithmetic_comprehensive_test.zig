@@ -39,7 +39,6 @@ test "STOP (0x00): Halt execution" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -83,7 +82,6 @@ test "ADD (0x01): Basic addition" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test basic addition: 5 + 10 = 15
@@ -126,7 +124,6 @@ test "ADD: Overflow wraps to zero" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test overflow: MAX + 1 = 0
@@ -169,7 +166,6 @@ test "ADD: Large numbers" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test large number addition
@@ -218,7 +214,6 @@ test "MUL (0x02): Basic multiplication" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test basic multiplication: 5 * 10 = 50
@@ -260,7 +255,6 @@ test "MUL: Multiplication by zero" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test multiplication by zero
@@ -302,7 +296,6 @@ test "MUL: Overflow behavior" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test overflow: (2^128) * (2^128) should wrap
@@ -350,7 +343,6 @@ test "SUB (0x03): Basic subtraction" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test basic subtraction: 10 - 5 = 5
@@ -392,7 +384,6 @@ test "SUB: Underflow wraps to max" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test underflow: 0 - 1 = MAX
@@ -438,7 +429,6 @@ test "DIV (0x04): Basic division" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test basic division: 20 / 5 = 4
@@ -480,7 +470,6 @@ test "DIV: Division by zero returns zero" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test division by zero: 100 / 0 = 0
@@ -522,7 +511,6 @@ test "DIV: Integer division truncates" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test truncation: 7 / 3 = 2 (not 2.33...)
@@ -568,7 +556,6 @@ test "SDIV (0x05): Signed division positive" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test positive division: 20 / 5 = 4
@@ -610,7 +597,6 @@ test "SDIV: Signed division negative" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test negative division: -20 / 5 = -4
@@ -655,7 +641,6 @@ test "SDIV: Division by zero returns zero" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test division by zero
@@ -697,7 +682,6 @@ test "SDIV: Edge case MIN / -1" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test MIN / -1 = MIN (special case)
@@ -745,7 +729,6 @@ test "MOD (0x06): Basic modulo" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test basic modulo: 17 % 5 = 2
@@ -787,7 +770,6 @@ test "MOD: Modulo by zero returns zero" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test modulo by zero: 100 % 0 = 0
@@ -833,7 +815,6 @@ test "SMOD (0x07): Signed modulo positive" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test positive modulo: 17 % 5 = 2
@@ -875,7 +856,6 @@ test "SMOD: Signed modulo negative" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test negative modulo: -17 % 5 = -2
@@ -923,7 +903,6 @@ test "ADDMOD (0x08): Basic modular addition" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: (10 + 10) % 8 = 4
@@ -966,7 +945,6 @@ test "ADDMOD: Modulo zero returns zero" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: (10 + 10) % 0 = 0
@@ -1009,7 +987,6 @@ test "ADDMOD: No intermediate overflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test with values that would overflow u256
@@ -1060,7 +1037,6 @@ test "MULMOD (0x09): Basic modular multiplication" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: (10 * 10) % 8 = 4
@@ -1103,7 +1079,6 @@ test "MULMOD: No intermediate overflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test with values that would overflow u256
@@ -1152,7 +1127,6 @@ test "EXP (0x0A): Basic exponentiation" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: 2^8 = 256
@@ -1194,7 +1168,6 @@ test "EXP: Zero exponent" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: 100^0 = 1
@@ -1236,7 +1209,6 @@ test "EXP: Zero base with non-zero exponent" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: 0^10 = 0
@@ -1278,7 +1250,6 @@ test "EXP: Gas consumption scales with exponent size" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Test with large exponent
@@ -1328,7 +1299,6 @@ test "SIGNEXTEND (0x0B): Extend positive byte" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: sign extend 0x7F (positive) from byte 0
@@ -1370,7 +1340,6 @@ test "SIGNEXTEND: Extend negative byte" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: sign extend 0xFF (negative) from byte 0
@@ -1414,7 +1383,6 @@ test "SIGNEXTEND: Extend from higher byte position" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: sign extend 0x00FF from byte 1 (second byte)
@@ -1457,7 +1425,6 @@ test "SIGNEXTEND: Byte position >= 31 returns value unchanged" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: byte position >= 31 returns original value
@@ -1543,8 +1510,7 @@ test "Arithmetic opcodes: Gas consumption" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
-        frame.gas_remaining = 1000;
+            frame.gas_remaining = 1000;
 
         try tc.setup(&frame);
 
@@ -1594,8 +1560,7 @@ test "Arithmetic opcodes: Stack underflow" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
-        frame.gas_remaining = 1000;
+            frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1628,8 +1593,7 @@ test "Arithmetic opcodes: Stack underflow" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
-        frame.gas_remaining = 1000;
+            frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);

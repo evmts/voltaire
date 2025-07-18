@@ -10,31 +10,26 @@ pub fn calculate_num_words(len: usize) usize {
 // Test basic functionality
 test "Memory initialization and basic operations" {
     // Test init with default capacity
-    var mem = try Memory.init_default(testing.allocator);
-    mem.finalize_root();
+    var mem = try Memory.init(testing.allocator, Memory.InitialCapacity, Memory.DefaultMemoryLimit);
     defer mem.deinit();
 
     try testing.expectEqual(@as(usize, 0), mem.context_size());
 
     // Test custom capacity
     var mem2 = try Memory.init(testing.allocator, 8192, Memory.DefaultMemoryLimit);
-    mem2.finalize_root();
     defer mem2.deinit();
 
     try testing.expectEqual(@as(usize, 0), mem2.context_size());
 
     // Test with custom memory limit
-    var mem3 = try Memory.init_default(testing.allocator);
-    mem3.finalize_root();
+    var mem3 = try Memory.init(testing.allocator, Memory.InitialCapacity, 1024);
     defer mem3.deinit();
-    mem3.memory_limit = 1024;
 
     try testing.expectEqual(@as(u64, 1024), mem3.memory_limit);
 }
 
 test "Memory data operations" {
-    var mem = try Memory.init_default(testing.allocator);
-    mem.finalize_root();
+    var mem = try Memory.init(testing.allocator, Memory.InitialCapacity, Memory.DefaultMemoryLimit);
     defer mem.deinit();
 
     // Test set_data and get_slice
@@ -50,8 +45,7 @@ test "Memory data operations" {
 }
 
 test "Memory 32-byte data operations" {
-    var mem = try Memory.init_default(testing.allocator);
-    mem.finalize_root();
+    var mem = try Memory.init(testing.allocator, Memory.InitialCapacity, Memory.DefaultMemoryLimit);
     defer mem.deinit();
 
     // Test 32-byte data using set_data and get_slice
@@ -75,8 +69,7 @@ test "Memory 32-byte data operations" {
 }
 
 test "Memory U256 read operations" {
-    var mem = try Memory.init_default(testing.allocator);
-    mem.finalize_root();
+    var mem = try Memory.init(testing.allocator, Memory.InitialCapacity, Memory.DefaultMemoryLimit);
     defer mem.deinit();
 
     // Test reading from zero-initialized memory
@@ -86,8 +79,7 @@ test "Memory U256 read operations" {
 }
 
 test "Memory slice operations" {
-    var mem = try Memory.init_default(testing.allocator);
-    mem.finalize_root();
+    var mem = try Memory.init(testing.allocator, Memory.InitialCapacity, Memory.DefaultMemoryLimit);
     defer mem.deinit();
 
     // Test setData and getSlice
@@ -106,8 +98,7 @@ test "Memory slice operations" {
 }
 
 test "Memory setDataBounded" {
-    var mem = try Memory.init_default(testing.allocator);
-    mem.finalize_root();
+    var mem = try Memory.init(testing.allocator, Memory.InitialCapacity, Memory.DefaultMemoryLimit);
     defer mem.deinit();
 
     const data = [_]u8{ 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -135,8 +126,7 @@ test "Memory setDataBounded" {
 }
 
 test "Memory expansion and gas calculation" {
-    var mem = try Memory.init_default(testing.allocator);
-    mem.finalize_root();
+    var mem = try Memory.init(testing.allocator, Memory.InitialCapacity, Memory.DefaultMemoryLimit);
     defer mem.deinit();
 
     // Test word calculation
@@ -153,10 +143,8 @@ test "Memory expansion and gas calculation" {
 }
 
 test "Memory limit enforcement" {
-    var mem = try Memory.init_default(testing.allocator);
-    mem.finalize_root();
+    var mem = try Memory.init(testing.allocator, Memory.InitialCapacity, 1024);
     defer mem.deinit();
-    mem.memory_limit = 1024;
 
     // Should succeed
     _ = try mem.ensure_context_capacity(1024);
@@ -166,6 +154,35 @@ test "Memory limit enforcement" {
 
     // Size should remain unchanged
     try testing.expectEqual(@as(usize, 1024), mem.context_size());
+}
+
+test "Memory child memory sharing" {
+    // Test root memory and child memory sharing the same buffer
+    var root_mem = try Memory.init(testing.allocator, Memory.InitialCapacity, Memory.DefaultMemoryLimit);
+    defer root_mem.deinit();
+
+    // Write some data to root memory
+    const test_data = "Hello, shared memory!";
+    try root_mem.set_data(0, test_data);
+    try testing.expectEqual(@as(usize, test_data.len), root_mem.context_size());
+
+    // Create child memory starting at checkpoint 10
+    var child_mem = try root_mem.init_child_memory(10);
+    defer child_mem.deinit();
+
+    // Child should see shared buffer but from its checkpoint
+    try testing.expectEqual(@as(usize, test_data.len - 10), child_mem.context_size());
+
+    // Child can read data that was written by root (after its checkpoint)
+    const slice = try child_mem.get_slice(0, 5); // Reading from child's offset 0 = root's offset 10
+    try testing.expectEqualSlices(u8, "red m", slice);
+
+    // Child can write data that root can see
+    try child_mem.set_data(5, " world");
+    
+    // Root should see the child's write
+    const root_slice = try root_mem.get_slice(15, 6); // Root's offset 15 = child's offset 5
+    try testing.expectEqualSlices(u8, " world", root_slice);
 }
 
 test "Memory word calculation" {

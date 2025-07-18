@@ -39,7 +39,6 @@ test "AND (0x16): Basic bitwise AND" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: 0xFF00 & 0x0FF0 = 0x0F00
@@ -82,7 +81,6 @@ test "AND: All zeros" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: 0xFFFF & 0x0000 = 0x0000
@@ -124,7 +122,6 @@ test "AND: All ones" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: MAX & MAX = MAX
@@ -167,7 +164,6 @@ test "AND: Masking operations" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: Extract lower byte with mask
@@ -213,7 +209,6 @@ test "OR (0x17): Basic bitwise OR" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: 0xF000 | 0x00F0 = 0xF0F0
@@ -255,7 +250,6 @@ test "OR: With zero" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: 0x1234 | 0x0000 = 0x1234
@@ -297,7 +291,6 @@ test "OR: Setting bits" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: Set specific bits
@@ -343,7 +336,6 @@ test "XOR (0x18): Basic bitwise XOR" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: 0xFF00 ^ 0x0FF0 = 0xF0F0
@@ -385,7 +377,6 @@ test "XOR: Self XOR equals zero" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: X ^ X = 0
@@ -427,7 +418,6 @@ test "XOR: Toggle bits" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: Toggle specific bits
@@ -473,7 +463,6 @@ test "NOT (0x19): Basic bitwise NOT" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: NOT 0 = MAX
@@ -514,7 +503,6 @@ test "NOT: Invert all bits" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: NOT MAX = 0
@@ -555,7 +543,6 @@ test "NOT: Double NOT returns original" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: NOT(NOT(X)) = X
@@ -607,7 +594,6 @@ test "BYTE (0x1A): Extract first byte" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: Extract byte 0 (most significant) from 0x123456...
@@ -649,7 +635,6 @@ test "BYTE: Extract last byte" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: Extract byte 31 (least significant) from value
@@ -691,7 +676,6 @@ test "BYTE: Out of bounds returns zero" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test: Byte index >= 32 returns 0
@@ -733,7 +717,6 @@ test "BYTE: Extract from full u256" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Create a value with known byte pattern
@@ -840,7 +823,6 @@ test "Bitwise opcodes: Gas consumption" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         try tc.setup(&frame);
@@ -891,7 +873,6 @@ test "Bitwise opcodes: Stack underflow" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -925,7 +906,6 @@ test "Bitwise opcodes: Stack underflow" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -967,7 +947,6 @@ test "Bitwise operations: Large values" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test with maximum values
@@ -1012,7 +991,6 @@ test "BYTE: Byte extraction patterns" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Create a value with distinct byte pattern

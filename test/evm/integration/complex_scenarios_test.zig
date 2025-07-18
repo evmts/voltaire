@@ -106,7 +106,6 @@ test "complex: fibonacci calculation" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -187,7 +186,6 @@ test "complex: storage-based counter with access patterns" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -250,7 +248,6 @@ test "complex: memory expansion with large offsets" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -341,7 +338,6 @@ test "complex: nested conditionals with multiple jumps" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -414,7 +410,6 @@ test "complex: event emission with multiple topics" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -478,7 +473,6 @@ test "complex: keccak256 hash computation" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -635,7 +629,6 @@ test "complex: bit manipulation operations" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -782,7 +775,6 @@ test "complex: modular arithmetic edge cases" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);

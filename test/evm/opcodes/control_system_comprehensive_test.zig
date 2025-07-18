@@ -44,7 +44,6 @@ test "RETURN (0xF3): Return data from execution" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Write data to memory
@@ -102,7 +101,6 @@ test "RETURN: Empty return data" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Execute push operations
@@ -158,7 +156,6 @@ test "REVERT (0xFD): Revert with data" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Write revert reason to memory
@@ -216,7 +213,6 @@ test "REVERT: Empty revert data" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Execute instructions
@@ -270,7 +266,6 @@ test "INVALID (0xFE): Consume all gas and fail" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const gas_before = frame.gas_remaining;
@@ -345,7 +340,6 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Execute PUSH20
@@ -390,7 +384,6 @@ test "SELFDESTRUCT: Static call protection" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Set static mode
@@ -435,7 +428,6 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Ensure beneficiary is cold
@@ -490,7 +482,6 @@ test "Control opcodes: Gas consumption" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Return large data requiring memory expansion
@@ -541,7 +532,6 @@ test "RETURN/REVERT: Large memory offset" {
 
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 10000;
 
         // Push large offset
@@ -594,7 +584,6 @@ test "RETURN/REVERT: Stack underflow" {
 
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 1000;
 
         // Empty stack
@@ -638,7 +627,6 @@ test "Control flow interaction: Call with REVERT" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Push CALL parameters in reverse order (stack is LIFO)

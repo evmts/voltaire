@@ -1,5 +1,4 @@
 const std = @import("std");
-const Log = @import("../log.zig");
 
 /// High-performance EVM stack implementation with fixed capacity.
 ///
@@ -66,10 +65,10 @@ size: usize = 0,
 pub fn append(self: *Stack, value: u256) Error!void {
     if (self.size >= CAPACITY) {
         @branchHint(.cold);
-        Log.debug("Stack.append: Stack overflow, size={}, capacity={}", .{ self.size, CAPACITY });
+        // Debug logging removed for fuzz testing compatibility
         return Error.StackOverflow;
     }
-    Log.debug("Stack.append: Pushing value={}, new_size={}", .{ value, self.size + 1 });
+    // Debug logging removed for fuzz testing compatibility
     self.data[self.size] = value;
     self.size += 1;
 }
@@ -103,13 +102,13 @@ pub fn append_unsafe(self: *Stack, value: u256) void {
 pub fn pop(self: *Stack) Error!u256 {
     if (self.size == 0) {
         @branchHint(.cold);
-        Log.debug("Stack.pop: Stack underflow, size=0", .{});
+        // Debug logging removed for fuzz testing compatibility
         return Error.StackUnderflow;
     }
     self.size -= 1;
     const value = self.data[self.size];
     self.data[self.size] = 0;
-    Log.debug("Stack.pop: Popped value={}, new_size={}", .{ value, self.size });
+    // Debug logging removed for fuzz testing compatibility
     return value;
 }
 

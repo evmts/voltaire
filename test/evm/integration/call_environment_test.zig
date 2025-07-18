@@ -52,7 +52,6 @@ test "Integration: Call with value transfer and balance check" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -140,7 +139,6 @@ test "Integration: Environment opcodes in context" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -225,7 +223,6 @@ test "Integration: CREATE with init code from memory" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Build init code that stores a value and returns runtime code
     // PUSH1 42, PUSH1 0, SSTORE (store 42 at slot 0)
@@ -317,7 +314,6 @@ test "Integration: DELEGATECALL preserves context" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -380,7 +376,6 @@ test "Integration: STATICCALL prevents state changes" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -443,7 +438,6 @@ test "Integration: Call depth limit handling" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -513,7 +507,6 @@ test "Integration: Return data handling across calls" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -598,7 +591,6 @@ test "Integration: Gas forwarding in calls" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);

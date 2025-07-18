@@ -41,7 +41,6 @@ test "Invalid Opcodes: 0x21-0x24 should fail" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 1000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Test each invalid opcode from 0x21 to 0x24
     const invalid_opcodes = [_]u8{ 0x21, 0x22, 0x23, 0x24 };
@@ -100,7 +99,6 @@ test "Invalid Opcodes: Full 0x21-0x2F range" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 1000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Test all opcodes from 0x21 to 0x2F
     var opcode: u8 = 0x21;

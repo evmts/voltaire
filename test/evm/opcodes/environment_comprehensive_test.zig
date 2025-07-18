@@ -39,7 +39,6 @@ test "ADDRESS (0x30): Push current contract address" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -80,7 +79,6 @@ test "BALANCE (0x31): Get account balance" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -144,7 +142,6 @@ test "ORIGIN (0x32): Get transaction origin" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -190,7 +187,6 @@ test "CALLER (0x33): Get immediate caller" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -240,7 +236,6 @@ test "CALLVALUE (0x34): Get msg.value" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -289,7 +284,6 @@ test "CALLDATALOAD (0x35): Load 32 bytes from calldata" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -369,7 +363,6 @@ test "CALLDATASIZE (0x36): Get calldata size" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -417,7 +410,6 @@ test "CALLDATACOPY (0x37): Copy calldata to memory" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -505,7 +497,6 @@ test "CODESIZE (0x38): Get code size" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -554,7 +545,6 @@ test "CODECOPY (0x39): Copy code to memory" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -635,7 +625,6 @@ test "GASPRICE (0x3A): Get gas price" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -680,7 +669,6 @@ test "Environmental opcodes: Gas consumption" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -742,7 +730,6 @@ test "Environmental opcodes: Stack underflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -791,7 +778,6 @@ test "Environmental opcodes: Memory expansion limits" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100; // Limited gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -833,7 +819,6 @@ test "BALANCE: EIP-2929 cold/warm account access" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

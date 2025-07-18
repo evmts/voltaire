@@ -32,7 +32,6 @@ test "fuzz_crypto_keccak256_empty" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test KECCAK256 of empty data: stack order [size, offset] where offset is on top
@@ -73,7 +72,6 @@ test "fuzz_crypto_keccak256_basic" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Set up test data in memory
@@ -122,7 +120,6 @@ test "fuzz_crypto_keccak256_edge_cases" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test with single byte

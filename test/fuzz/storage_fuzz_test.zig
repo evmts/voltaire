@@ -27,7 +27,6 @@ test "fuzz_storage_sload_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     const slot: u256 = 0x123456789ABCDEF;
@@ -67,7 +66,6 @@ test "fuzz_storage_sstore_sload_roundtrip" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     const slot: u256 = 0x123456789ABCDEF;
@@ -113,7 +111,6 @@ test "fuzz_storage_tload_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     const slot: u256 = 0x123456789ABCDEF;
@@ -153,7 +150,6 @@ test "fuzz_storage_tstore_tload_roundtrip" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     const slot: u256 = 0x123456789ABCDEF;

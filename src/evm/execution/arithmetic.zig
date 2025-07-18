@@ -761,7 +761,6 @@ pub fn fuzz_arithmetic_operations(allocator: std.mem.Allocator, operations: []co
     for (operations) |op| {
         var memory = try @import("../memory/memory.zig").init_default(allocator);
         defer memory.deinit();
-        memory.finalize_root();
         
         var db = @import("../state/memory_database.zig").init(allocator);
         defer db.deinit();

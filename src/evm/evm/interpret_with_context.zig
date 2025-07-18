@@ -26,7 +26,6 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
     var pc: usize = 0;
     var frame = try Frame.init(self.allocator, contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.is_static = self.read_only;
     frame.depth = @as(u32, @intCast(self.depth));
     frame.input = input;

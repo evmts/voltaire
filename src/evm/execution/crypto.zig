@@ -94,7 +94,6 @@ pub fn fuzz_crypto_operations(allocator: std.mem.Allocator, operations: []const 
     for (operations) |op| {
         var memory = try Memory.init_default(allocator);
         defer memory.deinit();
-        memory.finalize_root();
         
         var db = MemoryDatabase.init(allocator);
         defer db.deinit();

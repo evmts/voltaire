@@ -38,7 +38,6 @@ test "MSIZE (0x59): Get current memory size" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -124,7 +123,6 @@ test "GAS (0x5A): Get remaining gas" {
     for (test_cases) |initial_gas| {
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
         frame.gas_remaining = initial_gas;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -192,7 +190,6 @@ test "JUMPDEST (0x5B): Mark valid jump destination" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -256,7 +253,6 @@ test "MSIZE, GAS, JUMPDEST: Gas consumption" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -314,7 +310,6 @@ test "MSIZE: Memory expansion scenarios" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -367,7 +362,6 @@ test "GAS: Low gas scenarios" {
     // Test with exactly enough gas for GAS opcode
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 2;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -431,7 +425,6 @@ test "JUMPDEST: Code analysis integration" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -475,7 +468,6 @@ test "Stack operations: MSIZE and GAS push exactly one value" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

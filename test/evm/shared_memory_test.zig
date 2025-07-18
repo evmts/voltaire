@@ -8,8 +8,6 @@ test "Memory: basic initialization" {
     // Test default initialization
     var mem = try Memory.init_default(allocator);
     defer mem.deinit();
-    mem.finalize_root();
-    mem.finalize_root();
 
     try testing.expectEqual(@as(usize, 0), mem.context_size());
     try testing.expectEqual(@as(usize, 0), mem.my_checkpoint);
@@ -23,7 +21,6 @@ test "Memory: initialization with custom capacity and limit" {
 
     var mem = try Memory.init(allocator, 8192, 1024 * 1024);
     defer mem.deinit();
-    mem.finalize_root();
 
     try testing.expectEqual(@as(usize, 0), mem.context_size());
     try testing.expectEqual(@as(u64, 1024 * 1024), mem.memory_limit);
@@ -35,7 +32,6 @@ test "Memory: child context creation" {
 
     var root = try Memory.init_default(allocator);
     defer root.deinit();
-    root.finalize_root();
 
     // Write some data to root
     try root.set_word(0, [_]u8{0x11} ** 20);
@@ -59,7 +55,6 @@ test "Memory: context operations - basic read/write" {
 
     var root = try Memory.init_default(allocator);
     defer root.deinit();
-    root.finalize_root();
 
     // Test byte operations
     try root.set_byte(10, 0xAB);
@@ -81,7 +76,6 @@ test "Memory: child context isolation" {
 
     var root = try Memory.init_default(allocator);
     defer root.deinit();
-    root.finalize_root();
 
     // Root writes data
     try root.set_word(0, [_]u8{0x11} ** 20);
@@ -109,7 +103,6 @@ test "Memory: revert child context" {
 
     var root = try Memory.init_default(allocator);
     defer root.deinit();
-    root.finalize_root();
 
     // Root writes data
     try root.set_word(0, [_]u8{0x11} ** 20);
@@ -138,7 +131,6 @@ test "Memory: commit child context" {
 
     var root = try Memory.init_default(allocator);
     defer root.deinit();
-    root.finalize_root();
 
     // Root writes data
     try root.set_word(0, [_]u8{0x11} ** 20);
@@ -165,7 +157,6 @@ test "Memory: nested contexts" {
 
     var root = try Memory.init_default(allocator);
     defer root.deinit();
-    root.finalize_root();
 
     // Root -> Child -> Grandchild
     try root.set_byte(0, 0xAA);
@@ -200,7 +191,6 @@ test "Memory: memory limit enforcement" {
 
     var mem = try Memory.init(allocator, 1024, 2048);
     defer mem.deinit();
-    mem.finalize_root();
 
     // Should succeed - within limit
     try mem.resize_context(1024);
@@ -219,7 +209,6 @@ test "Memory: gas calculation with ensure_context_capacity" {
 
     var mem = try Memory.init_default(allocator);
     defer mem.deinit();
-    mem.finalize_root();
 
     // First expansion - 0 to 32 bytes = 1 word
     const words1 = try mem.ensure_context_capacity(32);
@@ -243,7 +232,6 @@ test "Memory: data copy operations" {
 
     var mem = try Memory.init_default(allocator);
     defer mem.deinit();
-    mem.finalize_root();
 
     // Test set_data
     const data = "Hello, Memory!";
@@ -273,7 +261,6 @@ test "Memory: memory copy (MCOPY)" {
 
     var mem = try Memory.init_default(allocator);
     defer mem.deinit();
-    mem.finalize_root();
 
     // Set up source data
     const src_data = [_]u8{ 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -303,7 +290,6 @@ test "Memory: unsafe operations" {
 
     var mem = try Memory.init_default(allocator);
     defer mem.deinit();
-    mem.finalize_root();
 
     // Ensure some capacity first
     _ = try mem.ensure_context_capacity(100);
@@ -329,7 +315,6 @@ test "Memory: snapshot and restore" {
 
     var mem = try Memory.init_default(allocator);
     defer mem.deinit();
-    mem.finalize_root();
 
     // Set up initial state
     try mem.set_word(0, [_]u8{0x11} ** 20);
@@ -358,7 +343,6 @@ test "Memory: hex conversion" {
 
     var mem = try Memory.init_default(allocator);
     defer mem.deinit();
-    mem.finalize_root();
 
     try mem.set_data(0, &[_]u8{ 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF });
 
@@ -373,7 +357,6 @@ test "Memory: word-aligned resize" {
 
     var mem = try Memory.init_default(allocator);
     defer mem.deinit();
-    mem.finalize_root();
 
     // Resize to 33 bytes should round up to 64 (2 words)
     try mem.resize_context_word_aligned(33);
@@ -389,7 +372,6 @@ test "Memory: error cases" {
 
     var mem = try Memory.init_default(allocator);
     defer mem.deinit();
-    mem.finalize_root();
 
     // Read beyond bounds
     try testing.expectError(Memory.MemoryError.InvalidOffset, mem.get_byte(10));
@@ -410,7 +392,6 @@ test "Memory: compatibility aliases" {
 
     var mem = try Memory.init_default(allocator);
     defer mem.deinit();
-    mem.finalize_root();
 
     // Test size() alias
     try mem.resize(100);
@@ -419,7 +400,6 @@ test "Memory: compatibility aliases" {
     // Test is_empty() alias
     var mem2 = try Memory.init_default(allocator);
     defer mem2.deinit();
-    mem2.finalize_root();
     try testing.expect(mem2.is_empty());
     try mem2.set_byte(0, 1);
     try testing.expect(!mem2.is_empty());

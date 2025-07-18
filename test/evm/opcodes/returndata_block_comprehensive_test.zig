@@ -52,7 +52,6 @@ test "EXTCODESIZE (0x3B): Get external code size" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -116,7 +115,6 @@ test "EXTCODECOPY (0x3C): Copy external code to memory" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -185,7 +183,6 @@ test "RETURNDATASIZE (0x3D): Get return data size" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -239,7 +236,6 @@ test "RETURNDATACOPY (0x3E): Copy return data to memory" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const return_data = [_]u8{
@@ -310,7 +306,6 @@ test "EXTCODEHASH (0x3F): Get external code hash" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -382,7 +377,6 @@ test "BLOCKHASH (0x40): Get block hash" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -472,7 +466,6 @@ test "COINBASE (0x41): Get block coinbase" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -536,8 +529,7 @@ test "TIMESTAMP (0x42): Get block timestamp" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
-        frame.gas_remaining = 1000;
+            frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -601,8 +593,7 @@ test "NUMBER (0x43): Get block number" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
-        frame.gas_remaining = 1000;
+            frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -665,8 +656,7 @@ test "PREVRANDAO (0x44): Get previous RANDAO" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
-        frame.gas_remaining = 1000;
+            frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -715,7 +705,6 @@ test "EXTCODE* opcodes: Gas consumption with EIP-2929" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -763,7 +752,6 @@ test "Block opcodes: Gas consumption" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const simple_opcodes = [_]struct {
@@ -833,7 +821,6 @@ test "RETURNDATACOPY: Out of bounds access" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const return_data = [_]u8{ 0x42, 0x43, 0x44, 0x45 };
@@ -897,7 +884,6 @@ test "Memory copy opcodes: Memory expansion" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100; // Limited gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -957,7 +943,6 @@ test "BLOCKHASH: Edge cases" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

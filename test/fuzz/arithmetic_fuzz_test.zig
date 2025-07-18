@@ -27,7 +27,6 @@ test "fuzz_arithmetic_basic_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test ADD operation
@@ -66,7 +65,6 @@ test "fuzz_arithmetic_overflow_cases" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test ADD with max values (should wrap around)
@@ -105,7 +103,6 @@ test "fuzz_arithmetic_division_by_zero" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test DIV by zero
@@ -144,7 +141,6 @@ test "fuzz_arithmetic_modulo_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test MOD operation: 10 % 3 = 1

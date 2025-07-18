@@ -44,7 +44,6 @@ test "Integration: contract creation and initialization" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Create simple init code that stores a value and returns runtime code
     // PUSH1 0x42 PUSH1 0x00 SSTORE   (store 0x42 at slot 0)
@@ -122,7 +121,6 @@ test "Integration: inter-contract calls" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Set up accounts
     try vm.setBalance(contract_address, 10000);
@@ -200,7 +198,6 @@ test "Integration: delegatecall context preservation" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 50000;
-    frame.memory.finalize_root();
     frame.value = 1000;
 
     // Prepare call data
@@ -271,7 +268,6 @@ test "Integration: staticcall restrictions" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 50000;
-    frame.memory.finalize_root();
 
     // Set up for STATICCALL
     vm.call_result = .{
@@ -355,7 +351,6 @@ test "Integration: CREATE2 deterministic deployment" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Simple init code
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }; // PUSH1 0 PUSH1 0 RETURN
@@ -433,7 +428,6 @@ test "Integration: selfdestruct with balance transfer" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Set up contract with balance
     const contract_balance: u256 = 5000;
@@ -490,7 +484,6 @@ test "Integration: call depth limit enforcement" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Set depth to maximum
     frame.depth = 1024;
@@ -560,7 +553,6 @@ test "Integration: return data buffer management" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 50000;
-    frame.memory.finalize_root();
 
     // Initial state - no return data
     const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);

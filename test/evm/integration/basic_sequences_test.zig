@@ -42,7 +42,6 @@ test "Integration: arithmetic calculation sequence" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Simulate: (5 + 3) * 2 - 1 = 15
 
@@ -106,7 +105,6 @@ test "Integration: stack manipulation with DUP and SWAP" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Push initial values
     try frame.stack.append(10);
@@ -176,7 +174,6 @@ test "Integration: memory to storage workflow" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -252,7 +249,6 @@ test "Integration: conditional branching" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -321,7 +317,6 @@ test "Integration: hash and compare workflow" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -417,7 +412,6 @@ test "Integration: call data processing" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
     frame.input = &call_data;
 
     // Execute opcodes through jump table
@@ -486,7 +480,6 @@ test "Integration: gas tracking through operations" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -559,7 +552,6 @@ test "Integration: error handling in sequences" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -615,7 +607,6 @@ test "Integration: transient storage usage" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);

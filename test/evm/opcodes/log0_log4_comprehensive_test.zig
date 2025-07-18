@@ -44,7 +44,6 @@ test "LOG0 (0xA0): Emit log with no topics" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Write some data to memory
@@ -138,7 +137,6 @@ test "LOG1 (0xA1): Emit log with one topic" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Write some data to memory at offset 32
@@ -220,7 +218,6 @@ test "LOG2-LOG4: Multiple topics" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Write test data to memory
@@ -324,7 +321,6 @@ test "LOG0-LOG4: Gas consumption" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -409,7 +405,6 @@ test "LOG operations: Static call protection" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Set static mode
@@ -475,7 +470,6 @@ test "LOG operations: Stack underflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -533,7 +527,6 @@ test "LOG operations: Empty data" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -585,7 +578,6 @@ test "LOG operations: Large memory offset" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Push large offset and size (bottom to top: size, offset)
@@ -717,7 +709,6 @@ test "LOG operations: ERC20 Transfer event pattern" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Write amount to memory (1000 tokens = 0x3E8)
@@ -803,7 +794,6 @@ test "LOG operations: Multiple logs in sequence" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Write data to memory

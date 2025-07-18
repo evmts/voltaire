@@ -40,7 +40,6 @@ test "Integration: Memory operations with arithmetic" {
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
     defer frame.deinit();
 
     // Store result of arithmetic operation in memory
@@ -99,7 +98,6 @@ test "Integration: Storage with conditional updates" {
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
     defer frame.deinit();
 
     // Set initial storage value
@@ -175,7 +173,6 @@ test "Integration: Memory copy operations" {
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -242,7 +239,6 @@ test "Integration: Transient storage with arithmetic" {
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -312,7 +308,6 @@ test "Integration: MSTORE8 with bitwise operations" {
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -368,7 +363,6 @@ test "Integration: Storage slot calculation" {
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 30000;
-    frame.memory.finalize_root();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -434,7 +428,6 @@ test "Integration: Memory expansion tracking" {
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -509,7 +502,6 @@ test "Integration: Cold/warm storage access patterns" {
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);

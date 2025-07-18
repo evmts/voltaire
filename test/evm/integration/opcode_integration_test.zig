@@ -64,7 +64,6 @@ test "integration: simple arithmetic sequence" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -120,7 +119,6 @@ test "integration: memory operations sequence" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -177,7 +175,6 @@ test "integration: storage operations sequence" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 50000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -234,7 +231,6 @@ test "integration: control flow with jumps" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -292,7 +288,6 @@ test "integration: environment access sequence" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -351,7 +346,6 @@ test "integration: stack operations sequence" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -403,7 +397,6 @@ test "integration: return data handling" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -459,7 +452,6 @@ test "integration: revert with reason" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -515,7 +507,6 @@ test "integration: gas consumption tracking" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = initial_gas;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -566,7 +557,6 @@ test "integration: out of gas scenario" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 5;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -612,7 +602,6 @@ test "integration: invalid opcode handling" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -667,7 +656,6 @@ test "integration: transient storage operations" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -723,7 +711,6 @@ test "integration: logging operations" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -784,7 +771,6 @@ test "integration: cold/warm storage access (EIP-2929)" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = initial_gas;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -839,7 +825,6 @@ test "integration: push0 operation (Shanghai)" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -930,7 +915,6 @@ test "integration: mcopy operation (Cancun)" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);

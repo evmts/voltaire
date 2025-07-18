@@ -44,7 +44,6 @@ test "CREATE (0xF0): Basic contract creation with valid init code" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
 
     // Set balance for the contract address in VM state (needed for CREATE)
@@ -106,7 +105,6 @@ test "CREATE: Empty init code creates empty contract" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
 
     // Push CREATE parameters for empty init code
@@ -149,7 +147,6 @@ test "CREATE: Static call protection" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Set static mode
@@ -193,7 +190,6 @@ test "CREATE: Depth limit enforcement" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Set depth to maximum
@@ -242,7 +238,6 @@ test "CREATE: EIP-3860 initcode size limit (Shanghai+)" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Push parameters with oversized init code
@@ -286,7 +281,6 @@ test "CREATE: EIP-3860 initcode word gas cost" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Write 64 bytes of init code (2 words)
@@ -334,7 +328,6 @@ test "CREATE: Memory expansion gas cost" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Initialize memory at high offset to test expansion
@@ -385,7 +378,6 @@ test "CREATE: Stack underflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Push only 2 values (need 3)
@@ -429,7 +421,6 @@ test "CREATE2 (0xF5): Deterministic address generation" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
 
     // Write init code to memory
@@ -481,7 +472,6 @@ test "CREATE2: Same parameters produce same address" {
 
     var frame1 = try Frame.init(allocator, &contract1);
     defer frame1.deinit();
-    frame1.memory.finalize_root();
     frame1.gas_remaining = 1000000;
 
     _ = try frame1.memory.set_data(0, &init_code);
@@ -511,7 +501,6 @@ test "CREATE2: Same parameters produce same address" {
 
     var frame2 = try Frame.init(allocator, &contract2);
     defer frame2.deinit();
-    frame2.memory.finalize_root();
     frame2.gas_remaining = 1000000;
 
     _ = try frame2.memory.set_data(0, &init_code);
@@ -558,7 +547,6 @@ test "CREATE2: Additional gas for keccak256 hashing" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Large init code to test hash cost
@@ -610,7 +598,6 @@ test "CALL (0xF1): Basic external call" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Write call data to memory
@@ -662,7 +649,6 @@ test "CALL: Value transfer in static context fails" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Set static mode
@@ -711,7 +697,6 @@ test "CALL: Cold address access (EIP-2929)" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Clear access list to ensure cold access
@@ -762,7 +747,6 @@ test "CALL: Return data handling" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Pre-expand memory for return data
@@ -817,7 +801,6 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Push CALLCODE parameters (same as CALL)
@@ -869,7 +852,6 @@ test "DELEGATECALL (0xF4): Execute with current context (no value transfer)" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Push DELEGATECALL parameters (no value parameter)
@@ -920,7 +902,6 @@ test "STATICCALL (0xFA): Read-only external call" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Push STATICCALL parameters (no value parameter)
@@ -971,7 +952,6 @@ test "RETURN (0xF3): Return data from execution" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Write return data to memory
@@ -1018,7 +998,6 @@ test "RETURN: Empty return data" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Push parameters for empty return
@@ -1060,7 +1039,6 @@ test "RETURN: Memory expansion gas cost" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Return large data requiring memory expansion
@@ -1108,7 +1086,6 @@ test "REVERT (0xFD): Revert with error data" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Write revert reason to memory
@@ -1155,7 +1132,6 @@ test "REVERT: Empty revert data" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Push parameters for empty revert
@@ -1201,7 +1177,6 @@ test "INVALID (0xFE): Consume all gas and fail" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const gas_before = frame.gas_remaining;
@@ -1243,7 +1218,6 @@ test "INVALID: No stack manipulation" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Put some values on stack
@@ -1292,7 +1266,6 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Push beneficiary address
@@ -1332,7 +1305,6 @@ test "SELFDESTRUCT: Static call protection" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Set static mode
@@ -1375,7 +1347,6 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Clear access list to ensure cold access
@@ -1443,7 +1414,6 @@ test "System opcodes: Stack underflow validation" {
 
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 100000;
 
         // Push insufficient items (one less than required)
@@ -1495,7 +1465,6 @@ test "System opcodes: Depth limit enforcement" {
 
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 100000;
 
         // Set depth to maximum
@@ -1563,7 +1532,6 @@ test "System opcodes: Gas consumption verification" {
 
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 1000000;
 
         // Write init code if needed
@@ -1624,7 +1592,6 @@ test "System opcodes: CREATE followed by CALL" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
 
     // CREATE empty contract
@@ -1680,7 +1647,6 @@ test "System opcodes: Nested STATICCALL restrictions" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Set static mode (simulating we're already in a static call)
@@ -1733,7 +1699,6 @@ test "System opcodes: REVERT vs RETURN data handling" {
 
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 10000;
 
         _ = try test_frame.memory.set_data(0, test_data);
@@ -1766,7 +1731,6 @@ test "System opcodes: REVERT vs RETURN data handling" {
 
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 10000;
 
         _ = try test_frame.memory.set_data(0, test_data);
@@ -1815,7 +1779,6 @@ test "System opcodes: Large memory offsets" {
 
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 10000;
 
         // Push parameters with very large offset
@@ -1870,7 +1833,6 @@ test "System opcodes: Zero gas scenarios" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100;
 
     // Consume almost all gas first
@@ -1932,7 +1894,6 @@ test "System opcodes: Hardfork feature availability" {
 
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 100000;
 
         // Push sufficient parameters
@@ -1978,7 +1939,6 @@ test "System opcodes: Hardfork feature availability" {
 
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 100000;
 
         // Push CREATE2 parameters
@@ -2029,7 +1989,6 @@ test "System opcodes: Memory bounds checking" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
 
     // Try to access memory beyond reasonable limits
@@ -2079,7 +2038,6 @@ test "System opcodes: Gas optimization for warm addresses" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Push CALL parameters with warm address

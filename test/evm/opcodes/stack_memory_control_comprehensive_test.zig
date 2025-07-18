@@ -38,7 +38,6 @@ test "POP (0x50): Remove top stack item" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -97,7 +96,6 @@ test "MLOAD (0x51): Load word from memory" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -153,7 +151,6 @@ test "MSTORE (0x52): Store 32 bytes to memory" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -218,7 +215,6 @@ test "MSTORE8 (0x53): Store single byte to memory" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -283,7 +279,6 @@ test "SLOAD (0x54): Load from storage" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 50000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -352,7 +347,6 @@ test "SSTORE (0x55): Store to storage" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 30000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -424,7 +418,6 @@ test "JUMP (0x56): Unconditional jump" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -486,7 +479,6 @@ test "JUMPI (0x57): Conditional jump" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -547,7 +539,6 @@ test "PC (0x58): Get program counter" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -605,7 +596,6 @@ test "Stack, Memory, and Control opcodes: Gas consumption" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -632,7 +622,6 @@ test "Stack, Memory, and Control opcodes: Gas consumption" {
     // Test MSTORE gas (with fresh memory to avoid interference from MLOAD)
     var frame2 = try Frame.init(allocator, &contract);
     defer frame2.deinit();
-    frame2.memory.finalize_root();
     frame2.gas_remaining = 1000;
     const state_ptr2: *Evm.Operation.State = @ptrCast(&frame2);
 
@@ -646,7 +635,6 @@ test "Stack, Memory, and Control opcodes: Gas consumption" {
     // Test MSTORE8 gas (with fresh memory)
     var frame3 = try Frame.init(allocator, &contract);
     defer frame3.deinit();
-    frame3.memory.finalize_root();
     frame3.gas_remaining = 1000;
     const state_ptr3: *Evm.Operation.State = @ptrCast(&frame3);
 
@@ -692,7 +680,6 @@ test "SLOAD/SSTORE: EIP-2929 gas costs" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 50000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -745,7 +732,6 @@ test "Invalid opcode 0x4F" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -782,7 +768,6 @@ test "Memory operations: Large offset handling" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100; // Limited gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -844,7 +829,6 @@ test "Jump operations: Code analysis integration" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

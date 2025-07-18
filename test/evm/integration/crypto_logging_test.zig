@@ -45,7 +45,6 @@ test "Integration: SHA3 with dynamic data" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Store some data in memory to hash
     const data1: u256 = 0x1234567890ABCDEF;
@@ -130,7 +129,6 @@ test "Integration: Logging with topics and data" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Store event data in memory
     const event_data = [_]u8{
@@ -201,7 +199,6 @@ test "Integration: LOG operations with multiple topics" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Prepare log data
     const log_data = "Hello, Ethereum!";
@@ -275,7 +272,6 @@ test "Integration: Hash-based address calculation" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Simulate CREATE2 address calculation
     // address = keccak256(0xff ++ deployer ++ salt ++ keccak256(init_code))[12:]
@@ -358,7 +354,6 @@ test "Integration: Event emission patterns" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Simulate ERC20 Transfer event
     // Transfer(address indexed from, address indexed to, uint256 value)
@@ -452,7 +447,6 @@ test "Integration: Dynamic log data with memory expansion" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Create dynamic-sized log data
     const message = "This is a longer message that will cause memory expansion when logged!";
@@ -527,7 +521,6 @@ test "Integration: SHA3 for signature verification" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Simulate function selector calculation
     // keccak256("transfer(address,uint256)")[:4]
@@ -587,7 +580,6 @@ test "Integration: Log in static context fails" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Set static context
     frame.is_static = true;

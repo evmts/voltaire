@@ -54,7 +54,6 @@ test "Integration: Arithmetic with conditional jumps" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Execute sequence: PUSH 5, PUSH 10, ADD
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
@@ -124,7 +123,6 @@ test "Integration: Complex arithmetic expression evaluation" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Calculate: ((10 + 5) * 3) - 7
     // Expected: ((15) * 3) - 7 = 45 - 7 = 38
@@ -178,7 +176,6 @@ test "Integration: Modular arithmetic chain" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Test ADDMOD followed by MULMOD
     // (10 + 15) % 7 = 25 % 7 = 4
@@ -232,7 +229,6 @@ test "Integration: Division by zero handling in expression" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Test: 10 / 0 = 0, then 0 + 5 = 5
     try frame.stack.push(10);
@@ -281,7 +277,6 @@ test "Integration: Bitwise operations with arithmetic" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Test: ((0xFF AND 0x0F) << 4) + 10
     // Expected: ((0x0F) << 4) + 10 = 0xF0 + 10 = 240 + 10 = 250
@@ -337,7 +332,6 @@ test "Integration: Stack manipulation with arithmetic" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Test DUP and SWAP with arithmetic
     // Stack: [10, 20]
@@ -403,7 +397,6 @@ test "Integration: Comparison chain for range checking" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Check if value is in range [10, 20]
     // value >= 10 AND value <= 20
@@ -466,7 +459,6 @@ test "Integration: EXP with modular arithmetic" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Calculate (2^8) % 100 = 256 % 100 = 56
     try frame.stack.push(2);
@@ -515,7 +507,6 @@ test "Integration: Signed arithmetic with comparisons" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Test signed operations
     // -5 (two's complement) compared with 10

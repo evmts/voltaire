@@ -35,7 +35,6 @@ test "Integration: stack limit boundary conditions" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Fill stack to near limit (1024 items)
     var i: usize = 0;
@@ -97,7 +96,6 @@ test "Integration: memory expansion limits" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 30000;
-    try frame.memory.finalize_root();
 
     // Try moderate memory expansion
     try frame.stack.push(0x1234);
@@ -154,7 +152,6 @@ test "Integration: arithmetic overflow and underflow" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     const max_u256 = std.math.maxInt(u256);
 
@@ -223,7 +220,6 @@ test "Integration: signed arithmetic boundaries" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Maximum positive signed value (2^255 - 1)
     const max_signed: u256 = (@as(u256, 1) << 255) - 1;
@@ -283,7 +279,6 @@ test "Integration: bitwise operation boundaries" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -355,7 +350,6 @@ test "Integration: call gas calculation edge cases" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 1000;
-    try frame.memory.finalize_root();
 
     // Set up call result expectation
     vm.call_result = .{
@@ -417,7 +411,6 @@ test "Integration: return data boundary conditions" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Set return data
     const return_data = [_]u8{ 0x11, 0x22, 0x33, 0x44 };
@@ -493,7 +486,6 @@ test "Integration: exponentiation edge cases" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -568,7 +560,6 @@ test "Integration: jump destination validation" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -621,7 +612,6 @@ test "Integration: storage slot temperature transitions" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    try frame.memory.finalize_root();
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -688,7 +678,6 @@ test "Integration: MCOPY overlap handling" {
     var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    try frame.memory.finalize_root();
 
     // Write pattern to memory
     var i: usize = 0;

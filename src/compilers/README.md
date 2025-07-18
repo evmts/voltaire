@@ -289,6 +289,12 @@ Run the test suite:
 zig build test-foundry
 ```
 
+Run the SnailShellBenchmark compilation and execution test:
+
+```bash
+zig build test-benchmark
+```
+
 
 ## Architecture
 

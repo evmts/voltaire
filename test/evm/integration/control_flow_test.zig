@@ -63,7 +63,6 @@ test "Integration: Conditional jump patterns" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     // Test 1: Jump when condition is true
     frame_ptr.pc = 0;
@@ -147,7 +146,6 @@ test "Integration: Loop implementation with JUMP" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 100000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     // Initialize counter to 5
     try frame_ptr.stack.append(5);
@@ -216,7 +214,6 @@ test "Integration: Return data handling" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(frame_ptr);
@@ -277,7 +274,6 @@ test "Integration: Revert with reason" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(frame_ptr);
@@ -337,7 +333,6 @@ test "Integration: PC tracking through operations" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(frame_ptr);
@@ -396,7 +391,6 @@ test "Integration: Invalid opcode handling" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(frame_ptr);
@@ -457,7 +451,6 @@ test "Integration: Nested conditions with jumps" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(frame_ptr);
@@ -542,7 +535,6 @@ test "Integration: Self-destruct with beneficiary" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(frame_ptr);

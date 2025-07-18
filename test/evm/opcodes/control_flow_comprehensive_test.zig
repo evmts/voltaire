@@ -57,7 +57,6 @@ test "JUMP (0x56): Basic unconditional jump" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Push jump destination
@@ -160,7 +159,6 @@ test "JUMP: Jump to various valid destinations" {
     for (destinations) |dest| {
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 1000;
 
         try test_frame.stack.append(dest);
@@ -212,7 +210,6 @@ test "JUMP: Invalid jump destinations" {
     for (invalid_destinations) |dest| {
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 1000;
 
         try test_frame.stack.append(dest);
@@ -254,7 +251,6 @@ test "JUMP: Stack underflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Don't push anything to stack - should cause stack underflow
@@ -309,7 +305,6 @@ test "JUMPI (0x57): Conditional jump with true condition" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Execute the PUSH1 instructions in the bytecode
@@ -371,7 +366,6 @@ test "JUMPI: Conditional jump with false condition" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Set PC to start of JUMPI instruction
@@ -425,7 +419,6 @@ test "JUMPI: Various condition values" {
     for (true_conditions) |condition| {
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 1000;
 
         test_frame.pc = 10; // Set to non-zero position
@@ -441,7 +434,6 @@ test "JUMPI: Various condition values" {
     {
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 1000;
 
         test_frame.pc = 10;
@@ -482,7 +474,6 @@ test "JUMPI: Invalid destination with true condition" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Try to jump to invalid destination with true condition
@@ -522,7 +513,6 @@ test "JUMPI: Stack underflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     // Test with empty stack
@@ -582,7 +572,6 @@ test "PC (0x58): Get program counter at various positions" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -639,7 +628,6 @@ test "PC: Stack overflow protection" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Fill stack to capacity - 1 (so PC can still push one value)
@@ -698,7 +686,6 @@ test "GAS (0x5A): Get remaining gas" {
     for (test_gas_amounts) |initial_gas| {
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = initial_gas;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -738,7 +725,6 @@ test "GAS: After consuming gas with operations" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const initial_gas = frame.gas_remaining;
@@ -793,7 +779,6 @@ test "GAS: Low gas scenarios" {
     {
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 2;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -807,7 +792,6 @@ test "GAS: Low gas scenarios" {
     {
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 1;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -843,7 +827,6 @@ test "GAS: Stack overflow protection" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Fill stack to capacity
@@ -896,7 +879,6 @@ test "JUMPDEST (0x5B): Basic operation" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // JUMPDEST should be a no-op
@@ -970,7 +952,6 @@ test "JUMPDEST: Jump destination validation" {
     // Test actual jumping to valid JUMPDEST
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     frame.pc = 5; // Position before JUMP
@@ -1027,7 +1008,6 @@ test "JUMPDEST: Code analysis edge cases" {
     // Test jumping to the valid JUMPDEST
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     try frame.stack.append(3);
@@ -1138,7 +1118,6 @@ test "Control Flow: Gas consumption verification" {
     for (opcodes) |op| {
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = 1000;
 
         const gas_before = test_frame.gas_remaining;
@@ -1218,7 +1197,6 @@ test "Control Flow: Complex jump sequences" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1333,7 +1311,6 @@ test "Control Flow: Stack operations validation" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1413,7 +1390,6 @@ test "Control Flow: Program counter tracking" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1498,7 +1474,6 @@ test "Control Flow: Out of gas scenarios" {
         // Test with insufficient gas
         var test_frame = try Frame.init(allocator, &contract);
         defer test_frame.deinit();
-        test_frame.memory.finalize_root();
         test_frame.gas_remaining = case.min_gas - 1;
 
         if (case.setup) |setup_fn| {
@@ -1542,7 +1517,6 @@ test "Control Flow: Stack operations edge cases" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

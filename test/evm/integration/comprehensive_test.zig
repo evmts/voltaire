@@ -54,7 +54,6 @@ test "Integration: Complete ERC20 transfer simulation" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     // Transfer amount
     const transfer_amount: u256 = 100;
@@ -172,7 +171,6 @@ test "Integration: Smart contract deployment flow" {
     var frame = try Frame.init(allocator, &deployer_contract);
     defer frame.deinit();
     frame.gas_remaining = 200000;
-    frame.memory.finalize_root();
 
     // Build constructor arguments
     const initial_supply: u256 = 1_000_000;
@@ -342,7 +340,6 @@ test "Integration: Complex control flow with nested conditions" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Execute the contract logic step by step
     // We'll test with value = 150, which should result in 300 (150 * 2)
@@ -497,7 +494,6 @@ test "Integration: Gas metering across operations" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
-    frame.memory.finalize_root();
 
     const initial_gas = frame.gas_remaining;
     var total_gas_used: u64 = 0;
@@ -593,7 +589,6 @@ test "Integration: Error propagation and recovery" {
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
-    frame.memory.finalize_root();
 
     // Test 1: Stack underflow recovery
     const div_result = opcodes.arithmetic.op_div(0, &vm, &frame);

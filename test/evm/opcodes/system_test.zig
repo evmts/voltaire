@@ -43,7 +43,6 @@ test "CREATE: create new contract" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set depth to 1024 to trigger depth limit failure (CREATE should return 0)
     frame.depth = 1024;
@@ -101,7 +100,6 @@ test "CREATE: empty init code creates empty contract" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Push size, offset, value
     try frame.stack.append(0); // size (will be popped 3rd)
@@ -150,7 +148,6 @@ test "CREATE: write protection in static call" {
     frame.gas_remaining = 100000;
     frame.is_static = true;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Push size, offset, value
     try frame.stack.append(0); // size (will be popped 3rd)
@@ -195,7 +192,6 @@ test "CREATE: depth limit" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
@@ -246,7 +242,6 @@ test "CREATE2: create with deterministic address" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
@@ -306,7 +301,6 @@ test "CALL: basic call behavior" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
@@ -371,7 +365,6 @@ test "CALL: failed call" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
@@ -426,7 +419,6 @@ test "CALL: cold address access costs more gas" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 10000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
@@ -486,7 +478,6 @@ test "CALL: value transfer in static call fails" {
     frame.gas_remaining = 100000;
     frame.is_static = true;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Push in reverse order for stack (LIFO) with non-zero value
     try frame.stack.append(0); // ret_size
@@ -537,7 +528,6 @@ test "DELEGATECALL: execute code in current context" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
@@ -595,7 +585,6 @@ test "STATICCALL: read-only call" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
@@ -653,7 +642,6 @@ test "CALL: depth limit" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
@@ -709,7 +697,6 @@ test "CREATE: gas consumption" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Write init code to memory
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 };
@@ -766,7 +753,6 @@ test "CREATE2: additional gas for hashing" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Write init code to memory
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 };
@@ -825,7 +811,6 @@ test "CREATE: stack underflow" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Push only two values (need three)
     try frame.stack.append(0); // offset
@@ -869,7 +854,6 @@ test "CALL: stack underflow" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Push only six values (need seven)
     try frame.stack.append(0); // to
@@ -918,7 +902,6 @@ test "CREATE: memory expansion for init code" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set up sufficient balance for contract creation
     try evm.state.set_balance(contract_address, 1000000);
@@ -978,7 +961,6 @@ test "CREATE: EIP-3860 initcode size limit" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 10000000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Push parameters with size exceeding MaxInitcodeSize (49152)
     try frame.stack.append(49153); // size (one byte over limit)
@@ -1023,7 +1005,6 @@ test "CREATE: EIP-3860 initcode word gas" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set up sufficient balance for contract creation
     try evm.state.set_balance(contract_address, 1000000);
@@ -1082,7 +1063,6 @@ test "CREATE2: EIP-3860 initcode size limit" {
     var frame = try Frame.init(allocator, &contract);
     frame.gas_remaining = 10000000;
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Push parameters with size exceeding MaxInitcodeSize (49152)
     try frame.stack.append(0x123); // salt (will be popped 4th)

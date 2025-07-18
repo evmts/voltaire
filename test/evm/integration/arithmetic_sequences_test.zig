@@ -52,7 +52,6 @@ test "Integration: Complex arithmetic calculation" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     // Push values and execute: (10 + 20) * 3 - 15
     try frame_ptr.stack.append(20);
@@ -113,7 +112,6 @@ test "Integration: Modular arithmetic with overflow" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     const max_u256 = std.math.maxInt(u256);
 
@@ -172,7 +170,6 @@ test "Integration: Fibonacci sequence calculation" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     // Initialize with 0, 1
     try frame_ptr.stack.append(0); // fib(0)
@@ -244,7 +241,6 @@ test "Integration: Conditional arithmetic based on comparison" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     // Setup for opcode execution
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -331,7 +327,6 @@ test "Integration: Calculate average of multiple values" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     // Setup for opcode execution
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -396,7 +391,6 @@ test "Integration: Complex ADDMOD and MULMOD calculations" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     // Setup for opcode execution
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -478,7 +472,6 @@ test "Integration: Exponentiation chain" {
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 50000;
     frame_ptr.input = contract.input;
-    frame_ptr.memory.finalize_root();
 
     // Setup for opcode execution
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);

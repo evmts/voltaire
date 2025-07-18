@@ -287,7 +287,6 @@ pub fn fuzz_control_operations(allocator: std.mem.Allocator, operations: []const
         // Create clean VM and frame for each test
         var memory = try @import("../memory/memory.zig").init_default(allocator);
         defer memory.deinit();
-        memory.finalize_root();
         
         var db = @import("../state/memory_database.zig").init(allocator);
         defer db.deinit();

@@ -856,6 +856,20 @@ pub fn build(b: *std.Build) void {
     const compiler_test_step = b.step("test-compiler", "Run Compiler tests");
     compiler_test_step.dependOn(&run_compiler_test.step);
 
+    // Add SnailShellBenchmark test
+    const snail_shell_benchmark_test = b.addTest(.{
+        .name = "snail-shell-benchmark-test",
+        .root_source_file = b.path("src/solidity/snail_shell_benchmark_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    snail_shell_benchmark_test.root_module.addImport("primitives", primitives_mod);
+    snail_shell_benchmark_test.root_module.addImport("evm", evm_mod);
+
+    const run_snail_shell_benchmark_test = b.addRunArtifact(snail_shell_benchmark_test);
+    const snail_shell_benchmark_test_step = b.step("test-benchmark", "Run SnailShellBenchmark tests");
+    snail_shell_benchmark_test_step.dependOn(&run_snail_shell_benchmark_test.step);
+
 
     // Add Constructor Bug test
     const constructor_bug_test = b.addTest(.{

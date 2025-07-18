@@ -78,7 +78,6 @@ test "JumpTable execute consumes gas before opcode execution" {
         false, // is_static
     );
     var test_frame = try Frame.init(test_allocator, &test_contract);
-    test_frame.memory.finalize_root();
     defer test_frame.deinit();
     test_frame.gas_remaining = 100;
 

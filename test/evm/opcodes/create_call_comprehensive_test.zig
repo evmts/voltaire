@@ -47,7 +47,6 @@ test "CREATE (0xF0): Basic contract creation" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Write init code to memory (simple bytecode that returns empty)
@@ -109,7 +108,6 @@ test "CREATE: Static call protection" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Set static mode
@@ -156,7 +154,6 @@ test "CREATE: EIP-3860 initcode size limit" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Enable EIP-3860 (Shanghai)
@@ -203,7 +200,6 @@ test "CREATE: Depth limit" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Set depth to maximum
@@ -264,7 +260,6 @@ test "CREATE2 (0xF5): Deterministic contract creation" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Write init code to memory
@@ -325,7 +320,6 @@ test "CALL (0xF1): Basic external call" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Push CALL parameters in reverse order (stack is LIFO)
@@ -378,7 +372,6 @@ test "CALL: Value transfer in static context" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Set static mode
@@ -429,7 +422,6 @@ test "CALL: Cold address access (EIP-2929)" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Ensure address is cold
@@ -488,7 +480,6 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Push CALLCODE parameters in reverse order (stack is LIFO)
@@ -544,7 +535,6 @@ test "DELEGATECALL (0xF4): Execute with current context" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Push DELEGATECALL parameters in reverse order (stack is LIFO, no value parameter)
@@ -604,7 +594,6 @@ test "STATICCALL (0xFA): Read-only external call" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     // Push STATICCALL parameters in reverse order (stack is LIFO, no value parameter)
@@ -659,7 +648,6 @@ test "System opcodes: Gas consumption" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Test CREATE gas with EIP-3860
@@ -719,8 +707,7 @@ test "CALL operations: Depth limit" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
-        frame.gas_remaining = 10000;
+            frame.gas_remaining = 10000;
 
         // Set depth to maximum
         frame.depth = 1024;
@@ -786,7 +773,6 @@ test "CREATE/CREATE2: Failed creation scenarios" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     // Test failed creation - push parameters in reverse order (stack is LIFO)

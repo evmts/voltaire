@@ -28,7 +28,6 @@ test "fuzz_environment_address_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test ADDRESS operation
@@ -65,7 +64,6 @@ test "fuzz_environment_caller_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test CALLER operation
@@ -102,7 +100,6 @@ test "fuzz_environment_callvalue_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test CALLVALUE operation
@@ -138,7 +135,6 @@ test "fuzz_environment_codesize_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test CODESIZE operation

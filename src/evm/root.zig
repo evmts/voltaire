@@ -181,6 +181,9 @@ pub const hardforks = struct {
 /// EVM constants (stack size, memory limits, etc.)
 pub const constants = @import("constants/constants.zig");
 
+/// Logger for EVM operations
+pub const Log = @import("log.zig");
+
 /// EIP-7702 EOA delegation bytecode format
 pub const eip_7702_bytecode = @import("frame/eip_7702_bytecode.zig");
 

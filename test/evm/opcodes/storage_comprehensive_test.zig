@@ -43,7 +43,6 @@ test "SLOAD (0x54): Load from storage" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 3000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -88,7 +87,6 @@ test "SLOAD: Load from uninitialized slot returns zero" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 3000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -129,7 +127,6 @@ test "SLOAD: Multiple loads from same slot" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 6000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -173,7 +170,6 @@ test "SLOAD: EIP-2929 cold/warm access" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -234,7 +230,6 @@ test "SSTORE (0x55): Store to storage" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 30000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -277,7 +272,6 @@ test "SSTORE: Static call protection" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -354,7 +348,6 @@ test "SSTORE: EIP-2200 gas cost scenarios" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -412,7 +405,6 @@ test "SSTORE: Large storage values" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 50000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -466,7 +458,6 @@ test "Storage opcodes: Gas consumption patterns" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -528,7 +519,6 @@ test "Storage opcodes: Stack underflow" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -552,7 +542,6 @@ test "Storage opcodes: Stack underflow" {
 
     var frame2 = try Frame.init(allocator, &contract2);
     defer frame2.deinit();
-    frame2.memory.finalize_root();
     frame2.gas_remaining = 1000;
 
     const state_ptr2: *Evm.Operation.State = @ptrCast(&frame2);
@@ -610,7 +599,6 @@ test "Storage: Multiple consecutive operations" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -681,8 +669,7 @@ test "SSTORE: Overwriting values" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
-        frame.gas_remaining = 30000;
+            frame.gas_remaining = 30000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -727,7 +714,6 @@ test "SSTORE: EIP-2200 complete gas cost scenarios" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -793,7 +779,6 @@ test "SSTORE: Zero value edge cases" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -841,7 +826,6 @@ test "SSTORE: Same value edge cases" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -916,8 +900,7 @@ test "Storage: Boundary value testing" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
-        frame.gas_remaining = 50000;
+            frame.gas_remaining = 50000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -975,8 +958,7 @@ test "Storage: Large slot number testing" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.memory.finalize_root();
-        frame.gas_remaining = 50000;
+            frame.gas_remaining = 50000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1029,7 +1011,6 @@ test "Storage: Contract slot warming pattern" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1081,7 +1062,6 @@ test "Storage: Complex access patterns" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1136,7 +1116,6 @@ test "SSTORE: EIP-1706 gas stipend protection" {
     // Set gas remaining to exactly the stipend limit (2300)
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 2300;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1176,7 +1155,6 @@ test "Storage: Rapid alternating operations" {
 
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 200000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1245,12 +1223,10 @@ test "Storage: Multiple contracts isolation" {
 
     var frame1 = try Frame.init(allocator, &contract1);
     defer frame1.deinit();
-    frame1.memory.finalize_root();
     frame1.gas_remaining = 30000;
 
     var frame2 = try Frame.init(allocator, &contract2);
     defer frame2.deinit();
-    frame2.memory.finalize_root();
     frame2.gas_remaining = 30000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

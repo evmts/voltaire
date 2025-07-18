@@ -132,46 +132,104 @@ This principle ensures code quality and prevents the accumulation of broken func
 
 ## CRITICAL: Zero Tolerance for Compilation and Test Failures
 
-**ABSOLUTE REQUIREMENT**: The codebase must ALWAYS compile and all tests must ALWAYS pass. There are NO exceptions to this rule.
+**ABSOLUTE MANDATE**: Any code change that breaks compilation or tests is UNACCEPTABLE.
 
-**Compilation Failures Are Unacceptable**:
-- Every change must result in a successful `zig build` command
-- No compilation errors, warnings, or syntax issues are tolerated
-- If your changes introduce compilation failures, you MUST fix them immediately
-- Never leave the codebase in a non-compiling state, even temporarily
+### MANDATORY BUILD VERIFICATION PROTOCOL
 
-**Test Failures Are Unacceptable**:
-- Every change must result in a successful `zig build test` command
-- All existing tests must continue to pass after your changes
-- Any new tests you add must pass before committing changes
-- If tests fail, you MUST fix them before proceeding with any other work
+**EVERY SINGLE CODE CHANGE** must be immediately followed by:
 
-**Required Workflow Before ANY Commit**:
 ```bash
-# These commands MUST succeed before any commit
 zig build && zig build test
 ```
 
-**If Either Command Fails**:
-1. **STOP all other work immediately**
-2. **Fix the compilation errors or test failures**
-3. **Verify the fix by running both commands again**
-4. **Only proceed once both commands succeed**
+**NO EXCEPTIONS. NO SHORTCUTS. NO DELAYS.**
 
-**No Exceptions**:
-- "It's just a minor compilation error" - NOT acceptable
-- "The test was already broken" - NOT acceptable
-- "I'll fix it later" - NOT acceptable
-- "It works on my machine" - NOT acceptable
+### Why This is NON-NEGOTIABLE
 
-**Why This Is Critical**:
-- Broken builds block all development work
-- Test failures indicate regressions or bugs
-- A non-compiling codebase is unusable
-- Accumulated failures create technical debt
-- Other developers depend on a working codebase
+1. **Build and tests are FAST** - Under 10 seconds total
+2. **Broken code blocks ALL development** - No excuses
+3. **Professional standards** - Working code is the baseline, not an aspiration
+4. **Debugging hell** - Broken state makes it impossible to isolate issues
+5. **Wasted time** - Fixing broken code later takes exponentially more time
 
-This is a fundamental requirement that overrides all other considerations. A working, tested codebase is the foundation of all development work.
+### IMMEDIATE CONSEQUENCES OF VIOLATIONS
+
+If you make ANY code change without verifying the build:
+- You are operating unprofessionally
+- You are creating technical debt
+- You are wasting everyone's time
+- You are violating the fundamental requirement of working code
+
+### MANDATORY VERIFICATION STEPS
+
+**AFTER EVERY SINGLE EDIT** (not just commits):
+
+1. **IMMEDIATELY** run `zig build`
+2. **IMMEDIATELY** run `zig build test`
+3. **ONLY PROCEED** if both commands succeed with zero errors
+4. **IF EITHER FAILS** - STOP everything and fix it before making any other changes
+
+### ABSOLUTELY FORBIDDEN PRACTICES
+
+- ❌ Making multiple changes without testing
+- ❌ "I'll test it later"
+- ❌ "It's just a small change"
+- ❌ "I'll fix the build issues at the end"
+- ❌ Assuming changes work without verification
+- ❌ Continuing development with broken builds
+
+### REQUIRED MINDSET
+
+- ✅ **Working code is the ONLY acceptable state**
+- ✅ **Test after EVERY change**
+- ✅ **Fix broken builds IMMEDIATELY**
+- ✅ **Never commit broken code**
+- ✅ **Professional development practices**
+
+### ENFORCEMENT
+
+This is not a suggestion. This is a **HARD REQUIREMENT**. Violation of this protocol demonstrates unprofessional development practices and is unacceptable.
+
+**THE CODEBASE MUST ALWAYS COMPILE AND PASS TESTS.**
+
+**NO EXCEPTIONS.**
+
+### CRITICAL REMINDER
+
+Every single code change must be verified immediately - no exceptions, no shortcuts, no delays.
+
+## CRITICAL: Debugging Philosophy - No Speculation, Only Evidence
+
+**FUNDAMENTAL PRINCIPLE**: Never guess what causes bugs. Always use logging and direct evidence to understand issues.
+
+### MANDATORY DEBUGGING PROTOCOL
+
+When encountering bugs, crashes, or unexpected behavior:
+
+1. **NEVER SPECULATE** about root causes without direct evidence
+2. **ALWAYS ADD LOGGING** to understand what is actually happening
+3. **TRACE EXECUTION** step by step until the exact failure point is identified
+4. **VERIFY ASSUMPTIONS** with concrete evidence before making changes
+
+### FORBIDDEN DEBUGGING PRACTICES
+
+- ❌ "This might be because..."
+- ❌ "It's probably a null pointer..."
+- ❌ "The issue could be..."
+- ❌ Making changes based on guesses
+- ❌ "Let me try this and see if it works"
+
+### REQUIRED DEBUGGING PRACTICES
+
+- ✅ Add debug logging to trace execution
+- ✅ "Let me add logging to see what's happening"
+- ✅ Verify each assumption with concrete evidence
+- ✅ Trace execution until exact failure point is found
+- ✅ Only make changes after understanding the root cause
+
+### ENFORCEMENT
+
+Speculating about bugs without evidence demonstrates unprofessional debugging practices. All debugging must be evidence-based.
 
 ### Why This Approach?
 - **Tests are documentation** - A developer should understand what's being tested without jumping between files
@@ -342,6 +400,26 @@ const Contract = @import("../frame/contract.zig");
 - **Regressions are unacceptable** - broken builds/tests block all development
 - **No exceptions** - even small changes can break imports or cause test failures
 - **Fast feedback loop** - catches issues immediately before they propagate
+
+## MANDATORY SUCCESS CRITERIA
+
+**ZERO TOLERANCE POLICY**: The agent is STRICTLY FORBIDDEN from claiming success, completion, or using positive language (✅, "working", "successful", etc.) if ANY of the following conditions exist:
+
+1. **Any build command fails** - `zig build`, `zig build test`, `zig build fuzz`, etc.
+2. **Any test fails** - Even a single failing test means the system is broken
+3. **Any compilation errors** - All code must compile cleanly
+4. **Any runtime errors** - All functionality must work correctly in practice
+5. **Any memory leaks** - All memory must be properly managed
+6. **Any functionality is incomplete** - Features must be fully implemented and tested
+
+**REQUIRED BEHAVIOR**:
+- If ANY test fails, the agent MUST investigate the root cause
+- If ANY functionality is broken, the agent MUST fix it completely
+- The agent MUST NOT use success indicators until ALL issues are resolved
+- The agent MUST NOT claim "infrastructure is working" if tests are failing
+- The agent MUST be completely honest about broken functionality
+
+**VIOLATION CONSEQUENCES**: Claiming success with failing tests is grounds for immediate termination of the agent's assistance.
 
 ### Required Workflow
 ```bash

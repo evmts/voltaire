@@ -27,7 +27,6 @@ test "fuzz_bitwise_and_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test AND operation
@@ -66,7 +65,6 @@ test "fuzz_bitwise_or_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test OR operation
@@ -105,7 +103,6 @@ test "fuzz_bitwise_xor_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test XOR operation
@@ -144,7 +141,6 @@ test "fuzz_bitwise_not_operations" {
     
     var frame = try evm.Frame.init(allocator, &contract);
     defer frame.deinit();
-    frame.memory.finalize_root();
     frame.gas_remaining = 1000000;
     
     // Test NOT operation

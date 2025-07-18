@@ -1,5 +1,4 @@
 const std = @import("std");
-const Log = @import("../log.zig");
 const constants = @import("constants.zig");
 
 /// Memory implementation for EVM execution contexts.
@@ -12,53 +11,56 @@ pub const DefaultMemoryLimit = constants.DefaultMemoryLimit;
 pub const calculate_num_words = constants.calculate_num_words;
 
 // Core memory struct fields
-shared_buffer: std.ArrayList(u8),
+shared_buffer_ref: *std.ArrayList(u8),
 allocator: std.mem.Allocator,
 my_checkpoint: usize,
 memory_limit: u64,
-root_ptr: *Memory,
+owns_buffer: bool,
 
-/// Initializes the root Memory context. This instance owns the shared_buffer.
-/// The caller must ensure the returned Memory is stored at a stable address
-/// and call finalize_root() before use.
+/// Initializes the root Memory context that owns the shared buffer.
+/// This is the safe API that eliminates the undefined pointer footgun.
 pub fn init(
     allocator: std.mem.Allocator,
     initial_capacity: usize,
     memory_limit: u64,
 ) !Memory {
-    Log.debug("Memory.init: Initializing memory, initial_capacity={}, memory_limit={}", .{ initial_capacity, memory_limit });
-    var shared_buffer = std.ArrayList(u8).init(allocator);
+    const shared_buffer = try allocator.create(std.ArrayList(u8));
+    errdefer allocator.destroy(shared_buffer);
+    
+    shared_buffer.* = std.ArrayList(u8).init(allocator);
     errdefer shared_buffer.deinit();
     try shared_buffer.ensureTotalCapacity(initial_capacity);
 
-    Log.debug("Memory.init: Memory initialized successfully", .{});
     return Memory{
-        .shared_buffer = shared_buffer,
+        .shared_buffer_ref = shared_buffer,
         .allocator = allocator,
         .my_checkpoint = 0,
         .memory_limit = memory_limit,
-        .root_ptr = undefined,
+        .owns_buffer = true,
     };
 }
 
-/// Finalizes the root Memory by setting root_ptr to itself.
-/// Must be called after init() and the Memory is stored at its final address.
-pub fn finalize_root(self: *Memory) void {
-    Log.debug("Memory.finalize_root: Finalizing root memory pointer", .{});
-    self.root_ptr = self;
+/// Creates a child Memory that shares the buffer with a different checkpoint.
+/// Child memory has a view of the shared buffer starting from its checkpoint.
+pub fn init_child_memory(self: *Memory, checkpoint: usize) !Memory {
+    return Memory{
+        .shared_buffer_ref = self.shared_buffer_ref,
+        .allocator = self.allocator,
+        .my_checkpoint = checkpoint,
+        .memory_limit = self.memory_limit,
+        .owns_buffer = false,
+    };
 }
 
 pub fn init_default(allocator: std.mem.Allocator) !Memory {
     return try init(allocator, InitialCapacity, DefaultMemoryLimit);
 }
 
-/// Deinitializes the shared_buffer. Should ONLY be called on the root Memory instance.
+/// Deinitializes the Memory. Only root Memory instances clean up the shared buffer.
 pub fn deinit(self: *Memory) void {
-    if (self.my_checkpoint == 0 and self.root_ptr == self) {
-        Log.debug("Memory.deinit: Deinitializing root memory, buffer_size={}", .{self.shared_buffer.items.len});
-        self.shared_buffer.deinit();
-    } else {
-        Log.debug("Memory.deinit: Skipping deinit for non-root memory context, checkpoint={}", .{self.my_checkpoint});
+    if (self.owns_buffer) {
+        self.shared_buffer_ref.deinit();
+        self.allocator.destroy(self.shared_buffer_ref);
     }
 }
 
@@ -90,9 +92,8 @@ pub const slice = slice_ops.slice;
 
 // Fuzz testing functions
 pub fn fuzz_memory_operations(allocator: std.mem.Allocator, operations: []const FuzzMemoryOperation) !void {
-    var memory = try init_default(allocator);
+    var memory = try init(allocator, InitialCapacity, DefaultMemoryLimit);
     defer memory.deinit();
-    memory.finalize_root();
     
     const testing = std.testing;
     
@@ -177,10 +178,10 @@ fn validateMemoryInvariants(memory: *const Memory) !void {
     try testing.expect(memory.context_size() <= memory.memory_limit);
     
     // Checkpoint should be valid
-    try testing.expect(memory.my_checkpoint <= memory.root_ptr.shared_buffer.items.len);
+    try testing.expect(memory.my_checkpoint <= memory.shared_buffer_ref.items.len);
     
-    // Root pointer should be valid
-    try testing.expect(memory.root_ptr == memory or memory.my_checkpoint > 0);
+    // Buffer ownership should be consistent
+    try testing.expect(memory.owns_buffer or memory.my_checkpoint > 0);
 }
 
 test "fuzz_memory_basic_operations" {
@@ -323,9 +324,8 @@ test "fuzz_memory_alignment_patterns" {
 test "fuzz_memory_bounded_operations" {
     const allocator = std.testing.allocator;
     
-    var memory = try init_default(allocator);
+    var memory = try init(allocator, InitialCapacity, DefaultMemoryLimit);
     defer memory.deinit();
-    memory.finalize_root();
     
     const source_data = "Hello, World! This is a test string for bounded operations.";
     

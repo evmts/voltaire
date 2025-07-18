@@ -34,7 +34,6 @@ test "SELFDESTRUCT: Basic functionality" {
     // Create frame
     var frame = try Evm.Frame.init(allocator, &contract, 10000, false, 0);
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Set contract balance
     try evm.state.set_balance(contract_address, 1000);
@@ -91,7 +90,6 @@ test "SELFDESTRUCT: Forbidden in static call" {
     // Create frame with static call flag
     var frame = try Evm.Frame.init(allocator, &contract, 10000, true, 0);
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Push recipient address to stack
     const bob_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{3});
@@ -140,7 +138,6 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
         // Create frame
         var frame = try Evm.Frame.init(allocator, &contract, 10000, false, 0);
         defer frame.deinit();
-        frame.memory.finalize_root();
 
         // Push recipient address to stack
         const bob_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{3});
@@ -189,7 +186,6 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
         // Create frame
         var frame = try Evm.Frame.init(allocator, &contract, 50000, false, 0);
         defer frame.deinit();
-        frame.memory.finalize_root();
 
         // Push recipient address to stack
         const bob_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{3});
@@ -240,7 +236,6 @@ test "SELFDESTRUCT: Account creation cost (EIP-161)" {
     // Create frame
     var frame = try Evm.Frame.init(allocator, &contract, 50000, false, 0);
     defer frame.deinit();
-    frame.memory.finalize_root();
 
     // Use a fresh address that doesn't exist (no balance, code, or nonce)
     var rng = std.rand.DefaultPrng.init(@intCast(std.time.milliTimestamp()));
