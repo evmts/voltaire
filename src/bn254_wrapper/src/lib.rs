@@ -40,8 +40,16 @@ pub extern "C" fn bn254_init() -> c_int {
 /// - Bytes 32-63: result y coordinate (big-endian)
 ///
 /// Returns Bn254Result::Success on success, error code otherwise
+///
+/// # Safety
+/// 
+/// This function dereferences raw pointers and requires:
+/// - `input` must be valid for reads of `input_len` bytes
+/// - `output` must be valid for writes of `output_len` bytes
+/// - Pointers must not be null when lengths are non-zero
+/// - Caller must ensure input/output buffers don't overlap
 #[no_mangle]
-pub extern "C" fn bn254_ecmul(
+pub unsafe extern "C" fn bn254_ecmul(
     input: *const c_uchar,
     input_len: c_uint,
     output: *mut c_uchar,
@@ -57,8 +65,8 @@ pub extern "C" fn bn254_ecmul(
     }
 
     // Convert pointers to slices
-    let input_slice = unsafe { std::slice::from_raw_parts(input, input_len as usize) };
-    let output_slice = unsafe { std::slice::from_raw_parts_mut(output, output_len as usize) };
+    let input_slice = std::slice::from_raw_parts(input, input_len as usize);
+    let output_slice = std::slice::from_raw_parts_mut(output, output_len as usize);
 
     // Ensure we have exactly 96 bytes of input
     let mut padded_input = [0u8; 96];
@@ -75,17 +83,11 @@ pub extern "C" fn bn254_ecmul(
     // Convert bytes to field elements
     use ark_bn254::{Fq, Fr};
 
-    let x_coord = match Fq::from_be_bytes_mod_order(x_bytes) {
-        x => x,
-    };
+    let x_coord = Fq::from_be_bytes_mod_order(x_bytes);
 
-    let y_coord = match Fq::from_be_bytes_mod_order(y_bytes) {
-        y => y,
-    };
+    let y_coord = Fq::from_be_bytes_mod_order(y_bytes);
 
-    let scalar = match Fr::from_be_bytes_mod_order(scalar_bytes) {
-        s => s,
-    };
+    let scalar = Fr::from_be_bytes_mod_order(scalar_bytes);
 
     // Create G1 point from coordinates
     let point = match G1Affine::new_unchecked(x_coord, y_coord) {
@@ -142,8 +144,16 @@ pub extern "C" fn bn254_ecmul(
 /// - 32-byte boolean result (0x00...00 for false, 0x00...01 for true)
 ///
 /// Returns Bn254Result::Success on success, error code otherwise
+///
+/// # Safety
+/// 
+/// This function dereferences raw pointers and requires:
+/// - `input` must be valid for reads of `input_len` bytes
+/// - `output` must be valid for writes of `output_len` bytes
+/// - Pointers must not be null when lengths are non-zero
+/// - Caller must ensure input/output buffers don't overlap
 #[no_mangle]
-pub extern "C" fn bn254_ecpairing(
+pub unsafe extern "C" fn bn254_ecpairing(
     input: *const c_uchar,
     input_len: c_uint,
     output: *mut c_uchar,
@@ -164,8 +174,8 @@ pub extern "C" fn bn254_ecpairing(
     }
 
     // Convert pointers to slices
-    let input_slice = unsafe { std::slice::from_raw_parts(input, input_len as usize) };
-    let output_slice = unsafe { std::slice::from_raw_parts_mut(output, output_len as usize) };
+    let input_slice = std::slice::from_raw_parts(input, input_len as usize);
+    let output_slice = std::slice::from_raw_parts_mut(output, output_len as usize);
 
     use ark_bn254::{Fq, Fq2};
 
