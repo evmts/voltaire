@@ -64,13 +64,13 @@ pub const RIPEMD160 = struct {
     pub fn hash(input: []const u8, output: []u8) void {
         std.debug.assert(output.len >= OUTPUT_SIZE);
 
-        const result = ripemd160_impl.hash(input);
+        const result = ripemd160_impl.unaudited_hash(input);
         @memcpy(output[0..OUTPUT_SIZE], &result);
     }
 
     /// Compute RIPEMD160 hash and return as fixed-size array
     pub fn hashFixed(input: []const u8) [OUTPUT_SIZE]u8 {
-        return ripemd160_impl.hash(input);
+        return ripemd160_impl.unaudited_hash(input);
     }
 };
 
@@ -112,19 +112,25 @@ pub const BLAKE2F = struct {
     pub const OUTPUT_SIZE: usize = 64; // 64 bytes
 
     /// Perform BLAKE2F compression
+    /// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+    /// This function wraps unaudited BLAKE2b compression implementation.
+    /// Use at your own risk in production systems.
     /// @param h State vector (8 x 64-bit words)
     /// @param m Message block (16 x 64-bit words)
     /// @param t Offset counters (2 x 64-bit words)
     /// @param f Final block flag
     /// @param rounds Number of rounds to perform
-    pub fn compress(h: *[STATE_SIZE]u64, m: *const [MESSAGE_SIZE]u64, t: [2]u64, f: bool, rounds: u32) void {
-        blake2_impl.blake2fCompress(h, m, t, f, rounds);
+    pub fn unaudited_compress(h: *[STATE_SIZE]u64, m: *const [MESSAGE_SIZE]u64, t: [2]u64, f: bool, rounds: u32) void {
+        blake2_impl.unaudited_blake2fCompress(h, m, t, f, rounds);
     }
 
     /// Parse and compress from EIP-152 format input
+    /// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+    /// This function wraps unaudited BLAKE2b compression implementation.
+    /// Use at your own risk in production systems.
     /// @param input 213-byte input (rounds + h + m + t + f)
     /// @param output 64-byte output buffer
-    pub fn compressEip152(input: []const u8, output: []u8) !void {
+    pub fn unaudited_compressEip152(input: []const u8, output: []u8) !void {
         if (input.len != 213) return error.InvalidInputLength;
         if (output.len < OUTPUT_SIZE) return error.OutputBufferTooSmall;
 
@@ -156,7 +162,7 @@ pub const BLAKE2F = struct {
         if (f != 0 and f != 1) return error.InvalidFinalFlag;
 
         // Perform compression
-        compress(&h, &m, t, f != 0, rounds);
+        unaudited_compress(&h, &m, t, f != 0, rounds);
 
         // Write result to output (little-endian)
         for (0..8) |i| {

@@ -1,5 +1,18 @@
 const std = @import("std");
 
+/// ⚠️ UNAUDITED CUSTOM CRYPTO IMPLEMENTATION - NOT SECURITY AUDITED ⚠️
+/// 
+/// This module contains CUSTOM modular exponentiation implementations
+/// that have NOT been security audited or verified against known attacks.
+/// These implementations are provided for educational/testing purposes only.
+/// DO NOT USE IN PRODUCTION without proper security audit and testing.
+///
+/// Known risks:
+/// - Potential timing attacks in big integer operations
+/// - Unvalidated against side-channel vulnerabilities
+/// - Custom algorithms may have edge case bugs
+/// - Memory safety not guaranteed under all conditions
+///
 /// Modular exponentiation implementation
 /// Computes base^exponent mod modulus for arbitrary-precision integers
 /// Error set for modular exponentiation operations
@@ -15,39 +28,43 @@ pub const ModExpError = error{
     InvalidLength,
 };
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Performs modular exponentiation: base^exponent mod modulus
+/// WARNING: This is a custom crypto implementation that has not been security audited.
+/// May be vulnerable to timing attacks and other side-channel attacks.
+/// Do not use in production without proper security review.
 ///
 /// @param allocator Memory allocator for big integer operations
 /// @param base_bytes Base value as big-endian bytes
 /// @param exp_bytes Exponent value as big-endian bytes
 /// @param mod_bytes Modulus value as big-endian bytes
 /// @param output Output buffer (must be at least mod_bytes.len)
-pub fn modexp(allocator: std.mem.Allocator, base_bytes: []const u8, exp_bytes: []const u8, mod_bytes: []const u8, output: []u8) ModExpError!void {
+pub fn unaudited_modexp(allocator: std.mem.Allocator, base_bytes: []const u8, exp_bytes: []const u8, mod_bytes: []const u8, output: []u8) ModExpError!void {
     // Clear output first
     @memset(output, 0);
 
     // Handle special cases
-    if (exp_bytes.len == 0 or isZero(exp_bytes)) {
+    if (exp_bytes.len == 0 or unaudited_isZero(exp_bytes)) {
         // exp = 0, result = 1
         if (output.len > 0) output[output.len - 1] = 1;
         return;
     }
 
-    if (base_bytes.len == 0 or isZero(base_bytes)) {
+    if (base_bytes.len == 0 or unaudited_isZero(base_bytes)) {
         // base = 0, result = 0 (already cleared)
         return;
     }
 
     // Check for zero modulus
-    if (mod_bytes.len == 0 or isZero(mod_bytes)) {
+    if (mod_bytes.len == 0 or unaudited_isZero(mod_bytes)) {
         return ModExpError.DivisionByZero;
     }
 
     // For simplicity, handle small numbers directly
     if (base_bytes.len <= 8 and exp_bytes.len <= 8 and mod_bytes.len <= 8) {
-        const base = bytesToU64(base_bytes);
-        const exp = bytesToU64(exp_bytes);
-        const mod = bytesToU64(mod_bytes);
+        const base = unaudited_bytesToU64(base_bytes);
+        const exp = unaudited_bytesToU64(exp_bytes);
+        const mod = unaudited_bytesToU64(mod_bytes);
 
         if (mod == 0) return ModExpError.DivisionByZero;
 
@@ -138,16 +155,20 @@ pub fn modexp(allocator: std.mem.Allocator, base_bytes: []const u8, exp_bytes: [
     try writeBigEndian(&result, output);
 }
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Check if a byte array represents zero
-pub fn isZero(bytes: []const u8) bool {
+/// WARNING: May be vulnerable to timing attacks
+pub fn unaudited_isZero(bytes: []const u8) bool {
     for (bytes) |byte| {
         if (byte != 0) return false;
     }
     return true;
 }
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Convert bytes to u64 (big-endian)
-pub fn bytesToU64(bytes: []const u8) u64 {
+/// WARNING: May be vulnerable to timing attacks
+pub fn unaudited_bytesToU64(bytes: []const u8) u64 {
     var result: u64 = 0;
     for (bytes) |byte| {
         result = (result << 8) | byte;
@@ -155,8 +176,10 @@ pub fn bytesToU64(bytes: []const u8) u64 {
     return result;
 }
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Convert u64 to bytes (big-endian)
-pub fn u64ToBytes(value: u64, output: []u8) void {
+/// WARNING: May be vulnerable to timing attacks
+pub fn unaudited_u64ToBytes(value: u64, output: []u8) void {
     const len = output.len;
     var i: usize = 0;
     while (i < len) : (i += 1) {
@@ -169,8 +192,10 @@ pub fn u64ToBytes(value: u64, output: []u8) void {
 pub const GAS_QUADRATIC_THRESHOLD: usize = 64;
 pub const GAS_LINEAR_THRESHOLD: usize = 1024;
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Calculates multiplication complexity for gas cost
-pub fn calculateMultiplicationComplexity(x: usize) u64 {
+/// WARNING: Custom gas calculation logic not audited
+pub fn unaudited_calculateMultiplicationComplexity(x: usize) u64 {
     const x64: u64 = @intCast(x);
 
     if (x <= GAS_QUADRATIC_THRESHOLD) {
@@ -184,8 +209,10 @@ pub fn calculateMultiplicationComplexity(x: usize) u64 {
     }
 }
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Calculates adjusted exponent length based on leading zeros
-pub fn calculateAdjustedExponentLength(exp_len: usize, exp_bytes: []const u8) u64 {
+/// WARNING: Custom exponent length calculation not audited
+pub fn unaudited_calculateAdjustedExponentLength(exp_len: usize, exp_bytes: []const u8) u64 {
     if (exp_len == 0) return 0;
 
     // Find first non-zero byte
@@ -216,7 +243,7 @@ test "modexp: base^0 mod m = 1" {
     const mod = [_]u8{7};
     var output: [1]u8 = undefined;
 
-    try modexp(allocator, &base, &exp, &mod, &output);
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
     try std.testing.expectEqual(@as(u8, 1), output[0]);
 }
 
@@ -228,7 +255,7 @@ test "modexp: 0^exp mod m = 0" {
     const mod = [_]u8{7};
     var output: [1]u8 = undefined;
 
-    try modexp(allocator, &base, &exp, &mod, &output);
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
     try std.testing.expectEqual(@as(u8, 0), output[0]);
 }
 
@@ -240,7 +267,7 @@ test "modexp: 2^3 mod 5 = 3" {
     const mod = [_]u8{5};
     var output: [1]u8 = undefined;
 
-    try modexp(allocator, &base, &exp, &mod, &output);
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
     try std.testing.expectEqual(@as(u8, 3), output[0]);
 }
 
@@ -252,7 +279,7 @@ test "modexp: division by zero" {
     const mod = [_]u8{0};
     var output: [1]u8 = undefined;
 
-    try std.testing.expectError(ModExpError.DivisionByZero, modexp(allocator, &base, &exp, &mod, &output));
+    try std.testing.expectError(ModExpError.DivisionByZero, unaudited_modexp(allocator, &base, &exp, &mod, &output));
 }
 
 /// Read big-endian bytes into a Managed big integer
@@ -307,7 +334,7 @@ test "modexp: large numbers - 2^255 mod 2^128" {
 
     var output: [17]u8 = undefined;
 
-    try modexp(allocator, &base, &exp, &mod, &output);
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
 
     // 2^255 mod 2^128 = 2^127
     var expected: [17]u8 = .{0} ** 17;
@@ -330,7 +357,7 @@ test "modexp: large base and modulus" {
 
     var output: [16]u8 = undefined;
 
-    try modexp(allocator, &base, &exp, &mod, &output);
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
 
     // Verify the result is less than the modulus
     for (output, 0..) |byte, i| {
@@ -356,10 +383,10 @@ test "modexp: very large exponent" {
 
     var output: [4]u8 = undefined;
 
-    try modexp(allocator, &base, &exp, &mod, &output);
+    try unaudited_modexp(allocator, &base, &exp, &mod, &output);
 
     // Verify result is less than modulus
-    const result = bytesToU64(&output);
-    const modulus = bytesToU64(&mod);
+    const result = unaudited_bytesToU64(&output);
+    const modulus = unaudited_bytesToU64(&mod);
     try std.testing.expect(result < modulus);
 }

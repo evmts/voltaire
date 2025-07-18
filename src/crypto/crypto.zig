@@ -209,7 +209,10 @@ pub const SECP256K1_GX: u256 = secp256k1.SECP256K1_GX;
 pub const SECP256K1_GY: u256 = secp256k1.SECP256K1_GY;
 
 /// Generate a random private key
-pub fn randomPrivateKey() !PrivateKey {
+/// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+/// This function implements private key generation without security review.
+/// Use at your own risk in production systems.
+pub fn unaudited_randomPrivateKey() !PrivateKey {
     var private_key: PrivateKey = undefined;
     crypto.random.bytes(&private_key);
 
@@ -217,7 +220,7 @@ pub fn randomPrivateKey() !PrivateKey {
     const key_as_u256 = std.mem.readInt(u256, &private_key, .big);
 
     if (key_as_u256 == 0 or key_as_u256 >= SECP256K1_N) {
-        return randomPrivateKey(); // Recursively generate until valid
+        return unaudited_randomPrivateKey(); // Recursively generate until valid
     }
 
     return private_key;
@@ -259,7 +262,10 @@ pub fn isValidSignature(signature: Signature) bool {
 }
 
 /// Derive public key from private key
-pub fn getPublicKey(private_key: PrivateKey) !PublicKey {
+/// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+/// This function implements public key derivation using unaudited ECC operations.
+/// Use at your own risk in production systems.
+pub fn unaudited_getPublicKey(private_key: PrivateKey) !PublicKey {
     const private_key_u256 = std.mem.readInt(u256, &private_key, .big);
 
     // Validate private key
@@ -282,7 +288,10 @@ pub fn getPublicKey(private_key: PrivateKey) !PublicKey {
 }
 
 /// Sign a hash with a private key using ECDSA
-pub fn signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
+/// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+/// This function implements ECDSA signing without security review.
+/// Use at your own risk in production systems.
+pub fn unaudited_signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
     const private_key_u256 = std.mem.readInt(u256, &private_key, .big);
 
     // Validate private key
@@ -338,8 +347,8 @@ pub fn signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
         recovery_id = if ((point_r.y & 1) == 1) @as(u8, 1) else @as(u8, 0);
 
         // Verify signature by recovering public key
-        const recovered_address = secp256k1.recoverAddress(&hash, recovery_id, r, s) catch continue;
-        const expected_public_key = getPublicKey(private_key) catch continue;
+        const recovered_address = secp256k1.unaudited_recoverAddress(&hash, recovery_id, r, s) catch continue;
+        const expected_public_key = unaudited_getPublicKey(private_key) catch continue;
         const expected_address = expected_public_key.toAddress();
 
         if (std.mem.eql(u8, &recovered_address, &expected_address)) {
@@ -359,13 +368,19 @@ pub fn signHash(hash: Hash.Hash, private_key: PrivateKey) !Signature {
 }
 
 /// Sign a message with EIP-191 prefix
-pub fn signMessage(message: []const u8, private_key: PrivateKey) !Signature {
+/// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+/// This function implements message signing without security review.
+/// Use at your own risk in production systems.
+pub fn unaudited_signMessage(message: []const u8, private_key: PrivateKey) !Signature {
     const message_hash = hashMessage(message);
-    return signHash(message_hash, private_key);
+    return unaudited_signHash(message_hash, private_key);
 }
 
 /// Recover address from signature and hash
-pub fn recoverAddress(hash: Hash.Hash, signature: Signature) !Address {
+/// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+/// This function implements signature recovery without security review.
+/// Use at your own risk in production systems.
+pub fn unaudited_recoverAddress(hash: Hash.Hash, signature: Signature) !Address {
     if (!signature.isValid()) {
         return CryptoError.InvalidSignature;
     }
@@ -375,24 +390,33 @@ pub fn recoverAddress(hash: Hash.Hash, signature: Signature) !Address {
         return CryptoError.InvalidRecoveryId;
     }
 
-    return secp256k1.recoverAddress(&hash, recovery_id, signature.r, signature.s);
+    return secp256k1.unaudited_recoverAddress(&hash, recovery_id, signature.r, signature.s);
 }
 
 /// Recover address from message and signature
-pub fn recoverMessageAddress(message: []const u8, signature: Signature) !Address {
+/// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+/// This function implements message address recovery without security review.
+/// Use at your own risk in production systems.
+pub fn unaudited_recoverMessageAddress(message: []const u8, signature: Signature) !Address {
     const message_hash = hashMessage(message);
-    return recoverAddress(message_hash, signature);
+    return unaudited_recoverAddress(message_hash, signature);
 }
 
 /// Verify a signature against a hash and address
-pub fn verifySignature(hash: Hash.Hash, signature: Signature, address: Address) !bool {
-    const recovered_address = recoverAddress(hash, signature) catch return false;
+/// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+/// This function implements signature verification without security review.
+/// Use at your own risk in production systems.
+pub fn unaudited_verifySignature(hash: Hash.Hash, signature: Signature, address: Address) !bool {
+    const recovered_address = unaudited_recoverAddress(hash, signature) catch return false;
     return std.mem.eql(u8, &recovered_address, &address);
 }
 
 /// Verify a message signature against an address
-pub fn verifyMessage(message: []const u8, signature: Signature, address: Address) !bool {
-    const recovered_address = recoverMessageAddress(message, signature) catch return false;
+/// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
+/// This function implements message verification without security review.
+/// Use at your own risk in production systems.
+pub fn unaudited_verifyMessage(message: []const u8, signature: Signature, address: Address) !bool {
+    const recovered_address = unaudited_recoverMessageAddress(message, signature) catch return false;
     return std.mem.eql(u8, &recovered_address, &address);
 }
 
@@ -401,7 +425,7 @@ pub fn verifyMessage(message: []const u8, signature: Signature, address: Address
 // ============================================================================
 
 test "private key generation" {
-    const private_key = try randomPrivateKey();
+    const private_key = try unaudited_randomPrivateKey();
 
     // Verify it's not all zeros
     var is_zero = true;
@@ -420,8 +444,8 @@ test "private key generation" {
 }
 
 test "public key derivation" {
-    const private_key = try randomPrivateKey();
-    const public_key = try getPublicKey(private_key);
+    const private_key = try unaudited_randomPrivateKey();
+    const public_key = try unaudited_getPublicKey(private_key);
 
     // Verify public key is valid
     try testing.expect(public_key.isValid());
@@ -431,8 +455,8 @@ test "public key derivation" {
 }
 
 test "address derivation" {
-    const private_key = try randomPrivateKey();
-    const public_key = try getPublicKey(private_key);
+    const private_key = try unaudited_randomPrivateKey();
+    const public_key = try unaudited_getPublicKey(private_key);
     const address = public_key.toAddress();
 
     // Verify address is not zero
@@ -455,33 +479,33 @@ test "message hashing" {
 }
 
 test "signature creation and verification" {
-    const private_key = try randomPrivateKey();
+    const private_key = try unaudited_randomPrivateKey();
     const message = "Test message for signing";
 
     // Sign the message
-    const signature = try signMessage(message, private_key);
+    const signature = try unaudited_signMessage(message, private_key);
 
     // Verify signature is valid
     try testing.expect(signature.isValid());
 
     // Recover address from signature
-    const recovered_address = try recoverMessageAddress(message, signature);
+    const recovered_address = try unaudited_recoverMessageAddress(message, signature);
 
     // Verify recovered address matches expected
-    const public_key = try getPublicKey(private_key);
+    const public_key = try unaudited_getPublicKey(private_key);
     const expected_address = public_key.toAddress();
     try testing.expect(std.mem.eql(u8, &recovered_address, &expected_address));
 
     // Verify signature verification
-    try testing.expect(try verifyMessage(message, signature, expected_address));
+    try testing.expect(try unaudited_verifyMessage(message, signature, expected_address));
 }
 
 test "signature roundtrip" {
-    const private_key = try randomPrivateKey();
+    const private_key = try unaudited_randomPrivateKey();
     const message = "Roundtrip test message";
 
     // Sign message
-    const signature = try signMessage(message, private_key);
+    const signature = try unaudited_signMessage(message, private_key);
 
     // Verify signature components
     try testing.expect(signature.r > 0);
@@ -496,26 +520,26 @@ test "signature roundtrip" {
     try testing.expect(signature_restored.v == signature.v);
 
     // Verify message verification
-    const expected_address = (try getPublicKey(private_key)).toAddress();
-    try testing.expect(try verifyMessage(message, signature, expected_address));
+    const expected_address = (try unaudited_getPublicKey(private_key)).toAddress();
+    try testing.expect(try unaudited_verifyMessage(message, signature, expected_address));
 }
 
 test "invalid signature rejection" {
-    const private_key = try randomPrivateKey();
+    const private_key = try unaudited_randomPrivateKey();
     const message = "Test message";
-    const signature = try signMessage(message, private_key);
-    const expected_address = (try getPublicKey(private_key)).toAddress();
+    const signature = try unaudited_signMessage(message, private_key);
+    const expected_address = (try unaudited_getPublicKey(private_key)).toAddress();
 
     // Verify correct signature works
-    try testing.expect(try verifyMessage(message, signature, expected_address));
+    try testing.expect(try unaudited_verifyMessage(message, signature, expected_address));
 
     // Test with modified message
     const wrong_message = "Wrong message";
-    try testing.expect(!try verifyMessage(wrong_message, signature, expected_address));
+    try testing.expect(!try unaudited_verifyMessage(wrong_message, signature, expected_address));
 
     // Test with wrong address
     const wrong_address = [_]u8{0xFF} ** 20;
-    try testing.expect(!try verifyMessage(message, signature, wrong_address));
+    try testing.expect(!try unaudited_verifyMessage(message, signature, wrong_address));
 
     // Test with invalid signature
     var invalid_signature = signature;
@@ -539,7 +563,7 @@ test "create and verify signature" {
     const message_hash = Hash.keccak256(message);
 
     // Sign the message
-    const signature = try signHash(message_hash, private_key);
+    const signature = try unaudited_signHash(message_hash, private_key);
 
     // Verify signature components
     try testing.expectEqual(@as(usize, 32), @sizeOf(@TypeOf(signature.r)));
@@ -558,7 +582,7 @@ test "ecdsa recover public key" {
     };
 
     // Recovery should not fail for valid signature
-    const result = recoverAddress(message_hash, signature);
+    const result = unaudited_recoverAddress(message_hash, signature);
     _ = result catch |err| {
         // Expected to potentially fail with invalid test data
         try testing.expect(err == CryptoError.InvalidSignature or
@@ -619,8 +643,8 @@ test "signature hex encoding" {
 }
 
 test "generate private key" {
-    const key1 = try randomPrivateKey();
-    const key2 = try randomPrivateKey();
+    const key1 = try unaudited_randomPrivateKey();
+    const key2 = try unaudited_randomPrivateKey();
 
     // Keys should be different
     try testing.expect(!std.mem.eql(u8, &key1, &key2));
@@ -639,13 +663,13 @@ test "derive public key from private key" {
     // Test vector with known private/public key pair
     const private_key = PrivateKey{ 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-    const public_key = try getPublicKey(private_key);
+    const public_key = try unaudited_getPublicKey(private_key);
 
     // Public key should be valid
     try testing.expect(public_key.isValid());
 
     // Public key should be deterministic
-    const public_key2 = try getPublicKey(private_key);
+    const public_key2 = try unaudited_getPublicKey(private_key);
     try testing.expectEqual(public_key.x, public_key2.x);
     try testing.expectEqual(public_key.y, public_key2.y);
 }
@@ -658,7 +682,7 @@ test "derive address from private key" {
         0x36, 0x49, 0x5a, 0xf7, 0x42, 0x2f, 0xba, 0x41,
     };
 
-    const public_key = try getPublicKey(private_key);
+    const public_key = try unaudited_getPublicKey(private_key);
     const address = publicKeyToAddress(public_key);
 
     // Address should be 20 bytes
@@ -675,7 +699,7 @@ test "personal sign message" {
     const message = "Hello, Ethereum!";
 
     // Sign with personal_sign prefix
-    const signature = try signMessage(message, private_key);
+    const signature = try unaudited_signMessage(message, private_key);
 
     // Verify signature format
     try testing.expectEqual(@as(usize, 32), @sizeOf(@TypeOf(signature.r)));

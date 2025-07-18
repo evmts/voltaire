@@ -399,8 +399,12 @@ fn hashDomain(allocator: Allocator, domain: *const Eip712Domain) Eip712Error!Has
 
 // Main EIP-712 functions
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Hash typed data according to EIP-712: keccak256("\x19\x01" ‖ domainSeparator ‖ hashStruct(message))
-pub fn hashTypedData(allocator: Allocator, typed_data: *const TypedData) Eip712Error!Hash.Hash {
+/// WARNING: This is a custom crypto implementation that has not been security audited.
+/// EIP-712 implementation may have vulnerabilities in type encoding or hashing.
+/// Do not use in production without proper security review.
+pub fn unaudited_hashTypedData(allocator: Allocator, typed_data: *const TypedData) Eip712Error!Hash.Hash {
     var result = ArrayList(u8).init(allocator);
     defer result.deinit();
 
@@ -423,22 +427,34 @@ pub fn hashTypedData(allocator: Allocator, typed_data: *const TypedData) Eip712E
     return Hash.keccak256(final_data);
 }
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Sign typed data with a private key
-pub fn signTypedData(allocator: Allocator, typed_data: *const TypedData, private_key: PrivateKey) (Eip712Error || Crypto.CryptoError)!Signature {
-    const hash = try hashTypedData(allocator, typed_data);
-    return Crypto.signHash(hash, private_key);
+/// WARNING: This is a custom crypto implementation that has not been security audited.
+/// EIP-712 signing implementation may have vulnerabilities.
+/// Do not use in production without proper security review.
+pub fn unaudited_signTypedData(allocator: Allocator, typed_data: *const TypedData, private_key: PrivateKey) (Eip712Error || Crypto.CryptoError)!Signature {
+    const hash = try unaudited_hashTypedData(allocator, typed_data);
+    return Crypto.unaudited_signHash(hash, private_key);
 }
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Verify typed data signature
-pub fn verifyTypedData(allocator: Allocator, typed_data: *const TypedData, signature: Signature, address: Address) (Eip712Error || Crypto.CryptoError)!bool {
-    const hash = try hashTypedData(allocator, typed_data);
-    return Crypto.verifySignature(hash, signature, address);
+/// WARNING: This is a custom crypto implementation that has not been security audited.
+/// EIP-712 verification implementation may have vulnerabilities.
+/// Do not use in production without proper security review.
+pub fn unaudited_verifyTypedData(allocator: Allocator, typed_data: *const TypedData, signature: Signature, address: Address) (Eip712Error || Crypto.CryptoError)!bool {
+    const hash = try unaudited_hashTypedData(allocator, typed_data);
+    return Crypto.unaudited_verifySignature(hash, signature, address);
 }
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Recover address from typed data signature
-pub fn recoverTypedDataAddress(allocator: Allocator, typed_data: *const TypedData, signature: Signature) (Eip712Error || Crypto.CryptoError)!Address {
-    const hash = try hashTypedData(allocator, typed_data);
-    return Crypto.recoverAddress(hash, signature);
+/// WARNING: This is a custom crypto implementation that has not been security audited.
+/// EIP-712 address recovery implementation may have vulnerabilities.
+/// Do not use in production without proper security review.
+pub fn unaudited_recoverTypedDataAddress(allocator: Allocator, typed_data: *const TypedData, signature: Signature) (Eip712Error || Crypto.CryptoError)!Address {
+    const hash = try unaudited_hashTypedData(allocator, typed_data);
+    return Crypto.unaudited_recoverAddress(hash, signature);
 }
 
 // Convenience functions for common patterns
@@ -535,18 +551,18 @@ test "EIP-712 signature roundtrip" {
     try typed_data.message.put(try allocator.dupe(u8, "value"), MessageValue{ .number = 42 });
 
     // Generate key pair
-    const private_key = try Crypto.randomPrivateKey();
-    const public_key = try Crypto.getPublicKey(private_key);
+    const private_key = try Crypto.unaudited_randomPrivateKey();
+    const public_key = try Crypto.unaudited_getPublicKey(private_key);
     const expected_address = public_key.toAddress();
 
     // Sign typed data
-    const signature = try signTypedData(allocator, &typed_data, private_key);
+    const signature = try unaudited_signTypedData(allocator, &typed_data, private_key);
 
     // Verify signature
-    try testing.expect(try verifyTypedData(allocator, &typed_data, signature, expected_address));
+    try testing.expect(try unaudited_verifyTypedData(allocator, &typed_data, signature, expected_address));
 
     // Recover address
-    const recovered_address = try recoverTypedDataAddress(allocator, &typed_data, signature);
+    const recovered_address = try unaudited_recoverTypedDataAddress(allocator, &typed_data, signature);
     try testing.expect(std.mem.eql(u8, &recovered_address, &expected_address));
 }
 
@@ -573,8 +589,8 @@ test "EIP-712 hash deterministic" {
     try typed_data.message.put(try allocator.dupe(u8, "value"), MessageValue{ .number = 42 });
 
     // Hash twice and verify they're the same
-    const hash1 = try hashTypedData(allocator, &typed_data);
-    const hash2 = try hashTypedData(allocator, &typed_data);
+    const hash1 = try unaudited_hashTypedData(allocator, &typed_data);
+    const hash2 = try unaudited_hashTypedData(allocator, &typed_data);
 
     try testing.expect(std.mem.eql(u8, &hash1, &hash2));
 }
@@ -598,7 +614,7 @@ test "EIP-712 basic functionality" {
     typed_data.primary_type = "TestMessage";
 
     // Try to hash - this should work even if we don't have complete type definitions
-    const hash_result = hashTypedData(allocator, &typed_data);
+    const hash_result = unaudited_hashTypedData(allocator, &typed_data);
 
     // We expect this to potentially fail but not crash
     if (hash_result) |hash| {
@@ -613,8 +629,8 @@ test "EIP-712 basic functionality" {
 
 test "EIP-712 crypto integration" {
     // Test that the crypto functions are available
-    const private_key = try Crypto.randomPrivateKey();
-    const public_key = try Crypto.getPublicKey(private_key);
+    const private_key = try Crypto.unaudited_randomPrivateKey();
+    const public_key = try Crypto.unaudited_getPublicKey(private_key);
     const address = public_key.toAddress();
 
     // Basic test that addresses work

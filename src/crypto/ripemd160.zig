@@ -1,6 +1,19 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+/// ⚠️ UNAUDITED CUSTOM CRYPTO IMPLEMENTATION - NOT SECURITY AUDITED ⚠️
+/// 
+/// This module contains a CUSTOM RIPEMD160 hash function implementation
+/// that has NOT been security audited or verified against known attacks.
+/// These implementations are provided for educational/testing purposes only.
+/// DO NOT USE IN PRODUCTION without proper security audit and testing.
+///
+/// Known risks:
+/// - Potential timing attacks in hash computation
+/// - Unvalidated against known hash function vulnerabilities
+/// - Custom implementation may have edge case bugs
+/// - Memory safety not guaranteed under all conditions
+///
 /// RIPEMD160 implementation based on Bitcoin Core reference
 /// This implementation follows the RIPEMD160 specification and matches Bitcoin Core's implementation
 pub const RIPEMD160 = struct {
@@ -456,8 +469,12 @@ fn round(a: *u32, _: *u32, c: *u32, _: *u32, e: *u32, x: u32, s: u5) void {
     c.* = rol(c.*, 10);
 }
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Compute RIPEMD160 hash of input data
-pub fn hash(data: []const u8) [20]u8 {
+/// WARNING: This is a custom crypto implementation that has not been security audited.
+/// May be vulnerable to timing attacks and other cryptographic vulnerabilities.
+/// Do not use in production without proper security review.
+pub fn unaudited_hash(data: []const u8) [20]u8 {
     var h = RIPEMD160.init();
     h.update(data);
     return h.final();

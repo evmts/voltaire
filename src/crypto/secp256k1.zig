@@ -3,7 +3,18 @@ const crypto = std.crypto;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 
-/// Production-ready ECDSA signature recovery for secp256k1
+/// ⚠️ UNAUDITED CUSTOM CRYPTO IMPLEMENTATION - NOT SECURITY AUDITED ⚠️
+/// 
+/// This module contains CUSTOM elliptic curve cryptography implementations
+/// that have NOT been security audited or verified against known attacks.
+/// These implementations are provided for educational/testing purposes only.
+/// DO NOT USE IN PRODUCTION without proper security audit and testing.
+///
+/// Known risks:
+/// - Potential timing attacks in modular arithmetic
+/// - Unvalidated against known ECC vulnerabilities  
+/// - Custom point arithmetic may have edge case bugs
+/// - Memory safety not guaranteed under all conditions
 ///
 /// This module provides a wrapper around the existing precompile implementation
 /// to make it accessible from the primitives package.
@@ -35,9 +46,9 @@ pub const AffinePoint = struct {
         if (self.infinity) return true;
 
         // Check y² = x³ + 7 mod p
-        const y2 = mulmod(self.y, self.y, SECP256K1_P);
-        const x3 = mulmod(mulmod(self.x, self.x, SECP256K1_P), self.x, SECP256K1_P);
-        const right = addmod(x3, SECP256K1_B, SECP256K1_P);
+        const y2 = unaudited_mulmod(self.y, self.y, SECP256K1_P);
+        const x3 = unaudited_mulmod(unaudited_mulmod(self.x, self.x, SECP256K1_P), self.x, SECP256K1_P);
+        const right = unaudited_addmod(x3, SECP256K1_B, SECP256K1_P);
 
         return y2 == right;
     }
@@ -51,20 +62,20 @@ pub const AffinePoint = struct {
         if (self.infinity) return self;
 
         // λ = (3x² + a) / (2y) mod p, where a = 0 for secp256k1
-        const x2 = mulmod(self.x, self.x, SECP256K1_P);
-        const three_x2 = mulmod(3, x2, SECP256K1_P);
-        const two_y = mulmod(2, self.y, SECP256K1_P);
-        const two_y_inv = invmod(two_y, SECP256K1_P) orelse return Self.zero();
-        const lambda = mulmod(three_x2, two_y_inv, SECP256K1_P);
+        const x2 = unaudited_mulmod(self.x, self.x, SECP256K1_P);
+        const three_x2 = unaudited_mulmod(3, x2, SECP256K1_P);
+        const two_y = unaudited_mulmod(2, self.y, SECP256K1_P);
+        const two_y_inv = unaudited_invmod(two_y, SECP256K1_P) orelse return Self.zero();
+        const lambda = unaudited_mulmod(three_x2, two_y_inv, SECP256K1_P);
 
         // x3 = λ² - 2x mod p
-        const lambda2 = mulmod(lambda, lambda, SECP256K1_P);
-        const two_x = mulmod(2, self.x, SECP256K1_P);
-        const x3 = submod(lambda2, two_x, SECP256K1_P);
+        const lambda2 = unaudited_mulmod(lambda, lambda, SECP256K1_P);
+        const two_x = unaudited_mulmod(2, self.x, SECP256K1_P);
+        const x3 = unaudited_submod(lambda2, two_x, SECP256K1_P);
 
         // y3 = λ(x - x3) - y mod p
-        const x_diff = submod(self.x, x3, SECP256K1_P);
-        const y3 = submod(mulmod(lambda, x_diff, SECP256K1_P), self.y, SECP256K1_P);
+        const x_diff = unaudited_submod(self.x, x3, SECP256K1_P);
+        const y3 = unaudited_submod(unaudited_mulmod(lambda, x_diff, SECP256K1_P), self.y, SECP256K1_P);
 
         return Self{ .x = x3, .y = y3, .infinity = false };
     }
@@ -78,18 +89,18 @@ pub const AffinePoint = struct {
         }
 
         // λ = (y2 - y1) / (x2 - x1) mod p
-        const y_diff = submod(other.y, self.y, SECP256K1_P);
-        const x_diff = submod(other.x, self.x, SECP256K1_P);
-        const x_diff_inv = invmod(x_diff, SECP256K1_P) orelse return Self.zero();
-        const lambda = mulmod(y_diff, x_diff_inv, SECP256K1_P);
+        const y_diff = unaudited_submod(other.y, self.y, SECP256K1_P);
+        const x_diff = unaudited_submod(other.x, self.x, SECP256K1_P);
+        const x_diff_inv = unaudited_invmod(x_diff, SECP256K1_P) orelse return Self.zero();
+        const lambda = unaudited_mulmod(y_diff, x_diff_inv, SECP256K1_P);
 
         // x3 = λ² - x1 - x2 mod p
-        const lambda2 = mulmod(lambda, lambda, SECP256K1_P);
-        const x3 = submod(submod(lambda2, self.x, SECP256K1_P), other.x, SECP256K1_P);
+        const lambda2 = unaudited_mulmod(lambda, lambda, SECP256K1_P);
+        const x3 = unaudited_submod(unaudited_submod(lambda2, self.x, SECP256K1_P), other.x, SECP256K1_P);
 
         // y3 = λ(x1 - x3) - y1 mod p
-        const x1_diff = submod(self.x, x3, SECP256K1_P);
-        const y3 = submod(mulmod(lambda, x1_diff, SECP256K1_P), self.y, SECP256K1_P);
+        const x1_diff = unaudited_submod(self.x, x3, SECP256K1_P);
+        const y3 = unaudited_submod(unaudited_mulmod(lambda, x1_diff, SECP256K1_P), self.y, SECP256K1_P);
 
         return Self{ .x = x3, .y = y3, .infinity = false };
     }
@@ -112,8 +123,11 @@ pub const AffinePoint = struct {
     }
 };
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Validates ECDSA signature parameters for Ethereum
-pub fn validateSignature(r: u256, s: u256) bool {
+/// WARNING: This is a custom crypto implementation that has not been security audited.
+/// Do not use in production without proper security review.
+pub fn unaudited_validateSignature(r: u256, s: u256) bool {
     // r and s must be in [1, n-1]
     if (r == 0 or r >= SECP256K1_N) return false;
     if (s == 0 or s >= SECP256K1_N) return false;
@@ -125,8 +139,12 @@ pub fn validateSignature(r: u256, s: u256) bool {
     return true;
 }
 
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
 /// Recovers Ethereum address from ECDSA signature
-pub fn recoverAddress(
+/// WARNING: This is a custom crypto implementation that has not been security audited.
+/// Contains custom elliptic curve point arithmetic that may have vulnerabilities.
+/// Do not use in production without proper security review.
+pub fn unaudited_recoverAddress(
     hash: []const u8,
     recovery_id: u8,
     r: u256,
@@ -134,21 +152,21 @@ pub fn recoverAddress(
 ) !Address {
     if (hash.len != 32) return error.InvalidHashLength;
     if (recovery_id > 1) return error.InvalidRecoveryId;
-    if (!validateSignature(r, s)) return error.InvalidSignature;
+    if (!unaudited_validateSignature(r, s)) return error.InvalidSignature;
 
     // Step 1: Calculate point R from r and recovery_id
     // x = r (we don't handle r >= p case as it's extremely rare)
     if (r >= SECP256K1_P) return error.InvalidSignature;
 
     // Calculate y² = x³ + 7 mod p
-    const x3 = mulmod(mulmod(r, r, SECP256K1_P), r, SECP256K1_P);
-    const y2 = addmod(x3, SECP256K1_B, SECP256K1_P);
+    const x3 = unaudited_mulmod(unaudited_mulmod(r, r, SECP256K1_P), r, SECP256K1_P);
+    const y2 = unaudited_addmod(x3, SECP256K1_B, SECP256K1_P);
 
     // Calculate y = y²^((p+1)/4) mod p (works because p ≡ 3 mod 4)
-    const y = powmod(y2, (SECP256K1_P + 1) >> 2, SECP256K1_P);
+    const y = unaudited_powmod(y2, (SECP256K1_P + 1) >> 2, SECP256K1_P);
 
     // Verify y is correct
-    if (mulmod(y, y, SECP256K1_P) != y2) return error.InvalidSignature;
+    if (unaudited_mulmod(y, y, SECP256K1_P) != y2) return error.InvalidSignature;
 
     // Choose correct y based on recovery_id
     const y_is_odd = (y & 1) == 1;
@@ -163,7 +181,7 @@ pub fn recoverAddress(
     const e = std.mem.readInt(u256, &hash_array, .big);
 
     // Step 3: Calculate public key Q = r⁻¹(sR - eG)
-    const r_inv = invmod(r, SECP256K1_N) orelse return error.InvalidSignature;
+    const r_inv = unaudited_invmod(r, SECP256K1_N) orelse return error.InvalidSignature;
 
     // Calculate sR
     const sR = R.scalarMul(s);
@@ -208,13 +226,13 @@ fn verifySignature(
     const e = std.mem.readInt(u256, &hash, .big);
 
     // Calculate s⁻¹
-    const s_inv = invmod(s, SECP256K1_N) orelse return false;
+    const s_inv = unaudited_invmod(s, SECP256K1_N) orelse return false;
 
     // u_1 = e * s⁻¹ mod n
-    const u_1 = mulmod(e, s_inv, SECP256K1_N);
+    const u_1 = unaudited_mulmod(e, s_inv, SECP256K1_N);
 
     // u_2 = r * s⁻¹ mod n
-    const u_2 = mulmod(r, s_inv, SECP256K1_N);
+    const u_2 = unaudited_mulmod(r, s_inv, SECP256K1_N);
 
     // R' = u_1*G + u_2*Q
     const u1G = AffinePoint.generator().scalarMul(u_1);
@@ -229,7 +247,10 @@ fn verifySignature(
 
 // Field arithmetic helpers
 
-pub fn mulmod(a: u256, b: u256, m: u256) u256 {
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
+/// Custom modular multiplication implementation
+/// WARNING: Potential timing attack vulnerabilities - not constant time
+pub fn unaudited_mulmod(a: u256, b: u256, m: u256) u256 {
     if (m == 0) return 0;
     if (a == 0 or b == 0) return 0;
 
@@ -245,11 +266,11 @@ pub fn mulmod(a: u256, b: u256, m: u256) u256 {
     while (multiplier > 0) {
         if (multiplier & 1 == 1) {
             // Add multiplicand to result (mod m)
-            result = addmod(result, multiplicand, m);
+            result = unaudited_addmod(result, multiplicand, m);
         }
 
         // Double multiplicand (mod m)
-        multiplicand = addmod(multiplicand, multiplicand, m);
+        multiplicand = unaudited_addmod(multiplicand, multiplicand, m);
 
         multiplier >>= 1;
     }
@@ -257,7 +278,10 @@ pub fn mulmod(a: u256, b: u256, m: u256) u256 {
     return result;
 }
 
-pub fn addmod(a: u256, b: u256, m: u256) u256 {
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
+/// Custom modular addition implementation  
+/// WARNING: Potential timing attack vulnerabilities - not constant time
+pub fn unaudited_addmod(a: u256, b: u256, m: u256) u256 {
     if (m == 0) return 0;
 
     const a_mod = a % m;
@@ -271,7 +295,10 @@ pub fn addmod(a: u256, b: u256, m: u256) u256 {
     }
 }
 
-pub fn submod(a: u256, b: u256, m: u256) u256 {
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
+/// Custom modular subtraction implementation
+/// WARNING: Potential timing attack vulnerabilities - not constant time
+pub fn unaudited_submod(a: u256, b: u256, m: u256) u256 {
     const a_mod = a % m;
     const b_mod = b % m;
 
@@ -282,7 +309,10 @@ pub fn submod(a: u256, b: u256, m: u256) u256 {
     }
 }
 
-pub fn powmod(base: u256, exp: u256, modulus: u256) u256 {
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
+/// Custom modular exponentiation implementation
+/// WARNING: Potential timing attack vulnerabilities - not constant time
+pub fn unaudited_powmod(base: u256, exp: u256, modulus: u256) u256 {
     if (modulus == 1) return 0;
     if (exp == 0) return 1;
 
@@ -292,16 +322,19 @@ pub fn powmod(base: u256, exp: u256, modulus: u256) u256 {
 
     while (exp_remaining > 0) {
         if (exp_remaining & 1 == 1) {
-            result = mulmod(result, base_mod, modulus);
+            result = unaudited_mulmod(result, base_mod, modulus);
         }
-        base_mod = mulmod(base_mod, base_mod, modulus);
+        base_mod = unaudited_mulmod(base_mod, base_mod, modulus);
         exp_remaining >>= 1;
     }
 
     return result;
 }
 
-pub fn invmod(a: u256, m: u256) ?u256 {
+/// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
+/// Custom modular inverse implementation using Extended Euclidean Algorithm
+/// WARNING: Potential timing attack vulnerabilities - not constant time
+pub fn unaudited_invmod(a: u256, m: u256) ?u256 {
     if (m == 0) return null;
     if (a == 0) return null;
 
@@ -355,7 +388,7 @@ test "recover address from signature" {
     const recovery_id: u8 = 0;
 
     // Recover address
-    const recovered_address = recoverAddress(&message_hash, recovery_id, r, s) catch |err| {
+    const recovered_address = unaudited_recoverAddress(&message_hash, recovery_id, r, s) catch |err| {
         // Expected to potentially fail with test data
         try std.testing.expect(err == error.InvalidSignature);
         return;
@@ -372,7 +405,7 @@ test "signature malleability check" {
     const s_high: u256 = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141; // n
 
     // Should be considered invalid due to high S
-    try std.testing.expect(!validateSignature(r, s_high));
+    try std.testing.expect(!unaudited_validateSignature(r, s_high));
 }
 
 test "EIP-2 signature validation" {
@@ -381,13 +414,13 @@ test "EIP-2 signature validation" {
     const s: u256 = 0x3456789012345678901234567890123456789012345678901234567890123456;
 
     // Valid signature parameters
-    try std.testing.expect(validateSignature(r, s));
+    try std.testing.expect(unaudited_validateSignature(r, s));
 
     // Test with zero r (invalid)
-    try std.testing.expect(!validateSignature(0, s));
+    try std.testing.expect(!unaudited_validateSignature(0, s));
 
     // Test with zero s (invalid)
-    try std.testing.expect(!validateSignature(r, 0));
+    try std.testing.expect(!unaudited_validateSignature(r, 0));
 }
 
 test "signature recovery edge cases" {
@@ -396,7 +429,7 @@ test "signature recovery edge cases" {
     const r: u256 = 0x1234567890123456789012345678901234567890123456789012345678901234;
     const s: u256 = 0x3456789012345678901234567890123456789012345678901234567890123456;
 
-    const result = recoverAddress(&zero_hash, 0, r, s);
+    const result = unaudited_recoverAddress(&zero_hash, 0, r, s);
     _ = result catch |err| {
         // Expected to fail
         try std.testing.expect(err == error.InvalidSignature);
@@ -459,27 +492,27 @@ test "field arithmetic" {
     const a: u256 = 0x123456789abcdef;
     const b: u256 = 0xfedcba987654321;
     const m: u256 = SECP256K1_P;
-    const result = mulmod(a, b, m);
+    const result = unaudited_mulmod(a, b, m);
     try std.testing.expect(result < m);
 
     // Test addmod
-    const sum = addmod(a, b, m);
+    const sum = unaudited_addmod(a, b, m);
     try std.testing.expect(sum < m);
     try std.testing.expect(sum == (a + b) % m);
 
     // Test submod
-    const diff = submod(b, a, m);
+    const diff = unaudited_submod(b, a, m);
     try std.testing.expect(diff < m);
 
     // Test powmod
     const base: u256 = 2;
     const exp: u256 = 10;
-    const pow_result = powmod(base, exp, m);
+    const pow_result = unaudited_powmod(base, exp, m);
     try std.testing.expect(pow_result == 1024);
 
     // Test invmod
-    const inv = invmod(a, m) orelse unreachable;
-    const product = mulmod(a, inv, m);
+    const inv = unaudited_invmod(a, m) orelse unreachable;
+    const product = unaudited_mulmod(a, inv, m);
     try std.testing.expect(product == 1);
 }
 
@@ -525,7 +558,7 @@ test "Bitcoin Core test vectors - valid signatures" {
     };
 
     for (test_vectors) |tv| {
-        const result = recoverAddress(&tv.msg_hash, tv.recovery_id, tv.r, tv.s) catch |err| {
+        const result = unaudited_recoverAddress(&tv.msg_hash, tv.recovery_id, tv.r, tv.s) catch |err| {
             // Some test vectors might be designed to fail
             try std.testing.expect(err == error.InvalidSignature);
             continue;
@@ -536,7 +569,7 @@ test "Bitcoin Core test vectors - valid signatures" {
         try std.testing.expect(!std.mem.eql(u8, &result, &zero_address));
 
         // Verify the signature was properly validated
-        try std.testing.expect(validateSignature(tv.r, tv.s));
+        try std.testing.expect(unaudited_validateSignature(tv.r, tv.s));
     }
 }
 
@@ -579,7 +612,7 @@ test "Ethereum test vectors - signature recovery" {
         // v in Ethereum is 27 or 28, we need recovery_id 0 or 1
         const recovery_id = tv.v - 27;
 
-        const recovered = recoverAddress(&message_hash, @intCast(recovery_id), tv.r, tv.s) catch |err| {
+        const recovered = unaudited_recoverAddress(&message_hash, @intCast(recovery_id), tv.r, tv.s) catch |err| {
             // Some test vectors might be designed to fail
             try std.testing.expect(err == error.InvalidSignature);
             continue;
@@ -602,45 +635,45 @@ test "Edge cases - invalid signatures" {
 
     // Test 1: r = 0 (invalid)
     {
-        const result = recoverAddress(&msg_hash, 0, 0, 0x123456);
+        const result = unaudited_recoverAddress(&msg_hash, 0, 0, 0x123456);
         try std.testing.expectError(error.InvalidSignature, result);
     }
 
     // Test 2: s = 0 (invalid)
     {
-        const result = recoverAddress(&msg_hash, 0, 0x123456, 0);
+        const result = unaudited_recoverAddress(&msg_hash, 0, 0x123456, 0);
         try std.testing.expectError(error.InvalidSignature, result);
     }
 
     // Test 3: r >= n (invalid)
     {
-        const result = recoverAddress(&msg_hash, 0, SECP256K1_N, 0x123456);
+        const result = unaudited_recoverAddress(&msg_hash, 0, SECP256K1_N, 0x123456);
         try std.testing.expectError(error.InvalidSignature, result);
     }
 
     // Test 4: s >= n (invalid)
     {
-        const result = recoverAddress(&msg_hash, 0, 0x123456, SECP256K1_N);
+        const result = unaudited_recoverAddress(&msg_hash, 0, 0x123456, SECP256K1_N);
         try std.testing.expectError(error.InvalidSignature, result);
     }
 
     // Test 5: s > n/2 (malleability check)
     {
         const half_n = SECP256K1_N >> 1;
-        const result = recoverAddress(&msg_hash, 0, 0x123456, half_n + 1);
+        const result = unaudited_recoverAddress(&msg_hash, 0, 0x123456, half_n + 1);
         try std.testing.expectError(error.InvalidSignature, result);
     }
 
     // Test 6: Invalid recovery_id
     {
-        const result = recoverAddress(&msg_hash, 2, 0x123456, 0x789abc);
+        const result = unaudited_recoverAddress(&msg_hash, 2, 0x123456, 0x789abc);
         try std.testing.expectError(error.InvalidRecoveryId, result);
     }
 
     // Test 7: Invalid hash length
     {
         const short_hash = [_]u8{0x01} ** 31;
-        const result = recoverAddress(&short_hash, 0, 0x123456, 0x789abc);
+        const result = unaudited_recoverAddress(&short_hash, 0, 0x123456, 0x789abc);
         try std.testing.expectError(error.InvalidHashLength, result);
     }
 }
@@ -724,7 +757,7 @@ test "Bitcoin signature test vectors - comprehensive" {
     };
 
     for (test_cases) |tc| {
-        const result = recoverAddress(&tc.hash, tc.recovery_id, tc.r, tc.s);
+        const result = unaudited_recoverAddress(&tc.hash, tc.recovery_id, tc.r, tc.s);
 
         if (tc.should_fail) {
             try std.testing.expectError(error.InvalidSignature, result);
@@ -754,13 +787,13 @@ test "Public key recovery consistency" {
     const s: u256 = 0x26afe8922bb25e8a87cd0fca0f21e9e08b6fb8e4c50a7c7c069e69f6e2b5c5a2;
 
     // Recover address multiple times
-    const addr1 = recoverAddress(&hash, 0, r, s) catch |err| {
+    const addr1 = unaudited_recoverAddress(&hash, 0, r, s) catch |err| {
         try std.testing.expect(err == error.InvalidSignature);
         return;
     };
 
-    const addr2 = recoverAddress(&hash, 0, r, s) catch unreachable;
-    const addr3 = recoverAddress(&hash, 0, r, s) catch unreachable;
+    const addr2 = unaudited_recoverAddress(&hash, 0, r, s) catch unreachable;
+    const addr3 = unaudited_recoverAddress(&hash, 0, r, s) catch unreachable;
 
     // All recovered addresses should be identical
     try std.testing.expectEqualSlices(u8, &addr1, &addr2);
@@ -772,24 +805,24 @@ test "Field arithmetic edge cases" {
 
     // Test with p - 1
     const p_minus_1 = SECP256K1_P - 1;
-    const p_minus_1_squared = mulmod(p_minus_1, p_minus_1, SECP256K1_P);
+    const p_minus_1_squared = unaudited_mulmod(p_minus_1, p_minus_1, SECP256K1_P);
     try std.testing.expectEqual(@as(u256, 1), p_minus_1_squared);
 
     // Test with n - 1
     const n_minus_1 = SECP256K1_N - 1;
-    const n_minus_1_squared = mulmod(n_minus_1, n_minus_1, SECP256K1_N);
+    const n_minus_1_squared = unaudited_mulmod(n_minus_1, n_minus_1, SECP256K1_N);
     try std.testing.expectEqual(@as(u256, 1), n_minus_1_squared);
 
     // Test modular inverse of 2
-    const two_inv_p = invmod(2, SECP256K1_P) orelse unreachable;
-    const check_p = mulmod(2, two_inv_p, SECP256K1_P);
+    const two_inv_p = unaudited_invmod(2, SECP256K1_P) orelse unreachable;
+    const check_p = unaudited_mulmod(2, two_inv_p, SECP256K1_P);
     try std.testing.expectEqual(@as(u256, 1), check_p);
 
-    const two_inv_n = invmod(2, SECP256K1_N) orelse unreachable;
-    const check_n = mulmod(2, two_inv_n, SECP256K1_N);
+    const two_inv_n = unaudited_invmod(2, SECP256K1_N) orelse unreachable;
+    const check_n = unaudited_mulmod(2, two_inv_n, SECP256K1_N);
     try std.testing.expectEqual(@as(u256, 1), check_n);
 
     // Test that p and n are coprime (which they should be)
-    const gcd_result = invmod(SECP256K1_P, SECP256K1_N);
+    const gcd_result = unaudited_invmod(SECP256K1_P, SECP256K1_N);
     try std.testing.expect(gcd_result != null);
 }

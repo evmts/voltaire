@@ -57,12 +57,12 @@ pub fn calculate_gas(base_len: usize, exp_len: usize, mod_len: usize, exp_bytes:
 
 /// Calculates multiplication complexity based on size
 fn calculate_multiplication_complexity(x: usize) u64 {
-    return crypto.ModExp.calculateMultiplicationComplexity(x);
+    return crypto.ModExp.unaudited_calculateMultiplicationComplexity(x);
 }
 
 /// Calculates adjusted exponent length based on leading zeros
 fn calculate_adjusted_exponent_length(exp_len: usize, exp_bytes: []const u8) u64 {
-    return crypto.ModExp.calculateAdjustedExponentLength(exp_len, exp_bytes);
+    return crypto.ModExp.unaudited_calculateAdjustedExponentLength(exp_len, exp_bytes);
 }
 
 /// Executes the ModExp precompile
@@ -128,7 +128,7 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
     }
 
     // Check if modulus is zero
-    if (crypto.ModExp.isZero(mod_bytes)) {
+    if (crypto.ModExp.unaudited_isZero(mod_bytes)) {
         // Modulus is 0, result is 0
         @memset(output[0..mod_len], 0);
         return PrecompileOutput.success_result(gas_cost, mod_len);
@@ -145,7 +145,7 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    crypto.ModExp.modexp(allocator, base_bytes, exp_bytes, mod_bytes, output[0..mod_len]) catch {
+    crypto.ModExp.unaudited_modexp(allocator, base_bytes, exp_bytes, mod_bytes, output[0..mod_len]) catch {
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     };
 
