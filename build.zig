@@ -192,7 +192,7 @@ pub fn build(b: *std.Build) void {
     const rust_profile = if (optimize == .Debug) "dev" else "release";
     const rust_target_dir = if (optimize == .Debug) "debug" else "release";
 
-    const rust_build = b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml" });
+    const rust_build = b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
 
     // Fix for macOS linking issues (only on macOS)
     if (target.result.os.tag == .macos) {
@@ -210,12 +210,23 @@ pub fn build(b: *std.Build) void {
     const rust_lib_path = b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
     bn254_lib.addObjectFile(b.path(rust_lib_path));
     bn254_lib.linkLibC();
+    
+    // Link additional system libraries that Rust might need
+    if (target.result.os.tag == .linux) {
+        bn254_lib.linkSystemLibrary("dl");
+        bn254_lib.linkSystemLibrary("pthread");
+        bn254_lib.linkSystemLibrary("m");
+    }
 
     // Add include path for C header
     bn254_lib.addIncludePath(b.path("src/bn254_wrapper"));
 
+    // Add a step to verify the library exists
+    const verify_lib = b.addSystemCommand(&[_][]const u8{ "ls", "-la", rust_lib_path });
+    verify_lib.step.dependOn(&rust_build.step);
+    
     // Make the rust build a dependency
-    bn254_lib.step.dependOn(&rust_build.step);
+    bn254_lib.step.dependOn(&verify_lib.step);
 
     // C-KZG-4844 Zig bindings from evmts/c-kzg-4844
     const c_kzg_dep = b.dependency("c_kzg_4844", .{

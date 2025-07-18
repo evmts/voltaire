@@ -42,7 +42,7 @@ pub extern "C" fn bn254_init() -> c_int {
 /// Returns Bn254Result::Success on success, error code otherwise
 ///
 /// # Safety
-/// 
+///
 /// This function dereferences raw pointers and requires:
 /// - `input` must be valid for reads of `input_len` bytes
 /// - `output` must be valid for writes of `output_len` bytes
@@ -146,7 +146,7 @@ pub unsafe extern "C" fn bn254_ecmul(
 /// Returns Bn254Result::Success on success, error code otherwise
 ///
 /// # Safety
-/// 
+///
 /// This function dereferences raw pointers and requires:
 /// - `input` must be valid for reads of `input_len` bytes
 /// - `output` must be valid for writes of `output_len` bytes

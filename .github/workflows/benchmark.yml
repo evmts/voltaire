@@ -56,8 +56,9 @@ jobs:
           output-file-path: benchmarks/zig-bench.json
           benchmark-data-dir-path: 'dev/bench'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
+          auto-push: false
           alert-threshold: '150%'
           comment-on-alert: true
           fail-on-alert: false
           alert-comment-cc-users: '@willcory10'
+          skip-fetch-gh-pages: true
