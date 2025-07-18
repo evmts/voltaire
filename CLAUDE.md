@@ -130,6 +130,49 @@ All tests in this codebase should be written with **zero abstractions or indirec
 
 This principle ensures code quality and prevents the accumulation of broken functionality.
 
+## CRITICAL: Zero Tolerance for Compilation and Test Failures
+
+**ABSOLUTE REQUIREMENT**: The codebase must ALWAYS compile and all tests must ALWAYS pass. There are NO exceptions to this rule.
+
+**Compilation Failures Are Unacceptable**:
+- Every change must result in a successful `zig build` command
+- No compilation errors, warnings, or syntax issues are tolerated
+- If your changes introduce compilation failures, you MUST fix them immediately
+- Never leave the codebase in a non-compiling state, even temporarily
+
+**Test Failures Are Unacceptable**:
+- Every change must result in a successful `zig build test` command
+- All existing tests must continue to pass after your changes
+- Any new tests you add must pass before committing changes
+- If tests fail, you MUST fix them before proceeding with any other work
+
+**Required Workflow Before ANY Commit**:
+```bash
+# These commands MUST succeed before any commit
+zig build && zig build test
+```
+
+**If Either Command Fails**:
+1. **STOP all other work immediately**
+2. **Fix the compilation errors or test failures**
+3. **Verify the fix by running both commands again**
+4. **Only proceed once both commands succeed**
+
+**No Exceptions**:
+- "It's just a minor compilation error" - NOT acceptable
+- "The test was already broken" - NOT acceptable
+- "I'll fix it later" - NOT acceptable
+- "It works on my machine" - NOT acceptable
+
+**Why This Is Critical**:
+- Broken builds block all development work
+- Test failures indicate regressions or bugs
+- A non-compiling codebase is unusable
+- Accumulated failures create technical debt
+- Other developers depend on a working codebase
+
+This is a fundamental requirement that overrides all other considerations. A working, tested codebase is the foundation of all development work.
+
 ### Why This Approach?
 - **Tests are documentation** - A developer should understand what's being tested without jumping between files
 - **Tests should be obvious** - No mental overhead from abstractions
