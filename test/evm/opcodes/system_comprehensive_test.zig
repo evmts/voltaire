@@ -220,7 +220,7 @@ test "CREATE: EIP-3860 initcode size limit (Shanghai+)" {
     defer evm.deinit();
 
     // Enable EIP-3860
-    evm.chain_rules.IsEIP3860 = true;
+    evm.chain_rules.is_eip3860 = true;
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
@@ -263,7 +263,7 @@ test "CREATE: EIP-3860 initcode word gas cost" {
     defer evm.deinit();
 
     // Enable EIP-3860
-    evm.chain_rules.IsEIP3860 = true;
+    evm.chain_rules.is_eip3860 = true;
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;

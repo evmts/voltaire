@@ -11,19 +11,19 @@ pub const BenchmarkResult = struct {
     iterations: u32,
     total_time_ns: u64,
     
-    pub fn meanTimeMs(self: BenchmarkResult) f64 {
+    pub fn mean_time_ms(self: BenchmarkResult) f64 {
         return @as(f64, @floatFromInt(self.mean_time_ns)) / 1_000_000.0;
     }
     
-    pub fn minTimeMs(self: BenchmarkResult) f64 {
+    pub fn min_time_ms(self: BenchmarkResult) f64 {
         return @as(f64, @floatFromInt(self.min_time_ns)) / 1_000_000.0;
     }
     
-    pub fn maxTimeMs(self: BenchmarkResult) f64 {
+    pub fn max_time_ms(self: BenchmarkResult) f64 {
         return @as(f64, @floatFromInt(self.max_time_ns)) / 1_000_000.0;
     }
     
-    pub fn totalTimeMs(self: BenchmarkResult) f64 {
+    pub fn total_time_ms(self: BenchmarkResult) f64 {
         return @as(f64, @floatFromInt(self.total_time_ns)) / 1_000_000.0;
     }
 };
@@ -95,12 +95,12 @@ pub const BenchmarkSuite = struct {
         
         std.log.info("Benchmark '{s}' completed: {d:.3}ms avg ({d} iterations)", .{
             config.name,
-            result.meanTimeMs(),
+            result.mean_time_ms(),
             config.iterations,
         });
     }
     
-    pub fn printResults(self: *BenchmarkSuite) void {
+    pub fn print_results(self: *BenchmarkSuite) void {
         if (self.results.items.len == 0) {
             print("No benchmark results available\n", .{});
             return;
@@ -109,11 +109,11 @@ pub const BenchmarkSuite = struct {
         print("\n=== Benchmark Results ===\n", .{});
         for (self.results.items) |result| {
             print("{s}:\n", .{result.name});
-            print("  Mean: {d:.3}ms\n", .{result.meanTimeMs()});
-            print("  Min:  {d:.3}ms\n", .{result.minTimeMs()});
-            print("  Max:  {d:.3}ms\n", .{result.maxTimeMs()});
+            print("  Mean: {d:.3}ms\n", .{result.mean_time_ms()});
+            print("  Min:  {d:.3}ms\n", .{result.min_time_ms()});
+            print("  Max:  {d:.3}ms\n", .{result.max_time_ms()});
             print("  Iterations: {d}\n", .{result.iterations});
-            print("  Total: {d:.3}ms\n", .{result.totalTimeMs()});
+            print("  Total: {d:.3}ms\n", .{result.total_time_ms()});
             print("\n", .{});
         }
     }
@@ -143,8 +143,8 @@ pub const BenchmarkSuite = struct {
         const percent_diff = ((@as(f64, @floatFromInt(comparison.mean_time_ns)) - @as(f64, @floatFromInt(baseline.mean_time_ns))) / @as(f64, @floatFromInt(baseline.mean_time_ns))) * 100;
         
         print("\n=== Benchmark Comparison ===\n", .{});
-        print("Baseline: {s} - {d:.3}ms\n", .{ baseline.name, baseline.meanTimeMs() });
-        print("Comparison: {s} - {d:.3}ms\n", .{ comparison.name, comparison.meanTimeMs() });
+        print("Baseline: {s} - {d:.3}ms\n", .{ baseline.name, baseline.mean_time_ms() });
+        print("Comparison: {s} - {d:.3}ms\n", .{ comparison.name, comparison.mean_time_ms() });
         print("Speedup: {d:.2}x\n", .{speedup});
         print("Percent difference: {d:.1}%\n", .{percent_diff});
         
@@ -159,7 +159,7 @@ pub const BenchmarkSuite = struct {
 };
 
 // Helper function to benchmark a function with arguments
-pub fn benchmarkWithArgs(allocator: Allocator, config: BenchmarkConfig, comptime func: anytype, args: anytype) !BenchmarkResult {
+pub fn benchmark_with_args(allocator: Allocator, config: BenchmarkConfig, comptime func: anytype, args: anytype) !BenchmarkResult {
     std.log.info("Running benchmark: {s}", .{config.name});
     
     // Warmup
@@ -205,7 +205,7 @@ test "benchmark timing" {
     defer suite.deinit();
     
     const TestFunction = struct {
-        fn simpleWork() void {
+        fn simple_work() void {
             var sum: u64 = 0;
             var i: u32 = 0;
             while (i < 1000) : (i += 1) {
@@ -218,7 +218,7 @@ test "benchmark timing" {
         .name = "simple_work",
         .iterations = 10,
         .warmup_iterations = 2,
-    }, TestFunction.simpleWork);
+    }, TestFunction.simple_work);
     
     try std.testing.expectEqual(@as(usize, 1), suite.results.items.len);
     try std.testing.expect(suite.results.items[0].mean_time_ns > 0);

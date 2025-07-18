@@ -41,7 +41,7 @@ const ChainRules = @import("../hardforks/chain_rules.zig");
 /// @param chain_rules Current chain configuration
 /// @return Gas cost for ECADD operation
 pub fn calculate_gas(chain_rules: ChainRules) u64 {
-    if (chain_rules.IsIstanbul) {
+    if (chain_rules.is_istanbul) {
         @branchHint(.likely);
         return gas_constants.ECADD_GAS_COST;
     } else {

@@ -103,7 +103,7 @@ has_create: bool,
 ///
 /// ## Example
 /// ```zig
-/// var analysis = try analyzeCode(allocator, bytecode);
+/// var analysis = try analyze_code(allocator, bytecode);
 /// defer analysis.deinit(allocator);
 /// ```
 pub fn deinit(self: *CodeAnalysis, allocator: std.mem.Allocator) void {

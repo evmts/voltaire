@@ -164,7 +164,7 @@ pub const TypedData = struct {
 };
 
 // EIP-712 Domain type properties
-fn getEip712DomainTypes(domain: *const Eip712Domain, allocator: Allocator) Eip712Error![]TypeProperty {
+fn get_eip712_domain_types(domain: *const Eip712Domain, allocator: Allocator) Eip712Error![]TypeProperty {
     var properties = ArrayList(TypeProperty).init(allocator);
     defer properties.deinit();
 
@@ -207,18 +207,18 @@ fn getEip712DomainTypes(domain: *const Eip712Domain, allocator: Allocator) Eip71
 }
 
 // Encode type string for EIP-712
-fn encodeType(allocator: Allocator, primary_type: []const u8, types: *const TypeDefinitions) Eip712Error![]u8 {
+fn encode_type(allocator: Allocator, primary_type: []const u8, types: *const TypeDefinitions) Eip712Error![]u8 {
     var visited = std.StringHashMap(void).init(allocator);
     defer visited.deinit();
 
     var result = ArrayList(u8).init(allocator);
     defer result.deinit();
 
-    try encodeTypeRecursive(allocator, primary_type, types, &visited, &result);
+    try encode_type_recursive(allocator, primary_type, types, &visited, &result);
     return result.toOwnedSlice();
 }
 
-fn encodeTypeRecursive(
+fn encode_type_recursive(
     allocator: Allocator,
     type_name: []const u8,
     types: *const TypeDefinitions,
@@ -242,7 +242,7 @@ fn encodeTypeRecursive(
 
         // If this is a custom type, recursively encode it
         if (types.get(prop.type) != null) {
-            try encodeTypeRecursive(allocator, prop.type, types, visited, result);
+            try encode_type_recursive(allocator, prop.type, types, visited, result);
         }
     }
 
@@ -250,22 +250,22 @@ fn encodeTypeRecursive(
 }
 
 // Hash struct according to EIP-712
-fn hashStruct(allocator: Allocator, primary_type: []const u8, data: *const std.StringHashMap(MessageValue), types: *const TypeDefinitions) Eip712Error!Hash.Hash {
-    const encoded_data = try encodeData(allocator, primary_type, data, types);
+fn hash_struct(allocator: Allocator, primary_type: []const u8, data: *const std.StringHashMap(MessageValue), types: *const TypeDefinitions) Eip712Error!Hash.Hash {
+    const encoded_data = try encode_data(allocator, primary_type, data, types);
     defer allocator.free(encoded_data);
 
     return Hash.keccak256(encoded_data);
 }
 
 // Encode data for struct hashing
-fn encodeData(allocator: Allocator, primary_type: []const u8, data: *const std.StringHashMap(MessageValue), types: *const TypeDefinitions) Eip712Error![]u8 {
+fn encode_data(allocator: Allocator, primary_type: []const u8, data: *const std.StringHashMap(MessageValue), types: *const TypeDefinitions) Eip712Error![]u8 {
     const type_properties = types.get(primary_type) orelse return Eip712Error.TypeNotFound;
 
     var result = ArrayList(u8).init(allocator);
     defer result.deinit();
 
     // Add type hash
-    const type_string = try encodeType(allocator, primary_type, types);
+    const type_string = try encode_type(allocator, primary_type, types);
     defer allocator.free(type_string);
 
     const type_hash = Hash.keccak256(type_string);
@@ -274,7 +274,7 @@ fn encodeData(allocator: Allocator, primary_type: []const u8, data: *const std.S
     // Add encoded values
     for (type_properties) |prop| {
         const value = data.get(prop.name) orelse return Eip712Error.InvalidMessage;
-        const encoded_value = try encodeValue(allocator, prop.type, value, types);
+        const encoded_value = try encode_value(allocator, prop.type, value, types);
         defer allocator.free(encoded_value);
         try result.appendSlice(encoded_value);
     }
@@ -283,7 +283,7 @@ fn encodeData(allocator: Allocator, primary_type: []const u8, data: *const std.S
 }
 
 // Encode individual value
-fn encodeValue(allocator: Allocator, type_name: []const u8, value: MessageValue, types: *const TypeDefinitions) Eip712Error![]u8 {
+fn encode_value(allocator: Allocator, type_name: []const u8, value: MessageValue, types: *const TypeDefinitions) Eip712Error![]u8 {
     var result: [32]u8 = [_]u8{0} ** 32;
 
     if (std.mem.startsWith(u8, type_name, "uint")) {
@@ -338,7 +338,7 @@ fn encodeValue(allocator: Allocator, type_name: []const u8, value: MessageValue,
             .object => |o| o,
             else => return Eip712Error.InvalidMessage,
         };
-        const hash = try hashStruct(allocator, type_name, &obj, types);
+        const hash = try hash_struct(allocator, type_name, &obj, types);
         @memcpy(&result, &hash);
     } else {
         return Eip712Error.TypeNotFound;
@@ -348,13 +348,13 @@ fn encodeValue(allocator: Allocator, type_name: []const u8, value: MessageValue,
 }
 
 // Hash domain separator
-fn hashDomain(allocator: Allocator, domain: *const Eip712Domain) Eip712Error!Hash.Hash {
+fn hash_domain(allocator: Allocator, domain: *const Eip712Domain) Eip712Error!Hash.Hash {
     const domain_type_name = "EIP712Domain";
 
     var types = TypeDefinitions.init(allocator);
     defer types.deinit(allocator);
 
-    const domain_types = try getEip712DomainTypes(domain, allocator);
+    const domain_types = try get_eip712_domain_types(domain, allocator);
     defer {
         for (domain_types) |*prop| {
             prop.deinit(allocator);
@@ -394,7 +394,7 @@ fn hashDomain(allocator: Allocator, domain: *const Eip712Domain) Eip712Error!Has
         try domain_data.put(try allocator.dupe(u8, "salt"), MessageValue{ .bytes = try allocator.dupe(u8, &salt) });
     }
 
-    return hashStruct(allocator, domain_type_name, &domain_data, &types);
+    return hash_struct(allocator, domain_type_name, &domain_data, &types);
 }
 
 // Main EIP-712 functions
@@ -412,12 +412,12 @@ pub fn unaudited_hashTypedData(allocator: Allocator, typed_data: *const TypedDat
     try result.appendSlice("\x19\x01");
 
     // Add domain separator
-    const domain_hash = try hashDomain(allocator, &typed_data.domain);
+    const domain_hash = try hash_domain(allocator, &typed_data.domain);
     try result.appendSlice(&domain_hash);
 
     // Add message hash (skip if primary type is EIP712Domain)
     if (!std.mem.eql(u8, typed_data.primary_type, "EIP712Domain")) {
-        const message_hash = try hashStruct(allocator, typed_data.primary_type, &typed_data.message, &typed_data.types);
+        const message_hash = try hash_struct(allocator, typed_data.primary_type, &typed_data.message, &typed_data.types);
         try result.appendSlice(&message_hash);
     }
 
@@ -460,7 +460,7 @@ pub fn unaudited_recoverTypedDataAddress(allocator: Allocator, typed_data: *cons
 // Convenience functions for common patterns
 
 /// Create a simple typed data structure for testing
-pub fn createSimpleTypedData(allocator: Allocator, domain: Eip712Domain, primary_type: []const u8) !TypedData {
+pub fn create_simple_typed_data(allocator: Allocator, domain: Eip712Domain, primary_type: []const u8) !TypedData {
     var typed_data = TypedData.init(allocator);
 
     // Set domain
@@ -473,7 +473,7 @@ pub fn createSimpleTypedData(allocator: Allocator, domain: Eip712Domain, primary
 }
 
 /// Create EIP-712 domain
-pub fn createDomain(allocator: Allocator, name: ?[]const u8, version: ?[]const u8, chain_id: ?u64, verifying_contract: ?Address) Eip712Error!Eip712Domain {
+pub fn create_domain(allocator: Allocator, name: ?[]const u8, version: ?[]const u8, chain_id: ?u64, verifying_contract: ?Address) Eip712Error!Eip712Domain {
     return Eip712Domain{
         .name = if (name) |n| try allocator.dupe(u8, n) else null,
         .version = if (version) |v| try allocator.dupe(u8, v) else null,
@@ -490,13 +490,13 @@ pub fn createDomain(allocator: Allocator, name: ?[]const u8, version: ?[]const u
 test "EIP-712 domain hashing" {
     const allocator = testing.allocator;
 
-    const domain = try createDomain(allocator, "Test", "1", 1, null);
+    const domain = try create_domain(allocator, "Test", "1", 1, null);
     defer {
         var mut_domain = domain;
         mut_domain.deinit(allocator);
     }
 
-    const hash = try hashDomain(allocator, &domain);
+    const hash = try hash_domain(allocator, &domain);
 
     // Verify hash is not all zeros
     const zero_hash = [_]u8{0} ** 32;
@@ -516,7 +516,7 @@ test "EIP-712 type encoding" {
 
     try types.put(allocator, "Person", &person_props);
 
-    const encoded = try encodeType(allocator, "Person", &types);
+    const encoded = try encode_type(allocator, "Person", &types);
     defer allocator.free(encoded);
 
     try testing.expect(std.mem.indexOf(u8, encoded, "Person(") != null);
@@ -528,7 +528,7 @@ test "EIP-712 signature roundtrip" {
     const allocator = testing.allocator;
 
     // Create a simple domain
-    const domain = try createDomain(allocator, "TestDomain", "1", 1, null);
+    const domain = try create_domain(allocator, "TestDomain", "1", 1, null);
     defer {
         var mut_domain = domain;
         mut_domain.deinit(allocator);
@@ -569,7 +569,7 @@ test "EIP-712 signature roundtrip" {
 test "EIP-712 hash deterministic" {
     const allocator = testing.allocator;
 
-    const domain = try createDomain(allocator, "TestDomain", "1", 1, null);
+    const domain = try create_domain(allocator, "TestDomain", "1", 1, null);
     defer {
         var mut_domain = domain;
         mut_domain.deinit(allocator);

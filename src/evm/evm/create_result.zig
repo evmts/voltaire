@@ -116,7 +116,7 @@ gas_left: u64,
 /// ```
 output: ?[]const u8,
 
-pub fn initFailure(gas_left: u64, output: ?[]const u8) CreateResult {
+pub fn init_failure(gas_left: u64, output: ?[]const u8) CreateResult {
     return CreateResult{
         .success = false,
         .address = primitives.Address.ZERO_ADDRESS,

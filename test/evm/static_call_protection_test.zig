@@ -8,7 +8,7 @@ const MemoryDatabase = Evm.MemoryDatabase;
 const DatabaseInterface = Evm.DatabaseInterface;
 
 // Helper function to create EVM with memory database
-fn createTestEvm(allocator: std.mem.Allocator) !struct { evm: EVM, memory_db: *MemoryDatabase } {
+fn create_test_evm(allocator: std.mem.Allocator) !struct { evm: EVM, memory_db: *MemoryDatabase } {
     const memory_db = try allocator.create(MemoryDatabase);
     memory_db.* = MemoryDatabase.init(allocator);
     const db_interface = memory_db.to_database_interface();
@@ -16,7 +16,7 @@ fn createTestEvm(allocator: std.mem.Allocator) !struct { evm: EVM, memory_db: *M
     return .{ .evm = evm, .memory_db = memory_db };
 }
 
-fn destroyTestEvm(allocator: std.mem.Allocator, evm: *EVM, memory_db: *MemoryDatabase) void {
+fn destroy_test_evm(allocator: std.mem.Allocator, evm: *EVM, memory_db: *MemoryDatabase) void {
     evm.deinit();
     memory_db.deinit();
     allocator.destroy(memory_db);
@@ -24,9 +24,9 @@ fn destroyTestEvm(allocator: std.mem.Allocator, evm: *EVM, memory_db: *MemoryDat
 
 test "Static call protection - validate_static_context" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     var evm = test_setup.evm;
-    defer destroyTestEvm(allocator, &evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, &evm, test_setup.memory_db);
 
     // Test 1: Normal context should allow modifications
     evm.read_only = false;
@@ -40,9 +40,9 @@ test "Static call protection - validate_static_context" {
 
 test "Static call protection - storage operations" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     var evm = test_setup.evm;
-    defer destroyTestEvm(allocator, &evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, &evm, test_setup.memory_db);
 
     const test_address = [_]u8{0x01} ** 20;
     const test_slot: u256 = 42;
@@ -66,9 +66,9 @@ test "Static call protection - storage operations" {
 
 test "Static call protection - transient storage operations" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     var evm = test_setup.evm;
-    defer destroyTestEvm(allocator, &evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, &evm, test_setup.memory_db);
 
     const test_address = [_]u8{0x02} ** 20;
     const test_slot: u256 = 50;
@@ -88,9 +88,9 @@ test "Static call protection - transient storage operations" {
 
 test "Static call protection - balance operations" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     var evm = test_setup.evm;
-    defer destroyTestEvm(allocator, &evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, &evm, test_setup.memory_db);
 
     const test_address = [_]u8{0x03} ** 20;
     const test_balance: u256 = 1000;
@@ -109,9 +109,9 @@ test "Static call protection - balance operations" {
 
 test "Static call protection - code operations" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     var evm = test_setup.evm;
-    defer destroyTestEvm(allocator, &evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, &evm, test_setup.memory_db);
 
     const test_address = [_]u8{0x04} ** 20;
     const test_code = [_]u8{ 0x60, 0x01, 0x60, 0x02 }; // PUSH1 1 PUSH1 2
@@ -131,9 +131,9 @@ test "Static call protection - code operations" {
 
 test "Static call protection - log operations" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     var evm = test_setup.evm;
-    defer destroyTestEvm(allocator, &evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, &evm, test_setup.memory_db);
 
     const test_address = [_]u8{0x05} ** 20;
     const topics = [_]u256{ 0x123, 0x456 };
@@ -155,9 +155,9 @@ test "Static call protection - log operations" {
 
 test "Static call protection - contract creation" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     var evm = test_setup.evm;
-    defer destroyTestEvm(allocator, &evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, &evm, test_setup.memory_db);
 
     const creator = [_]u8{0x06} ** 20;
     const value: u256 = 1000;
@@ -176,9 +176,9 @@ test "Static call protection - contract creation" {
 
 test "Static call protection - CREATE2 contract creation" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     var evm = test_setup.evm;
-    defer destroyTestEvm(allocator, &evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, &evm, test_setup.memory_db);
 
     const creator = [_]u8{0x07} ** 20;
     const value: u256 = 1000;
@@ -198,9 +198,9 @@ test "Static call protection - CREATE2 contract creation" {
 
 test "Static call protection - value transfer validation" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     var evm = test_setup.evm;
-    defer destroyTestEvm(allocator, &evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, &evm, test_setup.memory_db);
 
     // Test 1: Normal context allows value transfers
     evm.read_only = false;
@@ -218,9 +218,9 @@ test "Static call protection - value transfer validation" {
 
 test "Static call protection - selfdestruct" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     var evm = test_setup.evm;
-    defer destroyTestEvm(allocator, &evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, &evm, test_setup.memory_db);
 
     const contract = [_]u8{0x08} ** 20;
     const beneficiary = [_]u8{0x09} ** 20;
@@ -237,9 +237,9 @@ test "Static call protection - selfdestruct" {
 
 test "Static call protection - comprehensive scenario" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     var evm = test_setup.evm;
-    defer destroyTestEvm(allocator, &evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, &evm, test_setup.memory_db);
 
     const test_address = [_]u8{0x0A} ** 20;
 

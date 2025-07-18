@@ -168,7 +168,7 @@ pub const AbiType = enum {
     }
 
     /// Check if this type is dynamic (requires offset pointer in encoding)
-    pub fn isDynamic(self: AbiType) bool {
+    pub fn is_dynamic(self: AbiType) bool {
         return switch (self) {
             .bytes, .string, .array => true,
             else => false,
@@ -176,13 +176,13 @@ pub const AbiType = enum {
     }
 
     /// Check if this type is static (fixed size)
-    pub fn isStatic(self: AbiType) bool {
-        return !self.isDynamic();
+    pub fn is_static(self: AbiType) bool {
+        return !self.is_dynamic();
     }
 
     /// Get the static size in bytes for static types (returns 32 for all static types per ABI spec)
-    pub fn getStaticSize(self: AbiType) u32 {
-        return if (self.isStatic()) 32 else 0;
+    pub fn get_static_size(self: AbiType) u32 {
+        return if (self.is_static()) 32 else 0;
     }
 };
 
@@ -200,13 +200,13 @@ pub const AbiParameter = struct {
     inner_type: ?*const AbiParameter = null,
 
     /// Check if this parameter represents a dynamic type
-    pub fn isDynamic(self: *const AbiParameter) bool {
+    pub fn is_dynamic(self: *const AbiParameter) bool {
         switch (self.type) {
             .bytes, .string, .array => return true,
             .fixed_array => {
                 // Fixed arrays are dynamic if their inner type is dynamic
                 if (self.inner_type) |inner| {
-                    return inner.isDynamic();
+                    return inner.is_dynamic();
                 }
                 return false;
             },
@@ -214,7 +214,7 @@ pub const AbiParameter = struct {
                 // Tuples are dynamic if any component is dynamic
                 if (self.components) |comps| {
                     for (comps) |comp| {
-                        if (comp.isDynamic()) return true;
+                        if (comp.is_dynamic()) return true;
                     }
                 }
                 return false;
@@ -289,7 +289,7 @@ pub const AbiValue = union(enum) {
     tuple: []const AbiValue,
 
     /// Get the ABI type for this value
-    pub fn getType(self: AbiValue) AbiType {
+    pub fn get_type(self: AbiValue) AbiType {
         return switch (self) {
             .uint8 => .uint8,
             .uint16 => .uint16,
@@ -345,7 +345,7 @@ pub const AbiValue = union(enum) {
     }
 
     /// Check if this value represents a dynamic type
-    pub fn isDynamic(self: AbiValue) bool {
+    pub fn is_dynamic(self: AbiValue) bool {
         return switch (self) {
             .bytes, .string, .array, .tuple => true,
             else => false,
@@ -390,11 +390,11 @@ pub const Cursor = struct {
         };
     }
 
-    pub fn setPosition(self: *Cursor, pos: usize) void {
+    pub fn set_position(self: *Cursor, pos: usize) void {
         self.position = pos;
     }
 
-    pub fn readBytes(self: *Cursor, len: usize) AbiError![]const u8 {
+    pub fn read_bytes(self: *Cursor, len: usize) AbiError![]const u8 {
         if (self.position + len > self.data.len) return AbiError.OutOfBounds;
         const result = self.data[self.position .. self.position + len];
         self.position += len;
@@ -402,21 +402,21 @@ pub const Cursor = struct {
     }
 
     /// Read exactly 32 bytes (one word)
-    pub fn readWord(self: *Cursor) AbiError![32]u8 {
-        const bytes = try self.readBytes(32);
+    pub fn read_word(self: *Cursor) AbiError![32]u8 {
+        const bytes = try self.read_bytes(32);
         var result: [32]u8 = undefined;
         @memcpy(&result, bytes);
         return result;
     }
 
     /// Read a u256 from a 32-byte word
-    pub fn readU256Word(self: *Cursor) AbiError!u256 {
-        const word = try self.readWord();
+    pub fn read_u256_word(self: *Cursor) AbiError!u256 {
+        const word = try self.read_word();
         return std.mem.readInt(u256, &word, .big);
     }
 
     /// Create a new cursor at a specific position
-    pub fn atPosition(self: *const Cursor, pos: usize) Cursor {
+    pub fn at_position(self: *const Cursor, pos: usize) Cursor {
         return Cursor{
             .data = self.data,
             .position = pos,
@@ -434,75 +434,75 @@ pub const Cursor = struct {
 // Helper Value Constructor Functions
 // ============================================================================
 
-pub fn uint8Value(val: u8) AbiValue {
+pub fn uint8_value(val: u8) AbiValue {
     return AbiValue{ .uint8 = val };
 }
-pub fn uint16Value(val: u16) AbiValue {
+pub fn uint16_value(val: u16) AbiValue {
     return AbiValue{ .uint16 = val };
 }
-pub fn uint32Value(val: u32) AbiValue {
+pub fn uint32_value(val: u32) AbiValue {
     return AbiValue{ .uint32 = val };
 }
-pub fn uint64Value(val: u64) AbiValue {
+pub fn uint64_value(val: u64) AbiValue {
     return AbiValue{ .uint64 = val };
 }
-pub fn uint128Value(val: u128) AbiValue {
+pub fn uint128_value(val: u128) AbiValue {
     return AbiValue{ .uint128 = val };
 }
-pub fn uint256Value(val: u256) AbiValue {
+pub fn uint256_value(val: u256) AbiValue {
     return AbiValue{ .uint256 = val };
 }
 
-pub fn int8Value(val: i8) AbiValue {
+pub fn int8_value(val: i8) AbiValue {
     return AbiValue{ .int8 = val };
 }
-pub fn int16Value(val: i16) AbiValue {
+pub fn int16_value(val: i16) AbiValue {
     return AbiValue{ .int16 = val };
 }
-pub fn int32Value(val: i32) AbiValue {
+pub fn int32_value(val: i32) AbiValue {
     return AbiValue{ .int32 = val };
 }
-pub fn int64Value(val: i64) AbiValue {
+pub fn int64_value(val: i64) AbiValue {
     return AbiValue{ .int64 = val };
 }
-pub fn int128Value(val: i128) AbiValue {
+pub fn int128_value(val: i128) AbiValue {
     return AbiValue{ .int128 = val };
 }
-pub fn int256Value(val: i256) AbiValue {
+pub fn int256_value(val: i256) AbiValue {
     return AbiValue{ .int256 = val };
 }
 
-pub fn addressValue(val: Address) AbiValue {
+pub fn address_value(val: Address) AbiValue {
     return AbiValue{ .address = val };
 }
-pub fn boolValue(val: bool) AbiValue {
+pub fn bool_value(val: bool) AbiValue {
     return AbiValue{ .bool = val };
 }
 
-pub fn bytesValue(val: []const u8) AbiValue {
+pub fn bytes_value(val: []const u8) AbiValue {
     return AbiValue{ .bytes = val };
 }
-pub fn stringValue(val: []const u8) AbiValue {
+pub fn string_value(val: []const u8) AbiValue {
     return AbiValue{ .string = val };
 }
-pub fn arrayValue(val: []const AbiValue) AbiValue {
+pub fn array_value(val: []const AbiValue) AbiValue {
     return AbiValue{ .array = val };
 }
-pub fn tupleValue(val: []const AbiValue) AbiValue {
+pub fn tuple_value(val: []const AbiValue) AbiValue {
     return AbiValue{ .tuple = val };
 }
 
 // Fixed-size bytes constructors
-pub fn bytes4Value(val: [4]u8) AbiValue {
+pub fn bytes4_value(val: [4]u8) AbiValue {
     return AbiValue{ .bytes4 = val };
 }
-pub fn bytes8Value(val: [8]u8) AbiValue {
+pub fn bytes8_value(val: [8]u8) AbiValue {
     return AbiValue{ .bytes8 = val };
 }
-pub fn bytes16Value(val: [16]u8) AbiValue {
+pub fn bytes16_value(val: [16]u8) AbiValue {
     return AbiValue{ .bytes16 = val };
 }
-pub fn bytes32Value(val: [32]u8) AbiValue {
+pub fn bytes32_value(val: [32]u8) AbiValue {
     return AbiValue{ .bytes32 = val };
 }
 
@@ -511,14 +511,14 @@ pub fn bytes32Value(val: [32]u8) AbiValue {
 // ============================================================================
 
 /// Compute function selector from signature using Keccak256
-pub fn computeSelector(signature: []const u8) Selector {
+pub fn compute_selector(signature: []const u8) Selector {
     var digest: [32]u8 = undefined;
     hash.sha3.Keccak256.hash(signature, &digest, .{});
     return digest[0..4].*;
 }
 
 /// Create function signature from name and parameter types
-pub fn createFunctionSignature(allocator: Allocator, name: []const u8, param_types: []const AbiType) ![]u8 {
+pub fn create_function_signature(allocator: Allocator, name: []const u8, param_types: []const AbiType) ![]u8 {
     var signature = std.ArrayList(u8).init(allocator);
     defer signature.deinit();
 
@@ -551,7 +551,7 @@ const PreparedParameter = struct {
 };
 
 /// Encode a single ABI value to prepared parameter
-fn prepareParameter(allocator: Allocator, value: AbiValue) AbiError!PreparedParameter {
+fn prepare_parameter(allocator: Allocator, value: AbiValue) AbiError!PreparedParameter {
     switch (value) {
         // Static integer types
         .uint8 => |val| {
@@ -735,7 +735,7 @@ fn prepareParameter(allocator: Allocator, value: AbiValue) AbiError!PreparedPara
 
             // Prepare all elements
             for (arr) |item| {
-                const prepared = try prepareParameter(allocator, item);
+                const prepared = try prepare_parameter(allocator, item);
                 defer prepared.deinit(allocator);
 
                 if (prepared.dynamic) {
@@ -800,7 +800,7 @@ fn prepareParameter(allocator: Allocator, value: AbiValue) AbiError!PreparedPara
 
             // Prepare all tuple elements
             for (tup) |item| {
-                const prepared = try prepareParameter(allocator, item);
+                const prepared = try prepare_parameter(allocator, item);
                 defer prepared.deinit(allocator);
 
                 if (prepared.dynamic) {
@@ -853,7 +853,7 @@ fn prepareParameter(allocator: Allocator, value: AbiValue) AbiError!PreparedPara
 }
 
 /// Main ABI parameter encoding function
-pub fn encodeAbiParameters(allocator: Allocator, values: []const AbiValue) ![]u8 {
+pub fn encode_abi_parameters(allocator: Allocator, values: []const AbiValue) ![]u8 {
     if (values.len == 0) return try allocator.alloc(u8, 0);
 
     var prepared_params = std.ArrayList(PreparedParameter).init(allocator);
@@ -866,7 +866,7 @@ pub fn encodeAbiParameters(allocator: Allocator, values: []const AbiValue) ![]u8
 
     // Prepare all parameters
     for (values) |value| {
-        const prepared = try prepareParameter(allocator, value);
+        const prepared = try prepare_parameter(allocator, value);
         try prepared_params.append(prepared);
     }
 
@@ -913,8 +913,8 @@ pub fn encodeAbiParameters(allocator: Allocator, values: []const AbiValue) ![]u8
 }
 
 /// Encode function data (selector + parameters)
-pub fn encodeFunctionData(allocator: Allocator, selector: Selector, parameters: []const AbiValue) ![]u8 {
-    const encoded_params = try encodeAbiParameters(allocator, parameters);
+pub fn encode_function_data(allocator: Allocator, selector: Selector, parameters: []const AbiValue) ![]u8 {
+    const encoded_params = try encode_abi_parameters(allocator, parameters);
     defer allocator.free(encoded_params);
 
     var result = try allocator.alloc(u8, 4 + encoded_params.len);
@@ -929,135 +929,135 @@ pub fn encodeFunctionData(allocator: Allocator, selector: Selector, parameters: 
 // ============================================================================
 
 /// Decode a single ABI parameter
-fn decodeParameter(allocator: Allocator, cursor: *Cursor, abi_type: AbiType, static_position: usize) AbiError!AbiValue {
+fn decode_parameter(allocator: Allocator, cursor: *Cursor, abi_type: AbiType, static_position: usize) AbiError!AbiValue {
     switch (abi_type) {
         // Unsigned integers
         .uint8 => {
-            const word = try cursor.readWord();
-            return uint8Value(word[31]);
+            const word = try cursor.read_word();
+            return uint8_value(word[31]);
         },
         .uint16 => {
-            const word = try cursor.readWord();
-            return uint16Value(std.mem.readInt(u16, word[30..32], .big));
+            const word = try cursor.read_word();
+            return uint16_value(std.mem.readInt(u16, word[30..32], .big));
         },
         .uint32 => {
-            const word = try cursor.readWord();
-            return uint32Value(std.mem.readInt(u32, word[28..32], .big));
+            const word = try cursor.read_word();
+            return uint32_value(std.mem.readInt(u32, word[28..32], .big));
         },
         .uint64 => {
-            const word = try cursor.readWord();
-            return uint64Value(std.mem.readInt(u64, word[24..32], .big));
+            const word = try cursor.read_word();
+            return uint64_value(std.mem.readInt(u64, word[24..32], .big));
         },
         .uint128 => {
-            const word = try cursor.readWord();
-            return uint128Value(std.mem.readInt(u128, word[16..32], .big));
+            const word = try cursor.read_word();
+            return uint128_value(std.mem.readInt(u128, word[16..32], .big));
         },
         .uint256 => {
-            const word = try cursor.readWord();
-            return uint256Value(std.mem.readInt(u256, &word, .big));
+            const word = try cursor.read_word();
+            return uint256_value(std.mem.readInt(u256, &word, .big));
         },
 
         // Signed integers (two's complement)
         .int8 => {
-            const word = try cursor.readWord();
-            return int8Value(@bitCast(word[31]));
+            const word = try cursor.read_word();
+            return int8_value(@bitCast(word[31]));
         },
         .int16 => {
-            const word = try cursor.readWord();
-            return int16Value(@bitCast(std.mem.readInt(u16, word[30..32], .big)));
+            const word = try cursor.read_word();
+            return int16_value(@bitCast(std.mem.readInt(u16, word[30..32], .big)));
         },
         .int32 => {
-            const word = try cursor.readWord();
-            return int32Value(@bitCast(std.mem.readInt(u32, word[28..32], .big)));
+            const word = try cursor.read_word();
+            return int32_value(@bitCast(std.mem.readInt(u32, word[28..32], .big)));
         },
         .int64 => {
-            const word = try cursor.readWord();
-            return int64Value(@bitCast(std.mem.readInt(u64, word[24..32], .big)));
+            const word = try cursor.read_word();
+            return int64_value(@bitCast(std.mem.readInt(u64, word[24..32], .big)));
         },
         .int128 => {
-            const word = try cursor.readWord();
-            return int128Value(@bitCast(std.mem.readInt(u128, word[16..32], .big)));
+            const word = try cursor.read_word();
+            return int128_value(@bitCast(std.mem.readInt(u128, word[16..32], .big)));
         },
         .int256 => {
-            const word = try cursor.readWord();
-            return int256Value(@bitCast(std.mem.readInt(u256, &word, .big)));
+            const word = try cursor.read_word();
+            return int256_value(@bitCast(std.mem.readInt(u256, &word, .big)));
         },
 
         // Address
         .address => {
-            const word = try cursor.readWord();
+            const word = try cursor.read_word();
             var addr: Address = undefined;
             @memcpy(&addr, word[12..32]);
-            return addressValue(addr);
+            return address_value(addr);
         },
 
         // Boolean
         .bool => {
-            const word = try cursor.readWord();
-            return boolValue(word[31] != 0);
+            const word = try cursor.read_word();
+            return bool_value(word[31] != 0);
         },
 
         // Fixed-size byte arrays
         .bytes4 => {
-            const word = try cursor.readWord();
+            const word = try cursor.read_word();
             var bytes: [4]u8 = undefined;
             @memcpy(&bytes, word[0..4]);
-            return bytes4Value(bytes);
+            return bytes4_value(bytes);
         },
         .bytes8 => {
-            const word = try cursor.readWord();
+            const word = try cursor.read_word();
             var bytes: [8]u8 = undefined;
             @memcpy(&bytes, word[0..8]);
-            return bytes8Value(bytes);
+            return bytes8_value(bytes);
         },
         .bytes16 => {
-            const word = try cursor.readWord();
+            const word = try cursor.read_word();
             var bytes: [16]u8 = undefined;
             @memcpy(&bytes, word[0..16]);
-            return bytes16Value(bytes);
+            return bytes16_value(bytes);
         },
         .bytes32 => {
-            const word = try cursor.readWord();
-            return bytes32Value(word);
+            const word = try cursor.read_word();
+            return bytes32_value(word);
         },
 
         // Dynamic bytes
         .bytes => {
-            const offset = try cursor.readU256Word();
-            var offset_cursor = cursor.atPosition(static_position + @as(usize, @intCast(offset)));
+            const offset = try cursor.read_u256_word();
+            var offset_cursor = cursor.at_position(static_position + @as(usize, @intCast(offset)));
 
-            const length = try offset_cursor.readU256Word();
+            const length = try offset_cursor.read_u256_word();
             const length_usize = @as(usize, @intCast(length));
 
             if (length_usize == 0) {
-                return bytesValue(try allocator.alloc(u8, 0));
+                return bytes_value(try allocator.alloc(u8, 0));
             }
 
             // Calculate padded length (round up to 32-byte boundary)
             const padded_length = ((length_usize + 31) / 32) * 32;
-            const data = try offset_cursor.readBytes(padded_length);
+            const data = try offset_cursor.read_bytes(padded_length);
 
             // Only return the actual data, not the padding
             const result = try allocator.alloc(u8, length_usize);
             @memcpy(result, data[0..length_usize]);
-            return bytesValue(result);
+            return bytes_value(result);
         },
 
         // Dynamic string
         .string => {
-            const offset = try cursor.readU256Word();
-            var offset_cursor = cursor.atPosition(static_position + @as(usize, @intCast(offset)));
+            const offset = try cursor.read_u256_word();
+            var offset_cursor = cursor.at_position(static_position + @as(usize, @intCast(offset)));
 
-            const length = try offset_cursor.readU256Word();
+            const length = try offset_cursor.read_u256_word();
             const length_usize = @as(usize, @intCast(length));
 
             if (length_usize == 0) {
-                return stringValue(try allocator.alloc(u8, 0));
+                return string_value(try allocator.alloc(u8, 0));
             }
 
             // Calculate padded length (round up to 32-byte boundary)
             const padded_length = ((length_usize + 31) / 32) * 32;
-            const data = try offset_cursor.readBytes(padded_length);
+            const data = try offset_cursor.read_bytes(padded_length);
 
             // Only return the actual data, not the padding
             const result = try allocator.alloc(u8, length_usize);
@@ -1069,7 +1069,7 @@ fn decodeParameter(allocator: Allocator, cursor: *Cursor, abi_type: AbiType, sta
                 return AbiError.InvalidUtf8;
             }
 
-            return stringValue(result);
+            return string_value(result);
         },
 
         else => return AbiError.NotImplemented,
@@ -1077,7 +1077,7 @@ fn decodeParameter(allocator: Allocator, cursor: *Cursor, abi_type: AbiType, sta
 }
 
 /// Main ABI parameter decoding function
-pub fn decodeAbiParameters(allocator: Allocator, data: []const u8, types: []const AbiType) ![]AbiValue {
+pub fn decode_abi_parameters(allocator: Allocator, data: []const u8, types: []const AbiType) ![]AbiValue {
     if (data.len == 0 and types.len > 0) return AbiError.ZeroData;
     if (data.len > 0 and data.len < 32 and types.len > 0) return AbiError.DataTooSmall;
     if (types.len == 0) return try allocator.alloc(AbiValue, 0);
@@ -1093,8 +1093,8 @@ pub fn decodeAbiParameters(allocator: Allocator, data: []const u8, types: []cons
 
     var consumed: usize = 0;
     for (types, 0..) |abi_type, i| {
-        cursor.setPosition(consumed);
-        result[i] = try decodeParameter(allocator, &cursor, abi_type, 0);
+        cursor.set_position(consumed);
+        result[i] = try decode_parameter(allocator, &cursor, abi_type, 0);
         consumed += 32; // Each parameter takes 32 bytes in the static part
     }
 
@@ -1102,11 +1102,11 @@ pub fn decodeAbiParameters(allocator: Allocator, data: []const u8, types: []cons
 }
 
 /// Decode function data (selector + parameters)
-pub fn decodeFunctionData(allocator: Allocator, data: []const u8, types: []const AbiType) AbiError!struct { selector: Selector, parameters: []AbiValue } {
+pub fn decode_function_data(allocator: Allocator, data: []const u8, types: []const AbiType) AbiError!struct { selector: Selector, parameters: []AbiValue } {
     if (data.len < 4) return AbiError.InvalidLength;
 
     const selector: Selector = data[0..4].*;
-    const parameters = try decodeAbiParameters(allocator, data[4..], types);
+    const parameters = try decode_abi_parameters(allocator, data[4..], types);
 
     return .{
         .selector = selector,
@@ -1146,7 +1146,7 @@ pub const CommonSelectors = struct {
 };
 
 /// Estimate gas cost for calldata
-pub fn estimateGasForCalldata(data: []const u8) u64 {
+pub fn estimate_gas_for_calldata(data: []const u8) u64 {
     var gas: u64 = 21000; // Base transaction cost
 
     for (data) |byte| {
@@ -1169,9 +1169,9 @@ test "basic ABI encoding - static types" {
 
     // Test encoding basic static types
     const values = [_]AbiValue{
-        uint256Value(42),
-        boolValue(true),
-        addressValue([_]u8{0x12} ** 20),
+        uint256_value(42),
+        bool_value(true),
+        address_value([_]u8{0x12} ** 20),
     };
 
     const encoded = try encodeAbiParameters(allocator, &values);
@@ -1195,9 +1195,9 @@ test "basic ABI decoding - static types" {
 
     // Test decoding the data we just encoded
     const values = [_]AbiValue{
-        uint256Value(42),
-        boolValue(true),
-        addressValue([_]u8{0x12} ** 20),
+        uint256_value(42),
+        bool_value(true),
+        address_value([_]u8{0x12} ** 20),
     };
 
     const encoded = try encodeAbiParameters(allocator, &values);
@@ -1276,8 +1276,8 @@ test "mixed static and dynamic types" {
     const test_string = "wagmi";
     const values = [_]AbiValue{
         stringValue(test_string),
-        uint256Value(420),
-        boolValue(true),
+        uint256_value(420),
+        bool_value(true),
     };
 
     const encoded = try encodeAbiParameters(allocator, &values);
@@ -1299,7 +1299,7 @@ test "mixed static and dynamic types" {
 }
 
 test "function selector computation" {
-    const transfer_selector = computeSelector("transfer(address,uint256)");
+    const transfer_selector = compute_selector("transfer(address,uint256)");
     const expected = [_]u8{ 0xa9, 0x05, 0x9c, 0xbb };
     try testing.expectEqualSlices(u8, &expected, &transfer_selector);
 
@@ -1310,10 +1310,10 @@ test "function selector computation" {
 test "function data encoding" {
     const allocator = testing.allocator;
 
-    const selector = computeSelector("transfer(address,uint256)");
+    const selector = compute_selector("transfer(address,uint256)");
     const params = [_]AbiValue{
-        addressValue([_]u8{0x12} ** 20),
-        uint256Value(1000),
+        address_value([_]u8{0x12} ** 20),
+        uint256_value(1000),
     };
 
     const encoded = try encodeFunctionData(allocator, selector, &params);
@@ -1326,10 +1326,10 @@ test "function data encoding" {
 test "function data decoding" {
     const allocator = testing.allocator;
 
-    const selector = computeSelector("transfer(address,uint256)");
+    const selector = compute_selector("transfer(address,uint256)");
     const params = [_]AbiValue{
-        addressValue([_]u8{0x12} ** 20),
-        uint256Value(1000),
+        address_value([_]u8{0x12} ** 20),
+        uint256_value(1000),
     };
 
     const encoded = try encodeFunctionData(allocator, selector, &params);
@@ -1353,8 +1353,8 @@ test "signed integer encoding" {
     const allocator = testing.allocator;
 
     const values = [_]AbiValue{
-        int256Value(-42),
-        int8Value(-1),
+        int256_value(-42),
+        int8_value(-1),
     };
 
     const encoded = try encodeAbiParameters(allocator, &values);
@@ -1381,8 +1381,8 @@ test "fixed bytes encoding" {
     const test_bytes32: [32]u8 = [_]u8{0x12} ** 32;
 
     const values = [_]AbiValue{
-        bytes4Value(test_bytes4),
-        bytes32Value(test_bytes32),
+        bytes4_value(test_bytes4),
+        bytes32_value(test_bytes32),
     };
 
     const encoded = try encodeAbiParameters(allocator, &values);
@@ -1405,16 +1405,16 @@ test "empty data handling" {
     const allocator = testing.allocator;
 
     // Empty parameters
-    const encoded_empty = try encodeAbiParameters(allocator, &[_]AbiValue{});
+    const encoded_empty = try encode_abi_parameters(allocator, &[_]AbiValue{});
     defer allocator.free(encoded_empty);
     try testing.expectEqual(@as(usize, 0), encoded_empty.len);
 
-    const decoded_empty = try decodeAbiParameters(allocator, &[_]u8{}, &[_]AbiType{});
+    const decoded_empty = try decode_abi_parameters(allocator, &[_]u8{}, &[_]AbiType{});
     defer allocator.free(decoded_empty);
     try testing.expectEqual(@as(usize, 0), decoded_empty.len);
 
     // Empty string
-    const empty_string_values = [_]AbiValue{stringValue("")};
+    const empty_string_values = [_]AbiValue{string_value("")};
     const encoded_string = try encodeAbiParameters(allocator, &empty_string_values);
     defer allocator.free(encoded_string);
 
@@ -1432,7 +1432,7 @@ test "empty data handling" {
 
 test "gas estimation" {
     const data = [_]u8{ 0x00, 0x00, 0xFF, 0xAB };
-    const gas = estimateGasForCalldata(&data);
+    const gas = estimate_gas_for_calldata(&data);
     const expected = 21000 + 4 + 4 + 16 + 16; // base + 2 zeros + 2 non-zeros
     try testing.expectEqual(expected, gas);
 }
@@ -1441,11 +1441,11 @@ test "multiple integer sizes" {
     const allocator = testing.allocator;
 
     const values = [_]AbiValue{
-        uint8Value(255),
-        uint16Value(65535),
-        uint32Value(4294967295),
-        uint64Value(18446744073709551615),
-        uint128Value(340282366920938463463374607431768211455),
+        uint8_value(255),
+        uint16_value(65535),
+        uint32_value(4294967295),
+        uint64_value(18446744073709551615),
+        uint128_value(340282366920938463463374607431768211455),
     };
 
     const encoded = try encodeAbiParameters(allocator, &values);

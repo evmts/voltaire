@@ -13,14 +13,14 @@ pub fn create_contract_internal(self: *Vm, creator: primitives.Address.Address, 
     if (self.state.get_code(new_address).len > 0) {
         @branchHint(.unlikely);
         // Contract already exists at this address - fail
-        return CreateResult.initFailure(gas, null);
+        return CreateResult.init_failure(gas, null);
     }
 
     const creator_balance = self.state.get_balance(creator);
     if (creator_balance < value) {
         @branchHint(.unlikely);
         // Insufficient balance - fail
-        return CreateResult.initFailure(gas, null);
+        return CreateResult.init_failure(gas, null);
     }
 
     if (value > 0) {
@@ -57,11 +57,11 @@ pub fn create_contract_internal(self: *Vm, creator: primitives.Address.Address, 
         Log.debug("Init code execution failed with error: {}", .{err});
         if (err == ExecutionError.Error.REVERT) {
             // On revert, consume partial gas
-            return CreateResult.initFailure(init_contract.gas, null);
+            return CreateResult.init_failure(init_contract.gas, null);
         }
 
         // Most initcode failures should return 0 address and consume all gas
-        return CreateResult.initFailure(0, null);
+        return CreateResult.init_failure(0, null);
     };
 
     Log.debug("create_contract_internal: Init code execution completed: status={}, gas_used={}, output_size={}, output_ptr={any}", .{
@@ -81,13 +81,13 @@ pub fn create_contract_internal(self: *Vm, creator: primitives.Address.Address, 
 
     // Check EIP-170 MAX_CODE_SIZE limit on the returned bytecode (24,576 bytes)
     if (deployment_code.len > constants.MAX_CODE_SIZE) {
-        return CreateResult.initFailure(0, null);
+        return CreateResult.init_failure(0, null);
     }
 
     const deploy_code_gas = @as(u64, @intCast(deployment_code.len)) * constants.DEPLOY_CODE_GAS_PER_BYTE;
 
     if (deploy_code_gas > init_result.gas_left) {
-        return CreateResult.initFailure(0, null);
+        return CreateResult.init_failure(0, null);
     }
 
     try self.state.set_code(new_address, deployment_code);

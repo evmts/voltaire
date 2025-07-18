@@ -47,7 +47,7 @@ else
 /// @param chain_rules Current chain configuration
 /// @return Gas cost for ECMUL operation
 pub fn calculate_gas(chain_rules: ChainRules) u64 {
-    if (chain_rules.IsIstanbul) {
+    if (chain_rules.is_istanbul) {
         @branchHint(.likely);
         return gas_constants.ECMUL_GAS_COST;
     } else {

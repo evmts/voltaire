@@ -387,7 +387,7 @@ pub const CALL_GAS_RETENTION_DIVISOR: u64 = 64;
 /// ## Formula
 /// The total memory cost for n words is: 3n + n²/512
 /// Where a word is 32 bytes.
-pub fn memoryGasCost(current_size: u64, new_size: u64) u64 {
+pub fn memory_gas_cost(current_size: u64, new_size: u64) u64 {
     if (new_size <= current_size) return 0;
 
     const current_words = (current_size + 31) / 32;

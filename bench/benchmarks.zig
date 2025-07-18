@@ -4,17 +4,17 @@ const timing = @import("timing.zig");
 const BenchmarkSuite = timing.BenchmarkSuite;
 const BenchmarkConfig = timing.BenchmarkConfig;
 
-pub fn runAllBenchmarks(allocator: Allocator) !void {
+pub fn run_all_benchmarks(allocator: Allocator) !void {
     var suite = BenchmarkSuite.init(allocator);
     defer suite.deinit();
     
     // Simple hello world benchmark
     const HelloWorldBench = struct {
-        fn helloWorld() void {
+        fn hello_world() void {
             std.debug.print("Hello World from Guillotine benchmarks!\n", .{});
         }
         
-        fn simpleComputation() u64 {
+        fn simple_computation() u64 {
             var sum: u64 = 0;
             var i: u32 = 0;
             while (i < 1000) : (i += 1) {
@@ -23,7 +23,7 @@ pub fn runAllBenchmarks(allocator: Allocator) !void {
             return sum;
         }
         
-        fn memoryAllocation() !void {
+        fn memory_allocation() !void {
             var gpa = std.heap.GeneralPurposeAllocator(.{}){};
             defer _ = gpa.deinit();
             const alloc = gpa.allocator();
@@ -41,24 +41,24 @@ pub fn runAllBenchmarks(allocator: Allocator) !void {
         .name = "hello_world",
         .iterations = 10,
         .warmup_iterations = 2,
-    }, HelloWorldBench.helloWorld);
+    }, HelloWorldBench.hello_world);
     
     try suite.benchmark(BenchmarkConfig{
         .name = "simple_computation",
         .iterations = 100,
         .warmup_iterations = 10,
-    }, HelloWorldBench.simpleComputation);
+    }, HelloWorldBench.simple_computation);
     
     try suite.benchmark(BenchmarkConfig{
         .name = "memory_allocation",
         .iterations = 50,
         .warmup_iterations = 5,
-    }, HelloWorldBench.memoryAllocation);
+    }, HelloWorldBench.memory_allocation);
     
-    suite.printResults();
+    suite.print_results();
 }
 
-fn addEvmBenchmarks(suite: *BenchmarkSuite) !void {
+fn add_evm_benchmarks(suite: *BenchmarkSuite) !void {
     try suite.addBenchmark(BenchmarkConfig{
         .name = "guillotine_evm_basic",
         .command = "zig build && echo 'Basic EVM execution test' | ./zig-out/bin/Guillotine",
@@ -82,7 +82,7 @@ fn addEvmBenchmarks(suite: *BenchmarkSuite) !void {
     });
 }
 
-fn addArithmeticBenchmarks(suite: *BenchmarkSuite) !void {
+fn add_arithmetic_benchmarks(suite: *BenchmarkSuite) !void {
     try suite.addBenchmark(BenchmarkConfig{
         .name = "guillotine_arithmetic_ops",
         .command = "zig build test-opcodes",
@@ -105,7 +105,7 @@ fn addArithmeticBenchmarks(suite: *BenchmarkSuite) !void {
     });
 }
 
-fn addMemoryBenchmarks(suite: *BenchmarkSuite) !void {
+fn add_memory_benchmarks(suite: *BenchmarkSuite) !void {
     try suite.addBenchmark(BenchmarkConfig{
         .name = "guillotine_memory_ops",
         .command = "zig build test-memory",
@@ -139,7 +139,7 @@ fn addMemoryBenchmarks(suite: *BenchmarkSuite) !void {
     });
 }
 
-fn addCryptoBenchmarks(suite: *BenchmarkSuite) !void {
+fn add_crypto_benchmarks(suite: *BenchmarkSuite) !void {
     try suite.addBenchmark(BenchmarkConfig{
         .name = "guillotine_crypto_sha256",
         .command = "zig build test-sha256",
@@ -184,30 +184,30 @@ fn addCryptoBenchmarks(suite: *BenchmarkSuite) !void {
     });
 }
 
-pub fn runComparisonBenchmarks(allocator: Allocator) !void {
+pub fn run_comparison_benchmarks(allocator: Allocator) !void {
     var suite = BenchmarkSuite.init(allocator);
     defer suite.deinit();
     
-    try addExternalEvmBenchmarks(&suite);
-    try addGuillotineBenchmarks(&suite);
+    try add_external_evm_benchmarks(&suite);
+    try add_guillotine_benchmarks(&suite);
     
-    suite.printResults();
+    suite.print_results();
     
     // TODO: Add comparisons when external benchmarks are available
 }
 
-fn addExternalEvmBenchmarks(suite: *BenchmarkSuite) !void {
+fn add_external_evm_benchmarks(suite: *BenchmarkSuite) !void {
     // TODO: Add external EVM benchmarks when available
     _ = suite;
 }
 
-fn addGuillotineBenchmarks(suite: *BenchmarkSuite) !void {
+fn add_guillotine_benchmarks(suite: *BenchmarkSuite) !void {
     // TODO: Add Guillotine EVM benchmarks
     _ = suite;
 }
 
-pub fn runParameterizedBenchmarks(allocator: Allocator) !void {
-    try hyperfine.ensureHyperfineInstalled(allocator);
+pub fn run_parameterized_benchmarks(allocator: Allocator) !void {
+    try timing.ensure_hyperfine_installed(allocator);
     
     var suite = BenchmarkSuite.init(allocator);
     defer suite.deinit();
@@ -220,7 +220,7 @@ pub fn runParameterizedBenchmarks(allocator: Allocator) !void {
         .max_runs = 20,
         .export_json = true,
         .export_csv = true,
-        .parameter_scan = hyperfine.ParameterScan{
+        .parameter_scan = timing.ParameterScan{
             .parameter_name = "gas_limit",
             .values = &[_][]const u8{ "100000", "500000", "1000000", "5000000", "10000000" },
             .command_template = "echo 'Testing with gas limit: {gas_limit}' && zig build test-gas",
@@ -235,7 +235,7 @@ pub fn runParameterizedBenchmarks(allocator: Allocator) !void {
         .max_runs = 20,
         .export_json = true,
         .export_csv = true,
-        .parameter_scan = hyperfine.ParameterScan{
+        .parameter_scan = timing.ParameterScan{
             .parameter_name = "memory_size",
             .values = &[_][]const u8{ "1024", "4096", "16384", "65536", "262144" },
             .command_template = "echo 'Testing with memory size: {memory_size}' && zig build test-memory",
@@ -243,10 +243,10 @@ pub fn runParameterizedBenchmarks(allocator: Allocator) !void {
     });
     
     try suite.run();
-    suite.printSummary();
+    suite.print_summary();
 }
 
-pub fn generateBenchmarkReport(allocator: Allocator) !void {
+pub fn generate_benchmark_report(allocator: Allocator) !void {
     const report_content =
         \\# Guillotine EVM Benchmark Report
         \\
@@ -334,7 +334,7 @@ test "benchmark configuration" {
     var suite = BenchmarkSuite.init(allocator);
     defer suite.deinit();
     
-    try addEvmBenchmarks(&suite);
+    try add_evm_benchmarks(&suite);
     
     try std.testing.expect(suite.configs.items.len > 0);
     

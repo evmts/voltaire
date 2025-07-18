@@ -13,8 +13,8 @@
 //!
 //! ```zig
 //! const config = DatabaseConfig{ .Memory = {} };
-//! const db_interface = try createDatabase(allocator, config);
-//! defer destroyDatabase(allocator, db_interface);
+//! const db_interface = try create_database(allocator, config);
+//! defer destroy_database(allocator, db_interface);
 //! ```
 //!
 //! ## Extensibility
@@ -22,7 +22,7 @@
 //! New database types can be added by:
 //! 1. Adding to DatabaseType enum
 //! 2. Adding configuration to DatabaseConfig union
-//! 3. Adding case to createDatabase function
+//! 3. Adding case to create_database function
 //! 4. Implementing the required database interface
 
 const std = @import("std");
@@ -80,7 +80,7 @@ const DatabaseMetadata = struct {
 var database_metadata_map: ?std.AutoHashMap(*anyopaque, DatabaseMetadata) = null;
 
 /// Initialize the metadata map (called automatically when needed)
-fn ensureMetadataMapInitialized(allocator: std.mem.Allocator) !void {
+fn ensure_metadata_map_initialized(allocator: std.mem.Allocator) !void {
     if (database_metadata_map == null) {
         database_metadata_map = std.AutoHashMap(*anyopaque, DatabaseMetadata).init(allocator);
     }
@@ -97,19 +97,19 @@ fn ensureMetadataMapInitialized(allocator: std.mem.Allocator) !void {
 ///
 /// ## Memory Management
 /// The returned database interface owns the underlying implementation.
-/// Call `destroyDatabase` to properly clean up resources.
+/// Call `destroy_database` to properly clean up resources.
 ///
 /// ## Example
 /// ```zig
 /// const config = DatabaseConfig{ .Memory = {} };
-/// const db = try createDatabase(allocator, config);
-/// defer destroyDatabase(allocator, db);
+/// const db = try create_database(allocator, config);
+/// defer destroy_database(allocator, db);
 ///
 /// // Use database through interface
 /// try db.set_account(address, account);
 /// ```
-pub fn createDatabase(allocator: std.mem.Allocator, config: DatabaseConfig) !DatabaseInterface {
-    try ensureMetadataMapInitialized(allocator);
+pub fn create_database(allocator: std.mem.Allocator, config: DatabaseConfig) !DatabaseInterface {
+    try ensure_metadata_map_initialized(allocator);
 
     switch (config) {
         .Memory => {
@@ -161,7 +161,7 @@ pub fn createDatabase(allocator: std.mem.Allocator, config: DatabaseConfig) !Dat
         // },
         //
         // .Cached => |cached_config| {
-        //     const backend_db = try createDatabase(allocator, cached_config.backend_config.*);
+        //     const backend_db = try create_database(allocator, cached_config.backend_config.*);
         //
         //     const cached_db = try allocator.create(CachedDatabase);
         //     cached_db.* = try CachedDatabase.init(allocator, backend_db, cached_config.cache_size);
@@ -178,7 +178,7 @@ pub fn createDatabase(allocator: std.mem.Allocator, config: DatabaseConfig) !Dat
     }
 }
 
-/// Destroy a database created by createDatabase
+/// Destroy a database created by create_database
 ///
 /// ## Parameters
 /// - `allocator`: The same allocator used to create the database
@@ -190,10 +190,10 @@ pub fn createDatabase(allocator: std.mem.Allocator, config: DatabaseConfig) !Dat
 ///
 /// ## Example
 /// ```zig
-/// const db = try createDatabase(allocator, config);
-/// defer destroyDatabase(allocator, db);
+/// const db = try create_database(allocator, config);
+/// defer destroy_database(allocator, db);
 /// ```
-pub fn destroyDatabase(allocator: std.mem.Allocator, database: DatabaseInterface) void {
+pub fn destroy_database(allocator: std.mem.Allocator, database: DatabaseInterface) void {
     // Call the database's deinit method
     database.deinit();
 
@@ -235,7 +235,7 @@ pub fn destroyDatabase(allocator: std.mem.Allocator, database: DatabaseInterface
 ///
 /// ## Returns
 /// DatabaseType if the database was created through this factory, null otherwise
-pub fn getDatabaseType(database: DatabaseInterface) ?DatabaseType {
+pub fn get_database_type(database: DatabaseInterface) ?DatabaseType {
     if (database_metadata_map) |*map| {
         if (map.get(database.ptr)) |metadata| {
             return metadata.database_type;
@@ -248,7 +248,7 @@ pub fn getDatabaseType(database: DatabaseInterface) ?DatabaseType {
 ///
 /// Call this when shutting down to clean up internal factory state.
 /// Only needed if you've created databases through this factory.
-pub fn deinitFactory() void {
+pub fn deinit_factory() void {
     if (database_metadata_map) |*map| {
         map.deinit();
         database_metadata_map = null;
@@ -262,25 +262,25 @@ pub fn deinitFactory() void {
 ///
 /// ## Returns
 /// DatabaseInterface for a new memory database
-pub fn createMemoryDatabase(allocator: std.mem.Allocator) !DatabaseInterface {
-    return createDatabase(allocator, DatabaseConfig{ .Memory = {} });
+pub fn create_memory_database(allocator: std.mem.Allocator) !DatabaseInterface {
+    return create_database(allocator, DatabaseConfig{ .Memory = {} });
 }
 
 // Future convenience functions:
 //
 // /// Convenience function to create a fork database
-// pub fn createForkDatabase(allocator: std.mem.Allocator, remote_url: []const u8, block_number: ?u64) !DatabaseInterface {
-//     return createDatabase(allocator, DatabaseConfig{ .Fork = .{ .remote_url = remote_url, .block_number = block_number } });
+// pub fn create_fork_database(allocator: std.mem.Allocator, remote_url: []const u8, block_number: ?u64) !DatabaseInterface {
+//     return create_database(allocator, DatabaseConfig{ .Fork = .{ .remote_url = remote_url, .block_number = block_number } });
 // }
 //
 // /// Convenience function to create a file database
-// pub fn createFileDatabase(allocator: std.mem.Allocator, file_path: []const u8) !DatabaseInterface {
-//     return createDatabase(allocator, DatabaseConfig{ .File = .{ .file_path = file_path } });
+// pub fn create_file_database(allocator: std.mem.Allocator, file_path: []const u8) !DatabaseInterface {
+//     return create_database(allocator, DatabaseConfig{ .File = .{ .file_path = file_path } });
 // }
 //
 // /// Convenience function to create a cached database
-// pub fn createCachedDatabase(allocator: std.mem.Allocator, backend_config: DatabaseConfig, cache_size: usize) !DatabaseInterface {
-//     return createDatabase(allocator, DatabaseConfig{ .Cached = .{ .backend_config = &backend_config, .cache_size = cache_size } });
+// pub fn create_cached_database(allocator: std.mem.Allocator, backend_config: DatabaseConfig, cache_size: usize) !DatabaseInterface {
+//     return create_database(allocator, DatabaseConfig{ .Cached = .{ .backend_config = &backend_config, .cache_size = cache_size } });
 // }
 
 // Tests
@@ -288,8 +288,8 @@ const testing = std.testing;
 
 test "factory memory database creation" {
     const config = DatabaseConfig{ .Memory = {} };
-    const db = try createDatabase(testing.allocator, config);
-    defer destroyDatabase(testing.allocator, db);
+    const db = try create_database(testing.allocator, config);
+    defer destroy_database(testing.allocator, db);
 
     // Test that we can use the database
     const address = [_]u8{1} ** 20;
@@ -301,20 +301,20 @@ test "factory memory database creation" {
 }
 
 test "factory convenience function" {
-    const db = try createMemoryDatabase(testing.allocator);
-    defer destroyDatabase(testing.allocator, db);
+    const db = try create_memory_database(testing.allocator);
+    defer destroy_database(testing.allocator, db);
 
     // Test database type detection
-    const db_type = getDatabaseType(db);
+    const db_type = get_database_type(db);
     try testing.expect(db_type == .Memory);
 }
 
 test "factory cleanup" {
-    defer deinitFactory();
+    defer deinit_factory();
 
     // Create and destroy a database
-    const db = try createMemoryDatabase(testing.allocator);
-    destroyDatabase(testing.allocator, db);
+    const db = try create_memory_database(testing.allocator);
+    destroy_database(testing.allocator, db);
 
     // Factory should clean up properly
 }

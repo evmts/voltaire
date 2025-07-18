@@ -337,7 +337,7 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     // EIP-3860: Check initcode size limit FIRST (Shanghai and later)
     try check_offset_bounds(size);
     const size_usize = @as(usize, @intCast(size));
-    if (vm.chain_rules.IsEIP3860 and size_usize > gas_constants.MaxInitcodeSize) {
+    if (vm.chain_rules.is_eip3860 and size_usize > gas_constants.MaxInitcodeSize) {
         @branchHint(.unlikely);
         return ExecutionError.Error.MaxCodeSizeExceeded;
     }
@@ -352,7 +352,7 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         // Calculate memory expansion gas cost
         const current_size = frame.memory.total_size();
         const new_size = offset_usize + size_usize;
-        const memory_gas = gas_constants.memoryGasCost(current_size, new_size);
+        const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
         try frame.consume_gas(memory_gas);
 
         // Ensure memory is available and get the slice
@@ -364,7 +364,7 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     const init_code_cost = @as(u64, @intCast(init_code.len)) * gas_constants.CreateDataGas;
 
     // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
-    const initcode_word_cost = if (vm.chain_rules.IsEIP3860)
+    const initcode_word_cost = if (vm.chain_rules.is_eip3860)
         @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.InitcodeWordGas
     else
         0;
@@ -421,7 +421,7 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     // EIP-3860: Check initcode size limit FIRST (Shanghai and later)
     try check_offset_bounds(size);
     const size_usize = @as(usize, @intCast(size));
-    if (vm.chain_rules.IsEIP3860 and size_usize > gas_constants.MaxInitcodeSize) {
+    if (vm.chain_rules.is_eip3860 and size_usize > gas_constants.MaxInitcodeSize) {
         @branchHint(.unlikely);
         return ExecutionError.Error.MaxCodeSizeExceeded;
     }
@@ -436,7 +436,7 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
         // Calculate memory expansion gas cost
         const current_size = frame.memory.total_size();
         const new_size = offset_usize + size_usize;
-        const memory_gas = gas_constants.memoryGasCost(current_size, new_size);
+        const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
         try frame.consume_gas(memory_gas);
 
         // Ensure memory is available and get the slice
@@ -448,7 +448,7 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     const hash_cost = @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.Keccak256WordGas;
 
     // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
-    const initcode_word_cost = if (vm.chain_rules.IsEIP3860)
+    const initcode_word_cost = if (vm.chain_rules.is_eip3860)
         @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.InitcodeWordGas
     else
         0;
@@ -927,13 +927,13 @@ pub fn op_selfdestruct(pc: usize, interpreter: *Operation.Interpreter, state: *O
     var gas_cost: u64 = 0;
 
     // Calculate base gas cost based on hardfork
-    if (chain_rules.IsTangerineWhistle) {
+    if (chain_rules.is_eip150) {
         gas_cost += gas_constants.SelfdestructGas; // 5000 gas
     }
     // Before Tangerine Whistle: 0 gas cost
 
     // EIP-161: Account creation cost if transferring to a non-existent account
-    if (chain_rules.IsSpuriousDragon) {
+    if (chain_rules.is_eip158) {
         @branchHint(.likely);
 
         // Check if the recipient account exists and is empty
@@ -945,7 +945,7 @@ pub fn op_selfdestruct(pc: usize, interpreter: *Operation.Interpreter, state: *O
     }
 
     // Account for access list gas costs (EIP-2929)
-    if (chain_rules.IsBerlin) {
+    if (chain_rules.is_berlin) {
         @branchHint(.likely);
 
         // Warm up recipient address access

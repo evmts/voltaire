@@ -55,7 +55,7 @@ pub const Provider = struct {
     }
 
     // Convenience methods for common RPC calls
-    pub fn getBlockByNumber(self: *Provider, block_number: u64, include_txs: bool) ProviderError!json_rpc.JsonRpcResponse {
+    pub fn get_block_by_number(self: *Provider, block_number: u64, include_txs: bool) ProviderError!json_rpc.JsonRpcResponse {
         const params = std.fmt.allocPrint(self.allocator,
             \\["0x{x}",{s}]
         , .{ block_number, if (include_txs) "true" else "false" }) catch |err| switch (err) {
@@ -66,7 +66,7 @@ pub const Provider = struct {
         return self.request("eth_getBlockByNumber", params);
     }
 
-    pub fn getTransactionReceipt(self: *Provider, tx_hash: []const u8) ProviderError!json_rpc.JsonRpcResponse {
+    pub fn get_transaction_receipt(self: *Provider, tx_hash: []const u8) ProviderError!json_rpc.JsonRpcResponse {
         const params = std.fmt.allocPrint(self.allocator,
             \\["{s}"]
         , .{tx_hash}) catch |err| switch (err) {
@@ -77,7 +77,7 @@ pub const Provider = struct {
         return self.request("eth_getTransactionReceipt", params);
     }
 
-    pub fn getChainId(self: *Provider) ProviderError!json_rpc.JsonRpcResponse {
+    pub fn get_chain_id(self: *Provider) ProviderError!json_rpc.JsonRpcResponse {
         return self.request("eth_chainId", "[]");
     }
 };

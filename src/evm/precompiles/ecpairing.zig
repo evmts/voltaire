@@ -52,7 +52,7 @@ else
 /// @param chain_rules Current chain configuration
 /// @return Gas cost for ECPAIRING operation
 pub fn calculate_gas(num_pairs: usize, chain_rules: ChainRules) u64 {
-    if (chain_rules.IsIstanbul) {
+    if (chain_rules.is_istanbul) {
         @branchHint(.likely);
         return gas_constants.ECPAIRING_BASE_GAS_COST +
             gas_constants.ECPAIRING_PER_PAIR_GAS_COST * @as(u64, @intCast(num_pairs));

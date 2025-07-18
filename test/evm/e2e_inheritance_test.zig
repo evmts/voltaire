@@ -12,7 +12,7 @@ const USER_ADDRESS = primitives.Address.from_u256(0x2222);
 const CONTRACT_ADDRESS = primitives.Address.from_u256(0x3333);
 
 // Helper to convert byte array to u256 (big-endian)
-fn bytesToU256(bytes: []const u8) u256 {
+fn bytes_to_u256(bytes: []const u8) u256 {
     var value: u256 = 0;
     for (bytes) |byte| {
         value = (value << 8) | byte;
@@ -94,7 +94,7 @@ test "E2E: Basic inheritance - virtual function overrides" {
 
     try testing.expect(result.status == .Success);
     if (result.output) |output| {
-        const value = bytesToU256(output);
+        const value = bytes_to_u256(output);
         try testing.expectEqual(@as(u256, 300), value); // 100 * 3
     }
 }
@@ -186,11 +186,11 @@ test "E2E: Interface compliance - polymorphic behavior" {
         try testing.expectEqual(@as(usize, 64), output.len);
 
         // ConcreteA result: 50 * 2 = 100
-        const concrete_a_result = bytesToU256(output[0..32]);
+        const concrete_a_result = bytes_to_u256(output[0..32]);
         try testing.expectEqual(@as(u256, 100), concrete_a_result);
 
         // ConcreteB result: 50 + 5 = 55
-        const concrete_b_result = bytesToU256(output[32..64]);
+        const concrete_b_result = bytes_to_u256(output[32..64]);
         try testing.expectEqual(@as(u256, 55), concrete_b_result);
     }
 }
@@ -264,7 +264,7 @@ test "E2E: Multiple inheritance - diamond pattern resolution" {
 
     try testing.expect(result.status == .Success);
     if (result.output) |output| {
-        const combined_value = bytesToU256(output);
+        const combined_value = bytes_to_u256(output);
         try testing.expectEqual(@as(u256, 800), combined_value);
     }
 }
@@ -355,7 +355,7 @@ test "E2E: Function visibility - access control patterns" {
 
     try testing.expect(result.status == .Success);
     if (result.output) |output| {
-        const total = bytesToU256(output);
+        const total = bytes_to_u256(output);
         // 100 (internal function) + 1 (private) + 2 (internal) + 3 (public) = 106
         try testing.expectEqual(@as(u256, 106), total);
     }

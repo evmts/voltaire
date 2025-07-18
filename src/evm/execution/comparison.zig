@@ -204,7 +204,7 @@ pub fn fuzz_comparison_operations(allocator: std.mem.Allocator, operations: []co
         }
         
         // Verify the result makes sense
-        try validateComparisonResult(&frame.stack, op);
+        try validate_comparison_result(&frame.stack, op);
     }
 }
 
@@ -223,7 +223,7 @@ const ComparisonOpType = enum {
     iszero,
 };
 
-fn validateComparisonResult(stack: *const Stack, op: FuzzComparisonOperation) !void {
+fn validate_comparison_result(stack: *const Stack, op: FuzzComparisonOperation) !void {
     const testing = std.testing;
     
     // Stack should have exactly one result

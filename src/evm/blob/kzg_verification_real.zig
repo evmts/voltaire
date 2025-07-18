@@ -52,12 +52,12 @@ pub const KZGVerifier = struct {
         proof: *const blob_types.KZGProof,
     ) KZGVerificationError!bool {
         // Convert blob_types to KZG types
-        const kzg_blob = KZG.Blob.fromBytes(&blob.data) catch return KZGVerificationError.InvalidBlob;
-        const kzg_commitment = KZG.KZGCommitment.fromBytes(&commitment.data) catch return KZGVerificationError.InvalidCommitment;
-        const kzg_proof = KZG.KZGProof.fromBytes(&proof.data) catch return KZGVerificationError.InvalidProof;
+        const kzg_blob = KZG.Blob.from_bytes(&blob.data) catch return KZGVerificationError.InvalidBlob;
+        const kzg_commitment = KZG.KZGCommitment.from_bytes(&commitment.data) catch return KZGVerificationError.InvalidCommitment;
+        const kzg_proof = KZG.KZGProof.from_bytes(&proof.data) catch return KZGVerificationError.InvalidProof;
 
         // Verify using c-kzg-4844
-        const valid = KZG.verifyBlobKZGProof(&self.settings, &kzg_blob, &kzg_commitment, &kzg_proof) catch |err| switch (err) {
+        const valid = KZG.verify_blob_kzg_proof(&self.settings, &kzg_blob, &kzg_commitment, &kzg_proof) catch |err| switch (err) {
             KZG.KZGError.InvalidBlob => return KZGVerificationError.InvalidBlob,
             KZG.KZGError.InvalidCommitment => return KZGVerificationError.InvalidCommitment,
             KZG.KZGError.InvalidProof => return KZGVerificationError.InvalidProof,
@@ -75,10 +75,10 @@ pub const KZGVerifier = struct {
         blob: *const blob_types.Blob,
     ) KZGVerificationError!blob_types.KZGCommitment {
         // Convert blob_types to KZG types
-        const kzg_blob = KZG.Blob.fromBytes(&blob.data) catch return KZGVerificationError.InvalidBlob;
+        const kzg_blob = KZG.Blob.from_bytes(&blob.data) catch return KZGVerificationError.InvalidBlob;
 
         // Compute commitment using c-kzg-4844
-        const kzg_commitment = KZG.blobToKZGCommitment(&self.settings, &kzg_blob) catch |err| switch (err) {
+        const kzg_commitment = KZG.blob_to_kzg_commitment(&self.settings, &kzg_blob) catch |err| switch (err) {
             KZG.KZGError.InvalidBlob => return KZGVerificationError.InvalidBlob,
             KZG.KZGError.OutOfMemory => return KZGVerificationError.OutOfMemory,
             else => return KZGVerificationError.LibraryNotAvailable,
@@ -99,13 +99,13 @@ pub const KZGVerifier = struct {
         proof: *const blob_types.KZGProof,
     ) KZGVerificationError!bool {
         // Convert types
-        const kzg_commitment = KZG.KZGCommitment.fromBytes(&commitment.data) catch return KZGVerificationError.InvalidCommitment;
-        const kzg_z = KZG.FieldElement.fromBytes(&z.data) catch return KZGVerificationError.InvalidFieldElement;
-        const kzg_y = KZG.FieldElement.fromBytes(&y.data) catch return KZGVerificationError.InvalidFieldElement;
-        const kzg_proof = KZG.KZGProof.fromBytes(&proof.data) catch return KZGVerificationError.InvalidProof;
+        const kzg_commitment = KZG.KZGCommitment.from_bytes(&commitment.data) catch return KZGVerificationError.InvalidCommitment;
+        const kzg_z = KZG.FieldElement.from_bytes(&z.data) catch return KZGVerificationError.InvalidFieldElement;
+        const kzg_y = KZG.FieldElement.from_bytes(&y.data) catch return KZGVerificationError.InvalidFieldElement;
+        const kzg_proof = KZG.KZGProof.from_bytes(&proof.data) catch return KZGVerificationError.InvalidProof;
 
         // Verify using c-kzg-4844
-        const valid = KZG.verifyKZGProof(&self.settings, &kzg_commitment, &kzg_z, &kzg_y, &kzg_proof) catch |err| switch (err) {
+        const valid = KZG.verify_kzg_proof(&self.settings, &kzg_commitment, &kzg_z, &kzg_y, &kzg_proof) catch |err| switch (err) {
             KZG.KZGError.InvalidProof => return KZGVerificationError.InvalidProof,
             KZG.KZGError.VerificationFailed => return false,
             KZG.KZGError.OutOfMemory => return KZGVerificationError.OutOfMemory,

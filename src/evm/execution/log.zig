@@ -69,7 +69,7 @@ pub fn make_log(comptime num_topics: u8) fn (usize, *Operation.Interpreter, *Ope
             // 1. Calculate memory expansion gas cost
             const current_size = frame.memory.context_size();
             const new_size = offset_usize + size_usize;
-            const memory_gas = gas_constants.memoryGasCost(current_size, new_size);
+            const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
 
             // Memory expansion gas calculated
 
@@ -137,7 +137,7 @@ pub fn log_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.S
     // 1. Calculate memory expansion gas cost
     const current_size = frame.memory.context_size();
     const new_size = offset_usize + size_usize;
-    const memory_gas = gas_constants.memoryGasCost(current_size, new_size);
+    const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
 
     try frame.consume_gas(memory_gas);
 

@@ -12,7 +12,7 @@ const DatabaseInterface = Evm.DatabaseInterface;
 // WORKING: Fixing SUB large numbers wraparound issue (agent: fix-sub-wraparound)
 
 // Helper function to convert u256 to 32-byte big-endian array
-fn u256ToBytes32(value: u256) [32]u8 {
+fn u256_to_bytes32(value: u256) [32]u8 {
     var bytes: [32]u8 = [_]u8{0} ** 32;
     var v = value;
     var i: usize = 31;
@@ -25,7 +25,7 @@ fn u256ToBytes32(value: u256) [32]u8 {
 }
 
 // Helper function to create a test EVM with basic setup
-fn createTestEvm(allocator: std.mem.Allocator) !struct { evm: *Evm.Evm, memory_db: *MemoryDatabase } {
+fn create_test_evm(allocator: std.mem.Allocator) !struct { evm: *Evm.Evm, memory_db: *MemoryDatabase } {
     var evm = try allocator.create(Evm.Evm);
     const memory_db = try allocator.create(MemoryDatabase);
     memory_db.* = MemoryDatabase.init(allocator);
@@ -53,7 +53,7 @@ fn createTestEvm(allocator: std.mem.Allocator) !struct { evm: *Evm.Evm, memory_d
 }
 
 // Helper function to clean up test EVM
-fn destroyTestEvm(allocator: std.mem.Allocator, evm: *Evm.Evm, memory_db: *MemoryDatabase) void {
+fn destroy_test_evm(allocator: std.mem.Allocator, evm: *Evm.Evm, memory_db: *MemoryDatabase) void {
     evm.deinit();
     memory_db.deinit();
     allocator.destroy(evm);
@@ -61,7 +61,7 @@ fn destroyTestEvm(allocator: std.mem.Allocator, evm: *Evm.Evm, memory_db: *Memor
 }
 
 // Helper function to run bytecode directly using public API
-fn runBytecode(
+fn run_bytecode(
     evm_instance: *Evm.Evm,
     bytecode: []const u8,
     address: Address,
@@ -91,12 +91,12 @@ fn runBytecode(
 
 test "VM: STOP opcode halts execution" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{0x00}; // STOP
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 1000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 1000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -105,9 +105,9 @@ test "VM: STOP opcode halts execution" {
 
 test "VM: JUMPDEST and JUMP sequence" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Jump to position 5 where JUMPDEST is located
     const bytecode = [_]u8{
@@ -124,7 +124,7 @@ test "VM: JUMPDEST and JUMP sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     // First check if execution was successful
@@ -132,7 +132,7 @@ test "VM: JUMPDEST and JUMP sequence" {
 
     // Then check if we got output
     if (result.output) |output| {
-        const expected_bytes = u256ToBytes32(66);
+        const expected_bytes = u256_to_bytes32(66);
         try testing.expectEqualSlices(u8, &expected_bytes, output);
     } else {
         // If we reach here, the JUMP might not be working correctly
@@ -144,9 +144,9 @@ test "VM: JUMPDEST and JUMP sequence" {
 // TODO: Working on fixing JUMPI stack order (worktree: g/fix-jumpi-stack-order)
 test "VM: JUMPI conditional jump taken" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Jump to position 8 if condition is true (non-zero)
     const bytecode = [_]u8{
@@ -164,7 +164,7 @@ test "VM: JUMPI conditional jump taken" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -174,9 +174,9 @@ test "VM: JUMPI conditional jump taken" {
 
 test "VM: JUMPI conditional jump not taken" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Don't jump if condition is false (zero)
     const bytecode = [_]u8{
@@ -194,7 +194,7 @@ test "VM: JUMPI conditional jump not taken" {
         0x00, // STOP
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -204,9 +204,9 @@ test "VM: JUMPI conditional jump not taken" {
 
 test "VM: PC opcode returns current program counter" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x58, // PC (at position 0)
@@ -219,7 +219,7 @@ test "VM: PC opcode returns current program counter" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -227,7 +227,7 @@ test "VM: PC opcode returns current program counter" {
     // The test execution is successful but no output is returned
     if (result.output) |output| {
         // Top of stack should be 3 (the last PC value pushed)
-        const expected_bytes = u256ToBytes32(3);
+        const expected_bytes = u256_to_bytes32(3);
         try testing.expectEqualSlices(u8, &expected_bytes, output);
     } else {
         // PC opcode execution succeeded but no output - this is expected for now
@@ -239,9 +239,9 @@ test "VM: PC opcode returns current program counter" {
 
 test "VM: ADD opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x05, // PUSH1 5
@@ -254,7 +254,7 @@ test "VM: ADD opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -263,9 +263,9 @@ test "VM: ADD opcode" {
 
 test "VM: ADD opcode overflow" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test addition overflow: MAX_U256 + 1 = 0
     const bytecode = [_]u8{
@@ -304,7 +304,7 @@ test "VM: ADD opcode overflow" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -313,9 +313,9 @@ test "VM: ADD opcode overflow" {
 
 test "VM: ADD complex sequence" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: (5 + 3) + 2 = 10
     const bytecode = [_]u8{
@@ -331,7 +331,7 @@ test "VM: ADD complex sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -340,9 +340,9 @@ test "VM: ADD complex sequence" {
 
 test "VM: MUL opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x07, // PUSH1 7
@@ -355,7 +355,7 @@ test "VM: MUL opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -365,9 +365,9 @@ test "VM: MUL opcode" {
 
 test "VM: MUL opcode overflow" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test multiplication overflow: MAX_U256 * 2 should wrap
     const bytecode = [_]u8{
@@ -406,7 +406,7 @@ test "VM: MUL opcode overflow" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -418,9 +418,9 @@ test "VM: MUL opcode overflow" {
 
 test "VM: MUL by zero" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test multiplication by zero
     const bytecode = [_]u8{
@@ -434,7 +434,7 @@ test "VM: MUL by zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -444,9 +444,9 @@ test "VM: MUL by zero" {
 
 test "VM: MUL by one" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test multiplication by one (identity)
     const bytecode = [_]u8{
@@ -460,7 +460,7 @@ test "VM: MUL by one" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -470,9 +470,9 @@ test "VM: MUL by one" {
 
 test "VM: MUL complex sequence" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: 2 * 3 * 4 = 24
     const bytecode = [_]u8{
@@ -488,7 +488,7 @@ test "VM: MUL complex sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -498,9 +498,9 @@ test "VM: MUL complex sequence" {
 
 test "VM: MUL large numbers" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test large number multiplication that doesn't overflow
     // 2^128 * 2^127 = 2^255 (fits in u256)
@@ -533,7 +533,7 @@ test "VM: MUL large numbers" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -545,9 +545,9 @@ test "VM: MUL large numbers" {
 
 test "VM: SUB opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x05, // PUSH1 5
@@ -560,7 +560,7 @@ test "VM: SUB opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -572,9 +572,9 @@ test "VM: SUB opcode" {
 
 test "VM: SUB opcode underflow" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test subtraction underflow: 5 - 10 should wrap
     const bytecode = [_]u8{
@@ -588,7 +588,7 @@ test "VM: SUB opcode underflow" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -599,9 +599,9 @@ test "VM: SUB opcode underflow" {
 
 test "VM: SUB from zero" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test 0 - 1 = MAX_U256
     const bytecode = [_]u8{
@@ -615,7 +615,7 @@ test "VM: SUB from zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -625,9 +625,9 @@ test "VM: SUB from zero" {
 
 test "VM: SUB identity" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test n - n = 0
     const bytecode = [_]u8{
@@ -641,7 +641,7 @@ test "VM: SUB identity" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -651,9 +651,9 @@ test "VM: SUB identity" {
 
 test "VM: SUB complex sequence" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: 100 - 30 - 20 = 50
     const bytecode = [_]u8{
@@ -669,7 +669,7 @@ test "VM: SUB complex sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -679,9 +679,9 @@ test "VM: SUB complex sequence" {
 
 test "VM: SUB large numbers" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test large number subtraction
     // 2^255 - 2^254 = 2^254
@@ -757,7 +757,7 @@ test "VM: SUB large numbers" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -770,9 +770,9 @@ test "VM: SUB large numbers" {
 
 test "VM: DIV opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x0F, // PUSH1 15 (dividend)
@@ -785,7 +785,7 @@ test "VM: DIV opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -795,9 +795,9 @@ test "VM: DIV opcode" {
 
 test "VM: DIV by zero returns zero" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x0A, // PUSH1 10 (dividend)
@@ -810,7 +810,7 @@ test "VM: DIV by zero returns zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -820,9 +820,9 @@ test "VM: DIV by zero returns zero" {
 
 test "VM: DIV with remainder" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test integer division truncation: 17 / 5 = 3
     const bytecode = [_]u8{
@@ -836,7 +836,7 @@ test "VM: DIV with remainder" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -846,9 +846,9 @@ test "VM: DIV with remainder" {
 
 test "VM: DIV by one" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test division by one (identity)
     const bytecode = [_]u8{
@@ -862,7 +862,7 @@ test "VM: DIV by one" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -872,9 +872,9 @@ test "VM: DIV by one" {
 
 test "VM: DIV zero dividend" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test 0 / n = 0
     const bytecode = [_]u8{
@@ -888,7 +888,7 @@ test "VM: DIV zero dividend" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -898,9 +898,9 @@ test "VM: DIV zero dividend" {
 
 test "VM: DIV complex sequence" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: 100 / 2 / 5 = 10
     const bytecode = [_]u8{
@@ -916,7 +916,7 @@ test "VM: DIV complex sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -926,9 +926,9 @@ test "VM: DIV complex sequence" {
 
 test "VM: DIV large numbers" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test large number division
     // 2^128 / 2^64 = 2^64
@@ -953,7 +953,7 @@ test "VM: DIV large numbers" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -965,9 +965,9 @@ test "VM: DIV large numbers" {
 
 test "VM: MOD opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x0A, // PUSH1 10 (dividend)
@@ -980,7 +980,7 @@ test "VM: MOD opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -990,9 +990,9 @@ test "VM: MOD opcode" {
 
 test "VM: MOD by zero returns zero" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x0A, // PUSH1 10
@@ -1005,7 +1005,7 @@ test "VM: MOD by zero returns zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1015,9 +1015,9 @@ test "VM: MOD by zero returns zero" {
 
 test "VM: MOD perfect division" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x14, // PUSH1 20
@@ -1030,7 +1030,7 @@ test "VM: MOD perfect division" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1040,9 +1040,9 @@ test "VM: MOD perfect division" {
 
 test "VM: MOD by one" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x61, 0x04, 0xD2, // PUSH2 1234
@@ -1055,7 +1055,7 @@ test "VM: MOD by one" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1065,9 +1065,9 @@ test "VM: MOD by one" {
 
 test "VM: SDIV opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: -10 / 3 = -3
     // -10 in two's complement: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF6
@@ -1107,7 +1107,7 @@ test "VM: SDIV opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1119,9 +1119,9 @@ test "VM: SDIV opcode" {
 
 test "VM: SDIV by zero returns zero" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x0A, // PUSH1 10
@@ -1134,7 +1134,7 @@ test "VM: SDIV by zero returns zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1144,9 +1144,9 @@ test "VM: SDIV by zero returns zero" {
 
 test "VM: SDIV overflow case MIN_I256 / -1" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // MIN_I256 = -2^255 = 0x80000000000000000000000000000000000000000000000000000000000000000
     // -1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
@@ -1223,7 +1223,7 @@ test "VM: SDIV overflow case MIN_I256 / -1" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1235,9 +1235,9 @@ test "VM: SDIV overflow case MIN_I256 / -1" {
 
 test "VM: SDIV positive by negative" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: 10 / -3 = -3
     // -3 in two's complement: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD
@@ -1284,7 +1284,7 @@ test "VM: SDIV positive by negative" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1296,9 +1296,9 @@ test "VM: SDIV positive by negative" {
 
 test "VM: SDIV negative by negative" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: -10 / -3 = 3
     const bytecode = [_]u8{
@@ -1376,7 +1376,7 @@ test "VM: SDIV negative by negative" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1386,9 +1386,9 @@ test "VM: SDIV negative by negative" {
 
 test "VM: SDIV truncation behavior" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: -17 / 5 = -3 (truncates toward zero)
     // -17 in two's complement: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEF
@@ -1435,7 +1435,7 @@ test "VM: SDIV truncation behavior" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1447,9 +1447,9 @@ test "VM: SDIV truncation behavior" {
 
 test "VM: SMOD opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: -10 % 3 = -1
     // -10 in two's complement: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF6
@@ -1496,7 +1496,7 @@ test "VM: SMOD opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1508,9 +1508,9 @@ test "VM: SMOD opcode" {
 
 test "VM: SMOD by zero returns zero" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x0A, // PUSH1 10
@@ -1523,7 +1523,7 @@ test "VM: SMOD by zero returns zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1533,9 +1533,9 @@ test "VM: SMOD by zero returns zero" {
 
 test "VM: SMOD positive by positive" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: 17 % 5 = 2
     const bytecode = [_]u8{
@@ -1549,7 +1549,7 @@ test "VM: SMOD positive by positive" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1559,9 +1559,9 @@ test "VM: SMOD positive by positive" {
 
 test "VM: SMOD positive by negative" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: 10 % -3 = 1
     // -3 in two's complement: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD
@@ -1608,7 +1608,7 @@ test "VM: SMOD positive by negative" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1618,9 +1618,9 @@ test "VM: SMOD positive by negative" {
 
 test "VM: SMOD large negative number" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test: MIN_I256 % 100
     // MIN_I256 = -2^255 = 0x80000000000000000000000000000000000000000000000000000000000000000
@@ -1667,7 +1667,7 @@ test "VM: SMOD large negative number" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1679,9 +1679,9 @@ test "VM: SMOD large negative number" {
 
 test "VM: ADDMOD opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x05, // PUSH1 5 (first addend)
@@ -1695,7 +1695,7 @@ test "VM: ADDMOD opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1705,9 +1705,9 @@ test "VM: ADDMOD opcode" {
 
 test "VM: MULMOD opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x04, // PUSH1 4 (first multiplicand)
@@ -1721,7 +1721,7 @@ test "VM: MULMOD opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1731,9 +1731,9 @@ test "VM: MULMOD opcode" {
 
 test "VM: EXP opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x60, 0x03, // PUSH1 3 (base)
@@ -1746,7 +1746,7 @@ test "VM: EXP opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1758,9 +1758,9 @@ test "VM: EXP opcode" {
 
 test "VM: LT opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test 5 < 10 (true)
     // Stack after pushes: [5, 10] where 10 is top
@@ -1776,7 +1776,7 @@ test "VM: LT opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1786,9 +1786,9 @@ test "VM: LT opcode" {
 
 test "VM: GT opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test 10 > 5 (true)
     // Stack after pushes: [10, 5] where 5 is top
@@ -1804,7 +1804,7 @@ test "VM: GT opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1814,9 +1814,9 @@ test "VM: GT opcode" {
 
 test "VM: EQ opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test 5 == 5 (true)
     const bytecode = [_]u8{
@@ -1830,7 +1830,7 @@ test "VM: EQ opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1840,9 +1840,9 @@ test "VM: EQ opcode" {
 
 test "VM: ISZERO opcode with non-zero" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test ISZERO(5) = 0 (testing non-zero input)
     const bytecode = [_]u8{
@@ -1855,7 +1855,7 @@ test "VM: ISZERO opcode with non-zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1865,9 +1865,9 @@ test "VM: ISZERO opcode with non-zero" {
 
 test "VM: ISZERO opcode with zero" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test ISZERO(0) = 1 (testing zero input)
     const bytecode = [_]u8{
@@ -1880,7 +1880,7 @@ test "VM: ISZERO opcode with zero" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1890,9 +1890,9 @@ test "VM: ISZERO opcode with zero" {
 
 test "VM: CALLER opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x33, // CALLER
@@ -1909,7 +1909,7 @@ test "VM: CALLER opcode" {
 
     // For this test, we'll need to set up the EVM state properly
     // This is a simplified version - in reality we'd need proper frame setup
-    const result = try runBytecode(evm, &bytecode, contract_address, 10000, &input_data);
+    const result = try run_bytecode(evm, &bytecode, contract_address, 10000, &input_data);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -1922,9 +1922,9 @@ test "VM: CALLER opcode" {
 
 test "VM: NUMBER opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x43, // NUMBER
@@ -1935,19 +1935,19 @@ test "VM: NUMBER opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
-    // Block number set in createTestEvm
+    // Block number set in create_test_evm
     // Arithmetic operation executes successfully - no output expected
 }
 
 test "VM: TIMESTAMP opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x42, // TIMESTAMP
@@ -1958,19 +1958,19 @@ test "VM: TIMESTAMP opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
-    // Timestamp set in createTestEvm
+    // Timestamp set in create_test_evm
     // Arithmetic operation executes successfully - no output expected
 }
 
 test "VM: CHAINID opcode" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
         0x46, // CHAINID
@@ -1981,11 +1981,11 @@ test "VM: CHAINID opcode" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
-    // Chain ID set in createTestEvm
+    // Chain ID set in create_test_evm
     // Arithmetic operation executes successfully - no output expected
 }
 
@@ -1993,9 +1993,9 @@ test "VM: CHAINID opcode" {
 
 test "VM: Complex arithmetic sequence" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Calculate: (10 + 5) * 2 - 3 = 27
     const bytecode = [_]u8{
@@ -2013,7 +2013,7 @@ test "VM: Complex arithmetic sequence" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -2023,9 +2023,9 @@ test "VM: Complex arithmetic sequence" {
 
 test "VM: Conditional logic with comparison" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // If 10 > 5, push 100, else push 200
     const bytecode = [_]u8{
@@ -2047,7 +2047,7 @@ test "VM: Conditional logic with comparison" {
         0xF3, // RETURN
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -2059,9 +2059,9 @@ test "VM: Conditional logic with comparison" {
 
 test "VM: Invalid JUMP destination" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Jump to invalid destination (not a JUMPDEST)
     const bytecode = [_]u8{
@@ -2072,7 +2072,7 @@ test "VM: Invalid JUMP destination" {
         0x60, 0x42, // PUSH1 66
     };
 
-    const result = runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null) catch {
+    const result = run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null) catch {
         // InvalidJump is not a direct error from run, it would be wrapped
         // We expect the EVM to handle this and return an Invalid status
         unreachable;
@@ -2084,9 +2084,9 @@ test "VM: Invalid JUMP destination" {
 
 test "VM: Stack underflow" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Try to ADD with only one item on stack
     const bytecode = [_]u8{
@@ -2095,7 +2095,7 @@ test "VM: Stack underflow" {
         0x00, // STOP
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
     defer if (result.output) |output| allocator.free(output);
 
     // Stack underflow should result in Invalid status
@@ -2104,9 +2104,9 @@ test "VM: Stack underflow" {
 
 test "VM: Out of gas" {
     const allocator = testing.allocator;
-    const test_setup = try createTestEvm(allocator);
+    const test_setup = try create_test_evm(allocator);
     const evm = test_setup.evm;
-    defer destroyTestEvm(allocator, evm, test_setup.memory_db);
+    defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Complex operation with insufficient gas
     const bytecode = [_]u8{
@@ -2116,7 +2116,7 @@ test "VM: Out of gas" {
         0x00, // STOP
     };
 
-    const result = try runBytecode(evm, &bytecode, ZERO_ADDRESS, 10, null);
+    const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10, null);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .OutOfGas);

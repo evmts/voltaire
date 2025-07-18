@@ -1,29 +1,29 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-pub fn runBenchmarks(allocator: Allocator, zbench: anytype) !void {
+pub fn run_benchmarks(allocator: Allocator, zbench: anytype) !void {
     var benchmark = zbench.Benchmark.init(allocator, .{});
     defer benchmark.deinit();
     
     // Hello World benchmark
-    try benchmark.add("Hello World", helloWorld, .{});
+    try benchmark.add("Hello World", hello_world, .{});
     
     // Simple computation benchmark
-    try benchmark.add("Simple Computation", simpleComputation, .{});
+    try benchmark.add("Simple Computation", simple_computation, .{});
     
     // Memory allocation benchmark
-    try benchmark.add("Memory Allocation", memoryAllocation, .{});
+    try benchmark.add("Memory Allocation", memory_allocation, .{});
     
     // Run all benchmarks
     try benchmark.run(std.io.getStdOut().writer());
 }
 
-fn helloWorld(allocator: Allocator) void {
+fn hello_world(allocator: Allocator) void {
     _ = allocator;
     std.debug.print("Hello World from Guillotine benchmarks!\n", .{});
 }
 
-fn simpleComputation(allocator: Allocator) void {
+fn simple_computation(allocator: Allocator) void {
     _ = allocator;
     var sum: u64 = 0;
     var i: u32 = 0;
@@ -34,7 +34,7 @@ fn simpleComputation(allocator: Allocator) void {
     std.mem.doNotOptimizeAway(sum);
 }
 
-fn memoryAllocation(allocator: Allocator) void {
+fn memory_allocation(allocator: Allocator) void {
     const data = allocator.alloc(u8, 1024) catch return;
     defer allocator.free(data);
     
@@ -44,16 +44,16 @@ fn memoryAllocation(allocator: Allocator) void {
 }
 
 // EVM-specific benchmarks can be added here
-pub fn addEvmBenchmarks(benchmark: anytype, allocator: Allocator) !void {
+pub fn add_evm_benchmarks(benchmark: anytype, allocator: Allocator) !void {
     _ = allocator;
     
     // Placeholder for EVM benchmarks
-    try benchmark.add("EVM Stack Operations", evmStackOperations, .{});
-    try benchmark.add("EVM Memory Operations", evmMemoryOperations, .{});
-    try benchmark.add("EVM Arithmetic", evmArithmetic, .{});
+    try benchmark.add("EVM Stack Operations", evm_stack_operations, .{});
+    try benchmark.add("EVM Memory Operations", evm_memory_operations, .{});
+    try benchmark.add("EVM Arithmetic", evm_arithmetic, .{});
 }
 
-fn evmStackOperations(allocator: Allocator) void {
+fn evm_stack_operations(allocator: Allocator) void {
     _ = allocator;
     // TODO: Add actual EVM stack operation benchmarks
     var stack_simulation: [1024]u256 = undefined;
@@ -74,7 +74,7 @@ fn evmStackOperations(allocator: Allocator) void {
     std.mem.doNotOptimizeAway(stack_simulation);
 }
 
-fn evmMemoryOperations(allocator: Allocator) void {
+fn evm_memory_operations(allocator: Allocator) void {
     _ = allocator;
     // TODO: Add actual EVM memory operation benchmarks
     var memory: [1024]u8 = undefined;
@@ -89,7 +89,7 @@ fn evmMemoryOperations(allocator: Allocator) void {
     std.mem.doNotOptimizeAway(memory);
 }
 
-fn evmArithmetic(allocator: Allocator) void {
+fn evm_arithmetic(allocator: Allocator) void {
     _ = allocator;
     // TODO: Add actual EVM arithmetic operation benchmarks
     var result: u256 = 0;
@@ -111,6 +111,6 @@ test "zbench runner" {
     // Note: We can't easily test the actual run() function in a test
     // as it depends on zbench being available, but we can test that
     // the individual benchmark functions compile and run
-    simpleComputation(allocator);
-    memoryAllocation(allocator);
+    simple_computation(allocator);
+    memory_allocation(allocator);
 }

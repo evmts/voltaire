@@ -147,7 +147,7 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         const current_size = frame.memory.context_size();
         const end = offset_usize + size_usize;
         if (end > offset_usize) { // Check for overflow
-            const memory_gas = gas_constants.memoryGasCost(current_size, end);
+            const memory_gas = gas_constants.memory_gas_cost(current_size, end);
             try frame.consume_gas(memory_gas);
 
             _ = try frame.memory.ensure_context_capacity(end);
@@ -207,7 +207,7 @@ pub fn op_revert(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         const current_size = frame.memory.context_size();
         const end = offset_usize + size_usize;
         if (end > offset_usize) { // Check for overflow
-            const memory_gas = gas_constants.memoryGasCost(current_size, end);
+            const memory_gas = gas_constants.memory_gas_cost(current_size, end);
             try frame.consume_gas(memory_gas);
 
             _ = try frame.memory.ensure_context_capacity(end);
@@ -356,10 +356,10 @@ pub fn fuzz_control_operations(allocator: std.mem.Allocator, operations: []const
         }
         
         // Execute the operation
-        const result = executeControlOperation(op.op_type, frame.pc, &vm, &frame);
+        const result = execute_control_operation(op.op_type, frame.pc, &vm, &frame);
         
         // Verify the result makes sense
-        try validateControlResult(&frame, op, result);
+        try validate_control_result(&frame, op, result);
     }
 }
 
@@ -385,7 +385,7 @@ const ControlOpType = enum {
     selfdestruct,
 };
 
-fn executeControlOperation(op_type: ControlOpType, pc: usize, vm: *Vm, frame: *Frame) ExecutionError.Error!ExecutionResult {
+fn execute_control_operation(op_type: ControlOpType, pc: usize, vm: *Vm, frame: *Frame) ExecutionError.Error!ExecutionResult {
     switch (op_type) {
         .stop => return op_stop(pc, @ptrCast(vm), @ptrCast(frame)),
         .jump => return op_jump(pc, @ptrCast(vm), @ptrCast(frame)),
@@ -399,7 +399,7 @@ fn executeControlOperation(op_type: ControlOpType, pc: usize, vm: *Vm, frame: *F
     }
 }
 
-fn validateControlResult(frame: *const Frame, op: FuzzControlOperation, result: ExecutionError.Error!ExecutionResult) !void {
+fn validate_control_result(frame: *const Frame, op: FuzzControlOperation, result: ExecutionError.Error!ExecutionResult) !void {
     const testing = std.testing;
     
     switch (op.op_type) {

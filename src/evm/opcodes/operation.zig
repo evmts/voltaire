@@ -33,7 +33,7 @@ const Memory = @import("../memory/memory.zig");
 /// ```zig
 /// // ADD operation
 /// const add_op = Operation{
-///     .execute = executeAdd,
+///     .execute = execute_add,
 ///     .constant_gas = 3,
 ///     .min_stack = 2,
 ///     .max_stack = Stack.CAPACITY - 1,

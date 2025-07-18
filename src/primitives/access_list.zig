@@ -11,7 +11,7 @@ const Allocator = std.mem.Allocator;
 // EIP-2930 Access List
 pub const AccessListEntry = struct {
     address: Address,
-    storageKeys: []const Hash,
+    storage_keys: []const Hash,
 };
 
 pub const AccessList = []const AccessListEntry;
@@ -29,7 +29,7 @@ pub const AccessListError = error{
 };
 
 // Calculate total gas cost for access list
-pub fn calculateAccessListGasCost(accessList: AccessList) u64 {
+pub fn calculate_access_list_gas_cost(accessList: AccessList) u64 {
     var totalCost: u64 = 0;
 
     for (accessList) |entry| {
@@ -37,14 +37,14 @@ pub fn calculateAccessListGasCost(accessList: AccessList) u64 {
         totalCost += ACCESS_LIST_ADDRESS_COST;
 
         // Cost per storage key
-        totalCost += ACCESS_LIST_STORAGE_KEY_COST * entry.storageKeys.len;
+        totalCost += ACCESS_LIST_STORAGE_KEY_COST * entry.storage_keys.len;
     }
 
     return totalCost;
 }
 
 // Check if address is in access list
-pub fn isAddressInAccessList(accessList: AccessList, addr: Address) bool {
+pub fn is_address_in_access_list(accessList: AccessList, addr: Address) bool {
     for (accessList) |entry| {
         if (entry.address.eql(addr)) {
             return true;
@@ -54,15 +54,15 @@ pub fn isAddressInAccessList(accessList: AccessList, addr: Address) bool {
 }
 
 // Check if storage key is in access list
-pub fn isStorageKeyInAccessList(
+pub fn is_storage_key_in_access_list(
     accessList: AccessList,
     addr: Address,
-    storageKey: Hash,
+    storage_key: Hash,
 ) bool {
     for (accessList) |entry| {
         if (entry.address.eql(addr)) {
-            for (entry.storageKeys) |key| {
-                if (key.eql(storageKey)) {
+            for (entry.storage_keys) |key| {
+                if (key.eql(storage_key)) {
                     return true;
                 }
             }
@@ -72,7 +72,7 @@ pub fn isStorageKeyInAccessList(
 }
 
 // RLP encode access list
-pub fn encodeAccessList(allocator: Allocator, accessList: AccessList) ![]u8 {
+pub fn encode_access_list(allocator: Allocator, accessList: AccessList) ![]u8 {
     // First, encode each entry as a list of [address, [storageKeys...]]
     var entries = std.ArrayList([]const u8).init(allocator);
     defer {
@@ -96,7 +96,7 @@ pub fn encodeAccessList(allocator: Allocator, accessList: AccessList) ![]u8 {
             encodedKeys.deinit();
         }
 
-        for (entry.storageKeys) |key| {
+        for (entry.storage_keys) |key| {
             const encodedKey = try rlp.encodeBytes(allocator, &key.bytes);
             try encodedKeys.append(encodedKey);
         }
@@ -116,7 +116,7 @@ pub fn encodeAccessList(allocator: Allocator, accessList: AccessList) ![]u8 {
 }
 
 // Calculate gas savings from access list
-pub fn calculateGasSavings(accessList: AccessList) u64 {
+pub fn calculate_gas_savings(accessList: AccessList) u64 {
     var savings: u64 = 0;
 
     for (accessList) |entry| {
@@ -124,7 +124,7 @@ pub fn calculateGasSavings(accessList: AccessList) u64 {
         savings += COLD_ACCOUNT_ACCESS_COST - ACCESS_LIST_ADDRESS_COST;
 
         // Save on cold storage access
-        for (entry.storageKeys) |_| {
+        for (entry.storage_keys) |_| {
             savings += COLD_STORAGE_ACCESS_COST - ACCESS_LIST_STORAGE_KEY_COST;
         }
     }
@@ -133,7 +133,7 @@ pub fn calculateGasSavings(accessList: AccessList) u64 {
 }
 
 // Deduplicate access list entries
-pub fn deduplicateAccessList(
+pub fn deduplicate_access_list(
     allocator: Allocator,
     accessList: AccessList,
 ) ![]AccessListEntry {
@@ -150,12 +150,12 @@ pub fn deduplicateAccessList(
                 defer keys.deinit();
 
                 // Add existing keys
-                try keys.appendSlice(existing.storageKeys);
+                try keys.appendSlice(existing.storage_keys);
 
                 // Add new keys if not duplicate
-                for (entry.storageKeys) |newKey| {
+                for (entry.storage_keys) |newKey| {
                     var isDuplicate = false;
-                    for (existing.storageKeys) |existingKey| {
+                    for (existing.storage_keys) |existingKey| {
                         if (newKey.eql(existingKey)) {
                             isDuplicate = true;
                             break;
@@ -166,7 +166,7 @@ pub fn deduplicateAccessList(
                     }
                 }
 
-                existing.storageKeys = try keys.toOwnedSlice();
+                existing.storage_keys = try keys.toOwnedSlice();
                 found = true;
                 break;
             }
@@ -175,7 +175,7 @@ pub fn deduplicateAccessList(
         if (!found) {
             try result.append(.{
                 .address = entry.address,
-                .storageKeys = try allocator.dupe(Hash, entry.storageKeys),
+                .storage_keys = try allocator.dupe(Hash, entry.storage_keys),
             });
         }
     }
@@ -188,7 +188,7 @@ pub fn deduplicateAccessList(
 test "access list gas calculation" {
     _ = testing.allocator;
 
-    const storageKeys = [_]Hash{
+    const storage_keys = [_]Hash{
         try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
         try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
@@ -196,22 +196,22 @@ test "access list gas calculation" {
     const accessList = [_]AccessListEntry{
         .{
             .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
-            .storageKeys = &storageKeys,
+            .storage_keys = &storage_keys,
         },
         .{
             .address = try Address.fromHex("0x2222222222222222222222222222222222222222"),
-            .storageKeys = &.{},
+            .storage_keys = &.{},
         },
     };
 
-    const gasCost = calculateAccessListGasCost(&accessList);
+    const gasCost = calculate_access_list_gas_cost(&accessList);
 
     // Expected: 2 addresses * 2400 + 2 storage keys * 1900 = 8600
     try testing.expectEqual(@as(u64, 8600), gasCost);
 }
 
 test "access list membership checks" {
-    const storageKeys = [_]Hash{
+    const storage_keys = [_]Hash{
         try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
         try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
@@ -219,7 +219,7 @@ test "access list membership checks" {
     const accessList = [_]AccessListEntry{
         .{
             .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
-            .storageKeys = &storageKeys,
+            .storage_keys = &storage_keys,
         },
     };
 
@@ -227,43 +227,43 @@ test "access list membership checks" {
     const addr1 = try Address.fromHex("0x1111111111111111111111111111111111111111");
     const addr2 = try Address.fromHex("0x2222222222222222222222222222222222222222");
 
-    try testing.expect(isAddressInAccessList(&accessList, addr1));
-    try testing.expect(!isAddressInAccessList(&accessList, addr2));
+    try testing.expect(is_address_in_access_list(&accessList, addr1));
+    try testing.expect(!is_address_in_access_list(&accessList, addr2));
 
     // Test storage key membership
     const key1 = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001");
     const key3 = try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000003");
 
-    try testing.expect(isStorageKeyInAccessList(&accessList, addr1, key1));
-    try testing.expect(!isStorageKeyInAccessList(&accessList, addr1, key3));
-    try testing.expect(!isStorageKeyInAccessList(&accessList, addr2, key1));
+    try testing.expect(is_storage_key_in_access_list(&accessList, addr1, key1));
+    try testing.expect(!is_storage_key_in_access_list(&accessList, addr1, key3));
+    try testing.expect(!is_storage_key_in_access_list(&accessList, addr2, key1));
 }
 
 test "empty access list" {
     const accessList: AccessList = &.{};
 
-    const gasCost = calculateAccessListGasCost(accessList);
+    const gasCost = calculate_access_list_gas_cost(accessList);
     try testing.expectEqual(@as(u64, 0), gasCost);
 
     const addr = try Address.fromHex("0x1111111111111111111111111111111111111111");
-    try testing.expect(!isAddressInAccessList(accessList, addr));
+    try testing.expect(!is_address_in_access_list(accessList, addr));
 }
 
 test "access list RLP encoding" {
     const allocator = testing.allocator;
 
-    const storageKeys = [_]Hash{
+    const storage_keys = [_]Hash{
         try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
     };
 
     const accessList = [_]AccessListEntry{
         .{
             .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
-            .storageKeys = &storageKeys,
+            .storage_keys = &storage_keys,
         },
     };
 
-    const encoded = try encodeAccessList(allocator, &accessList);
+    const encoded = try encode_access_list(allocator, &accessList);
     defer allocator.free(encoded);
 
     // Should produce valid RLP
@@ -272,7 +272,7 @@ test "access list RLP encoding" {
 }
 
 test "access list gas savings" {
-    const storageKeys = [_]Hash{
+    const storage_keys = [_]Hash{
         try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000001"),
         try Hash.fromHex("0x0000000000000000000000000000000000000000000000000000000000000002"),
     };
@@ -280,11 +280,11 @@ test "access list gas savings" {
     const accessList = [_]AccessListEntry{
         .{
             .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
-            .storageKeys = &storageKeys,
+            .storage_keys = &storage_keys,
         },
     };
 
-    const savings = calculateGasSavings(&accessList);
+    const savings = calculate_gas_savings(&accessList);
 
     // Expected savings:
     // Account: 2600 - 2400 = 200
@@ -310,19 +310,19 @@ test "complex access list" {
     const accessList = [_]AccessListEntry{
         .{
             .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
-            .storageKeys = &keys1,
+            .storage_keys = &keys1,
         },
         .{
             .address = try Address.fromHex("0x2222222222222222222222222222222222222222"),
-            .storageKeys = &keys2,
+            .storage_keys = &keys2,
         },
         .{
             .address = try Address.fromHex("0x3333333333333333333333333333333333333333"),
-            .storageKeys = &.{}, // No storage keys
+            .storage_keys = &.{}, // No storage keys
         },
     };
 
-    const gasCost = calculateAccessListGasCost(&accessList);
+    const gasCost = calculate_access_list_gas_cost(&accessList);
 
     // Expected:
     // 3 addresses * 2400 = 7200
@@ -331,7 +331,7 @@ test "complex access list" {
     try testing.expectEqual(@as(u64, 14800), gasCost);
 
     // Test encoding
-    const encoded = try encodeAccessList(allocator, &accessList);
+    const encoded = try encode_access_list(allocator, &accessList);
     defer allocator.free(encoded);
 
     try testing.expect(encoded.len > 0);
@@ -353,23 +353,23 @@ test "deduplicate access list" {
     const accessList = [_]AccessListEntry{
         .{
             .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
-            .storageKeys = &keys1,
+            .storage_keys = &keys1,
         },
         .{
             .address = try Address.fromHex("0x1111111111111111111111111111111111111111"), // Same address
-            .storageKeys = &keys2,
+            .storage_keys = &keys2,
         },
     };
 
-    const deduped = try deduplicateAccessList(allocator, &accessList);
+    const deduped = try deduplicate_access_list(allocator, &accessList);
     defer {
         for (deduped) |entry| {
-            allocator.free(entry.storageKeys);
+            allocator.free(entry.storage_keys);
         }
         allocator.free(deduped);
     }
 
     // Should have one entry with three unique keys
     try testing.expectEqual(@as(usize, 1), deduped.len);
-    try testing.expectEqual(@as(usize, 3), deduped[0].storageKeys.len);
+    try testing.expectEqual(@as(usize, 3), deduped[0].storage_keys.len);
 }

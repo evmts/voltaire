@@ -804,7 +804,7 @@ pub fn fuzz_arithmetic_operations(allocator: std.mem.Allocator, operations: []co
         }
         
         // Verify the result makes sense
-        try validateArithmeticResult(&frame.stack, op);
+        try validate_arithmetic_result(&frame.stack, op);
     }
 }
 
@@ -829,7 +829,7 @@ const ArithmeticOpType = enum {
     signextend,
 };
 
-fn validateArithmeticResult(stack: *const Stack, op: FuzzArithmeticOperation) !void {
+fn validate_arithmetic_result(stack: *const Stack, op: FuzzArithmeticOperation) !void {
     const testing = std.testing;
     
     // Stack should have exactly one result

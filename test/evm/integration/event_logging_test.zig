@@ -1,13 +1,14 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
+const primitives = @import("primitives");
 const opcodes = Evm.opcodes;
 const ExecutionError = Evm.ExecutionError;
 const MemoryDatabase = Evm.MemoryDatabase;
 const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const Operation = Evm.Operation;
-const Address = Evm.Address;
+const Address = primitives.Address;
 
 // Test addresses
 const TEST_ADDRESS_1 = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -16,7 +17,7 @@ const TEST_ADDRESS_3 = primitives.Address.from_u256(0x33333333333333333333333333
 const TEST_CONTRACT_ADDRESS = primitives.Address.from_u256(0x4444444444444444444444444444444444444444);
 
 // Helper to convert address to u256
-fn to_u256(address: Address.Address) u256 {
+fn to_u256(address: primitives.Address) u256 {
     var result: u256 = 0;
     for (address) |byte| {
         result = (result << 8) | byte;

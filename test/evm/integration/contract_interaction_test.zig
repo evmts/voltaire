@@ -22,8 +22,8 @@ test "Integration: contract creation and initialization" {
     defer vm.deinit();
 
     // Create contract
-    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
 
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -57,7 +57,7 @@ test "Integration: contract creation and initialization" {
     try frame.memory.set_data(0, &init_code);
 
     // Set up CREATE result
-    const new_contract_address = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const new_contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
     vm.create_result = .{
         .success = true,
         .address = new_contract_address,
@@ -76,10 +76,10 @@ test "Integration: contract creation and initialization" {
 
     // Check result
     const created_address = try frame.stack.pop();
-    try testing.expectEqual(primitives.Address.to_u256(new_contract_address), created_address);
+    try testing.expectEqual(Address.to_u256(new_contract_address), created_address);
 
     // Verify address is warm (EIP-2929)
-    try testing.expect(!vm.isAddressCold(new_contract_address));
+    try testing.expect(!vm.is_address_cold(new_contract_address));
 
     // Gas should be consumed
     try testing.expect(frame.gas_remaining < 100000);
@@ -98,9 +98,9 @@ test "Integration: inter-contract calls" {
     defer vm.deinit();
 
     // Create contract
-    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    const target_address = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const target_address = Address.from_u256(0x2222222222222222222222222222222222222222);
 
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -123,8 +123,8 @@ test "Integration: inter-contract calls" {
     frame.gas_remaining = 100000;
 
     // Set up accounts
-    try vm.setBalance(contract_address, 10000);
-    try vm.setBalance(target_address, 1000);
+    try vm.set_balance(contract_address, 10000);
+    try vm.set_balance(target_address, 1000);
 
     // Prepare call data
     const call_data = [_]u8{ 0x11, 0x22, 0x33, 0x44 };
@@ -140,7 +140,7 @@ test "Integration: inter-contract calls" {
 
     // Execute CALL
     try frame.stack.append(50000); // gas
-    try frame.stack.append(primitives.Address.to_u256(target_address)); // to
+    try frame.stack.append(Address.to_u256(target_address)); // to
     try frame.stack.append(500); // value to send
     try frame.stack.append(0); // args_offset
     try frame.stack.append(4); // args_size
@@ -175,9 +175,9 @@ test "Integration: delegatecall context preservation" {
     defer vm.deinit();
 
     // Create contract
-    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    const caller_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    const target_address = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const caller_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const target_address = Address.from_u256(0x2222222222222222222222222222222222222222);
 
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -213,7 +213,7 @@ test "Integration: delegatecall context preservation" {
 
     // Execute DELEGATECALL
     try frame.stack.append(30000); // gas
-    try frame.stack.append(primitives.Address.to_u256(target_address)); // to
+    try frame.stack.append(Address.to_u256(target_address)); // to
     try frame.stack.append(0); // args_offset
     try frame.stack.append(2); // args_size
     try frame.stack.append(50); // ret_offset
@@ -245,9 +245,9 @@ test "Integration: staticcall restrictions" {
     defer vm.deinit();
 
     // Create contract
-    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    const target_address = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const target_address = Address.from_u256(0x2222222222222222222222222222222222222222);
 
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -278,7 +278,7 @@ test "Integration: staticcall restrictions" {
 
     // Execute STATICCALL
     try frame.stack.append(30000); // gas
-    try frame.stack.append(primitives.Address.to_u256(target_address)); // to
+    try frame.stack.append(Address.to_u256(target_address)); // to
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // ret_offset
@@ -329,8 +329,8 @@ test "Integration: CREATE2 deterministic deployment" {
     defer vm.deinit();
 
     // Create contract
-    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
 
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -359,7 +359,7 @@ test "Integration: CREATE2 deterministic deployment" {
     try frame.memory.set_data(0, &init_code);
 
     // Set up CREATE2 result
-    const deterministic_address = primitives.Address.from_u256(0x4444444444444444444444444444444444444444);
+    const deterministic_address = Address.from_u256(0x4444444444444444444444444444444444444444);
     vm.create_result = .{
         .success = true,
         .address = deterministic_address,
@@ -380,10 +380,10 @@ test "Integration: CREATE2 deterministic deployment" {
 
     // Check result
     const created_address = try frame.stack.pop();
-    try testing.expectEqual(primitives.Address.to_u256(deterministic_address), created_address);
+    try testing.expectEqual(Address.to_u256(deterministic_address), created_address);
 
     // Address should be warm
-    try testing.expect(!vm.isAddressCold(deterministic_address));
+    try testing.expect(!vm.is_address_cold(deterministic_address));
 
     // Gas consumption should include hashing cost
     const gas_used = 100000 - frame.gas_remaining;
@@ -405,9 +405,9 @@ test "Integration: selfdestruct with balance transfer" {
     defer vm.deinit();
 
     // Create contract
-    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    const beneficiary = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const beneficiary = Address.from_u256(0x2222222222222222222222222222222222222222);
 
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -431,10 +431,10 @@ test "Integration: selfdestruct with balance transfer" {
 
     // Set up contract with balance
     const contract_balance: u256 = 5000;
-    try vm.setBalance(contract_address, contract_balance);
+    try vm.set_balance(contract_address, contract_balance);
 
     // Execute SELFDESTRUCT
-    try frame.stack.append(primitives.Address.to_u256(beneficiary));
+    try frame.stack.append(Address.to_u256(beneficiary));
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
@@ -442,10 +442,10 @@ test "Integration: selfdestruct with balance transfer" {
     try testing.expectError(ExecutionError.Error.STOP, result);
 
     // Verify contract is marked for deletion
-    try testing.expect(vm.isMarkedForDeletion(contract_address));
+    try testing.expect(vm.is_marked_for_deletion(contract_address));
 
     // Verify beneficiary is recorded
-    try testing.expectEqual(beneficiary, vm.getSelfdestructBeneficiary(contract_address));
+    try testing.expectEqual(beneficiary, vm.get_selfdestruct_beneficiary(contract_address));
 }
 
 // Test call depth limit
@@ -461,9 +461,9 @@ test "Integration: call depth limit enforcement" {
     defer vm.deinit();
 
     // Create contract
-    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    const target_address = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const target_address = Address.from_u256(0x2222222222222222222222222222222222222222);
 
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -502,7 +502,7 @@ test "Integration: call depth limit enforcement" {
 
     // Try CALL - should fail silently (push 0)
     try frame.stack.append(1000); // gas
-    try frame.stack.append(primitives.Address.to_u256(target_address)); // to
+    try frame.stack.append(Address.to_u256(target_address)); // to
     try frame.stack.append(0); // value
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // args_size
@@ -530,9 +530,9 @@ test "Integration: return data buffer management" {
     defer vm.deinit();
 
     // Create contract
-    const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    const target_address = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
+    const contract_address = Address.from_u256(0x3333333333333333333333333333333333333333);
+    const alice_address = Address.from_u256(0x1111111111111111111111111111111111111111);
+    const target_address = Address.from_u256(0x2222222222222222222222222222222222222222);
 
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
@@ -569,7 +569,7 @@ test "Integration: return data buffer management" {
     };
 
     try frame.stack.append(30000); // gas
-    try frame.stack.append(primitives.Address.to_u256(target_address)); // to
+    try frame.stack.append(Address.to_u256(target_address)); // to
     try frame.stack.append(0); // value
     try frame.stack.append(0); // args_offset
     try frame.stack.append(0); // args_size

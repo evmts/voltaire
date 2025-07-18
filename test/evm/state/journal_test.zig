@@ -7,8 +7,8 @@
 const std = @import("std");
 const testing = std.testing;
 const expect = testing.expect;
-const expectEqual = testing.expectEqual;
-const expectError = testing.expectError;
+const expect_equal = testing.expectEqual;
+const expect_error = testing.expectError;
 
 // Import the modules we're testing
 const Journal = @import("../../../src/evm/state/journal.zig").Journal;
@@ -40,20 +40,20 @@ test "Journal: Basic snapshot and commit functionality" {
 
     // Set initial balance
     try state.set_balance(addr1, initial_balance);
-    try expectEqual(initial_balance, state.get_balance(addr1));
+    try expect_equal(initial_balance, state.get_balance(addr1));
 
     // Create snapshot
     const snapshot_id = try state.snapshot();
 
     // Modify state
     try state.set_balance(addr1, new_balance);
-    try expectEqual(new_balance, state.get_balance(addr1));
+    try expect_equal(new_balance, state.get_balance(addr1));
 
     // Commit changes
     state.commit(snapshot_id);
 
     // Balance should remain changed after commit
-    try expectEqual(new_balance, state.get_balance(addr1));
+    try expect_equal(new_balance, state.get_balance(addr1));
 }
 
 test "Journal: Basic snapshot and revert functionality" {
@@ -70,20 +70,20 @@ test "Journal: Basic snapshot and revert functionality" {
 
     // Set initial balance
     try state.set_balance(addr1, initial_balance);
-    try expectEqual(initial_balance, state.get_balance(addr1));
+    try expect_equal(initial_balance, state.get_balance(addr1));
 
     // Create snapshot
     const snapshot_id = try state.snapshot();
 
     // Modify state
     try state.set_balance(addr1, new_balance);
-    try expectEqual(new_balance, state.get_balance(addr1));
+    try expect_equal(new_balance, state.get_balance(addr1));
 
     // Revert changes
     try state.revert(snapshot_id);
 
     // Balance should be reverted to initial value
-    try expectEqual(initial_balance, state.get_balance(addr1));
+    try expect_equal(initial_balance, state.get_balance(addr1));
 }
 
 test "Journal: Nested snapshots - commit inner, revert outer" {
@@ -107,24 +107,24 @@ test "Journal: Nested snapshots - commit inner, revert outer" {
 
     // Modify state
     try state.set_balance(addr1, middle_balance);
-    try expectEqual(middle_balance, state.get_balance(addr1));
+    try expect_equal(middle_balance, state.get_balance(addr1));
 
     // Create inner snapshot
     const inner_snapshot = try state.snapshot();
 
     // Modify state again
     try state.set_balance(addr1, final_balance);
-    try expectEqual(final_balance, state.get_balance(addr1));
+    try expect_equal(final_balance, state.get_balance(addr1));
 
     // Commit inner snapshot
     state.commit(inner_snapshot);
-    try expectEqual(final_balance, state.get_balance(addr1));
+    try expect_equal(final_balance, state.get_balance(addr1));
 
     // Revert outer snapshot
     try state.revert(outer_snapshot);
 
     // Should revert to initial state
-    try expectEqual(initial_balance, state.get_balance(addr1));
+    try expect_equal(initial_balance, state.get_balance(addr1));
 }
 
 test "Journal: Multiple storage changes and revert" {
@@ -146,8 +146,8 @@ test "Journal: Multiple storage changes and revert" {
     // Set initial storage values
     try state.set_storage(addr1, slot1, initial_value1);
     try state.set_storage(addr1, slot2, initial_value2);
-    try expectEqual(initial_value1, state.get_storage(addr1, slot1));
-    try expectEqual(initial_value2, state.get_storage(addr1, slot2));
+    try expect_equal(initial_value1, state.get_storage(addr1, slot1));
+    try expect_equal(initial_value2, state.get_storage(addr1, slot2));
 
     // Create snapshot
     const snapshot_id = try state.snapshot();
@@ -155,15 +155,15 @@ test "Journal: Multiple storage changes and revert" {
     // Modify storage
     try state.set_storage(addr1, slot1, new_value1);
     try state.set_storage(addr1, slot2, new_value2);
-    try expectEqual(new_value1, state.get_storage(addr1, slot1));
-    try expectEqual(new_value2, state.get_storage(addr1, slot2));
+    try expect_equal(new_value1, state.get_storage(addr1, slot1));
+    try expect_equal(new_value2, state.get_storage(addr1, slot2));
 
     // Revert changes
     try state.revert(snapshot_id);
 
     // Storage should be reverted
-    try expectEqual(initial_value1, state.get_storage(addr1, slot1));
-    try expectEqual(initial_value2, state.get_storage(addr1, slot2));
+    try expect_equal(initial_value1, state.get_storage(addr1, slot1));
+    try expect_equal(initial_value2, state.get_storage(addr1, slot2));
 }
 
 test "Journal: Transient storage changes and revert" {
@@ -181,20 +181,20 @@ test "Journal: Transient storage changes and revert" {
 
     // Set initial transient storage value
     try state.set_transient_storage(addr1, slot1, initial_value);
-    try expectEqual(initial_value, state.get_transient_storage(addr1, slot1));
+    try expect_equal(initial_value, state.get_transient_storage(addr1, slot1));
 
     // Create snapshot
     const snapshot_id = try state.snapshot();
 
     // Modify transient storage
     try state.set_transient_storage(addr1, slot1, new_value);
-    try expectEqual(new_value, state.get_transient_storage(addr1, slot1));
+    try expect_equal(new_value, state.get_transient_storage(addr1, slot1));
 
     // Revert changes
     try state.revert(snapshot_id);
 
     // Transient storage should be reverted
-    try expectEqual(initial_value, state.get_transient_storage(addr1, slot1));
+    try expect_equal(initial_value, state.get_transient_storage(addr1, slot1));
 }
 
 test "Journal: Account nonce changes and revert" {
@@ -211,20 +211,20 @@ test "Journal: Account nonce changes and revert" {
 
     // Set initial nonce
     try state.set_nonce(addr1, initial_nonce);
-    try expectEqual(initial_nonce, state.get_nonce(addr1));
+    try expect_equal(initial_nonce, state.get_nonce(addr1));
 
     // Create snapshot
     const snapshot_id = try state.snapshot();
 
     // Modify nonce
     try state.set_nonce(addr1, new_nonce);
-    try expectEqual(new_nonce, state.get_nonce(addr1));
+    try expect_equal(new_nonce, state.get_nonce(addr1));
 
     // Revert changes
     try state.revert(snapshot_id);
 
     // Nonce should be reverted
-    try expectEqual(initial_nonce, state.get_nonce(addr1));
+    try expect_equal(initial_nonce, state.get_nonce(addr1));
 }
 
 test "Journal: Increment nonce and revert" {
@@ -240,21 +240,21 @@ test "Journal: Increment nonce and revert" {
 
     // Set initial nonce
     try state.set_nonce(addr1, initial_nonce);
-    try expectEqual(initial_nonce, state.get_nonce(addr1));
+    try expect_equal(initial_nonce, state.get_nonce(addr1));
 
     // Create snapshot
     const snapshot_id = try state.snapshot();
 
     // Increment nonce
     const returned_nonce = try state.increment_nonce(addr1);
-    try expectEqual(initial_nonce, returned_nonce);
-    try expectEqual(initial_nonce + 1, state.get_nonce(addr1));
+    try expect_equal(initial_nonce, returned_nonce);
+    try expect_equal(initial_nonce + 1, state.get_nonce(addr1));
 
     // Revert changes
     try state.revert(snapshot_id);
 
     // Nonce should be reverted to initial value
-    try expectEqual(initial_nonce, state.get_nonce(addr1));
+    try expect_equal(initial_nonce, state.get_nonce(addr1));
 }
 
 test "Journal: Contract code changes and revert" {
@@ -271,7 +271,7 @@ test "Journal: Contract code changes and revert" {
 
     // Set initial code
     try state.set_code(addr1, &initial_code);
-    try expectEqual(initial_code.len, state.get_code(addr1).len);
+    try expect_equal(initial_code.len, state.get_code(addr1).len);
     try expect(std.mem.eql(u8, &initial_code, state.get_code(addr1)));
 
     // Create snapshot
@@ -279,14 +279,14 @@ test "Journal: Contract code changes and revert" {
 
     // Modify code
     try state.set_code(addr1, &new_code);
-    try expectEqual(new_code.len, state.get_code(addr1).len);
+    try expect_equal(new_code.len, state.get_code(addr1).len);
     try expect(std.mem.eql(u8, &new_code, state.get_code(addr1)));
 
     // Revert changes
     try state.revert(snapshot_id);
 
     // Code should be reverted
-    try expectEqual(initial_code.len, state.get_code(addr1).len);
+    try expect_equal(initial_code.len, state.get_code(addr1).len);
     try expect(std.mem.eql(u8, &initial_code, state.get_code(addr1)));
 }
 
@@ -303,31 +303,31 @@ test "Journal: Log emission and revert" {
     const data = [_]u8{ 0xAA, 0xBB, 0xCC };
 
     // Initially no logs
-    try expectEqual(@as(usize, 0), state.logs.items.len);
+    try expect_equal(@as(usize, 0), state.logs.items.len);
 
     // Create snapshot
     const snapshot_id = try state.snapshot();
 
     // Emit log
     try state.emit_log(addr1, &topics, &data);
-    try expectEqual(@as(usize, 1), state.logs.items.len);
+    try expect_equal(@as(usize, 1), state.logs.items.len);
 
     // Verify log content
     const emitted_log = state.logs.items[0];
-    try expectEqual(addr1, emitted_log.address);
-    try expectEqual(@as(usize, 2), emitted_log.topics.len);
-    try expectEqual(@as(u256, 0x1111), emitted_log.topics[0]);
-    try expectEqual(@as(u256, 0x2222), emitted_log.topics[1]);
-    try expectEqual(@as(usize, 3), emitted_log.data.len);
-    try expectEqual(@as(u8, 0xAA), emitted_log.data[0]);
-    try expectEqual(@as(u8, 0xBB), emitted_log.data[1]);
-    try expectEqual(@as(u8, 0xCC), emitted_log.data[2]);
+    try expect_equal(addr1, emitted_log.address);
+    try expect_equal(@as(usize, 2), emitted_log.topics.len);
+    try expect_equal(@as(u256, 0x1111), emitted_log.topics[0]);
+    try expect_equal(@as(u256, 0x2222), emitted_log.topics[1]);
+    try expect_equal(@as(usize, 3), emitted_log.data.len);
+    try expect_equal(@as(u8, 0xAA), emitted_log.data[0]);
+    try expect_equal(@as(u8, 0xBB), emitted_log.data[1]);
+    try expect_equal(@as(u8, 0xCC), emitted_log.data[2]);
 
     // Revert changes
     try state.revert(snapshot_id);
 
     // Logs should be reverted
-    try expectEqual(@as(usize, 0), state.logs.items.len);
+    try expect_equal(@as(usize, 0), state.logs.items.len);
 }
 
 test "Journal: Complex mixed state changes and revert" {
@@ -355,11 +355,11 @@ test "Journal: Complex mixed state changes and revert" {
     try state.set_code(addr2, &code);
 
     // Verify initial state
-    try expectEqual(@as(u256, 1000), state.get_balance(addr1));
-    try expectEqual(@as(u256, 2000), state.get_balance(addr2));
-    try expectEqual(@as(u256, 10), state.get_storage(addr1, slot1));
-    try expectEqual(@as(u256, 20), state.get_storage(addr1, slot2));
-    try expectEqual(@as(u64, 5), state.get_nonce(addr1));
+    try expect_equal(@as(u256, 1000), state.get_balance(addr1));
+    try expect_equal(@as(u256, 2000), state.get_balance(addr2));
+    try expect_equal(@as(u256, 10), state.get_storage(addr1, slot1));
+    try expect_equal(@as(u256, 20), state.get_storage(addr1, slot2));
+    try expect_equal(@as(u64, 5), state.get_nonce(addr1));
     try expect(std.mem.eql(u8, &code, state.get_code(addr2)));
 
     // Create snapshot
@@ -376,26 +376,26 @@ test "Journal: Complex mixed state changes and revert" {
     try state.set_transient_storage(addr1, slot1, 99);
 
     // Verify changes
-    try expectEqual(@as(u256, 3000), state.get_balance(addr1));
-    try expectEqual(@as(u256, 4000), state.get_balance(addr2));
-    try expectEqual(@as(u256, 30), state.get_storage(addr1, slot1));
-    try expectEqual(@as(u256, 40), state.get_storage(addr1, slot2));
-    try expectEqual(@as(u64, 10), state.get_nonce(addr1));
-    try expectEqual(@as(usize, 2), state.get_code(addr2).len);
-    try expectEqual(@as(usize, 1), state.logs.items.len);
-    try expectEqual(@as(u256, 99), state.get_transient_storage(addr1, slot1));
+    try expect_equal(@as(u256, 3000), state.get_balance(addr1));
+    try expect_equal(@as(u256, 4000), state.get_balance(addr2));
+    try expect_equal(@as(u256, 30), state.get_storage(addr1, slot1));
+    try expect_equal(@as(u256, 40), state.get_storage(addr1, slot2));
+    try expect_equal(@as(u64, 10), state.get_nonce(addr1));
+    try expect_equal(@as(usize, 2), state.get_code(addr2).len);
+    try expect_equal(@as(usize, 1), state.logs.items.len);
+    try expect_equal(@as(u256, 99), state.get_transient_storage(addr1, slot1));
 
     // Revert all changes
     try state.revert(snapshot_id);
 
     // Verify everything is reverted
-    try expectEqual(@as(u256, 1000), state.get_balance(addr1));
-    try expectEqual(@as(u256, 2000), state.get_balance(addr2));
-    try expectEqual(@as(u256, 10), state.get_storage(addr1, slot1));
-    try expectEqual(@as(u256, 20), state.get_storage(addr1, slot2));
-    try expectEqual(@as(u64, 5), state.get_nonce(addr1));
+    try expect_equal(@as(u256, 1000), state.get_balance(addr1));
+    try expect_equal(@as(u256, 2000), state.get_balance(addr2));
+    try expect_equal(@as(u256, 10), state.get_storage(addr1, slot1));
+    try expect_equal(@as(u256, 20), state.get_storage(addr1, slot2));
+    try expect_equal(@as(u64, 5), state.get_nonce(addr1));
     try expect(std.mem.eql(u8, &code, state.get_code(addr2)));
-    try expectEqual(@as(usize, 0), state.logs.items.len);
+    try expect_equal(@as(usize, 0), state.logs.items.len);
     try expectEqual(@as(u256, 0), state.get_transient_storage(addr1, slot1)); // Should be 0 (uninitialized)
 }
 
@@ -468,25 +468,25 @@ test "Journal: Multiple snapshots and selective reverts" {
     try state.set_balance(addr3, 3500); // Modify addr3
 
     // Verify all changes
-    try expectEqual(@as(u256, 1500), state.get_balance(addr1));
-    try expectEqual(@as(u256, 2500), state.get_balance(addr2));
-    try expectEqual(@as(u256, 3500), state.get_balance(addr3));
+    try expect_equal(@as(u256, 1500), state.get_balance(addr1));
+    try expect_equal(@as(u256, 2500), state.get_balance(addr2));
+    try expect_equal(@as(u256, 3500), state.get_balance(addr3));
 
     // Revert snapshot_c (only addr3 should revert)
     try state.revert(snapshot_c);
-    try expectEqual(@as(u256, 1500), state.get_balance(addr1)); // Still modified
-    try expectEqual(@as(u256, 2500), state.get_balance(addr2)); // Still modified
+    try expect_equal(@as(u256, 1500), state.get_balance(addr1)); // Still modified
+    try expect_equal(@as(u256, 2500), state.get_balance(addr2)); // Still modified
     try expectEqual(@as(u256, 3000), state.get_balance(addr3)); // Reverted
 
     // Commit snapshot_b
     state.commit(snapshot_b);
-    try expectEqual(@as(u256, 1500), state.get_balance(addr1)); // Still modified
-    try expectEqual(@as(u256, 2500), state.get_balance(addr2)); // Still modified
+    try expect_equal(@as(u256, 1500), state.get_balance(addr1)); // Still modified
+    try expect_equal(@as(u256, 2500), state.get_balance(addr2)); // Still modified
 
     // Revert snapshot_a (both addr1 and addr2 should revert)
     try state.revert(snapshot_a);
-    try expectEqual(@as(u256, 1000), state.get_balance(addr1)); // Reverted
-    try expectEqual(@as(u256, 2000), state.get_balance(addr2)); // Reverted
+    try expect_equal(@as(u256, 1000), state.get_balance(addr1)); // Reverted
+    try expect_equal(@as(u256, 2000), state.get_balance(addr2)); // Reverted
     try expectEqual(@as(u256, 3000), state.get_balance(addr3)); // Remains reverted
 }
 
@@ -521,7 +521,7 @@ test "Journal: Performance - many snapshots and changes" {
         for (0..num_changes_per_snapshot) |j| {
             const slot = @as(u256, @intCast(i * num_changes_per_snapshot + j));
             const expected_value = @as(u256, @intCast((i + 1) * (j + 1)));
-            try expectEqual(expected_value, state.get_storage(addr1, slot));
+            try expect_equal(expected_value, state.get_storage(addr1, slot));
         }
     }
 
@@ -536,7 +536,7 @@ test "Journal: Performance - many snapshots and changes" {
     for (0..num_snapshots) |snap_i| {
         for (0..num_changes_per_snapshot) |change_j| {
             const slot = @as(u256, @intCast(snap_i * num_changes_per_snapshot + change_j));
-            try expectEqual(@as(u256, 0), state.get_storage(addr1, slot));
+            try expect_equal(@as(u256, 0), state.get_storage(addr1, slot));
         }
     }
 }
@@ -552,26 +552,26 @@ test "Journal: Journal entry counting" {
     const addr1 = test_address(0x1234);
 
     // Initially no journal entries
-    try expectEqual(@as(usize, 0), state.journal.entry_count());
-    try expectEqual(@as(usize, 0), state.journal.snapshot_count());
+    try expect_equal(@as(usize, 0), state.journal.entry_count());
+    try expect_equal(@as(usize, 0), state.journal.snapshot_count());
 
     // Create snapshot
     const snapshot_id = try state.snapshot();
-    try expectEqual(@as(usize, 0), state.journal.entry_count());
-    try expectEqual(@as(usize, 1), state.journal.snapshot_count());
+    try expect_equal(@as(usize, 0), state.journal.entry_count());
+    try expect_equal(@as(usize, 1), state.journal.snapshot_count());
 
     // Make changes
     try state.set_balance(addr1, 1000);
-    try expectEqual(@as(usize, 1), state.journal.entry_count());
+    try expect_equal(@as(usize, 1), state.journal.entry_count());
 
     try state.set_storage(addr1, 100, 200);
-    try expectEqual(@as(usize, 2), state.journal.entry_count());
+    try expect_equal(@as(usize, 2), state.journal.entry_count());
 
     try state.set_nonce(addr1, 5);
-    try expectEqual(@as(usize, 3), state.journal.entry_count());
+    try expect_equal(@as(usize, 3), state.journal.entry_count());
 
     // Revert and check counts
     try state.revert(snapshot_id);
-    try expectEqual(@as(usize, 0), state.journal.entry_count());
-    try expectEqual(@as(usize, 0), state.journal.snapshot_count());
+    try expect_equal(@as(usize, 0), state.journal.entry_count());
+    try expect_equal(@as(usize, 0), state.journal.snapshot_count());
 }

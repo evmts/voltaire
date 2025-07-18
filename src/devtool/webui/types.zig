@@ -99,7 +99,7 @@ pub const Config = enum(c_int) {
     /// Control if WebUI should block and process the UI events
     /// one a time in a single thread `True`, or process every
     /// event in a new non-blocking thread `False`. This updates
-    /// all windows. You can use `setEventBlocking()` for
+    /// all windows. You can use `set_event_blocking()` for
     /// a specific single window update.
     /// Default: False
     ui_event_blocking = 1,

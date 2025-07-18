@@ -120,7 +120,7 @@ pub fn fuzz_crypto_operations(allocator: std.mem.Allocator, operations: []const 
         const result = op_sha3(0, @ptrCast(&vm), @ptrCast(&frame));
         
         // Verify the result
-        try validateCryptoResult(&frame, op, result);
+        try validate_crypto_result(&frame, op, result);
     }
 }
 
@@ -130,7 +130,7 @@ const FuzzCryptoOperation = struct {
     data: []const u8,
 };
 
-fn validateCryptoResult(frame: *const Frame, op: FuzzCryptoOperation, result: anyerror!Operation.ExecutionResult) !void {
+fn validate_crypto_result(frame: *const Frame, op: FuzzCryptoOperation, result: anyerror!Operation.ExecutionResult) !void {
     const testing = std.testing;
     const memory_limits = @import("../constants/memory_limits.zig");
     

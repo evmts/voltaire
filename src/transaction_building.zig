@@ -66,8 +66,8 @@ pub const TransactionRequest = struct {
     transaction_type: ?TxType = null,
 
     /// Convert request to appropriate transaction type
-    pub fn toTransaction(self: TransactionRequest) !TypedTransaction {
-        const tx_type = self.transaction_type orelse try inferTransactionType(self);
+    pub fn to_transaction(self: TransactionRequest) !TypedTransaction {
+        const tx_type = self.transaction_type orelse try infer_transaction_type(self);
 
         switch (tx_type) {
             .legacy => {
@@ -155,7 +155,7 @@ pub const TransactionRequest = struct {
     }
 
     /// Infer transaction type from request parameters
-    fn inferTransactionType(self: TransactionRequest) !TxType {
+    fn infer_transaction_type(self: TransactionRequest) !TxType {
         if (self.authorization_list != null) return .eip7702;
         if (self.blob_versioned_hashes != null or self.max_fee_per_blob_gas != null) return .eip4844;
         if (self.max_fee_per_gas != null or self.max_priority_fee_per_gas != null) return .eip1559;
@@ -175,35 +175,35 @@ pub const TransactionSerializer = struct {
     /// Serialize a transaction envelope to bytes
     pub fn serialize(self: *TransactionSerializer, envelope: TransactionEnvelope) ![]u8 {
         switch (envelope) {
-            .typed => |tx| return try self.serializeTypedTransaction(tx),
-            .signed => |signed_tx| return try self.serializeSignedTransaction(signed_tx),
+            .typed => |tx| return try self.serialize_typed_transaction(tx),
+            .signed => |signed_tx| return try self.serialize_signed_transaction(signed_tx),
         }
     }
 
     /// Serialize a typed transaction (unsigned)
-    pub fn serializeTypedTransaction(self: *TransactionSerializer, tx: TypedTransaction) ![]u8 {
+    pub fn serialize_typed_transaction(self: *TransactionSerializer, tx: TypedTransaction) ![]u8 {
         switch (tx) {
-            .legacy => |legacy| return try self.serializeLegacyTransaction(legacy, null),
-            .eip2930 => |eip2930| return try self.serializeEip2930Transaction(eip2930, null),
-            .eip1559 => |eip1559| return try self.serializeEip1559Transaction(eip1559, null),
-            .eip4844 => |eip4844| return try self.serializeEip4844Transaction(eip4844, null),
-            .eip7702 => |eip7702| return try self.serializeEip7702Transaction(eip7702, null),
+            .legacy => |legacy| return try self.serialize_legacy_transaction(legacy, null),
+            .eip2930 => |eip2930| return try self.serialize_eip2930_transaction(eip2930, null),
+            .eip1559 => |eip1559| return try self.serialize_eip1559_transaction(eip1559, null),
+            .eip4844 => |eip4844| return try self.serialize_eip4844_transaction(eip4844, null),
+            .eip7702 => |eip7702| return try self.serialize_eip7702_transaction(eip7702, null),
         }
     }
 
     /// Serialize a signed transaction
-    pub fn serializeSignedTransaction(self: *TransactionSerializer, signed_tx: SignedTransaction) ![]u8 {
+    pub fn serialize_signed_transaction(self: *TransactionSerializer, signed_tx: SignedTransaction) ![]u8 {
         switch (signed_tx.transaction) {
-            .legacy => |legacy| return try self.serializeLegacyTransaction(legacy, signed_tx.signature),
-            .eip2930 => |eip2930| return try self.serializeEip2930Transaction(eip2930, signed_tx.signature),
-            .eip1559 => |eip1559| return try self.serializeEip1559Transaction(eip1559, signed_tx.signature),
-            .eip4844 => |eip4844| return try self.serializeEip4844Transaction(eip4844, signed_tx.signature),
-            .eip7702 => |eip7702| return try self.serializeEip7702Transaction(eip7702, signed_tx.signature),
+            .legacy => |legacy| return try self.serialize_legacy_transaction(legacy, signed_tx.signature),
+            .eip2930 => |eip2930| return try self.serialize_eip2930_transaction(eip2930, signed_tx.signature),
+            .eip1559 => |eip1559| return try self.serialize_eip1559_transaction(eip1559, signed_tx.signature),
+            .eip4844 => |eip4844| return try self.serialize_eip4844_transaction(eip4844, signed_tx.signature),
+            .eip7702 => |eip7702| return try self.serialize_eip7702_transaction(eip7702, signed_tx.signature),
         }
     }
 
     /// Serialize Legacy transaction
-    fn serializeLegacyTransaction(self: *TransactionSerializer, tx: TxLegacy, signature: ?Signature) ![]u8 {
+    fn serialize_legacy_transaction(self: *TransactionSerializer, tx: TxLegacy, signature: ?Signature) ![]u8 {
         var fields = std.ArrayList([]u8).init(self.allocator);
         defer {
             for (fields.items) |field| {
@@ -213,31 +213,31 @@ pub const TransactionSerializer = struct {
         }
 
         // Encode fields in order: [nonce, gasPrice, gasLimit, to, value, data, chainId?, r?, s?]
-        try fields.append(try encodeU64(self.allocator, tx.nonce));
-        try fields.append(try encodeU256(self.allocator, tx.gas_price));
-        try fields.append(try encodeU64(self.allocator, tx.gas_limit));
-        try fields.append(try encodeTxKind(self.allocator, tx.to));
-        try fields.append(try encodeU256(self.allocator, tx.value));
-        try fields.append(try encodeBytes(self.allocator, tx.input));
+        try fields.append(try encode_u64(self.allocator, tx.nonce));
+        try fields.append(try encode_u256(self.allocator, tx.gas_price));
+        try fields.append(try encode_u64(self.allocator, tx.gas_limit));
+        try fields.append(try encode_tx_kind(self.allocator, tx.to));
+        try fields.append(try encode_u256(self.allocator, tx.value));
+        try fields.append(try encode_bytes(self.allocator, tx.input));
 
         if (signature) |sig| {
             // EIP-155 encoding
-            const v = try computeV(sig.y_parity, tx.chain_id);
-            try fields.append(try encodeU256(self.allocator, v));
-            try fields.append(try encodeU256(self.allocator, sig.r));
-            try fields.append(try encodeU256(self.allocator, sig.s));
+            const v = try compute_v(sig.y_parity, tx.chain_id);
+            try fields.append(try encode_u256(self.allocator, v));
+            try fields.append(try encode_u256(self.allocator, sig.r));
+            try fields.append(try encode_u256(self.allocator, sig.s));
         } else if (tx.chain_id) |chain_id| {
             // Unsigned with chain ID for signing
-            try fields.append(try encodeU64(self.allocator, chain_id));
-            try fields.append(try encodeU256(self.allocator, 0));
-            try fields.append(try encodeU256(self.allocator, 0));
+            try fields.append(try encode_u64(self.allocator, chain_id));
+            try fields.append(try encode_u256(self.allocator, 0));
+            try fields.append(try encode_u256(self.allocator, 0));
         }
 
         return try rlp.encode(self.allocator, fields.items);
     }
 
     /// Serialize EIP-2930 transaction
-    fn serializeEip2930Transaction(self: *TransactionSerializer, tx: Eip2930Transaction, signature: ?Signature) ![]u8 {
+    fn serialize_eip2930_transaction(self: *TransactionSerializer, tx: TxEip2930, signature: ?Signature) ![]u8 {
         var fields = std.ArrayList([]u8).init(self.allocator);
         defer {
             for (fields.items) |field| {
@@ -247,19 +247,19 @@ pub const TransactionSerializer = struct {
         }
 
         // Encode fields: [chainId, nonce, gasPrice, gasLimit, to, value, data, accessList, yParity?, r?, s?]
-        try fields.append(try encodeU64(self.allocator, tx.chain_id));
-        try fields.append(try encodeU64(self.allocator, tx.nonce));
-        try fields.append(try encodeU256(self.allocator, tx.gas_price));
-        try fields.append(try encodeU64(self.allocator, tx.gas_limit));
-        try fields.append(try encodeTxKind(self.allocator, tx.to));
-        try fields.append(try encodeU256(self.allocator, tx.value));
-        try fields.append(try encodeBytes(self.allocator, tx.input));
-        try fields.append(try encodeAccessList(self.allocator, tx.access_list));
+        try fields.append(try encode_u64(self.allocator, tx.chain_id));
+        try fields.append(try encode_u64(self.allocator, tx.nonce));
+        try fields.append(try encode_u256(self.allocator, tx.gas_price));
+        try fields.append(try encode_u64(self.allocator, tx.gas_limit));
+        try fields.append(try encode_tx_kind(self.allocator, tx.to));
+        try fields.append(try encode_u256(self.allocator, tx.value));
+        try fields.append(try encode_bytes(self.allocator, tx.input));
+        try fields.append(try encode_access_list(self.allocator, tx.access_list));
 
         if (signature) |sig| {
-            try fields.append(try encodeU8(self.allocator, if (sig.y_parity) 1 else 0));
-            try fields.append(try encodeU256(self.allocator, sig.r));
-            try fields.append(try encodeU256(self.allocator, sig.s));
+            try fields.append(try encode_u8(self.allocator, if (sig.y_parity) 1 else 0));
+            try fields.append(try encode_u256(self.allocator, sig.r));
+            try fields.append(try encode_u256(self.allocator, sig.s));
         }
 
         const rlp_encoded = try rlp.encode(self.allocator, fields.items);
@@ -273,7 +273,7 @@ pub const TransactionSerializer = struct {
     }
 
     /// Serialize EIP-1559 transaction
-    fn serializeEip1559Transaction(self: *TransactionSerializer, tx: Eip1559Transaction, signature: ?Signature) ![]u8 {
+    fn serialize_eip1559_transaction(self: *TransactionSerializer, tx: TxEip1559, signature: ?Signature) ![]u8 {
         var fields = std.ArrayList([]u8).init(self.allocator);
         defer {
             for (fields.items) |field| {
@@ -283,20 +283,20 @@ pub const TransactionSerializer = struct {
         }
 
         // Encode fields: [chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data, accessList, yParity?, r?, s?]
-        try fields.append(try encodeU64(self.allocator, tx.chain_id));
-        try fields.append(try encodeU64(self.allocator, tx.nonce));
-        try fields.append(try encodeU256(self.allocator, tx.max_priority_fee_per_gas));
-        try fields.append(try encodeU256(self.allocator, tx.max_fee_per_gas));
-        try fields.append(try encodeU64(self.allocator, tx.gas_limit));
-        try fields.append(try encodeTxKind(self.allocator, tx.to));
-        try fields.append(try encodeU256(self.allocator, tx.value));
-        try fields.append(try encodeBytes(self.allocator, tx.input));
-        try fields.append(try encodeAccessList(self.allocator, tx.access_list));
+        try fields.append(try encode_u64(self.allocator, tx.chain_id));
+        try fields.append(try encode_u64(self.allocator, tx.nonce));
+        try fields.append(try encode_u256(self.allocator, tx.max_priority_fee_per_gas));
+        try fields.append(try encode_u256(self.allocator, tx.max_fee_per_gas));
+        try fields.append(try encode_u64(self.allocator, tx.gas_limit));
+        try fields.append(try encode_tx_kind(self.allocator, tx.to));
+        try fields.append(try encode_u256(self.allocator, tx.value));
+        try fields.append(try encode_bytes(self.allocator, tx.input));
+        try fields.append(try encode_access_list(self.allocator, tx.access_list));
 
         if (signature) |sig| {
-            try fields.append(try encodeU8(self.allocator, if (sig.y_parity) 1 else 0));
-            try fields.append(try encodeU256(self.allocator, sig.r));
-            try fields.append(try encodeU256(self.allocator, sig.s));
+            try fields.append(try encode_u8(self.allocator, if (sig.y_parity) 1 else 0));
+            try fields.append(try encode_u256(self.allocator, sig.r));
+            try fields.append(try encode_u256(self.allocator, sig.s));
         }
 
         const rlp_encoded = try rlp.encode(self.allocator, fields.items);
@@ -310,7 +310,7 @@ pub const TransactionSerializer = struct {
     }
 
     /// Serialize EIP-4844 transaction
-    fn serializeEip4844Transaction(self: *TransactionSerializer, tx: Eip4844Transaction, signature: ?Signature) ![]u8 {
+    fn serialize_eip4844_transaction(self: *TransactionSerializer, tx: TxEip4844, signature: ?Signature) ![]u8 {
         var fields = std.ArrayList([]u8).init(self.allocator);
         defer {
             for (fields.items) |field| {
@@ -320,22 +320,22 @@ pub const TransactionSerializer = struct {
         }
 
         // Encode fields: [chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data, accessList, maxFeePerBlobGas, blobVersionedHashes, yParity?, r?, s?]
-        try fields.append(try encodeU64(self.allocator, tx.chain_id));
-        try fields.append(try encodeU64(self.allocator, tx.nonce));
-        try fields.append(try encodeU256(self.allocator, tx.max_priority_fee_per_gas));
-        try fields.append(try encodeU256(self.allocator, tx.max_fee_per_gas));
-        try fields.append(try encodeU64(self.allocator, tx.gas_limit));
-        try fields.append(try encodeTxKind(self.allocator, tx.to));
-        try fields.append(try encodeU256(self.allocator, tx.value));
-        try fields.append(try encodeBytes(self.allocator, tx.input));
-        try fields.append(try encodeAccessList(self.allocator, tx.access_list));
-        try fields.append(try encodeU256(self.allocator, tx.max_fee_per_blob_gas));
-        try fields.append(try encodeBlobVersionedHashes(self.allocator, tx.blob_versioned_hashes));
+        try fields.append(try encode_u64(self.allocator, tx.chain_id));
+        try fields.append(try encode_u64(self.allocator, tx.nonce));
+        try fields.append(try encode_u256(self.allocator, tx.max_priority_fee_per_gas));
+        try fields.append(try encode_u256(self.allocator, tx.max_fee_per_gas));
+        try fields.append(try encode_u64(self.allocator, tx.gas_limit));
+        try fields.append(try encode_tx_kind(self.allocator, tx.to));
+        try fields.append(try encode_u256(self.allocator, tx.value));
+        try fields.append(try encode_bytes(self.allocator, tx.input));
+        try fields.append(try encode_access_list(self.allocator, tx.access_list));
+        try fields.append(try encode_u256(self.allocator, tx.max_fee_per_blob_gas));
+        try fields.append(try encode_blob_versioned_hashes(self.allocator, tx.blob_versioned_hashes));
 
         if (signature) |sig| {
-            try fields.append(try encodeU8(self.allocator, if (sig.y_parity) 1 else 0));
-            try fields.append(try encodeU256(self.allocator, sig.r));
-            try fields.append(try encodeU256(self.allocator, sig.s));
+            try fields.append(try encode_u8(self.allocator, if (sig.y_parity) 1 else 0));
+            try fields.append(try encode_u256(self.allocator, sig.r));
+            try fields.append(try encode_u256(self.allocator, sig.s));
         }
 
         const rlp_encoded = try rlp.encode(self.allocator, fields.items);
@@ -349,7 +349,7 @@ pub const TransactionSerializer = struct {
     }
 
     /// Serialize EIP-7702 transaction
-    fn serializeEip7702Transaction(self: *TransactionSerializer, tx: Eip7702Transaction, signature: ?Signature) ![]u8 {
+    fn serialize_eip7702_transaction(self: *TransactionSerializer, tx: TxEip7702, signature: ?Signature) ![]u8 {
         var fields = std.ArrayList([]u8).init(self.allocator);
         defer {
             for (fields.items) |field| {
@@ -359,21 +359,21 @@ pub const TransactionSerializer = struct {
         }
 
         // Encode fields: [chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gasLimit, to, value, data, accessList, authorizationList, yParity?, r?, s?]
-        try fields.append(try encodeU64(self.allocator, tx.chain_id));
-        try fields.append(try encodeU64(self.allocator, tx.nonce));
-        try fields.append(try encodeU256(self.allocator, tx.max_priority_fee_per_gas));
-        try fields.append(try encodeU256(self.allocator, tx.max_fee_per_gas));
-        try fields.append(try encodeU64(self.allocator, tx.gas_limit));
-        try fields.append(try encodeTxKind(self.allocator, tx.to));
-        try fields.append(try encodeU256(self.allocator, tx.value));
-        try fields.append(try encodeBytes(self.allocator, tx.input));
-        try fields.append(try encodeAccessList(self.allocator, tx.access_list));
-        try fields.append(try encodeAuthorizationList(self.allocator, tx.authorization_list));
+        try fields.append(try encode_u64(self.allocator, tx.chain_id));
+        try fields.append(try encode_u64(self.allocator, tx.nonce));
+        try fields.append(try encode_u256(self.allocator, tx.max_priority_fee_per_gas));
+        try fields.append(try encode_u256(self.allocator, tx.max_fee_per_gas));
+        try fields.append(try encode_u64(self.allocator, tx.gas_limit));
+        try fields.append(try encode_tx_kind(self.allocator, tx.to));
+        try fields.append(try encode_u256(self.allocator, tx.value));
+        try fields.append(try encode_bytes(self.allocator, tx.input));
+        try fields.append(try encode_access_list(self.allocator, tx.access_list));
+        try fields.append(try encode_authorization_list(self.allocator, tx.authorization_list));
 
         if (signature) |sig| {
-            try fields.append(try encodeU8(self.allocator, if (sig.y_parity) 1 else 0));
-            try fields.append(try encodeU256(self.allocator, sig.r));
-            try fields.append(try encodeU256(self.allocator, sig.s));
+            try fields.append(try encode_u8(self.allocator, if (sig.y_parity) 1 else 0));
+            try fields.append(try encode_u256(self.allocator, sig.r));
+            try fields.append(try encode_u256(self.allocator, sig.s));
         }
 
         const rlp_encoded = try rlp.encode(self.allocator, fields.items);
@@ -401,26 +401,26 @@ pub const TransactionParser = struct {
 
         // Check if it's a typed transaction (starts with 0x01, 0x02, 0x03, or 0x04)
         if (data[0] <= 0x04) {
-            const tx_type = try transaction_types.TransactionUtils.typeFromByte(data[0]);
-            return try self.parseTypedTransaction(data[1..], tx_type);
+            const tx_type = try transaction_types.TransactionUtils.type_from_byte(data[0]);
+            return try self.parse_typed_transaction(data[1..], tx_type);
         } else {
             // Legacy transaction
-            return try self.parseLegacyTransaction(data);
+            return try self.parse_legacy_transaction(data);
         }
     }
 
     /// Parse a typed transaction (EIP-2718)
-    fn parseTypedTransaction(self: *TransactionParser, data: []const u8, tx_type: TxType) !TransactionEnvelope {
+    fn parse_typed_transaction(self: *TransactionParser, data: []const u8, tx_type: TxType) !TransactionEnvelope {
         const decoded = try rlp.decode(self.allocator, data, false);
         defer decoded.data.deinit(self.allocator);
 
         switch (decoded.data) {
             .List => |fields| {
                 switch (tx_type) {
-                    .eip2930 => return try self.parseEip2930Fields(fields),
-                    .eip1559 => return try self.parseEip1559Fields(fields),
-                    .eip4844 => return try self.parseEip4844Fields(fields),
-                    .eip7702 => return try self.parseEip7702Fields(fields),
+                    .eip2930 => return try self.parse_eip2930_fields(fields),
+                    .eip1559 => return try self.parse_eip1559_fields(fields),
+                    .eip4844 => return try self.parse_eip4844_fields(fields),
+                    .eip7702 => return try self.parse_eip7702_fields(fields),
                     .legacy => unreachable, // Legacy transactions don't have type prefix
                 }
             },
@@ -429,30 +429,30 @@ pub const TransactionParser = struct {
     }
 
     /// Parse legacy transaction
-    fn parseLegacyTransaction(self: *TransactionParser, data: []const u8) !TransactionEnvelope {
+    fn parse_legacy_transaction(self: *TransactionParser, data: []const u8) !TransactionEnvelope {
         const decoded = try rlp.decode(self.allocator, data, false);
         defer decoded.data.deinit(self.allocator);
 
         switch (decoded.data) {
-            .List => |fields| return try self.parseLegacyFields(fields),
+            .List => |fields| return try self.parse_legacy_fields(fields),
             else => return TransactionBuildingError.InvalidFormat,
         }
     }
 
     /// Parse legacy transaction fields
-    fn parseLegacyFields(self: *TransactionParser, fields: []rlp.Data) !TransactionEnvelope {
+    fn parse_legacy_fields(self: *TransactionParser, fields: []rlp.Data) !TransactionEnvelope {
         if (fields.len != 6 and fields.len != 9) {
             return TransactionBuildingError.InvalidFormat;
         }
 
-        const nonce = try parseU64(fields[0]);
-        const gas_price = try parseU256(fields[1]);
-        const gas_limit = try parseU64(fields[2]);
-        const to = try parseTxKind(fields[3]);
-        const value = try parseU256(fields[4]);
-        const input = try parseBytes(self.allocator, fields[5]);
+        const nonce = try parse_u64(fields[0]);
+        const gas_price = try parse_u256(fields[1]);
+        const gas_limit = try parse_u64(fields[2]);
+        const to = try parse_tx_kind(fields[3]);
+        const value = try parse_u256(fields[4]);
+        const input = try parse_bytes(self.allocator, fields[5]);
 
-        const tx = LegacyTransaction{
+        const tx = TxLegacy{
             .chain_id = null,
             .nonce = nonce,
             .gas_price = gas_price,
@@ -464,12 +464,12 @@ pub const TransactionParser = struct {
 
         if (fields.len == 9) {
             // Has signature
-            const v = try parseU256(fields[6]);
-            const r = try parseU256(fields[7]);
-            const s = try parseU256(fields[8]);
+            const v = try parse_u256(fields[6]);
+            const r = try parse_u256(fields[7]);
+            const s = try parse_u256(fields[8]);
 
             // Extract chain ID and y_parity from v
-            const chain_id, const y_parity = extractChainIdAndParity(v);
+            const chain_id, const y_parity = extract_chain_id_and_parity(v);
             var signed_tx = tx;
             signed_tx.chain_id = chain_id;
 
@@ -493,21 +493,21 @@ pub const TransactionParser = struct {
     }
 
     /// Parse EIP-2930 transaction fields
-    fn parseEip2930Fields(self: *TransactionParser, fields: []rlp.Data) !TransactionEnvelope {
+    fn parse_eip2930_fields(self: *TransactionParser, fields: []rlp.Data) !TransactionEnvelope {
         if (fields.len != 8 and fields.len != 11) {
             return TransactionBuildingError.InvalidFormat;
         }
 
-        const chain_id = try parseU64(fields[0]);
-        const nonce = try parseU64(fields[1]);
-        const gas_price = try parseU256(fields[2]);
-        const gas_limit = try parseU64(fields[3]);
-        const to = try parseTxKind(fields[4]);
-        const value = try parseU256(fields[5]);
-        const input = try parseBytes(self.allocator, fields[6]);
-        const access_list = try parseAccessList(self.allocator, fields[7]);
+        const chain_id = try parse_u64(fields[0]);
+        const nonce = try parse_u64(fields[1]);
+        const gas_price = try parse_u256(fields[2]);
+        const gas_limit = try parse_u64(fields[3]);
+        const to = try parse_tx_kind(fields[4]);
+        const value = try parse_u256(fields[5]);
+        const input = try parse_bytes(self.allocator, fields[6]);
+        const access_list = try parse_access_list(self.allocator, fields[7]);
 
-        const tx = Eip2930Transaction{
+        const tx = TxEip2930{
             .chain_id = chain_id,
             .nonce = nonce,
             .gas_price = gas_price,
@@ -520,9 +520,9 @@ pub const TransactionParser = struct {
 
         if (fields.len == 11) {
             // Has signature
-            const y_parity = (try parseU8(fields[8])) != 0;
-            const r = try parseU256(fields[9]);
-            const s = try parseU256(fields[10]);
+            const y_parity = (try parse_u8(fields[8])) != 0;
+            const r = try parse_u256(fields[9]);
+            const s = try parse_u256(fields[10]);
 
             const signature = Signature{
                 .y_parity = y_parity,
@@ -544,22 +544,22 @@ pub const TransactionParser = struct {
     }
 
     /// Parse EIP-1559 transaction fields
-    fn parseEip1559Fields(self: *TransactionParser, fields: []rlp.Data) !TransactionEnvelope {
+    fn parse_eip1559_fields(self: *TransactionParser, fields: []rlp.Data) !TransactionEnvelope {
         if (fields.len != 9 and fields.len != 12) {
             return TransactionBuildingError.InvalidFormat;
         }
 
-        const chain_id = try parseU64(fields[0]);
-        const nonce = try parseU64(fields[1]);
-        const max_priority_fee_per_gas = try parseU256(fields[2]);
-        const max_fee_per_gas = try parseU256(fields[3]);
-        const gas_limit = try parseU64(fields[4]);
-        const to = try parseTxKind(fields[5]);
-        const value = try parseU256(fields[6]);
-        const input = try parseBytes(self.allocator, fields[7]);
-        const access_list = try parseAccessList(self.allocator, fields[8]);
+        const chain_id = try parse_u64(fields[0]);
+        const nonce = try parse_u64(fields[1]);
+        const max_priority_fee_per_gas = try parse_u256(fields[2]);
+        const max_fee_per_gas = try parse_u256(fields[3]);
+        const gas_limit = try parse_u64(fields[4]);
+        const to = try parse_tx_kind(fields[5]);
+        const value = try parse_u256(fields[6]);
+        const input = try parse_bytes(self.allocator, fields[7]);
+        const access_list = try parse_access_list(self.allocator, fields[8]);
 
-        const tx = Eip1559Transaction{
+        const tx = TxEip1559{
             .chain_id = chain_id,
             .nonce = nonce,
             .max_priority_fee_per_gas = max_priority_fee_per_gas,
@@ -573,9 +573,9 @@ pub const TransactionParser = struct {
 
         if (fields.len == 12) {
             // Has signature
-            const y_parity = (try parseU8(fields[9])) != 0;
-            const r = try parseU256(fields[10]);
-            const s = try parseU256(fields[11]);
+            const y_parity = (try parse_u8(fields[9])) != 0;
+            const r = try parse_u256(fields[10]);
+            const s = try parse_u256(fields[11]);
 
             const signature = Signature{
                 .y_parity = y_parity,
@@ -597,24 +597,24 @@ pub const TransactionParser = struct {
     }
 
     /// Parse EIP-4844 transaction fields
-    fn parseEip4844Fields(self: *TransactionParser, fields: []rlp.Data) !TransactionEnvelope {
+    fn parse_eip4844_fields(self: *TransactionParser, fields: []rlp.Data) !TransactionEnvelope {
         if (fields.len != 11 and fields.len != 14) {
             return TransactionBuildingError.InvalidFormat;
         }
 
-        const chain_id = try parseU64(fields[0]);
-        const nonce = try parseU64(fields[1]);
-        const max_priority_fee_per_gas = try parseU256(fields[2]);
-        const max_fee_per_gas = try parseU256(fields[3]);
-        const gas_limit = try parseU64(fields[4]);
-        const to = try parseTxKind(fields[5]);
-        const value = try parseU256(fields[6]);
-        const input = try parseBytes(self.allocator, fields[7]);
-        const access_list = try parseAccessList(self.allocator, fields[8]);
-        const max_fee_per_blob_gas = try parseU256(fields[9]);
-        const blob_versioned_hashes = try parseBlobVersionedHashes(self.allocator, fields[10]);
+        const chain_id = try parse_u64(fields[0]);
+        const nonce = try parse_u64(fields[1]);
+        const max_priority_fee_per_gas = try parse_u256(fields[2]);
+        const max_fee_per_gas = try parse_u256(fields[3]);
+        const gas_limit = try parse_u64(fields[4]);
+        const to = try parse_tx_kind(fields[5]);
+        const value = try parse_u256(fields[6]);
+        const input = try parse_bytes(self.allocator, fields[7]);
+        const access_list = try parse_access_list(self.allocator, fields[8]);
+        const max_fee_per_blob_gas = try parse_u256(fields[9]);
+        const blob_versioned_hashes = try parse_blob_versioned_hashes(self.allocator, fields[10]);
 
-        const tx = Eip4844Transaction{
+        const tx = TxEip4844{
             .chain_id = chain_id,
             .nonce = nonce,
             .max_priority_fee_per_gas = max_priority_fee_per_gas,
@@ -630,9 +630,9 @@ pub const TransactionParser = struct {
 
         if (fields.len == 14) {
             // Has signature
-            const y_parity = (try parseU8(fields[11])) != 0;
-            const r = try parseU256(fields[12]);
-            const s = try parseU256(fields[13]);
+            const y_parity = (try parse_u8(fields[11])) != 0;
+            const r = try parse_u256(fields[12]);
+            const s = try parse_u256(fields[13]);
 
             const signature = Signature{
                 .y_parity = y_parity,
@@ -654,23 +654,23 @@ pub const TransactionParser = struct {
     }
 
     /// Parse EIP-7702 transaction fields
-    fn parseEip7702Fields(self: *TransactionParser, fields: []rlp.Data) !TransactionEnvelope {
+    fn parse_eip7702_fields(self: *TransactionParser, fields: []rlp.Data) !TransactionEnvelope {
         if (fields.len != 10 and fields.len != 13) {
             return TransactionBuildingError.InvalidFormat;
         }
 
-        const chain_id = try parseU64(fields[0]);
-        const nonce = try parseU64(fields[1]);
-        const max_priority_fee_per_gas = try parseU256(fields[2]);
-        const max_fee_per_gas = try parseU256(fields[3]);
-        const gas_limit = try parseU64(fields[4]);
-        const to = try parseTxKind(fields[5]);
-        const value = try parseU256(fields[6]);
-        const input = try parseBytes(self.allocator, fields[7]);
-        const access_list = try parseAccessList(self.allocator, fields[8]);
-        const authorization_list = try parseAuthorizationList(self.allocator, fields[9]);
+        const chain_id = try parse_u64(fields[0]);
+        const nonce = try parse_u64(fields[1]);
+        const max_priority_fee_per_gas = try parse_u256(fields[2]);
+        const max_fee_per_gas = try parse_u256(fields[3]);
+        const gas_limit = try parse_u64(fields[4]);
+        const to = try parse_tx_kind(fields[5]);
+        const value = try parse_u256(fields[6]);
+        const input = try parse_bytes(self.allocator, fields[7]);
+        const access_list = try parse_access_list(self.allocator, fields[8]);
+        const authorization_list = try parse_authorization_list(self.allocator, fields[9]);
 
-        const tx = Eip7702Transaction{
+        const tx = TxEip7702{
             .chain_id = chain_id,
             .nonce = nonce,
             .max_priority_fee_per_gas = max_priority_fee_per_gas,
@@ -685,9 +685,9 @@ pub const TransactionParser = struct {
 
         if (fields.len == 13) {
             // Has signature
-            const y_parity = (try parseU8(fields[10])) != 0;
-            const r = try parseU256(fields[11]);
-            const s = try parseU256(fields[12]);
+            const y_parity = (try parse_u8(fields[10])) != 0;
+            const r = try parse_u256(fields[11]);
+            const s = try parse_u256(fields[12]);
 
             const signature = Signature{
                 .y_parity = y_parity,
@@ -724,12 +724,12 @@ pub const TransactionBuilder = struct {
     }
 
     /// Build a transaction from a request
-    pub fn buildTransaction(_: *TransactionBuilder, request: TransactionRequest) !TypedTransaction {
-        return try request.toTransaction();
+    pub fn build_transaction(_: *TransactionBuilder, request: TransactionRequest) !TypedTransaction {
+        return try request.to_transaction();
     }
 
     /// Prepare transaction request with default values
-    pub fn prepareTransactionRequest(_: *TransactionBuilder, request: TransactionRequest) TransactionRequest {
+    pub fn prepare_transaction_request(_: *TransactionBuilder, request: TransactionRequest) TransactionRequest {
         var prepared = request;
 
         // Set default gas limit if not provided
@@ -751,9 +751,9 @@ pub const TransactionBuilder = struct {
     }
 
     /// Sign a transaction
-    pub fn signTransaction(self: *TransactionBuilder, tx: TypedTransaction, _: [32]u8, chain_id: ?ChainId) !SignedTransaction {
+    pub fn sign_transaction(self: *TransactionBuilder, tx: TypedTransaction, _: [32]u8, chain_id: ?ChainId) !SignedTransaction {
         // Get signing hash
-        _ = try self.getSigningHash(tx, chain_id);
+        _ = try self.get_signing_hash(tx, chain_id);
 
         // Sign the hash (placeholder - would use actual ECDSA implementation)
         // For now, create a mock signature
@@ -770,9 +770,9 @@ pub const TransactionBuilder = struct {
     }
 
     /// Get transaction signing hash
-    pub fn getSigningHash(self: *TransactionBuilder, tx: TypedTransaction, _: ?ChainId) !B256 {
+    pub fn get_signing_hash(self: *TransactionBuilder, tx: TypedTransaction, _: ?ChainId) !B256 {
         // For signing, we serialize without signature and hash
-        const serialized = try self.serializer.serializeTypedTransaction(tx);
+        const serialized = try self.serializer.serialize_typed_transaction(tx);
         defer self.allocator.free(serialized);
 
         // Use keccak256 to hash the serialized transaction
@@ -783,7 +783,7 @@ pub const TransactionBuilder = struct {
     }
 
     /// Serialize transaction to hex string for RPC
-    pub fn toHex(self: *TransactionBuilder, envelope: TransactionEnvelope) ![]u8 {
+    pub fn to_hex(self: *TransactionBuilder, envelope: TransactionEnvelope) ![]u8 {
         const serialized = try self.serializer.serialize(envelope);
         defer self.allocator.free(serialized);
 
@@ -791,7 +791,7 @@ pub const TransactionBuilder = struct {
     }
 
     /// Parse hex string to transaction envelope
-    pub fn fromHex(self: *TransactionBuilder, hex_string: []const u8) !TransactionEnvelope {
+    pub fn from_hex(self: *TransactionBuilder, hex_string: []const u8) !TransactionEnvelope {
         const decoded = try hex.decode(self.allocator, hex_string);
         defer self.allocator.free(decoded);
 
@@ -801,45 +801,45 @@ pub const TransactionBuilder = struct {
 
 // Helper functions for encoding/decoding
 
-fn encodeU64(allocator: std.mem.Allocator, value: u64) ![]u8 {
+fn encode_u64(allocator: std.mem.Allocator, value: u64) ![]u8 {
     return try rlp.encode(allocator, value);
 }
 
-fn encodeU256(allocator: std.mem.Allocator, value: U256) ![]u8 {
+fn encode_u256(allocator: std.mem.Allocator, value: U256) ![]u8 {
     return try rlp.encode(allocator, value);
 }
 
-fn encodeU8(allocator: std.mem.Allocator, value: u8) ![]u8 {
+fn encode_u8(allocator: std.mem.Allocator, value: u8) ![]u8 {
     return try rlp.encode(allocator, value);
 }
 
-fn encodeBytes(allocator: std.mem.Allocator, bytes: []const u8) ![]u8 {
+fn encode_bytes(allocator: std.mem.Allocator, bytes: []const u8) ![]u8 {
     return try rlp.encode(allocator, bytes);
 }
 
-fn encodeTxKind(allocator: std.mem.Allocator, tx_kind: TxKind) ![]u8 {
+fn encode_tx_kind(allocator: std.mem.Allocator, tx_kind: TxKind) ![]u8 {
     switch (tx_kind) {
         .call => |addr| return try rlp.encode(allocator, addr),
         .create => return try rlp.encode(allocator, &[_]u8{}),
     }
 }
 
-fn encodeAccessList(allocator: std.mem.Allocator, _: AccessList) ![]u8 {
+fn encode_access_list(allocator: std.mem.Allocator, _: AccessList) ![]u8 {
     // Simplified encoding - would need proper implementation
     return try rlp.encode(allocator, &[_]u8{});
 }
 
-fn encodeAuthorizationList(allocator: std.mem.Allocator, _: AuthorizationList) ![]u8 {
+fn encode_authorization_list(allocator: std.mem.Allocator, _: []SignedAuthorization) ![]u8 {
     // Simplified encoding - would need proper implementation
     return try rlp.encode(allocator, &[_]u8{});
 }
 
-fn encodeBlobVersionedHashes(allocator: std.mem.Allocator, _: []const B256) ![]u8 {
+fn encode_blob_versioned_hashes(allocator: std.mem.Allocator, _: []const B256) ![]u8 {
     // Simplified encoding - would need proper implementation
     return try rlp.encode(allocator, &[_]u8{});
 }
 
-fn computeV(y_parity: bool, chain_id: ?ChainId) !U256 {
+fn compute_v(y_parity: bool, chain_id: ?ChainId) !U256 {
     if (chain_id) |cid| {
         // EIP-155: v = 35 + chain_id * 2 + y_parity
         return 35 + @as(U256, cid) * 2 + (if (y_parity) @as(U256, 1) else @as(U256, 0));
@@ -849,7 +849,7 @@ fn computeV(y_parity: bool, chain_id: ?ChainId) !U256 {
     }
 }
 
-fn extractChainIdAndParity(v: U256) struct { ?ChainId, bool } {
+fn extract_chain_id_and_parity(v: U256) struct { ?ChainId, bool } {
     if (v == 27) return .{ null, false };
     if (v == 28) return .{ null, true };
 
@@ -864,7 +864,7 @@ fn extractChainIdAndParity(v: U256) struct { ?ChainId, bool } {
 
 // Parsing helper functions
 
-fn parseU64(data: rlp.Data) !u64 {
+fn parse_u64(data: rlp.Data) !u64 {
     switch (data) {
         .String => |bytes| {
             if (bytes.len == 0) return 0;
@@ -878,7 +878,7 @@ fn parseU64(data: rlp.Data) !u64 {
     }
 }
 
-fn parseU256(data: rlp.Data) !U256 {
+fn parse_u256(data: rlp.Data) !U256 {
     switch (data) {
         .String => |bytes| {
             if (bytes.len == 0) return 0;
@@ -892,7 +892,7 @@ fn parseU256(data: rlp.Data) !U256 {
     }
 }
 
-fn parseU8(data: rlp.Data) !u8 {
+fn parse_u8(data: rlp.Data) !u8 {
     switch (data) {
         .String => |bytes| {
             if (bytes.len == 0) return 0;
@@ -903,14 +903,14 @@ fn parseU8(data: rlp.Data) !u8 {
     }
 }
 
-fn parseBytes(allocator: std.mem.Allocator, data: rlp.Data) ![]u8 {
+fn parse_bytes(allocator: std.mem.Allocator, data: rlp.Data) ![]u8 {
     switch (data) {
         .String => |bytes| return try allocator.dupe(u8, bytes),
         else => return TransactionBuildingError.InvalidFormat,
     }
 }
 
-fn parseTxKind(data: rlp.Data) !TxKind {
+fn parse_tx_kind(data: rlp.Data) !TxKind {
     switch (data) {
         .String => |bytes| {
             if (bytes.len == 0) return TxKind.create;
@@ -923,7 +923,7 @@ fn parseTxKind(data: rlp.Data) !TxKind {
     }
 }
 
-fn parseAccessList(allocator: std.mem.Allocator, data: rlp.Data) !AccessList {
+fn parse_access_list(allocator: std.mem.Allocator, data: rlp.Data) !AccessList {
     // Simplified parsing - would need proper implementation
     _ = allocator;
     switch (data) {
@@ -932,7 +932,7 @@ fn parseAccessList(allocator: std.mem.Allocator, data: rlp.Data) !AccessList {
     }
 }
 
-fn parseAuthorizationList(allocator: std.mem.Allocator, data: rlp.Data) !AuthorizationList {
+fn parse_authorization_list(allocator: std.mem.Allocator, data: rlp.Data) ![]SignedAuthorization {
     // Simplified parsing - would need proper implementation
     _ = allocator;
     switch (data) {
@@ -941,7 +941,7 @@ fn parseAuthorizationList(allocator: std.mem.Allocator, data: rlp.Data) !Authori
     }
 }
 
-fn parseBlobVersionedHashes(allocator: std.mem.Allocator, data: rlp.Data) ![]B256 {
+fn parse_blob_versioned_hashes(allocator: std.mem.Allocator, data: rlp.Data) ![]B256 {
     // Simplified parsing - would need proper implementation
     _ = allocator;
     switch (data) {
@@ -963,7 +963,7 @@ test "transaction building" {
         .nonce = 0,
     };
 
-    const tx = try builder.buildTransaction(request);
+    const tx = try builder.build_transaction(request);
     try testing.expect(tx == .legacy);
     try testing.expect(tx.legacy.value == 1000000000000000000);
     try testing.expect(tx.legacy.gas_limit == 21000);
@@ -973,7 +973,7 @@ test "transaction serialization" {
     var serializer = TransactionSerializer.init(testing.allocator);
 
     const tx = TypedTransaction{
-        .legacy = LegacyTransaction{
+        .legacy = TxLegacy{
             .chain_id = 1,
             .nonce = 0,
             .gas_price = 20000000000,
@@ -984,7 +984,7 @@ test "transaction serialization" {
         },
     };
 
-    const serialized = try serializer.serializeTypedTransaction(tx);
+    const serialized = try serializer.serialize_typed_transaction(tx);
     defer testing.allocator.free(serialized);
 
     try testing.expect(serialized.len > 0);
@@ -1005,12 +1005,12 @@ test "transaction type inference" {
         .to = TxKind.create,
         .gas = 21000,
     };
-    try testing.expect(try request1.inferTransactionType() == .legacy);
+    try testing.expect(try request1.infer_transaction_type() == .legacy);
 
     const request2 = TransactionRequest{
         .to = TxKind.create,
         .gas = 21000,
         .max_fee_per_gas = 1000000000,
     };
-    try testing.expect(try request2.inferTransactionType() == .eip1559);
+    try testing.expect(try request2.infer_transaction_type() == .eip1559);
 }

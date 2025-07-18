@@ -78,7 +78,7 @@ const GenerateAssetsStep = struct {
         while (try walker.next()) |entry| {
             if (entry.kind != .file) continue;
 
-            const mime_type = getMimeType(entry.basename);
+            const mime_type = get_mime_type(entry.basename);
             const path = try std.fmt.allocPrint(allocator, "/{s}", .{entry.path});
             defer allocator.free(path);
 
@@ -101,7 +101,7 @@ const GenerateAssetsStep = struct {
         try writer.writeAll("}\n");
     }
 
-    fn getMimeType(filename: []const u8) []const u8 {
+    fn get_mime_type(filename: []const u8) []const u8 {
         if (std.mem.endsWith(u8, filename, ".html")) return "text/html";
         if (std.mem.endsWith(u8, filename, ".js")) return "application/javascript";
         if (std.mem.endsWith(u8, filename, ".css")) return "text/css";

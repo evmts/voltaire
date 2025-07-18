@@ -180,8 +180,8 @@ pub fn set_top_unsafe(self: *Stack, value: u256) void {
     self.data[self.size - 1] = value;
 }
 
-/// CamelCase alias used by existing execution code
-pub fn swapUnsafe(self: *Stack, n: usize) void {
+/// Swap unsafe function following snake_case convention
+pub fn swap_unsafe(self: *Stack, n: usize) void {
     @branchHint(.likely);
     std.mem.swap(u256, &self.data[self.size - 1], &self.data[self.size - n - 1]);
 }
@@ -262,7 +262,7 @@ pub fn fuzz_stack_operations(operations: []const FuzzOperation) !void {
             },
         }
         
-        try validateStackInvariants(&stack);
+        try validate_stack_invariants(&stack);
     }
 }
 
@@ -273,7 +273,7 @@ const FuzzOperation = union(enum) {
     clear: void,
 };
 
-fn validateStackInvariants(stack: *const Stack) !void {
+fn validate_stack_invariants(stack: *const Stack) !void {
     const testing = std.testing;
     
     try testing.expect(stack.size <= CAPACITY);
@@ -385,7 +385,7 @@ test "fuzz_stack_random_operations" {
         }
         
         try std.testing.expectEqual(reference.items.len, stack.size);
-        try validateStackInvariants(&stack);
+        try validate_stack_invariants(&stack);
     }
 }
 
@@ -432,7 +432,7 @@ test "fuzz_stack_swap_operations" {
     stack.append_unsafe(200);
     stack.append_unsafe(300);
     
-    stack.swapUnsafe(1);
+    stack.swap_unsafe(1);
     
     try std.testing.expectEqual(@as(u256, 200), stack.data[2]);
     try std.testing.expectEqual(@as(u256, 300), stack.data[1]);

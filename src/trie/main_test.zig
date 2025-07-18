@@ -36,7 +36,7 @@ fn get_all_tests() []const type {
         trie.TrieMask,
         trie.key_to_nibbles,
         trie.nibbles_to_key,
-        trie.encodePath,
+        trie.encode_path,
         trie.BranchNode,
         trie.LeafNode,
         trie.ExtensionNode,

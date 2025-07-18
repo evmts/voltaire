@@ -49,7 +49,7 @@ pub const TransactionRequest = struct {
     transaction_type: ?TxType = null,
 
     /// Convert request to appropriate transaction type
-    pub fn toTransaction(self: TransactionRequest) !TypedTransaction {
+    pub fn to_transaction(self: TransactionRequest) !TypedTransaction {
         const tx_type = self.transaction_type orelse .legacy;
 
         switch (tx_type) {
@@ -95,12 +95,12 @@ pub const TransactionBuilder = struct {
     }
 
     /// Build a transaction from a request
-    pub fn buildTransaction(_: *TransactionBuilder, request: TransactionRequest) !TypedTransaction {
-        return try request.toTransaction();
+    pub fn build_transaction(_: *TransactionBuilder, request: TransactionRequest) !TypedTransaction {
+        return try request.to_transaction();
     }
 
     /// Prepare transaction request with default values
-    pub fn prepareTransactionRequest(_: *TransactionBuilder, request: TransactionRequest) TransactionRequest {
+    pub fn prepare_transaction_request(_: *TransactionBuilder, request: TransactionRequest) TransactionRequest {
         var prepared = request;
 
         // Set default gas limit if not provided
@@ -117,7 +117,7 @@ pub const TransactionBuilder = struct {
     }
 
     /// Sign a transaction (placeholder implementation)
-    pub fn signTransaction(_: *TransactionBuilder, tx: TypedTransaction, _: [32]u8) !SignedTransaction {
+    pub fn sign_transaction(_: *TransactionBuilder, tx: TypedTransaction, _: [32]u8) !SignedTransaction {
         // Placeholder signature
         const signature = Signature{
             .y_parity = false,
@@ -132,7 +132,7 @@ pub const TransactionBuilder = struct {
     }
 
     /// Get transaction hash (placeholder)
-    pub fn getTransactionHash(_: *TransactionBuilder, _: TypedTransaction) !B256 {
+    pub fn get_transaction_hash(_: *TransactionBuilder, _: TypedTransaction) !B256 {
         // Placeholder hash
         var hash: B256 = undefined;
         @memset(&hash, 0x42);
@@ -140,7 +140,7 @@ pub const TransactionBuilder = struct {
     }
 
     /// Serialize transaction to hex string (placeholder)
-    pub fn toHex(self: *TransactionBuilder, envelope: TransactionEnvelope) ![]u8 {
+    pub fn to_hex(self: *TransactionBuilder, envelope: TransactionEnvelope) ![]u8 {
         // Simplified serialization - just return a placeholder hex string
         _ = envelope;
         return try self.allocator.dupe(u8, "0x1234567890abcdef");
@@ -150,7 +150,7 @@ pub const TransactionBuilder = struct {
 /// Utility functions for transaction building
 pub const TransactionUtils = struct {
     /// Estimate gas for a transaction
-    pub fn estimateGas(tx: TypedTransaction) u64 {
+    pub fn estimate_gas(tx: TypedTransaction) u64 {
         switch (tx) {
             .legacy => |legacy| {
                 const base_gas: u64 = 21000;
@@ -167,17 +167,17 @@ pub const TransactionUtils = struct {
     }
 
     /// Check if transaction is a contract creation
-    pub fn isContractCreation(tx: TypedTransaction) bool {
+    pub fn is_contract_creation(tx: TypedTransaction) bool {
         switch (tx) {
-            .legacy => |legacy| return legacy.to.isCreate(),
-            .eip1559 => |eip1559| return eip1559.to.isCreate(),
-            .eip2930 => |eip2930| return eip2930.to.isCreate(),
+            .legacy => |legacy| return legacy.to.is_create(),
+            .eip1559 => |eip1559| return eip1559.to.is_create(),
+            .eip2930 => |eip2930| return eip2930.to.is_create(),
             else => return false,
         }
     }
 
     /// Get transaction type
-    pub fn getTransactionType(tx: TypedTransaction) TxType {
+    pub fn get_transaction_type(tx: TypedTransaction) TxType {
         return switch (tx) {
             .legacy => .legacy,
             .eip2930 => .eip2930,
@@ -199,7 +199,7 @@ test "transaction request to transaction conversion" {
         .transaction_type = .legacy,
     };
 
-    const tx = try request.toTransaction();
+    const tx = try request.to_transaction();
     try testing.expect(tx == .legacy);
     try testing.expectEqual(@as(u256, 1000000000000000000), tx.legacy.value);
     try testing.expectEqual(@as(u64, 21000), tx.legacy.gas_limit);
@@ -218,7 +218,7 @@ test "transaction builder" {
         .transaction_type = .eip1559,
     };
 
-    const tx = try builder.buildTransaction(request);
+    const tx = try builder.build_transaction(request);
     try testing.expect(tx == .eip1559);
     try testing.expectEqual(@as(u64, 21000), tx.eip1559.gas_limit);
 }
@@ -236,10 +236,10 @@ test "transaction utils" {
         },
     };
 
-    try testing.expect(TransactionUtils.isContractCreation(legacy_tx));
-    try testing.expectEqual(TxType.legacy, TransactionUtils.getTransactionType(legacy_tx));
+    try testing.expect(TransactionUtils.is_contract_creation(legacy_tx));
+    try testing.expectEqual(TxType.legacy, TransactionUtils.get_transaction_type(legacy_tx));
 
-    const estimated_gas = TransactionUtils.estimateGas(legacy_tx);
+    const estimated_gas = TransactionUtils.estimate_gas(legacy_tx);
     try testing.expectEqual(@as(u64, 21000), estimated_gas);
 }
 
@@ -251,7 +251,7 @@ test "transaction preparation" {
         .value = 1000000000000000000,
     };
 
-    const prepared = builder.prepareTransactionRequest(request);
+    const prepared = builder.prepare_transaction_request(request);
     try testing.expectEqual(@as(u64, 21000), prepared.gas.?);
     try testing.expectEqual(TxType.legacy, prepared.transaction_type.?);
 }
@@ -267,7 +267,7 @@ test "eip1559 transaction" {
         .transaction_type = .eip1559,
     };
 
-    const tx = try request.toTransaction();
+    const tx = try request.to_transaction();
     try testing.expect(tx == .eip1559);
     try testing.expectEqual(@as(u64, 1), tx.eip1559.chain_id);
     try testing.expectEqual(@as(u64, 42), tx.eip1559.nonce);

@@ -56,10 +56,10 @@ pub fn is_available(address: primitives.Address.Address, chain_rules: ChainRules
 
     return switch (precompile_id) {
         1, 2, 3, 4 => true, // ECRECOVER, SHA256, RIPEMD160, IDENTITY available from Frontier
-        5 => chain_rules.IsByzantium, // MODEXP from Byzantium
-        6, 7, 8 => chain_rules.IsByzantium, // ECADD, ECMUL, ECPAIRING from Byzantium
-        9 => chain_rules.IsIstanbul, // BLAKE2F from Istanbul
-        10 => chain_rules.IsCancun, // POINT_EVALUATION from Cancun
+        5 => chain_rules.is_byzantium, // MODEXP from Byzantium
+        6, 7, 8 => chain_rules.is_byzantium, // ECADD, ECMUL, ECPAIRING from Byzantium
+        9 => chain_rules.is_istanbul, // BLAKE2F from Istanbul
+        10 => chain_rules.is_cancun, // POINT_EVALUATION from Cancun
         else => false,
     };
 }

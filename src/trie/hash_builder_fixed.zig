@@ -151,7 +151,7 @@ pub const HashBuilder = struct {
     }
 
     /// Calculate the root hash
-    pub fn root_hash(self: *const HashBuilder) ?[32]u8 {
+    pub fn get_root_hash(self: *const HashBuilder) ?[32]u8 {
         return self.root_hash;
     }
 
@@ -998,13 +998,13 @@ test "HashBuilder - insert and get" {
     defer builder.deinit();
 
     // Empty trie has no root
-    try testing.expect(builder.root_hash() == null);
+    try testing.expect(builder.get_root_hash() == null);
 
     // Insert a key-value pair
     try builder.insert(&[_]u8{ 1, 2, 3 }, "value1");
 
     // Root should be set
-    try testing.expect(builder.root_hash() != null);
+    try testing.expect(builder.get_root_hash() != null);
 
     // Get the value
     const value = try builder.get(&[_]u8{ 1, 2, 3 });
@@ -1061,7 +1061,7 @@ test "HashBuilder - delete" {
     try builder.delete(&[_]u8{ 5, 6, 7 });
 
     // Trie should be empty
-    try testing.expect(builder.root_hash() == null);
+    try testing.expect(builder.get_root_hash() == null);
 }
 
 test "HashBuilder - update existing" {
@@ -1140,7 +1140,7 @@ test "HashBuilder - reset" {
     builder.reset();
 
     // Trie should be empty
-    try testing.expect(builder.root_hash() == null);
+    try testing.expect(builder.get_root_hash() == null);
 
     // Values should be gone
     const value1 = try builder.get(&[_]u8{ 1, 2, 3 });

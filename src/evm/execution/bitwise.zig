@@ -262,7 +262,7 @@ pub fn fuzz_bitwise_operations(allocator: std.mem.Allocator, operations: []const
         }
         
         // Verify the result makes sense
-        try validateBitwiseResult(&frame.stack, op);
+        try validate_bitwise_result(&frame.stack, op);
     }
 }
 
@@ -283,7 +283,7 @@ const BitwiseOpType = enum {
     sar_op,
 };
 
-fn validateBitwiseResult(stack: *const Stack, op: FuzzBitwiseOperation) !void {
+fn validate_bitwise_result(stack: *const Stack, op: FuzzBitwiseOperation) !void {
     const testing = std.testing;
     
     // Stack should have exactly one result

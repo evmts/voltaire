@@ -36,8 +36,8 @@ test "Integration: Arithmetic with conditional jumps" {
     };
 
     // Create test addresses
-    const contract_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000001");
-    const owner_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000002");
+    const contract_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const owner_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000002");
 
     // Create contract directly
     var contract = try Evm.Contract.init(
@@ -105,8 +105,8 @@ test "Integration: Complex arithmetic expression evaluation" {
     defer vm.deinit();
 
     // Create test addresses
-    const contract_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000001");
-    const owner_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000002");
+    const contract_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const owner_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000002");
 
     // Create contract directly
     var contract = try Evm.Contract.init(
@@ -158,8 +158,8 @@ test "Integration: Modular arithmetic chain" {
     defer vm.deinit();
 
     // Create test addresses
-    const contract_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000001");
-    const owner_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000002");
+    const contract_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const owner_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000002");
 
     // Create contract directly
     var contract = try Evm.Contract.init(
@@ -211,8 +211,8 @@ test "Integration: Division by zero handling in expression" {
     defer vm.deinit();
 
     // Create test addresses
-    const contract_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000001");
-    const owner_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000002");
+    const contract_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const owner_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000002");
 
     // Create contract directly
     var contract = try Evm.Contract.init(
@@ -259,8 +259,8 @@ test "Integration: Bitwise operations with arithmetic" {
     defer vm.deinit();
 
     // Create test addresses
-    const contract_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000001");
-    const owner_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000002");
+    const contract_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const owner_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000002");
 
     // Create contract directly
     var contract = try Evm.Contract.init(
@@ -314,8 +314,8 @@ test "Integration: Stack manipulation with arithmetic" {
     defer vm.deinit();
 
     // Create test addresses
-    const contract_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000001");
-    const owner_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000002");
+    const contract_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const owner_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000002");
 
     // Create contract directly
     var contract = try Evm.Contract.init(
@@ -379,8 +379,8 @@ test "Integration: Comparison chain for range checking" {
     defer vm.deinit();
 
     // Create test addresses
-    const contract_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000001");
-    const owner_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000002");
+    const contract_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const owner_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000002");
 
     // Create contract directly
     var contract = try Evm.Contract.init(
@@ -441,8 +441,8 @@ test "Integration: EXP with modular arithmetic" {
     defer vm.deinit();
 
     // Create test addresses
-    const contract_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000001");
-    const owner_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000002");
+    const contract_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const owner_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000002");
 
     // Create contract directly
     var contract = try Evm.Contract.init(
@@ -489,8 +489,8 @@ test "Integration: Signed arithmetic with comparisons" {
     defer vm.deinit();
 
     // Create test addresses
-    const contract_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000001");
-    const owner_address = Evm.Address.fromHex("0x0000000000000000000000000000000000000002");
+    const contract_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000001");
+    const owner_address = Evm.Address.from_hex("0x0000000000000000000000000000000000000002");
 
     // Create contract directly
     var contract = try Evm.Contract.init(

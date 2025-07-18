@@ -293,7 +293,7 @@ test "SSTORE: Static call protection" {
 //     var test_vm = try helpers.TestVm.init(allocator);
 //     defer test_vm.deinit(allocator);
 //
-//     var contract = try helpers.createTestContract(
+//     var contract = try helpers.create_test_contract(
 //         allocator,
 //         helpers.TestAddresses.CONTRACT,
 //         helpers.TestAddresses.ALICE,
@@ -306,15 +306,15 @@ test "SSTORE: Static call protection" {
 //     defer test_frame.deinit();
 //
 //     // First set a non-zero value
-//     try test_vm.setStorage(helpers.TestAddresses.CONTRACT, 0x50, 0x123);
+//     try test_vm.set_storage(helpers.TestAddresses.CONTRACT, 0x50, 0x123);
 //
 //     // Store zero to clear the slot
-//     try test_frame.pushStack(&[_]u256{0x50}); // slot
-//     try test_frame.pushStack(&[_]u256{0});    // value (zero)
+//     try test_frame.push_stack(&[_]u256{0x50}); // slot
+//     try test_frame.push_stack(&[_]u256{0});    // value (zero)
 //
 //     // TODO: gas_refund is not exposed in the current VM API
 //     // const gas_refund_before = test_vm.evm.gas_refund;
-//     _ = try helpers.executeOpcode(0x55, test_vm.evm, test_frame.frame);
+//     _ = try helpers.execute_opcode(0x55, test_vm.evm, test_frame.frame);
 //     // const gas_refund_after = test_vm.evm.gas_refund;
 //
 //     // Should receive refund for clearing storage

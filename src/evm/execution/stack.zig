@@ -155,7 +155,7 @@ pub fn make_swap(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.S
                 unreachable;
             }
 
-            frame.stack.swapUnsafe(n);
+            frame.stack.swap_unsafe(n);
 
             return Operation.ExecutionResult{};
         }
@@ -175,7 +175,7 @@ pub fn swap_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
         unreachable;
     }
 
-    frame.stack.swapUnsafe(@intCast(n));
+    frame.stack.swap_unsafe(@intCast(n));
 
     return Operation.ExecutionResult{};
 }

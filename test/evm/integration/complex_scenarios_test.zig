@@ -9,7 +9,7 @@ const Frame = Evm.Frame;
 const Operation = Evm.Operation;
 
 // Helper function to convert u256 to 32-byte big-endian array
-fn u256ToBytes32(value: u256) [32]u8 {
+fn u256_to_bytes32(value: u256) [32]u8 {
     var bytes: [32]u8 = [_]u8{0} ** 32;
     var v = value;
     var i: usize = 31;
@@ -89,8 +89,8 @@ test "complex: fibonacci calculation" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO, // caller
+        Address.ZERO, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -100,7 +100,7 @@ test "complex: fibonacci calculation" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -112,7 +112,7 @@ test "complex: fibonacci calculation" {
 
     try testing.expect(result.status == .Success);
     // fibonacci(10) = 55
-    const expected_bytes = u256ToBytes32(55);
+    const expected_bytes = u256_to_bytes32(55);
     try testing.expectEqualSlices(u8, &expected_bytes, result.output.?);
 }
 
@@ -128,7 +128,7 @@ test "complex: storage-based counter with access patterns" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Increment a counter in storage multiple times
     // Tests: SLOAD, SSTORE, warm/cold access patterns
@@ -191,7 +191,7 @@ test "complex: storage-based counter with access patterns" {
     const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
-    const expected_bytes = u256ToBytes32(3);
+    const expected_bytes = u256_to_bytes32(3);
     try testing.expectEqualSlices(u8, &expected_bytes, result.output.?);
 }
 
@@ -231,8 +231,8 @@ test "complex: memory expansion with large offsets" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO, // caller
+        Address.ZERO, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -242,7 +242,7 @@ test "complex: memory expansion with large offsets" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -321,8 +321,8 @@ test "complex: nested conditionals with multiple jumps" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO, // caller
+        Address.ZERO, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -332,7 +332,7 @@ test "complex: nested conditionals with multiple jumps" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -361,7 +361,7 @@ test "complex: event emission with multiple topics" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = primitives.Address.from_u256(0xdeadbeef00000000000000000000000000000000);
+    const contract_address = Address.from_u256(0xdeadbeef00000000000000000000000000000000);
 
     // Emit multiple events with different topics
     const bytecode = [_]u8{
@@ -456,8 +456,8 @@ test "complex: keccak256 hash computation" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO, // caller
+        Address.ZERO, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -467,7 +467,7 @@ test "complex: keccak256 hash computation" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -481,7 +481,7 @@ test "complex: keccak256 hash computation" {
 
     // Expected keccak256("Hello, World!") = 0xacaf3289d7b601cbd114fb36c4d29c85bbfd5e133f14cb355c3fd8d99367964f
     const expected: u256 = 0xacaf3289d7b601cbd114fb36c4d29c85bbfd5e133f14cb355c3fd8d99367964f;
-    const expected_bytes = u256ToBytes32(expected);
+    const expected_bytes = u256_to_bytes32(expected);
     try testing.expectEqualSlices(u8, &expected_bytes, result.output.?);
 }
 
@@ -522,7 +522,7 @@ test "complex: call depth limit enforcement" {
     //     0x00,        // STOP
     // };
     //
-    // const result = try test_helpers.runBytecode(vm, &bytecode, primitives.Address.ZERO_ADDRESS, 100000, null);
+    // const result = try test_helpers.runBytecode(vm, &bytecode, Address.ZERO, 100000, null);
     // defer if (result.output) |output| allocator.free(output);
     //
     // try testing.expect(result.status == .Success);
@@ -533,7 +533,7 @@ test "complex: call depth limit enforcement" {
     // evm.last_frame.?.depth = 1024;
     // evm.last_frame.?.stack.size = 0; // Reset stack
     //
-    // const result2 = try test_helpers.runBytecode(vm, &bytecode, primitives.Address.ZERO_ADDRESS, 100000, null);
+    // const result2 = try test_helpers.runBytecode(vm, &bytecode, Address.ZERO, 100000, null);
     // defer if (result2.output) |output| allocator.free(output);
     //
     // try testing.expect(result2.status == .Success);
@@ -612,8 +612,8 @@ test "complex: bit manipulation operations" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO, // caller
+        Address.ZERO, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -623,7 +623,7 @@ test "complex: bit manipulation operations" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -758,8 +758,8 @@ test "complex: modular arithmetic edge cases" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO, // caller
+        Address.ZERO, // address where code executes
         0, // value
         100000, // gas
         &bytecode,
@@ -769,7 +769,7 @@ test "complex: modular arithmetic edge cases" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);

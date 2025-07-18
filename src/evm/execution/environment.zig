@@ -146,7 +146,7 @@ pub fn op_extcodecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Op
     // Calculate memory expansion gas cost
     const current_size = frame.memory.context_size();
     const new_size = mem_offset_usize + size_usize;
-    const memory_gas = gas_constants.memoryGasCost(current_size, new_size);
+    const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
     try frame.consume_gas(memory_gas);
 
     // Dynamic gas for copy operation
@@ -307,7 +307,7 @@ pub fn op_calldatacopy(pc: usize, interpreter: *Operation.Interpreter, state: *O
     // Calculate memory expansion gas cost
     const current_size = frame.memory.context_size();
     const new_size = mem_offset_usize + size_usize;
-    const memory_gas = gas_constants.memoryGasCost(current_size, new_size);
+    const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
     try frame.consume_gas(memory_gas);
 
     // Dynamic gas for copy operation (VERYLOW * word_count)
@@ -354,7 +354,7 @@ pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     // Calculate memory expansion gas cost
     const current_size = frame.memory.context_size();
     const new_size = mem_offset_usize + size_usize;
-    const memory_gas = gas_constants.memoryGasCost(current_size, new_size);
+    const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
     try frame.consume_gas(memory_gas);
 
     // Dynamic gas for copy operation
@@ -478,7 +478,7 @@ pub fn fuzz_environment_operations(allocator: std.mem.Allocator, operations: []c
         };
         
         // Verify the result
-        try validateEnvironmentResult(&frame, &vm, op, result);
+        try validate_environment_result(&frame, &vm, op, result);
     }
 }
 
@@ -513,7 +513,7 @@ const EnvironmentOpType = enum {
     returndataload,
 };
 
-fn validateEnvironmentResult(frame: *const Frame, vm: *const Vm, op: FuzzEnvironmentOperation, result: anyerror!Operation.ExecutionResult) !void {
+fn validate_environment_result(frame: *const Frame, vm: *const Vm, op: FuzzEnvironmentOperation, result: anyerror!Operation.ExecutionResult) !void {
     _ = vm;
     const testing = std.testing;
     

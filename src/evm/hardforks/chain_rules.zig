@@ -26,7 +26,7 @@ const Log = @import("../log.zig");
 /// const rules = ChainRules.for_hardfork(.LONDON);
 ///
 /// // Check if specific features are enabled
-/// if (rules.IsEIP1559) {
+/// if (rules.is_eip1559) {
 ///     // Use EIP-1559 fee market logic
 /// }
 /// ```
@@ -69,7 +69,7 @@ pub const ChainRules = @This();
 /// - New opcode: DELEGATECALL for code reuse with caller's context
 /// - Modified CREATE behavior for out-of-gas scenarios
 /// - Changed gas costs for CALL operations
-IsHomestead: bool = true,
+is_homestead: bool = true,
 
 /// EIP-150 "Tangerine Whistle" hardfork activation (October 2016).
 ///
@@ -86,7 +86,7 @@ IsHomestead: bool = true,
 /// ## Security Impact
 /// Mitigated "Shanghai attacks" that exploited underpriced opcodes
 /// to create transactions consuming excessive resources.
-IsEIP150: bool = true,
+is_eip150: bool = true,
 
 /// EIP-158 "Spurious Dragon" hardfork activation (November 2016).
 ///
@@ -103,7 +103,7 @@ IsEIP150: bool = true,
 /// ## State Impact
 /// Significantly reduced state size by removing ~20 million empty
 /// accounts created by previous attacks.
-IsEIP158: bool = true,
+is_eip158: bool = true,
 
 /// EIP-1559 fee market mechanism activation (London hardfork).
 ///
@@ -122,7 +122,7 @@ IsEIP158: bool = true,
 /// - More predictable gas prices
 /// - ETH becomes deflationary under high usage
 /// - Better UX with fee estimation
-IsEIP1559: bool = true,
+is_eip1559: bool = true,
 
 /// Constantinople hardfork activation (February 2019).
 ///
@@ -141,7 +141,7 @@ IsEIP1559: bool = true,
 /// - Bitwise operations enable more efficient algorithms
 /// - CREATE2 enables counterfactual instantiation patterns
 /// - Cheaper storage operations for certain patterns
-IsConstantinople: bool = true,
+is_constantinople: bool = true,
 
 /// Petersburg hardfork activation (February 2019).
 ///
@@ -158,7 +158,7 @@ IsConstantinople: bool = true,
 /// Constantinople was deployed on testnet but postponed on mainnet
 /// when security researchers found the reentrancy issue. Petersburg
 /// represents the actually deployed version.
-IsPetersburg: bool = true,
+is_petersburg: bool = true,
 
 /// Istanbul hardfork activation (December 2019).
 ///
@@ -180,7 +180,7 @@ IsPetersburg: bool = true,
 ///
 /// ## Performance Impact
 /// Significant reduction in costs for L2 solutions using calldata.
-IsIstanbul: bool = true,
+is_istanbul: bool = true,
 
 /// Berlin hardfork activation (April 2021).
 ///
@@ -202,7 +202,7 @@ IsIstanbul: bool = true,
 /// ## Developer Considerations
 /// Access lists allow contracts to optimize gas usage by pre-warming
 /// storage slots and addresses they'll interact with.
-IsBerlin: bool = true,
+is_berlin: bool = true,
 
 /// London hardfork activation (August 2021).
 ///
@@ -225,7 +225,7 @@ IsBerlin: bool = true,
 /// - Base fee burned makes ETH potentially deflationary
 /// - Gas price volatility significantly reduced
 /// - Better fee estimation and user experience
-IsLondon: bool = true,
+is_london: bool = true,
 
 /// The Merge activation (September 2022).
 ///
@@ -248,7 +248,7 @@ IsLondon: bool = true,
 /// - No more uncle blocks
 /// - Predictable block times
 /// - Validators replace miners
-IsMerge: bool = true,
+is_merge: bool = true,
 
 /// Shanghai hardfork activation (April 2023).
 ///
@@ -269,7 +269,7 @@ IsMerge: bool = true,
 /// ## Withdrawal Mechanism
 /// Validators can finally withdraw staked ETH, completing
 /// the Proof of Stake transition.
-IsShanghai: bool = true,
+is_shanghai: bool = true,
 
 /// Cancun hardfork activation (March 2024).
 ///
@@ -292,7 +292,7 @@ IsShanghai: bool = true,
 /// ## Transient Storage
 /// Storage that persists only within a transaction, enabling
 /// reentrancy locks and other patterns without permanent storage.
-IsCancun: bool = true,
+is_cancun: bool = true,
 
 /// Prague hardfork activation flag (future upgrade).
 ///
@@ -305,7 +305,7 @@ IsCancun: bool = true,
 /// ## Note
 /// This flag is reserved for future use and should remain
 /// false until Prague specifications are finalized.
-IsPrague: bool = false,
+is_prague: bool = false,
 
 /// Verkle trees activation flag (future upgrade).
 ///
@@ -321,7 +321,7 @@ IsPrague: bool = false,
 /// ## Status
 /// Under active research and development. Will require extensive
 /// testing before mainnet deployment.
-IsVerkle: bool = false,
+is_verkle: bool = false,
 
 /// Byzantium hardfork activation (October 2017).
 ///
@@ -343,7 +343,7 @@ IsVerkle: bool = false,
 /// ## Privacy Features
 /// zkSNARK precompiles enable privacy-preserving applications
 /// like private transactions and scalability solutions.
-IsByzantium: bool = true,
+is_byzantium: bool = true,
 
 /// EIP-2930 optional access lists activation (Berlin hardfork).
 ///
@@ -364,7 +364,7 @@ IsByzantium: bool = true,
 /// ## Gas Savings
 /// Pre-declaring access saves ~2000 gas per address and
 /// ~2000 gas per storage slot on first access.
-IsEIP2930: bool = true,
+is_eip2930: bool = true,
 
 /// EIP-3198 BASEFEE opcode activation (London hardfork).
 ///
@@ -385,7 +385,7 @@ IsEIP2930: bool = true,
 /// ## Complementary to EIP-1559
 /// Essential for contracts to interact properly with the
 /// new fee market mechanism.
-IsEIP3198: bool = true,
+is_eip3198: bool = true,
 
 /// EIP-3651 warm COINBASE activation (Shanghai hardfork).
 ///
@@ -404,7 +404,7 @@ IsEIP3198: bool = true,
 /// ## Implementation
 /// The COINBASE address is added to the warm address set
 /// at the beginning of transaction execution.
-IsEIP3651: bool = true,
+is_eip3651: bool = true,
 
 /// EIP-3855 PUSH0 instruction activation (Shanghai hardfork).
 ///
@@ -425,7 +425,7 @@ IsEIP3651: bool = true,
 /// ## Usage Statistics
 /// Analysis showed ~11% of all PUSH operations push zero,
 /// making this a significant optimization.
-IsEIP3855: bool = true,
+is_eip3855: bool = true,
 
 /// EIP-3860 initcode size limit activation (Shanghai hardfork).
 ///
@@ -445,7 +445,7 @@ IsEIP3855: bool = true,
 /// ## Security Rationale
 /// Previously unlimited initcode could cause nodes to consume
 /// excessive resources during contract deployment verification.
-IsEIP3860: bool = true,
+is_eip3860: bool = true,
 
 /// EIP-4895 beacon chain withdrawals activation (Shanghai hardfork).
 ///
@@ -466,7 +466,7 @@ IsEIP3860: bool = true,
 /// ## Network Impact
 /// Completes the Ethereum staking lifecycle, allowing validators
 /// to access their staked funds and rewards.
-IsEIP4895: bool = true,
+is_eip4895: bool = true,
 
 /// EIP-4844 proto-danksharding activation (Cancun hardfork).
 ///
@@ -489,7 +489,7 @@ IsEIP4895: bool = true,
 /// ## L2 Impact
 /// Dramatically reduces costs for rollups by providing
 /// dedicated data availability layer.
-IsEIP4844: bool = true,
+is_eip4844: bool = true,
 
 /// EIP-1153 transient storage activation (Cancun hardfork).
 ///
@@ -512,7 +512,7 @@ IsEIP4844: bool = true,
 /// - Reentrancy guards without storage slots
 /// - Temporary computation results
 /// - Cross-contract communication within transaction
-IsEIP1153: bool = true,
+is_eip1153: bool = true,
 
 /// EIP-5656 MCOPY instruction activation (Cancun hardfork).
 ///
@@ -533,7 +533,7 @@ IsEIP1153: bool = true,
 /// ## Common Patterns
 /// Optimizes array copying, string manipulation, and
 /// data structure operations in smart contracts.
-IsEIP5656: bool = true,
+is_eip5656: bool = true,
 
 /// EIP-3541 contract code prefix restriction (London hardfork).
 ///
@@ -556,7 +556,7 @@ IsEIP5656: bool = true,
 /// ## Developer Impact
 /// Extremely rare in practice as 0xEF was not a valid opcode,
 /// making accidental conflicts unlikely.
-IsEIP3541: bool = true,
+is_eip3541: bool = true,
 
 /// Creates a ChainRules configuration for a specific Ethereum hardfork.
 ///
@@ -602,30 +602,30 @@ const HardforkRule = struct {
 pub const DEFAULT = for_hardfork(.DEFAULT);
 
 const HARDFORK_RULES = [_]HardforkRule{
-    .{ .field_name = "IsHomestead", .introduced_in = .HOMESTEAD },
-    .{ .field_name = "IsEIP150", .introduced_in = .TANGERINE_WHISTLE },
-    .{ .field_name = "IsEIP158", .introduced_in = .SPURIOUS_DRAGON },
-    .{ .field_name = "IsByzantium", .introduced_in = .BYZANTIUM },
-    .{ .field_name = "IsConstantinople", .introduced_in = .CONSTANTINOPLE },
-    .{ .field_name = "IsPetersburg", .introduced_in = .PETERSBURG },
-    .{ .field_name = "IsIstanbul", .introduced_in = .ISTANBUL },
-    .{ .field_name = "IsBerlin", .introduced_in = .BERLIN },
-    .{ .field_name = "IsLondon", .introduced_in = .LONDON },
-    .{ .field_name = "IsMerge", .introduced_in = .MERGE },
-    .{ .field_name = "IsShanghai", .introduced_in = .SHANGHAI },
-    .{ .field_name = "IsCancun", .introduced_in = .CANCUN },
+    .{ .field_name = "is_homestead", .introduced_in = .HOMESTEAD },
+    .{ .field_name = "is_eip150", .introduced_in = .TANGERINE_WHISTLE },
+    .{ .field_name = "is_eip158", .introduced_in = .SPURIOUS_DRAGON },
+    .{ .field_name = "is_byzantium", .introduced_in = .BYZANTIUM },
+    .{ .field_name = "is_constantinople", .introduced_in = .CONSTANTINOPLE },
+    .{ .field_name = "is_petersburg", .introduced_in = .PETERSBURG },
+    .{ .field_name = "is_istanbul", .introduced_in = .ISTANBUL },
+    .{ .field_name = "is_berlin", .introduced_in = .BERLIN },
+    .{ .field_name = "is_london", .introduced_in = .LONDON },
+    .{ .field_name = "is_merge", .introduced_in = .MERGE },
+    .{ .field_name = "is_shanghai", .introduced_in = .SHANGHAI },
+    .{ .field_name = "is_cancun", .introduced_in = .CANCUN },
     // EIPs grouped by their hardfork
-    .{ .field_name = "IsEIP1559", .introduced_in = .LONDON },
-    .{ .field_name = "IsEIP2930", .introduced_in = .BERLIN },
-    .{ .field_name = "IsEIP3198", .introduced_in = .LONDON },
-    .{ .field_name = "IsEIP3541", .introduced_in = .LONDON },
-    .{ .field_name = "IsEIP3651", .introduced_in = .SHANGHAI },
-    .{ .field_name = "IsEIP3855", .introduced_in = .SHANGHAI },
-    .{ .field_name = "IsEIP3860", .introduced_in = .SHANGHAI },
-    .{ .field_name = "IsEIP4895", .introduced_in = .SHANGHAI },
-    .{ .field_name = "IsEIP4844", .introduced_in = .CANCUN },
-    .{ .field_name = "IsEIP1153", .introduced_in = .CANCUN },
-    .{ .field_name = "IsEIP5656", .introduced_in = .CANCUN },
+    .{ .field_name = "is_eip1559", .introduced_in = .LONDON },
+    .{ .field_name = "is_eip2930", .introduced_in = .BERLIN },
+    .{ .field_name = "is_eip3198", .introduced_in = .LONDON },
+    .{ .field_name = "is_eip3541", .introduced_in = .LONDON },
+    .{ .field_name = "is_eip3651", .introduced_in = .SHANGHAI },
+    .{ .field_name = "is_eip3855", .introduced_in = .SHANGHAI },
+    .{ .field_name = "is_eip3860", .introduced_in = .SHANGHAI },
+    .{ .field_name = "is_eip4895", .introduced_in = .SHANGHAI },
+    .{ .field_name = "is_eip4844", .introduced_in = .CANCUN },
+    .{ .field_name = "is_eip1153", .introduced_in = .CANCUN },
+    .{ .field_name = "is_eip5656", .introduced_in = .CANCUN },
 };
 
 pub fn for_hardfork(hardfork: Hardfork) ChainRules {

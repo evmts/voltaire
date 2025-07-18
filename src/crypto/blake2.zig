@@ -26,7 +26,7 @@ pub const BLAKE2B_SIGMA = [12][16]u8{
 /// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
 /// This function implements critical BLAKE2b mixing operations without security review.
 /// Use at your own risk in production systems.
-pub fn unaudited_blake2bG(v: *[16]u64, a: usize, b: usize, c: usize, d: usize, x: u64, y: u64) void {
+pub fn unaudited_blake2b_g(v: *[16]u64, a: usize, b: usize, c: usize, d: usize, x: u64, y: u64) void {
     v[a] = v[a] +% v[b] +% x;
     v[d] = std.math.rotr(u64, v[d] ^ v[a], 32);
     v[c] = v[c] +% v[d];
@@ -41,20 +41,20 @@ pub fn unaudited_blake2bG(v: *[16]u64, a: usize, b: usize, c: usize, d: usize, x
 /// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
 /// This function implements BLAKE2b compression rounds without security review.
 /// Use at your own risk in production systems.
-pub fn unaudited_blake2bRound(v: *[16]u64, message: *const [16]u64, round: u32) void {
+pub fn unaudited_blake2b_round(v: *[16]u64, message: *const [16]u64, round: u32) void {
     const s = &BLAKE2B_SIGMA[round % 12];
 
     // Column mixing
-    unaudited_blake2bG(v, 0, 4, 8, 12, message[s[0]], message[s[1]]);
-    unaudited_blake2bG(v, 1, 5, 9, 13, message[s[2]], message[s[3]]);
-    unaudited_blake2bG(v, 2, 6, 10, 14, message[s[4]], message[s[5]]);
-    unaudited_blake2bG(v, 3, 7, 11, 15, message[s[6]], message[s[7]]);
+    unaudited_blake2b_g(v, 0, 4, 8, 12, message[s[0]], message[s[1]]);
+    unaudited_blake2b_g(v, 1, 5, 9, 13, message[s[2]], message[s[3]]);
+    unaudited_blake2b_g(v, 2, 6, 10, 14, message[s[4]], message[s[5]]);
+    unaudited_blake2b_g(v, 3, 7, 11, 15, message[s[6]], message[s[7]]);
 
     // Diagonal mixing
-    unaudited_blake2bG(v, 0, 5, 10, 15, message[s[8]], message[s[9]]);
-    unaudited_blake2bG(v, 1, 6, 11, 12, message[s[10]], message[s[11]]);
-    unaudited_blake2bG(v, 2, 7, 8, 13, message[s[12]], message[s[13]]);
-    unaudited_blake2bG(v, 3, 4, 9, 14, message[s[14]], message[s[15]]);
+    unaudited_blake2b_g(v, 0, 5, 10, 15, message[s[8]], message[s[9]]);
+    unaudited_blake2b_g(v, 1, 6, 11, 12, message[s[10]], message[s[11]]);
+    unaudited_blake2b_g(v, 2, 7, 8, 13, message[s[12]], message[s[13]]);
+    unaudited_blake2b_g(v, 3, 4, 9, 14, message[s[14]], message[s[15]]);
 }
 
 /// BLAKE2b compression function
@@ -62,7 +62,7 @@ pub fn unaudited_blake2bRound(v: *[16]u64, message: *const [16]u64, round: u32) 
 /// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
 /// This function implements core BLAKE2b compression without security review.
 /// Use at your own risk in production systems.
-pub fn unaudited_blake2bCompress(state: *[8]u64, message: *const [16]u64, offset: [2]u64, final_block: bool, rounds: u32) void {
+pub fn unaudited_blake2b_compress(state: *[8]u64, message: *const [16]u64, offset: [2]u64, final_block: bool, rounds: u32) void {
     // Working variables
     var v: [16]u64 = undefined;
 
@@ -83,7 +83,7 @@ pub fn unaudited_blake2bCompress(state: *[8]u64, message: *const [16]u64, offset
 
     // Perform compression rounds
     for (0..rounds) |round| {
-        unaudited_blake2bRound(&v, message, @intCast(round));
+        unaudited_blake2b_round(&v, message, @intCast(round));
     }
 
     // Finalize state
@@ -97,8 +97,8 @@ pub fn unaudited_blake2bCompress(state: *[8]u64, message: *const [16]u64, offset
 /// WARNING: UNAUDITED - Custom cryptographic implementation that has NOT been audited!
 /// This function wraps unaudited BLAKE2b compression implementation.
 /// Use at your own risk in production systems.
-pub fn unaudited_blake2fCompress(h: *[8]u64, m: *const [16]u64, t: [2]u64, f: bool, rounds: u32) void {
-    unaudited_blake2bCompress(h, m, t, f, rounds);
+pub fn unaudited_blake2f_compress(h: *[8]u64, m: *const [16]u64, t: [2]u64, f: bool, rounds: u32) void {
+    unaudited_blake2b_compress(h, m, t, f, rounds);
 }
 
 // Test vectors from RFC 7693 and official Blake2 sources
@@ -120,7 +120,7 @@ test "blake2b compression - empty input" {
     const m = [_]u64{0} ** 16;
     const t = [2]u64{ 0, 0 };
 
-    unaudited_blake2fCompress(&h, &m, t, true, 12);
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
 
     // Verify that compression changed the state
     for (0..8) |i| {
@@ -129,7 +129,7 @@ test "blake2b compression - empty input" {
 
     // Verify compression is deterministic - same input produces same output
     var h2 = initial_h;
-    unaudited_blake2fCompress(&h2, &m, t, true, 12);
+    unaudited_blake2f_compress(&h2, &m, t, true, 12);
     for (0..8) |i| {
         try std.testing.expectEqual(h[i], h2[i]);
     }
@@ -157,7 +157,7 @@ test "blake2b compression - abc test vector" {
 
     const t = [2]u64{ 3, 0 }; // 3 bytes processed
 
-    unaudited_blake2fCompress(&h, &m, t, true, 12);
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
 
     // Verify state changed
     for (0..8) |i| {
@@ -168,7 +168,7 @@ test "blake2b compression - abc test vector" {
     var h_empty = initial_h;
     const m_empty = [_]u64{0} ** 16;
     const t_empty = [2]u64{ 0, 0 };
-    unaudited_blake2fCompress(&h_empty, &m_empty, t_empty, true, 12);
+    unaudited_blake2f_compress(&h_empty, &m_empty, t_empty, true, 12);
 
     // The "abc" result should be different from empty input
     try std.testing.expect(h[0] != h_empty[0]);
@@ -193,7 +193,7 @@ test "blake2b compression - single byte input" {
 
     const t = [2]u64{ 1, 0 }; // 1 byte processed
 
-    unaudited_blake2fCompress(&h, &m, t, true, 12);
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
 
     // Verify state changed from initial values
     try std.testing.expect(h[0] != (0x6a09e667f3bcc908 ^ 0x01010040));
@@ -219,7 +219,7 @@ test "blake2b compression - two byte input" {
 
     const t = [2]u64{ 2, 0 }; // 2 bytes processed
 
-    unaudited_blake2fCompress(&h, &m, t, true, 12);
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
 
     // Verify state changed from initial values
     try std.testing.expect(h[0] != (0x6a09e667f3bcc908 ^ 0x01010040));
@@ -261,7 +261,7 @@ test "blake2b compression - full block (128 bytes)" {
 
     const t = [2]u64{ 128, 0 }; // 128 bytes processed
 
-    unaudited_blake2fCompress(&h, &m, t, true, 12);
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
 
     // This is a computed expected value for verification
     try std.testing.expect(h[0] != BLAKE2B_IV[0]); // State should have changed
@@ -284,7 +284,7 @@ test "blake2b compression - edge case with max rounds" {
     const t = [2]u64{ 0, 0 };
 
     // Test with 12 rounds (standard)
-    unaudited_blake2fCompress(&h, &m, t, true, 12);
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
 
     // Verify state changed
     try std.testing.expect(h[0] != (0x6a09e667f3bcc908 ^ 0x01010040));
@@ -307,7 +307,7 @@ test "blake2b compression - non-final block" {
     const t = [2]u64{ 128, 0 }; // 128 bytes processed so far
 
     // Non-final block (final_block = false)
-    unaudited_blake2fCompress(&h, &m, t, false, 12);
+    unaudited_blake2f_compress(&h, &m, t, false, 12);
 
     // Verify state changed and is different from final block compression
     try std.testing.expect(h[0] != (0x6a09e667f3bcc908 ^ 0x01010040));
@@ -329,7 +329,7 @@ test "blake2b compression - counter overflow" {
     const m = [_]u64{0} ** 16;
     const t = [2]u64{ 0xFFFFFFFFFFFFFF80, 0 }; // Large counter value
 
-    unaudited_blake2fCompress(&h, &m, t, true, 12);
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
 
     // Verify compression completed without errors
     try std.testing.expect(h[0] != (0x6a09e667f3bcc908 ^ 0x01010040));
@@ -351,7 +351,7 @@ test "blake2b G function - mixing verification" {
     const v_original = v;
 
     // Apply G function
-    unaudited_blake2bG(&v, 0, 4, 8, 12, 0x0123456789ABCDEF, 0xFEDCBA9876543210);
+    unaudited_blake2b_g(&v, 0, 4, 8, 12, 0x0123456789ABCDEF, 0xFEDCBA9876543210);
 
     // Verify that the G function modified the state
     try std.testing.expect(v[0] != v_original[0]);
@@ -387,7 +387,7 @@ test "blake2b round function - permutation verification" {
     const v_original = v;
 
     // Apply one round
-    unaudited_blake2bRound(&v, &message, 0);
+    unaudited_blake2b_round(&v, &message, 0);
 
     // Verify that all elements changed
     for (0..16) |i| {
@@ -417,7 +417,7 @@ test "blake2b compression - known test vector with 32 bytes" {
 
     const t = [2]u64{ 32, 0 }; // 32 bytes processed
 
-    unaudited_blake2fCompress(&h, &m, t, true, 12);
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
 
     // Verify state changed
     try std.testing.expect(h[0] != (0x6a09e667f3bcc908 ^ 0x01010040));
@@ -441,11 +441,11 @@ test "blake2b compression - all zeros vs all ones" {
     // First compression with all zeros
     const m1 = [_]u64{0} ** 16;
     const t = [2]u64{ 128, 0 };
-    unaudited_blake2fCompress(&h1, &m1, t, true, 12);
+    unaudited_blake2f_compress(&h1, &m1, t, true, 12);
 
     // Second compression with all ones
     const m2 = [_]u64{0xFFFFFFFFFFFFFFFF} ** 16;
-    unaudited_blake2fCompress(&h2, &m2, t, true, 12);
+    unaudited_blake2f_compress(&h2, &m2, t, true, 12);
 
     // Verify different inputs produced different outputs
     for (0..8) |i| {
@@ -472,10 +472,10 @@ test "blake2b compression - variable rounds" {
     const t = [2]u64{ 0, 0 };
 
     // Compress with 10 rounds
-    unaudited_blake2fCompress(&h10, &m, t, true, 10);
+    unaudited_blake2f_compress(&h10, &m, t, true, 10);
 
     // Compress with 12 rounds (standard)
-    unaudited_blake2fCompress(&h12, &m, t, true, 12);
+    unaudited_blake2f_compress(&h12, &m, t, true, 12);
 
     // Verify different round counts produced different outputs
     try std.testing.expect(h10[0] != h12[0]);
@@ -501,7 +501,7 @@ test "blake2b compression - message schedule verification" {
     };
 
     const t = [2]u64{ 128, 0 };
-    unaudited_blake2fCompress(&h, &m, t, true, 12);
+    unaudited_blake2f_compress(&h, &m, t, true, 12);
 
     // Verify compression completed
     try std.testing.expect(h[0] != (0x6a09e667f3bcc908 ^ 0x01010040));

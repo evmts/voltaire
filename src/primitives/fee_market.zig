@@ -12,7 +12,7 @@ const std = @import("std");
 // 3. Base fee adjustment based on block fullness
 
 /// Helper function to calculate fee delta safely avoiding overflow and division by zero
-fn calculateFeeDelta(fee: u64, gas_delta: u64, gas_target: u64, denominator: u64) u64 {
+fn calculate_fee_delta(fee: u64, gas_delta: u64, gas_target: u64, denominator: u64) u64 {
     // Using u128 for intermediate calculation to avoid overflow
     const intermediate: u128 = @as(u128, fee) * @as(u128, gas_delta);
     // Avoid division by zero
@@ -41,7 +41,7 @@ pub const BASE_FEE_CHANGE_DENOMINATOR: u64 = 8;
 /// - parent_gas_limit: Gas limit of the parent block
 ///
 /// Returns: The initial base fee (in wei)
-pub fn initialBaseFee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
+pub fn initial_base_fee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
     // Initializing base fee for first EIP-1559 block
     // Parent block gas used and gas limit used in calculation
 
@@ -63,7 +63,7 @@ pub fn initialBaseFee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
         else
             parent_gas_target - parent_gas_used;
 
-        const base_fee_delta = calculateFeeDelta(base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
+        const base_fee_delta = calculate_fee_delta(base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
 
         if (parent_gas_used > parent_gas_target) {
             base_fee = base_fee + base_fee_delta;
@@ -93,7 +93,7 @@ pub fn initialBaseFee(parent_gas_used: u64, parent_gas_limit: u64) u64 {
 /// - parent_gas_target: Target gas usage of the parent block
 ///
 /// Returns: The next block's base fee (in wei)
-pub fn nextBaseFee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_target: u64) u64 {
+pub fn next_base_fee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_target: u64) u64 {
     // Calculating next block's base fee
     // Using parent block base fee and gas usage
 
@@ -117,7 +117,7 @@ pub fn nextBaseFee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_target
         const gas_used_delta = parent_gas_used - parent_gas_target;
 
         // Calculate the base fee delta (max 12.5% increase)
-        const base_fee_delta = calculateFeeDelta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
+        const base_fee_delta = calculate_fee_delta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
 
         // Increase the base fee
         // The overflow check is probably unnecessary given gas limits, but it's a good safety measure
@@ -131,7 +131,7 @@ pub fn nextBaseFee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_target
         const gas_used_delta = parent_gas_target - parent_gas_used;
 
         // Calculate the base fee delta (max 12.5% decrease)
-        const base_fee_delta = calculateFeeDelta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
+        const base_fee_delta = calculate_fee_delta(parent_base_fee, gas_used_delta, parent_gas_target, BASE_FEE_CHANGE_DENOMINATOR);
 
         // Decrease the base fee, but don't go below the minimum
         new_base_fee = if (parent_base_fee > base_fee_delta)
@@ -161,7 +161,7 @@ pub fn nextBaseFee(parent_base_fee: u64, parent_gas_used: u64, parent_gas_target
 /// - max_priority_fee_per_gas: Maximum tip the sender is willing to pay to the miner
 ///
 /// Returns: The effective gas price, and the miner's portion of the fee
-pub fn getEffectiveGasPrice(base_fee_per_gas: u64, max_fee_per_gas: u64, max_priority_fee_per_gas: u64) struct { effective_gas_price: u64, miner_fee: u64 } {
+pub fn get_effective_gas_price(base_fee_per_gas: u64, max_fee_per_gas: u64, max_priority_fee_per_gas: u64) struct { effective_gas_price: u64, miner_fee: u64 } {
     // Calculating effective gas price
     // Using base fee, max fee, and max priority fee
 
@@ -194,55 +194,55 @@ pub fn getEffectiveGasPrice(base_fee_per_gas: u64, max_fee_per_gas: u64, max_pri
 /// - gas_limit: The block's gas limit
 ///
 /// Returns: The gas target for the block
-pub fn getGasTarget(gas_limit: u64) u64 {
+pub fn get_gas_target(gas_limit: u64) u64 {
     return gas_limit / 2;
 }
 
 // Tests
 
-test "calculateFeeDelta basic functionality" {
+test "calculate_fee_delta basic functionality" {
     // Test basic calculation
     const fee = 1000;
     const gas_delta = 100;
     const gas_target = 1000;
     const denominator = 8;
 
-    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
+    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
     // Expected: (1000 * 100) / (1000 * 8) = 100000 / 8000 = 12.5, rounded to 12
     try std.testing.expectEqual(@as(u64, 12), result);
 }
 
-test "calculateFeeDelta returns at least 1" {
+test "calculate_fee_delta returns at least 1" {
     // Test that result is always at least 1
     const fee = 1;
     const gas_delta = 1;
     const gas_target = 1000000;
     const denominator = 1000000;
 
-    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
+    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
     try std.testing.expectEqual(@as(u64, 1), result);
 }
 
-test "calculateFeeDelta handles large values without overflow" {
+test "calculate_fee_delta handles large values without overflow" {
     // Test with large values that would overflow u64 in intermediate calculations
     const fee = std.math.maxInt(u64) / 2;
     const gas_delta = 1000;
     const gas_target = 1000;
     const denominator = 1;
 
-    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
+    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
     // Should not panic and return a valid result
     try std.testing.expect(result > 0);
 }
 
-test "calculateFeeDelta handles division by zero protection" {
+test "calculate_fee_delta handles division by zero protection" {
     // Test with zero gas_target and denominator
     const fee = 1000;
     const gas_delta = 100;
     const gas_target = 0;
     const denominator = 0;
 
-    const result = calculateFeeDelta(fee, gas_delta, gas_target, denominator);
+    const result = calculate_fee_delta(fee, gas_delta, gas_target, denominator);
     // Should use divisor of 1 and return fee * gas_delta
     try std.testing.expectEqual(@as(u64, 100000), result);
 }
@@ -255,21 +255,21 @@ test "BASE_FEE_CHANGE_DENOMINATOR constant value" {
     try std.testing.expectEqual(@as(u64, 8), BASE_FEE_CHANGE_DENOMINATOR);
 }
 
-test "initialBaseFee with exactly target gas usage" {
+test "initial_base_fee with exactly target gas usage" {
     const parent_gas_limit = 30_000_000;
     const parent_gas_used = 15_000_000; // Exactly half (target)
 
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
-    // When exactly at target, there's still a minimal adjustment due to calculateFeeDelta returning at least 1
-    // gas_used_delta = 0, but calculateFeeDelta returns 1, so base_fee = 1_000_000_000 - 1
+    const base_fee = initial_base_fee(parent_gas_used, parent_gas_limit);
+    // When exactly at target, there's still a minimal adjustment due to calculate_fee_delta returning at least 1
+    // gas_used_delta = 0, but calculate_fee_delta returns 1, so base_fee = 1_000_000_000 - 1
     try std.testing.expectEqual(@as(u64, 999_999_999), base_fee);
 }
 
-test "initialBaseFee with above target gas usage" {
+test "initial_base_fee with above target gas usage" {
     const parent_gas_limit = 30_000_000;
     const parent_gas_used = 20_000_000; // Above target (15M)
 
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
+    const base_fee = initial_base_fee(parent_gas_used, parent_gas_limit);
     // Should be higher than 1 gwei
     try std.testing.expect(base_fee > 1_000_000_000);
 
@@ -279,11 +279,11 @@ test "initialBaseFee with above target gas usage" {
     try std.testing.expectEqual(@as(u64, 1_041_666_666), base_fee);
 }
 
-test "initialBaseFee with below target gas usage" {
+test "initial_base_fee with below target gas usage" {
     const parent_gas_limit = 30_000_000;
     const parent_gas_used = 10_000_000; // Below target (15M)
 
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
+    const base_fee = initial_base_fee(parent_gas_used, parent_gas_limit);
     // Should be lower than 1 gwei
     try std.testing.expect(base_fee < 1_000_000_000);
 
@@ -292,40 +292,40 @@ test "initialBaseFee with below target gas usage" {
     try std.testing.expectEqual(@as(u64, 958_333_334), base_fee);
 }
 
-test "initialBaseFee with zero gas usage" {
+test "initial_base_fee with zero gas usage" {
     const parent_gas_limit = 30_000_000;
     const parent_gas_used = 0;
 
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
+    const base_fee = initial_base_fee(parent_gas_used, parent_gas_limit);
     // Should return 1 gwei (no adjustment)
     try std.testing.expectEqual(@as(u64, 1_000_000_000), base_fee);
 }
 
-test "initialBaseFee respects minimum base fee" {
+test "initial_base_fee respects minimum base fee" {
     const parent_gas_limit = 100;
     const parent_gas_used = 0;
 
-    const base_fee = initialBaseFee(parent_gas_used, parent_gas_limit);
+    const base_fee = initial_base_fee(parent_gas_used, parent_gas_limit);
     // Even with extreme values, should respect MIN_BASE_FEE
     try std.testing.expect(base_fee >= MIN_BASE_FEE);
 }
 
-test "nextBaseFee with exactly target gas usage" {
+test "next_base_fee with exactly target gas usage" {
     const parent_base_fee = 1_000_000_000;
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 15_000_000; // Exactly target
 
-    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    const next_fee = next_base_fee(parent_base_fee, parent_gas_used, parent_gas_target);
     // Should remain the same
     try std.testing.expectEqual(parent_base_fee, next_fee);
 }
 
-test "nextBaseFee with above target gas usage" {
+test "next_base_fee with above target gas usage" {
     const parent_base_fee = 1_000_000_000;
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 20_000_000; // 5M above target
 
-    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    const next_fee = next_base_fee(parent_base_fee, parent_gas_used, parent_gas_target);
     // Should increase by up to 12.5%
     try std.testing.expect(next_fee > parent_base_fee);
 
@@ -334,12 +334,12 @@ test "nextBaseFee with above target gas usage" {
     try std.testing.expectEqual(expected, next_fee);
 }
 
-test "nextBaseFee with below target gas usage" {
+test "next_base_fee with below target gas usage" {
     const parent_base_fee = 1_000_000_000;
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 10_000_000; // 5M below target
 
-    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    const next_fee = next_base_fee(parent_base_fee, parent_gas_used, parent_gas_target);
     // Should decrease by up to 12.5%
     try std.testing.expect(next_fee < parent_base_fee);
 
@@ -348,133 +348,133 @@ test "nextBaseFee with below target gas usage" {
     try std.testing.expectEqual(expected, next_fee);
 }
 
-test "nextBaseFee with maximum increase (full block)" {
+test "next_base_fee with maximum increase (full block)" {
     const parent_base_fee = 1_000_000_000;
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 30_000_000; // Double the target (full block)
 
-    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    const next_fee = next_base_fee(parent_base_fee, parent_gas_used, parent_gas_target);
     // Should increase by exactly 12.5%
     const expected = parent_base_fee + (parent_base_fee / 8);
     try std.testing.expectEqual(expected, next_fee);
 }
 
-test "nextBaseFee with empty parent block" {
+test "next_base_fee with empty parent block" {
     const parent_base_fee = 1_000_000_000;
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 0; // Empty block
 
-    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    const next_fee = next_base_fee(parent_base_fee, parent_gas_used, parent_gas_target);
     // Should remain the same for empty blocks
     try std.testing.expectEqual(parent_base_fee, next_fee);
 }
 
-test "nextBaseFee respects minimum base fee on decrease" {
+test "next_base_fee respects minimum base fee on decrease" {
     const parent_base_fee = 10; // Very low base fee
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 0; // Would normally decrease
 
-    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    const next_fee = next_base_fee(parent_base_fee, parent_gas_used, parent_gas_target);
     // Should not go below MIN_BASE_FEE
     try std.testing.expectEqual(@as(u64, 10), next_fee); // Stays at parent fee since it's above MIN_BASE_FEE
 }
 
-test "nextBaseFee respects minimum when decrease would go below" {
+test "next_base_fee respects minimum when decrease would go below" {
     const parent_base_fee = 8; // Just above MIN_BASE_FEE
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 1; // Very low usage
 
-    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    const next_fee = next_base_fee(parent_base_fee, parent_gas_used, parent_gas_target);
     // Should not go below MIN_BASE_FEE
     try std.testing.expect(next_fee >= MIN_BASE_FEE);
 }
 
-test "nextBaseFee handles overflow protection" {
+test "next_base_fee handles overflow protection" {
     const parent_base_fee = std.math.maxInt(u64) - 1000;
     const parent_gas_target = 15_000_000;
     const parent_gas_used = 30_000_000; // Would increase
 
-    const next_fee = nextBaseFee(parent_base_fee, parent_gas_used, parent_gas_target);
+    const next_fee = next_base_fee(parent_base_fee, parent_gas_used, parent_gas_target);
     // Should handle overflow gracefully
     try std.testing.expectEqual(parent_base_fee, next_fee);
 }
 
-test "getEffectiveGasPrice with sufficient max fee" {
+test "get_effective_gas_price with sufficient max fee" {
     const base_fee = 1_000_000_000; // 1 gwei
     const max_fee = 2_000_000_000; // 2 gwei
     const max_priority_fee = 500_000_000; // 0.5 gwei
 
-    const result = getEffectiveGasPrice(base_fee, max_fee, max_priority_fee);
+    const result = get_effective_gas_price(base_fee, max_fee, max_priority_fee);
     // Effective price should be base + priority
     try std.testing.expectEqual(@as(u64, 1_500_000_000), result.effective_gas_price);
     try std.testing.expectEqual(@as(u64, 500_000_000), result.miner_fee);
 }
 
-test "getEffectiveGasPrice with limited max fee" {
+test "get_effective_gas_price with limited max fee" {
     const base_fee = 1_000_000_000; // 1 gwei
     const max_fee = 1_200_000_000; // 1.2 gwei
     const max_priority_fee = 500_000_000; // 0.5 gwei (more than available)
 
-    const result = getEffectiveGasPrice(base_fee, max_fee, max_priority_fee);
+    const result = get_effective_gas_price(base_fee, max_fee, max_priority_fee);
     // Priority fee limited by max_fee - base_fee
     try std.testing.expectEqual(@as(u64, 1_200_000_000), result.effective_gas_price);
     try std.testing.expectEqual(@as(u64, 200_000_000), result.miner_fee);
 }
 
-test "getEffectiveGasPrice with max fee below base fee" {
+test "get_effective_gas_price with max fee below base fee" {
     const base_fee = 1_000_000_000; // 1 gwei
     const max_fee = 800_000_000; // 0.8 gwei (below base)
     const max_priority_fee = 100_000_000; // 0.1 gwei
 
-    const result = getEffectiveGasPrice(base_fee, max_fee, max_priority_fee);
+    const result = get_effective_gas_price(base_fee, max_fee, max_priority_fee);
     // Transaction would be rejected, but returns max_fee and 0 miner fee
     try std.testing.expectEqual(@as(u64, 800_000_000), result.effective_gas_price);
     try std.testing.expectEqual(@as(u64, 0), result.miner_fee);
 }
 
-test "getEffectiveGasPrice with zero priority fee" {
+test "get_effective_gas_price with zero priority fee" {
     const base_fee = 1_000_000_000; // 1 gwei
     const max_fee = 2_000_000_000; // 2 gwei
     const max_priority_fee = 0; // No tip
 
-    const result = getEffectiveGasPrice(base_fee, max_fee, max_priority_fee);
+    const result = get_effective_gas_price(base_fee, max_fee, max_priority_fee);
     // Should just pay base fee
     try std.testing.expectEqual(base_fee, result.effective_gas_price);
     try std.testing.expectEqual(@as(u64, 0), result.miner_fee);
 }
 
-test "getEffectiveGasPrice with exact base fee" {
+test "get_effective_gas_price with exact base fee" {
     const base_fee = 1_000_000_000; // 1 gwei
     const max_fee = 1_000_000_000; // Exactly base fee
     const max_priority_fee = 100_000_000; // 0.1 gwei (can't be paid)
 
-    const result = getEffectiveGasPrice(base_fee, max_fee, max_priority_fee);
+    const result = get_effective_gas_price(base_fee, max_fee, max_priority_fee);
     // No room for priority fee
     try std.testing.expectEqual(base_fee, result.effective_gas_price);
     try std.testing.expectEqual(@as(u64, 0), result.miner_fee);
 }
 
-test "getGasTarget basic calculation" {
+test "get_gas_target basic calculation" {
     const gas_limit = 30_000_000;
-    const target = getGasTarget(gas_limit);
+    const target = get_gas_target(gas_limit);
     try std.testing.expectEqual(@as(u64, 15_000_000), target);
 }
 
-test "getGasTarget with odd gas limit" {
+test "get_gas_target with odd gas limit" {
     const gas_limit = 30_000_001;
-    const target = getGasTarget(gas_limit);
+    const target = get_gas_target(gas_limit);
     // Integer division rounds down
     try std.testing.expectEqual(@as(u64, 15_000_000), target);
 }
 
-test "getGasTarget with zero gas limit" {
+test "get_gas_target with zero gas limit" {
     const gas_limit = 0;
-    const target = getGasTarget(gas_limit);
+    const target = get_gas_target(gas_limit);
     try std.testing.expectEqual(@as(u64, 0), target);
 }
 
-test "getGasTarget with small gas limit" {
+test "get_gas_target with small gas limit" {
     const gas_limit = 1;
-    const target = getGasTarget(gas_limit);
+    const target = get_gas_target(gas_limit);
     try std.testing.expectEqual(@as(u64, 0), target);
 }

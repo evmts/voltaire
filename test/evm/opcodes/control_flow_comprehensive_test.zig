@@ -1108,8 +1108,8 @@ test "Control Flow: Gas consumption verification" {
         expected_gas: u64,
         setup: ?*const fn (*Frame) anyerror!void,
     }{
-        .{ .opcode = 0x56, .name = "JUMP", .expected_gas = 8, .setup = &setupJump },
-        .{ .opcode = 0x57, .name = "JUMPI", .expected_gas = 10, .setup = &setupJumpi },
+        .{ .opcode = 0x56, .name = "JUMP", .expected_gas = 8, .setup = &setup_jump },
+        .{ .opcode = 0x57, .name = "JUMPI", .expected_gas = 10, .setup = &setup_jumpi },
         .{ .opcode = 0x58, .name = "PC", .expected_gas = 2, .setup = null },
         .{ .opcode = 0x5A, .name = "GAS", .expected_gas = 2, .setup = null },
         .{ .opcode = 0x5B, .name = "JUMPDEST", .expected_gas = 1, .setup = null },
@@ -1135,11 +1135,11 @@ test "Control Flow: Gas consumption verification" {
     }
 }
 
-fn setupJump(test_frame: *Frame) !void {
+fn setup_jump(test_frame: *Frame) !void {
     try test_frame.stack.append(0); // Jump to position 0 (valid JUMPDEST)
 }
 
-fn setupJumpi(test_frame: *Frame) !void {
+fn setup_jumpi(test_frame: *Frame) !void {
     try test_frame.stack.append(0); // condition=0 (don't jump)
     try test_frame.stack.append(0); // dest=0
 }
@@ -1463,8 +1463,8 @@ test "Control Flow: Out of gas scenarios" {
         min_gas: u64,
         setup: ?*const fn (*Frame) anyerror!void,
     }{
-        .{ .opcode = 0x56, .min_gas = 8, .setup = &setupJump },
-        .{ .opcode = 0x57, .min_gas = 10, .setup = &setupJumpi },
+        .{ .opcode = 0x56, .min_gas = 8, .setup = &setup_jump },
+        .{ .opcode = 0x57, .min_gas = 10, .setup = &setup_jumpi },
         .{ .opcode = 0x58, .min_gas = 2, .setup = null },
         .{ .opcode = 0x5A, .min_gas = 2, .setup = null },
         .{ .opcode = 0x5B, .min_gas = 1, .setup = null },

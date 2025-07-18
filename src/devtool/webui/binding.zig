@@ -59,7 +59,7 @@ pub fn bind(
 }
 
 /// Use this API after using `bind()` to add any user data to it that can be
-/// read later using `getContext()`
+/// read later using `get_context()`
 pub fn set_context(self: Webui, element: [:0]const u8, context: *anyopaque) void {
     webui_set_context(self.window_handle, element.ptr, context);
 }
@@ -92,7 +92,7 @@ pub fn interface_bind(
     _ = webui_interface_bind(self.window_handle, element.ptr, tmp_struct.handle);
 }
 
-/// When using `interfaceBind()`, you may need this function to easily set a response.
+/// When using `interface_bind()`, you may need this function to easily set a response.
 pub fn interface_set_response(self: Webui, event_number: usize, response: [:0]const u8) void {
     webui_interface_set_response(self.window_handle, event_number, response.ptr);
 }
@@ -100,10 +100,10 @@ pub fn interface_set_response(self: Webui, event_number: usize, response: [:0]co
 /// Advanced binding function with automatic type conversion
 pub fn binding(self: Webui, element: [:0]const u8, comptime callback: anytype) !usize {
     const T = @TypeOf(callback);
-    const TInfo = @typeInfo(T);
+    const t_info = @typeInfo(T);
 
     // Verify the callback is a function
-    if (TInfo != .@"fn") {
+    if (t_info != .@"fn") {
         const err_msg = std.fmt.comptimePrint(
             "callback's type ({}), it must be a function!",
             .{T},
@@ -111,18 +111,18 @@ pub fn binding(self: Webui, element: [:0]const u8, comptime callback: anytype) !
         @compileError(err_msg);
     }
 
-    const fnInfo = TInfo.@"fn";
+    const fn_info = t_info.@"fn";
     // Verify return type is void
-    if (fnInfo.return_type != void) {
+    if (fn_info.return_type != void) {
         const err_msg = std.fmt.comptimePrint(
             "callback's return type ({}), it must be void!",
-            .{fnInfo.return_type},
+            .{fn_info.return_type},
         );
         @compileError(err_msg);
     }
 
     // Verify function is not generic
-    if (fnInfo.is_generic) {
+    if (fn_info.is_generic) {
         const err_msg = std.fmt.comptimePrint(
             "callback's type ({}), it can not be a generic function!",
             .{T},
@@ -131,7 +131,7 @@ pub fn binding(self: Webui, element: [:0]const u8, comptime callback: anytype) !
     }
 
     // Verify function does not use varargs
-    if (fnInfo.is_var_args) {
+    if (fn_info.is_var_args) {
         const err_msg = std.fmt.comptimePrint(
             "callback's type ({}), it can not have variable args!",
             .{T},
@@ -140,7 +140,7 @@ pub fn binding(self: Webui, element: [:0]const u8, comptime callback: anytype) !
     }
 
     const tmp_struct = struct {
-        const tup_t = fn_params_to_tuple(fnInfo.params);
+        const tup_t = fn_params_to_tuple(fn_info.params);
 
         // Event handler that will convert parameters and call the user's callback
         fn handle(e: *Event) void {
@@ -148,10 +148,10 @@ pub fn binding(self: Webui, element: [:0]const u8, comptime callback: anytype) !
 
             var index: usize = 0;
             // Process each parameter of the callback function
-            inline for (fnInfo.params, 0..fnInfo.params.len) |param, i| {
+            inline for (fn_info.params, 0..fn_info.params.len) |param, i| {
                 if (param.type) |tt| {
-                    const paramTInfo = @typeInfo(tt);
-                    switch (paramTInfo) {
+                    const param_t_info = @typeInfo(tt);
+                    switch (param_t_info) {
                         // Handle struct type parameters (only Event is allowed)
                         .@"struct" => {
                             if (tt == Event) {
@@ -229,7 +229,7 @@ pub fn binding(self: Webui, element: [:0]const u8, comptime callback: anytype) !
     return self.bind(element, tmp_struct.handle);
 }
 
-/// this funciton will return a fn's params tuple
+/// this function will return a fn's params tuple
 fn fn_params_to_tuple(comptime params: []const std.builtin.Type.Fn.Param) type {
     const Type = std.builtin.Type;
     const fields: [params.len]Type.StructField = blk: {

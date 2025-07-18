@@ -103,9 +103,9 @@ pub fn unaudited_modexp(allocator: std.mem.Allocator, base_bytes: []const u8, ex
     defer mod.deinit();
 
     // Parse inputs from big-endian bytes
-    try readBigEndian(&base, base_bytes);
-    try readBigEndian(&exp, exp_bytes);
-    try readBigEndian(&mod, mod_bytes);
+    try read_big_endian(&base, base_bytes);
+    try read_big_endian(&exp, exp_bytes);
+    try read_big_endian(&mod, mod_bytes);
 
     // Check if modulus is zero
     var zero = try Managed.init(allocator);
@@ -152,7 +152,7 @@ pub fn unaudited_modexp(allocator: std.mem.Allocator, base_bytes: []const u8, ex
     }
 
     // Write result to output (big-endian)
-    try writeBigEndian(&result, output);
+    try write_big_endian(&result, output);
 }
 
 /// ⚠️ UNAUDITED - NOT SECURITY AUDITED ⚠️
@@ -283,7 +283,7 @@ test "modexp: division by zero" {
 }
 
 /// Read big-endian bytes into a Managed big integer
-fn readBigEndian(big: *std.math.big.int.Managed, bytes: []const u8) !void {
+fn read_big_endian(big: *std.math.big.int.Managed, bytes: []const u8) !void {
     if (bytes.len == 0) {
         try big.set(0);
         return;
@@ -297,7 +297,7 @@ fn readBigEndian(big: *std.math.big.int.Managed, bytes: []const u8) !void {
 }
 
 /// Write a Managed big integer to big-endian bytes
-fn writeBigEndian(big: *const std.math.big.int.Managed, output: []u8) !void {
+fn write_big_endian(big: *const std.math.big.int.Managed, output: []u8) !void {
     @memset(output, 0);
 
     // Check if the big integer is zero

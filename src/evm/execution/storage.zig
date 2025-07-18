@@ -38,7 +38,7 @@ pub fn op_sload(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
 
     const slot = frame.stack.peek_unsafe().*;
 
-    if (vm.chain_rules.IsBerlin) {
+    if (vm.chain_rules.is_berlin) {
         const is_cold = frame.contract.mark_storage_slot_warm(frame.allocator, slot, null) catch {
             return ExecutionError.Error.OutOfMemory;
         };
@@ -70,7 +70,7 @@ pub fn op_sstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 
     // EIP-1706: Disable SSTORE with gasleft lower than call stipend (2300)
     // This prevents reentrancy attacks by ensuring enough gas remains for exception handling
-    if (vm.chain_rules.IsIstanbul and frame.gas_remaining <= gas_constants.SstoreSentryGas) {
+    if (vm.chain_rules.is_istanbul and frame.gas_remaining <= gas_constants.SstoreSentryGas) {
         @branchHint(.unlikely);
         return ExecutionError.Error.OutOfGas;
     }
@@ -172,8 +172,8 @@ pub fn fuzz_storage_operations(allocator: std.mem.Allocator, operations: []const
         defer vm.deinit();
         
         // Set up VM with appropriate chain rules
-        vm.chain_rules.IsBerlin = op.is_berlin;
-        vm.chain_rules.IsIstanbul = op.is_istanbul;
+        vm.chain_rules.is_berlin = op.is_berlin;
+        vm.chain_rules.is_istanbul = op.is_istanbul;
         
         var contract = try Contract.init(allocator, &[_]u8{0x01}, .{
             .address = op.contract_address,
@@ -214,7 +214,7 @@ pub fn fuzz_storage_operations(allocator: std.mem.Allocator, operations: []const
         };
         
         // Verify the result
-        try validateStorageResult(&frame, &vm, op, result);
+        try validate_storage_result(&frame, &vm, op, result);
     }
 }
 
@@ -237,7 +237,7 @@ const StorageOpType = enum {
     tstore,
 };
 
-fn validateStorageResult(frame: *const Frame, vm: *const Vm, op: FuzzStorageOperation, result: anyerror!Operation.ExecutionResult) !void {
+fn validate_storage_result(frame: *const Frame, vm: *const Vm, op: FuzzStorageOperation, result: anyerror!Operation.ExecutionResult) !void {
     _ = vm;
     const testing = std.testing;
     

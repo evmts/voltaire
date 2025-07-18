@@ -3,7 +3,7 @@ const testing = std.testing;
 const evm = @import("evm");
 const Stack = evm.Stack;
 
-fn setupStack(items: []const u256) !Stack {
+fn setup_stack(items: []const u256) !Stack {
     var stack = Stack{};
     for (items) |item| {
         try stack.append(item);
@@ -57,7 +57,7 @@ test "Stack: push_unsafe and pop_unsafe" {
 }
 
 test "Stack: peek operations" {
-    var stack = try setupStack(&[_]u256{ 1, 2, 3, 4, 5 });
+    var stack = try setup_stack(&[_]u256{ 1, 2, 3, 4, 5 });
 
     // Test peek_unsafe (top element)
     const top = stack.peek_unsafe();
@@ -74,7 +74,7 @@ test "Stack: peek operations" {
 }
 
 test "Stack: dup_unsafe operation" {
-    var stack = try setupStack(&[_]u256{ 10, 20, 30 });
+    var stack = try setup_stack(&[_]u256{ 10, 20, 30 });
 
     // Duplicate top element (n=1)
     stack.dup_unsafe(1);
@@ -87,11 +87,11 @@ test "Stack: dup_unsafe operation" {
     try testing.expectEqual(@as(u256, 10), try stack.pop());
 }
 
-test "Stack: swapUnsafe operation" {
-    var stack = try setupStack(&[_]u256{ 1, 2, 3, 4, 5 });
+test "Stack: swap_unsafe operation" {
+    var stack = try setup_stack(&[_]u256{ 1, 2, 3, 4, 5 });
 
     // Swap top with second element (n=1)
-    stack.swapUnsafe(1);
+    stack.swap_unsafe(1);
     try testing.expectEqual(@as(u256, 4), try stack.pop()); // Was second, now top
     try testing.expectEqual(@as(u256, 5), try stack.pop()); // Was top, now second
 
@@ -102,7 +102,7 @@ test "Stack: swapUnsafe operation" {
 }
 
 test "Stack: pop2_unsafe operation" {
-    var stack = try setupStack(&[_]u256{ 1, 2, 3, 4, 5 });
+    var stack = try setup_stack(&[_]u256{ 1, 2, 3, 4, 5 });
 
     const popped = stack.pop2_unsafe();
     try testing.expectEqual(@as(u256, 4), popped.a); // Second from top
@@ -114,7 +114,7 @@ test "Stack: pop2_unsafe operation" {
 }
 
 test "Stack: pop3_unsafe operation" {
-    var stack = try setupStack(&[_]u256{ 1, 2, 3, 4, 5 });
+    var stack = try setup_stack(&[_]u256{ 1, 2, 3, 4, 5 });
 
     const popped = stack.pop3_unsafe();
     try testing.expectEqual(@as(u256, 3), popped.a); // Third from top
@@ -128,7 +128,7 @@ test "Stack: pop3_unsafe operation" {
 }
 
 test "Stack: set_top_unsafe operation" {
-    var stack = try setupStack(&[_]u256{ 1, 2, 3 });
+    var stack = try setup_stack(&[_]u256{ 1, 2, 3 });
 
     stack.set_top_unsafe(999);
     try testing.expectEqual(@as(u256, 999), try stack.pop());
@@ -137,7 +137,7 @@ test "Stack: set_top_unsafe operation" {
 }
 
 test "Stack: clear operation" {
-    var stack = try setupStack(&[_]u256{ 1, 2, 3, 4, 5 });
+    var stack = try setup_stack(&[_]u256{ 1, 2, 3, 4, 5 });
     try testing.expectEqual(@as(usize, 5), stack.size);
 
     stack.clear();

@@ -8,7 +8,7 @@ pub const JsonRpcRequest = struct {
     params: []const u8, // JSON string
     id: u64,
 
-    pub fn toJson(self: JsonRpcRequest, allocator: Allocator) ![]u8 {
+    pub fn to_json(self: JsonRpcRequest, allocator: Allocator) ![]u8 {
         return std.fmt.allocPrint(allocator,
             \\{{"jsonrpc":"2.0","method":"{s}","params":{s},"id":{d}}}
         , .{ self.method, self.params, self.id });
@@ -20,7 +20,7 @@ pub const JsonRpcResponse = struct {
     error_info: ?JsonRpcError,
     id: u64,
 
-    pub fn fromJson(allocator: Allocator, json_str: []const u8) !JsonRpcResponse {
+    pub fn from_json(allocator: Allocator, json_str: []const u8) !JsonRpcResponse {
         const parsed = try std.json.parseFromSlice(std.json.Value, allocator, json_str, .{});
         defer parsed.deinit();
 

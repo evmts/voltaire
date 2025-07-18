@@ -58,6 +58,7 @@ pub const TxGasContractCreation = GasConstants.TxGasContractCreation;
 pub const TxDataZeroGas = GasConstants.TxDataZeroGas;
 pub const TxDataNonZeroGas = GasConstants.TxDataNonZeroGas;
 pub const CopyGas = GasConstants.CopyGas;
+pub const COPY_GAS = GasConstants.CopyGas;
 pub const MaxRefundQuotient = GasConstants.MaxRefundQuotient;
 
 pub const BlobHashGas = GasConstants.BlobHashGas;
@@ -95,7 +96,7 @@ pub const GAS_STIPEND_VALUE_TRANSFER = GasConstants.GAS_STIPEND_VALUE_TRANSFER;
 pub const CALL_GAS_RETENTION_DIVISOR = GasConstants.CALL_GAS_RETENTION_DIVISOR;
 
 // Re-export functions
-pub const memoryGasCost = GasConstants.memoryGasCost;
+pub const memory_gas_cost = GasConstants.memory_gas_cost;
 
 // Re-export the lookup table if needed
 pub const MEMORY_EXPANSION_LUT = blk: {

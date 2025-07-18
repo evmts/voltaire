@@ -21,7 +21,7 @@ pub const AuthorizationError = error{
 
 // Authorization structure
 pub const Authorization = struct {
-    chainId: u64,
+    chain_id: u64,
     address: Address,
     nonce: u64,
     v: u64,
@@ -30,7 +30,7 @@ pub const Authorization = struct {
 
     pub fn authority(self: *const Authorization) !Address {
         // Recover the authority (signer) from the authorization
-        const h = try self.signingHash();
+        const h = try self.signing_hash();
         const signature = crypto.Signature{
             .v = self.v,
             .r = self.r,
@@ -38,11 +38,11 @@ pub const Authorization = struct {
         };
 
         const allocator = std.heap.page_allocator;
-        const publicKey = try crypto.recoverPublicKey(allocator, h, signature);
-        return address.fromPublicKey(publicKey.bytes);
+        const public_key = try crypto.recover_public_key(allocator, h, signature);
+        return address.from_public_key(public_key.bytes);
     }
 
-    pub fn signingHash(self: *const Authorization) !Hash {
+    pub fn signing_hash(self: *const Authorization) !Hash {
         const allocator = std.heap.page_allocator;
 
         // RLP encode [chain_id, address, nonce]
@@ -50,63 +50,63 @@ pub const Authorization = struct {
         defer list.deinit();
 
         // Encode chain_id
-        try rlp.encodeUint(allocator, self.chainId, &list);
+        try rlp.encode_uint(allocator, self.chain_id, &list);
 
         // Encode address
-        try rlp.encodeBytes(allocator, &self.address.bytes, &list);
+        try rlp.encode_bytes(allocator, &self.address.bytes, &list);
 
         // Encode nonce
-        try rlp.encodeUint(allocator, self.nonce, &list);
+        try rlp.encode_uint(allocator, self.nonce, &list);
 
         // Wrap in RLP list
-        var rlpList = std.ArrayList(u8).init(allocator);
-        defer rlpList.deinit();
+        var rlp_list = std.ArrayList(u8).init(allocator);
+        defer rlp_list.deinit();
 
         if (list.items.len <= 55) {
-            try rlpList.append(@as(u8, @intCast(0xc0 + list.items.len)));
+            try rlp_list.append(@as(u8, @intCast(0xc0 + list.items.len)));
         } else {
-            const lenBytes = rlp.encodeLength(list.items.len);
-            try rlpList.append(@as(u8, @intCast(0xf7 + lenBytes.len)));
-            try rlpList.appendSlice(lenBytes);
+            const len_bytes = rlp.encode_length(list.items.len);
+            try rlp_list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+            try rlp_list.appendSlice(len_bytes);
         }
-        try rlpList.appendSlice(list.items);
+        try rlp_list.appendSlice(list.items);
 
         // EIP-7702 uses keccak256(MAGIC || rlp([chain_id, address, nonce]))
-        var data: [rlpList.items.len + 1]u8 = undefined;
+        var data: [rlp_list.items.len + 1]u8 = undefined;
         data[0] = 0x05; // MAGIC byte for EIP-7702
-        @memcpy(data[1..], rlpList.items);
+        @memcpy(data[1..], rlp_list.items);
 
         return hash.keccak256(&data);
     }
 
     pub fn validate(self: *const Authorization) !void {
         // Chain ID must be non-zero
-        if (self.chainId == 0) {
+        if (self.chain_id == 0) {
             return AuthorizationError.InvalidChainId;
         }
 
         // Address must not be zero
-        if (self.address.isZero()) {
+        if (self.address.is_zero()) {
             return AuthorizationError.ZeroAddress;
         }
 
         // Signature must be valid
-        if (!crypto.isValidSignature(.{ .v = self.v, .r = self.r, .s = self.s })) {
+        if (!crypto.is_valid_signature(.{ .v = self.v, .r = self.r, .s = self.s })) {
             return AuthorizationError.InvalidSignature;
         }
     }
 };
 
 // Create a signed authorization
-pub fn createAuthorization(
+pub fn create_authorization(
     allocator: Allocator,
-    chainId: u64,
+    chain_id: u64,
     addr: Address,
     nonce: u64,
-    privateKey: crypto.PrivateKey,
+    private_key: crypto.PrivateKey,
 ) !Authorization {
     var auth = Authorization{
-        .chainId = chainId,
+        .chain_id = chain_id,
         .address = addr,
         .nonce = nonce,
         .v = 0,
@@ -114,8 +114,8 @@ pub fn createAuthorization(
         .s = [_]u8{0} ** 32,
     };
 
-    const h = try auth.signingHash();
-    const signature = try crypto.sign(allocator, privateKey, h);
+    const h = try auth.signing_hash();
+    const signature = try crypto.sign(allocator, private_key, h);
 
     auth.v = signature.v;
     auth.r = signature.r;
@@ -128,31 +128,31 @@ pub fn createAuthorization(
 pub const AuthorizationList = []const Authorization;
 
 // RLP encode authorization list
-pub fn encodeAuthorizationList(allocator: Allocator, authList: AuthorizationList) ![]u8 {
+pub fn encode_authorization_list(allocator: Allocator, auth_list: AuthorizationList) ![]u8 {
     var list = std.ArrayList(u8).init(allocator);
     defer list.deinit();
 
-    for (authList) |auth| {
-        var authFields = std.ArrayList(u8).init(allocator);
-        defer authFields.deinit();
+    for (auth_list) |auth| {
+        var auth_fields = std.ArrayList(u8).init(allocator);
+        defer auth_fields.deinit();
 
         // Encode fields: [chain_id, address, nonce, v, r, s]
-        try rlp.encodeUint(allocator, auth.chainId, &authFields);
-        try rlp.encodeBytes(allocator, &auth.address.bytes, &authFields);
-        try rlp.encodeUint(allocator, auth.nonce, &authFields);
-        try rlp.encodeUint(allocator, auth.v, &authFields);
-        try rlp.encodeBytes(allocator, &auth.r, &authFields);
-        try rlp.encodeBytes(allocator, &auth.s, &authFields);
+        try rlp.encode_uint(allocator, auth.chain_id, &auth_fields);
+        try rlp.encode_bytes(allocator, &auth.address.bytes, &auth_fields);
+        try rlp.encode_uint(allocator, auth.nonce, &auth_fields);
+        try rlp.encode_uint(allocator, auth.v, &auth_fields);
+        try rlp.encode_bytes(allocator, &auth.r, &auth_fields);
+        try rlp.encode_bytes(allocator, &auth.s, &auth_fields);
 
         // Wrap authorization in RLP list
-        if (authFields.items.len <= 55) {
-            try list.append(@as(u8, @intCast(0xc0 + authFields.items.len)));
+        if (auth_fields.items.len <= 55) {
+            try list.append(@as(u8, @intCast(0xc0 + auth_fields.items.len)));
         } else {
-            const lenBytes = rlp.encodeLength(authFields.items.len);
-            try list.append(@as(u8, @intCast(0xf7 + lenBytes.len)));
-            try list.appendSlice(lenBytes);
+            const len_bytes = rlp.encode_length(auth_fields.items.len);
+            try list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+            try list.appendSlice(len_bytes);
         }
-        try list.appendSlice(authFields.items);
+        try list.appendSlice(auth_fields.items);
     }
 
     // Wrap entire list
@@ -160,9 +160,9 @@ pub fn encodeAuthorizationList(allocator: Allocator, authList: AuthorizationList
     if (list.items.len <= 55) {
         try result.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const lenBytes = rlp.encodeLength(list.items.len);
-        try result.append(@as(u8, @intCast(0xf7 + lenBytes.len)));
-        try result.appendSlice(lenBytes);
+        const len_bytes = rlp.encode_length(list.items.len);
+        try result.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+        try result.appendSlice(len_bytes);
     }
     try result.appendSlice(list.items);
 
@@ -172,27 +172,27 @@ pub fn encodeAuthorizationList(allocator: Allocator, authList: AuthorizationList
 // Delegation designation
 pub const DelegationDesignation = struct {
     authority: Address,
-    delegatedAddress: Address,
+    delegated_address: Address,
 
-    pub fn isActive(self: *const DelegationDesignation) bool {
+    pub fn is_active(self: *const DelegationDesignation) bool {
         // Delegation is active if delegated address is not zero
-        return !self.delegatedAddress.isZero();
+        return !self.delegated_address.is_zero();
     }
 
     pub fn revoke(self: *DelegationDesignation) void {
-        self.delegatedAddress = Address.ZERO;
+        self.delegated_address = Address.ZERO;
     }
 };
 
 // Batch authorization processing
-pub fn processAuthorizations(
+pub fn process_authorizations(
     allocator: Allocator,
-    authList: AuthorizationList,
+    auth_list: AuthorizationList,
 ) ![]DelegationDesignation {
     var delegations = std.ArrayList(DelegationDesignation).init(allocator);
     defer delegations.deinit();
 
-    for (authList) |auth| {
+    for (auth_list) |auth| {
         // Validate authorization
         try auth.validate();
 
@@ -202,7 +202,7 @@ pub fn processAuthorizations(
         // Create delegation
         try delegations.append(.{
             .authority = auth_addr,
-            .delegatedAddress = auth.address,
+            .delegated_address = auth.address,
         });
     }
 
@@ -213,10 +213,10 @@ pub fn processAuthorizations(
 pub const PER_EMPTY_ACCOUNT_COST = 25000;
 pub const PER_AUTH_BASE_COST = 12500;
 
-pub fn calculateAuthorizationGasCost(authList: AuthorizationList, emptyAccounts: usize) u64 {
-    const authCost = authList.len * PER_AUTH_BASE_COST;
-    const emptyCost = emptyAccounts * PER_EMPTY_ACCOUNT_COST;
-    return authCost + emptyCost;
+pub fn calculate_authorization_gas_cost(auth_list: AuthorizationList, empty_accounts: usize) u64 {
+    const auth_cost = auth_list.len * PER_AUTH_BASE_COST;
+    const empty_cost = empty_accounts * PER_EMPTY_ACCOUNT_COST;
+    return auth_cost + empty_cost;
 }
 
 // Tests
@@ -224,19 +224,19 @@ pub fn calculateAuthorizationGasCost(authList: AuthorizationList, emptyAccounts:
 test "authorization creation and recovery" {
     const allocator = testing.allocator;
 
-    const privateKey = crypto.PrivateKey{
+    const private_key = crypto.PrivateKey{
         .bytes = [_]u8{0x42} ** 32,
     };
 
-    const signerAddress = try crypto.getAddress(allocator, privateKey);
-    const targetAddress = try Address.fromHex("0x1111111111111111111111111111111111111111");
+    const signer_address = try crypto.getAddress(allocator, private_key);
+    const target_address = try Address.fromHex("0x1111111111111111111111111111111111111111");
 
-    const auth = try createAuthorization(
+    const auth = try create_authorization(
         allocator,
         1, // chain_id
-        targetAddress,
+        target_address,
         0, // nonce
-        privateKey,
+        private_key,
     );
 
     // Validate
@@ -244,12 +244,12 @@ test "authorization creation and recovery" {
 
     // Recover authority
     const auth_addr = try auth.authority();
-    try testing.expectEqual(signerAddress, auth_addr);
+    try testing.expectEqual(signer_address, auth_addr);
 }
 
 test "authorization validation" {
     var auth = Authorization{
-        .chainId = 1,
+        .chain_id = 1,
         .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
         .nonce = 0,
         .v = 27,
@@ -261,9 +261,9 @@ test "authorization validation" {
     try auth.validate();
 
     // Invalid chain ID
-    auth.chainId = 0;
+    auth.chain_id = 0;
     try testing.expectError(AuthorizationError.InvalidChainId, auth.validate());
-    auth.chainId = 1;
+    auth.chain_id = 1;
 
     // Zero address
     auth.address = Address.ZERO;
@@ -273,29 +273,29 @@ test "authorization validation" {
 test "authorization list encoding" {
     const allocator = testing.allocator;
 
-    const privateKey = crypto.PrivateKey{
+    const private_key = crypto.PrivateKey{
         .bytes = [_]u8{0x42} ** 32,
     };
 
-    const auth1 = try createAuthorization(
+    const auth1 = try create_authorization(
         allocator,
         1,
         try Address.fromHex("0x1111111111111111111111111111111111111111"),
         0,
-        privateKey,
+        private_key,
     );
 
-    const auth2 = try createAuthorization(
+    const auth2 = try create_authorization(
         allocator,
         1,
         try Address.fromHex("0x2222222222222222222222222222222222222222"),
         1,
-        privateKey,
+        private_key,
     );
 
-    const authList = [_]Authorization{ auth1, auth2 };
+    const auth_list = [_]Authorization{ auth1, auth2 };
 
-    const encoded = try encodeAuthorizationList(allocator, &authList);
+    const encoded = try encode_authorization_list(allocator, &auth_list);
     defer allocator.free(encoded);
 
     // Should produce valid RLP
@@ -306,58 +306,58 @@ test "authorization list encoding" {
 test "delegation designation" {
     var delegation = DelegationDesignation{
         .authority = try Address.fromHex("0x1111111111111111111111111111111111111111"),
-        .delegatedAddress = try Address.fromHex("0x2222222222222222222222222222222222222222"),
+        .delegated_address = try Address.fromHex("0x2222222222222222222222222222222222222222"),
     };
 
     // Should be active
-    try testing.expect(delegation.isActive());
+    try testing.expect(delegation.is_active());
 
     // Revoke delegation
     delegation.revoke();
-    try testing.expect(!delegation.isActive());
-    try testing.expectEqual(Address.ZERO, delegation.delegatedAddress);
+    try testing.expect(!delegation.is_active());
+    try testing.expectEqual(Address.ZERO, delegation.delegated_address);
 }
 
 test "batch authorization processing" {
     const allocator = testing.allocator;
 
-    const privateKey1 = crypto.PrivateKey{
+    const private_key1 = crypto.PrivateKey{
         .bytes = [_]u8{0x01} ** 32,
     };
-    const privateKey2 = crypto.PrivateKey{
+    const private_key2 = crypto.PrivateKey{
         .bytes = [_]u8{0x02} ** 32,
     };
 
-    const auth1 = try createAuthorization(
+    const auth1 = try create_authorization(
         allocator,
         1,
         try Address.fromHex("0x1111111111111111111111111111111111111111"),
         0,
-        privateKey1,
+        private_key1,
     );
 
-    const auth2 = try createAuthorization(
+    const auth2 = try create_authorization(
         allocator,
         1,
         try Address.fromHex("0x2222222222222222222222222222222222222222"),
         0,
-        privateKey2,
+        private_key2,
     );
 
-    const authList = [_]Authorization{ auth1, auth2 };
+    const auth_list = [_]Authorization{ auth1, auth2 };
 
-    const delegations = try processAuthorizations(allocator, &authList);
+    const delegations = try process_authorizations(allocator, &auth_list);
     defer allocator.free(delegations);
 
     try testing.expectEqual(@as(usize, 2), delegations.len);
-    try testing.expect(delegations[0].isActive());
-    try testing.expect(delegations[1].isActive());
+    try testing.expect(delegations[0].is_active());
+    try testing.expect(delegations[1].is_active());
 }
 
 test "authorization gas cost calculation" {
-    const authList = [_]Authorization{
+    const auth_list = [_]Authorization{
         .{
-            .chainId = 1,
+            .chain_id = 1,
             .address = try Address.fromHex("0x1111111111111111111111111111111111111111"),
             .nonce = 0,
             .v = 27,
@@ -365,7 +365,7 @@ test "authorization gas cost calculation" {
             .s = [_]u8{0x34} ** 32,
         },
         .{
-            .chainId = 1,
+            .chain_id = 1,
             .address = try Address.fromHex("0x2222222222222222222222222222222222222222"),
             .nonce = 0,
             .v = 27,
@@ -375,8 +375,8 @@ test "authorization gas cost calculation" {
     };
 
     // 2 authorizations, 1 empty account
-    const gasCost = calculateAuthorizationGasCost(&authList, 1);
+    const gas_cost = calculate_authorization_gas_cost(&auth_list, 1);
 
     // Expected: 2 * 12500 + 1 * 25000 = 50000
-    try testing.expectEqual(@as(u64, 50000), gasCost);
+    try testing.expectEqual(@as(u64, 50000), gas_cost);
 }

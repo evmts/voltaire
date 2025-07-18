@@ -29,7 +29,7 @@ pub const TxKind = union(enum) {
     call: Address,
     create,
 
-    pub fn isCreate(self: TxKind) bool {
+    pub fn is_create(self: TxKind) bool {
         return switch (self) {
             .create => true,
             .call => false,
@@ -76,13 +76,13 @@ pub const TxLegacy = struct {
 
     pub const TX_TYPE: u8 = 0x00;
 
-    pub fn txType(self: TxLegacy) TxType {
+    pub fn tx_type(self: TxLegacy) TxType {
         _ = self;
         return .legacy;
     }
 
-    pub fn isCreate(self: TxLegacy) bool {
-        return self.to.isCreate();
+    pub fn is_create(self: TxLegacy) bool {
+        return self.to.is_create();
     }
 };
 
@@ -108,13 +108,13 @@ pub const TxEip2930 = struct {
 
     pub const TX_TYPE: u8 = 0x01;
 
-    pub fn txType(self: TxEip2930) TxType {
+    pub fn tx_type(self: TxEip2930) TxType {
         _ = self;
         return .eip2930;
     }
 
-    pub fn isCreate(self: TxEip2930) bool {
-        return self.to.isCreate();
+    pub fn is_create(self: TxEip2930) bool {
+        return self.to.is_create();
     }
 };
 
@@ -142,16 +142,16 @@ pub const TxEip1559 = struct {
 
     pub const TX_TYPE: u8 = 0x02;
 
-    pub fn txType(self: TxEip1559) TxType {
+    pub fn tx_type(self: TxEip1559) TxType {
         _ = self;
         return .eip1559;
     }
 
-    pub fn isCreate(self: TxEip1559) bool {
-        return self.to.isCreate();
+    pub fn is_create(self: TxEip1559) bool {
+        return self.to.is_create();
     }
 
-    pub fn isDynamicFee(self: TxEip1559) bool {
+    pub fn is_dynamic_fee(self: TxEip1559) bool {
         _ = self;
         return true;
     }
@@ -185,23 +185,23 @@ pub const TxEip4844 = struct {
 
     pub const TX_TYPE: u8 = 0x03;
 
-    pub fn txType(self: TxEip4844) TxType {
+    pub fn tx_type(self: TxEip4844) TxType {
         _ = self;
         return .eip4844;
     }
 
-    pub fn isCreate(self: TxEip4844) bool {
+    pub fn is_create(self: TxEip4844) bool {
         _ = self;
         return false; // EIP-4844 transactions cannot create contracts
     }
 
-    pub fn isDynamicFee(self: TxEip4844) bool {
+    pub fn is_dynamic_fee(self: TxEip4844) bool {
         _ = self;
         return true;
     }
 
     /// Calculate total blob gas for this transaction
-    pub fn blobGas(self: TxEip4844) u64 {
+    pub fn blob_gas(self: TxEip4844) u64 {
         const DATA_GAS_PER_BLOB: u64 = 131072; // From EIP-4844
         return @as(u64, @intCast(self.blob_versioned_hashes.len)) * DATA_GAS_PER_BLOB;
     }
@@ -233,17 +233,17 @@ pub const TxEip7702 = struct {
 
     pub const TX_TYPE: u8 = 0x04;
 
-    pub fn txType(self: TxEip7702) TxType {
+    pub fn tx_type(self: TxEip7702) TxType {
         _ = self;
         return .eip7702;
     }
 
-    pub fn isCreate(self: TxEip7702) bool {
+    pub fn is_create(self: TxEip7702) bool {
         _ = self;
         return false; // EIP-7702 transactions cannot create contracts
     }
 
-    pub fn isDynamicFee(self: TxEip7702) bool {
+    pub fn is_dynamic_fee(self: TxEip7702) bool {
         _ = self;
         return true;
     }
@@ -258,7 +258,7 @@ pub const TypedTransaction = union(TxType) {
     eip7702: TxEip7702,
 
     /// Get the transaction type
-    pub fn txType(self: TypedTransaction) TxType {
+    pub fn tx_type(self: TypedTransaction) TxType {
         return switch (self) {
             .legacy => .legacy,
             .eip2930 => .eip2930,
@@ -269,12 +269,12 @@ pub const TypedTransaction = union(TxType) {
     }
 
     /// Get the transaction type as a byte
-    pub fn txTypeByte(self: TypedTransaction) u8 {
-        return @intFromEnum(self.txType());
+    pub fn tx_type_byte(self: TypedTransaction) u8 {
+        return @intFromEnum(self.tx_type());
     }
 
     /// Check if transaction creates a contract
-    pub fn isCreate(self: TypedTransaction) bool {
+    pub fn is_create(self: TypedTransaction) bool {
         return switch (self) {
             .legacy => |tx| tx.isCreate(),
             .eip2930 => |tx| tx.isCreate(),
@@ -285,7 +285,7 @@ pub const TypedTransaction = union(TxType) {
     }
 
     /// Check if transaction uses dynamic fees
-    pub fn isDynamicFee(self: TypedTransaction) bool {
+    pub fn is_dynamic_fee(self: TypedTransaction) bool {
         return switch (self) {
             .legacy => false,
             .eip2930 => false,
@@ -296,7 +296,7 @@ pub const TypedTransaction = union(TxType) {
     }
 
     /// Get the chain ID
-    pub fn chainId(self: TypedTransaction) ?ChainId {
+    pub fn chain_id(self: TypedTransaction) ?ChainId {
         return switch (self) {
             .legacy => |tx| tx.chain_id,
             .eip2930 => |tx| tx.chain_id,
@@ -318,7 +318,7 @@ pub const TypedTransaction = union(TxType) {
     }
 
     /// Get the gas limit
-    pub fn gasLimit(self: TypedTransaction) u64 {
+    pub fn gas_limit(self: TypedTransaction) u64 {
         return switch (self) {
             .legacy => |tx| tx.gas_limit,
             .eip2930 => |tx| tx.gas_limit,
@@ -351,7 +351,7 @@ pub const TypedTransaction = union(TxType) {
     }
 
     /// Get the access list (if available)
-    pub fn accessList(self: TypedTransaction) ?AccessList {
+    pub fn access_list(self: TypedTransaction) ?AccessList {
         return switch (self) {
             .legacy => null,
             .eip2930 => |tx| tx.access_list,
@@ -362,7 +362,7 @@ pub const TypedTransaction = union(TxType) {
     }
 
     /// Get the max fee per gas
-    pub fn maxFeePerGas(self: TypedTransaction) u128 {
+    pub fn max_fee_per_gas(self: TypedTransaction) u128 {
         return switch (self) {
             .legacy => |tx| tx.gas_price,
             .eip2930 => |tx| tx.gas_price,
@@ -373,7 +373,7 @@ pub const TypedTransaction = union(TxType) {
     }
 
     /// Get the max priority fee per gas (if available)
-    pub fn maxPriorityFeePerGas(self: TypedTransaction) ?u128 {
+    pub fn max_priority_fee_per_gas(self: TypedTransaction) ?u128 {
         return switch (self) {
             .legacy => null,
             .eip2930 => null,
@@ -384,7 +384,7 @@ pub const TypedTransaction = union(TxType) {
     }
 
     /// Get the max fee per blob gas (if available)
-    pub fn maxFeePerBlobGas(self: TypedTransaction) ?u128 {
+    pub fn max_fee_per_blob_gas(self: TypedTransaction) ?u128 {
         return switch (self) {
             .legacy => null,
             .eip2930 => null,
@@ -395,7 +395,7 @@ pub const TypedTransaction = union(TxType) {
     }
 
     /// Get blob versioned hashes (if available)
-    pub fn blobVersionedHashes(self: TypedTransaction) ?[]B256 {
+    pub fn blob_versioned_hashes(self: TypedTransaction) ?[]B256 {
         return switch (self) {
             .legacy => null,
             .eip2930 => null,
@@ -406,7 +406,7 @@ pub const TypedTransaction = union(TxType) {
     }
 
     /// Get authorization list (if available)
-    pub fn authorizationList(self: TypedTransaction) ?[]SignedAuthorization {
+    pub fn authorization_list(self: TypedTransaction) ?[]SignedAuthorization {
         return switch (self) {
             .legacy => null,
             .eip2930 => null,
@@ -436,7 +436,7 @@ pub const SignedTransaction = struct {
     hash: B256,
 
     /// Recover the sender address from the signature
-    pub fn recoverSender(self: SignedTransaction) !Address {
+    pub fn recover_sender(self: SignedTransaction) !Address {
         // This would need cryptographic implementation
         // Placeholder for now
         _ = self;
@@ -458,7 +458,7 @@ pub const TransactionEnvelope = union(enum) {
     }
 
     /// Check if the transaction is signed
-    pub fn isSigned(self: TransactionEnvelope) bool {
+    pub fn is_signed(self: TransactionEnvelope) bool {
         return switch (self) {
             .typed => false,
             .signed => true,
@@ -469,7 +469,7 @@ pub const TransactionEnvelope = union(enum) {
 /// Utility functions for transaction type identification
 pub const TransactionUtils = struct {
     /// Determine transaction type from type byte
-    pub fn typeFromByte(type_byte: u8) !TxType {
+    pub fn type_from_byte(type_byte: u8) !TxType {
         return switch (type_byte) {
             0x00 => .legacy,
             0x01 => .eip2930,
@@ -481,7 +481,7 @@ pub const TransactionUtils = struct {
     }
 
     /// Check if a transaction type supports dynamic fees
-    pub fn supportsDynamicFees(tx_type: TxType) bool {
+    pub fn supports_dynamic_fees(tx_type: TxType) bool {
         return switch (tx_type) {
             .legacy, .eip2930 => false,
             .eip1559, .eip4844, .eip7702 => true,
@@ -489,7 +489,7 @@ pub const TransactionUtils = struct {
     }
 
     /// Check if a transaction type supports access lists
-    pub fn supportsAccessList(tx_type: TxType) bool {
+    pub fn supports_access_list(tx_type: TxType) bool {
         return switch (tx_type) {
             .legacy => false,
             .eip2930, .eip1559, .eip4844, .eip7702 => true,
@@ -497,7 +497,7 @@ pub const TransactionUtils = struct {
     }
 
     /// Check if a transaction type supports blobs
-    pub fn supportsBlobs(tx_type: TxType) bool {
+    pub fn supports_blobs(tx_type: TxType) bool {
         return switch (tx_type) {
             .eip4844 => true,
             else => false,
@@ -505,7 +505,7 @@ pub const TransactionUtils = struct {
     }
 
     /// Check if a transaction type supports authorizations
-    pub fn supportsAuthorizations(tx_type: TxType) bool {
+    pub fn supports_authorizations(tx_type: TxType) bool {
         return switch (tx_type) {
             .eip7702 => true,
             else => false,
@@ -517,21 +517,21 @@ pub const TransactionUtils = struct {
 test "transaction type identification" {
     const testing = std.testing;
 
-    try testing.expect(try TransactionUtils.typeFromByte(0x00) == .legacy);
-    try testing.expect(try TransactionUtils.typeFromByte(0x01) == .eip2930);
-    try testing.expect(try TransactionUtils.typeFromByte(0x02) == .eip1559);
-    try testing.expect(try TransactionUtils.typeFromByte(0x03) == .eip4844);
-    try testing.expect(try TransactionUtils.typeFromByte(0x04) == .eip7702);
+    try testing.expect(try TransactionUtils.type_from_byte(0x00) == .legacy);
+    try testing.expect(try TransactionUtils.type_from_byte(0x01) == .eip2930);
+    try testing.expect(try TransactionUtils.type_from_byte(0x02) == .eip1559);
+    try testing.expect(try TransactionUtils.type_from_byte(0x03) == .eip4844);
+    try testing.expect(try TransactionUtils.type_from_byte(0x04) == .eip7702);
 }
 
 test "dynamic fee support" {
     const testing = std.testing;
 
-    try testing.expect(!TransactionUtils.supportsDynamicFees(.legacy));
-    try testing.expect(!TransactionUtils.supportsDynamicFees(.eip2930));
-    try testing.expect(TransactionUtils.supportsDynamicFees(.eip1559));
-    try testing.expect(TransactionUtils.supportsDynamicFees(.eip4844));
-    try testing.expect(TransactionUtils.supportsDynamicFees(.eip7702));
+    try testing.expect(!TransactionUtils.supports_dynamic_fees(.legacy));
+    try testing.expect(!TransactionUtils.supports_dynamic_fees(.eip2930));
+    try testing.expect(TransactionUtils.supports_dynamic_fees(.eip1559));
+    try testing.expect(TransactionUtils.supports_dynamic_fees(.eip4844));
+    try testing.expect(TransactionUtils.supports_dynamic_fees(.eip7702));
 }
 
 test "typed transaction creation" {
@@ -553,8 +553,8 @@ test "typed transaction creation" {
 
     const typed_tx = TypedTransaction{ .legacy = legacy_tx };
 
-    try testing.expect(typed_tx.txType() == .legacy);
+    try testing.expect(typed_tx.tx_type() == .legacy);
     try testing.expect(typed_tx.nonce() == 42);
-    try testing.expect(typed_tx.gasLimit() == 21000);
-    try testing.expect(!typed_tx.isDynamicFee());
+    try testing.expect(typed_tx.gas_limit() == 21000);
+    try testing.expect(!typed_tx.is_dynamic_fee());
 }

@@ -15,14 +15,14 @@ const MemoryDatabase = @import("../../../src/evm/state/memory_database.zig").Mem
 const database_factory = @import("../../../src/evm/state/database_factory.zig");
 
 // Test helper to create a test address
-fn createTestAddress(value: u8) [20]u8 {
+fn create_test_address(value: u8) [20]u8 {
     var addr = [_]u8{0} ** 20;
     addr[19] = value;
     return addr;
 }
 
 // Test helper to create a test account
-fn createTestAccount(balance: u256, nonce: u64) Account {
+fn create_test_account(balance: u256, nonce: u64) Account {
     return Account{
         .balance = balance,
         .nonce = nonce,
@@ -32,11 +32,11 @@ fn createTestAccount(balance: u256, nonce: u64) Account {
 }
 
 // Test interface compliance for any database implementation
-fn testDatabaseInterfaceCompliance(db: DatabaseInterface) !void {
-    const addr1 = createTestAddress(1);
-    const addr2 = createTestAddress(2);
-    const account1 = createTestAccount(1000, 1);
-    const account2 = createTestAccount(2000, 2);
+fn test_database_interface_compliance(db: DatabaseInterface) !void {
+    const addr1 = create_test_address(1);
+    const addr2 = create_test_address(2);
+    const account1 = create_test_account(1000, 1);
+    const account2 = create_test_account(2000, 2);
 
     // Test account operations
     try testing.expect(!db.account_exists(addr1));
@@ -83,10 +83,10 @@ fn testDatabaseInterfaceCompliance(db: DatabaseInterface) !void {
 }
 
 // Test snapshot functionality
-fn testSnapshotFunctionality(db: DatabaseInterface) !void {
-    const addr = createTestAddress(1);
-    const account1 = createTestAccount(1000, 1);
-    const account2 = createTestAccount(2000, 2);
+fn test_snapshot_functionality(db: DatabaseInterface) !void {
+    const addr = create_test_address(1);
+    const account1 = create_test_account(1000, 1);
+    const account2 = create_test_account(2000, 2);
 
     // Set initial state
     try db.set_account(addr, account1);
@@ -114,11 +114,11 @@ fn testSnapshotFunctionality(db: DatabaseInterface) !void {
 }
 
 // Test batch operations
-fn testBatchOperations(db: DatabaseInterface) !void {
-    const addr1 = createTestAddress(1);
-    const addr2 = createTestAddress(2);
-    const account1 = createTestAccount(1000, 1);
-    const account2 = createTestAccount(2000, 2);
+fn test_batch_operations(db: DatabaseInterface) !void {
+    const addr1 = create_test_address(1);
+    const addr2 = create_test_address(2);
+    const account1 = create_test_account(1000, 1);
+    const account2 = create_test_account(2000, 2);
 
     // Test batch commit
     try db.begin_batch();
@@ -136,7 +136,7 @@ fn testBatchOperations(db: DatabaseInterface) !void {
     const original_balance = (try db.get_account(addr1)).?.balance;
 
     try db.begin_batch();
-    try db.set_account(addr1, createTestAccount(5000, 5));
+    try db.set_account(addr1, create_test_account(5000, 5));
     try db.set_storage(addr1, 1, 999);
     try db.rollback_batch();
 
@@ -147,7 +147,7 @@ fn testBatchOperations(db: DatabaseInterface) !void {
 }
 
 // Test error conditions
-fn testErrorConditions(db: DatabaseInterface) !void {
+fn test_error_conditions(db: DatabaseInterface) !void {
     // Test invalid snapshot revert
     const result = db.revert_to_snapshot(999);
     try testing.expectError(DatabaseError.SnapshotNotFound, result);
@@ -163,7 +163,7 @@ test "memory database interface compliance" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    try testDatabaseInterfaceCompliance(db_interface);
+    try test_database_interface_compliance(db_interface);
 }
 
 test "memory database snapshots" {
@@ -171,7 +171,7 @@ test "memory database snapshots" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    try testSnapshotFunctionality(db_interface);
+    try test_snapshot_functionality(db_interface);
 }
 
 test "memory database batch operations" {
@@ -179,7 +179,7 @@ test "memory database batch operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    try testBatchOperations(db_interface);
+    try test_batch_operations(db_interface);
 }
 
 test "memory database error conditions" {
@@ -187,7 +187,7 @@ test "memory database error conditions" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    try testErrorConditions(db_interface);
+    try test_error_conditions(db_interface);
 }
 
 // Test database factory
@@ -197,7 +197,7 @@ test "database factory memory creation" {
     const db = try database_factory.createMemoryDatabase(testing.allocator);
     defer database_factory.destroyDatabase(testing.allocator, db);
 
-    try testDatabaseInterfaceCompliance(db);
+    try test_database_interface_compliance(db);
 
     // Test factory type detection
     const db_type = database_factory.getDatabaseType(db);
@@ -211,7 +211,7 @@ test "database factory configuration" {
     const db = try database_factory.createDatabase(testing.allocator, config);
     defer database_factory.destroyDatabase(testing.allocator, db);
 
-    try testDatabaseInterfaceCompliance(db);
+    try test_database_interface_compliance(db);
 }
 
 // Test multiple databases simultaneously
@@ -224,9 +224,9 @@ test "multiple database instances" {
     const db2 = try database_factory.createMemoryDatabase(testing.allocator);
     defer database_factory.destroyDatabase(testing.allocator, db2);
 
-    const addr = createTestAddress(1);
-    const account1 = createTestAccount(1000, 1);
-    const account2 = createTestAccount(2000, 2);
+    const addr = create_test_address(1);
+    const account1 = create_test_account(1000, 1);
+    const account2 = create_test_account(2000, 2);
 
     // Set different data in each database
     try db1.set_account(addr, account1);
@@ -251,8 +251,8 @@ test "database state root operations" {
     const initial_root = try db_interface.get_state_root();
 
     // Add some data
-    const addr = createTestAddress(1);
-    const account = createTestAccount(1000, 1);
+    const addr = create_test_address(1);
+    const account = create_test_account(1000, 1);
     try db_interface.set_account(addr, account);
 
     // State root should change
@@ -293,8 +293,8 @@ test "database interleaved operations" {
 
     const db_interface = memory_db.to_database_interface();
 
-    const addr1 = createTestAddress(1);
-    const addr2 = createTestAddress(2);
+    const addr1 = create_test_address(1);
+    const addr2 = create_test_address(2);
 
     // Interleave operations on different accounts
     try db_interface.set_storage(addr1, 0, 100);
@@ -316,7 +316,7 @@ test "database edge cases" {
 
     const db_interface = memory_db.to_database_interface();
 
-    const addr = createTestAddress(1);
+    const addr = create_test_address(1);
 
     // Test zero values
     const zero_account = Account.zero();

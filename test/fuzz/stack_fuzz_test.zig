@@ -13,13 +13,13 @@ test "fuzz_stack_basic_operations" {
     try testing.expectEqual(@as(usize, 3), stack.size);
     try testing.expectEqual(@as(u256, 300), stack.peek_unsafe().*);
     
-    const val1 = stack.pop_unsafe();
-    const val2 = stack.pop_unsafe();
-    const val3 = stack.pop_unsafe();
+    const val_1 = stack.pop_unsafe();
+    const val_2 = stack.pop_unsafe();
+    const val_3 = stack.pop_unsafe();
     
-    try testing.expectEqual(@as(u256, 300), val1);
-    try testing.expectEqual(@as(u256, 200), val2);
-    try testing.expectEqual(@as(u256, 100), val3);
+    try testing.expectEqual(@as(u256, 300), val_1);
+    try testing.expectEqual(@as(u256, 200), val_2);
+    try testing.expectEqual(@as(u256, 100), val_3);
     try testing.expectEqual(@as(usize, 0), stack.size);
 }
 
@@ -66,7 +66,7 @@ test "fuzz_stack_swap_operations" {
     stack.append_unsafe(200);
     stack.append_unsafe(300);
     
-    stack.swapUnsafe(1);
+    stack.swap_unsafe(1);
     
     try testing.expectEqual(@as(u256, 200), stack.data[2]);
     try testing.expectEqual(@as(u256, 300), stack.data[1]);
@@ -82,15 +82,15 @@ test "fuzz_stack_multi_pop_operations" {
     stack.append_unsafe(400);
     stack.append_unsafe(500);
     
-    const result2 = stack.pop2_unsafe();
-    try testing.expectEqual(@as(u256, 400), result2.a);
-    try testing.expectEqual(@as(u256, 500), result2.b);
+    const result_2 = stack.pop2_unsafe();
+    try testing.expectEqual(@as(u256, 400), result_2.a);
+    try testing.expectEqual(@as(u256, 500), result_2.b);
     try testing.expectEqual(@as(usize, 3), stack.size);
     
-    const result3 = stack.pop3_unsafe();
-    try testing.expectEqual(@as(u256, 100), result3.a);
-    try testing.expectEqual(@as(u256, 200), result3.b);
-    try testing.expectEqual(@as(u256, 300), result3.c);
+    const result_3 = stack.pop3_unsafe();
+    try testing.expectEqual(@as(u256, 100), result_3.a);
+    try testing.expectEqual(@as(u256, 200), result_3.b);
+    try testing.expectEqual(@as(u256, 300), result_3.c);
     try testing.expectEqual(@as(usize, 0), stack.size);
 }
 

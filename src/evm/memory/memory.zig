@@ -6,8 +6,8 @@ pub const Memory = @This();
 
 // Re-export error types and constants for convenience
 pub const MemoryError = @import("errors.zig").MemoryError;
-pub const InitialCapacity = constants.InitialCapacity;
-pub const DefaultMemoryLimit = constants.DefaultMemoryLimit;
+pub const INITIAL_CAPACITY = constants.INITIAL_CAPACITY;
+pub const DEFAULT_MEMORY_LIMIT = constants.DEFAULT_MEMORY_LIMIT;
 pub const calculate_num_words = constants.calculate_num_words;
 
 // Core memory struct fields
@@ -53,7 +53,7 @@ pub fn init_child_memory(self: *Memory, checkpoint: usize) !Memory {
 }
 
 pub fn init_default(allocator: std.mem.Allocator) !Memory {
-    return try init(allocator, InitialCapacity, DefaultMemoryLimit);
+    return try init(allocator, INITIAL_CAPACITY, DEFAULT_MEMORY_LIMIT);
 }
 
 /// Deinitializes the Memory. Only root Memory instances clean up the shared buffer.
@@ -92,7 +92,7 @@ pub const slice = slice_ops.slice;
 
 // Fuzz testing functions
 pub fn fuzz_memory_operations(allocator: std.mem.Allocator, operations: []const FuzzMemoryOperation) !void {
-    var memory = try init(allocator, InitialCapacity, DefaultMemoryLimit);
+    var memory = try init(allocator, INITIAL_CAPACITY, DEFAULT_MEMORY_LIMIT);
     defer memory.deinit();
     
     const testing = std.testing;
@@ -151,7 +151,7 @@ pub fn fuzz_memory_operations(allocator: std.mem.Allocator, operations: []const 
             },
         }
         
-        try validateMemoryInvariants(&memory);
+        try validate_memory_invariants(&memory);
     }
 }
 
@@ -171,7 +171,7 @@ const FuzzMemoryOperation = union(enum) {
     resize: usize,
 };
 
-fn validateMemoryInvariants(memory: *const Memory) !void {
+fn validate_memory_invariants(memory: *const Memory) !void {
     const testing = std.testing;
     
     // Memory size should never exceed the limit
@@ -324,7 +324,7 @@ test "fuzz_memory_alignment_patterns" {
 test "fuzz_memory_bounded_operations" {
     const allocator = std.testing.allocator;
     
-    var memory = try init(allocator, InitialCapacity, DefaultMemoryLimit);
+    var memory = try init(allocator, INITIAL_CAPACITY, DEFAULT_MEMORY_LIMIT);
     defer memory.deinit();
     
     const source_data = "Hello, World! This is a test string for bounded operations.";

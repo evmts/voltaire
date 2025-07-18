@@ -42,7 +42,7 @@ pub const AffinePoint = struct {
         return Self{ .x = SECP256K1_GX, .y = SECP256K1_GY, .infinity = false };
     }
 
-    pub fn isOnCurve(self: Self) bool {
+    pub fn is_on_curve(self: Self) bool {
         if (self.infinity) return true;
 
         // Check y² = x³ + 7 mod p
@@ -105,7 +105,7 @@ pub const AffinePoint = struct {
         return Self{ .x = x3, .y = y3, .infinity = false };
     }
 
-    pub fn scalarMul(self: Self, scalar: u256) Self {
+    pub fn scalar_mul(self: Self, scalar: u256) Self {
         if (scalar == 0 or self.infinity) return Self.zero();
 
         var result = Self.zero();
@@ -127,7 +127,7 @@ pub const AffinePoint = struct {
 /// Validates ECDSA signature parameters for Ethereum
 /// WARNING: This is a custom crypto implementation that has not been security audited.
 /// Do not use in production without proper security review.
-pub fn unaudited_validateSignature(r: u256, s: u256) bool {
+pub fn unaudited_validate_signature(r: u256, s: u256) bool {
     // r and s must be in [1, n-1]
     if (r == 0 or r >= SECP256K1_N) return false;
     if (s == 0 or s >= SECP256K1_N) return false;
@@ -144,7 +144,7 @@ pub fn unaudited_validateSignature(r: u256, s: u256) bool {
 /// WARNING: This is a custom crypto implementation that has not been security audited.
 /// Contains custom elliptic curve point arithmetic that may have vulnerabilities.
 /// Do not use in production without proper security review.
-pub fn unaudited_recoverAddress(
+pub fn unaudited_recover_address(
     hash: []const u8,
     recovery_id: u8,
     r: u256,
@@ -152,7 +152,7 @@ pub fn unaudited_recoverAddress(
 ) !Address {
     if (hash.len != 32) return error.InvalidHashLength;
     if (recovery_id > 1) return error.InvalidRecoveryId;
-    if (!unaudited_validateSignature(r, s)) return error.InvalidSignature;
+    if (!unaudited_validate_signature(r, s)) return error.InvalidSignature;
 
     // Step 1: Calculate point R from r and recovery_id
     // x = r (we don't handle r >= p case as it's extremely rare)
@@ -173,7 +173,7 @@ pub fn unaudited_recoverAddress(
     const y_final = if (y_is_odd == (recovery_id == 1)) y else SECP256K1_P - y;
 
     const R = AffinePoint{ .x = r, .y = y_final, .infinity = false };
-    if (!R.isOnCurve()) return error.InvalidSignature;
+    if (!R.is_on_curve()) return error.InvalidSignature;
 
     // Step 2: Calculate e from message hash
     var hash_array: [32]u8 = undefined;
@@ -184,21 +184,21 @@ pub fn unaudited_recoverAddress(
     const r_inv = unaudited_invmod(r, SECP256K1_N) orelse return error.InvalidSignature;
 
     // Calculate sR
-    const sR = R.scalarMul(s);
+    const sR = R.scalar_mul(s);
 
     // Calculate eG
-    const eG = AffinePoint.generator().scalarMul(e);
+    const eG = AffinePoint.generator().scalar_mul(e);
 
     // Calculate sR - eG
     const diff = sR.add(eG.negate());
 
     // Calculate Q = r⁻¹ * (sR - eG)
-    const Q = diff.scalarMul(r_inv);
+    const Q = diff.scalar_mul(r_inv);
 
-    if (!Q.isOnCurve() or Q.infinity) return error.InvalidSignature;
+    if (!Q.is_on_curve() or Q.infinity) return error.InvalidSignature;
 
     // Step 4: Verify the signature with recovered key (optional but recommended)
-    if (!verifySignature(hash_array, r, s, Q)) return error.InvalidSignature;
+    if (!verify_signature(hash_array, r, s, Q)) return error.InvalidSignature;
 
     // Step 5: Convert public key to Ethereum address
     var pub_key_bytes: [64]u8 = undefined;
@@ -217,7 +217,7 @@ pub fn unaudited_recoverAddress(
 }
 
 /// Verify signature with public key (used internally for validation)
-fn verifySignature(
+fn verify_signature(
     hash: [32]u8,
     r: u256,
     s: u256,
@@ -235,8 +235,8 @@ fn verifySignature(
     const u_2 = unaudited_mulmod(r, s_inv, SECP256K1_N);
 
     // R' = u_1*G + u_2*Q
-    const u1G = AffinePoint.generator().scalarMul(u_1);
-    const u2Q = pub_key.scalarMul(u_2);
+    const u1G = AffinePoint.generator().scalar_mul(u_1);
+    const u2Q = pub_key.scalar_mul(u_2);
     const R_prime = u1G.add(u2Q);
 
     if (R_prime.infinity) return false;
@@ -388,7 +388,7 @@ test "recover address from signature" {
     const recovery_id: u8 = 0;
 
     // Recover address
-    const recovered_address = unaudited_recoverAddress(&message_hash, recovery_id, r, s) catch |err| {
+    const recovered_address = unaudited_recover_address(&message_hash, recovery_id, r, s) catch |err| {
         // Expected to potentially fail with test data
         try std.testing.expect(err == error.InvalidSignature);
         return;
@@ -405,7 +405,7 @@ test "signature malleability check" {
     const s_high: u256 = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141; // n
 
     // Should be considered invalid due to high S
-    try std.testing.expect(!unaudited_validateSignature(r, s_high));
+    try std.testing.expect(!unaudited_validate_signature(r, s_high));
 }
 
 test "EIP-2 signature validation" {
@@ -414,13 +414,13 @@ test "EIP-2 signature validation" {
     const s: u256 = 0x3456789012345678901234567890123456789012345678901234567890123456;
 
     // Valid signature parameters
-    try std.testing.expect(unaudited_validateSignature(r, s));
+    try std.testing.expect(unaudited_validate_signature(r, s));
 
     // Test with zero r (invalid)
-    try std.testing.expect(!unaudited_validateSignature(0, s));
+    try std.testing.expect(!unaudited_validate_signature(0, s));
 
     // Test with zero s (invalid)
-    try std.testing.expect(!unaudited_validateSignature(r, 0));
+    try std.testing.expect(!unaudited_validate_signature(r, 0));
 }
 
 test "signature recovery edge cases" {
@@ -429,7 +429,7 @@ test "signature recovery edge cases" {
     const r: u256 = 0x1234567890123456789012345678901234567890123456789012345678901234;
     const s: u256 = 0x3456789012345678901234567890123456789012345678901234567890123456;
 
-    const result = unaudited_recoverAddress(&zero_hash, 0, r, s);
+    const result = unaudited_recover_address(&zero_hash, 0, r, s);
     _ = result catch |err| {
         // Expected to fail
         try std.testing.expect(err == error.InvalidSignature);
@@ -440,12 +440,12 @@ test "affine point operations" {
     const generator = AffinePoint.generator();
 
     // Generator should be on curve
-    try std.testing.expect(generator.isOnCurve());
+    try std.testing.expect(generator.is_on_curve());
     try std.testing.expect(!generator.infinity);
 
     // Double the generator
     const doubled = generator.double();
-    try std.testing.expect(doubled.isOnCurve());
+    try std.testing.expect(doubled.is_on_curve());
     try std.testing.expect(!doubled.infinity);
 
     // Add generator to itself
@@ -455,7 +455,7 @@ test "affine point operations" {
 
     // Negate generator
     const negated = generator.negate();
-    try std.testing.expect(negated.isOnCurve());
+    try std.testing.expect(negated.is_on_curve());
     try std.testing.expect(negated.x == generator.x);
     try std.testing.expect(negated.y == SECP256K1_P - generator.y);
 
@@ -468,22 +468,22 @@ test "scalar multiplication" {
     const generator = AffinePoint.generator();
 
     // G * 0 = O (point at infinity)
-    const zero_mul = generator.scalarMul(0);
+    const zero_mul = generator.scalar_mul(0);
     try std.testing.expect(zero_mul.infinity);
 
     // G * 1 = G
-    const one_mul = generator.scalarMul(1);
+    const one_mul = generator.scalar_mul(1);
     try std.testing.expect(one_mul.x == generator.x);
     try std.testing.expect(one_mul.y == generator.y);
 
     // G * 2 = 2G
-    const two_mul = generator.scalarMul(2);
+    const two_mul = generator.scalar_mul(2);
     const doubled = generator.double();
     try std.testing.expect(two_mul.x == doubled.x);
     try std.testing.expect(two_mul.y == doubled.y);
 
     // G * n = O (where n is the curve order)
-    const n_mul = generator.scalarMul(SECP256K1_N);
+    const n_mul = generator.scalar_mul(SECP256K1_N);
     try std.testing.expect(n_mul.infinity);
 }
 
@@ -558,7 +558,7 @@ test "Bitcoin Core test vectors - valid signatures" {
     };
 
     for (test_vectors) |tv| {
-        const result = unaudited_recoverAddress(&tv.msg_hash, tv.recovery_id, tv.r, tv.s) catch |err| {
+        const result = unaudited_recover_address(&tv.msg_hash, tv.recovery_id, tv.r, tv.s) catch |err| {
             // Some test vectors might be designed to fail
             try std.testing.expect(err == error.InvalidSignature);
             continue;
@@ -569,7 +569,7 @@ test "Bitcoin Core test vectors - valid signatures" {
         try std.testing.expect(!std.mem.eql(u8, &result, &zero_address));
 
         // Verify the signature was properly validated
-        try std.testing.expect(unaudited_validateSignature(tv.r, tv.s));
+        try std.testing.expect(unaudited_validate_signature(tv.r, tv.s));
     }
 }
 
@@ -612,7 +612,7 @@ test "Ethereum test vectors - signature recovery" {
         // v in Ethereum is 27 or 28, we need recovery_id 0 or 1
         const recovery_id = tv.v - 27;
 
-        const recovered = unaudited_recoverAddress(&message_hash, @intCast(recovery_id), tv.r, tv.s) catch |err| {
+        const recovered = unaudited_recover_address(&message_hash, @intCast(recovery_id), tv.r, tv.s) catch |err| {
             // Some test vectors might be designed to fail
             try std.testing.expect(err == error.InvalidSignature);
             continue;
@@ -635,45 +635,45 @@ test "Edge cases - invalid signatures" {
 
     // Test 1: r = 0 (invalid)
     {
-        const result = unaudited_recoverAddress(&msg_hash, 0, 0, 0x123456);
+        const result = unaudited_recover_address(&msg_hash, 0, 0, 0x123456);
         try std.testing.expectError(error.InvalidSignature, result);
     }
 
     // Test 2: s = 0 (invalid)
     {
-        const result = unaudited_recoverAddress(&msg_hash, 0, 0x123456, 0);
+        const result = unaudited_recover_address(&msg_hash, 0, 0x123456, 0);
         try std.testing.expectError(error.InvalidSignature, result);
     }
 
     // Test 3: r >= n (invalid)
     {
-        const result = unaudited_recoverAddress(&msg_hash, 0, SECP256K1_N, 0x123456);
+        const result = unaudited_recover_address(&msg_hash, 0, SECP256K1_N, 0x123456);
         try std.testing.expectError(error.InvalidSignature, result);
     }
 
     // Test 4: s >= n (invalid)
     {
-        const result = unaudited_recoverAddress(&msg_hash, 0, 0x123456, SECP256K1_N);
+        const result = unaudited_recover_address(&msg_hash, 0, 0x123456, SECP256K1_N);
         try std.testing.expectError(error.InvalidSignature, result);
     }
 
     // Test 5: s > n/2 (malleability check)
     {
         const half_n = SECP256K1_N >> 1;
-        const result = unaudited_recoverAddress(&msg_hash, 0, 0x123456, half_n + 1);
+        const result = unaudited_recover_address(&msg_hash, 0, 0x123456, half_n + 1);
         try std.testing.expectError(error.InvalidSignature, result);
     }
 
     // Test 6: Invalid recovery_id
     {
-        const result = unaudited_recoverAddress(&msg_hash, 2, 0x123456, 0x789abc);
+        const result = unaudited_recover_address(&msg_hash, 2, 0x123456, 0x789abc);
         try std.testing.expectError(error.InvalidRecoveryId, result);
     }
 
     // Test 7: Invalid hash length
     {
         const short_hash = [_]u8{0x01} ** 31;
-        const result = unaudited_recoverAddress(&short_hash, 0, 0x123456, 0x789abc);
+        const result = unaudited_recover_address(&short_hash, 0, 0x123456, 0x789abc);
         try std.testing.expectError(error.InvalidHashLength, result);
     }
 }
@@ -683,31 +683,31 @@ test "secp256k1 curve properties" {
 
     // Test 1: Generator is on the curve
     const G = AffinePoint.generator();
-    try std.testing.expect(G.isOnCurve());
+    try std.testing.expect(G.is_on_curve());
     try std.testing.expectEqual(SECP256K1_GX, G.x);
     try std.testing.expectEqual(SECP256K1_GY, G.y);
 
     // Test 2: nG = O (point at infinity)
-    const nG = G.scalarMul(SECP256K1_N);
+    const nG = G.scalar_mul(SECP256K1_N);
     try std.testing.expect(nG.infinity);
 
     // Test 3: (n-1)G + G = O
-    const n_minus_1_G = G.scalarMul(SECP256K1_N - 1);
+    const n_minus_1_G = G.scalar_mul(SECP256K1_N - 1);
     const sum = n_minus_1_G.add(G);
     try std.testing.expect(sum.infinity);
 
     // Test 4: Point doubling consistency
     const twoG_add = G.add(G);
     const twoG_double = G.double();
-    const twoG_scalar = G.scalarMul(2);
+    const twoG_scalar = G.scalar_mul(2);
     try std.testing.expectEqual(twoG_add.x, twoG_double.x);
     try std.testing.expectEqual(twoG_add.y, twoG_double.y);
     try std.testing.expectEqual(twoG_scalar.x, twoG_double.x);
     try std.testing.expectEqual(twoG_scalar.y, twoG_double.y);
 
     // Test 5: Commutativity of point addition
-    const P = G.scalarMul(12345);
-    const Q = G.scalarMul(67890);
+    const P = G.scalar_mul(12345);
+    const Q = G.scalar_mul(67890);
     const P_plus_Q = P.add(Q);
     const Q_plus_P = Q.add(P);
     try std.testing.expectEqual(P_plus_Q.x, Q_plus_P.x);
@@ -757,7 +757,7 @@ test "Bitcoin signature test vectors - comprehensive" {
     };
 
     for (test_cases) |tc| {
-        const result = unaudited_recoverAddress(&tc.hash, tc.recovery_id, tc.r, tc.s);
+        const result = unaudited_recover_address(&tc.hash, tc.recovery_id, tc.r, tc.s);
 
         if (tc.should_fail) {
             try std.testing.expectError(error.InvalidSignature, result);
@@ -787,13 +787,13 @@ test "Public key recovery consistency" {
     const s: u256 = 0x26afe8922bb25e8a87cd0fca0f21e9e08b6fb8e4c50a7c7c069e69f6e2b5c5a2;
 
     // Recover address multiple times
-    const addr1 = unaudited_recoverAddress(&hash, 0, r, s) catch |err| {
+    const addr1 = unaudited_recover_address(&hash, 0, r, s) catch |err| {
         try std.testing.expect(err == error.InvalidSignature);
         return;
     };
 
-    const addr2 = unaudited_recoverAddress(&hash, 0, r, s) catch unreachable;
-    const addr3 = unaudited_recoverAddress(&hash, 0, r, s) catch unreachable;
+    const addr2 = unaudited_recover_address(&hash, 0, r, s) catch unreachable;
+    const addr3 = unaudited_recover_address(&hash, 0, r, s) catch unreachable;
 
     // All recovered addresses should be identical
     try std.testing.expectEqualSlices(u8, &addr1, &addr2);

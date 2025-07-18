@@ -157,7 +157,7 @@ test "CREATE: EIP-3860 initcode size limit" {
     frame.gas_remaining = 100000;
 
     // Enable EIP-3860 (Shanghai)
-    evm.chain_rules.IsEIP3860 = true;
+    evm.chain_rules.is_eip3860 = true;
 
     // Push parameters in reverse order (stack is LIFO)
     // CREATE pops: value, offset, size
@@ -651,7 +651,7 @@ test "System opcodes: Gas consumption" {
     frame.gas_remaining = 100000;
 
     // Test CREATE gas with EIP-3860
-    evm.chain_rules.IsEIP3860 = true;
+    evm.chain_rules.is_eip3860 = true;
 
     // Write 64 bytes of init code
     const init_code: [64]u8 = [_]u8{0xFF} ** 64;

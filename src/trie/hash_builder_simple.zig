@@ -70,7 +70,7 @@ pub const HashBuilder = struct {
                 // Update existing value
                 self.allocator.free(self.values.items[i]);
                 self.values.items[i] = try self.allocator.dupe(u8, value);
-                self.updateRootHash();
+                self.update_root_hash();
                 return;
             }
         }
@@ -84,7 +84,7 @@ pub const HashBuilder = struct {
 
         try self.keys.append(key_copy);
         try self.values.append(value_copy);
-        self.updateRootHash();
+        self.update_root_hash();
     }
 
     /// Get a value from the trie
@@ -108,19 +108,19 @@ pub const HashBuilder = struct {
                 // Remove from arrays
                 _ = self.keys.swapRemove(i);
                 _ = self.values.swapRemove(i);
-                self.updateRootHash();
+                self.update_root_hash();
                 return;
             }
         }
     }
 
     /// Calculate a simple hash of all data
-    pub fn rootHash(self: *const HashBuilder) ?[32]u8 {
+    pub fn get_root_hash(self: *const HashBuilder) ?[32]u8 {
         return self.root_hash;
     }
 
     // Internal helper to update root hash
-    fn updateRootHash(self: *HashBuilder) void {
+    fn update_root_hash(self: *HashBuilder) void {
         if (self.keys.items.len == 0) {
             self.root_hash = null;
             return;
@@ -147,13 +147,13 @@ test "HashBuilder - insert and get" {
     defer builder.deinit();
 
     // Empty trie has no root
-    try testing.expect(builder.rootHash() == null);
+    try testing.expect(builder.get_root_hash() == null);
 
     // Insert a key-value pair
     try builder.insert(&[_]u8{ 1, 2, 3 }, "value1");
 
     // Root should be set
-    try testing.expect(builder.rootHash() != null);
+    try testing.expect(builder.get_root_hash() != null);
 
     // Get the value
     const value = try builder.get(&[_]u8{ 1, 2, 3 });
@@ -210,7 +210,7 @@ test "HashBuilder - delete" {
     try builder.delete(&[_]u8{ 5, 6, 7 });
 
     // Trie should be empty
-    try testing.expect(builder.rootHash() == null);
+    try testing.expect(builder.get_root_hash() == null);
 }
 
 test "HashBuilder - update existing" {
@@ -247,7 +247,7 @@ test "HashBuilder - reset" {
     builder.reset();
 
     // Trie should be empty
-    try testing.expect(builder.rootHash() == null);
+    try testing.expect(builder.get_root_hash() == null);
 
     // Values should be gone
     const value1 = try builder.get(&[_]u8{ 1, 2, 3 });

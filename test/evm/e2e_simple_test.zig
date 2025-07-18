@@ -16,7 +16,7 @@ const USER_ADDRESS = primitives.Address.from_u256(0x2222);
 const CONTRACT_ADDRESS = primitives.Address.from_u256(0x3333);
 
 // Helper to convert byte array to u256 (big-endian)
-fn bytesToU256(bytes: []const u8) u256 {
+fn bytes_to_u256(bytes: []const u8) u256 {
     var value: u256 = 0;
     for (bytes) |byte| {
         value = (value << 8) | byte;
@@ -89,7 +89,7 @@ test "E2E: Basic EVM operations" {
         try testing.expectEqual(@as(usize, 32), output.len);
 
         // Decode returned value (should be 42 in first 32 bytes)
-        const returned_value = bytesToU256(output);
+        const returned_value = bytes_to_u256(output);
         try testing.expectEqual(@as(u256, 42), returned_value);
     } else {
         // If no output, this test isn't validating return data correctly

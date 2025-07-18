@@ -3,6 +3,7 @@ const testing = std.testing;
 
 // Import EVM components directly
 const Evm = @import("evm");
+const primitives = @import("primitives");
 const MemoryDatabase = Evm.MemoryDatabase;
 const Frame = Evm.Frame;
 const Contract = Evm.Contract;
@@ -200,7 +201,6 @@ test "Integration: CREATE with init code from memory" {
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    const charlie_addr = primitives.Address.from_u256(0x4444444444444444444444444444444444444444);
 
     // Calculate code hash for empty code
     var code_hash: [32]u8 = undefined;

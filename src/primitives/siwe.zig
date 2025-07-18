@@ -29,12 +29,12 @@ pub const SiweMessage = struct {
     statement: ?[]const u8,
     uri: []const u8,
     version: []const u8,
-    chainId: u64,
+    chain_id: u64,
     nonce: []const u8,
-    issuedAt: []const u8,
-    expirationTime: ?[]const u8,
-    notBefore: ?[]const u8,
-    requestId: ?[]const u8,
+    issued_at: []const u8,
+    expiration_time: ?[]const u8,
+    not_before: ?[]const u8,
+    request_id: ?[]const u8,
     resources: ?[]const []const u8,
 
     pub fn format(self: *const SiweMessage, allocator: Allocator) ![]u8 {
@@ -46,9 +46,9 @@ pub const SiweMessage = struct {
         try result.appendSlice(" wants you to sign in with your Ethereum account:\n");
 
         // Address
-        const addrHex = try hex.toHex(allocator, &self.address);
-        defer allocator.free(addrHex);
-        try result.appendSlice(addrHex);
+        const addr_hex = try hex.to_hex(allocator, &self.address);
+        defer allocator.free(addr_hex);
+        try result.appendSlice(addr_hex);
         try result.appendSlice("\n\n");
 
         // Statement (optional)
@@ -69,7 +69,7 @@ pub const SiweMessage = struct {
 
         // Chain ID
         try result.appendSlice("Chain ID: ");
-        try result.writer().print("{d}", .{self.chainId});
+        try result.writer().print("{d}", .{self.chain_id});
         try result.appendSlice("\n");
 
         // Nonce
@@ -79,20 +79,20 @@ pub const SiweMessage = struct {
 
         // Issued At
         try result.appendSlice("Issued At: ");
-        try result.appendSlice(self.issuedAt);
+        try result.appendSlice(self.issued_at);
 
         // Optional fields
-        if (self.expirationTime) |exp| {
+        if (self.expiration_time) |exp| {
             try result.appendSlice("\nExpiration Time: ");
             try result.appendSlice(exp);
         }
 
-        if (self.notBefore) |nb| {
+        if (self.not_before) |nb| {
             try result.appendSlice("\nNot Before: ");
             try result.appendSlice(nb);
         }
 
-        if (self.requestId) |rid| {
+        if (self.request_id) |rid| {
             try result.appendSlice("\nRequest ID: ");
             try result.appendSlice(rid);
         }
@@ -105,7 +105,7 @@ pub const SiweMessage = struct {
             }
         }
 
-        return result.toOwnedSlice();
+        return result.to_owned_slice();
     }
 
     pub fn validate(self: *const SiweMessage) !void {
@@ -130,25 +130,25 @@ pub const SiweMessage = struct {
         }
 
         // Validate timestamp formats (simplified)
-        if (!isValidTimestamp(self.issuedAt)) {
+        if (!is_valid_timestamp(self.issued_at)) {
             return SiweError.InvalidIssuedAt;
         }
 
-        if (self.expirationTime) |exp| {
-            if (!isValidTimestamp(exp)) {
+        if (self.expiration_time) |exp| {
+            if (!is_valid_timestamp(exp)) {
                 return SiweError.InvalidExpirationTime;
             }
         }
 
-        if (self.notBefore) |nb| {
-            if (!isValidTimestamp(nb)) {
+        if (self.not_before) |nb| {
+            if (!is_valid_timestamp(nb)) {
                 return SiweError.InvalidNotBefore;
             }
         }
     }
 };
 
-fn isValidTimestamp(timestamp: []const u8) bool {
+fn is_valid_timestamp(timestamp: []const u8) bool {
     // Simplified ISO 8601 validation
     // Format: YYYY-MM-DDTHH:MM:SSZ
     if (timestamp.len < 20) return false;
@@ -160,7 +160,7 @@ fn isValidTimestamp(timestamp: []const u8) bool {
 }
 
 // SIWE message verification
-pub fn verifySiweMessage(
+pub fn verify_siwe_message(
     allocator: Allocator,
     message: *const SiweMessage,
     signature: crypto.Signature,
@@ -173,61 +173,61 @@ pub fn verifySiweMessage(
     defer allocator.free(formatted);
 
     // Hash with EIP-191
-    const messageHash = try hash.eip191HashMessage(formatted, allocator);
+    const message_hash = try hash.eip_191_hash_message(formatted, allocator);
 
     // Recover signer
-    const publicKey = try crypto.recoverPublicKey(allocator, messageHash, signature);
-    const recoveredAddress = address.fromPublicKey(publicKey.bytes);
+    const public_key = try crypto.recover_public_key(allocator, message_hash, signature);
+    const recovered_address = address.from_public_key(public_key.bytes);
 
     // Check if recovered address matches
-    return recoveredAddress.eql(message.address);
+    return recovered_address.eql(message.address);
 }
 
 // Parse SIWE message from string
-pub fn parseSiweMessage(allocator: Allocator, text: []const u8) !SiweMessage {
+pub fn parse_siwe_message(allocator: Allocator, text: []const u8) !SiweMessage {
     var lines = std.mem.tokenizeScalar(u8, text, '\n');
 
     // Parse header
     const header = lines.next() orelse return SiweError.InvalidFormat;
-    const domainEnd = std.mem.indexOf(u8, header, " wants you") orelse return SiweError.InvalidFormat;
-    const domain = header[0..domainEnd];
+    const domain_end = std.mem.indexOf(u8, header, " wants you") orelse return SiweError.InvalidFormat;
+    const domain = header[0..domain_end];
 
     // Parse address
-    const addrLine = lines.next() orelse return SiweError.InvalidFormat;
-    const addr = try address.fromHex(addrLine);
+    const addr_line = lines.next() orelse return SiweError.InvalidFormat;
+    const addr = try address.from_hex(addr_line);
 
     // Skip empty line
     _ = lines.next();
 
     // Parse statement (optional)
     var statement: ?[]const u8 = null;
-    var nextLine = lines.next() orelse return SiweError.InvalidFormat;
+    var next_line = lines.next() orelse return SiweError.InvalidFormat;
 
-    if (!std.mem.startsWith(u8, nextLine, "URI: ")) {
-        statement = nextLine;
+    if (!std.mem.startsWith(u8, next_line, "URI: ")) {
+        statement = next_line;
         _ = lines.next(); // Skip empty line
-        nextLine = lines.next() orelse return SiweError.InvalidFormat;
+        next_line = lines.next() orelse return SiweError.InvalidFormat;
     }
 
     // Parse required fields
-    if (!std.mem.startsWith(u8, nextLine, "URI: ")) return SiweError.InvalidFormat;
-    const uri = nextLine[5..];
+    if (!std.mem.startsWith(u8, next_line, "URI: ")) return SiweError.InvalidFormat;
+    const uri = next_line[5..];
 
-    const versionLine = lines.next() orelse return SiweError.InvalidFormat;
-    if (!std.mem.startsWith(u8, versionLine, "Version: ")) return SiweError.InvalidFormat;
-    const version = versionLine[9..];
+    const version_line = lines.next() orelse return SiweError.InvalidFormat;
+    if (!std.mem.startsWith(u8, version_line, "Version: ")) return SiweError.InvalidFormat;
+    const version = version_line[9..];
 
-    const chainLine = lines.next() orelse return SiweError.InvalidFormat;
-    if (!std.mem.startsWith(u8, chainLine, "Chain ID: ")) return SiweError.InvalidFormat;
-    const chainId = try std.fmt.parseInt(u64, chainLine[10..], 10);
+    const chain_line = lines.next() orelse return SiweError.InvalidFormat;
+    if (!std.mem.startsWith(u8, chain_line, "Chain ID: ")) return SiweError.InvalidFormat;
+    const chain_id = try std.fmt.parseInt(u64, chain_line[10..], 10);
 
-    const nonceLine = lines.next() orelse return SiweError.InvalidFormat;
-    if (!std.mem.startsWith(u8, nonceLine, "Nonce: ")) return SiweError.InvalidFormat;
-    const nonce = nonceLine[7..];
+    const nonce_line = lines.next() orelse return SiweError.InvalidFormat;
+    if (!std.mem.startsWith(u8, nonce_line, "Nonce: ")) return SiweError.InvalidFormat;
+    const nonce = nonce_line[7..];
 
-    const issuedLine = lines.next() orelse return SiweError.InvalidFormat;
-    if (!std.mem.startsWith(u8, issuedLine, "Issued At: ")) return SiweError.InvalidFormat;
-    const issuedAt = issuedLine[11..];
+    const issued_line = lines.next() orelse return SiweError.InvalidFormat;
+    if (!std.mem.startsWith(u8, issued_line, "Issued At: ")) return SiweError.InvalidFormat;
+    const issued_at = issued_line[11..];
 
     // Allocate copies
     return SiweMessage{
@@ -236,12 +236,12 @@ pub fn parseSiweMessage(allocator: Allocator, text: []const u8) !SiweMessage {
         .statement = if (statement) |s| try allocator.dupe(u8, s) else null,
         .uri = try allocator.dupe(u8, uri),
         .version = try allocator.dupe(u8, version),
-        .chainId = chainId,
+        .chain_id = chain_id,
         .nonce = try allocator.dupe(u8, nonce),
-        .issuedAt = try allocator.dupe(u8, issuedAt),
-        .expirationTime = null,
-        .notBefore = null,
-        .requestId = null,
+        .issued_at = try allocator.dupe(u8, issued_at),
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
         .resources = null,
     };
 }
@@ -257,12 +257,12 @@ test "SIWE message formatting" {
         .statement = "Sign in to Example",
         .uri = "https://example.com",
         .version = "1",
-        .chainId = 1,
+        .chain_id = 1,
         .nonce = "32891756",
-        .issuedAt = "2021-09-30T16:25:24Z",
-        .expirationTime = null,
-        .notBefore = null,
-        .requestId = null,
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
         .resources = null,
     };
 
@@ -291,12 +291,12 @@ test "SIWE message with all fields" {
         .statement = "Sign in to Example",
         .uri = "https://example.com",
         .version = "1",
-        .chainId = 1,
+        .chain_id = 1,
         .nonce = "32891756",
-        .issuedAt = "2021-09-30T16:25:24Z",
-        .expirationTime = "2021-10-01T16:25:24Z",
-        .notBefore = "2021-09-30T16:00:00Z",
-        .requestId = "some-request-id",
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = "2021-10-01T16:25:24Z",
+        .not_before = "2021-09-30T16:00:00Z",
+        .request_id = "some-request-id",
         .resources = &resources,
     };
 
@@ -318,12 +318,12 @@ test "SIWE message validation" {
         .statement = null,
         .uri = "https://example.com",
         .version = "1",
-        .chainId = 1,
+        .chain_id = 1,
         .nonce = "32891756",
-        .issuedAt = "2021-09-30T16:25:24Z",
-        .expirationTime = null,
-        .notBefore = null,
-        .requestId = null,
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
         .resources = null,
     };
 
@@ -351,31 +351,31 @@ test "SIWE message validation" {
     message.nonce = "32891756";
 
     // Invalid timestamp
-    message.issuedAt = "not-a-timestamp";
+    message.issued_at = "not-a-timestamp";
     try testing.expectError(SiweError.InvalidIssuedAt, message.validate());
 }
 
 test "SIWE message signature verification" {
     const allocator = testing.allocator;
 
-    const privateKey = crypto.PrivateKey{
+    const private_key = crypto.PrivateKey{
         .bytes = [_]u8{0x42} ** 32,
     };
 
-    const signerAddress = try crypto.getAddress(allocator, privateKey);
+    const signer_address = try crypto.get_address(allocator, private_key);
 
     const message = SiweMessage{
         .domain = "example.com",
-        .address = signerAddress,
+        .address = signer_address,
         .statement = "Sign in to Example",
         .uri = "https://example.com",
         .version = "1",
-        .chainId = 1,
+        .chain_id = 1,
         .nonce = "32891756",
-        .issuedAt = "2021-09-30T16:25:24Z",
-        .expirationTime = null,
-        .notBefore = null,
-        .requestId = null,
+        .issued_at = "2021-09-30T16:25:24Z",
+        .expiration_time = null,
+        .not_before = null,
+        .request_id = null,
         .resources = null,
     };
 
@@ -383,17 +383,17 @@ test "SIWE message signature verification" {
     const formatted = try message.format(allocator);
     defer allocator.free(formatted);
 
-    const signature = try crypto.personalSign(allocator, privateKey, formatted);
+    const signature = try crypto.personal_sign(allocator, private_key, formatted);
 
     // Verify
-    const verified = try verifySiweMessage(allocator, &message, signature);
+    const verified = try verify_siwe_message(allocator, &message, signature);
     try testing.expect(verified);
 
     // Verify with wrong address should fail
-    var wrongMessage = message;
-    wrongMessage.address = Address.ZERO;
-    const notVerified = try verifySiweMessage(allocator, &wrongMessage, signature);
-    try testing.expect(!notVerified);
+    var wrong_message = message;
+    wrong_message.address = Address.ZERO;
+    const not_verified = try verify_siwe_message(allocator, &wrong_message, signature);
+    try testing.expect(!not_verified);
 }
 
 test "SIWE message parsing" {
@@ -412,18 +412,18 @@ test "SIWE message parsing" {
         \\Issued At: 2021-09-30T16:25:24Z
     ;
 
-    const parsed = try parseSiweMessage(allocator, text);
+    const parsed = try parse_siwe_message(allocator, text);
     defer {
         allocator.free(parsed.domain);
         if (parsed.statement) |s| allocator.free(s);
         allocator.free(parsed.uri);
         allocator.free(parsed.version);
         allocator.free(parsed.nonce);
-        allocator.free(parsed.issuedAt);
+        allocator.free(parsed.issued_at);
     }
 
     try testing.expectEqualStrings("example.com", parsed.domain);
     try testing.expectEqualStrings("Sign in to Example", parsed.statement.?);
     try testing.expectEqualStrings("https://example.com", parsed.uri);
-    try testing.expectEqual(@as(u64, 1), parsed.chainId);
+    try testing.expectEqual(@as(u64, 1), parsed.chain_id);
 }

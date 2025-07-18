@@ -10,7 +10,7 @@ const Frame = Evm.Frame;
 const Operation = Evm.Operation;
 
 // Helper function to convert u256 to 32-byte big-endian array
-fn u256ToBytes32(value: u256) [32]u8 {
+fn u256_to_bytes32(value: u256) [32]u8 {
     var bytes: [32]u8 = [_]u8{0} ** 32;
     var v = value;
     var i: usize = 31;
@@ -47,8 +47,8 @@ test "integration: simple arithmetic sequence" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO_ADDRESS, // caller
+        Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -58,7 +58,7 @@ test "integration: simple arithmetic sequence" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -102,8 +102,8 @@ test "integration: memory operations sequence" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO_ADDRESS, // caller
+        Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -113,7 +113,7 @@ test "integration: memory operations sequence" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -124,7 +124,7 @@ test "integration: memory operations sequence" {
     const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
-    const expected_bytes = u256ToBytes32(42);
+    const expected_bytes = u256_to_bytes32(42);
     try testing.expectEqualSlices(u8, &expected_bytes, result.output.?);
 }
 
@@ -140,7 +140,7 @@ test "integration: storage operations sequence" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Store 100 at slot 5, then load it
     const bytecode = [_]u8{
@@ -180,7 +180,7 @@ test "integration: storage operations sequence" {
     const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
-    const expected_bytes = u256ToBytes32(100);
+    const expected_bytes = u256_to_bytes32(100);
     try testing.expectEqualSlices(u8, &expected_bytes, result.output.?);
 }
 
@@ -214,8 +214,8 @@ test "integration: control flow with jumps" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO_ADDRESS, // caller
+        Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -225,7 +225,7 @@ test "integration: control flow with jumps" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -236,7 +236,7 @@ test "integration: control flow with jumps" {
     const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
-    const expected_bytes = u256ToBytes32(66);
+    const expected_bytes = u256_to_bytes32(66);
     try testing.expectEqualSlices(u8, &expected_bytes, result.output.?);
 }
 
@@ -252,7 +252,7 @@ test "integration: environment access sequence" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Add some balance to the contract
     try evm.balances.put(contract_address, 1000000);
@@ -294,7 +294,7 @@ test "integration: environment access sequence" {
 
     try testing.expect(result.status == .Success);
     // balance (1000000) + chainid (1) = 1000001
-    const expected_bytes = u256ToBytes32(1000001);
+    const expected_bytes = u256_to_bytes32(1000001);
     try testing.expectEqualSlices(u8, &expected_bytes, result.output.?);
 }
 
@@ -329,8 +329,8 @@ test "integration: stack operations sequence" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO_ADDRESS, // caller
+        Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -340,7 +340,7 @@ test "integration: stack operations sequence" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -352,7 +352,7 @@ test "integration: stack operations sequence" {
 
     try testing.expect(result.status == .Success);
     // Stack should have result: ((3 + 1) * 2) = 8
-    const expected_bytes = u256ToBytes32(8);
+    const expected_bytes = u256_to_bytes32(8);
     try testing.expectEqualSlices(u8, &expected_bytes, result.output.?);
 }
 
@@ -380,8 +380,8 @@ test "integration: return data handling" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO_ADDRESS, // caller
+        Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -391,7 +391,7 @@ test "integration: return data handling" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -435,8 +435,8 @@ test "integration: revert with reason" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO_ADDRESS, // caller
+        Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -446,7 +446,7 @@ test "integration: revert with reason" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -490,8 +490,8 @@ test "integration: gas consumption tracking" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO_ADDRESS, // caller
+        Address.ZERO_ADDRESS, // address where code executes
         0, // value
         initial_gas, // gas
         &bytecode,
@@ -501,7 +501,7 @@ test "integration: gas consumption tracking" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -540,8 +540,8 @@ test "integration: out of gas scenario" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO_ADDRESS, // caller
+        Address.ZERO_ADDRESS, // address where code executes
         0, // value
         5, // gas - only 5 gas
         &bytecode,
@@ -551,7 +551,7 @@ test "integration: out of gas scenario" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -585,8 +585,8 @@ test "integration: invalid opcode handling" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO_ADDRESS, // caller
+        Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -596,7 +596,7 @@ test "integration: invalid opcode handling" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -621,7 +621,7 @@ test "integration: transient storage operations" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Store and load from transient storage
     const bytecode = [_]u8{
@@ -661,7 +661,7 @@ test "integration: transient storage operations" {
     const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
-    const expected_bytes = u256ToBytes32(153);
+    const expected_bytes = u256_to_bytes32(153);
     try testing.expectEqualSlices(u8, &expected_bytes, result.output.?);
 }
 
@@ -677,7 +677,7 @@ test "integration: logging operations" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Emit a LOG2 event
     const bytecode = [_]u8{
@@ -738,7 +738,7 @@ test "integration: cold/warm storage access (EIP-2929)" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const contract_address = primitives.Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
+    const contract_address = Address.from_u256(0xc0ffee000000000000000000000000000000cafe);
 
     // Test program: Access same storage slot twice (cold then warm)
     const bytecode = [_]u8{
@@ -808,8 +808,8 @@ test "integration: push0 operation (Shanghai)" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO_ADDRESS, // caller
+        Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -819,7 +819,7 @@ test "integration: push0 operation (Shanghai)" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -830,7 +830,7 @@ test "integration: push0 operation (Shanghai)" {
     const result = try evm.run_frame(&frame, 0);
 
     try testing.expect(result.status == .Success);
-    const expected_bytes = u256ToBytes32(66);
+    const expected_bytes = u256_to_bytes32(66);
     try testing.expectEqualSlices(u8, &expected_bytes, result.output.?);
 }
 
@@ -898,8 +898,8 @@ test "integration: mcopy operation (Cancun)" {
 
     // Create contract
     var contract = Contract.init_at_address(
-        primitives.Address.ZERO_ADDRESS, // caller
-        primitives.Address.ZERO_ADDRESS, // address where code executes
+        Address.ZERO_ADDRESS, // caller
+        Address.ZERO_ADDRESS, // address where code executes
         0, // value
         10000, // gas
         &bytecode,
@@ -909,7 +909,7 @@ test "integration: mcopy operation (Cancun)" {
     defer contract.deinit(allocator, null);
 
     // Set the code for the contract address in EVM state
-    try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
+    try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
     var frame = try Frame.init(allocator, &contract);
@@ -923,6 +923,6 @@ test "integration: mcopy operation (Cancun)" {
 
     // Should have copied first 16 bytes from offset 0 to offset 32
     const expected: u256 = 0x1122334455667788_99aabbccddeeff00_0000000000000000_0000000000000000;
-    const expected_bytes = u256ToBytes32(expected);
+    const expected_bytes = u256_to_bytes32(expected);
     try testing.expectEqualSlices(u8, &expected_bytes, result.output.?);
 }

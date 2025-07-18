@@ -73,7 +73,7 @@ pub fn new_window_with_id(id: usize) !Webui {
     };
 }
 
-/// Get a free window number that can be used with `newWindowWithId`
+/// Get a free window number that can be used with `new_window_with_id`
 pub fn get_new_window_id() usize {
     return webui_get_new_window_id();
 }
@@ -193,7 +193,7 @@ pub fn get_child_process_id(self: Webui) !usize {
 /// Gets Win32 window `HWND`.
 pub fn win32_get_hwnd(self: Webui) !windows.HWND {
     if (builtin.os.tag != .windows) {
-        @compileError("Note: method win32GetHwnd only can call on MS windows!");
+        @compileError("Note: method win32_get_hwnd only can call on MS windows!");
     }
     const tmp_hwnd = webui_win32_get_hwnd(self.window_handle);
     if (tmp_hwnd) return @ptrCast(tmp_hwnd);

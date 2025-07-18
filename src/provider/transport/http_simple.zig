@@ -46,10 +46,10 @@ pub const HttpTransport = struct {
         const req = json_rpc.JsonRpcRequest{
             .method = method,
             .params = params,
-            .id = self.generateRequestId(),
+            .id = self.generate_request_id(),
         };
 
-        const json_payload = req.toJson(self.allocator) catch |err| switch (err) {
+        const json_payload = req.to_json(self.allocator) catch |err| switch (err) {
             error.OutOfMemory => return TransportError.OutOfMemory,
         };
         defer self.allocator.free(json_payload);
@@ -78,22 +78,22 @@ pub const HttpTransport = struct {
             return TransportError.NetworkError;
         }
 
-        return json_rpc.JsonRpcResponse.fromJson(self.allocator, response_buffer.items) catch |err| switch (err) {
+        return json_rpc.JsonRpcResponse.from_json(self.allocator, response_buffer.items) catch |err| switch (err) {
             error.OutOfMemory => TransportError.OutOfMemory,
             else => TransportError.InvalidResponse,
         };
     }
 
-    fn generateRequestId(self: *HttpTransport) u64 {
+    fn generate_request_id(self: *HttpTransport) u64 {
         return self.request_id.fetchAdd(1, .monotonic);
     }
 
-    pub fn isConnected(self: HttpTransport) bool {
+    pub fn is_connected(self: HttpTransport) bool {
         _ = self;
         return true; // HTTP is stateless
     }
 
-    pub fn getType(self: HttpTransport) []const u8 {
+    pub fn get_type(self: HttpTransport) []const u8 {
         _ = self;
         return "http";
     }

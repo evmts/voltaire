@@ -1,6 +1,7 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
+const primitives = @import("primitives");
 const opcodes = Evm.opcodes;
 const MemoryDatabase = Evm.MemoryDatabase;
 const Contract = Evm.Contract;
@@ -55,27 +56,27 @@ test "Integration: SHA3 with dynamic data" {
     try frame.stack.append(data1); // value
 
     // Execute MSTORE
-    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr1: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0x52);
+    const interpreter_ptr_1: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr_1: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr_1, state_ptr_1, 0x52);
 
     // Push data2 and offset 32 to stack
     try frame.stack.append(32); // offset
     try frame.stack.append(data2); // value
 
     // Execute MSTORE
-    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr2: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0x52);
+    const interpreter_ptr_2: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr_2: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr_2, state_ptr_2, 0x52);
 
     // Hash 64 bytes starting at offset 0
     try frame.stack.append(0); // offset
     try frame.stack.append(64); // size
 
     // Execute SHA3
-    const interpreter_ptr3: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr3: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr3, state_ptr3, 0x20);
+    const interpreter_ptr_3: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr_3: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr_3, state_ptr_3, 0x20);
 
     // Result should be a valid hash (non-zero)
     const hash = try frame.stack.pop();
@@ -86,9 +87,9 @@ test "Integration: SHA3 with dynamic data" {
     try frame.stack.append(0); // size
 
     // Execute SHA3
-    const interpreter_ptr4: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr4: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr4, state_ptr4, 0x20);
+    const interpreter_ptr_4: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr_4: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr_4, state_ptr_4, 0x20);
 
     // Empty hash: keccak256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
     const empty_hash = try frame.stack.pop();
@@ -217,9 +218,9 @@ test "Integration: LOG operations with multiple topics" {
     try frame.stack.append(topic3); // topic3
 
     // Execute LOG3
-    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr1: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0xA3);
+    const interpreter_ptr_1: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr_1: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr_1, state_ptr_1, 0xA3);
 
     // Clear logs for next test
     vm.logs.clearRetainingCapacity();
@@ -229,9 +230,9 @@ test "Integration: LOG operations with multiple topics" {
     try frame.stack.append(log_data.len); // size
 
     // Execute LOG0
-    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr2: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0xA0);
+    const interpreter_ptr_2: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr_2: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr_2, state_ptr_2, 0xA0);
 
     // Verify LOG0
     try testing.expectEqual(@as(usize, 1), vm.logs.items.len);
@@ -378,9 +379,9 @@ test "Integration: Event emission patterns" {
     try frame.stack.append(to_addr); // topic3: indexed 'to'
 
     // Execute LOG3
-    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr1: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0xA3);
+    const interpreter_ptr_1: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr_1: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr_1, state_ptr_1, 0xA3);
 
     // Simulate ERC20 Approval event
     // Approval(address indexed owner, address indexed spender, uint256 value)
@@ -405,9 +406,9 @@ test "Integration: Event emission patterns" {
     try frame.stack.append(spender_addr); // topic3: indexed 'spender'
 
     // Execute LOG3
-    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr2: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0xA3);
+    const interpreter_ptr_2: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr_2: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr_2, state_ptr_2, 0xA3);
 
     // Both events should be recorded
     try testing.expectEqual(@as(usize, 1), vm.logs.items.len);
@@ -456,9 +457,9 @@ test "Integration: Dynamic log data with memory expansion" {
     try frame.memory.set_data(high_offset, message);
 
     // Check memory size before
-    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr1: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0x59);
+    const interpreter_ptr_1: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr_1: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr_1, state_ptr_1, 0x59);
     const size_before = try frame.stack.pop();
 
     // Log with data from high offset
@@ -467,15 +468,15 @@ test "Integration: Dynamic log data with memory expansion" {
     try frame.stack.append(0x1234567890ABCDEF); // topic1
 
     const gas_before = frame.gas_remaining;
-    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr2: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0xA1);
+    const interpreter_ptr_2: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr_2: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr_2, state_ptr_2, 0xA1);
     const gas_after = frame.gas_remaining;
 
     // Check memory size after
-    const interpreter_ptr3: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr3: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr3, state_ptr3, 0x59);
+    const interpreter_ptr_3: *Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr_3: *Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr_3, state_ptr_3, 0x59);
     const size_after = try frame.stack.pop();
 
     // Memory should have expanded

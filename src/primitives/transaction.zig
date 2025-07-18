@@ -45,8 +45,8 @@
 //! ```zig
 //! const tx = LegacyTransaction{
 //!     .nonce = 42,
-//!     .gasPrice = 20_000_000_000, // 20 gwei
-//!     .gasLimit = 21_000,
+//!     .gas_price = 20_000_000_000, // 20 gwei
+//!     .gas_limit = 21_000,
 //!     .to = some_address,
 //!     .value = 1_000_000_000_000_000_000, // 1 ether
 //!     .data = &[_]u8{},
@@ -63,7 +63,7 @@
 //!     .nonce = 42,
 //!     .maxPriorityFeePerGas = 2_000_000_000, // 2 gwei
 //!     .maxFeePerGas = 20_000_000_000, // 20 gwei
-//!     .gasLimit = 21_000,
+//!     .gas_limit = 21_000,
 //!     .to = some_address,
 //!     .value = 1_000_000_000_000_000_000, // 1 ether
 //!     .data = &[_]u8{},
@@ -120,8 +120,8 @@ pub const TransactionType = enum(u8) {
 // Legacy transaction structure
 pub const LegacyTransaction = struct {
     nonce: u64,
-    gasPrice: u256,
-    gasLimit: u64,
+    gas_price: u256,
+    gas_limit: u64,
     to: ?Address, // null for contract creation
     value: u256,
     data: []const u8,
@@ -132,15 +132,15 @@ pub const LegacyTransaction = struct {
 
 // EIP-1559 transaction structure
 pub const Eip1559Transaction = struct {
-    chainId: u64,
+    chain_id: u64,
     nonce: u64,
-    maxPriorityFeePerGas: u256,
-    maxFeePerGas: u256,
-    gasLimit: u64,
+    max_priority_fee_per_gas: u256,
+    max_fee_per_gas: u256,
+    gas_limit: u64,
     to: ?Address,
     value: u256,
     data: []const u8,
-    accessList: []const AccessListItem,
+    access_list: []const AccessListItem,
     v: u64,
     r: [32]u8,
     s: [32]u8,
@@ -148,22 +148,22 @@ pub const Eip1559Transaction = struct {
 
 pub const AccessListItem = struct {
     address: Address,
-    storageKeys: []const [32]u8,
+    storage_keys: []const [32]u8,
 };
 
 // Encode legacy transaction for signing
-pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chainId: u64) ![]u8 {
+pub fn encode_legacy_for_signing(allocator: Allocator, tx: LegacyTransaction, chain_id: u64) ![]u8 {
     var list = std.ArrayList(u8).init(allocator);
     defer list.deinit();
 
     // Encode fields for signing (EIP-155)
     try rlp.encodeUint(allocator, tx.nonce, &list);
-    try rlp.encodeUint(allocator, tx.gasPrice, &list);
-    try rlp.encodeUint(allocator, tx.gasLimit, &list);
+    try rlp.encodeUint(allocator, tx.gas_price, &list);
+    try rlp.encodeUint(allocator, tx.gas_limit, &list);
 
     // Encode 'to' field
-    if (tx.to) |toAddr| {
-        try rlp.encodeBytes(allocator, &toAddr.bytes, &list);
+    if (tx.to) |to_addr| {
+        try rlp.encodeBytes(allocator, &to_addr.bytes, &list);
     } else {
         try list.append(0x80); // Empty RLP string for null
     }
@@ -173,7 +173,7 @@ pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain
 
     // For unsigned transaction (EIP-155)
     if (tx.v == 0) {
-        try rlp.encodeUint(allocator, chainId, &list);
+        try rlp.encodeUint(allocator, chain_id, &list);
         try rlp.encodeUint(allocator, 0, &list);
         try rlp.encodeUint(allocator, 0, &list);
     } else {
@@ -188,9 +188,9 @@ pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain
     if (list.items.len <= 55) {
         try result.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const lenBytes = rlp.encodeLength(list.items.len);
-        try result.append(@as(u8, @intCast(0xf7 + lenBytes.len)));
-        try result.appendSlice(lenBytes);
+        const len_bytes = rlp.encodeLength(list.items.len);
+        try result.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+        try result.appendSlice(len_bytes);
     }
     try result.appendSlice(list.items);
 
@@ -198,20 +198,20 @@ pub fn encodeLegacyForSigning(allocator: Allocator, tx: LegacyTransaction, chain
 }
 
 // Encode EIP-1559 transaction for signing
-pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]u8 {
+pub fn encode_eip1559_for_signing(allocator: Allocator, tx: Eip1559Transaction) ![]u8 {
     var list = std.ArrayList(u8).init(allocator);
     defer list.deinit();
 
     // Encode fields
-    try rlp.encodeUint(allocator, tx.chainId, &list);
+    try rlp.encodeUint(allocator, tx.chain_id, &list);
     try rlp.encodeUint(allocator, tx.nonce, &list);
-    try rlp.encodeUint(allocator, tx.maxPriorityFeePerGas, &list);
-    try rlp.encodeUint(allocator, tx.maxFeePerGas, &list);
-    try rlp.encodeUint(allocator, tx.gasLimit, &list);
+    try rlp.encodeUint(allocator, tx.max_priority_fee_per_gas, &list);
+    try rlp.encodeUint(allocator, tx.max_fee_per_gas, &list);
+    try rlp.encodeUint(allocator, tx.gas_limit, &list);
 
     // Encode 'to' field
-    if (tx.to) |toAddr| {
-        try rlp.encodeBytes(allocator, &toAddr.bytes, &list);
+    if (tx.to) |to_addr| {
+        try rlp.encodeBytes(allocator, &to_addr.bytes, &list);
     } else {
         try list.append(0x80); // Empty RLP string for null
     }
@@ -220,7 +220,7 @@ pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]
     try rlp.encodeBytes(allocator, tx.data, &list);
 
     // Encode access list
-    try encodeAccessList(allocator, tx.accessList, &list);
+    try encode_access_list(allocator, tx.access_list, &list);
 
     // For unsigned transaction
     if (tx.v == 0) {
@@ -233,103 +233,103 @@ pub fn encodeEip1559ForSigning(allocator: Allocator, tx: Eip1559Transaction) ![]
     }
 
     // Wrap in RLP list
-    var rlpWrapped = std.ArrayList(u8).init(allocator);
-    defer rlpWrapped.deinit();
+    var rlp_wrapped = std.ArrayList(u8).init(allocator);
+    defer rlp_wrapped.deinit();
 
     if (list.items.len <= 55) {
-        try rlpWrapped.append(@as(u8, @intCast(0xc0 + list.items.len)));
+        try rlp_wrapped.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const lenBytes = rlp.encodeLength(list.items.len);
-        try rlpWrapped.append(@as(u8, @intCast(0xf7 + lenBytes.len)));
-        try rlpWrapped.appendSlice(lenBytes);
+        const len_bytes = rlp.encodeLength(list.items.len);
+        try rlp_wrapped.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+        try rlp_wrapped.appendSlice(len_bytes);
     }
-    try rlpWrapped.appendSlice(list.items);
+    try rlp_wrapped.appendSlice(list.items);
 
     // Prepend transaction type
     var result = std.ArrayList(u8).init(allocator);
     try result.append(@intFromEnum(TransactionType.eip1559));
-    try result.appendSlice(rlpWrapped.items);
+    try result.appendSlice(rlp_wrapped.items);
 
     return result.toOwnedSlice();
 }
 
 // Encode access list
-fn encodeAccessList(allocator: Allocator, accessList: []const AccessListItem, output: *std.ArrayList(u8)) !void {
+fn encode_access_list(allocator: Allocator, access_list: []const AccessListItem, output: *std.ArrayList(u8)) !void {
     var list = std.ArrayList(u8).init(allocator);
     defer list.deinit();
 
-    for (accessList) |item| {
-        var itemList = std.ArrayList(u8).init(allocator);
-        defer itemList.deinit();
+    for (access_list) |item| {
+        var item_list = std.ArrayList(u8).init(allocator);
+        defer item_list.deinit();
 
         // Encode address
-        try rlp.encodeBytes(allocator, &item.address.bytes, &itemList);
+        try rlp.encodeBytes(allocator, &item.address.bytes, &item_list);
 
         // Encode storage keys
-        var keysList = std.ArrayList(u8).init(allocator);
-        defer keysList.deinit();
+        var keys_list = std.ArrayList(u8).init(allocator);
+        defer keys_list.deinit();
 
-        for (item.storageKeys) |key| {
-            try rlp.encodeBytes(allocator, &key, &keysList);
+        for (item.storage_keys) |key| {
+            try rlp.encodeBytes(allocator, &key, &keys_list);
         }
 
         // Wrap storage keys in RLP list
-        if (keysList.items.len <= 55) {
-            try itemList.append(@as(u8, @intCast(0xc0 + keysList.items.len)));
+        if (keys_list.items.len <= 55) {
+            try item_list.append(@as(u8, @intCast(0xc0 + keys_list.items.len)));
         } else {
-            const lenBytes = rlp.encodeLength(keysList.items.len);
-            try itemList.append(@as(u8, @intCast(0xf7 + lenBytes.len)));
-            try itemList.appendSlice(lenBytes);
+            const len_bytes = rlp.encodeLength(keys_list.items.len);
+            try item_list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+            try item_list.appendSlice(len_bytes);
         }
-        try itemList.appendSlice(keysList.items);
+        try item_list.appendSlice(keys_list.items);
 
         // Wrap access list item
-        if (itemList.items.len <= 55) {
-            try list.append(@as(u8, @intCast(0xc0 + itemList.items.len)));
+        if (item_list.items.len <= 55) {
+            try list.append(@as(u8, @intCast(0xc0 + item_list.items.len)));
         } else {
-            const lenBytes = rlp.encodeLength(itemList.items.len);
-            try list.append(@as(u8, @intCast(0xf7 + lenBytes.len)));
-            try list.appendSlice(lenBytes);
+            const len_bytes = rlp.encodeLength(item_list.items.len);
+            try list.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+            try list.appendSlice(len_bytes);
         }
-        try list.appendSlice(itemList.items);
+        try list.appendSlice(item_list.items);
     }
 
     // Wrap entire access list
     if (list.items.len <= 55) {
         try output.append(@as(u8, @intCast(0xc0 + list.items.len)));
     } else {
-        const lenBytes = rlp.encodeLength(list.items.len);
-        try output.append(@as(u8, @intCast(0xf7 + lenBytes.len)));
-        try output.appendSlice(lenBytes);
+        const len_bytes = rlp.encodeLength(list.items.len);
+        try output.append(@as(u8, @intCast(0xf7 + len_bytes.len)));
+        try output.appendSlice(len_bytes);
     }
     try output.appendSlice(list.items);
 }
 
 // Sign legacy transaction
-pub fn signLegacyTransaction(allocator: Allocator, tx: LegacyTransaction, privateKey: crypto.PrivateKey, chainId: u64) !LegacyTransaction {
+pub fn sign_legacy_transaction(allocator: Allocator, tx: LegacyTransaction, private_key: crypto.PrivateKey, chain_id: u64) !LegacyTransaction {
     // Encode transaction for signing
-    const encoded = try encodeLegacyForSigning(allocator, tx, chainId);
+    const encoded = try encode_legacy_for_signing(allocator, tx, chain_id);
     defer allocator.free(encoded);
 
     // Hash the encoded transaction
     const h = hash.keccak256(encoded);
 
     // Sign the hash
-    const signature = try crypto.sign(allocator, privateKey, h);
+    const signature = try crypto.sign(allocator, private_key, h);
 
     // Create signed transaction
-    var signedTx = tx;
-    signedTx.v = @as(u64, signature.v) + (chainId * 2) + 8; // EIP-155
-    signedTx.r = signature.r;
-    signedTx.s = signature.s;
+    var signed_tx = tx;
+    signed_tx.v = @as(u64, signature.v) + (chain_id * 2) + 8; // EIP-155
+    signed_tx.r = signature.r;
+    signed_tx.s = signature.s;
 
-    return signedTx;
+    return signed_tx;
 }
 
 // Compute legacy transaction hash
-pub fn computeLegacyTransactionHash(allocator: Allocator, tx: LegacyTransaction) !Hash {
+pub fn compute_legacy_transaction_hash(allocator: Allocator, tx: LegacyTransaction) !Hash {
     // Encode the full signed transaction
-    const encoded = try encodeLegacyForSigning(allocator, tx, 1);
+    const encoded = try encode_legacy_for_signing(allocator, tx, 1);
     defer allocator.free(encoded);
 
     // Return keccak256 hash
@@ -337,7 +337,7 @@ pub fn computeLegacyTransactionHash(allocator: Allocator, tx: LegacyTransaction)
 }
 
 // Detect transaction type from raw data
-pub fn detectTransactionType(data: []const u8) TransactionType {
+pub fn detect_transaction_type(data: []const u8) TransactionType {
     if (data.len == 0) return TransactionType.legacy;
 
     // Check for typed transaction envelope
@@ -358,8 +358,8 @@ test "encode legacy transaction" {
     // Test transaction data
     const tx = LegacyTransaction{
         .nonce = 0,
-        .gasPrice = 20_000_000_000, // 20 gwei
-        .gasLimit = 21000,
+        .gas_price = 20_000_000_000, // 20 gwei
+        .gas_limit = 21000,
         .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
         .value = 1_000_000_000_000_000, // 0.001 ETH
         .data = &[_]u8{},
@@ -369,7 +369,7 @@ test "encode legacy transaction" {
     };
 
     // Encode transaction for signing
-    const encoded = try encodeLegacyForSigning(allocator, tx, 1);
+    const encoded = try encode_legacy_for_signing(allocator, tx, 1);
     defer allocator.free(encoded);
 
     // Should produce valid RLP encoding
@@ -380,7 +380,7 @@ test "legacy transaction signature" {
     const allocator = testing.allocator;
 
     // Test private key
-    const privateKey = crypto.PrivateKey{
+    const private_key = crypto.PrivateKey{
         .bytes = [_]u8{
             0xac, 0x09, 0x74, 0xbe, 0xc3, 0x9a, 0x17, 0xe3,
             0x6b, 0xa4, 0xa6, 0xb4, 0xd2, 0x38, 0xff, 0x24,
@@ -391,8 +391,8 @@ test "legacy transaction signature" {
 
     const tx = LegacyTransaction{
         .nonce = 0,
-        .gasPrice = 20_000_000_000,
-        .gasLimit = 21000,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
         .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
         .value = 1_000_000_000_000_000,
         .data = &[_]u8{},
@@ -402,33 +402,33 @@ test "legacy transaction signature" {
     };
 
     // Sign transaction
-    const signedTx = try signLegacyTransaction(allocator, tx, privateKey, 1);
+    const signed_tx = try sign_legacy_transaction(allocator, tx, private_key, 1);
 
     // Verify signature components
-    try testing.expect(signedTx.v == 37 or signedTx.v == 38); // EIP-155 for mainnet
-    try testing.expect(!std.mem.eql(u8, &signedTx.r, &([_]u8{0} ** 32)));
-    try testing.expect(!std.mem.eql(u8, &signedTx.s, &([_]u8{0} ** 32)));
+    try testing.expect(signed_tx.v == 37 or signed_tx.v == 38); // EIP-155 for mainnet
+    try testing.expect(!std.mem.eql(u8, &signed_tx.r, &([_]u8{0} ** 32)));
+    try testing.expect(!std.mem.eql(u8, &signed_tx.s, &([_]u8{0} ** 32)));
 }
 
 test "encode eip1559 transaction" {
     const allocator = testing.allocator;
 
     const tx = Eip1559Transaction{
-        .chainId = 1,
+        .chain_id = 1,
         .nonce = 0,
-        .maxPriorityFeePerGas = 1_000_000_000, // 1 gwei
-        .maxFeePerGas = 20_000_000_000, // 20 gwei
-        .gasLimit = 21000,
+        .max_priority_fee_per_gas = 1_000_000_000, // 1 gwei
+        .max_fee_per_gas = 20_000_000_000, // 20 gwei
+        .gas_limit = 21000,
         .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
         .value = 1_000_000_000_000_000,
         .data = &[_]u8{},
-        .accessList = &[_]AccessListItem{},
+        .access_list = &[_]AccessListItem{},
         .v = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
 
-    const encoded = try encodeEip1559ForSigning(allocator, tx);
+    const encoded = try encode_eip1559_for_signing(allocator, tx);
     defer allocator.free(encoded);
 
     // Should start with transaction type
@@ -438,34 +438,34 @@ test "encode eip1559 transaction" {
 test "eip1559 with access list" {
     const allocator = testing.allocator;
 
-    const storageKeys = [_][32]u8{
+    const storage_keys = [_][32]u8{
         hash.fromU256(0).bytes,
         hash.fromU256(1).bytes,
     };
 
-    const accessList = [_]AccessListItem{
+    const access_list = [_]AccessListItem{
         .{
             .address = try Address.fromHex("0x0000000000000000000000000000000000000000"),
-            .storageKeys = &storageKeys,
+            .storage_keys = &storage_keys,
         },
     };
 
     const tx = Eip1559Transaction{
-        .chainId = 1,
+        .chain_id = 1,
         .nonce = 0,
-        .maxPriorityFeePerGas = 1_000_000_000,
-        .maxFeePerGas = 20_000_000_000,
-        .gasLimit = 30000, // Higher for access list
+        .max_priority_fee_per_gas = 1_000_000_000,
+        .max_fee_per_gas = 20_000_000_000,
+        .gas_limit = 30000, // Higher for access list
         .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
         .value = 0,
         .data = &[_]u8{},
-        .accessList = &accessList,
+        .access_list = &access_list,
         .v = 0,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
 
-    const encoded = try encodeEip1559ForSigning(allocator, tx);
+    const encoded = try encode_eip1559_for_signing(allocator, tx);
     defer allocator.free(encoded);
 
     try testing.expect(encoded.len > 100); // Should be larger with access list
@@ -476,8 +476,8 @@ test "compute transaction hash" {
 
     const tx = LegacyTransaction{
         .nonce = 0,
-        .gasPrice = 20_000_000_000,
-        .gasLimit = 21000,
+        .gas_price = 20_000_000_000,
+        .gas_limit = 21000,
         .to = try Address.fromHex("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
         .value = 1_000_000_000_000_000,
         .data = &[_]u8{},
@@ -486,34 +486,34 @@ test "compute transaction hash" {
         .s = [_]u8{0x34} ** 32,
     };
 
-    const h = try computeLegacyTransactionHash(allocator, tx);
+    const h = try compute_legacy_transaction_hash(allocator, tx);
 
     // Hash should be 32 bytes
     try testing.expectEqual(@as(usize, 32), h.bytes.len);
 
     // Hash should be deterministic
-    const h2 = try computeLegacyTransactionHash(allocator, tx);
+    const h2 = try compute_legacy_transaction_hash(allocator, tx);
     try testing.expectEqual(h, h2);
 }
 
 test "contract creation transaction" {
     const allocator = testing.allocator;
 
-    const initCode = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 }; // Sample init code
+    const init_code = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 }; // Sample init code
 
     const tx = LegacyTransaction{
         .nonce = 0,
-        .gasPrice = 20_000_000_000,
-        .gasLimit = 100000, // Higher for contract creation
+        .gas_price = 20_000_000_000,
+        .gas_limit = 100000, // Higher for contract creation
         .to = null, // null for contract creation
         .value = 0,
-        .data = &initCode,
+        .data = &init_code,
         .v = 37,
         .r = [_]u8{0} ** 32,
         .s = [_]u8{0} ** 32,
     };
 
-    const encoded = try encodeLegacyForSigning(allocator, tx, 1);
+    const encoded = try encode_legacy_for_signing(allocator, tx, 1);
     defer allocator.free(encoded);
 
     // Should encode properly with null `to` field
@@ -522,30 +522,30 @@ test "contract creation transaction" {
 
 test "detect transaction type" {
     // Legacy transaction (no prefix)
-    const legacyData = [_]u8{0xf8} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.legacy, detectTransactionType(&legacyData));
+    const legacy_data = [_]u8{0xf8} ++ [_]u8{0} ** 10;
+    try testing.expectEqual(TransactionType.legacy, detect_transaction_type(&legacy_data));
 
     // EIP-2930 (0x01 prefix)
-    const eip2930Data = [_]u8{0x01} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip2930, detectTransactionType(&eip2930Data));
+    const eip2930_data = [_]u8{0x01} ++ [_]u8{0} ** 10;
+    try testing.expectEqual(TransactionType.eip2930, detect_transaction_type(&eip2930_data));
 
     // EIP-1559 (0x02 prefix)
-    const eip1559Data = [_]u8{0x02} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip1559, detectTransactionType(&eip1559Data));
+    const eip1559_data = [_]u8{0x02} ++ [_]u8{0} ** 10;
+    try testing.expectEqual(TransactionType.eip1559, detect_transaction_type(&eip1559_data));
 
     // EIP-4844 (0x03 prefix)
-    const eip4844Data = [_]u8{0x03} ++ [_]u8{0} ** 10;
-    try testing.expectEqual(TransactionType.eip4844, detectTransactionType(&eip4844Data));
+    const eip4844_data = [_]u8{0x03} ++ [_]u8{0} ** 10;
+    try testing.expectEqual(TransactionType.eip4844, detect_transaction_type(&eip4844_data));
 }
 
 test "decode mainnet transaction" {
     const allocator = testing.allocator;
 
     // This is a real mainnet transaction (simplified)
-    const txHex = "0x02f8710180843b9aca00850df8475800825208940000000000000000000000000000000000000000880de0b6b3a764000080c001a0c7cf543e1b26a19fca825d164a0dc96e62c6a4a373d90abcf82b0de7f97e58f5a06d4b6bc588356822e38a0bec5fb4baa8efd8f19ec90b0584df2bbba09cd78c0d";
+    const tx_hex = "0x02f8710180843b9aca00850df8475800825208940000000000000000000000000000000000000000880de0b6b3a764000080c001a0c7cf543e1b26a19fca825d164a0dc96e62c6a4a373d90abcf82b0de7f97e58f5a06d4b6bc588356822e38a0bec5fb4baa8efd8f19ec90b0584df2bbba09cd78c0d";
 
     // In a real implementation, you would decode this hex and parse the transaction
-    _ = txHex;
+    _ = tx_hex;
     _ = allocator;
 
     // For now, just verify we can handle the concept

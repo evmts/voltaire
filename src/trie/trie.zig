@@ -502,7 +502,7 @@ test "key_to_nibbles and nibbles_to_key" {
     try testing.expectEqualSlices(u8, &key, round_trip);
 }
 
-test "encodePath and decodePath" {
+test "encode_path and decode_path" {
     const testing = std.testing;
     const allocator = testing.allocator;
 
