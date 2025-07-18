@@ -77,14 +77,12 @@ const DatabaseMetadata = struct {
 };
 
 /// Storage for database metadata to enable proper cleanup
-var database_metadata_map: std.AutoHashMap(*anyopaque, DatabaseMetadata) = undefined;
-var metadata_map_initialized = false;
+var database_metadata_map: ?std.AutoHashMap(*anyopaque, DatabaseMetadata) = null;
 
 /// Initialize the metadata map (called automatically when needed)
 fn ensureMetadataMapInitialized(allocator: std.mem.Allocator) !void {
-    if (!metadata_map_initialized) {
+    if (database_metadata_map == null) {
         database_metadata_map = std.AutoHashMap(*anyopaque, DatabaseMetadata).init(allocator);
-        metadata_map_initialized = true;
     }
 }
 
@@ -125,7 +123,9 @@ pub fn createDatabase(allocator: std.mem.Allocator, config: DatabaseConfig) !Dat
                 .allocation_ptr = memory_db,
                 .allocation_size = @sizeOf(MemoryDatabase),
             };
-            try database_metadata_map.put(memory_db, metadata);
+            if (database_metadata_map) |*map| {
+                try map.put(memory_db, metadata);
+            }
 
             return memory_db.to_database_interface();
         },
@@ -198,16 +198,17 @@ pub fn destroyDatabase(allocator: std.mem.Allocator, database: DatabaseInterface
     database.deinit();
 
     // Look up metadata for proper deallocation
-    if (database_metadata_map.get(database.ptr)) |metadata| {
-        // Remove from metadata map
-        _ = database_metadata_map.remove(database.ptr);
+    if (database_metadata_map) |*map| {
+        if (map.get(database.ptr)) |metadata| {
+            // Remove from metadata map
+            _ = map.remove(database.ptr);
 
-        // Deallocate based on original type
-        switch (metadata.database_type) {
-            .Memory => {
-                const memory_db: *MemoryDatabase = @ptrCast(@alignCast(metadata.allocation_ptr));
-                allocator.destroy(memory_db);
-            },
+            // Deallocate based on original type
+            switch (metadata.database_type) {
+                .Memory => {
+                    const memory_db: *MemoryDatabase = @ptrCast(@alignCast(metadata.allocation_ptr));
+                    allocator.destroy(memory_db);
+                },
 
             // Future database type cleanup:
             // .Fork => {
@@ -222,6 +223,7 @@ pub fn destroyDatabase(allocator: std.mem.Allocator, database: DatabaseInterface
             //     const cached_db: *CachedDatabase = @ptrCast(@alignCast(metadata.allocation_ptr));
             //     allocator.destroy(cached_db);
             // },
+            }
         }
     }
 }
@@ -234,8 +236,10 @@ pub fn destroyDatabase(allocator: std.mem.Allocator, database: DatabaseInterface
 /// ## Returns
 /// DatabaseType if the database was created through this factory, null otherwise
 pub fn getDatabaseType(database: DatabaseInterface) ?DatabaseType {
-    if (database_metadata_map.get(database.ptr)) |metadata| {
-        return metadata.database_type;
+    if (database_metadata_map) |*map| {
+        if (map.get(database.ptr)) |metadata| {
+            return metadata.database_type;
+        }
     }
     return null;
 }
@@ -245,9 +249,9 @@ pub fn getDatabaseType(database: DatabaseInterface) ?DatabaseType {
 /// Call this when shutting down to clean up internal factory state.
 /// Only needed if you've created databases through this factory.
 pub fn deinitFactory() void {
-    if (metadata_map_initialized) {
-        database_metadata_map.deinit();
-        metadata_map_initialized = false;
+    if (database_metadata_map) |*map| {
+        map.deinit();
+        database_metadata_map = null;
     }
 }
 
