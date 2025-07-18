@@ -54,10 +54,10 @@ test "CREATE (0xF0): Basic contract creation with valid init code" {
     const init_code = [_]u8{
         0x60, 0x60, // PUSH1 0x60 (value)
         0x60, 0x80, // PUSH1 0x80 (offset)
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 0x20 (size)
         0x60, 0x60, // PUSH1 0x60 (offset)
-        0xF3,       // RETURN
+        0xF3, // RETURN
     };
     _ = try frame.memory.set_data(0, &init_code);
 
@@ -339,7 +339,7 @@ test "CREATE: Memory expansion gas cost" {
 
     // Initialize memory at high offset to test expansion
     const high_offset = 1000;
-    const init_code = [_]u8{0x60, 0x00, 0x60, 0x00, 0xF3}; // Simple RETURN
+    const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }; // Simple RETURN
     for (init_code, 0..) |byte, i| {
         try frame.memory.set_data(high_offset + i, &[_]u8{byte});
     }
@@ -433,7 +433,7 @@ test "CREATE2 (0xF5): Deterministic address generation" {
     frame.gas_remaining = 1000000;
 
     // Write init code to memory
-    const init_code = [_]u8{0x60, 0x00, 0x60, 0x00, 0xF3}; // RETURN empty
+    const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }; // RETURN empty
     _ = try frame.memory.set_data(0, &init_code);
 
     // Push CREATE2 parameters: value, offset, size, salt
@@ -462,7 +462,7 @@ test "CREATE2: Same parameters produce same address" {
     defer evm.deinit();
 
     const salt = 0x42424242;
-    const init_code = [_]u8{0x60, 0x00, 0x60, 0x00, 0xF3};
+    const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 };
 
     // First creation
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -614,7 +614,7 @@ test "CALL (0xF1): Basic external call" {
     frame.gas_remaining = 100000;
 
     // Write call data to memory
-    const call_data = [_]u8{0x11, 0x22, 0x33, 0x44};
+    const call_data = [_]u8{ 0x11, 0x22, 0x33, 0x44 };
     _ = try frame.memory.set_data(0, &call_data);
 
     // Push CALL parameters: gas, to, value, args_offset, args_size, ret_offset, ret_size
@@ -975,11 +975,11 @@ test "RETURN (0xF3): Return data from execution" {
     frame.gas_remaining = 10000;
 
     // Write return data to memory
-    const return_data = "Hello World!" ++ ([_]u8{0x11} ** 20;
+    const return_data = "Hello World!" ++ ([_]u8{0x11} ** 20);
     _ = try frame.memory.set_data(0, return_data[0..]);
 
     // Push RETURN parameters: offset, size (RETURN expects size on top, offset below)
-    try frame.stack.append(0); // offset (pushed first, will be below) 
+    try frame.stack.append(0); // offset (pushed first, will be below)
     try frame.stack.append(return_data.len); // size (exact length)
 
     // Execute RETURN - should trigger STOP
@@ -1112,7 +1112,7 @@ test "REVERT (0xFD): Revert with error data" {
     frame.gas_remaining = 10000;
 
     // Write revert reason to memory
-    const revert_data = "Insufficient balance" ++ ([_]u8{0x11} ** 20;
+    const revert_data = "Insufficient balance" ++ ([_]u8{0x11} ** 20);
     _ = try frame.memory.set_data(0, revert_data[0..]);
 
     // Push REVERT parameters: offset, size (REVERT expects size on top, offset below)
