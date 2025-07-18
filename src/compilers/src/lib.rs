@@ -1,5 +1,8 @@
 use foundry_compilers::{
-    artifacts::{output_selection::OutputSelection, remappings::Remapping, EvmVersion, Optimizer, Settings, Severity, Source, Sources},
+    artifacts::{
+        output_selection::OutputSelection, remappings::Remapping, EvmVersion, Optimizer, Settings,
+        Severity, Source, Sources,
+    },
     compilers::{multi::MultiCompiler, solc::Solc},
     ConfigurableArtifacts, ProjectBuilder, ProjectPathsConfig,
 };
@@ -78,7 +81,7 @@ impl Default for CompilerSettings {
 pub struct CompiledContract {
     pub name: *mut c_char,
     pub abi: *mut c_char,               // JSON string
-    pub bytecode: *mut c_char,           // Hex string
+    pub bytecode: *mut c_char,          // Hex string
     pub deployed_bytecode: *mut c_char, // Hex string
 }
 
@@ -387,10 +390,8 @@ fn build_and_compile_file(
     file_path: &str,
     settings: &CompilerSettings,
 ) -> Result<CompilationResult, *mut FoundryError> {
-    let parent = Path::new(file_path)
-        .parent()
-        .unwrap_or(Path::new("."));
-    
+    let parent = Path::new(file_path).parent().unwrap_or(Path::new("."));
+
     let paths = ProjectPathsConfig::dapptools(parent).map_err(|e| {
         FoundryError::new(
             FoundryErrorCode::IoError,
@@ -400,19 +401,17 @@ fn build_and_compile_file(
 
     let mut builder = ProjectBuilder::<MultiCompiler, ConfigurableArtifacts>::default();
     builder = builder.paths(paths);
-    
+
     // Apply settings to builder
     let mut solc_settings = Settings::default();
     apply_settings_to_solc(&mut solc_settings, settings)?;
-    
-    let project = builder
-        .build(MultiCompiler::default())
-        .map_err(|e| {
-            FoundryError::new(
-                FoundryErrorCode::CompilationError,
-                format!("Failed to build project: {}", e),
-            )
-        })?;
+
+    let project = builder.build(MultiCompiler::default()).map_err(|e| {
+        FoundryError::new(
+            FoundryErrorCode::CompilationError,
+            format!("Failed to build project: {}", e),
+        )
+    })?;
 
     let output = project.compile_file(file_path).map_err(|e| {
         FoundryError::new(
@@ -429,7 +428,6 @@ fn build_and_compile_source(
     content: &str,
     settings: &CompilerSettings,
 ) -> Result<CompilationResult, *mut FoundryError> {
-
     let mut sources = Sources::new();
     sources.insert(name.into(), Source::new(content));
 
@@ -449,35 +447,32 @@ fn build_and_compile_source(
 
     let mut builder = ProjectBuilder::<MultiCompiler, ConfigurableArtifacts>::default();
     builder = builder.paths(paths);
-    
+
     // Apply settings to builder
     let mut solc_settings = Settings::default();
     apply_settings_to_solc(&mut solc_settings, settings)?;
-    
-    let project = builder
-        .build(MultiCompiler::default())
+
+    let project = builder.build(MultiCompiler::default()).map_err(|e| {
+        FoundryError::new(
+            FoundryErrorCode::CompilationError,
+            format!("Failed to build project: {}", e),
+        )
+    })?;
+
+    let output = foundry_compilers::project::ProjectCompiler::with_sources(&project, sources)
         .map_err(|e| {
             FoundryError::new(
                 FoundryErrorCode::CompilationError,
-                format!("Failed to build project: {}", e),
+                format!("Failed to create compiler: {}", e),
+            )
+        })?
+        .compile()
+        .map_err(|e| {
+            FoundryError::new(
+                FoundryErrorCode::CompilationError,
+                format!("Compilation failed: {}", e),
             )
         })?;
-
-    let output =
-        foundry_compilers::project::ProjectCompiler::with_sources(&project, sources)
-            .map_err(|e| {
-                FoundryError::new(
-                    FoundryErrorCode::CompilationError,
-                    format!("Failed to create compiler: {}", e),
-                )
-            })?
-            .compile()
-            .map_err(|e| {
-                FoundryError::new(
-                    FoundryErrorCode::CompilationError,
-                    format!("Compilation failed: {}", e),
-                )
-            })?;
 
     process_output(output)
 }
@@ -496,14 +491,12 @@ fn apply_settings_to_solc(
     // Apply EVM version
     if !settings.evm_version.is_null() {
         let evm_version = unsafe {
-            CStr::from_ptr(settings.evm_version)
-                .to_str()
-                .map_err(|_| {
-                    FoundryError::new(
-                        FoundryErrorCode::InvalidInput,
-                        "Invalid EVM version encoding".to_string(),
-                    )
-                })?
+            CStr::from_ptr(settings.evm_version).to_str().map_err(|_| {
+                FoundryError::new(
+                    FoundryErrorCode::InvalidInput,
+                    "Invalid EVM version encoding".to_string(),
+                )
+            })?
         };
 
         if let Ok(version) = evm_version.parse::<EvmVersion>() {
@@ -539,7 +532,7 @@ fn apply_settings_to_solc(
 
     // Apply output selection
     let mut selections = Vec::new();
-    
+
     if settings.output_abi {
         selections.push("abi".to_string());
     }
@@ -554,7 +547,7 @@ fn apply_settings_to_solc(
     if settings.output_ast {
         selections.push("ast".to_string());
     }
-    
+
     if !selections.is_empty() {
         solc_settings.output_selection = OutputSelection::common_output_selection(selections);
     } else {
@@ -574,7 +567,7 @@ fn process_output(
     // Process contracts
     for (artifact_id, contract) in output.clone().into_artifacts() {
         let name = format!("{}", artifact_id.name);
-        
+
         let abi_str = contract
             .abi
             .as_ref()
@@ -618,7 +611,7 @@ fn process_output(
 
     // Process errors and warnings
     use foundry_compilers::compilers::multi::MultiCompilerError;
-    
+
     for error in output.output().errors.iter() {
         let (message, severity, error_code, source_location) = match error {
             MultiCompilerError::Solc(solc_error) => (
@@ -629,14 +622,15 @@ fn process_output(
                     Severity::Info => 0,
                 },
                 solc_error.error_code.unwrap_or(0),
-                solc_error.source_location.as_ref().map(|loc| {
-                    format!("{}:{}:{}", loc.file, loc.start, loc.end)
-                }),
+                solc_error
+                    .source_location
+                    .as_ref()
+                    .map(|loc| format!("{}:{}:{}", loc.file, loc.start, loc.end)),
             ),
             MultiCompilerError::Vyper(vyper_error) => (
                 vyper_error.to_string(),
-                2, // Vyper errors are always errors, not warnings
-                0, // Vyper doesn't have error codes
+                2,    // Vyper errors are always errors, not warnings
+                0,    // Vyper doesn't have error codes
                 None, // Vyper error structure is different
             ),
         };
@@ -770,7 +764,10 @@ mod tests {
 
             if !result.is_null() {
                 let result_ref = &*result;
-                assert!(result_ref.contracts_count > 0, "Should have compiled contracts");
+                assert!(
+                    result_ref.contracts_count > 0,
+                    "Should have compiled contracts"
+                );
                 assert_eq!(result_ref.errors_count, 0, "Should have no errors");
 
                 foundry_free_compilation_result(result);

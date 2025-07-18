@@ -1,15 +1,14 @@
+use ark_bn254::{Bn254, G1Affine, G2Affine};
+use ark_ec::{pairing::Pairing, AffineRepr, CurveGroup};
+use ark_ff::{BigInteger, One, PrimeField, Zero};
 /// BN254 Wrapper Library for Zig Integration
-/// 
+///
 /// This library provides C-compatible bindings for BN254 elliptic curve operations
 /// using the arkworks library. It's designed to be called from Zig code
 /// for ECMUL and ECPAIRING precompile implementations.
 ///
 /// Based on arkworks algebra library for production-grade BN254 operations.
-
-use std::os::raw::{c_uchar, c_int, c_uint};
-use ark_bn254::{Bn254, G1Affine, G2Affine};
-use ark_ec::{AffineRepr, CurveGroup, pairing::Pairing};
-use ark_ff::{PrimeField, BigInteger, Zero, One};
+use std::os::raw::{c_int, c_uchar, c_uint};
 
 /// Result codes for BN254 operations
 #[repr(C)]
@@ -30,7 +29,7 @@ pub extern "C" fn bn254_init() -> c_int {
 }
 
 /// Perform elliptic curve scalar multiplication (ECMUL)
-/// 
+///
 /// Input format (96 bytes):
 /// - Bytes 0-31: x coordinate (big-endian)
 /// - Bytes 32-63: y coordinate (big-endian)  
@@ -52,7 +51,7 @@ pub extern "C" fn bn254_ecmul(
     if input.is_null() || output.is_null() {
         return Bn254Result::InvalidInput as c_int;
     }
-    
+
     if input_len < 96 || output_len < 64 {
         return Bn254Result::InvalidInput as c_int;
     }
@@ -69,21 +68,21 @@ pub extern "C" fn bn254_ecmul(
     // Parse the G1 point coordinates (64 bytes)
     let x_bytes = &padded_input[0..32];
     let y_bytes = &padded_input[32..64];
-    
+
     // Parse the scalar (32 bytes)
     let scalar_bytes = &padded_input[64..96];
 
     // Convert bytes to field elements
     use ark_bn254::{Fq, Fr};
-    
+
     let x_coord = match Fq::from_be_bytes_mod_order(x_bytes) {
         x => x,
     };
-    
+
     let y_coord = match Fq::from_be_bytes_mod_order(y_bytes) {
         y => y,
     };
-    
+
     let scalar = match Fr::from_be_bytes_mod_order(scalar_bytes) {
         s => s,
     };
@@ -111,13 +110,19 @@ pub extern "C" fn bn254_ecmul(
     // Convert result to bytes (big-endian)
     let x_result = result.x();
     let y_result = result.y();
-    
-    let x_bytes = x_result.expect("x coordinate should exist").into_bigint().to_bytes_be();
-    let y_bytes = y_result.expect("y coordinate should exist").into_bigint().to_bytes_be();
-    
+
+    let x_bytes = x_result
+        .expect("x coordinate should exist")
+        .into_bigint()
+        .to_bytes_be();
+    let y_bytes = y_result
+        .expect("y coordinate should exist")
+        .into_bigint()
+        .to_bytes_be();
+
     // Pad to 32 bytes and copy to output
     let x_start = 32 - x_bytes.len();
-    
+
     output_slice[..32].fill(0);
     output_slice[32..64].fill(0);
     output_slice[x_start..32].copy_from_slice(&x_bytes);
@@ -127,7 +132,7 @@ pub extern "C" fn bn254_ecmul(
 }
 
 /// Perform elliptic curve pairing check (ECPAIRING)
-/// 
+///
 /// Input format (multiple of 192 bytes):
 /// Each 192-byte group contains:
 /// - Bytes 0-63: G1 point (x, y coordinates, 32 bytes each)
@@ -148,7 +153,7 @@ pub extern "C" fn bn254_ecpairing(
     if input.is_null() || output.is_null() {
         return Bn254Result::InvalidInput as c_int;
     }
-    
+
     if output_len < 32 {
         return Bn254Result::InvalidInput as c_int;
     }
@@ -163,7 +168,7 @@ pub extern "C" fn bn254_ecpairing(
     let output_slice = unsafe { std::slice::from_raw_parts_mut(output, output_len as usize) };
 
     use ark_bn254::{Fq, Fq2};
-    
+
     // Handle empty input (should return true according to EIP-197)
     if input_len == 0 {
         output_slice[..32].fill(0);
@@ -178,14 +183,14 @@ pub extern "C" fn bn254_ecpairing(
     // Parse input pairs
     for i in 0..num_pairs {
         let pair_start = i * 192;
-        
+
         // Parse G1 point (64 bytes)
         let g1_x_bytes = &input_slice[pair_start..pair_start + 32];
         let g1_y_bytes = &input_slice[pair_start + 32..pair_start + 64];
-        
+
         let g1_x = Fq::from_be_bytes_mod_order(g1_x_bytes);
         let g1_y = Fq::from_be_bytes_mod_order(g1_y_bytes);
-        
+
         // Check if this is the point at infinity (both coordinates are zero)
         if g1_x.is_zero() && g1_y.is_zero() {
             g1_points.push(G1Affine::zero());
@@ -234,14 +239,14 @@ pub extern "C" fn bn254_ecpairing(
 
     // Compute multi-pairing
     let pairing_result = Bn254::multi_pairing(&g1_points, &g2_points);
-    
+
     // Check if result equals 1 (identity element in GT)
     // For the pairing check, we need to see if the result equals the identity element
     // The identity element in GT for BN254 is represented as 1, not 0
     use ark_ec::pairing::PairingOutput;
     let identity = PairingOutput::<Bn254>(ark_bn254::Fq12::one());
     let is_one = pairing_result == identity;
-    
+
     // Set output
     output_slice[..32].fill(0);
     if is_one {
@@ -265,14 +270,11 @@ pub extern "C" fn bn254_ecpairing_output_size() -> c_uint {
 
 /// Validate ECMUL input format
 #[no_mangle]
-pub extern "C" fn bn254_ecmul_validate_input(
-    input: *const c_uchar,
-    input_len: c_uint,
-) -> c_int {
+pub extern "C" fn bn254_ecmul_validate_input(input: *const c_uchar, input_len: c_uint) -> c_int {
     if input.is_null() {
         return Bn254Result::InvalidInput as c_int;
     }
-    
+
     if input_len < 96 {
         return Bn254Result::InvalidInput as c_int;
     }
@@ -289,7 +291,7 @@ pub extern "C" fn bn254_ecpairing_validate_input(
     if input.is_null() {
         return Bn254Result::InvalidInput as c_int;
     }
-    
+
     if input_len % 192 != 0 {
         return Bn254Result::InvalidInput as c_int;
     }
@@ -320,14 +322,14 @@ mod tests {
             bn254_ecmul_validate_input(std::ptr::null(), 96),
             Bn254Result::InvalidInput as c_int
         );
-        
+
         // Test invalid size
         let dummy_data = [0u8; 50];
         assert_eq!(
             bn254_ecmul_validate_input(dummy_data.as_ptr(), 50),
             Bn254Result::InvalidInput as c_int
         );
-        
+
         // Test valid size
         let dummy_data = [0u8; 96];
         assert_eq!(
@@ -344,7 +346,7 @@ mod tests {
             bn254_ecpairing_validate_input(dummy_data.as_ptr(), 100),
             Bn254Result::InvalidInput as c_int
         );
-        
+
         // Test valid size (multiple of 192)
         let dummy_data = [0u8; 192];
         assert_eq!(
