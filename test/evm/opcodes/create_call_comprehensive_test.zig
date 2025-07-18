@@ -611,9 +611,9 @@ test "STATICCALL (0xFA): Read-only external call" {
     const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xFA);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
-    // Check status (regular calls not implemented yet, so expect failure)
+    // Check status (basic STATICCALL implementation now returns success)
     const success = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 0), success);
+    try testing.expectEqual(@as(u256, 1), success);
 }
 
 // ============================

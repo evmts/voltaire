@@ -201,7 +201,6 @@ test "Integration: CREATE with init code from memory" {
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-
     // Calculate code hash for empty code
     var code_hash: [32]u8 = undefined;
     var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
