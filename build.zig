@@ -947,6 +947,50 @@ pub fn build(b: *std.Build) void {
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
 
+    // Add Fuzz Testing
+    const fuzz_stack_test = b.addTest(.{
+        .name = "fuzz-stack-test",
+        .root_source_file = b.path("src/evm/stack/stack.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_stack_test.root_module.addImport("evm", evm_mod);
+
+    const run_fuzz_stack_test = b.addRunArtifact(fuzz_stack_test);
+    const fuzz_stack_test_step = b.step("fuzz-stack", "Run stack fuzz tests");
+    fuzz_stack_test_step.dependOn(&run_fuzz_stack_test.step);
+
+    const fuzz_memory_test = b.addTest(.{
+        .name = "fuzz-memory-test",
+        .root_source_file = b.path("src/evm/memory/memory.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_memory_test.root_module.addImport("evm", evm_mod);
+
+    const run_fuzz_memory_test = b.addRunArtifact(fuzz_memory_test);
+    const fuzz_memory_test_step = b.step("fuzz-memory", "Run memory fuzz tests");
+    fuzz_memory_test_step.dependOn(&run_fuzz_memory_test.step);
+
+    const fuzz_arithmetic_test = b.addTest(.{
+        .name = "fuzz-arithmetic-test",
+        .root_source_file = b.path("src/evm/execution/arithmetic.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_arithmetic_test.root_module.addImport("evm", evm_mod);
+    fuzz_arithmetic_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_arithmetic_test = b.addRunArtifact(fuzz_arithmetic_test);
+    const fuzz_arithmetic_test_step = b.step("fuzz-arithmetic", "Run arithmetic fuzz tests");
+    fuzz_arithmetic_test_step.dependOn(&run_fuzz_arithmetic_test.step);
+
+    // Combined fuzz test step
+    const fuzz_test_step = b.step("fuzz", "Run all fuzz tests");
+    fuzz_test_step.dependOn(&run_fuzz_stack_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_memory_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_arithmetic_test.step);
+
     // Documentation generation step
     const docs_step = b.step("docs", "Generate and install documentation");
     const docs_install = b.addInstallDirectory(.{

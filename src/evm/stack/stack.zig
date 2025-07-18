@@ -211,3 +211,275 @@ pub fn peek(self: *const Stack) Error!u256 {
     }
     return self.data[self.size - 1];
 }
+
+// Fuzz testing functions
+pub fn fuzz_stack_operations(operations: []const FuzzOperation) !void {
+    var stack = Stack{};
+    const testing = std.testing;
+    
+    for (operations) |op| {
+        switch (op) {
+            .push => |value| {
+                const old_size = stack.size;
+                const result = stack.append(value);
+                
+                if (old_size < CAPACITY) {
+                    try result;
+                    try testing.expectEqual(old_size + 1, stack.size);
+                    try testing.expectEqual(value, stack.data[old_size]);
+                } else {
+                    try testing.expectError(Error.StackOverflow, result);
+                    try testing.expectEqual(old_size, stack.size);
+                }
+            },
+            .pop => {
+                const old_size = stack.size;
+                const result = stack.pop();
+                
+                if (old_size > 0) {
+                    _ = try result;
+                    try testing.expectEqual(old_size - 1, stack.size);
+                    try testing.expectEqual(@as(u256, 0), stack.data[stack.size]);
+                } else {
+                    try testing.expectError(Error.StackUnderflow, result);
+                    try testing.expectEqual(@as(usize, 0), stack.size);
+                }
+            },
+            .peek => {
+                const result = stack.peek();
+                if (stack.size > 0) {
+                    const value = try result;
+                    try testing.expectEqual(stack.data[stack.size - 1], value);
+                } else {
+                    try testing.expectError(Error.StackUnderflow, result);
+                }
+            },
+            .clear => {
+                stack.clear();
+                try testing.expectEqual(@as(usize, 0), stack.size);
+                for (stack.data) |value| {
+                    try testing.expectEqual(@as(u256, 0), value);
+                }
+            },
+        }
+        
+        try validateStackInvariants(&stack);
+    }
+}
+
+const FuzzOperation = union(enum) {
+    push: u256,
+    pop: void,
+    peek: void,
+    clear: void,
+};
+
+fn validateStackInvariants(stack: *const Stack) !void {
+    const testing = std.testing;
+    
+    try testing.expect(stack.size <= CAPACITY);
+    
+    for (stack.data[stack.size..]) |value| {
+        try testing.expectEqual(@as(u256, 0), value);
+    }
+}
+
+test "fuzz_stack_basic_operations" {
+    const operations = [_]FuzzOperation{
+        .{ .push = 100 },
+        .{ .push = 200 },
+        .{ .peek = {} },
+        .{ .pop = {} },
+        .{ .pop = {} },
+        .{ .pop = {} },
+        .clear,
+        .{ .push = 42 },
+    };
+    
+    try fuzz_stack_operations(&operations);
+}
+
+test "fuzz_stack_overflow_boundary" {
+    var operations = std.ArrayList(FuzzOperation).init(std.testing.allocator);
+    defer operations.deinit();
+    
+    var i: usize = 0;
+    while (i <= CAPACITY + 10) : (i += 1) {
+        try operations.append(.{ .push = @as(u256, i) });
+    }
+    
+    try fuzz_stack_operations(operations.items);
+}
+
+test "fuzz_stack_underflow_boundary" {
+    const operations = [_]FuzzOperation{
+        .{ .pop = {} },
+        .{ .pop = {} },
+        .{ .peek = {} },
+        .{ .push = 1 },
+        .{ .pop = {} },
+        .{ .pop = {} },
+    };
+    
+    try fuzz_stack_operations(&operations);
+}
+
+test "fuzz_stack_lifo_property" {
+    var prng = std.Random.DefaultPrng.init(42);
+    const random = prng.random();
+    
+    var stack = Stack{};
+    var reference = std.ArrayList(u256).init(std.testing.allocator);
+    defer reference.deinit();
+    
+    var i: usize = 0;
+    while (i < 100) : (i += 1) {
+        const value = random.int(u256);
+        try stack.append(value);
+        try reference.append(value);
+    }
+    
+    while (reference.items.len > 0) {
+        const expected = reference.pop();
+        const actual = try stack.pop();
+        try std.testing.expectEqual(expected, actual);
+    }
+    
+    try std.testing.expectEqual(@as(usize, 0), stack.size);
+}
+
+test "fuzz_stack_random_operations" {
+    var prng = std.Random.DefaultPrng.init(123);
+    const random = prng.random();
+    
+    var stack = Stack{};
+    var reference = std.ArrayList(u256).init(std.testing.allocator);
+    defer reference.deinit();
+    
+    var i: usize = 0;
+    while (i < 1000) : (i += 1) {
+        const op_type = random.intRangeAtMost(u8, 0, 2);
+        
+        switch (op_type) {
+            0 => {
+                if (stack.size < CAPACITY) {
+                    const value = random.int(u256);
+                    try stack.append(value);
+                    try reference.append(value);
+                }
+            },
+            1 => {
+                if (stack.size > 0) {
+                    const expected = reference.pop();
+                    const actual = try stack.pop();
+                    try std.testing.expectEqual(expected, actual);
+                }
+            },
+            2 => {
+                if (stack.size > 0) {
+                    const expected = reference.items[reference.items.len - 1];
+                    const actual = try stack.peek();
+                    try std.testing.expectEqual(expected, actual);
+                }
+            },
+            else => unreachable,
+        }
+        
+        try std.testing.expectEqual(reference.items.len, stack.size);
+        try validateStackInvariants(&stack);
+    }
+}
+
+test "fuzz_stack_unsafe_operations" {
+    var stack = Stack{};
+    
+    stack.append_unsafe(100);
+    stack.append_unsafe(200);
+    stack.append_unsafe(300);
+    
+    try std.testing.expectEqual(@as(usize, 3), stack.size);
+    try std.testing.expectEqual(@as(u256, 300), stack.peek_unsafe().*);
+    
+    const val1 = stack.pop_unsafe();
+    const val2 = stack.pop_unsafe();
+    const val3 = stack.pop_unsafe();
+    
+    try std.testing.expectEqual(@as(u256, 300), val1);
+    try std.testing.expectEqual(@as(u256, 200), val2);
+    try std.testing.expectEqual(@as(u256, 100), val3);
+    try std.testing.expectEqual(@as(usize, 0), stack.size);
+}
+
+test "fuzz_stack_dup_operations" {
+    var stack = Stack{};
+    
+    stack.append_unsafe(100);
+    stack.append_unsafe(200);
+    stack.append_unsafe(300);
+    
+    stack.dup_unsafe(1);
+    try std.testing.expectEqual(@as(usize, 4), stack.size);
+    try std.testing.expectEqual(@as(u256, 300), stack.peek_unsafe().*);
+    
+    stack.dup_unsafe(2);
+    try std.testing.expectEqual(@as(usize, 5), stack.size);
+    try std.testing.expectEqual(@as(u256, 200), stack.peek_unsafe().*);
+}
+
+test "fuzz_stack_swap_operations" {
+    var stack = Stack{};
+    
+    stack.append_unsafe(100);
+    stack.append_unsafe(200);
+    stack.append_unsafe(300);
+    
+    stack.swapUnsafe(1);
+    
+    try std.testing.expectEqual(@as(u256, 200), stack.data[2]);
+    try std.testing.expectEqual(@as(u256, 300), stack.data[1]);
+    try std.testing.expectEqual(@as(u256, 100), stack.data[0]);
+}
+
+test "fuzz_stack_multi_pop_operations" {
+    var stack = Stack{};
+    
+    stack.append_unsafe(100);
+    stack.append_unsafe(200);
+    stack.append_unsafe(300);
+    stack.append_unsafe(400);
+    stack.append_unsafe(500);
+    
+    const result2 = stack.pop2_unsafe();
+    try std.testing.expectEqual(@as(u256, 500), result2.a);
+    try std.testing.expectEqual(@as(u256, 400), result2.b);
+    try std.testing.expectEqual(@as(usize, 3), stack.size);
+    
+    const result3 = stack.pop3_unsafe();
+    try std.testing.expectEqual(@as(u256, 300), result3.a);
+    try std.testing.expectEqual(@as(u256, 200), result3.b);
+    try std.testing.expectEqual(@as(u256, 100), result3.c);
+    try std.testing.expectEqual(@as(usize, 0), stack.size);
+}
+
+test "fuzz_stack_edge_values" {
+    var stack = Stack{};
+    
+    const edge_values = [_]u256{
+        0,
+        1,
+        std.math.maxInt(u8),
+        std.math.maxInt(u16),
+        std.math.maxInt(u32),
+        std.math.maxInt(u64),
+        std.math.maxInt(u128),
+        std.math.maxInt(u256),
+        1 << 128,
+        (1 << 255),
+    };
+    
+    for (edge_values) |value| {
+        try stack.append(value);
+        const popped = try stack.pop();
+        try std.testing.expectEqual(value, popped);
+    }
+}
