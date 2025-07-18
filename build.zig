@@ -560,19 +560,6 @@ pub fn build(b: *std.Build) void {
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
-    // Add EVM module tests
-    const evm_test = b.addTest(.{
-        .name = "evm-test",
-        .root_source_file = b.path("src/evm/evm.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    evm_test.root_module.addImport("primitives", primitives_mod);
-    evm_test.root_module.addImport("evm", evm_mod);
-
-    const run_evm_test = b.addRunArtifact(evm_test);
-    const evm_test_step = b.step("test-evm", "Run EVM tests");
-    evm_test_step.dependOn(&run_evm_test.step);
 
     // Add Memory tests
     const memory_test = b.addTest(.{
@@ -869,13 +856,6 @@ pub fn build(b: *std.Build) void {
     const compiler_test_step = b.step("test-compiler", "Run Compiler tests");
     compiler_test_step.dependOn(&run_compiler_test.step);
 
-    // Add Snail Tracer test
-    const snail_tracer_test = b.addTest(.{
-        .name = "snail-tracer-test",
-        .root_source_file = b.path("src/solidity/snail_tracer_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
 
     // Add Constructor Bug test
     const constructor_bug_test = b.addTest(.{
@@ -954,7 +934,6 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_exe_unit_tests.step);
-    test_step.dependOn(&run_evm_test.step);
     test_step.dependOn(&run_memory_test.step);
     test_step.dependOn(&run_stack_test.step);
     test_step.dependOn(&run_stack_validation_test.step);
@@ -984,7 +963,7 @@ pub fn build(b: *std.Build) void {
     // Add Fuzz Testing
     const fuzz_stack_test = b.addTest(.{
         .name = "fuzz-stack-test",
-        .root_source_file = b.path("src/evm/stack/stack.zig"),
+        .root_source_file = b.path("test/fuzz/stack_fuzz_test.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -996,7 +975,7 @@ pub fn build(b: *std.Build) void {
 
     const fuzz_memory_test = b.addTest(.{
         .name = "fuzz-memory-test",
-        .root_source_file = b.path("src/evm/memory/memory.zig"),
+        .root_source_file = b.path("test/fuzz/memory_fuzz_test.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -1008,7 +987,7 @@ pub fn build(b: *std.Build) void {
 
     const fuzz_arithmetic_test = b.addTest(.{
         .name = "fuzz-arithmetic-test",
-        .root_source_file = b.path("src/evm/execution/arithmetic.zig"),
+        .root_source_file = b.path("test/fuzz/arithmetic_fuzz_test.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -1021,7 +1000,7 @@ pub fn build(b: *std.Build) void {
 
     const fuzz_bitwise_test = b.addTest(.{
         .name = "fuzz-bitwise-test",
-        .root_source_file = b.path("src/evm/execution/bitwise.zig"),
+        .root_source_file = b.path("test/fuzz/bitwise_fuzz_test.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -1034,7 +1013,7 @@ pub fn build(b: *std.Build) void {
 
     const fuzz_comparison_test = b.addTest(.{
         .name = "fuzz-comparison-test",
-        .root_source_file = b.path("src/evm/execution/comparison.zig"),
+        .root_source_file = b.path("test/fuzz/comparison_fuzz_test.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -1047,7 +1026,7 @@ pub fn build(b: *std.Build) void {
 
     const fuzz_control_test = b.addTest(.{
         .name = "fuzz-control-test",
-        .root_source_file = b.path("src/evm/execution/control.zig"),
+        .root_source_file = b.path("test/fuzz/control_fuzz_test.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -1060,7 +1039,7 @@ pub fn build(b: *std.Build) void {
 
     const fuzz_crypto_test = b.addTest(.{
         .name = "fuzz-crypto-test",
-        .root_source_file = b.path("src/evm/execution/crypto.zig"),
+        .root_source_file = b.path("test/fuzz/crypto_fuzz_test.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -1071,6 +1050,32 @@ pub fn build(b: *std.Build) void {
     const fuzz_crypto_test_step = b.step("fuzz-crypto", "Run crypto fuzz tests");
     fuzz_crypto_test_step.dependOn(&run_fuzz_crypto_test.step);
 
+    const fuzz_environment_test = b.addTest(.{
+        .name = "fuzz-environment-test",
+        .root_source_file = b.path("test/fuzz/environment_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_environment_test.root_module.addImport("evm", evm_mod);
+    fuzz_environment_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_environment_test = b.addRunArtifact(fuzz_environment_test);
+    const fuzz_environment_test_step = b.step("fuzz-environment", "Run environment fuzz tests");
+    fuzz_environment_test_step.dependOn(&run_fuzz_environment_test.step);
+
+    const fuzz_storage_test = b.addTest(.{
+        .name = "fuzz-storage-test",
+        .root_source_file = b.path("test/fuzz/storage_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_storage_test.root_module.addImport("evm", evm_mod);
+    fuzz_storage_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_storage_test = b.addRunArtifact(fuzz_storage_test);
+    const fuzz_storage_test_step = b.step("fuzz-storage", "Run storage fuzz tests");
+    fuzz_storage_test_step.dependOn(&run_fuzz_storage_test.step);
+
     // Combined fuzz test step
     const fuzz_test_step = b.step("fuzz", "Run all fuzz tests");
     fuzz_test_step.dependOn(&run_fuzz_stack_test.step);
@@ -1080,6 +1085,8 @@ pub fn build(b: *std.Build) void {
     fuzz_test_step.dependOn(&run_fuzz_comparison_test.step);
     fuzz_test_step.dependOn(&run_fuzz_control_test.step);
     fuzz_test_step.dependOn(&run_fuzz_crypto_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_environment_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_storage_test.step);
 
     // Documentation generation step
     const docs_step = b.step("docs", "Generate and install documentation");

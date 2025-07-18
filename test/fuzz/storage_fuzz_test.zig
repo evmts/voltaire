@@ -1,0 +1,176 @@
+const std = @import("std");
+const evm = @import("evm");
+const primitives = @import("primitives");
+const testing = std.testing;
+
+test "fuzz_storage_sload_operations" {
+    const allocator = testing.allocator;
+    
+    var db = evm.MemoryDatabase.init(allocator);
+    defer db.deinit();
+    
+    var vm = try evm.Evm.init(allocator, db.to_database_interface(), null, null);
+    defer vm.deinit();
+    
+    const test_code = [_]u8{0x01};
+    var contract = evm.Contract.init(
+        primitives.Address.ZERO,
+        primitives.Address.ZERO,
+        0,
+        1000000,
+        &test_code,
+        [_]u8{0} ** 32,
+        &.{},
+        false
+    );
+    defer contract.deinit(allocator, null);
+    
+    var frame = try evm.Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000000;
+    
+    const slot: u256 = 0x123456789ABCDEF;
+    
+    // Test SLOAD operation (should return 0 for uninitialized storage)
+    try frame.stack.append(slot);
+    
+    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x54); // SLOAD opcode
+    
+    const result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result);
+}
+
+test "fuzz_storage_sstore_sload_roundtrip" {
+    const allocator = testing.allocator;
+    
+    var db = evm.MemoryDatabase.init(allocator);
+    defer db.deinit();
+    
+    var vm = try evm.Evm.init(allocator, db.to_database_interface(), null, null);
+    defer vm.deinit();
+    
+    const test_code = [_]u8{0x01};
+    var contract = evm.Contract.init(
+        primitives.Address.ZERO,
+        primitives.Address.ZERO,
+        0,
+        1000000,
+        &test_code,
+        [_]u8{0} ** 32,
+        &.{},
+        false
+    );
+    defer contract.deinit(allocator, null);
+    
+    var frame = try evm.Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000000;
+    
+    const slot: u256 = 0x123456789ABCDEF;
+    const value: u256 = 0xFEDCBA9876543210;
+    
+    // Test SSTORE operation: stack order [value, slot] where slot is on top
+    try frame.stack.append(value);
+    try frame.stack.append(slot);
+    
+    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x55); // SSTORE opcode
+    
+    // Now test SLOAD to retrieve the stored value
+    try frame.stack.append(slot);
+    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x54); // SLOAD opcode
+    
+    const result = try frame.stack.pop();
+    try testing.expectEqual(value, result);
+}
+
+test "fuzz_storage_tload_operations" {
+    const allocator = testing.allocator;
+    
+    var db = evm.MemoryDatabase.init(allocator);
+    defer db.deinit();
+    
+    var vm = try evm.Evm.init(allocator, db.to_database_interface(), null, null);
+    defer vm.deinit();
+    
+    const test_code = [_]u8{0x01};
+    var contract = evm.Contract.init(
+        primitives.Address.ZERO,
+        primitives.Address.ZERO,
+        0,
+        1000000,
+        &test_code,
+        [_]u8{0} ** 32,
+        &.{},
+        false
+    );
+    defer contract.deinit(allocator, null);
+    
+    var frame = try evm.Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000000;
+    
+    const slot: u256 = 0x123456789ABCDEF;
+    
+    // Test TLOAD operation (should return 0 for uninitialized transient storage)
+    try frame.stack.append(slot);
+    
+    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x5C); // TLOAD opcode
+    
+    const result = try frame.stack.pop();
+    try testing.expectEqual(@as(u256, 0), result);
+}
+
+test "fuzz_storage_tstore_tload_roundtrip" {
+    const allocator = testing.allocator;
+    
+    var db = evm.MemoryDatabase.init(allocator);
+    defer db.deinit();
+    
+    var vm = try evm.Evm.init(allocator, db.to_database_interface(), null, null);
+    defer vm.deinit();
+    
+    const test_code = [_]u8{0x01};
+    var contract = evm.Contract.init(
+        primitives.Address.ZERO,
+        primitives.Address.ZERO,
+        0,
+        1000000,
+        &test_code,
+        [_]u8{0} ** 32,
+        &.{},
+        false
+    );
+    defer contract.deinit(allocator, null);
+    
+    var frame = try evm.Frame.init(allocator, &contract);
+    defer frame.deinit();
+    frame.memory.finalize_root();
+    frame.gas_remaining = 1000000;
+    
+    const slot: u256 = 0x123456789ABCDEF;
+    const value: u256 = 0xFEDCBA9876543210;
+    
+    // Test TSTORE operation: stack order [value, slot] where slot is on top
+    try frame.stack.append(value);
+    try frame.stack.append(slot);
+    
+    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x5D); // TSTORE opcode
+    
+    // Now test TLOAD to retrieve the stored value
+    try frame.stack.append(slot);
+    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x5C); // TLOAD opcode
+    
+    const result = try frame.stack.pop();
+    try testing.expectEqual(value, result);
+}

@@ -4,6 +4,7 @@ const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
+const primitives = @import("primitives");
 
 pub fn op_sha3(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
@@ -88,7 +89,7 @@ pub fn fuzz_crypto_operations(allocator: std.mem.Allocator, operations: []const 
     const Memory = @import("../memory/memory.zig");
     const MemoryDatabase = @import("../state/memory_database.zig");
     const Contract = @import("../frame/contract.zig");
-    const Address = @import("../../Address.zig");
+    _ = primitives.Address;
     
     for (operations) |op| {
         var memory = try Memory.init_default(allocator);
@@ -104,7 +105,7 @@ pub fn fuzz_crypto_operations(allocator: std.mem.Allocator, operations: []const 
         var contract = try Contract.init(allocator, &[_]u8{0x01}, .{});
         defer contract.deinit(allocator, null);
         
-        var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
         defer frame.deinit();
         
         // Set up memory with test data
