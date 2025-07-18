@@ -19,9 +19,9 @@ pub const BlobGasMarketStats = blob_gas_market.BlobGasMarketStats;
 
 // KZG verification - use real implementation for native, placeholder for WASM
 pub const kzg_verification = if (@import("builtin").target.cpu.arch == .wasm32)
-    @import("kzg_verification.zig")  // Use placeholder for WASM
+    @import("kzg_verification.zig") // Use placeholder for WASM
 else
-    @import("kzg_verification_real.zig");  // Use real c-kzg-4844 for native
+    @import("kzg_verification_real.zig"); // Use real c-kzg-4844 for native
 pub const KZGVerifier = kzg_verification.KZGVerifier;
 
 // Re-export important constants

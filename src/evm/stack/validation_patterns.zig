@@ -19,7 +19,6 @@ const Log = @import("../log.zig");
 /// ## Performance
 /// These validation functions are designed to be inlined by the compiler,
 /// making them zero-cost abstractions over direct validation code.
-
 /// Validates stack requirements for binary operations.
 ///
 /// Binary operations consume two stack items and produce one result.

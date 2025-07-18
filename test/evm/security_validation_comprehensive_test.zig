@@ -110,27 +110,27 @@ test "Security: Stack underflow protection across all operation types" {
         // Arithmetic operations
         .{ .name = "ADD underflow", .opcode = 0x01, .required_items = 2, .provided_items = 1 },
         .{ .name = "ADDMOD underflow", .opcode = 0x08, .required_items = 3, .provided_items = 2 },
-        
+
         // Memory operations
         .{ .name = "MSTORE underflow", .opcode = 0x52, .required_items = 2, .provided_items = 1 },
         .{ .name = "MLOAD underflow", .opcode = 0x51, .required_items = 1, .provided_items = 0 },
-        
+
         // Storage operations
         .{ .name = "SSTORE underflow", .opcode = 0x55, .required_items = 2, .provided_items = 1 },
         .{ .name = "SLOAD underflow", .opcode = 0x54, .required_items = 1, .provided_items = 0 },
-        
+
         // Control flow operations
         .{ .name = "JUMP underflow", .opcode = 0x56, .required_items = 1, .provided_items = 0 },
         .{ .name = "JUMPI underflow", .opcode = 0x57, .required_items = 2, .provided_items = 1 },
-        
+
         // DUP operations
         .{ .name = "DUP1 underflow", .opcode = 0x80, .required_items = 1, .provided_items = 0 },
         .{ .name = "DUP16 underflow", .opcode = 0x8F, .required_items = 16, .provided_items = 15 },
-        
+
         // SWAP operations
         .{ .name = "SWAP1 underflow", .opcode = 0x90, .required_items = 2, .provided_items = 1 },
         .{ .name = "SWAP16 underflow", .opcode = 0x9F, .required_items = 17, .provided_items = 16 },
-        
+
         // System operations
         .{ .name = "CREATE underflow", .opcode = 0xF0, .required_items = 3, .provided_items = 2 },
         .{ .name = "CALL underflow", .opcode = 0xF1, .required_items = 7, .provided_items = 6 },
@@ -309,7 +309,7 @@ test "Security: Memory bounds checking with invalid offsets" {
             0x51 => { // MLOAD
                 try frame.stack.append(test_case.offset);
             },
-            0x52 => { // MSTORE  
+            0x52 => { // MSTORE
                 try frame.stack.append(test_case.offset);
                 try frame.stack.append(0x42);
             },
@@ -335,11 +335,9 @@ test "Security: Memory bounds checking with invalid offsets" {
             // The important thing is they don't crash or corrupt memory
         } else |err| {
             // Should fail with one of the expected errors
-            try testing.expect(
-                err == test_case.expected_error or 
+            try testing.expect(err == test_case.expected_error or
                 err == ExecutionError.Error.InvalidOffset or
-                err == ExecutionError.Error.MemoryLimitExceeded
-            );
+                err == ExecutionError.Error.MemoryLimitExceeded);
         }
     }
 }
@@ -380,11 +378,9 @@ test "Security: Memory expansion limit enforcement (32MB default)" {
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
-    try testing.expect(
-        result == ExecutionError.Error.MemoryLimitExceeded or
+    try testing.expect(result == ExecutionError.Error.MemoryLimitExceeded or
         result == ExecutionError.Error.OutOfGas or
-        result == ExecutionError.Error.InvalidOffset
-    );
+        result == ExecutionError.Error.InvalidOffset);
 }
 
 test "Security: Memory gas cost grows quadratically" {
@@ -456,11 +452,11 @@ test "Security: Gas limit enforcement across operation categories" {
         gas_limit: u64,
         setup_values: []const u256,
     }{
-        .{ .name = "ADD out of gas", .opcode = 0x01, .gas_limit = 2, .setup_values = &[_]u256{20, 10} },
-        .{ .name = "MSTORE out of gas", .opcode = 0x52, .gas_limit = 5, .setup_values = &[_]u256{0x42, 0} },
-        .{ .name = "SSTORE out of gas", .opcode = 0x55, .gas_limit = 50, .setup_values = &[_]u256{0x42, 0} },
-        .{ .name = "KECCAK256 out of gas", .opcode = 0x20, .gas_limit = 10, .setup_values = &[_]u256{32, 0} },
-        .{ .name = "CREATE out of gas", .opcode = 0xF0, .gas_limit = 100, .setup_values = &[_]u256{0, 0, 0} },
+        .{ .name = "ADD out of gas", .opcode = 0x01, .gas_limit = 2, .setup_values = &[_]u256{ 20, 10 } },
+        .{ .name = "MSTORE out of gas", .opcode = 0x52, .gas_limit = 5, .setup_values = &[_]u256{ 0x42, 0 } },
+        .{ .name = "SSTORE out of gas", .opcode = 0x55, .gas_limit = 50, .setup_values = &[_]u256{ 0x42, 0 } },
+        .{ .name = "KECCAK256 out of gas", .opcode = 0x20, .gas_limit = 10, .setup_values = &[_]u256{ 32, 0 } },
+        .{ .name = "CREATE out of gas", .opcode = 0xF0, .gas_limit = 100, .setup_values = &[_]u256{ 0, 0, 0 } },
     };
 
     for (gas_test_cases) |test_case| {
@@ -529,7 +525,7 @@ test "Security: Gas exhaustion in complex operations" {
 
     // Setup CALL with value transfer (expensive)
     try frame.stack.append(0); // ret_size
-    try frame.stack.append(0); // ret_offset  
+    try frame.stack.append(0); // ret_offset
     try frame.stack.append(0); // args_size
     try frame.stack.append(0); // args_offset
     try frame.stack.append(1000000); // value (expensive transfer)
@@ -596,7 +592,7 @@ test "Security: Gas refund limits and calculations" {
     const gas_before_clear = frame.gas_remaining;
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
     const gas_after_clear = frame.gas_remaining;
-    
+
     // Clearing should cost less than initial store due to refunds
     const clear_cost = gas_before_clear - gas_after_clear;
     try testing.expect(clear_cost < store_cost);
@@ -689,7 +685,7 @@ test "Security: Call depth limit enforcement at 1024 levels" {
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         _ = try evm.table.execute(0, interpreter_ptr, state_ptr, call_test.opcode);
-        
+
         // All call operations should push 0 (failure) when depth limit is reached
         const result = try frame.stack.pop();
         testing.expectEqual(@as(u256, 0), result) catch |err| {
@@ -726,7 +722,7 @@ test "Security: Depth tracking in nested calls" {
 
     // Test at various depths below the limit
     const test_depths = [_]u32{ 0, 100, 500, 1000, 1023 };
-    
+
     for (test_depths) |depth| {
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
@@ -748,7 +744,7 @@ test "Security: Depth tracking in nested calls" {
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
         const call_result = try frame.stack.pop();
-        
+
         if (depth < 1024) {
             // Should succeed (though implementation may return 0 for unimplemented calls)
             // Implementation-dependent result
@@ -805,7 +801,7 @@ test "Security: Arithmetic operations handle integer overflow correctly" {
         defer frame.deinit();
         frame.gas_remaining = 100000;
 
-        // Push operands (EVM stack is LIFO) 
+        // Push operands (EVM stack is LIFO)
         // For most operations: stack should be [a, b] where operation is a OP b
         try frame.stack.append(test_case.a);
         try frame.stack.append(test_case.b); // b on top
@@ -814,7 +810,7 @@ test "Security: Arithmetic operations handle integer overflow correctly" {
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         _ = try evm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
-        
+
         const result = try frame.stack.pop();
         testing.expectEqual(test_case.expected_result, result) catch |err| {
             return err;
@@ -872,7 +868,7 @@ test "Security: Division by zero handling" {
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         _ = try evm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
-        
+
         const result = try frame.stack.pop();
         testing.expectEqual(test_case.expected_result, result) catch |err| {
             return err;
@@ -933,9 +929,9 @@ test "Security: Modular arithmetic overflow protection" {
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         _ = try evm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
-        
+
         const result = try frame.stack.pop();
-        
+
         switch (test_case.expected_behavior) {
             .zero_result => {
                 try testing.expectEqual(@as(u256, 0), result);
@@ -1042,7 +1038,7 @@ test "Security: Zero-value CREATE operations" {
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
-    
+
     const created_address = try frame.stack.pop();
     // Should create a valid address (or 0 if implementation doesn't support it)
     _ = created_address; // Implementation dependent
@@ -1117,7 +1113,7 @@ test "Security: CALL to empty contract" {
 
     // Call to address with no contract (empty code)
     const empty_address = [_]u8{0x99} ** 20;
-    
+
     try frame.stack.append(0); // ret_size
     try frame.stack.append(0); // ret_offset
     try frame.stack.append(0); // args_size
@@ -1130,7 +1126,7 @@ test "Security: CALL to empty contract" {
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
-    
+
     const call_result = try frame.stack.pop();
     // Implementation dependent - may return 1 (success) for empty code calls
     _ = call_result;
@@ -1181,7 +1177,7 @@ test "Security: Self-call detection and handling" {
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
-    
+
     const call_result = try frame.stack.pop();
     // Should either succeed or fail gracefully (no crash)
     _ = call_result; // Implementation dependent
@@ -1231,7 +1227,7 @@ test "Security: Reentrancy with depth tracking" {
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
-    
+
     const call_result = try frame.stack.pop();
     // At depth 1020, should still succeed initially
     _ = call_result; // Implementation dependent
@@ -1266,7 +1262,7 @@ test "Security: Invalid jump destination handling" {
     for (invalid_jump_tests) |test_case| {
         // Create bytecode with invalid jump destination
         const bytecode = [_]u8{ 0x60, 0x01, 0x5B }; // PUSH1 1, JUMPDEST at position 2
-        
+
         const caller: Address.Address = [_]u8{0x11} ** 20;
         const contract_addr: Address.Address = [_]u8{0x33} ** 20;
         var contract = Contract.init(
@@ -1312,10 +1308,10 @@ test "Security: Valid jump destination validation" {
     defer evm.deinit();
 
     // Create bytecode with valid JUMPDEST
-    const bytecode = [_]u8{ 
-        0x5B,       // JUMPDEST (position 0)
+    const bytecode = [_]u8{
+        0x5B, // JUMPDEST (position 0)
         0x60, 0x00, // PUSH1 0 (jump to position 0 - valid JUMPDEST)
-        0x56,       // JUMP
+        0x56, // JUMP
     };
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -1347,7 +1343,7 @@ test "Security: Valid jump destination validation" {
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x56);
-        
+
         // PC should be updated to jump destination
         try testing.expectEqual(@as(usize, 0), frame.pc);
     }
@@ -1365,7 +1361,7 @@ test "Security: Valid jump destination validation" {
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
         _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x57);
-        
+
         // PC should not change for false condition (stays at 0)
         try testing.expectEqual(@as(usize, 0), frame.pc);
     }
@@ -1390,10 +1386,10 @@ test "Security: Static call protection for state modification" {
         opcode: u8,
         setup_values: []const u256,
     }{
-        .{ .name = "SSTORE in static", .opcode = 0x55, .setup_values = &[_]u256{0x42, 0} },
-        .{ .name = "CREATE in static", .opcode = 0xF0, .setup_values = &[_]u256{0, 0, 0} },
+        .{ .name = "SSTORE in static", .opcode = 0x55, .setup_values = &[_]u256{ 0x42, 0 } },
+        .{ .name = "CREATE in static", .opcode = 0xF0, .setup_values = &[_]u256{ 0, 0, 0 } },
         .{ .name = "SELFDESTRUCT in static", .opcode = 0xFF, .setup_values = &[_]u256{primitives.Address.to_u256([_]u8{0x22} ** 20)} },
-        .{ .name = "LOG0 in static", .opcode = 0xA0, .setup_values = &[_]u256{32, 0} },
+        .{ .name = "LOG0 in static", .opcode = 0xA0, .setup_values = &[_]u256{ 32, 0 } },
     };
 
     for (state_modifying_opcodes) |test_case| {
@@ -1473,9 +1469,9 @@ test "Security: Combined boundary conditions stress test" {
     frame.gas_remaining = 5000; // Limited gas
 
     // Set multiple boundary conditions
-    frame.stack.size = 1020;     // Near stack limit
-    frame.depth = 1020;          // Near call depth limit
-    frame.is_static = true;      // Static context
+    frame.stack.size = 1020; // Near stack limit
+    frame.depth = 1020; // Near call depth limit
+    frame.is_static = true; // Static context
 
     // Fill stack with dummy values
     var i: u32 = 0;
@@ -1490,11 +1486,9 @@ test "Security: Combined boundary conditions stress test" {
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
-    try testing.expect(
-        result == ExecutionError.Error.OutOfGas or
+    try testing.expect(result == ExecutionError.Error.OutOfGas or
         result == ExecutionError.Error.InvalidOffset or
-        result == ExecutionError.Error.MemoryLimitExceeded
-    );
+        result == ExecutionError.Error.MemoryLimitExceeded);
 }
 
 test "Security: Attack vector simulation - DoS via resource exhaustion" {
@@ -1524,7 +1518,7 @@ test "Security: Attack vector simulation - DoS via resource exhaustion" {
 
     var successful_creates: u32 = 0;
     var i: u32 = 0;
-    
+
     // Try to create many contracts in sequence
     while (i < 100 and successful_creates < 10) : (i += 1) {
         var frame = try Frame.init(allocator, &contract);
@@ -1533,7 +1527,7 @@ test "Security: Attack vector simulation - DoS via resource exhaustion" {
 
         // Create with minimal init code
         try frame.stack.append(0); // size = 0
-        try frame.stack.append(0); // offset = 0  
+        try frame.stack.append(0); // offset = 0
         try frame.stack.append(0); // value = 0
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1564,7 +1558,7 @@ test "Security: Comprehensive coverage verification" {
     const security_areas_covered = [_][]const u8{
         "Stack Overflow/Underflow Protection",
         "Memory Bounds Checking",
-        "Gas Limit Enforcement", 
+        "Gas Limit Enforcement",
         "Call Depth Limits",
         "Integer Overflow/Underflow Protection",
         "Zero-value Transfers",
@@ -1577,7 +1571,7 @@ test "Security: Comprehensive coverage verification" {
 
     // Verify we have comprehensive coverage
     try testing.expectEqual(@as(usize, 11), security_areas_covered.len);
-    
+
     // All security validations above cover the critical EVM security boundaries
     try testing.expect(true); // Placeholder for coverage verification
 }

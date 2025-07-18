@@ -191,7 +191,7 @@ test "SSTORE: store value to storage" {
 
     // Push value and slot (value first, then slot - stack is LIFO)
     try frame.stack.append(0xABCDEF); // value
-    try frame.stack.append(0x555);    // slot
+    try frame.stack.append(0x555); // slot
 
     // Execute SSTORE
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
@@ -527,7 +527,7 @@ test "TSTORE: store value to transient storage" {
 
     // Push value and slot (value first, then slot - stack is LIFO)
     try frame.stack.append(0xDEADBEEF); // value
-    try frame.stack.append(0x777);      // slot
+    try frame.stack.append(0x777); // slot
 
     // Execute TSTORE
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5D);

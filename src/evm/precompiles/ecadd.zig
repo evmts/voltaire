@@ -11,7 +11,7 @@
 /// ## Input Format
 /// - 128 bytes total (4 × 32-byte fields)
 /// - Bytes 0-31: x1 coordinate (big-endian)
-/// - Bytes 32-63: y1 coordinate (big-endian)  
+/// - Bytes 32-63: y1 coordinate (big-endian)
 /// - Bytes 64-95: x2 coordinate (big-endian)
 /// - Bytes 96-127: y2 coordinate (big-endian)
 /// - Shorter inputs are zero-padded
@@ -26,7 +26,6 @@
 /// - Invalid points (not on curve): Return (0, 0)
 /// - Malformed input: Return (0, 0)
 /// - Out of gas: Standard precompile error
-
 const std = @import("std");
 const bn254 = @import("bn254.zig");
 const gas_constants = @import("../constants/gas_constants.zig");
@@ -76,7 +75,7 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
 /// 5. Result formatting
 ///
 /// @param input Input data (up to 128 bytes)
-/// @param output Output buffer (must be >= 64 bytes)  
+/// @param output Output buffer (must be >= 64 bytes)
 /// @param gas_limit Maximum gas available
 /// @param chain_rules Current chain configuration
 /// @return PrecompileOutput with success/failure and gas usage
@@ -176,7 +175,7 @@ test "ECADD generator point addition" {
 
     // Test adding generator point (1, 2) to point at infinity
     var input = [_]u8{0} ** 128;
-    
+
     // Set first point to (1, 2)
     input[31] = 1; // x1 = 1
     input[63] = 2; // y1 = 2
@@ -184,7 +183,7 @@ test "ECADD generator point addition" {
 
     var output = [_]u8{0} ** 64;
     const result = execute(&input, &output, 1000, chain_rules);
-    
+
     try testing.expect(result.is_success());
     try testing.expectEqual(@as(u64, 150), result.get_gas_used());
 
@@ -198,7 +197,7 @@ test "ECADD point doubling" {
 
     // Test adding point (1, 2) to itself
     var input = [_]u8{0} ** 128;
-    
+
     // Set both points to (1, 2)
     input[31] = 1; // x1 = 1
     input[63] = 2; // y1 = 2
@@ -207,7 +206,7 @@ test "ECADD point doubling" {
 
     var output = [_]u8{0} ** 64;
     const result = execute(&input, &output, 1000, chain_rules);
-    
+
     try testing.expect(result.is_success());
     try testing.expectEqual(@as(u64, 150), result.get_gas_used());
 
@@ -234,7 +233,7 @@ test "ECADD invalid points" {
 
     var output = [_]u8{0} ** 64;
     const result = execute(&input, &output, 1000, chain_rules);
-    
+
     try testing.expect(result.is_success());
     try testing.expectEqual(@as(u64, 150), result.get_gas_used());
 
@@ -264,7 +263,7 @@ test "ECADD out of gas" {
 
     // Provide insufficient gas
     const result = execute(&input, &output, 100, chain_rules);
-    
+
     try testing.expect(result.is_failure());
     try testing.expectEqual(PrecompileError.OutOfGas, result.get_error().?);
 }
@@ -273,11 +272,11 @@ test "ECADD short input handling" {
     const chain_rules = ChainRules.for_hardfork(.ISTANBUL);
 
     // Test with short input (should be zero-padded)
-    var input = [_]u8{1, 2, 3}; // Only 3 bytes
+    var input = [_]u8{ 1, 2, 3 }; // Only 3 bytes
     var output = [_]u8{0} ** 64;
 
     const result = execute(&input, &output, 1000, chain_rules);
-    
+
     try testing.expect(result.is_success());
     try testing.expectEqual(@as(u64, 150), result.get_gas_used());
 

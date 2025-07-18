@@ -15,7 +15,6 @@ const c_kzg = crypto.c_kzg;
 /// 2. Trusted setup ceremony parameters
 /// 3. Proper BLS12-381 curve arithmetic
 /// 4. Secure random number generation for proofs
-
 /// Error types for KZG verification operations
 pub const KZGVerificationError = error{
     InvalidCommitment,

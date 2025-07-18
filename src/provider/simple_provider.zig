@@ -56,7 +56,7 @@ pub const Provider = struct {
 
     // Convenience methods for common RPC calls
     pub fn getBlockByNumber(self: *Provider, block_number: u64, include_txs: bool) ProviderError!json_rpc.JsonRpcResponse {
-        const params = std.fmt.allocPrint(self.allocator, 
+        const params = std.fmt.allocPrint(self.allocator,
             \\["0x{x}",{s}]
         , .{ block_number, if (include_txs) "true" else "false" }) catch |err| switch (err) {
             error.OutOfMemory => return ProviderError.OutOfMemory,
@@ -67,7 +67,7 @@ pub const Provider = struct {
     }
 
     pub fn getTransactionReceipt(self: *Provider, tx_hash: []const u8) ProviderError!json_rpc.JsonRpcResponse {
-        const params = std.fmt.allocPrint(self.allocator, 
+        const params = std.fmt.allocPrint(self.allocator,
             \\["{s}"]
         , .{tx_hash}) catch |err| switch (err) {
             error.OutOfMemory => return ProviderError.OutOfMemory,

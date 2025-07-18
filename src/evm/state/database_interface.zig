@@ -16,10 +16,10 @@
 //! // Create a memory database
 //! var memory_db = MemoryDatabase.init(allocator);
 //! defer memory_db.deinit();
-//! 
+//!
 //! // Convert to interface
 //! const db_interface = memory_db.to_database_interface();
-//! 
+//!
 //! // Use through interface
 //! const account = try db_interface.get_account(address);
 //! try db_interface.set_account(address, updated_account);
@@ -84,9 +84,9 @@ pub const Account = struct {
 
     /// Checks if account is empty (zero balance, nonce, and no code)
     pub fn is_empty(self: Account) bool {
-        return self.balance == 0 and 
-               self.nonce == 0 and 
-               std.mem.eql(u8, &self.code_hash, &[_]u8{0} ** 32);
+        return self.balance == 0 and
+            self.nonce == 0 and
+            std.mem.eql(u8, &self.code_hash, &[_]u8{0} ** 32);
     }
 };
 
@@ -132,7 +132,7 @@ pub const DatabaseInterface = struct {
     };
 
     /// Initialize a database interface from any implementation
-    /// 
+    ///
     /// This function uses Zig's compile-time type introspection to generate
     /// the appropriate vtable for the given implementation type.
     ///
@@ -147,7 +147,7 @@ pub const DatabaseInterface = struct {
     pub fn init(implementation: anytype) DatabaseInterface {
         const Impl = @TypeOf(implementation);
         const impl_info = @typeInfo(Impl);
-        
+
         if (impl_info != .pointer) {
             @compileError("Database interface requires a pointer to implementation");
         }

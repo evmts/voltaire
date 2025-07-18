@@ -260,7 +260,6 @@ test "MSTORE8 (0x53): Store single byte to memory" {
 test "SLOAD (0x54): Load from storage" {
     const allocator = testing.allocator;
 
-
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -636,7 +635,7 @@ test "Stack, Memory, and Control opcodes: Gas consumption" {
     frame2.memory.finalize_root();
     frame2.gas_remaining = 1000;
     const state_ptr2: *Evm.Operation.State = @ptrCast(&frame2);
-    
+
     try frame2.stack.append(42); // value
     try frame2.stack.append(0); // offset (on top)
     gas_before = frame2.gas_remaining;
@@ -650,7 +649,7 @@ test "Stack, Memory, and Control opcodes: Gas consumption" {
     frame3.memory.finalize_root();
     frame3.gas_remaining = 1000;
     const state_ptr3: *Evm.Operation.State = @ptrCast(&frame3);
-    
+
     try frame3.stack.append(42); // value (will be popped 2nd)
     try frame3.stack.append(0); // offset (will be popped 1st)
     gas_before = frame3.gas_remaining;

@@ -681,7 +681,7 @@ test "SSTORE: Overwriting values" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-    frame.memory.finalize_root();
+        frame.memory.finalize_root();
         frame.gas_remaining = 30000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -916,7 +916,7 @@ test "Storage: Boundary value testing" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-    frame.memory.finalize_root();
+        frame.memory.finalize_root();
         frame.gas_remaining = 50000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -975,7 +975,7 @@ test "Storage: Large slot number testing" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-    frame.memory.finalize_root();
+        frame.memory.finalize_root();
         frame.gas_remaining = 50000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1183,22 +1183,22 @@ test "Storage: Rapid alternating operations" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     const slot: u256 = 0x777;
-    
+
     // Rapid store/load alternating pattern
     for (0..5) |i| {
         const value = @as(u256, i + 1);
-        
+
         // Store
         try frame.stack.append(value);
         try frame.stack.append(slot);
         frame.pc = 0;
         _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
-        
+
         // Load back immediately
         try frame.stack.append(slot);
         frame.pc = 1;
         _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
-        
+
         const loaded = try frame.stack.pop();
         try testing.expectEqual(value, loaded);
     }

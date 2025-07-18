@@ -79,7 +79,7 @@ pub const HashValue = union(enum) {
                 // RLP encode the data first
                 const encoded = try primitives.Rlp.encode(allocator, data);
                 defer allocator.free(encoded);
-                
+
                 // Then calculate the hash
                 var hash_output: [32]u8 = undefined;
                 std.crypto.hash.sha3.Keccak256.hash(encoded, &hash_output, .{});
@@ -127,7 +127,7 @@ pub const BranchNode = struct {
     pub fn dupe(self: BranchNode, allocator: Allocator) !BranchNode {
         var new_branch = BranchNode.init();
         new_branch.children_mask = self.children_mask;
-        
+
         // Track how many children we've copied for cleanup on error
         var copied_count: usize = 0;
         errdefer {
@@ -142,7 +142,7 @@ pub const BranchNode = struct {
                 v.deinit(allocator);
             }
         }
-        
+
         // Deep copy all children
         for (self.children, 0..) |child, i| {
             if (child) |c| {
@@ -150,12 +150,12 @@ pub const BranchNode = struct {
                 copied_count = i + 1;
             }
         }
-        
+
         // Deep copy value if present
         if (self.value) |v| {
             new_branch.value = try v.dupe(allocator);
         }
-        
+
         return new_branch;
     }
 
@@ -369,7 +369,7 @@ fn encode_path(allocator: Allocator, nibbles: []const u8, is_leaf: bool) ![]u8 {
         hex_arr[0] = if (is_leaf) 0x20 else 0x00;
         return hex_arr;
     }
-    
+
     // Create a new array for the encoded path
     const len = if (nibbles.len % 2 == 0) (nibbles.len / 2) + 1 else (nibbles.len + 1) / 2;
     const hex_arr = try allocator.alloc(u8, len);
@@ -393,10 +393,7 @@ fn encode_path(allocator: Allocator, nibbles: []const u8, is_leaf: bool) ![]u8 {
 }
 
 /// Decodes a path into nibbles
-pub fn decode_path(allocator: Allocator, encoded_path: []const u8) !struct { 
-    nibbles: []u8, 
-    is_leaf: bool 
-} {
+pub fn decode_path(allocator: Allocator, encoded_path: []const u8) !struct { nibbles: []u8, is_leaf: bool } {
     if (encoded_path.len == 0) {
         return TrieError.InvalidPath;
     }
@@ -405,12 +402,12 @@ pub fn decode_path(allocator: Allocator, encoded_path: []const u8) !struct {
     const prefix_nibble = prefix >> 4;
     const is_leaf = prefix_nibble == 2 or prefix_nibble == 3;
     const has_odd_nibble = prefix_nibble == 1 or prefix_nibble == 3;
-    
-    const nibble_count = if (has_odd_nibble) 
+
+    const nibble_count = if (has_odd_nibble)
         encoded_path.len * 2 - 1
-    else 
+    else
         (encoded_path.len - 1) * 2;
-        
+
     const nibbles = try allocator.alloc(u8, nibble_count);
     errdefer allocator.free(nibbles);
 
@@ -458,25 +455,25 @@ pub const HashBuilder = struct {
 
 test "TrieMask operations" {
     const testing = std.testing;
-    
+
     var mask = TrieMask.init();
     try testing.expect(mask.is_empty());
     try testing.expectEqual(@as(u5, 0), mask.bit_count());
-    
+
     mask.set(1);
     try testing.expect(!mask.is_empty());
     try testing.expectEqual(@as(u5, 1), mask.bit_count());
     try testing.expect(mask.is_set(1));
     try testing.expect(!mask.is_set(2));
-    
+
     mask.set(3);
     try testing.expectEqual(@as(u5, 2), mask.bit_count());
-    
+
     mask.unset(1);
     try testing.expectEqual(@as(u5, 1), mask.bit_count());
     try testing.expect(!mask.is_set(1));
     try testing.expect(mask.is_set(3));
-    
+
     mask.unset(3);
     try testing.expect(mask.is_empty());
 }
@@ -484,11 +481,11 @@ test "TrieMask operations" {
 test "key_to_nibbles and nibbles_to_key" {
     const testing = std.testing;
     const allocator = testing.allocator;
-    
+
     const key = [_]u8{ 0x12, 0x34, 0xAB, 0xCD };
     const nibbles = try key_to_nibbles(allocator, &key);
     defer allocator.free(nibbles);
-    
+
     try testing.expectEqual(@as(usize, 8), nibbles.len);
     try testing.expectEqual(@as(u8, 1), nibbles[0]);
     try testing.expectEqual(@as(u8, 2), nibbles[1]);
@@ -498,49 +495,49 @@ test "key_to_nibbles and nibbles_to_key" {
     try testing.expectEqual(@as(u8, 11), nibbles[5]);
     try testing.expectEqual(@as(u8, 12), nibbles[6]);
     try testing.expectEqual(@as(u8, 13), nibbles[7]);
-    
+
     const round_trip = try nibbles_to_key(allocator, nibbles);
     defer allocator.free(round_trip);
-    
+
     try testing.expectEqualSlices(u8, &key, round_trip);
 }
 
 test "encodePath and decodePath" {
     const testing = std.testing;
     const allocator = testing.allocator;
-    
+
     // Test with even number of nibbles - extension node
     {
         const nibbles = [_]u8{ 1, 2, 3, 4 };
         const encoded = try encode_path(allocator, &nibbles, false);
         defer allocator.free(encoded);
-        
+
         try testing.expectEqual(@as(usize, 3), encoded.len);
         try testing.expectEqual(@as(u8, 0x00), encoded[0]);
         try testing.expectEqual(@as(u8, 0x12), encoded[1]);
         try testing.expectEqual(@as(u8, 0x34), encoded[2]);
-        
+
         const decoded = try decode_path(allocator, encoded);
         defer allocator.free(decoded.nibbles);
-        
+
         try testing.expectEqual(false, decoded.is_leaf);
         try testing.expectEqualSlices(u8, &nibbles, decoded.nibbles);
     }
-    
+
     // Test with odd number of nibbles - leaf node
     {
         const nibbles = [_]u8{ 1, 2, 3, 4, 5 };
         const encoded = try encode_path(allocator, &nibbles, true);
         defer allocator.free(encoded);
-        
+
         try testing.expectEqual(@as(usize, 3), encoded.len);
         try testing.expectEqual(@as(u8, 0x31), encoded[0]);
         try testing.expectEqual(@as(u8, 0x23), encoded[1]);
         try testing.expectEqual(@as(u8, 0x45), encoded[2]);
-        
+
         const decoded = try decode_path(allocator, encoded);
         defer allocator.free(decoded.nibbles);
-        
+
         try testing.expectEqual(true, decoded.is_leaf);
         try testing.expectEqualSlices(u8, &nibbles, decoded.nibbles);
     }
@@ -549,28 +546,28 @@ test "encodePath and decodePath" {
 test "BranchNode encoding" {
     const testing = std.testing;
     const allocator = testing.allocator;
-    
+
     var branch = BranchNode.init();
     defer branch.deinit(allocator);
-    
+
     const data1 = "value1";
     const data1_copy = try allocator.dupe(u8, data1);
     branch.children[1] = HashValue{ .Raw = data1_copy };
     branch.children_mask.set(1);
-    
+
     const data2 = "value2";
     const data2_copy = try allocator.dupe(u8, data2);
     branch.children[9] = HashValue{ .Raw = data2_copy };
     branch.children_mask.set(9);
-    
+
     const encoded = try branch.encode(allocator);
     defer allocator.free(encoded);
-    
+
     // With RLP, we can only verify encoding-decoding roundtrip because
     // the exact encoding layout is complex to predict
     const decoded = try primitives.Rlp.decode(allocator, encoded, false);
     defer decoded.data.deinit(allocator);
-    
+
     switch (decoded.data) {
         .List => |items| {
             try testing.expectEqual(@as(usize, 17), items.len);
@@ -582,22 +579,22 @@ test "BranchNode encoding" {
 test "LeafNode encoding" {
     const testing = std.testing;
     const allocator = testing.allocator;
-    
+
     const path = [_]u8{ 1, 2, 3, 4 };
     const value = "test_value";
     const value_copy = try allocator.dupe(u8, value);
     const path_copy = try allocator.dupe(u8, &path);
-    
+
     var leaf = try LeafNode.init(allocator, path_copy, HashValue{ .Raw = value_copy });
     defer leaf.deinit(allocator);
-    
+
     const encoded = try leaf.encode(allocator);
     defer allocator.free(encoded);
-    
+
     // Verify it's a list with 2 items (path and value)
     const decoded = try primitives.Rlp.decode(allocator, encoded, false);
     defer decoded.data.deinit(allocator);
-    
+
     switch (decoded.data) {
         .List => |items| {
             try testing.expectEqual(@as(usize, 2), items.len);
@@ -609,22 +606,22 @@ test "LeafNode encoding" {
 test "ExtensionNode encoding" {
     const testing = std.testing;
     const allocator = testing.allocator;
-    
+
     const path = [_]u8{ 1, 2, 3, 4 };
     const value = "next_node";
     const value_copy = try allocator.dupe(u8, value);
     const path_copy = try allocator.dupe(u8, &path);
-    
+
     var extension = try ExtensionNode.init(allocator, path_copy, HashValue{ .Raw = value_copy });
     defer extension.deinit(allocator);
-    
+
     const encoded = try extension.encode(allocator);
     defer allocator.free(encoded);
-    
+
     // Verify it's a list with 2 items (path and next node)
     const decoded = try primitives.Rlp.decode(allocator, encoded, false);
     defer decoded.data.deinit(allocator);
-    
+
     switch (decoded.data) {
         .List => |items| {
             try testing.expectEqual(@as(usize, 2), items.len);
@@ -636,19 +633,19 @@ test "ExtensionNode encoding" {
 test "TrieNode hash" {
     const testing = std.testing;
     const allocator = testing.allocator;
-    
+
     // Create a leaf node
     const path = [_]u8{ 1, 2, 3, 4 };
     const value = "test_value";
     const value_copy = try allocator.dupe(u8, value);
     const path_copy = try allocator.dupe(u8, &path);
-    
+
     const leaf = try LeafNode.init(allocator, path_copy, HashValue{ .Raw = value_copy });
     var node = TrieNode{ .Leaf = leaf };
     defer node.deinit(allocator);
-    
+
     const hash = try node.hash(allocator);
-    
+
     // We can't predict the exact hash, but we can ensure it's non-zero
     var is_zero = true;
     for (hash) |byte| {

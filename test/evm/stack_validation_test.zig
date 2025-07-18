@@ -20,19 +20,13 @@ test "Stack validation: binary operations" {
 
     // Test with a standalone stack
     var stack = Stack{};
-    
+
     // Test underflow - empty stack
-    try testing.expectError(
-        ExecutionError.Error.StackUnderflow, 
-        stack_validation.validate_stack_requirements(&stack, add_op)
-    );
+    try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.validate_stack_requirements(&stack, add_op));
 
     // Add one item - still underflow
     try stack.append(10);
-    try testing.expectError(
-        ExecutionError.Error.StackUnderflow,
-        stack_validation.validate_stack_requirements(&stack, add_op)
-    );
+    try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.validate_stack_requirements(&stack, add_op));
 
     // Add second item - should pass
     try stack.append(20);
@@ -42,71 +36,59 @@ test "Stack validation: binary operations" {
 test "Stack validation: PUSH operations" {
     var table = JumpTable.init_from_hardfork(.FRONTIER);
     const push1_op = table.get_operation(0x60);
-    
+
     // PUSH operations have min_stack = 0
     try testing.expectEqual(@as(u32, 0), push1_op.min_stack);
-    
+
     // Test with a standalone stack
     var stack = Stack{};
-    
+
     // Fill stack to capacity
     stack.size = Stack.CAPACITY;
-    
+
     // Should fail due to overflow
-    try testing.expectError(
-        ExecutionError.Error.StackOverflow,
-        stack_validation.validate_stack_requirements(&stack, push1_op)
-    );
+    try testing.expectError(ExecutionError.Error.StackOverflow, stack_validation.validate_stack_requirements(&stack, push1_op));
 }
 
 test "Stack validation: DUP operations" {
     var table = JumpTable.init_from_hardfork(.FRONTIER);
     const dup1_op = table.get_operation(0x80);
-    
+
     // DUP1 needs at least 1 item
     try testing.expectEqual(@as(u32, 1), dup1_op.min_stack);
-    
+
     // Test with a standalone stack
     var stack = Stack{};
-    
+
     // Test with empty stack
-    try testing.expectError(
-        ExecutionError.Error.StackUnderflow,
-        stack_validation.validate_stack_requirements(&stack, dup1_op)
-    );
-    
+    try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.validate_stack_requirements(&stack, dup1_op));
+
     // Add item and test
     try stack.append(42);
     try stack_validation.validate_stack_requirements(&stack, dup1_op);
-    
+
     // Test overflow - fill stack to capacity
     stack.size = Stack.CAPACITY;
-    try testing.expectError(
-        ExecutionError.Error.StackOverflow,
-        stack_validation.validate_stack_requirements(&stack, dup1_op)
-    );
+    try testing.expectError(ExecutionError.Error.StackOverflow, stack_validation.validate_stack_requirements(&stack, dup1_op));
 }
 
 test "Stack validation: SWAP operations" {
     var table = JumpTable.init_from_hardfork(.FRONTIER);
     const swap1_op = table.get_operation(0x90);
-    
+
     // SWAP1 needs at least 2 items
     try testing.expectEqual(@as(u32, 2), swap1_op.min_stack);
-    
+
     // Test with a standalone stack
     var stack = Stack{};
-    
+
     // Test validation patterns
-    try testing.expectError(
-        ExecutionError.Error.StackUnderflow,
-        stack_validation.ValidationPatterns.validate_swap(&stack, 1)
-    );
-    
+    try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.ValidationPatterns.validate_swap(&stack, 1));
+
     // Add items
     try stack.append(10);
     try stack.append(20);
-    
+
     // Should pass now
     try stack_validation.ValidationPatterns.validate_swap(&stack, 1);
 }
@@ -140,45 +122,36 @@ test "Stack validation: max_stack calculations" {
 test "Stack validation: jump table stack requirements verification" {
     // This test verifies that the jump table properly sets stack requirements
     // for operations, and that our validation functions work correctly with them
-    
+
     var table = JumpTable.init_from_hardfork(.FRONTIER);
-    
+
     // Test ADD operation requirements
     const add_op = table.get_operation(0x01);
     try testing.expectEqual(@as(u32, 2), add_op.min_stack);
     try testing.expectEqual(@as(u32, Stack.CAPACITY), add_op.max_stack);
-    
+
     // Test with a simple stack
     var stack = Stack{};
-    
+
     // Should fail with empty stack
-    try testing.expectError(
-        ExecutionError.Error.StackUnderflow,
-        stack_validation.validate_stack_requirements(&stack, add_op)
-    );
-    
+    try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.validate_stack_requirements(&stack, add_op));
+
     // Add one item - still should fail
     try stack.append(10);
-    try testing.expectError(
-        ExecutionError.Error.StackUnderflow,
-        stack_validation.validate_stack_requirements(&stack, add_op)
-    );
-    
+    try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.validate_stack_requirements(&stack, add_op));
+
     // Add second item - should pass
     try stack.append(20);
     try stack_validation.validate_stack_requirements(&stack, add_op);
-    
+
     // Test PUSH1 operation
     const push1_op = table.get_operation(0x60);
     try testing.expectEqual(@as(u32, 0), push1_op.min_stack);
     try testing.expectEqual(@as(u32, Stack.CAPACITY - 1), push1_op.max_stack);
-    
+
     // Test at capacity
     stack.size = Stack.CAPACITY;
-    try testing.expectError(
-        ExecutionError.Error.StackOverflow,
-        stack_validation.validate_stack_requirements(&stack, push1_op)
-    );
+    try testing.expectError(ExecutionError.Error.StackOverflow, stack_validation.validate_stack_requirements(&stack, push1_op));
 }
 
 test "Stack validation: all operation categories" {

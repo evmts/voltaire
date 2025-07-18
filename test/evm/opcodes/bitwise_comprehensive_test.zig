@@ -840,7 +840,7 @@ test "Bitwise opcodes: Gas consumption" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-    frame.memory.finalize_root();
+        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         try tc.setup(&frame);
@@ -891,7 +891,7 @@ test "Bitwise opcodes: Stack underflow" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-    frame.memory.finalize_root();
+        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -925,7 +925,7 @@ test "Bitwise opcodes: Stack underflow" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-    frame.memory.finalize_root();
+        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

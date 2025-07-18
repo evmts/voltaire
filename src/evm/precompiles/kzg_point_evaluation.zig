@@ -12,7 +12,6 @@ const kzg_verification = @import("../blob/kzg_verification.zig");
 /// This precompile verifies KZG polynomial commitment proofs for EIP-4844 blob transactions.
 /// It takes a versioned hash, evaluation point, claimed value, commitment, and proof as input,
 /// and returns a success indicator if the proof is valid.
-
 /// Gas cost for KZG point evaluation (EIP-4844)
 pub const KZG_POINT_EVALUATION_GAS_COST: u64 = 50000;
 
@@ -34,21 +33,45 @@ pub const KZG_POINT_EVALUATION_OUTPUT_LENGTH: usize = 64;
 /// Second 32 bytes: BLS_MODULUS
 const KZG_POINT_EVALUATION_SUCCESS: [64]u8 = blk: {
     var result: [64]u8 = [_]u8{0} ** 64;
-    
+
     // First 32 bytes: FIELD_ELEMENTS_PER_BLOB (0x1000 = 4096)
     result[30] = 0x10; // 0x1000 in big-endian
     result[31] = 0x00;
-    
+
     // Second 32 bytes: BLS_MODULUS (0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001)
-    result[32] = 0x73; result[33] = 0xed; result[34] = 0xa7; result[35] = 0x53;
-    result[36] = 0x29; result[37] = 0x9d; result[38] = 0x7d; result[39] = 0x48;
-    result[40] = 0x33; result[41] = 0x39; result[42] = 0xd8; result[43] = 0x08;
-    result[44] = 0x09; result[45] = 0xa1; result[46] = 0xd8; result[47] = 0x05;
-    result[48] = 0x53; result[49] = 0xbd; result[50] = 0xa4; result[51] = 0x02;
-    result[52] = 0xff; result[53] = 0xfe; result[54] = 0x5b; result[55] = 0xfe;
-    result[56] = 0xff; result[57] = 0xff; result[58] = 0xff; result[59] = 0xff;
-    result[60] = 0x00; result[61] = 0x00; result[62] = 0x00; result[63] = 0x01;
-    
+    result[32] = 0x73;
+    result[33] = 0xed;
+    result[34] = 0xa7;
+    result[35] = 0x53;
+    result[36] = 0x29;
+    result[37] = 0x9d;
+    result[38] = 0x7d;
+    result[39] = 0x48;
+    result[40] = 0x33;
+    result[41] = 0x39;
+    result[42] = 0xd8;
+    result[43] = 0x08;
+    result[44] = 0x09;
+    result[45] = 0xa1;
+    result[46] = 0xd8;
+    result[47] = 0x05;
+    result[48] = 0x53;
+    result[49] = 0xbd;
+    result[50] = 0xa4;
+    result[51] = 0x02;
+    result[52] = 0xff;
+    result[53] = 0xfe;
+    result[54] = 0x5b;
+    result[55] = 0xfe;
+    result[56] = 0xff;
+    result[57] = 0xff;
+    result[58] = 0xff;
+    result[59] = 0xff;
+    result[60] = 0x00;
+    result[61] = 0x00;
+    result[62] = 0x00;
+    result[63] = 0x01;
+
     break :blk result;
 };
 

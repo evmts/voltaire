@@ -21,14 +21,13 @@ fn u256ToBytes32(value: u256) [32]u8 {
     return bytes;
 }
 
-
 test "complex: fibonacci calculation" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -99,16 +98,16 @@ test "complex: fibonacci calculation" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -120,11 +119,11 @@ test "complex: fibonacci calculation" {
 
 test "complex: storage-based counter with access patterns" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -180,16 +179,16 @@ test "complex: storage-based counter with access patterns" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(contract_address, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -200,11 +199,11 @@ test "complex: storage-based counter with access patterns" {
 
 test "complex: memory expansion with large offsets" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -243,16 +242,16 @@ test "complex: memory expansion with large offsets" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -265,11 +264,11 @@ test "complex: memory expansion with large offsets" {
 
 test "complex: nested conditionals with multiple jumps" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -334,16 +333,16 @@ test "complex: nested conditionals with multiple jumps" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -356,11 +355,11 @@ test "complex: nested conditionals with multiple jumps" {
 
 test "complex: event emission with multiple topics" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -407,16 +406,16 @@ test "complex: event emission with multiple topics" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(contract_address, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -428,11 +427,11 @@ test "complex: event emission with multiple topics" {
 
 test "complex: keccak256 hash computation" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -471,16 +470,16 @@ test "complex: keccak256 hash computation" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -494,11 +493,11 @@ test "complex: keccak256 hash computation" {
 
 test "complex: call depth limit enforcement" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -550,11 +549,11 @@ test "complex: call depth limit enforcement" {
 
 test "complex: bit manipulation operations" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -628,16 +627,16 @@ test "complex: bit manipulation operations" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -652,11 +651,11 @@ test "complex: bit manipulation operations" {
 
 test "complex: modular arithmetic edge cases" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -775,16 +774,16 @@ test "complex: modular arithmetic edge cases" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 

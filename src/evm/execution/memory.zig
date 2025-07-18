@@ -379,10 +379,8 @@ pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     const mem_offset = frame.stack.pop_unsafe();
     const code_offset = frame.stack.pop_unsafe();
     const size = frame.stack.pop_unsafe();
-    
-    Log.debug("CODECOPY: mem_offset={}, code_offset={}, size={}, code_len={}", .{
-        mem_offset, code_offset, size, frame.contract.code.len
-    });
+
+    Log.debug("CODECOPY: mem_offset={}, code_offset={}, size={}, code_len={}", .{ mem_offset, code_offset, size, frame.contract.code.len });
 
     if (size == 0) {
         @branchHint(.unlikely);
@@ -411,11 +409,8 @@ pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
 
     // Copy code to memory
     try frame.memory.set_data_bounded(mem_offset_usize, frame.contract.code, code_offset_usize, size_usize);
-    
-    Log.debug("CODECOPY: copied {} bytes from code[{}..{}] to memory[{}..{}]", .{
-        size_usize, code_offset_usize, code_offset_usize + size_usize,
-        mem_offset_usize, mem_offset_usize + size_usize
-    });
+
+    Log.debug("CODECOPY: copied {} bytes from code[{}..{}] to memory[{}..{}]", .{ size_usize, code_offset_usize, code_offset_usize + size_usize, mem_offset_usize, mem_offset_usize + size_usize });
 
     return Operation.ExecutionResult{};
 }

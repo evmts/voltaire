@@ -72,8 +72,7 @@ pub fn create_contract_internal(self: *Vm, creator: primitives.Address.Address, 
     });
 
     const deployment_code = init_result.output orelse &[_]u8{};
-    
-    
+
     if (deployment_code.len == 0) {
         Log.debug("create_contract_internal: WARNING: Init code returned empty deployment code! init_result.output={any}", .{init_result.output});
     } else {
@@ -97,7 +96,7 @@ pub fn create_contract_internal(self: *Vm, creator: primitives.Address.Address, 
     const gas_left = init_result.gas_left - deploy_code_gas;
 
     Log.debug("Contract creation successful! Address: {any}, gas_left: {}", .{ new_address, gas_left });
-    
+
     return CreateResult{
         .success = true,
         .address = new_address,

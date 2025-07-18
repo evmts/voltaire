@@ -507,7 +507,7 @@ test "Journal: Performance - many snapshots and changes" {
     // Create many nested snapshots with changes
     for (0..num_snapshots) |i| {
         snapshots[i] = try state.snapshot();
-        
+
         // Make several changes
         for (0..num_changes_per_snapshot) |j| {
             const slot = @as(u256, @intCast(i * num_changes_per_snapshot + j));

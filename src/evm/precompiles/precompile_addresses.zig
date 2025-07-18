@@ -2,7 +2,6 @@ const primitives = @import("primitives");
 
 /// Precompile addresses as defined by the Ethereum specification
 /// These addresses are reserved for built-in precompiled contracts
-
 /// ECRECOVER precompile - signature recovery
 pub const ECRECOVER_ADDRESS: primitives.Address.Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01 };
 
@@ -44,7 +43,7 @@ pub fn is_precompile(address: primitives.Address.Address) bool {
             return false;
         }
     }
-    
+
     // Check if the last byte is in the precompile range (1-10)
     const last_byte = address[19];
     return last_byte >= 1 and last_byte <= 10;

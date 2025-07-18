@@ -28,6 +28,6 @@ pub fn set_code_protected(self: *Vm, address: primitives.Address.Address, code: 
     if (self.read_only) {
         return ExecutionError.Error.WriteProtection;
     }
-    
+
     try self.state.set_code(address, code);
 }

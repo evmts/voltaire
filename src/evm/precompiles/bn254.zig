@@ -2,7 +2,7 @@
 ///
 /// This module implements the BN254 elliptic curve used by Ethereum precompiles:
 /// - ECADD (0x06): Point addition
-/// - ECMUL (0x07): Scalar multiplication  
+/// - ECMUL (0x07): Scalar multiplication
 /// - ECPAIRING (0x08): Pairing check
 ///
 /// ## Curve Parameters
@@ -13,7 +13,6 @@
 /// ## References
 /// - EIP-196: https://eips.ethereum.org/EIPS/eip-196
 /// - BN254 Specification: https://tools.ietf.org/id/draft-yoneyama-pairing-friendly-curves-02.html
-
 const std = @import("std");
 
 /// BN254 field prime (21888242871839275222246405745257275088696311157297823662689037894645226208583)
@@ -46,7 +45,7 @@ pub const G1Point = struct {
             x = (x << 8) | @as(u256, byte);
         }
 
-        // Convert 32-byte big-endian y coordinate  
+        // Convert 32-byte big-endian y coordinate
         for (input[32..64]) |byte| {
             y = (y << 8) | @as(u256, byte);
         }
@@ -219,20 +218,20 @@ fn mod_mul(a: u256, b: u256) u256 {
     var result: u256 = 0;
     var x = a % FIELD_PRIME;
     var y = b % FIELD_PRIME;
-    
+
     while (y > 0) {
         // If y is odd, add x to result (mod FIELD_PRIME)
         if ((y & 1) == 1) {
             const sum = result +% x;
             result = sum % FIELD_PRIME;
         }
-        
+
         // Double x (mod FIELD_PRIME)
         x = (x +% x) % FIELD_PRIME;
-        
+
         y >>= 1;
     }
-    
+
     return result;
 }
 
@@ -252,22 +251,22 @@ fn mod_inverse(a: u256) u256 {
     var s: u256 = 1;
     var old_s_negative = false;
     var s_negative = false;
-    
+
     while (r != 0) {
         const quotient = old_r / r;
-        
+
         // Update r
         const temp_r = r;
         r = old_r % r;
         old_r = temp_r;
-        
+
         // Update s with sign tracking
         const temp_s = s;
         const temp_s_negative = s_negative;
-        
+
         // Calculate quotient * s
         const q_times_s = mod_mul(quotient, s);
-        
+
         // Update s = old_s - quotient * s
         if (old_s_negative == temp_s_negative) {
             // Same sign: |old_s| - |q*s| or -(|old_s| - |q*s|)
@@ -283,7 +282,7 @@ fn mod_inverse(a: u256) u256 {
             s = (old_s +% q_times_s) % FIELD_PRIME;
             s_negative = old_s_negative;
         }
-        
+
         old_s = temp_s;
         old_s_negative = temp_s_negative;
     }
@@ -297,7 +296,7 @@ fn mod_inverse(a: u256) u256 {
     if (old_s_negative) {
         return FIELD_PRIME - old_s;
     }
-    
+
     return old_s;
 }
 
@@ -357,10 +356,10 @@ test "BN254 point addition" {
 
 test "BN254 byte conversion" {
     const point = G1Point{ .x = 1, .y = 2 };
-    
+
     var bytes: [64]u8 = undefined;
     point.to_bytes(&bytes);
-    
+
     const restored = G1Point.from_bytes(&bytes) catch unreachable;
     try testing.expectEqual(point.x, restored.x);
     try testing.expectEqual(point.y, restored.y);

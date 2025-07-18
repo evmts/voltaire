@@ -33,7 +33,7 @@ const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 pub const DatabaseType = enum {
     /// In-memory hash map based storage
     Memory,
-    
+
     // Future database types can be added here:
     // Fork,      // Fork from remote Ethereum node
     // File,      // File-based persistent storage
@@ -45,7 +45,7 @@ pub const DatabaseType = enum {
 pub const DatabaseConfig = union(DatabaseType) {
     /// Memory database requires no configuration
     Memory: void,
-    
+
     // Future configurations:
     // Fork: struct {
     //     remote_url: []const u8,
@@ -71,7 +71,7 @@ pub const DatabaseConfig = union(DatabaseType) {
 const DatabaseMetadata = struct {
     database_type: DatabaseType,
     allocation_ptr: *anyopaque,
-    
+
     /// Size of the allocated database struct for proper deallocation
     allocation_size: usize,
 };
@@ -106,19 +106,19 @@ fn ensureMetadataMapInitialized(allocator: std.mem.Allocator) !void {
 /// const config = DatabaseConfig{ .Memory = {} };
 /// const db = try createDatabase(allocator, config);
 /// defer destroyDatabase(allocator, db);
-/// 
+///
 /// // Use database through interface
 /// try db.set_account(address, account);
 /// ```
 pub fn createDatabase(allocator: std.mem.Allocator, config: DatabaseConfig) !DatabaseInterface {
     try ensureMetadataMapInitialized(allocator);
-    
+
     switch (config) {
         .Memory => {
             // Allocate memory database on heap
             const memory_db = try allocator.create(MemoryDatabase);
             memory_db.* = MemoryDatabase.init(allocator);
-            
+
             // Store metadata for cleanup
             const metadata = DatabaseMetadata{
                 .database_type = .Memory,
@@ -126,53 +126,53 @@ pub fn createDatabase(allocator: std.mem.Allocator, config: DatabaseConfig) !Dat
                 .allocation_size = @sizeOf(MemoryDatabase),
             };
             try database_metadata_map.put(memory_db, metadata);
-            
+
             return memory_db.to_database_interface();
         },
-        
+
         // Future database types can be implemented here:
         //
         // .Fork => |fork_config| {
         //     const fork_db = try allocator.create(ForkDatabase);
         //     fork_db.* = try ForkDatabase.init(allocator, fork_config.remote_url, fork_config.block_number);
-        //     
+        //
         //     const metadata = DatabaseMetadata{
         //         .database_type = .Fork,
         //         .allocation_ptr = fork_db,
         //         .allocation_size = @sizeOf(ForkDatabase),
         //     };
         //     try database_metadata_map.put(fork_db, metadata);
-        //     
+        //
         //     return fork_db.to_database_interface();
         // },
         //
         // .File => |file_config| {
         //     const file_db = try allocator.create(FileDatabase);
         //     file_db.* = try FileDatabase.init(allocator, file_config.file_path, file_config.create_if_missing);
-        //     
+        //
         //     const metadata = DatabaseMetadata{
         //         .database_type = .File,
         //         .allocation_ptr = file_db,
         //         .allocation_size = @sizeOf(FileDatabase),
         //     };
         //     try database_metadata_map.put(file_db, metadata);
-        //     
+        //
         //     return file_db.to_database_interface();
         // },
         //
         // .Cached => |cached_config| {
         //     const backend_db = try createDatabase(allocator, cached_config.backend_config.*);
-        //     
+        //
         //     const cached_db = try allocator.create(CachedDatabase);
         //     cached_db.* = try CachedDatabase.init(allocator, backend_db, cached_config.cache_size);
-        //     
+        //
         //     const metadata = DatabaseMetadata{
         //         .database_type = .Cached,
         //         .allocation_ptr = cached_db,
         //         .allocation_size = @sizeOf(CachedDatabase),
         //     };
         //     try database_metadata_map.put(cached_db, metadata);
-        //     
+        //
         //     return cached_db.to_database_interface();
         // },
     }
@@ -196,19 +196,19 @@ pub fn createDatabase(allocator: std.mem.Allocator, config: DatabaseConfig) !Dat
 pub fn destroyDatabase(allocator: std.mem.Allocator, database: DatabaseInterface) void {
     // Call the database's deinit method
     database.deinit();
-    
+
     // Look up metadata for proper deallocation
     if (database_metadata_map.get(database.ptr)) |metadata| {
         // Remove from metadata map
         _ = database_metadata_map.remove(database.ptr);
-        
+
         // Deallocate based on original type
         switch (metadata.database_type) {
             .Memory => {
                 const memory_db: *MemoryDatabase = @ptrCast(@alignCast(metadata.allocation_ptr));
                 allocator.destroy(memory_db);
             },
-            
+
             // Future database type cleanup:
             // .Fork => {
             //     const fork_db: *ForkDatabase = @ptrCast(@alignCast(metadata.allocation_ptr));
@@ -286,11 +286,11 @@ test "factory memory database creation" {
     const config = DatabaseConfig{ .Memory = {} };
     const db = try createDatabase(testing.allocator, config);
     defer destroyDatabase(testing.allocator, db);
-    
+
     // Test that we can use the database
     const address = [_]u8{1} ** 20;
     const account = @import("database_interface.zig").Account.zero();
-    
+
     try db.set_account(address, account);
     const retrieved_account = try db.get_account(address);
     try testing.expect(retrieved_account != null);
@@ -299,7 +299,7 @@ test "factory memory database creation" {
 test "factory convenience function" {
     const db = try createMemoryDatabase(testing.allocator);
     defer destroyDatabase(testing.allocator, db);
-    
+
     // Test database type detection
     const db_type = getDatabaseType(db);
     try testing.expect(db_type == .Memory);
@@ -307,10 +307,10 @@ test "factory convenience function" {
 
 test "factory cleanup" {
     defer deinitFactory();
-    
+
     // Create and destroy a database
     const db = try createMemoryDatabase(testing.allocator);
     destroyDatabase(testing.allocator, db);
-    
+
     // Factory should clean up properly
 }

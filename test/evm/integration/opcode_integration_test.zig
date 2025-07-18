@@ -24,11 +24,11 @@ fn u256ToBytes32(value: u256) [32]u8 {
 
 test "integration: simple arithmetic sequence" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -56,16 +56,16 @@ test "integration: simple arithmetic sequence" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -77,11 +77,11 @@ test "integration: simple arithmetic sequence" {
 
 test "integration: memory operations sequence" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -112,16 +112,16 @@ test "integration: memory operations sequence" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -132,11 +132,11 @@ test "integration: memory operations sequence" {
 
 test "integration: storage operations sequence" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -169,16 +169,16 @@ test "integration: storage operations sequence" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(contract_address, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 50000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -189,11 +189,11 @@ test "integration: storage operations sequence" {
 
 test "integration: control flow with jumps" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -226,16 +226,16 @@ test "integration: control flow with jumps" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -246,11 +246,11 @@ test "integration: control flow with jumps" {
 
 test "integration: environment access sequence" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -284,16 +284,16 @@ test "integration: environment access sequence" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(contract_address, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -305,11 +305,11 @@ test "integration: environment access sequence" {
 
 test "integration: stack operations sequence" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -343,16 +343,16 @@ test "integration: stack operations sequence" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -364,11 +364,11 @@ test "integration: stack operations sequence" {
 
 test "integration: return data handling" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -395,16 +395,16 @@ test "integration: return data handling" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -420,11 +420,11 @@ test "integration: return data handling" {
 
 test "integration: revert with reason" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -451,16 +451,16 @@ test "integration: revert with reason" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -476,11 +476,11 @@ test "integration: revert with reason" {
 
 test "integration: gas consumption tracking" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -507,16 +507,16 @@ test "integration: gas consumption tracking" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = initial_gas;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -529,11 +529,11 @@ test "integration: gas consumption tracking" {
 
 test "integration: out of gas scenario" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -558,16 +558,16 @@ test "integration: out of gas scenario" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 5;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -576,11 +576,11 @@ test "integration: out of gas scenario" {
 
 test "integration: invalid opcode handling" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -604,16 +604,16 @@ test "integration: invalid opcode handling" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -622,11 +622,11 @@ test "integration: invalid opcode handling" {
 
 test "integration: transient storage operations" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -659,16 +659,16 @@ test "integration: transient storage operations" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(contract_address, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -679,11 +679,11 @@ test "integration: transient storage operations" {
 
 test "integration: logging operations" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -715,16 +715,16 @@ test "integration: logging operations" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(contract_address, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -741,11 +741,11 @@ test "integration: logging operations" {
 
 test "integration: cold/warm storage access (EIP-2929)" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -776,16 +776,16 @@ test "integration: cold/warm storage access (EIP-2929)" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(contract_address, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = initial_gas;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -798,11 +798,11 @@ test "integration: cold/warm storage access (EIP-2929)" {
 
 test "integration: push0 operation (Shanghai)" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -831,16 +831,16 @@ test "integration: push0 operation (Shanghai)" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 
@@ -851,11 +851,11 @@ test "integration: push0 operation (Shanghai)" {
 
 test "integration: mcopy operation (Cancun)" {
     const allocator = testing.allocator;
-    
+
     // Create memory database
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
@@ -922,16 +922,16 @@ test "integration: mcopy operation (Cancun)" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm.state.set_code(primitives.Address.ZERO_ADDRESS, &bytecode);
-    
+
     // Create frame
     var frame = try Frame.init(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
     frame.memory.finalize_root();
-    
+
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
 

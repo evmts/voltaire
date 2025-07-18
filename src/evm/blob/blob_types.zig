@@ -7,7 +7,6 @@ const crypto = @import("crypto");
 /// This module implements the core data structures for EIP-4844 blob transactions,
 /// including blobs, KZG commitments, proofs, and versioned hashes. These structures
 /// enable the blob transaction functionality that provides data availability for L2s.
-
 /// Size constants for EIP-4844
 pub const BYTES_PER_BLOB = 131072; // 128 KB
 pub const FIELD_ELEMENTS_PER_BLOB = 4096; // 4096 field elements per blob

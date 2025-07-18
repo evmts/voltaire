@@ -32,7 +32,7 @@ const bitvec = @import("bitvec.zig");
 const CodeAnalysis = @This();
 
 /// Bit vector marking which bytes in the bytecode are executable code vs data.
-/// 
+///
 /// Each bit corresponds to a byte in the contract bytecode:
 /// - 1 = executable code byte
 /// - 0 = data byte (e.g., PUSH arguments)

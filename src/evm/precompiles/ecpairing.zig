@@ -29,7 +29,6 @@
 /// - Invalid input length: Return failure
 /// - Invalid points (not on curve): Return failure
 /// - Out of gas: Standard precompile error
-
 const std = @import("std");
 const builtin = @import("builtin");
 const log = @import("../log.zig");
@@ -39,10 +38,10 @@ const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const ChainRules = @import("../hardforks/chain_rules.zig");
 
 // Conditional imports based on target
-const bn254_backend = if (builtin.target.cpu.arch == .wasm32) 
-    @import("bn254.zig")  // Pure Zig implementation for WASM (limited)
-else 
-    @import("bn254_rust_wrapper.zig");  // Rust implementation for native
+const bn254_backend = if (builtin.target.cpu.arch == .wasm32)
+    @import("bn254.zig") // Pure Zig implementation for WASM (limited)
+else
+    @import("bn254_rust_wrapper.zig"); // Rust implementation for native
 
 /// Calculate gas cost for ECPAIRING based on chain rules and number of pairs
 ///
@@ -55,12 +54,12 @@ else
 pub fn calculate_gas(num_pairs: usize, chain_rules: ChainRules) u64 {
     if (chain_rules.IsIstanbul) {
         @branchHint(.likely);
-        return gas_constants.ECPAIRING_BASE_GAS_COST + 
-               gas_constants.ECPAIRING_PER_PAIR_GAS_COST * @as(u64, @intCast(num_pairs));
+        return gas_constants.ECPAIRING_BASE_GAS_COST +
+            gas_constants.ECPAIRING_PER_PAIR_GAS_COST * @as(u64, @intCast(num_pairs));
     } else {
         @branchHint(.cold);
-        return gas_constants.ECPAIRING_BASE_GAS_COST_BYZANTIUM + 
-               gas_constants.ECPAIRING_PER_PAIR_GAS_COST_BYZANTIUM * @as(u64, @intCast(num_pairs));
+        return gas_constants.ECPAIRING_BASE_GAS_COST_BYZANTIUM +
+            gas_constants.ECPAIRING_PER_PAIR_GAS_COST_BYZANTIUM * @as(u64, @intCast(num_pairs));
     }
 }
 
@@ -73,20 +72,20 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
     if (input_size % 192 != 0) {
         return error.InvalidInputSize;
     }
-    
+
     const num_pairs = input_size / 192;
-    
+
     // Check for overflow in gas calculation
-    const max_pairs = (std.math.maxInt(u64) - gas_constants.ECPAIRING_BASE_GAS_COST) / 
-                      gas_constants.ECPAIRING_PER_PAIR_GAS_COST;
-    
+    const max_pairs = (std.math.maxInt(u64) - gas_constants.ECPAIRING_BASE_GAS_COST) /
+        gas_constants.ECPAIRING_PER_PAIR_GAS_COST;
+
     if (num_pairs > max_pairs) {
         return error.GasOverflow;
     }
-    
+
     // Return Istanbul gas cost as default (most common case)
-    return gas_constants.ECPAIRING_BASE_GAS_COST + 
-           gas_constants.ECPAIRING_PER_PAIR_GAS_COST * @as(u64, @intCast(num_pairs));
+    return gas_constants.ECPAIRING_BASE_GAS_COST +
+        gas_constants.ECPAIRING_PER_PAIR_GAS_COST * @as(u64, @intCast(num_pairs));
 }
 
 /// Execute ECPAIRING precompile
@@ -180,7 +179,7 @@ pub fn validate_gas_requirement(input_size: usize, gas_limit: u64, chain_rules: 
     if (input_size % 192 != 0) {
         return false;
     }
-    
+
     const num_pairs = input_size / 192;
     const gas_cost = calculate_gas(num_pairs, chain_rules);
     return gas_cost <= gas_limit;
@@ -218,7 +217,7 @@ test "ECPAIRING single pair - identity pairing" {
 
     const gas_needed = 45000 + 34000; // Base + 1 pair
     const result = execute(&input, &output, gas_needed, chain_rules);
-    
+
     try testing.expect(result.is_success());
     try testing.expectEqual(@as(u64, gas_needed), result.get_gas_used());
 
@@ -237,7 +236,7 @@ test "ECPAIRING invalid input length" {
     var output = [_]u8{0} ** 32;
 
     const result = execute(&input, &output, 100000, chain_rules);
-    
+
     try testing.expect(result.is_failure());
     try testing.expectEqual(PrecompileError.ExecutionFailed, result.get_error().?);
 }
@@ -277,7 +276,7 @@ test "ECPAIRING out of gas" {
 
     // Provide insufficient gas
     const result = execute(&input, &output, 50000, chain_rules); // Need 79000
-    
+
     try testing.expect(result.is_failure());
     try testing.expectEqual(PrecompileError.OutOfGas, result.get_error().?);
 }

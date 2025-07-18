@@ -41,7 +41,7 @@ test "Memory data operations" {
     const test_data = [_]u8{0xAB};
     try mem.set_data(10, &test_data);
     try testing.expectEqual(@as(usize, 11), mem.context_size());
-    
+
     const slice = try mem.get_slice(10, 1);
     try testing.expectEqual(@as(u8, 0xAB), slice[0]);
 

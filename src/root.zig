@@ -30,11 +30,11 @@
 //! ### Zig API
 //! ```zig
 //! const guillotine = @import("guillotine");
-//! 
+//!
 //! // Initialize EVM
 //! var vm = try guillotine.Evm.init(allocator, database, null, null);
 //! defer vm.deinit();
-//! 
+//!
 //! // Execute bytecode
 //! const result = try vm.interpret(contract, input);
 //! ```
@@ -45,11 +45,11 @@
 //! if (guillotine_init() != 0) {
 //!     // Handle error
 //! }
-//! 
+//!
 //! // Execute bytecode
 //! CExecutionResult result;
 //! guillotine_execute(bytecode, len, caller, value, gas, &result);
-//! 
+//!
 //! // Cleanup
 //! guillotine_deinit();
 //! ```

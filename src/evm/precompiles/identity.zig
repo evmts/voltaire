@@ -16,7 +16,7 @@ const gas_utils = @import("precompile_gas.zig");
 /// 4. **Specification compliance**: Required by Ethereum specification
 ///
 /// ## Gas Cost
-/// 
+///
 /// The gas cost follows the standard linear formula:
 /// - Base cost: 15 gas
 /// - Per-word cost: 3 gas per 32-byte word (rounded up)
@@ -34,7 +34,6 @@ const gas_utils = @import("precompile_gas.zig");
 /// // 33 bytes input: 15 + 3*2 = 21 gas (2 words), same output as input
 /// const result3 = execute(&[_]u8{1, 2, 3, ..., 33}, &output, 100);
 /// ```
-
 /// Gas constants for IDENTITY precompile
 /// These values are defined in the Ethereum specification and must match exactly
 pub const IDENTITY_BASE_COST: u64 = 15;
@@ -85,26 +84,26 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput
         @branchHint(.cold);
         return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
     };
-    
+
     // Check if we have enough gas
     if (gas_cost > gas_limit) {
         @branchHint(.cold);
         return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
     }
-    
+
     // Validate output buffer size
     if (output.len < input.len) {
         @branchHint(.cold);
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     }
-    
+
     // Identity operation: copy input to output
     // This is the core functionality - simply copy the input unchanged
     if (input.len > 0) {
         @branchHint(.likely);
         @memcpy(output[0..input.len], input);
     }
-    
+
     return PrecompileOutput.success_result(gas_cost, input.len);
 }
 

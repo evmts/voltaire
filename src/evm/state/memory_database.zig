@@ -8,7 +8,7 @@
 //!
 //! - **Fast Access**: All operations are O(1) average case using hash maps
 //! - **Complete Interface**: Implements all database interface methods
-//! - **Snapshot Support**: Full snapshot/revert functionality 
+//! - **Snapshot Support**: Full snapshot/revert functionality
 //! - **Batch Operations**: Efficient bulk update support
 //! - **Memory Management**: Proper cleanup of all allocated resources
 //!
@@ -19,7 +19,7 @@
 //! defer memory_db.deinit();
 //!
 //! const db_interface = memory_db.to_database_interface();
-//! 
+//!
 //! // Use through interface
 //! try db_interface.set_account(address, account);
 //! const account = try db_interface.get_account(address);
@@ -65,7 +65,7 @@ const StorageKeyContext = struct {
     }
 };
 
-/// Context for code hash (32-byte array) hash map operations  
+/// Context for code hash (32-byte array) hash map operations
 const CodeHashContext = struct {
     pub fn hash(self: @This(), code_hash: [32]u8) u64 {
         _ = self;
@@ -82,13 +82,13 @@ const CodeHashContext = struct {
 const Snapshot = struct {
     id: u64,
     accounts: std.HashMap([20]u8, Account, AddressContext, 80),
-    storage: std.HashMap(StorageKey, u256, StorageKeyContext, 80), 
+    storage: std.HashMap(StorageKey, u256, StorageKeyContext, 80),
     code_storage: std.HashMap([32]u8, []u8, CodeHashContext, 80),
 
     fn deinit(self: *Snapshot, allocator: std.mem.Allocator) void {
         self.accounts.deinit();
         self.storage.deinit();
-        
+
         // Free all stored code
         var code_iter = self.code_storage.iterator();
         while (code_iter.next()) |entry| {
@@ -151,25 +151,25 @@ const BatchOperation = struct {
 pub const MemoryDatabase = struct {
     /// Memory allocator for all database allocations
     allocator: std.mem.Allocator,
-    
+
     /// Account data storage
     accounts: std.HashMap([20]u8, Account, AddressContext, 80),
-    
+
     /// Contract storage (address, slot) -> value mapping
     storage: std.HashMap(StorageKey, u256, StorageKeyContext, 80),
-    
+
     /// Code storage by hash
     code_storage: std.HashMap([32]u8, []u8, CodeHashContext, 80),
-    
+
     /// State snapshots for rollback support
     snapshots: std.ArrayList(Snapshot),
-    
+
     /// Next snapshot ID to assign
     next_snapshot_id: u64,
-    
+
     /// Pending batch operations
     batch_operations: ?std.ArrayList(BatchOperation),
-    
+
     /// Whether we're currently in a batch
     batch_in_progress: bool,
 
@@ -191,20 +191,20 @@ pub const MemoryDatabase = struct {
     pub fn deinit(self: *MemoryDatabase) void {
         self.accounts.deinit();
         self.storage.deinit();
-        
+
         // Free all stored code
         var code_iter = self.code_storage.iterator();
         while (code_iter.next()) |entry| {
             self.allocator.free(entry.value_ptr.*);
         }
         self.code_storage.deinit();
-        
+
         // Free all snapshots
         for (self.snapshots.items) |*snapshot| {
             snapshot.deinit(self.allocator);
         }
         self.snapshots.deinit();
-        
+
         // Free batch operations if any
         if (self.batch_operations) |*batch_ops| {
             batch_ops.deinit();
@@ -227,7 +227,7 @@ pub const MemoryDatabase = struct {
                 .account_data = account,
             });
         }
-        
+
         try self.accounts.put(address, account);
     }
 
@@ -239,20 +239,20 @@ pub const MemoryDatabase = struct {
                 .address = address,
             });
         }
-        
+
         _ = self.accounts.remove(address);
-        
+
         // Remove all storage for this account
         var storage_iter = self.storage.iterator();
         var keys_to_remove = std.ArrayList(StorageKey).init(self.allocator);
         defer keys_to_remove.deinit();
-        
+
         while (storage_iter.next()) |entry| {
             if (std.mem.eql(u8, &entry.key_ptr.address, &address)) {
                 try keys_to_remove.append(entry.key_ptr.*);
             }
         }
-        
+
         for (keys_to_remove.items) |key| {
             _ = self.storage.remove(key);
         }
@@ -281,7 +281,7 @@ pub const MemoryDatabase = struct {
                 .storage_value = value,
             });
         }
-        
+
         const storage_key = StorageKey{ .address = address, .slot = key };
         try self.storage.put(storage_key, value);
     }
@@ -298,7 +298,7 @@ pub const MemoryDatabase = struct {
         // Calculate keccak256 hash of the code
         var hash: [32]u8 = undefined;
         std.crypto.hash.sha3.Keccak256.hash(code, &hash, .{});
-        
+
         if (self.batch_in_progress) {
             try self.add_batch_operation(.{
                 .operation_type = .SetCode,
@@ -307,18 +307,18 @@ pub const MemoryDatabase = struct {
             });
             return hash;
         }
-        
+
         // Check if code with this hash already exists
         if (self.code_storage.get(hash)) |existing_code| {
             // Code already exists, no need to store again
             _ = existing_code;
             return hash;
         }
-        
+
         // Store a copy of the code
         const code_copy = try self.allocator.alloc(u8, code.len);
         @memcpy(code_copy, code);
-        
+
         try self.code_storage.put(hash, code_copy);
         return hash;
     }
@@ -330,19 +330,19 @@ pub const MemoryDatabase = struct {
         // In a real implementation, this would compute the Merkle root
         // For now, return a deterministic hash based on state content
         var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
-        
+
         // Hash account count
         const account_count = self.accounts.count();
         hasher.update(std.mem.asBytes(&account_count));
-        
-        // Hash storage count  
+
+        // Hash storage count
         const storage_count = self.storage.count();
         hasher.update(std.mem.asBytes(&storage_count));
-        
+
         // Hash code count
         const code_count = self.code_storage.count();
         hasher.update(std.mem.asBytes(&code_count));
-        
+
         var hash: [32]u8 = undefined;
         hasher.final(&hash);
         return hash;
@@ -361,15 +361,9 @@ pub const MemoryDatabase = struct {
     pub fn create_snapshot(self: *MemoryDatabase) DatabaseError!u64 {
         const snapshot_id = self.next_snapshot_id;
         self.next_snapshot_id += 1;
-        
-        const snapshot = try Snapshot.clone_from(
-            self.allocator, 
-            &self.accounts, 
-            &self.storage, 
-            &self.code_storage, 
-            snapshot_id
-        );
-        
+
+        const snapshot = try Snapshot.clone_from(self.allocator, &self.accounts, &self.storage, &self.code_storage, snapshot_id);
+
         try self.snapshots.append(snapshot);
         return snapshot_id;
     }
@@ -384,38 +378,38 @@ pub const MemoryDatabase = struct {
                 break;
             }
         }
-        
+
         const index = snapshot_index orelse return DatabaseError.SnapshotNotFound;
         const snapshot = &self.snapshots.items[index];
-        
+
         // Clear current state
         self.accounts.clearAndFree();
         self.storage.clearAndFree();
-        
+
         var code_iter = self.code_storage.iterator();
         while (code_iter.next()) |entry| {
             self.allocator.free(entry.value_ptr.*);
         }
         self.code_storage.clearAndFree();
-        
+
         // Restore from snapshot
         var account_iter = snapshot.accounts.iterator();
         while (account_iter.next()) |entry| {
             try self.accounts.put(entry.key_ptr.*, entry.value_ptr.*);
         }
-        
+
         var storage_iter = snapshot.storage.iterator();
         while (storage_iter.next()) |entry| {
             try self.storage.put(entry.key_ptr.*, entry.value_ptr.*);
         }
-        
+
         var snap_code_iter = snapshot.code_storage.iterator();
         while (snap_code_iter.next()) |entry| {
             const code_copy = try self.allocator.alloc(u8, entry.value_ptr.len);
             @memcpy(code_copy, entry.value_ptr.*);
             try self.code_storage.put(entry.key_ptr.*, code_copy);
         }
-        
+
         // Remove this snapshot and all newer ones
         while (self.snapshots.items.len > index) {
             var removed_snapshot = self.snapshots.items[self.snapshots.items.len - 1];
@@ -434,7 +428,7 @@ pub const MemoryDatabase = struct {
                 return;
             }
         }
-        
+
         return DatabaseError.SnapshotNotFound;
     }
 
@@ -445,7 +439,7 @@ pub const MemoryDatabase = struct {
         if (self.batch_in_progress) {
             return DatabaseError.NoBatchInProgress; // Already in batch
         }
-        
+
         self.batch_operations = std.ArrayList(BatchOperation).init(self.allocator);
         self.batch_in_progress = true;
     }
@@ -455,9 +449,9 @@ pub const MemoryDatabase = struct {
         if (!self.batch_in_progress) {
             return DatabaseError.NoBatchInProgress;
         }
-        
+
         const batch_ops = &(self.batch_operations orelse return DatabaseError.NoBatchInProgress);
-        
+
         // Execute all batch operations
         for (batch_ops.items) |op| {
             switch (op.operation_type) {
@@ -466,18 +460,18 @@ pub const MemoryDatabase = struct {
                 },
                 .DeleteAccount => {
                     _ = self.accounts.remove(op.address);
-                    
+
                     // Remove associated storage
                     var storage_iter = self.storage.iterator();
                     var keys_to_remove = std.ArrayList(StorageKey).init(self.allocator);
                     defer keys_to_remove.deinit();
-                    
+
                     while (storage_iter.next()) |entry| {
                         if (std.mem.eql(u8, &entry.key_ptr.address, &op.address)) {
                             try keys_to_remove.append(entry.key_ptr.*);
                         }
                     }
-                    
+
                     for (keys_to_remove.items) |key| {
                         _ = self.storage.remove(key);
                     }
@@ -490,14 +484,14 @@ pub const MemoryDatabase = struct {
                     const code = op.code_data.?;
                     var hash: [32]u8 = undefined;
                     std.crypto.hash.sha3.Keccak256.hash(code, &hash, .{});
-                    
+
                     const code_copy = try self.allocator.alloc(u8, code.len);
                     @memcpy(code_copy, code);
                     try self.code_storage.put(hash, code_copy);
                 },
             }
         }
-        
+
         // Clean up batch
         batch_ops.deinit();
         self.batch_operations = null;
@@ -509,7 +503,7 @@ pub const MemoryDatabase = struct {
         if (!self.batch_in_progress) {
             return DatabaseError.NoBatchInProgress;
         }
-        
+
         // Simply discard all pending operations
         if (self.batch_operations) |*batch_ops| {
             batch_ops.deinit();

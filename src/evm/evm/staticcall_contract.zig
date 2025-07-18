@@ -12,10 +12,10 @@ pub const StaticcallContractError = std.mem.Allocator.Error;
 pub fn staticcall_contract(self: *Vm, caller: primitives.Address.Address, to: primitives.Address.Address, input: []const u8, gas: u64) StaticcallContractError!CallResult {
     _ = self;
     Log.debug("VM.staticcall_contract: STATICCALL from {any} to {any}, gas={}", .{ caller, to, gas });
-    
+
     // STATICCALL not implemented yet
     Log.debug("VM.staticcall_contract: STATICCALL not implemented yet", .{});
     _ = input;
-    
+
     return CallResult{ .success = false, .gas_left = gas, .output = null };
 }

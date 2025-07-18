@@ -9,7 +9,7 @@ const secp256k1 = crypto.secp256k1;
 
 /// ECRECOVER precompile implementation (address 0x01)
 ///
-/// The ECRECOVER precompile recovers the signer's address from an ECDSA signature using 
+/// The ECRECOVER precompile recovers the signer's address from an ECDSA signature using
 /// elliptic curve cryptography. This is fundamental for Ethereum's signature verification system.
 ///
 /// This implementation uses cryptographically correct secp256k1 signature recovery
@@ -18,7 +18,7 @@ const secp256k1 = crypto.secp256k1;
 /// ## Input Format (128 bytes)
 /// - hash (32 bytes): Hash of the message that was signed
 /// - v (32 bytes): Recovery ID (27 or 28, padded with zeros)
-/// - r (32 bytes): ECDSA signature r component 
+/// - r (32 bytes): ECDSA signature r component
 /// - s (32 bytes): ECDSA signature s component
 ///
 /// ## Output Format
@@ -35,7 +35,6 @@ const secp256k1 = crypto.secp256k1;
 /// const result = execute(&input, &output, 5000);
 /// // result.output_size == 32 on success, 0 on failure
 /// ```
-
 /// Gas constant for ECRECOVER precompile - fixed cost
 pub const ECRECOVER_GAS_COST: u64 = gas_constants.ECRECOVER_COST;
 
@@ -87,62 +86,61 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
 /// @return PrecompileOutput containing success/failure and gas usage
 pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput {
     const gas_cost = ECRECOVER_GAS_COST;
-    
+
     // Check if we have enough gas - this is always the first check
     if (gas_cost > gas_limit) {
         @branchHint(.cold);
         return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
     }
-    
+
     // ECRECOVER requires exactly 128 bytes of input
     if (input.len != ECRECOVER_INPUT_SIZE) {
         @branchHint(.cold);
         return PrecompileOutput.success_result(gas_cost, 0); // Return empty on invalid input
     }
-    
+
     // Validate output buffer size
     if (output.len < ECRECOVER_OUTPUT_SIZE) {
         @branchHint(.cold);
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     }
-    
+
     // Parse input components (each 32 bytes)
     const hash = input[0..32];
     const v_bytes = input[32..64];
     const r_bytes = input[64..96];
     const s_bytes = input[96..128];
-    
+
     // Convert byte arrays to u256 values
     const v = bytes_to_u256(v_bytes);
     const r = bytes_to_u256(r_bytes);
     const s = bytes_to_u256(s_bytes);
-    
+
     // Validate signature parameters
     if (!secp256k1.validateSignature(r, s)) {
         @branchHint(.cold);
         return PrecompileOutput.success_result(gas_cost, 0); // Return empty on invalid params
     }
-    
+
     // Extract recovery ID from v value
     const recovery_id = extract_recovery_id(v);
     if (recovery_id > 1) {
         @branchHint(.cold);
         return PrecompileOutput.success_result(gas_cost, 0); // Return empty on invalid recovery ID
     }
-    
+
     // Recover public key from signature (placeholder implementation)
     const recovered_address = recover_address(hash, recovery_id, r, s) catch {
         @branchHint(.cold);
         return PrecompileOutput.success_result(gas_cost, 0); // Return empty on recovery failure
     };
-    
+
     // Clear output buffer and write the recovered address (left-padded to 32 bytes)
     @memset(output[0..ECRECOVER_OUTPUT_SIZE], 0);
     @memcpy(output[12..32], &recovered_address);
-    
+
     return PrecompileOutput.success_result(gas_cost, ECRECOVER_OUTPUT_SIZE);
 }
-
 
 /// Extracts the recovery ID from the v parameter
 ///
@@ -155,14 +153,14 @@ fn extract_recovery_id(v: u256) u8 {
     // Handle legacy format (27, 28)
     if (v == 27) return 0;
     if (v == 28) return 1;
-    
+
     // Handle EIP-155 format (chain_id * 2 + 35/36)
     if (v >= 35) {
         const adjusted = v - 35;
         const recovery_id = @as(u8, @intCast(adjusted % 2));
         return recovery_id;
     }
-    
+
     // Invalid v value
     return 255;
 }
@@ -207,7 +205,7 @@ pub fn validate_call(input_size: usize, gas_limit: u64) bool {
         @branchHint(.cold);
         return false;
     }
-    
+
     // Check input size requirement
     return input_size == ECRECOVER_INPUT_SIZE;
 }

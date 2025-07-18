@@ -396,6 +396,6 @@ pub fn memoryGasCost(current_size: u64, new_size: u64) u64 {
     // Calculate cost for each size
     const current_cost = MemoryGas * current_words + (current_words * current_words) / QuadCoeffDiv;
     const new_cost = MemoryGas * new_words + (new_words * new_words) / QuadCoeffDiv;
-    
+
     return new_cost - current_cost;
 }

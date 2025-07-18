@@ -32,17 +32,17 @@ test "Integration: Token balance check pattern" {
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     // Create contract
     var contract = Evm.Contract.init(
-        alice_address,    // caller
+        alice_address, // caller
         contract_address, // address
-        0,               // value
-        100000,          // gas
-        &[_]u8{},        // code
-        code_hash,       // code hash
-        &[_]u8{},        // input
-        false,           // is_static
+        0, // value
+        100000, // gas
+        &[_]u8{}, // code
+        code_hash, // code hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
 
@@ -119,17 +119,17 @@ test "Integration: Packed struct storage" {
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     // Create contract
     var contract = Evm.Contract.init(
-        alice_address,    // caller
+        alice_address, // caller
         contract_address, // address
-        0,               // value
-        100000,          // gas
-        &[_]u8{},        // code
-        code_hash,       // code hash
-        &[_]u8{},        // input
-        false,           // is_static
+        0, // value
+        100000, // gas
+        &[_]u8{}, // code
+        code_hash, // code hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
 
@@ -149,7 +149,7 @@ test "Integration: Packed struct storage" {
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x1B); // SHL
-    
+
     try frame.stack.append(a);
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x17); // OR
 
@@ -201,17 +201,17 @@ test "Integration: Dynamic array length update" {
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     // Create contract
     var contract = Evm.Contract.init(
-        alice_address,    // caller
+        alice_address, // caller
         contract_address, // address
-        0,               // value
-        100000,          // gas
-        &[_]u8{},        // code
-        code_hash,       // code hash
-        &[_]u8{},        // input
-        false,           // is_static
+        0, // value
+        100000, // gas
+        &[_]u8{}, // code
+        code_hash, // code hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
 
@@ -265,17 +265,17 @@ test "Integration: Reentrancy guard pattern" {
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     // Create contract
     var contract = Evm.Contract.init(
-        alice_address,    // caller
+        alice_address, // caller
         contract_address, // address
-        0,               // value
-        100000,          // gas
-        &[_]u8{},        // code
-        code_hash,       // code hash
-        &[_]u8{},        // input
-        false,           // is_static
+        0, // value
+        100000, // gas
+        &[_]u8{}, // code
+        code_hash, // code hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
 
@@ -313,7 +313,7 @@ test "Integration: Reentrancy guard pattern" {
     // Verify guard is set
     try frame.stack.append(guard_slot);
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x54); // SLOAD
-    
+
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, ENTERED), result2);
 }
@@ -339,17 +339,17 @@ test "Integration: Bitfield manipulation" {
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     // Create contract
     var contract = Evm.Contract.init(
-        alice_address,    // caller
+        alice_address, // caller
         contract_address, // address
-        0,               // value
-        100000,          // gas
-        &[_]u8{},        // code
-        code_hash,       // code hash
-        &[_]u8{},        // input
-        false,           // is_static
+        0, // value
+        100000, // gas
+        &[_]u8{}, // code
+        code_hash, // code hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
 
@@ -429,17 +429,17 @@ test "Integration: Safe math operations" {
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     // Create contract
     var contract = Evm.Contract.init(
-        alice_address,    // caller
+        alice_address, // caller
         contract_address, // address
-        0,               // value
-        100000,          // gas
-        &[_]u8{},        // code
-        code_hash,       // code hash
-        &[_]u8{},        // input
-        false,           // is_static
+        0, // value
+        100000, // gas
+        &[_]u8{}, // code
+        code_hash, // code hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
 
@@ -509,17 +509,17 @@ test "Integration: Signature verification simulation" {
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     // Create contract
     var contract = Evm.Contract.init(
-        alice_address,    // caller
+        alice_address, // caller
         contract_address, // address
-        0,               // value
-        100000,          // gas
-        &[_]u8{},        // code
-        code_hash,       // code hash
-        &[_]u8{},        // input
-        false,           // is_static
+        0, // value
+        100000, // gas
+        &[_]u8{}, // code
+        code_hash, // code hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
 
@@ -579,17 +579,17 @@ test "Integration: Multi-sig wallet threshold check" {
 
     // Calculate proper code hash
     const code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     // Create contract
     var contract = Evm.Contract.init(
-        caller_address,   // caller
+        caller_address, // caller
         contract_address, // address
-        0,               // value
-        100000,          // gas
-        &[_]u8{},        // code
-        code_hash,       // code hash
-        &[_]u8{},        // input
-        false,           // is_static
+        0, // value
+        100000, // gas
+        &[_]u8{}, // code
+        code_hash, // code hash
+        &[_]u8{}, // input
+        false, // is_static
     );
     defer contract.deinit(allocator, null);
 
@@ -665,13 +665,13 @@ test "Integration: Multi-sig wallet threshold check" {
     try frame.stack.append(1); // slot 1
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x54); // SLOAD - loads confirmation count (3)
     const confirmations = try frame.stack.pop();
-    
+
     try frame.stack.append(0); // slot 0
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x54); // SLOAD - loads required confirmations (3)
     const required = try frame.stack.pop();
-    
+
     // Multi-sig test: check confirmations vs required
-    
+
     // Put them back on stack for comparison
     try frame.stack.append(confirmations);
     try frame.stack.append(required);
@@ -681,7 +681,7 @@ test "Integration: Multi-sig wallet threshold check" {
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x10); // LT: confirmations < required
     const lt_result = try frame.stack.pop();
     // LT result
-    
+
     try frame.stack.append(lt_result);
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x15); // ISZERO: NOT(confirmations < required) = confirmations >= required
 

@@ -1,11 +1,10 @@
 /// BN254 Rust Wrapper for Zig Integration
 ///
 /// This module provides Zig bindings for the Rust BN254 library,
-/// enabling ECMUL and ECPAIRING precompile implementations using 
+/// enabling ECMUL and ECPAIRING precompile implementations using
 /// the arkworks ecosystem for production-grade elliptic curve operations.
 ///
 /// The Rust library is compiled as a static library and linked with Zig.
-
 const std = @import("std");
 
 /// C API bindings for the Rust BN254 library
@@ -27,7 +26,7 @@ fn result_to_error(result: c_int) Bn254Error!void {
     return switch (result) {
         0 => {}, // BN254_SUCCESS
         1 => Bn254Error.InvalidInput,
-        2 => Bn254Error.InvalidPoint, 
+        2 => Bn254Error.InvalidPoint,
         3 => Bn254Error.InvalidScalar,
         4 => Bn254Error.ComputationFailed,
         else => Bn254Error.ComputationFailed,
@@ -42,10 +41,10 @@ pub fn init() Bn254Error!void {
 }
 
 /// Perform elliptic curve scalar multiplication (ECMUL)
-/// 
+///
 /// Input format (96 bytes):
 /// - Bytes 0-31: x coordinate (big-endian)
-/// - Bytes 32-63: y coordinate (big-endian)  
+/// - Bytes 32-63: y coordinate (big-endian)
 /// - Bytes 64-95: scalar (big-endian)
 ///
 /// Output format (64 bytes):
@@ -60,18 +59,13 @@ pub fn ecmul(input: []const u8, output: []u8) Bn254Error!void {
         return Bn254Error.InvalidInput;
     }
 
-    const result = c.bn254_ecmul(
-        input.ptr,
-        @intCast(input.len),
-        output.ptr,
-        @intCast(output.len)
-    );
-    
+    const result = c.bn254_ecmul(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
+
     try result_to_error(result);
 }
 
 /// Perform elliptic curve pairing check (ECPAIRING)
-/// 
+///
 /// Input format (multiple of 192 bytes):
 /// Each 192-byte group contains:
 /// - Bytes 0-63: G1 point (x, y coordinates, 32 bytes each)
@@ -88,13 +82,8 @@ pub fn ecpairing(input: []const u8, output: []u8) Bn254Error!void {
         return Bn254Error.InvalidInput;
     }
 
-    const result = c.bn254_ecpairing(
-        input.ptr,
-        @intCast(input.len),
-        output.ptr,
-        @intCast(output.len)
-    );
-    
+    const result = c.bn254_ecpairing(input.ptr, @intCast(input.len), output.ptr, @intCast(output.len));
+
     try result_to_error(result);
 }
 
@@ -110,19 +99,13 @@ pub fn ecpairing_output_size() usize {
 
 /// Validate ECMUL input format
 pub fn validate_ecmul_input(input: []const u8) Bn254Error!void {
-    const result = c.bn254_ecmul_validate_input(
-        input.ptr,
-        @intCast(input.len)
-    );
+    const result = c.bn254_ecmul_validate_input(input.ptr, @intCast(input.len));
     try result_to_error(result);
 }
 
-/// Validate ECPAIRING input format  
+/// Validate ECPAIRING input format
 pub fn validate_ecpairing_input(input: []const u8) Bn254Error!void {
-    const result = c.bn254_ecpairing_validate_input(
-        input.ptr,
-        @intCast(input.len)
-    );
+    const result = c.bn254_ecpairing_validate_input(input.ptr, @intCast(input.len));
     try result_to_error(result);
 }
 
@@ -144,15 +127,15 @@ test "BN254 input validation" {
     // Test ECMUL validation
     var ecmul_input = [_]u8{0} ** 96;
     try validate_ecmul_input(&ecmul_input);
-    
+
     // Test invalid ECMUL input
     var short_input = [_]u8{0} ** 50;
     try testing.expectError(Bn254Error.InvalidInput, validate_ecmul_input(&short_input));
-    
-    // Test ECPAIRING validation  
+
+    // Test ECPAIRING validation
     var ecpairing_input = [_]u8{0} ** 192;
     try validate_ecpairing_input(&ecpairing_input);
-    
+
     // Test invalid ECPAIRING input (not multiple of 192)
     var invalid_pairing_input = [_]u8{0} ** 100;
     try testing.expectError(Bn254Error.InvalidInput, validate_ecpairing_input(&invalid_pairing_input));

@@ -68,7 +68,7 @@ test "Stack: peek operations" {
     try testing.expectEqual(@as(u256, 5), try stack.peek_n(0)); // Top
     try testing.expectEqual(@as(u256, 4), try stack.peek_n(1)); // Second from top
     try testing.expectEqual(@as(u256, 1), try stack.peek_n(4)); // Bottom
-    
+
     // Out of bounds should error
     try testing.expectError(Stack.Error.StackUnderflow, stack.peek_n(5));
 }
@@ -118,7 +118,7 @@ test "Stack: pop3_unsafe operation" {
 
     const popped = stack.pop3_unsafe();
     try testing.expectEqual(@as(u256, 3), popped.a); // Third from top
-    try testing.expectEqual(@as(u256, 4), popped.b); // Second from top  
+    try testing.expectEqual(@as(u256, 4), popped.b); // Second from top
     try testing.expectEqual(@as(u256, 5), popped.c); // Top
     try testing.expectEqual(@as(usize, 2), stack.size);
 
@@ -168,10 +168,10 @@ test "Stack: overflow protection" {
 
 test "Stack: data alignment and access" {
     var stack = Stack{};
-    
+
     // Test that we can store large values
     const large_value: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
     try stack.append(large_value);
-    
+
     try testing.expectEqual(large_value, try stack.pop());
 }

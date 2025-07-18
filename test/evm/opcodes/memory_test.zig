@@ -11,7 +11,7 @@ const ExecutionError = Evm.ExecutionError;
 // Test MLOAD operation
 test "MLOAD: load 32 bytes from memory" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -40,7 +40,7 @@ test "MLOAD: load 32 bytes from memory" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Write 32 bytes to memory
     var data: [32]u8 = undefined;
     var i: usize = 0;
@@ -48,13 +48,13 @@ test "MLOAD: load 32 bytes from memory" {
         data[i] = @intCast(i);
     }
     try frame.memory.set_data(0, &data);
-    
+
     // Push offset 0
     try frame.stack.append(0);
-    
+
     // Execute MLOAD
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
-    
+
     // Should load 32 bytes as u256 (big-endian)
     const result = try frame.stack.pop();
     // First byte (0) should be in the most significant position
@@ -64,7 +64,7 @@ test "MLOAD: load 32 bytes from memory" {
 
 test "MLOAD: load with offset" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -93,7 +93,7 @@ test "MLOAD: load with offset" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Write pattern to memory
     var data: [64]u8 = undefined;
     var i: usize = 0;
@@ -101,13 +101,13 @@ test "MLOAD: load with offset" {
         data[i] = @intCast(i + 0x10);
     }
     try frame.memory.set_data(0, &data);
-    
+
     // Push offset 16
     try frame.stack.append(16);
-    
+
     // Execute MLOAD
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
-    
+
     // Should load 32 bytes starting at offset 16
     const result = try frame.stack.pop();
     // First byte should be 0x20 (16 + 0x10)
@@ -116,7 +116,7 @@ test "MLOAD: load with offset" {
 
 test "MLOAD: load from uninitialized memory returns zeros" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -145,13 +145,13 @@ test "MLOAD: load from uninitialized memory returns zeros" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push offset to uninitialized area
     try frame.stack.append(1000);
-    
+
     // Execute MLOAD
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
-    
+
     // Should return all zeros
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 }
@@ -159,7 +159,7 @@ test "MLOAD: load from uninitialized memory returns zeros" {
 // Test MSTORE operation
 test "MSTORE: store 32 bytes to memory" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -188,15 +188,15 @@ test "MSTORE: store 32 bytes to memory" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push value and offset (stack is LIFO)
     const value: u256 = 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20;
     try frame.stack.append(value);
     try frame.stack.append(0);
-    
+
     // Execute MSTORE
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
-    
+
     // Check memory contents
     const mem = try frame.memory.get_slice(0, 32);
     try testing.expectEqual(@as(u8, 0x01), mem[0]);
@@ -206,7 +206,7 @@ test "MSTORE: store 32 bytes to memory" {
 
 test "MSTORE: store with offset" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -235,15 +235,15 @@ test "MSTORE: store with offset" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push value and offset (stack is LIFO)
     const value: u256 = 0xFFEEDDCCBBAA99887766554433221100;
     try frame.stack.append(value);
     try frame.stack.append(64);
-    
+
     // Execute MSTORE
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
-    
+
     // Check memory contents at offset
     const mem = try frame.memory.get_slice(64, 32);
     // The value 0xFFEEDDCCBBAA99887766554433221100 is stored big-endian
@@ -255,7 +255,7 @@ test "MSTORE: store with offset" {
 // Test MSTORE8 operation
 test "MSTORE8: store single byte to memory" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -284,14 +284,14 @@ test "MSTORE8: store single byte to memory" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push value and offset (stack is LIFO)
     try frame.stack.append(0x1234);
     try frame.stack.append(10);
-    
+
     // Execute MSTORE8
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x53);
-    
+
     // Check memory contents
     const mem = try frame.memory.get_slice(10, 1);
     try testing.expectEqual(@as(u8, 0x34), mem[0]);
@@ -304,7 +304,7 @@ test "MSTORE8: store single byte to memory" {
 
 test "MSTORE8: store only lowest byte" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -333,14 +333,14 @@ test "MSTORE8: store only lowest byte" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push value with all bytes set (stack is LIFO)
     try frame.stack.append(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFAB);
     try frame.stack.append(0);
-    
+
     // Execute MSTORE8
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x53);
-    
+
     // Check that only lowest byte was stored
     const mem = try frame.memory.get_slice(0, 1);
     try testing.expectEqual(@as(u8, 0xAB), mem[0]);
@@ -349,7 +349,7 @@ test "MSTORE8: store only lowest byte" {
 // Test MSIZE operation
 test "MSIZE: get memory size" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -378,21 +378,21 @@ test "MSIZE: get memory size" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Initially memory size should be 0
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
-    
+
     // Write to memory at offset 31 (should expand to 32 bytes)
     try frame.memory.set_data(31, &[_]u8{0xFF});
-    
+
     // Check size again
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
     try testing.expectEqual(@as(u256, 32), try frame.stack.pop());
-    
+
     // Write to memory at offset 32 (should expand to 64 bytes - word aligned)
     try frame.memory.set_data(32, &[_]u8{0xFF});
-    
+
     // Check size again
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x59);
     try testing.expectEqual(@as(u256, 64), try frame.stack.pop());
@@ -401,7 +401,7 @@ test "MSIZE: get memory size" {
 // Test MCOPY operation (EIP-5656)
 test "MCOPY: copy memory to memory" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -430,28 +430,28 @@ test "MCOPY: copy memory to memory" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Write source data
     const src_data = [_]u8{ 0xAA, 0xBB, 0xCC, 0xDD, 0xEE };
     try frame.memory.set_data(10, &src_data);
-    
+
     // Push parameters in order for stack
     // MCOPY pops: size (first), src (second), dest (third)
     // So push: dest, src, size (size on top)
     try frame.stack.append(50);
     try frame.stack.append(10);
     try frame.stack.append(5);
-    
+
     // Execute MCOPY
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
-    
+
     // Check that data was copied
     const dest_data = try frame.memory.get_slice(50, 5);
     var i: usize = 0;
     while (i < src_data.len) : (i += 1) {
         try testing.expectEqual(src_data[i], dest_data[i]);
     }
-    
+
     // Original data should still be there
     const orig_data = try frame.memory.get_slice(10, 5);
     i = 0;
@@ -462,7 +462,7 @@ test "MCOPY: copy memory to memory" {
 
 test "MCOPY: overlapping copy forward" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -491,20 +491,20 @@ test "MCOPY: overlapping copy forward" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Write source data
     const src_data = [_]u8{ 0x11, 0x22, 0x33, 0x44, 0x55 };
     try frame.memory.set_data(10, &src_data);
-    
+
     // Copy with overlap (forward)
     // MCOPY pops: size, src, dest
     try frame.stack.append(12);
     try frame.stack.append(10);
     try frame.stack.append(5);
-    
+
     // Execute MCOPY
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
-    
+
     // Check result - should handle overlap correctly
     const result = try frame.memory.get_slice(12, 5);
     try testing.expectEqual(@as(u8, 0x11), result[0]);
@@ -516,7 +516,7 @@ test "MCOPY: overlapping copy forward" {
 
 test "MCOPY: overlapping copy backward" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -545,20 +545,20 @@ test "MCOPY: overlapping copy backward" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Write source data
     const src_data = [_]u8{ 0xAA, 0xBB, 0xCC, 0xDD, 0xEE };
     try frame.memory.set_data(10, &src_data);
-    
+
     // Copy with overlap (backward)
     // MCOPY pops: size, src, dest
     try frame.stack.append(8);
     try frame.stack.append(10);
     try frame.stack.append(5);
-    
+
     // Execute MCOPY
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
-    
+
     // Check result
     const result = try frame.memory.get_slice(8, 5);
     try testing.expectEqual(@as(u8, 0xAA), result[0]);
@@ -570,7 +570,7 @@ test "MCOPY: overlapping copy backward" {
 
 test "MCOPY: zero length copy" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -599,16 +599,16 @@ test "MCOPY: zero length copy" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push length 0
     // MCOPY pops: size, src, dest
     try frame.stack.append(200);
     try frame.stack.append(100);
     try frame.stack.append(0);
-    
+
     // Execute MCOPY
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
-    
+
     // Should succeed without doing anything
     try testing.expectEqual(@as(usize, 0), frame.stack.size);
 }
@@ -616,7 +616,7 @@ test "MCOPY: zero length copy" {
 // Test gas consumption
 test "MLOAD: memory expansion gas" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -645,15 +645,15 @@ test "MLOAD: memory expansion gas" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push offset that requires memory expansion
     try frame.stack.append(256); // offset (requires 288 bytes = 9 words)
-    
+
     const gas_before = frame.gas_remaining;
-    
+
     // Execute MLOAD
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
-    
+
     // Should consume gas for memory expansion
     const gas_used = gas_before - frame.gas_remaining;
     try testing.expect(gas_used > 0); // Memory expansion should cost gas
@@ -661,7 +661,7 @@ test "MLOAD: memory expansion gas" {
 
 test "MSTORE: memory expansion gas" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -690,16 +690,16 @@ test "MSTORE: memory expansion gas" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push value and offset that requires expansion (stack is LIFO)
     try frame.stack.append(0x123456);
     try frame.stack.append(512);
-    
+
     const gas_before = frame.gas_remaining;
-    
+
     // Execute MSTORE
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
-    
+
     // Should consume gas for memory expansion
     const gas_used = gas_before - frame.gas_remaining;
     try testing.expect(gas_used > 0);
@@ -707,7 +707,7 @@ test "MSTORE: memory expansion gas" {
 
 test "MCOPY: gas consumption" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -736,18 +736,18 @@ test "MCOPY: gas consumption" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push parameters for 32 byte copy
     // MCOPY pops: size, src, dest
     try frame.stack.append(100);
     try frame.stack.append(0);
     try frame.stack.append(32);
-    
+
     const gas_before = frame.gas_remaining;
-    
+
     // Execute MCOPY
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
-    
+
     // MCOPY costs 3 gas per word
     // 32 bytes = 1 word = 3 gas
     // Plus memory expansion for destination
@@ -758,7 +758,7 @@ test "MCOPY: gas consumption" {
 // Test stack errors
 test "MLOAD: stack underflow" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -787,9 +787,9 @@ test "MLOAD: stack underflow" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Empty stack
-    
+
     // Execute MLOAD - should fail
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
@@ -797,7 +797,7 @@ test "MLOAD: stack underflow" {
 
 test "MSTORE: stack underflow" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -826,10 +826,10 @@ test "MSTORE: stack underflow" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push only one value (need two)
     try frame.stack.append(0);
-    
+
     // Execute MSTORE - should fail
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
@@ -837,7 +837,7 @@ test "MSTORE: stack underflow" {
 
 test "MCOPY: stack underflow" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -866,12 +866,12 @@ test "MCOPY: stack underflow" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push only two values (need three)
     // MCOPY needs: dest, src, size on stack
     try frame.stack.append(0);
     try frame.stack.append(10);
-    
+
     // Execute MCOPY - should fail
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
@@ -880,7 +880,7 @@ test "MCOPY: stack underflow" {
 // Test out of offset
 test "MLOAD: offset overflow" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -909,10 +909,10 @@ test "MLOAD: offset overflow" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push offset that would overflow when adding 32
     try frame.stack.append(std.math.maxInt(u256) - 10);
-    
+
     // Execute MLOAD - should fail
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
     try testing.expectError(ExecutionError.Error.OutOfOffset, result);
@@ -920,7 +920,7 @@ test "MLOAD: offset overflow" {
 
 test "MCOPY: source offset overflow" {
     const allocator = testing.allocator;
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -949,13 +949,13 @@ test "MCOPY: source offset overflow" {
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     // Push parameters that would overflow
     // MCOPY pops: size, src, dest
     try frame.stack.append(0);
     try frame.stack.append(std.math.maxInt(u256));
     try frame.stack.append(100);
-    
+
     // Execute MCOPY - should fail
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x5E);
     try testing.expectError(ExecutionError.Error.OutOfOffset, result);

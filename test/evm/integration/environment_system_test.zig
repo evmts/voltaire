@@ -25,7 +25,7 @@ test "Integration: Contract deployment simulation" {
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -86,7 +86,7 @@ test "Integration: Call with value transfer" {
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -95,7 +95,7 @@ test "Integration: Call with value transfer" {
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     const bob_addr = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    
+
     try vm.state.set_balance(alice_addr, 1_000_000_000_000_000_000); // 1 ETH
     try vm.state.set_balance(bob_addr, 0);
 
@@ -119,7 +119,7 @@ test "Integration: Call with value transfer" {
     frame.gas_remaining = 100000;
     frame.memory.finalize_root();
 
-    // Prepare CALL parameters  
+    // Prepare CALL parameters
     // CALL(gas, address, value, argsOffset, argsSize, retOffset, retSize)
     // Push in reverse order since stack is LIFO
     try frame.stack.append(0); // retSize
@@ -147,7 +147,7 @@ test "Integration: Environment data access" {
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -158,20 +158,9 @@ test "Integration: Environment data access" {
     const bob_addr = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const charlie_addr = primitives.Address.from_u256(0x4444444444444444444444444444444444444444);
-    
-    const context = Evm.Context.init_with_values(
-        alice_addr,
-        20 * 1_000_000_000, // 20 Gwei
-        15000000,
-        1234567890,
-        charlie_addr,
-        0,
-        30000000,
-        1,
-        0,
-        &[_]u256{},
-        0
-    );
+
+    const context = Evm.Context.init_with_values(alice_addr, 20 * 1_000_000_000, // 20 Gwei
+        15000000, 1234567890, charlie_addr, 0, 30000000, 1, 0, &[_]u256{}, 0);
     vm.set_context(context);
 
     var contract = Contract.init(
@@ -194,7 +183,7 @@ test "Integration: Environment data access" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Test ADDRESS
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x30);
     const address_result = try frame.stack.pop();
@@ -233,7 +222,7 @@ test "Integration: Block information access" {
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -243,20 +232,9 @@ test "Integration: Block information access" {
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const charlie_addr = primitives.Address.from_u256(0x4444444444444444444444444444444444444444);
-    
-    const context = Evm.Context.init_with_values(
-        alice_addr,
-        0,
-        17000000,
-        1683000000,
-        charlie_addr,
-        0,
-        30000000,
-        1,
-        30 * 1_000_000_000, // 30 Gwei
-        &[_]u256{},
-        0
-    );
+
+    const context = Evm.Context.init_with_values(alice_addr, 0, 17000000, 1683000000, charlie_addr, 0, 30000000, 1, 30 * 1_000_000_000, // 30 Gwei
+        &[_]u256{}, 0);
     vm.set_context(context);
 
     // Calculate code hash for empty code
@@ -264,7 +242,7 @@ test "Integration: Block information access" {
     var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
     hasher.update(&[_]u8{});
     hasher.final(&code_hash);
-    
+
     var contract = Contract.init(
         alice_addr,
         contract_addr,
@@ -285,7 +263,7 @@ test "Integration: Block information access" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Test NUMBER
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x43);
     const number_result = try frame.stack.pop();
@@ -319,7 +297,7 @@ test "Integration: Log emission with topics" {
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -327,13 +305,13 @@ test "Integration: Log emission with topics" {
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     const bob_addr = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    
+
     // Calculate code hash for empty code
     var code_hash: [32]u8 = undefined;
     var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
     hasher.update(&[_]u8{});
     hasher.final(&code_hash);
-    
+
     var contract = Contract.init(
         alice_addr,
         contract_addr,
@@ -369,7 +347,7 @@ test "Integration: Log emission with topics" {
     try frame.stack.append(0); // offset (will be popped first)
 
     const initial_log_count = vm.state.logs.items.len;
-    
+
     // Execute LOG3 through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
@@ -394,7 +372,7 @@ test "Integration: External code operations" {
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -402,7 +380,7 @@ test "Integration: External code operations" {
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     const bob_addr = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    
+
     // Set up external contract with code
     const external_code = [_]u8{
         0x60, 0x80, // PUSH1 0x80
@@ -419,7 +397,7 @@ test "Integration: External code operations" {
     var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
     hasher.update(&[_]u8{});
     hasher.final(&code_hash);
-    
+
     var contract = Contract.init(
         alice_addr,
         contract_addr,
@@ -440,7 +418,7 @@ test "Integration: External code operations" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Test EXTCODESIZE
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
@@ -476,14 +454,14 @@ test "Integration: Calldata operations" {
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    
+
     // Prepare calldata
     const calldata = [_]u8{
         0x12, 0x34, 0x56, 0x78, // Function selector
@@ -517,7 +495,7 @@ test "Integration: Calldata operations" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Test CALLDATASIZE
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x36);
     const datasize_result = try frame.stack.pop();
@@ -557,14 +535,14 @@ test "Integration: Self balance and code operations" {
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
-    
+
     // Contract code
     const contract_code = [_]u8{
         0x60, 0x00, // PUSH1 0x00
@@ -585,7 +563,7 @@ test "Integration: Self balance and code operations" {
     var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
     hasher.update(&contract_code);
     hasher.final(&code_hash);
-    
+
     var contract = Contract.init(
         alice_addr,
         contract_addr,
@@ -606,7 +584,7 @@ test "Integration: Self balance and code operations" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Test SELFBALANCE
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x47);
     const balance_result = try frame.stack.pop();

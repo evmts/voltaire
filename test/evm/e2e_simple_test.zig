@@ -34,34 +34,34 @@ test "E2E: Basic EVM operations" {
         }
     }
     const allocator = gpa.allocator();
-    
+
     // Create EVM instance
     var evm_instance = try allocator.create(Evm.Evm);
     defer allocator.destroy(evm_instance);
-    
+
     var memory_db = try allocator.create(MemoryDatabase);
     defer allocator.destroy(memory_db);
-    
+
     memory_db.* = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm_instance.deinit();
-    
+
     // Set up deployer account with ETH
     try evm_instance.state.set_balance(DEPLOYER_ADDRESS, 1000000);
-    
+
     // Test simple bytecode: PUSH1 42 PUSH1 0 MSTORE PUSH1 32 PUSH1 0 RETURN
     const simple_bytecode = [_]u8{
         0x60, 0x2A, // PUSH1 42
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x00, // PUSH1 0 (offset)
         0x60, 0x20, // PUSH1 32 (size)
-        0xF3,       // RETURN
+        0xF3, // RETURN
     };
-    
+
     // Create contract and execute
     var contract = Contract.init_at_address(
         CONTRACT_ADDRESS, // caller
@@ -73,21 +73,21 @@ test "E2E: Basic EVM operations" {
         false, // not static
     );
     defer contract.deinit(allocator, null);
-    
+
     // Set the code for the contract address in EVM state
     try evm_instance.state.set_code(CONTRACT_ADDRESS, &simple_bytecode);
-    
+
     // Execute the contract
     const result = try evm_instance.interpret(&contract, &[_]u8{});
     defer if (result.output) |output| allocator.free(output);
-    
+
     // Verify execution success
     try testing.expect(result.status == .Success);
-    
+
     // Check if we have output data
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
-        
+
         // Decode returned value (should be 42 in first 32 bytes)
         const returned_value = bytesToU256(output);
         try testing.expectEqual(@as(u256, 42), returned_value);
@@ -108,21 +108,21 @@ test "E2E: Arithmetic operations" {
         }
     }
     const allocator = gpa.allocator();
-    
+
     // Create EVM instance
     var evm_instance = try allocator.create(Evm.Evm);
     defer allocator.destroy(evm_instance);
-    
+
     var memory_db = try allocator.create(MemoryDatabase);
     defer allocator.destroy(memory_db);
-    
+
     memory_db.* = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm_instance.deinit();
-    
+
     // Create a contract at the specified address
     var test_contract = Contract.init_at_address(
         DEPLOYER_ADDRESS, // caller
@@ -134,49 +134,49 @@ test "E2E: Arithmetic operations" {
         false, // not static
     );
     defer test_contract.deinit(allocator, null);
-    
+
     // Create a frame for testing
     var frame = try allocator.create(Frame);
     defer allocator.destroy(frame);
-    
+
     frame.* = try Frame.init(allocator, &test_contract);
     defer frame.deinit();
-    
+
     frame.gas_remaining = 100_000;
     frame.input = test_contract.input;
     frame.memory.finalize_root();
-    
+
     // Test ADD operation: 25 + 17 = 42
     try frame.stack.append(25);
     try frame.stack.append(17);
-    
+
     // Execute ADD operation
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
     const state_ptr: *Operation.State = @ptrCast(frame);
     const add_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD opcode
-    
+
     try testing.expect(add_result.output.len == 0); // Continue means empty output
-    
+
     const sum = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), sum);
-    
+
     // Test SUB operation: 100 - 58 = 42
     try frame.stack.append(100);
     try frame.stack.append(58);
-    
+
     const sub_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x03); // SUB
     try testing.expect(sub_result.output.len == 0);
-    
+
     const diff = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), diff);
-    
+
     // Test MUL operation: 6 * 7 = 42
     try frame.stack.append(6);
     try frame.stack.append(7);
-    
+
     const mul_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x02); // MUL
     try testing.expect(mul_result.output.len == 0);
-    
+
     const product = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), product);
 }
@@ -191,21 +191,21 @@ test "E2E: Memory operations" {
         }
     }
     const allocator = gpa.allocator();
-    
+
     // Create EVM instance
     var evm_instance = try allocator.create(Evm.Evm);
     defer allocator.destroy(evm_instance);
-    
+
     var memory_db = try allocator.create(MemoryDatabase);
     defer allocator.destroy(memory_db);
-    
+
     memory_db.* = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm_instance.deinit();
-    
+
     // Create a contract at the specified address
     var test_contract = Contract.init_at_address(
         DEPLOYER_ADDRESS, // caller
@@ -217,47 +217,47 @@ test "E2E: Memory operations" {
         false, // not static
     );
     defer test_contract.deinit(allocator, null);
-    
+
     // Create a frame for testing
     var frame = try allocator.create(Frame);
     defer allocator.destroy(frame);
-    
+
     frame.* = try Frame.init(allocator, &test_contract);
     defer frame.deinit();
-    
+
     frame.gas_remaining = 100_000;
     frame.input = test_contract.input;
     frame.memory.finalize_root();
-    
+
     // Test MSTORE operation
     try frame.stack.append(0xDEADBEEF);
     try frame.stack.append(0);
-    
+
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
     const state_ptr: *Operation.State = @ptrCast(frame);
-    
+
     const mstore_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x52); // MSTORE
     try testing.expect(mstore_result.output.len == 0);
-    
+
     // Test MLOAD operation
     try frame.stack.append(0);
-    
+
     const mload_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x51); // MLOAD
     try testing.expect(mload_result.output.len == 0);
-    
+
     const loaded_value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xDEADBEEF), loaded_value);
-    
+
     // Test memory expansion
     try frame.stack.append(0xCAFEBABE);
     try frame.stack.append(1024);
-    
+
     const expand_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x52); // MSTORE at high offset
     try testing.expect(expand_result.output.len == 0);
-    
+
     // Verify the value at high offset
     try frame.stack.append(1024);
-    
+
     _ = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x51); // MLOAD
     const high_value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xCAFEBABE), high_value);
@@ -273,21 +273,21 @@ test "E2E: Storage operations" {
         }
     }
     const allocator = gpa.allocator();
-    
+
     // Create EVM instance
     var evm_instance = try allocator.create(Evm.Evm);
     defer allocator.destroy(evm_instance);
-    
+
     var memory_db = try allocator.create(MemoryDatabase);
     defer allocator.destroy(memory_db);
-    
+
     memory_db.* = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm_instance.deinit();
-    
+
     // Create a contract at the specified address
     var test_contract = Contract.init_at_address(
         DEPLOYER_ADDRESS, // caller
@@ -299,34 +299,34 @@ test "E2E: Storage operations" {
         false, // not static
     );
     defer test_contract.deinit(allocator, null);
-    
+
     // Create a frame for testing
     var frame = try allocator.create(Frame);
     defer allocator.destroy(frame);
-    
+
     frame.* = try Frame.init(allocator, &test_contract);
     defer frame.deinit();
-    
+
     frame.gas_remaining = 100_000;
     frame.input = test_contract.input;
     frame.memory.finalize_root();
-    
+
     // Test SSTORE operation
     try frame.stack.append(0x12345678);
     try frame.stack.append(5);
-    
+
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
     const state_ptr: *Operation.State = @ptrCast(frame);
-    
+
     const sstore_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x55); // SSTORE
     try testing.expect(sstore_result.output.len == 0);
-    
+
     // Test SLOAD operation
     try frame.stack.append(5);
-    
+
     const sload_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x54); // SLOAD
     try testing.expect(sload_result.output.len == 0);
-    
+
     const stored_value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x12345678), stored_value);
 }
@@ -341,21 +341,21 @@ test "E2E: Stack operations" {
         }
     }
     const allocator = gpa.allocator();
-    
+
     // Create EVM instance
     var evm_instance = try allocator.create(Evm.Evm);
     defer allocator.destroy(evm_instance);
-    
+
     var memory_db = try allocator.create(MemoryDatabase);
     defer allocator.destroy(memory_db);
-    
+
     memory_db.* = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm_instance.deinit();
-    
+
     // Create a contract at the specified address
     var test_contract = Contract.init_at_address(
         DEPLOYER_ADDRESS, // caller
@@ -367,45 +367,45 @@ test "E2E: Stack operations" {
         false, // not static
     );
     defer test_contract.deinit(allocator, null);
-    
+
     // Create a frame for testing
     var frame = try allocator.create(Frame);
     defer allocator.destroy(frame);
-    
+
     frame.* = try Frame.init(allocator, &test_contract);
     defer frame.deinit();
-    
+
     frame.gas_remaining = 100_000;
     frame.input = test_contract.input;
     frame.memory.finalize_root();
-    
+
     // Push some values
     try frame.stack.append(100);
     try frame.stack.append(200);
     try frame.stack.append(300);
-    
+
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
     const state_ptr: *Operation.State = @ptrCast(frame);
-    
+
     // Test DUP1 (duplicate top element)
     const dup_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x80); // DUP1
     try testing.expect(dup_result.output.len == 0);
-    
+
     try testing.expectEqual(@as(usize, 4), frame.stack.size);
-    
+
     // Top two elements should be the same
     const top1 = try frame.stack.pop();
     const top2 = try frame.stack.pop();
     try testing.expectEqual(top1, top2);
     try testing.expectEqual(@as(u256, 300), top1);
-    
+
     // Test SWAP1 (swap top two elements)
     try frame.stack.append(400);
     // Stack is now: 100, 200, 400
-    
+
     const swap_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x90); // SWAP1
     try testing.expect(swap_result.output.len == 0);
-    
+
     // Stack should now be: 100, 400, 200
     const after_swap1 = try frame.stack.pop();
     const after_swap2 = try frame.stack.pop();
@@ -423,21 +423,21 @@ test "E2E: Gas consumption patterns" {
         }
     }
     const allocator = gpa.allocator();
-    
+
     // Create EVM instance
     var evm_instance = try allocator.create(Evm.Evm);
     defer allocator.destroy(evm_instance);
-    
+
     var memory_db = try allocator.create(MemoryDatabase);
     defer allocator.destroy(memory_db);
-    
+
     memory_db.* = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm_instance.deinit();
-    
+
     // Create a contract at the specified address
     var test_contract = Contract.init_at_address(
         DEPLOYER_ADDRESS, // caller
@@ -449,42 +449,42 @@ test "E2E: Gas consumption patterns" {
         false, // not static
     );
     defer test_contract.deinit(allocator, null);
-    
+
     // Create a frame for testing
     var frame = try allocator.create(Frame);
     defer allocator.destroy(frame);
-    
+
     frame.* = try Frame.init(allocator, &test_contract);
     defer frame.deinit();
-    
+
     frame.gas_remaining = 100_000;
     frame.input = test_contract.input;
     frame.memory.finalize_root();
-    
+
     const initial_gas = frame.gas_remaining;
-    
+
     // Execute a simple operation
     try frame.stack.append(42);
-    
+
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
     const state_ptr: *Operation.State = @ptrCast(frame);
-    
+
     _ = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x50); // POP
-    
+
     const gas_after_pop = frame.gas_remaining;
     const pop_cost = initial_gas - gas_after_pop;
-    
+
     // POP should cost 2 gas
     try testing.expectEqual(@as(u64, 2), pop_cost);
-    
+
     // Test expensive operation (SSTORE)
     try frame.stack.append(100);
     try frame.stack.append(0);
     _ = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x55); // SSTORE
-    
+
     const gas_after_sstore = frame.gas_remaining;
     const sstore_cost = gas_after_pop - gas_after_sstore;
-    
+
     // SSTORE should cost much more than POP
     try testing.expect(sstore_cost > 1000); // SSTORE costs at least 20,000 gas for new slot
 }

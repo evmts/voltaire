@@ -22,17 +22,17 @@ test "Block: BLOCKHASH operations" {
     const tx_origin: Address.Address = [_]u8{0x11} ** 20;
     const block_coinbase: Address.Address = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,      // tx_origin
-        0,              // gas_price
-        1000,           // block_number
-        0,              // block_timestamp
+        tx_origin, // tx_origin
+        0, // gas_price
+        1000, // block_number
+        0, // block_timestamp
         block_coinbase, // block_coinbase
-        0,              // block_difficulty
-        0,              // block_gas_limit
-        1,              // chain_id
-        0,              // block_base_fee
-        &[_]u256{},     // blob_hashes
-        0,              // blob_base_fee
+        0, // block_difficulty
+        0, // block_gas_limit
+        1, // chain_id
+        0, // block_base_fee
+        &[_]u256{}, // blob_hashes
+        0, // blob_base_fee
     );
     evm.set_context(context);
 
@@ -97,17 +97,17 @@ test "Block: COINBASE operations" {
     const tx_origin: Address.Address = [_]u8{0x11} ** 20;
     const block_coinbase: Address.Address = [_]u8{0xCC} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,      // tx_origin
-        0,              // gas_price
-        0,              // block_number
-        0,              // block_timestamp
+        tx_origin, // tx_origin
+        0, // gas_price
+        0, // block_number
+        0, // block_timestamp
         block_coinbase, // block_coinbase
-        0,              // block_difficulty
-        0,              // block_gas_limit
-        1,              // chain_id
-        0,              // block_base_fee
-        &[_]u256{},     // blob_hashes
-        0,              // blob_base_fee
+        0, // block_difficulty
+        0, // block_gas_limit
+        1, // chain_id
+        0, // block_base_fee
+        &[_]u256{}, // blob_hashes
+        0, // blob_base_fee
     );
     evm.set_context(context);
 
@@ -157,17 +157,17 @@ test "Block: TIMESTAMP operations" {
     const tx_origin: Address.Address = [_]u8{0x11} ** 20;
     const block_coinbase: Address.Address = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,      // tx_origin
-        0,              // gas_price
-        0,              // block_number
-        1234567890,     // block_timestamp
+        tx_origin, // tx_origin
+        0, // gas_price
+        0, // block_number
+        1234567890, // block_timestamp
         block_coinbase, // block_coinbase
-        0,              // block_difficulty
-        0,              // block_gas_limit
-        1,              // chain_id
-        0,              // block_base_fee
-        &[_]u256{},     // blob_hashes
-        0,              // blob_base_fee
+        0, // block_difficulty
+        0, // block_gas_limit
+        1, // chain_id
+        0, // block_base_fee
+        &[_]u256{}, // blob_hashes
+        0, // blob_base_fee
     );
     evm.set_context(context);
 
@@ -216,17 +216,17 @@ test "Block: NUMBER operations" {
     const tx_origin: Address.Address = [_]u8{0x11} ** 20;
     const block_coinbase: Address.Address = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,      // tx_origin
-        0,              // gas_price
-        987654321,      // block_number
-        0,              // block_timestamp
+        tx_origin, // tx_origin
+        0, // gas_price
+        987654321, // block_number
+        0, // block_timestamp
         block_coinbase, // block_coinbase
-        0,              // block_difficulty
-        0,              // block_gas_limit
-        1,              // chain_id
-        0,              // block_base_fee
-        &[_]u256{},     // blob_hashes
-        0,              // blob_base_fee
+        0, // block_difficulty
+        0, // block_gas_limit
+        1, // chain_id
+        0, // block_base_fee
+        &[_]u256{}, // blob_hashes
+        0, // blob_base_fee
     );
     evm.set_context(context);
 
@@ -275,17 +275,17 @@ test "Block: DIFFICULTY/PREVRANDAO operations" {
     const tx_origin: Address.Address = [_]u8{0x11} ** 20;
     const block_coinbase: Address.Address = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,           // tx_origin
-        0,                   // gas_price
-        0,                   // block_number
-        0,                   // block_timestamp
-        block_coinbase,      // block_coinbase
-        0x123456789ABCDEF0,  // block_difficulty
-        0,                   // block_gas_limit
-        1,                   // chain_id
-        0,                   // block_base_fee
-        &[_]u256{},          // blob_hashes
-        0,                   // blob_base_fee
+        tx_origin, // tx_origin
+        0, // gas_price
+        0, // block_number
+        0, // block_timestamp
+        block_coinbase, // block_coinbase
+        0x123456789ABCDEF0, // block_difficulty
+        0, // block_gas_limit
+        1, // chain_id
+        0, // block_base_fee
+        &[_]u256{}, // blob_hashes
+        0, // blob_base_fee
     );
     evm.set_context(context);
 
@@ -334,17 +334,17 @@ test "Block: GASLIMIT operations" {
     const tx_origin: Address.Address = [_]u8{0x11} ** 20;
     const block_coinbase: Address.Address = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,      // tx_origin
-        0,              // gas_price
-        0,              // block_number
-        0,              // block_timestamp
+        tx_origin, // tx_origin
+        0, // gas_price
+        0, // block_number
+        0, // block_timestamp
         block_coinbase, // block_coinbase
-        0,              // block_difficulty
-        30_000_000,     // block_gas_limit
-        1,              // chain_id
-        0,              // block_base_fee
-        &[_]u256{},     // blob_hashes
-        0,              // blob_base_fee
+        0, // block_difficulty
+        30_000_000, // block_gas_limit
+        1, // chain_id
+        0, // block_base_fee
+        &[_]u256{}, // blob_hashes
+        0, // blob_base_fee
     );
     evm.set_context(context);
 
@@ -393,17 +393,17 @@ test "Block: BASEFEE operations (London)" {
     const tx_origin: Address.Address = [_]u8{0x11} ** 20;
     const block_coinbase: Address.Address = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,       // tx_origin
-        0,               // gas_price
-        0,               // block_number
-        0,               // block_timestamp
-        block_coinbase,  // block_coinbase
-        0,               // block_difficulty
-        0,               // block_gas_limit
-        1,               // chain_id
-        1_000_000_000,   // block_base_fee (1 gwei)
-        &[_]u256{},      // blob_hashes
-        0,               // blob_base_fee
+        tx_origin, // tx_origin
+        0, // gas_price
+        0, // block_number
+        0, // block_timestamp
+        block_coinbase, // block_coinbase
+        0, // block_difficulty
+        0, // block_gas_limit
+        1, // chain_id
+        1_000_000_000, // block_base_fee (1 gwei)
+        &[_]u256{}, // blob_hashes
+        0, // blob_base_fee
     );
     evm.set_context(context);
 
@@ -457,17 +457,17 @@ test "Block: BLOBHASH operations (Cancun)" {
     const tx_origin: Address.Address = [_]u8{0x11} ** 20;
     const block_coinbase: Address.Address = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,      // tx_origin
-        0,              // gas_price
-        0,              // block_number
-        0,              // block_timestamp
+        tx_origin, // tx_origin
+        0, // gas_price
+        0, // block_number
+        0, // block_timestamp
         block_coinbase, // block_coinbase
-        0,              // block_difficulty
-        0,              // block_gas_limit
-        1,              // chain_id
-        0,              // block_base_fee
-        &blob_hashes,   // blob_hashes
-        0,              // blob_base_fee
+        0, // block_difficulty
+        0, // block_gas_limit
+        1, // chain_id
+        0, // block_base_fee
+        &blob_hashes, // blob_hashes
+        0, // blob_base_fee
     );
     evm.set_context(context);
 
@@ -538,17 +538,17 @@ test "Block: BLOBBASEFEE operations (Cancun)" {
     const tx_origin: Address.Address = [_]u8{0x11} ** 20;
     const block_coinbase: Address.Address = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,      // tx_origin
-        0,              // gas_price
-        0,              // block_number
-        0,              // block_timestamp
+        tx_origin, // tx_origin
+        0, // gas_price
+        0, // block_number
+        0, // block_timestamp
         block_coinbase, // block_coinbase
-        0,              // block_difficulty
-        0,              // block_gas_limit
-        1,              // chain_id
-        0,              // block_base_fee
-        &[_]u256{},     // blob_hashes
-        100_000_000,    // blob_base_fee (0.1 gwei)
+        0, // block_difficulty
+        0, // block_gas_limit
+        1, // chain_id
+        0, // block_base_fee
+        &[_]u256{}, // blob_hashes
+        100_000_000, // blob_base_fee (0.1 gwei)
     );
     evm.set_context(context);
 
@@ -656,17 +656,17 @@ test "Block: Edge cases" {
     const tx_origin: Address.Address = [_]u8{0x11} ** 20;
     const block_coinbase: Address.Address = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,               // tx_origin
-        0,                       // gas_price
-        std.math.maxInt(u64),    // block_number
-        std.math.maxInt(u64),    // block_timestamp
-        block_coinbase,          // block_coinbase
-        std.math.maxInt(u256),   // block_difficulty
-        std.math.maxInt(u64),    // block_gas_limit
-        1,                       // chain_id
-        std.math.maxInt(u256),   // block_base_fee
-        &[_]u256{},              // blob_hashes
-        std.math.maxInt(u256),   // blob_base_fee
+        tx_origin, // tx_origin
+        0, // gas_price
+        std.math.maxInt(u64), // block_number
+        std.math.maxInt(u64), // block_timestamp
+        block_coinbase, // block_coinbase
+        std.math.maxInt(u256), // block_difficulty
+        std.math.maxInt(u64), // block_gas_limit
+        1, // chain_id
+        std.math.maxInt(u256), // block_base_fee
+        &[_]u256{}, // blob_hashes
+        std.math.maxInt(u256), // blob_base_fee
     );
     evm.set_context(context);
 

@@ -146,4 +146,3 @@ pub fn code_bitmap(allocator: std.mem.Allocator, code: []const u8) CodeBitmapErr
 
     return bitmap;
 }
-

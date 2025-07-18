@@ -142,7 +142,6 @@ pub const precompiles = struct {
     pub const PrecompileError = @import("precompiles/precompile_result.zig").PrecompileError;
 };
 
-
 /// ECADD precompile (0x06)
 pub const ecadd = @import("precompiles/ecadd.zig");
 

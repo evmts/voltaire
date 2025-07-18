@@ -47,7 +47,7 @@ test "STOP (0x00): Halt execution" {
 
     // Execute STOP
     const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x00);
-    
+
     // Should return STOP error
     try testing.expectError(ExecutionError.Error.STOP, result);
 }
@@ -1014,9 +1014,9 @@ test "ADDMOD: No intermediate overflow" {
 
     // Test with values that would overflow u256
     const max = std.math.maxInt(u256);
-    try frame.stack.append(max);   // first addend (pushed first, popped third)
-    try frame.stack.append(max);   // second addend (pushed second, popped second)
-    try frame.stack.append(10);    // modulus (pushed last, popped first)
+    try frame.stack.append(max); // first addend (pushed first, popped third)
+    try frame.stack.append(max); // second addend (pushed second, popped second)
+    try frame.stack.append(10); // modulus (pushed last, popped first)
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1491,27 +1491,39 @@ test "Arithmetic opcodes: Gas consumption" {
     const test_cases = [_]struct {
         opcode: u8,
         expected_gas: u64,
-        setup: *const fn(*Frame) anyerror!void,
+        setup: *const fn (*Frame) anyerror!void,
     }{
-        .{ .opcode = 0x01, .expected_gas = 3, .setup = struct { // ADD
-            fn setup(frame: *Frame) !void {
-                try frame.stack.append(5);
-                try frame.stack.append(10);
-            }
-        }.setup },
-        .{ .opcode = 0x02, .expected_gas = 5, .setup = struct { // MUL
-            fn setup(frame: *Frame) !void {
-                try frame.stack.append(5);
-                try frame.stack.append(10);
-            }
-        }.setup },
-        .{ .opcode = 0x08, .expected_gas = 8, .setup = struct { // ADDMOD
-            fn setup(frame: *Frame) !void {
-                try frame.stack.append(10);
-                try frame.stack.append(10);
-                try frame.stack.append(8);
-            }
-        }.setup },
+        .{
+            .opcode = 0x01,
+            .expected_gas = 3,
+            .setup = struct { // ADD
+                fn setup(frame: *Frame) !void {
+                    try frame.stack.append(5);
+                    try frame.stack.append(10);
+                }
+            }.setup,
+        },
+        .{
+            .opcode = 0x02,
+            .expected_gas = 5,
+            .setup = struct { // MUL
+                fn setup(frame: *Frame) !void {
+                    try frame.stack.append(5);
+                    try frame.stack.append(10);
+                }
+            }.setup,
+        },
+        .{
+            .opcode = 0x08,
+            .expected_gas = 8,
+            .setup = struct { // ADDMOD
+                fn setup(frame: *Frame) !void {
+                    try frame.stack.append(10);
+                    try frame.stack.append(10);
+                    try frame.stack.append(8);
+                }
+            }.setup,
+        },
     };
 
     for (test_cases) |tc| {
@@ -1531,7 +1543,7 @@ test "Arithmetic opcodes: Gas consumption" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-    frame.memory.finalize_root();
+        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         try tc.setup(&frame);
@@ -1561,8 +1573,8 @@ test "Arithmetic opcodes: Stack underflow" {
     var evm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer evm.deinit();
 
-    const binary_ops = [_]u8{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07}; // ADD, MUL, SUB, DIV, SDIV, MOD, SMOD
-    const ternary_ops = [_]u8{0x08, 0x09}; // ADDMOD, MULMOD
+    const binary_ops = [_]u8{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 }; // ADD, MUL, SUB, DIV, SDIV, MOD, SMOD
+    const ternary_ops = [_]u8{ 0x08, 0x09 }; // ADDMOD, MULMOD
 
     // Test binary operations with empty stack
     for (binary_ops) |opcode| {
@@ -1582,7 +1594,7 @@ test "Arithmetic opcodes: Stack underflow" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-    frame.memory.finalize_root();
+        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1616,7 +1628,7 @@ test "Arithmetic opcodes: Stack underflow" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-    frame.memory.finalize_root();
+        frame.memory.finalize_root();
         frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

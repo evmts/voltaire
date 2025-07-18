@@ -50,7 +50,7 @@ pub fn main() !void {
         std.debug.print("    ABI length: {}\n", .{contract.abi.len});
         std.debug.print("    Bytecode length: {}\n", .{contract.bytecode.len});
         std.debug.print("    Deployed bytecode length: {}\n", .{contract.deployed_bytecode.len});
-        
+
         // Print first few bytes of bytecode
         if (contract.bytecode.len > 10) {
             std.debug.print("    Bytecode preview: {s}...\n", .{contract.bytecode[0..10]});

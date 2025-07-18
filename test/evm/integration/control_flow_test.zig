@@ -70,11 +70,11 @@ test "Integration: Conditional jump patterns" {
     // JUMPI expects stack: [condition, destination] with destination on top
     try frame_ptr.stack.append(1); // condition=1
     try frame_ptr.stack.append(10); // destination=10
-    
+
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(frame_ptr);
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x57); // JUMPI
-    
+
     try testing.expectEqual(@as(usize, 10), frame_ptr.pc);
 
     // Test 2: Don't jump when condition is false
@@ -82,7 +82,7 @@ test "Integration: Conditional jump patterns" {
     // JUMPI expects stack: [condition, destination] with destination on top
     try frame_ptr.stack.append(0); // condition=0
     try frame_ptr.stack.append(20); // destination=20
-    
+
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x57); // JUMPI
     try testing.expectEqual(@as(usize, 0), frame_ptr.pc); // PC unchanged
 
@@ -347,14 +347,14 @@ test "Integration: PC tracking through operations" {
 
     // Get current PC - PC opcode uses frame's pc value
     _ = try vm.table.execute(frame_ptr.pc, interpreter_ptr, state_ptr, 0x58); // PC
-    
+
     const result1 = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 42), result1);
 
     // Change PC and get again
     frame_ptr.pc = 100;
     _ = try vm.table.execute(frame_ptr.pc, interpreter_ptr, state_ptr, 0x58); // PC
-    
+
     const result2 = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 100), result2);
 }

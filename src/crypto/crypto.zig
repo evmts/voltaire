@@ -30,11 +30,11 @@
 //! ### Hash Operations
 //! ```zig
 //! const crypto = @import("crypto.zig");
-//! 
+//!
 //! // Keccak256 hash (most common)
 //! const data = "Hello, Ethereum!";
 //! const hash = crypto.keccak256(data);
-//! 
+//!
 //! // SHA256 hash
 //! const sha_hash = crypto.sha256(data);
 //! ```
@@ -43,10 +43,10 @@
 //! ```zig
 //! // Generate a new private key
 //! const private_key = try crypto.generatePrivateKey();
-//! 
+//!
 //! // Derive public key from private key
 //! const public_key = try crypto.derivePublicKey(private_key);
-//! 
+//!
 //! // Derive Ethereum address from public key
 //! const address = crypto.deriveAddress(public_key);
 //! ```
@@ -56,10 +56,10 @@
 //! // Sign a message hash
 //! const message_hash = crypto.keccak256("message");
 //! const signature = try crypto.sign(private_key, message_hash);
-//! 
+//!
 //! // Verify signature
 //! const valid = try crypto.verify(signature, message_hash, public_key);
-//! 
+//!
 //! // Recover public key from signature
 //! const recovered_pubkey = try crypto.recoverPublicKey(signature, message_hash);
 //! ```
@@ -68,7 +68,7 @@
 //! ```zig
 //! // Check if address matches private key
 //! const matches = crypto.addressMatchesKey(address, private_key);
-//! 
+//!
 //! // Generate deterministic address
 //! const deterministic_addr = crypto.generateDeterministicAddress(seed, index);
 //! ```
@@ -533,14 +533,14 @@ test "create and verify signature" {
         0x4e, 0x21, 0xdb, 0x63, 0x5c, 0x51, 0xcb, 0x29,
         0x36, 0x49, 0x5a, 0xf7, 0x42, 0x2f, 0xba, 0x41,
     };
-    
+
     // Message to sign
     const message = "Hello, Ethereum!";
     const message_hash = Hash.keccak256(message);
-    
+
     // Sign the message
     const signature = try signHash(message_hash, private_key);
-    
+
     // Verify signature components
     try testing.expectEqual(@as(usize, 32), @sizeOf(@TypeOf(signature.r)));
     try testing.expectEqual(@as(usize, 32), @sizeOf(@TypeOf(signature.s)));
@@ -550,19 +550,19 @@ test "create and verify signature" {
 test "ecdsa recover public key" {
     // Known test vector
     const message_hash = Hash.keccak256("test message");
-    
+
     const signature = Signature{
         .r = 0x1234567890123456789012345678901234567890123456789012345678901234,
         .s = 0x3456789012345678901234567890123456789012345678901234567890123456,
         .v = 27,
     };
-    
+
     // Recovery should not fail for valid signature
     const result = recoverAddress(message_hash, signature);
     _ = result catch |err| {
         // Expected to potentially fail with invalid test data
-        try testing.expect(err == CryptoError.InvalidSignature or 
-                          err == CryptoError.RecoveryFailed);
+        try testing.expect(err == CryptoError.InvalidSignature or
+            err == CryptoError.RecoveryFailed);
     };
 }
 
@@ -572,24 +572,24 @@ test "signature serialization" {
         .s = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb,
         .v = 28,
     };
-    
+
     // Convert to bytes
     const bytes = signature.toBytes();
     try testing.expectEqual(@as(usize, 65), bytes.len);
-    
+
     // First 32 bytes should be r
     var expected_r: [32]u8 = undefined;
     std.mem.writeInt(u256, &expected_r, signature.r, .big);
     try testing.expectEqualSlices(u8, &expected_r, bytes[0..32]);
-    
+
     // Next 32 bytes should be s
     var expected_s: [32]u8 = undefined;
     std.mem.writeInt(u256, &expected_s, signature.s, .big);
     try testing.expectEqualSlices(u8, &expected_s, bytes[32..64]);
-    
+
     // Last byte should be v
     try testing.expectEqual(@as(u8, 28), bytes[64]);
-    
+
     // Convert back from bytes
     const recovered = Signature.fromBytes(bytes);
     try testing.expectEqual(signature.r, recovered.r);
@@ -603,14 +603,14 @@ test "signature hex encoding" {
         .s = 0xfedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210,
         .v = 27,
     };
-    
+
     // Convert to hex
     const hexStr = signature.toHex();
-    
+
     // Should be 0x + 130 chars (65 bytes * 2)
     try testing.expectEqual(@as(usize, 132), hexStr.len);
     try testing.expect(std.mem.startsWith(u8, &hexStr, "0x"));
-    
+
     // Convert back from hex
     const recovered = try Signature.fromHex(&hex);
     try testing.expectEqual(signature.r, recovered.r);
@@ -621,14 +621,14 @@ test "signature hex encoding" {
 test "generate private key" {
     const key1 = try randomPrivateKey();
     const key2 = try randomPrivateKey();
-    
+
     // Keys should be different
     try testing.expect(!std.mem.eql(u8, &key1, &key2));
-    
+
     // Keys should be 32 bytes
     try testing.expectEqual(@as(usize, 32), key1.len);
     try testing.expectEqual(@as(usize, 32), key2.len);
-    
+
     // Keys should not be zero
     const zero_key = [_]u8{0} ** 32;
     try testing.expect(!std.mem.eql(u8, &key1, &zero_key));
@@ -637,16 +637,13 @@ test "generate private key" {
 
 test "derive public key from private key" {
     // Test vector with known private/public key pair
-    const private_key = PrivateKey{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    
+    const private_key = PrivateKey{ 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
     const public_key = try getPublicKey(private_key);
-    
+
     // Public key should be valid
     try testing.expect(public_key.isValid());
-    
+
     // Public key should be deterministic
     const public_key2 = try getPublicKey(private_key);
     try testing.expectEqual(public_key.x, public_key2.x);
@@ -660,29 +657,26 @@ test "derive address from private key" {
         0x4e, 0x21, 0xdb, 0x63, 0x5c, 0x51, 0xcb, 0x29,
         0x36, 0x49, 0x5a, 0xf7, 0x42, 0x2f, 0xba, 0x41,
     };
-    
+
     const public_key = try getPublicKey(private_key);
     const address = publicKeyToAddress(public_key);
-    
+
     // Address should be 20 bytes
     try testing.expectEqual(@as(usize, 20), address.len);
-    
+
     // Address should be deterministic
     const address2 = publicKeyToAddress(public_key);
     try testing.expectEqualSlices(u8, &address, &address2);
 }
 
 test "personal sign message" {
-    const private_key = PrivateKey{0x42, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    
+    const private_key = PrivateKey{ 0x42, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
     const message = "Hello, Ethereum!";
-    
+
     // Sign with personal_sign prefix
     const signature = try signMessage(message, private_key);
-    
+
     // Verify signature format
     try testing.expectEqual(@as(usize, 32), @sizeOf(@TypeOf(signature.r)));
     try testing.expectEqual(@as(usize, 32), @sizeOf(@TypeOf(signature.s)));
@@ -697,7 +691,7 @@ test "signature normalization" {
         .s = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff, // High S value
         .v = 27,
     };
-    
+
     // This signature would be invalid due to high S
     try testing.expect(!signature.isValid());
 }
@@ -710,7 +704,7 @@ test "validate signature components" {
         .v = 27,
     };
     try testing.expect(isValidSignature(valid_sig));
-    
+
     // Invalid v value
     const invalid_v = Signature{
         .r = 0x1234567890123456789012345678901234567890123456789012345678901234,
@@ -718,7 +712,7 @@ test "validate signature components" {
         .v = 26, // Should be 27 or 28
     };
     try testing.expect(!isValidSignature(invalid_v));
-    
+
     // Zero r value (invalid)
     const zero_r = Signature{
         .r = 0,
@@ -726,7 +720,7 @@ test "validate signature components" {
         .v = 27,
     };
     try testing.expect(!isValidSignature(zero_r));
-    
+
     // Zero s value (invalid)
     const zero_s = Signature{
         .r = 0x1234567890123456789012345678901234567890123456789012345678901234,

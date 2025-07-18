@@ -47,7 +47,7 @@ test "Environment: ADDRESS opcode" {
     const result = try frame.stack.peek_n(0);
     const expected = primitives.Address.to_u256(contract_addr);
     try testing.expectEqual(expected, result);
-    
+
     // Check gas consumption (ADDRESS costs 2 gas)
     try testing.expectEqual(@as(u64, 998), frame.gas_remaining);
 }
@@ -122,17 +122,17 @@ test "Environment: ORIGIN and CALLER opcodes" {
     const tx_origin = [_]u8{0x11} ** 20;
     const block_coinbase = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,      // tx_origin
-        0,              // gas_price
-        0,              // block_number
-        0,              // block_timestamp
+        tx_origin, // tx_origin
+        0, // gas_price
+        0, // block_number
+        0, // block_timestamp
         block_coinbase, // block_coinbase
-        0,              // block_difficulty
-        0,              // block_gas_limit
-        1,              // chain_id
-        0,              // block_base_fee
-        &[_]u256{},     // blob_hashes
-        0,              // blob_base_fee
+        0, // block_difficulty
+        0, // block_gas_limit
+        1, // chain_id
+        0, // block_base_fee
+        &[_]u256{}, // blob_hashes
+        0, // blob_base_fee
     );
     evm.set_context(context);
 
@@ -227,17 +227,17 @@ test "Environment: GASPRICE opcode" {
     const tx_origin = [_]u8{0x11} ** 20;
     const block_coinbase = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,      // tx_origin
-        gas_price,      // gas_price
-        0,              // block_number
-        0,              // block_timestamp
+        tx_origin, // tx_origin
+        gas_price, // gas_price
+        0, // block_number
+        0, // block_timestamp
         block_coinbase, // block_coinbase
-        0,              // block_difficulty
-        0,              // block_gas_limit
-        1,              // chain_id
-        0,              // block_base_fee
-        &[_]u256{},     // blob_hashes
-        0,              // blob_base_fee
+        0, // block_difficulty
+        0, // block_gas_limit
+        1, // chain_id
+        0, // block_base_fee
+        &[_]u256{}, // blob_hashes
+        0, // blob_base_fee
     );
     evm.set_context(context);
 
@@ -342,10 +342,10 @@ test "Environment: EXTCODECOPY opcode" {
     const test_code = [_]u8{
         0x60, 0x01, // PUSH1 1
         0x60, 0x02, // PUSH1 2
-        0x01,       // ADD
+        0x01, // ADD
         0x60, 0x03, // PUSH1 3
-        0x02,       // MUL
-        0x00,       // STOP
+        0x02, // MUL
+        0x00, // STOP
     };
     try evm.state.set_balance(bob_addr, 0);
     try evm.state.set_code(bob_addr, &test_code);
@@ -374,10 +374,10 @@ test "Environment: EXTCODECOPY opcode" {
 
     // Test 1: Copy entire code
     const bob_u256 = primitives.Address.to_u256(bob_addr);
-    try frame.stack.append(test_code.len);    // size (will be popped 4th)
-    try frame.stack.append(0);                // code offset (will be popped 3rd)
-    try frame.stack.append(0);                // memory offset (will be popped 2nd)
-    try frame.stack.append(bob_u256);         // address (will be popped 1st)
+    try frame.stack.append(test_code.len); // size (will be popped 4th)
+    try frame.stack.append(0); // code offset (will be popped 3rd)
+    try frame.stack.append(0); // memory offset (will be popped 2nd)
+    try frame.stack.append(bob_u256); // address (will be popped 1st)
 
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3C);
 
@@ -390,10 +390,10 @@ test "Environment: EXTCODECOPY opcode" {
 
     // Test 2: Copy partial code with offset
     frame.stack.clear();
-    try frame.stack.append(4);         // size (copy 4 bytes) (will be popped 4th)
-    try frame.stack.append(2);         // code offset (skip first 2 bytes) (will be popped 3rd)
-    try frame.stack.append(32);        // memory offset (will be popped 2nd)
-    try frame.stack.append(bob_u256);  // address (will be popped 1st)
+    try frame.stack.append(4); // size (copy 4 bytes) (will be popped 4th)
+    try frame.stack.append(2); // code offset (skip first 2 bytes) (will be popped 3rd)
+    try frame.stack.append(32); // memory offset (will be popped 2nd)
+    try frame.stack.append(bob_u256); // address (will be popped 1st)
 
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3C);
 
@@ -406,10 +406,10 @@ test "Environment: EXTCODECOPY opcode" {
 
     // Test 3: Copy beyond code length (should pad with zeros)
     frame.stack.clear();
-    try frame.stack.append(16);        // size (longer than code) (will be popped 4th)
-    try frame.stack.append(0);         // code offset (will be popped 3rd)
-    try frame.stack.append(64);        // memory offset (will be popped 2nd)
-    try frame.stack.append(bob_u256);  // address (will be popped 1st)
+    try frame.stack.append(16); // size (longer than code) (will be popped 4th)
+    try frame.stack.append(0); // code offset (will be popped 3rd)
+    try frame.stack.append(64); // memory offset (will be popped 2nd)
+    try frame.stack.append(bob_u256); // address (will be popped 1st)
 
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3C);
 
@@ -519,7 +519,7 @@ test "Environment: SELFBALANCE opcode (Istanbul)" {
 
     const result = try frame.stack.peek_n(0);
     try testing.expectEqual(contract_balance, result);
-    
+
     // Check gas consumption (SELFBALANCE costs 5 gas)
     try testing.expectEqual(@as(u64, 995), frame.gas_remaining);
 }
@@ -539,17 +539,17 @@ test "Environment: CHAINID opcode (Istanbul)" {
     const tx_origin = [_]u8{0x11} ** 20;
     const block_coinbase = [_]u8{0x11} ** 20;
     const context = Evm.Context.init_with_values(
-        tx_origin,      // tx_origin
-        0,              // gas_price
-        0,              // block_number
-        0,              // block_timestamp
+        tx_origin, // tx_origin
+        0, // gas_price
+        0, // block_number
+        0, // block_timestamp
         block_coinbase, // block_coinbase
-        0,              // block_difficulty
-        0,              // block_gas_limit
-        chain_id,       // chain_id
-        0,              // block_base_fee
-        &[_]u256{},     // blob_hashes
-        0,              // blob_base_fee
+        0, // block_difficulty
+        0, // block_gas_limit
+        chain_id, // chain_id
+        0, // block_base_fee
+        &[_]u256{}, // blob_hashes
+        0, // blob_base_fee
     );
     evm.set_context(context);
 

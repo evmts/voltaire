@@ -25,7 +25,7 @@
 /// ```zig
 /// // MLOAD at offset 0x100 needs 32 bytes
 /// const mem_size = MemorySize{ .offset = 0x100, .size = 32 };
-/// 
+///
 /// // Calculate required memory size
 /// const required = mem_size.offset + mem_size.size; // 0x120
 /// ```

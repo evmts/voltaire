@@ -6,7 +6,6 @@ const blob_types = @import("blob_types.zig");
 /// This module implements the blob gas fee market mechanism introduced in EIP-4844.
 /// The blob gas market operates independently from the regular gas market, with its own
 /// base fee calculation and fee adjustment mechanism targeting 3 blobs per block.
-
 /// EIP-4844 blob gas market constants
 pub const BLOB_BASE_FEE_UPDATE_FRACTION = 3338477; // Adjustment factor for base fee updates
 pub const MIN_BLOB_GASPRICE = 1; // Minimum blob gas price (1 wei)

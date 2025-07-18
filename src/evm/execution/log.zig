@@ -102,7 +102,6 @@ pub fn make_log(comptime num_topics: u8) fn (usize, *Operation.Interpreter, *Ope
 
 // Runtime dispatch version for LOG operations (used in ReleaseSmall mode)
 pub fn log_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-
     const frame = @as(*Frame, @ptrCast(@alignCast(state)));
     const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
     const opcode = frame.contract.code[pc];

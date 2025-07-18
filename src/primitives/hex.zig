@@ -25,7 +25,7 @@
 //! ### Basic Validation
 //! ```zig
 //! const hex = @import("hex.zig");
-//! 
+//!
 //! // Validate hex strings
 //! const valid = hex.isHex("0x1234abcd"); // true
 //! const invalid = hex.isHex("1234abcd"); // false (missing 0x)
@@ -462,7 +462,7 @@ test "is valid hex" {
     try testing.expect(isHex("0x0123456789abcdef"));
     try testing.expect(isHex("0x0123456789ABCDEF"));
     try testing.expect(isHex("0xdeadbeef"));
-    
+
     // Invalid hex strings
     try testing.expect(!isHex(""));
     try testing.expect(!isHex("0"));
@@ -476,22 +476,22 @@ test "is valid hex" {
 
 test "from bytes basic" {
     const allocator = testing.allocator;
-    
+
     // Empty bytes
     const empty = try bytesToHex(allocator, &[_]u8{});
     defer allocator.free(empty);
     try testing.expectEqualStrings("0x", empty);
-    
+
     // Single byte
     const single = try bytesToHex(allocator, &[_]u8{0x61});
     defer allocator.free(single);
     try testing.expectEqualStrings("0x61", single);
-    
+
     // Multiple bytes
     const multiple = try bytesToHex(allocator, &[_]u8{ 0x61, 0x62, 0x63 });
     defer allocator.free(multiple);
     try testing.expectEqualStrings("0x616263", multiple);
-    
+
     // "Hello World!"
     const hello = try bytesToHex(allocator, "Hello World!");
     defer allocator.free(hello);
@@ -500,35 +500,35 @@ test "from bytes basic" {
 
 test "from bytes with specific case" {
     const allocator = testing.allocator;
-    
+
     const bytes = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
-    
+
     // Lowercase (default)
     const lower = try bytesToHex(allocator, &bytes);
     defer allocator.free(lower);
     try testing.expectEqualStrings("0xdeadbeef", lower);
-    
+
     // Uppercase - Note: bytesToHexUpper function doesn't exist, skip this test
 }
 
 test "to bytes basic" {
     const allocator = testing.allocator;
-    
+
     // Empty hex
     const empty = try hexToBytes(allocator, "0x");
     defer allocator.free(empty);
     try testing.expectEqual(@as(usize, 0), empty.len);
-    
+
     // Single byte
     const single = try hexToBytes(allocator, "0x61");
     defer allocator.free(single);
     try testing.expectEqualSlices(u8, &[_]u8{0x61}, single);
-    
+
     // Multiple bytes
     const multiple = try hexToBytes(allocator, "0x616263");
     defer allocator.free(multiple);
     try testing.expectEqualSlices(u8, &[_]u8{ 0x61, 0x62, 0x63 }, multiple);
-    
+
     // Mixed case
     const mixed = try hexToBytes(allocator, "0xDeAdBeEf");
     defer allocator.free(mixed);
@@ -537,22 +537,22 @@ test "to bytes basic" {
 
 test "to bytes odd length" {
     const allocator = testing.allocator;
-    
+
     // Note: hexToBytes expects even length after 0x prefix, so odd length will error
     const odd = hexToBytes(allocator, "0x1");
     try testing.expectError(HexError.OddLengthHex, odd);
-    
+
     const odd2 = hexToBytes(allocator, "0x123");
     try testing.expectError(HexError.OddLengthHex, odd2);
 }
 
 test "to bytes invalid hex" {
     const allocator = testing.allocator;
-    
+
     // Missing 0x prefix
     const result1 = hexToBytes(allocator, "deadbeef");
     try testing.expectError(HexError.InvalidHexFormat, result1);
-    
+
     // Invalid character
     const result2 = hexToBytes(allocator, "0xdeadbeeg");
     try testing.expectError(HexError.InvalidHexCharacter, result2);
@@ -560,22 +560,22 @@ test "to bytes invalid hex" {
 
 test "from u256" {
     const allocator = testing.allocator;
-    
+
     // Zero
     const zero = try u256ToHex(allocator, 0);
     defer allocator.free(zero);
     try testing.expectEqualStrings("0x0", zero);
-    
+
     // Small number
     const small = try u256ToHex(allocator, 69420);
     defer allocator.free(small);
     try testing.expectEqualStrings("0x10f2c", small);
-    
+
     // Large number
     const large = try u256ToHex(allocator, 0xdeadbeef);
     defer allocator.free(large);
     try testing.expectEqualStrings("0xdeadbeef", large);
-    
+
     // Max u256
     const max = try u256ToHex(allocator, std.math.maxInt(u256));
     defer allocator.free(max);
@@ -586,41 +586,30 @@ test "to u256" {
     // Zero
     const zero = try hexToU256("0x0");
     try testing.expectEqual(@as(u256, 0), zero);
-    
+
     // Small number
     const small = try hexToU256("0x10f2c");
     try testing.expectEqual(@as(u256, 69420), small);
-    
+
     // Large number
     const large = try hexToU256("0xdeadbeef");
     try testing.expectEqual(@as(u256, 0xdeadbeef), large);
-    
+
     // Max u256
     const max = try hexToU256("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
     try testing.expectEqual(std.math.maxInt(u256), max);
 }
 
-
-
-
-
-
-
-
-
-
-
-
 test "empty string handling" {
     const allocator = testing.allocator;
-    
+
     const result = hexToBytes(allocator, "");
     try testing.expectError(HexError.InvalidHexFormat, result);
 }
 
 test "only prefix" {
     const allocator = testing.allocator;
-    
+
     const bytes = try hexToBytes(allocator, "0x");
     defer allocator.free(bytes);
     try testing.expectEqual(@as(usize, 0), bytes.len);

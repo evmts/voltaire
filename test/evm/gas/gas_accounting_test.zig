@@ -3,7 +3,6 @@ const testing = std.testing;
 const Evm = @import("evm");
 const gas_constants = Evm.gas_constants;
 
-
 // Test basic gas constants are defined correctly
 test "gas constants are correctly defined" {
     // Basic operation costs
@@ -13,12 +12,12 @@ test "gas constants are correctly defined" {
     try testing.expectEqual(@as(u64, 8), gas_constants.GasMidStep);
     try testing.expectEqual(@as(u64, 10), gas_constants.GasSlowStep);
     try testing.expectEqual(@as(u64, 20), gas_constants.GasExtStep);
-    
+
     // Storage operation costs
     try testing.expectEqual(@as(u64, 100), gas_constants.SloadGas);
     try testing.expectEqual(@as(u64, 2100), gas_constants.ColdSloadCost);
     try testing.expectEqual(@as(u64, 2600), gas_constants.ColdAccountAccessCost);
-    
+
     // Precompile costs
     try testing.expectEqual(@as(u64, 3000), gas_constants.ECRECOVER_COST);
     try testing.expectEqual(@as(u64, 15), gas_constants.IDENTITY_BASE_COST);
@@ -30,18 +29,18 @@ test "memory expansion gas calculation" {
     // Test no expansion needed
     try testing.expectEqual(@as(u64, 0), gas_constants.memoryGasCost(100, 100));
     try testing.expectEqual(@as(u64, 0), gas_constants.memoryGasCost(100, 50));
-    
+
     // Test basic expansion cases
     // Expanding from 0 to 32 bytes (1 word): 3 + 0 = 3 gas
     try testing.expectEqual(@as(u64, 3), gas_constants.memoryGasCost(0, 32));
-    
+
     // Expanding from 0 to 64 bytes (2 words): 6 + 0 = 6 gas
     try testing.expectEqual(@as(u64, 6), gas_constants.memoryGasCost(0, 64));
-    
+
     // Test expansion with existing memory
     // From 32 to 64 bytes: 6 - 3 = 3 gas
     try testing.expectEqual(@as(u64, 3), gas_constants.memoryGasCost(32, 64));
-    
+
     // Test larger expansion
     // From 0 to 1024 bytes (32 words): 3*32 + 32*32/512 = 96 + 2 = 98 gas
     try testing.expectEqual(@as(u64, 98), gas_constants.memoryGasCost(0, 1024));
@@ -63,7 +62,7 @@ test "memory expansion edge cases" {
     try testing.expectEqual(@as(u64, 3), gas_constants.memoryGasCost(0, 31));
     try testing.expectEqual(@as(u64, 3), gas_constants.memoryGasCost(0, 32));
     try testing.expectEqual(@as(u64, 6), gas_constants.memoryGasCost(0, 33));
-    
+
     // Test that very large sizes don't cause overflow
     const large_size = gas_constants.memoryGasCost(0, 1024 * 1024); // 1MB
     try testing.expect(large_size > 1000000); // Should be very expensive
@@ -73,19 +72,19 @@ test "memory expansion edge cases" {
 test "operation gas costs" {
     // Quick operations (ADDRESS, ORIGIN, etc.)
     try testing.expectEqual(@as(u64, 2), gas_constants.GasQuickStep);
-    
+
     // Arithmetic operations (ADD, SUB, etc.)
     try testing.expectEqual(@as(u64, 3), gas_constants.GasFastestStep);
-    
+
     // Multiplication/division (MUL, DIV, etc.)
     try testing.expectEqual(@as(u64, 5), gas_constants.GasFastStep);
-    
+
     // Advanced arithmetic (ADDMOD, MULMOD, etc.)
     try testing.expectEqual(@as(u64, 8), gas_constants.GasMidStep);
-    
+
     // Control flow (JUMPI)
     try testing.expectEqual(@as(u64, 10), gas_constants.GasSlowStep);
-    
+
     // External operations (BALANCE, EXTCODESIZE, etc.)
     try testing.expectEqual(@as(u64, 20), gas_constants.GasExtStep);
 }
@@ -141,7 +140,7 @@ test "eip specific gas costs" {
     // EIP-1153: Transient storage
     try testing.expectEqual(@as(u64, 100), gas_constants.TLoadGas);
     try testing.expectEqual(@as(u64, 100), gas_constants.TStoreGas);
-    
+
     // EIP-4844: Blob transactions
     try testing.expectEqual(@as(u64, 3), gas_constants.BlobHashGas);
     try testing.expectEqual(@as(u64, 2), gas_constants.BlobBaseFeeGas);

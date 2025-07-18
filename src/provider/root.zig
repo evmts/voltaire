@@ -44,7 +44,7 @@
 //! ### Basic Setup
 //! ```zig
 //! const provider = @import("provider");
-//! 
+//!
 //! // Create provider instance
 //! var p = try provider.Provider.init(allocator, "https://mainnet.infura.io/v3/YOUR_KEY");
 //! defer p.deinit();
@@ -55,7 +55,7 @@
 //! // Get latest block
 //! const block = try p.getBlockByNumber("latest", true);
 //! defer block.deinit();
-//! 
+//!
 //! // Get specific block
 //! const block_123 = try p.getBlockByNumber("0x7b", false);
 //! defer block_123.deinit();
@@ -66,7 +66,7 @@
 //! // Get transaction
 //! const tx = try p.getTransactionByHash("0x1234...");
 //! defer tx.deinit();
-//! 
+//!
 //! // Send transaction
 //! const tx_hash = try p.sendRawTransaction(signed_tx_data);
 //! defer tx_hash.deinit();
@@ -76,7 +76,7 @@
 //! ```zig
 //! // Get balance
 //! const balance = try p.getBalance("0x742d35Cc6641C91B6E4bb6ac...", "latest");
-//! 
+//!
 //! // Get nonce
 //! const nonce = try p.getTransactionCount("0x742d35Cc6641C91B6E4bb6ac...", "latest");
 //! ```

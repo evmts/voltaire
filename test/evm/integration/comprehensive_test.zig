@@ -25,7 +25,7 @@ test "Integration: Complete ERC20 transfer simulation" {
     // Set up accounts
     const alice_balance: u256 = 1000;
     const bob_balance: u256 = 500;
-    
+
     // Create addresses
     const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -37,7 +37,7 @@ test "Integration: Complete ERC20 transfer simulation" {
 
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     var contract = Contract.init(
         alice_address, // Alice is calling
         contract_address,
@@ -69,7 +69,7 @@ test "Integration: Complete ERC20 transfer simulation" {
 
     // 2. Check if Alice has enough balance
     try frame.stack.append(transfer_amount); // b
-    try frame.stack.append(alice_initial);   // a
+    try frame.stack.append(alice_initial); // a
     const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr2: *Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0x10);
@@ -78,7 +78,7 @@ test "Integration: Complete ERC20 transfer simulation" {
 
     // 3. Calculate new balances
     try frame.stack.append(transfer_amount); // b
-    try frame.stack.append(alice_initial);   // a
+    try frame.stack.append(alice_initial); // a
     const interpreter_ptr3: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr3: *Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, interpreter_ptr3, state_ptr3, 0x03);
@@ -91,20 +91,20 @@ test "Integration: Complete ERC20 transfer simulation" {
     const bob_initial = try frame.stack.pop();
 
     try frame.stack.append(transfer_amount); // b
-    try frame.stack.append(bob_initial);     // a
+    try frame.stack.append(bob_initial); // a
     const interpreter_ptr5: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr5: *Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, interpreter_ptr5, state_ptr5, 0x01);
     const bob_new = try frame.stack.pop();
 
     // 4. Update storage
-    try frame.stack.append(0);         // slot
+    try frame.stack.append(0); // slot
     try frame.stack.append(alice_new); // value
     const interpreter_ptr6: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr6: *Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, interpreter_ptr6, state_ptr6, 0x55);
 
-    try frame.stack.append(1);       // slot
+    try frame.stack.append(1); // slot
     try frame.stack.append(bob_new); // value
     const interpreter_ptr7: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr7: *Operation.State = @ptrCast(&frame);
@@ -119,12 +119,12 @@ test "Integration: Complete ERC20 transfer simulation" {
     try frame.memory.set_data(0, &amount_bytes);
 
     // Push values in reverse order for LOG3
-    try frame.stack.append(0);                             // data offset
-    try frame.stack.append(32);                            // data size
-    try frame.stack.append(transfer_sig);                  // event signature
+    try frame.stack.append(0); // data offset
+    try frame.stack.append(32); // data size
+    try frame.stack.append(transfer_sig); // event signature
     try frame.stack.append(primitives.Address.to_u256(alice_address)); // from (indexed)
-    try frame.stack.append(primitives.Address.to_u256(bob_address));   // to (indexed)
-    
+    try frame.stack.append(primitives.Address.to_u256(bob_address)); // to (indexed)
+
     const interpreter_ptr8: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr8: *Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, interpreter_ptr8, state_ptr8, 0xA3);
@@ -152,10 +152,10 @@ test "Integration: Smart contract deployment flow" {
     const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     const bob_address = primitives.Address.from_u256(0x2222222222222222222222222222222222222222);
-    
+
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     var deployer_contract = Contract.init(
         alice_address,
         contract_address,
@@ -220,9 +220,9 @@ test "Integration: Smart contract deployment flow" {
     };
 
     // Deploy contract
-    try frame.stack.append(0);                   // offset
+    try frame.stack.append(0); // offset
     try frame.stack.append(constructor_code.len); // size
-    try frame.stack.append(0);                   // value
+    try frame.stack.append(0); // value
 
     const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr1: *Operation.State = @ptrCast(&frame);
@@ -239,13 +239,13 @@ test "Integration: Smart contract deployment flow" {
         .output = null,
     };
 
-    try frame.stack.append(50000);          // gas
+    try frame.stack.append(50000); // gas
     try frame.stack.append(deployed_address); // to
-    try frame.stack.append(0);              // value
-    try frame.stack.append(0);              // args_offset
-    try frame.stack.append(0);              // args_size
-    try frame.stack.append(0);              // ret_offset
-    try frame.stack.append(0);              // ret_size
+    try frame.stack.append(0); // value
+    try frame.stack.append(0); // args_offset
+    try frame.stack.append(0); // args_size
+    try frame.stack.append(0); // ret_offset
+    try frame.stack.append(0); // ret_size
 
     const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr2: *Operation.State = @ptrCast(&frame);
@@ -319,7 +319,7 @@ test "Integration: Complex control flow with nested conditions" {
     // Create addresses
     const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     // Calculate code hash
     var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
     hasher.update(&code);
@@ -477,10 +477,10 @@ test "Integration: Gas metering across operations" {
     const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
     const charlie_address = primitives.Address.from_u256(0x4444444444444444444444444444444444444444);
-    
+
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     var contract = Contract.init(
         alice_address,
         contract_address,
@@ -533,7 +533,7 @@ test "Integration: Gas metering across operations" {
 
     // 4. SHA3 with data
     frame.stack.clear();
-    try frame.stack.append(0);  // offset
+    try frame.stack.append(0); // offset
     try frame.stack.append(32); // size
     const gas_before_sha3 = frame.gas_remaining;
     const interpreter_ptr4: *Operation.Interpreter = @ptrCast(&vm);
@@ -573,10 +573,10 @@ test "Integration: Error propagation and recovery" {
     // Create addresses
     const contract_address = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const alice_address = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     // Calculate code hash for empty code
     var code_hash: [32]u8 = [_]u8{0} ** 32;
-    
+
     var contract = Contract.init(
         alice_address,
         contract_address,
@@ -600,7 +600,7 @@ test "Integration: Error propagation and recovery" {
     try testing.expectError(ExecutionError.Error.StackUnderflow, div_result);
 
     // Stack should still be usable
-    try frame.stack.append(5);  // b
+    try frame.stack.append(5); // b
     try frame.stack.append(10); // a
     const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr1: *Operation.State = @ptrCast(&frame);
@@ -629,7 +629,7 @@ test "Integration: Error propagation and recovery" {
     frame.stack.clear();
     frame.is_static = true;
 
-    try frame.stack.append(0);  // slot
+    try frame.stack.append(0); // slot
     try frame.stack.append(42); // value
     const sstore_result = opcodes.storage.op_sstore(0, &vm, &frame);
     try testing.expectError(ExecutionError.Error.WriteProtection, sstore_result);
@@ -637,7 +637,7 @@ test "Integration: Error propagation and recovery" {
     // Reset static flag and verify normal operation works
     frame.is_static = false;
     frame.stack.clear();
-    try frame.stack.append(0);  // slot
+    try frame.stack.append(0); // slot
     try frame.stack.append(42); // value
     const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr2: *Operation.State = @ptrCast(&frame);

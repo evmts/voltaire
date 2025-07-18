@@ -133,10 +133,10 @@ pub fn build(b: *std.Build) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall. Here we do not
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
-    
+
     // Custom build option to disable precompiles
     const no_precompiles = b.option(bool, "no_precompiles", "Disable all EVM precompiles for minimal build") orelse false;
-    
+
     // Create build options module
     const build_options = b.addOptions();
     build_options.addOption(bool, "no_precompiles", no_precompiles);
@@ -147,14 +147,14 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     lib_mod.addIncludePath(b.path("src/bn254_wrapper"));
-    
+
     // Create primitives module
     const primitives_mod = b.createModule(.{
         .root_source_file = b.path("src/primitives/root.zig"),
         .target = target,
         .optimize = optimize,
     });
-    
+
     // Create crypto module
     const crypto_mod = b.createModule(.{
         .root_source_file = b.path("src/crypto/root.zig"),
@@ -162,14 +162,14 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     crypto_mod.addImport("primitives", primitives_mod);
-    
+
     // Create utils module
     const utils_mod = b.createModule(.{
         .root_source_file = b.path("src/utils.zig"),
         .target = target,
         .optimize = optimize,
     });
-    
+
     // Create the trie module
     const trie_mod = b.createModule(.{
         .root_source_file = b.path("src/trie/root.zig"),
@@ -178,7 +178,7 @@ pub fn build(b: *std.Build) void {
     });
     trie_mod.addImport("primitives", primitives_mod);
     trie_mod.addImport("utils", utils_mod);
-    
+
     // Create the provider module
     const provider_mod = b.createModule(.{
         .root_source_file = b.path("src/provider/root.zig"),
@@ -186,48 +186,43 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     provider_mod.addImport("primitives", primitives_mod);
-    
+
     // BN254 Rust library integration for ECMUL and ECPAIRING precompiles
     // Uses arkworks ecosystem for production-grade elliptic curve operations
     const rust_profile = if (optimize == .ReleaseFast) "release-fast" else "release";
-    
-    const rust_build = b.addSystemCommand(&[_][]const u8{
-        "cargo", "build",
-        "--profile", rust_profile,
-        "--manifest-path", "src/bn254_wrapper/Cargo.toml"
-    });
-    
+
+    const rust_build = b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml" });
+
     // Fix for macOS linking issues
     rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
-    
+
     // Create static library artifact for the Rust BN254 wrapper
     const bn254_lib = b.addStaticLibrary(.{
         .name = "bn254_wrapper",
         .target = target,
         .optimize = optimize,
     });
-    
+
     // Link the compiled Rust library
     const rust_lib_path = b.fmt("target/{s}/libbn254_wrapper.a", .{rust_profile});
     bn254_lib.addObjectFile(b.path(rust_lib_path));
     bn254_lib.linkLibC();
-    
+
     // Add include path for C header
     bn254_lib.addIncludePath(b.path("src/bn254_wrapper"));
-    
+
     // Make the rust build a dependency
     bn254_lib.step.dependOn(&rust_build.step);
-    
+
     // C-KZG-4844 Zig bindings from evmts/c-kzg-4844
     const c_kzg_dep = b.dependency("c_kzg_4844", .{
         .target = target,
         .optimize = optimize,
     });
-    
+
     const c_kzg_lib = c_kzg_dep.artifact("c_kzg_4844");
     primitives_mod.linkLibrary(c_kzg_lib);
-    
-    
+
     // Create the main evm module that exports everything
     const evm_mod = b.createModule(.{
         .root_source_file = b.path("src/evm/root.zig"),
@@ -237,14 +232,14 @@ pub fn build(b: *std.Build) void {
     evm_mod.addImport("primitives", primitives_mod);
     evm_mod.addImport("crypto", crypto_mod);
     evm_mod.addImport("build_options", build_options.createModule());
-    
+
     // Link BN254 Rust library to EVM module (native targets only)
     evm_mod.linkLibrary(bn254_lib);
     evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
-    
+
     // Link c-kzg library to EVM module
     evm_mod.linkLibrary(c_kzg_lib);
-    
+
     // Add Rust Foundry wrapper integration
     // TODO: Fix Rust integration - needs proper zabi dependency
     // const rust_build = @import("src/compilers/rust_build.zig");
@@ -252,7 +247,7 @@ pub fn build(b: *std.Build) void {
     //     std.debug.print("Failed to add Rust integration: {}\n", .{err});
     //     return;
     // };
-    
+
     // Create compilers module
     const compilers_mod = b.createModule(.{
         .root_source_file = b.path("src/compilers/package.zig"),
@@ -261,7 +256,7 @@ pub fn build(b: *std.Build) void {
     });
     compilers_mod.addImport("primitives", primitives_mod);
     compilers_mod.addImport("evm", evm_mod);
-    
+
     // Add modules to lib_mod so tests can access them
     lib_mod.addImport("primitives", primitives_mod);
     lib_mod.addImport("crypto", crypto_mod);
@@ -277,11 +272,11 @@ pub fn build(b: *std.Build) void {
         .name = "Guillotine",
         .root_module = lib_mod,
     });
-    
+
     // Link BN254 Rust library to the library artifact
     lib.linkLibrary(bn254_lib);
     lib.addIncludePath(b.path("src/bn254_wrapper"));
-    
+
     // Note: c-kzg is now available as a module import, no need to link to main library
 
     // This declares intent for the library to be installed into the standard
@@ -304,7 +299,7 @@ pub fn build(b: *std.Build) void {
     // WASM library build optimized for size
     const wasm_target = b.resolveTargetQuery(.{
         .cpu_arch = .wasm32,
-        .os_tag = .freestanding,  // Use freestanding for minimal size
+        .os_tag = .freestanding, // Use freestanding for minimal size
     });
 
     // Use the same optimization mode as specified by the user
@@ -318,7 +313,7 @@ pub fn build(b: *std.Build) void {
         .optimize = wasm_optimize,
     });
     // Note: WASM build excludes c-kzg-4844 (not available for WASM)
-    
+
     // Create WASM-specific crypto module
     const wasm_crypto_mod = b.createModule(.{
         .root_source_file = b.path("src/crypto/root.zig"),
@@ -345,7 +340,7 @@ pub fn build(b: *std.Build) void {
         .single_threaded = true,
     });
     wasm_lib_mod.addImport("primitives", wasm_primitives_mod);
-    wasm_lib_mod.addImport("evm", wasm_evm_mod);  // Use WASM-specific EVM module
+    wasm_lib_mod.addImport("evm", wasm_evm_mod); // Use WASM-specific EVM module
 
     const wasm_lib = b.addExecutable(.{
         .name = "guillotine",
@@ -355,44 +350,37 @@ pub fn build(b: *std.Build) void {
     wasm_lib.entry = .disabled;
     wasm_lib.rdynamic = true;
 
-    const wasm_install = b.addInstallArtifact(wasm_lib, .{ 
-        .dest_sub_path = "guillotine.wasm" 
-    });
-    
+    const wasm_install = b.addInstallArtifact(wasm_lib, .{ .dest_sub_path = "guillotine.wasm" });
+
     // Add step to report WASM bundle size
-    const wasm_size_step = b.addSystemCommand(&[_][]const u8{
-        "sh", "-c", 
-        "echo '\\n=== WASM Bundle Size Report ===' && " ++
+    const wasm_size_step = b.addSystemCommand(&[_][]const u8{ "sh", "-c", "echo '\\n=== WASM Bundle Size Report ===' && " ++
         "ls -lh zig-out/bin/guillotine.wasm | awk '{print \"WASM Bundle Size: \" $5}' && " ++
-        "echo '=== End Report ===\\n'"
-    });
+        "echo '=== End Report ===\\n'" });
     wasm_size_step.step.dependOn(&wasm_install.step);
-    
+
     const wasm_step = b.step("wasm", "Build WASM library and show bundle size");
     wasm_step.dependOn(&wasm_size_step.step);
-    
+
     // Debug WASM build for analysis
     const wasm_debug_mod = b.createModule(.{
         .root_source_file = b.path("src/root_c.zig"),
         .target = wasm_target,
-        .optimize = .Debug,  // Debug mode for symbols
+        .optimize = .Debug, // Debug mode for symbols
         .single_threaded = true,
     });
     wasm_debug_mod.addImport("primitives", wasm_primitives_mod);
     wasm_debug_mod.addImport("evm", wasm_evm_mod);
-    
+
     const wasm_debug = b.addExecutable(.{
         .name = "guillotine-debug",
         .root_module = wasm_debug_mod,
     });
-    
+
     wasm_debug.entry = .disabled;
     wasm_debug.rdynamic = true;
-    
-    const wasm_debug_install = b.addInstallArtifact(wasm_debug, .{ 
-        .dest_sub_path = "../bin/guillotine-debug.wasm" 
-    });
-    
+
+    const wasm_debug_install = b.addInstallArtifact(wasm_debug, .{ .dest_sub_path = "../bin/guillotine-debug.wasm" });
+
     const wasm_debug_step = b.step("wasm-debug", "Build debug WASM for analysis");
     wasm_debug_step.dependOn(&wasm_debug_install.step);
 
@@ -423,29 +411,25 @@ pub fn build(b: *std.Build) void {
         .@"enable-tls" = false,
         .verbose = .err,
     });
-    
+
     // First, check if npm is installed and build the Solid app
-    const npm_check = b.addSystemCommand(&[_][]const u8{"which", "npm"});
+    const npm_check = b.addSystemCommand(&[_][]const u8{ "which", "npm" });
     npm_check.addCheck(.{ .expect_stdout_match = "npm" });
-    
+
     // Install npm dependencies for devtool
-    const npm_install = b.addSystemCommand(&[_][]const u8{"npm", "install"});
+    const npm_install = b.addSystemCommand(&[_][]const u8{ "npm", "install" });
     npm_install.setCwd(b.path("src/devtool"));
     npm_install.step.dependOn(&npm_check.step);
-    
+
     // Build the Solid app
-    const npm_build = b.addSystemCommand(&[_][]const u8{"npm", "run", "build"});
+    const npm_build = b.addSystemCommand(&[_][]const u8{ "npm", "run", "build" });
     npm_build.setCwd(b.path("src/devtool"));
     npm_build.step.dependOn(&npm_install.step);
-    
+
     // Generate assets from the built Solid app
-    const generate_assets = GenerateAssetsStep.init(
-        b,
-        "src/devtool/dist",
-        "src/devtool/assets.zig"
-    );
+    const generate_assets = GenerateAssetsStep.init(b, "src/devtool/dist", "src/devtool/assets.zig");
     generate_assets.step.dependOn(&npm_build.step);
-    
+
     const devtool_mod = b.createModule(.{
         .root_source_file = b.path("src/devtool/main.zig"),
         .target = target,
@@ -460,31 +444,31 @@ pub fn build(b: *std.Build) void {
         .name = "guillotine-devtool",
         .root_module = devtool_mod,
     });
-    
+
     // Link webui library
     devtool_exe.linkLibrary(webui.artifact("webui"));
-    
+
     // Link external libraries if needed for WebUI
     devtool_exe.linkLibC();
     if (target.result.os.tag == .macos) {
         devtool_exe.linkFramework("WebKit");
     }
-    
+
     // Make devtool build depend on asset generation
     devtool_exe.step.dependOn(&generate_assets.step);
-    
+
     b.installArtifact(devtool_exe);
-    
+
     const run_devtool_cmd = b.addRunArtifact(devtool_exe);
     run_devtool_cmd.step.dependOn(b.getInstallStep());
-    
+
     const devtool_step = b.step("devtool", "Build and run the Ethereum devtool");
     devtool_step.dependOn(&run_devtool_cmd.step);
-    
+
     // Add build-only step for devtool
     const build_devtool_step = b.step("build-devtool", "Build the Ethereum devtool (without running)");
     build_devtool_step.dependOn(b.getInstallStep());
-    
+
     // macOS app bundle creation
     if (target.result.os.tag == .macos) {
         // Create app bundle structure
@@ -492,24 +476,24 @@ pub fn build(b: *std.Build) void {
         const mkdir_bundle = b.addSystemCommand(&[_][]const u8{
             "mkdir", "-p", bundle_dir,
         });
-        
+
         // Copy executable to app bundle
         const copy_to_bundle = b.addSystemCommand(&[_][]const u8{
             "cp", "-f", "zig-out/bin/guillotine-devtool", bundle_dir,
         });
         copy_to_bundle.step.dependOn(&devtool_exe.step);
         copy_to_bundle.step.dependOn(&mkdir_bundle.step);
-        
+
         // Create macOS app bundle step
         const macos_app_step = b.step("macos-app", "Create macOS app bundle");
         macos_app_step.dependOn(&copy_to_bundle.step);
-        
+
         // Create DMG installer step
         const create_dmg = b.addSystemCommand(&[_][]const u8{
             "scripts/create-dmg-fancy.sh",
         });
         create_dmg.step.dependOn(&copy_to_bundle.step);
-        
+
         const dmg_step = b.step("macos-dmg", "Create macOS DMG installer");
         dmg_step.dependOn(&create_dmg.step);
     }
@@ -615,7 +599,6 @@ pub fn build(b: *std.Build) void {
     const run_opcodes_test = b.addRunArtifact(opcodes_test);
     const opcodes_test_step = b.step("test-opcodes", "Run Opcodes tests");
     opcodes_test_step.dependOn(&run_opcodes_test.step);
-
 
     // Add VM opcode tests
     const vm_opcode_test = b.addTest(.{
@@ -738,7 +721,7 @@ pub fn build(b: *std.Build) void {
     // Link BN254 Rust library to tests
     bn254_rust_test.linkLibrary(bn254_lib);
     bn254_rust_test.addIncludePath(b.path("src/bn254_wrapper"));
-    
+
     const run_bn254_rust_test = b.addRunArtifact(bn254_rust_test);
     const bn254_rust_test_step = b.step("test-bn254-rust", "Run BN254 Rust wrapper precompile tests");
     bn254_rust_test_step.dependOn(&run_bn254_rust_test.step);
@@ -806,7 +789,7 @@ pub fn build(b: *std.Build) void {
     const run_e2e_inheritance_test = b.addRunArtifact(e2e_inheritance_test);
     const e2e_inheritance_test_step = b.step("test-e2e-inheritance", "Run E2E inheritance tests");
     e2e_inheritance_test_step.dependOn(&run_e2e_inheritance_test.step);
-    
+
     // Add Compiler tests
     const compiler_test = b.addTest(.{
         .name = "compiler-test",
@@ -816,15 +799,15 @@ pub fn build(b: *std.Build) void {
     });
     compiler_test.root_module.addImport("primitives", primitives_mod);
     compiler_test.root_module.addImport("evm", evm_mod);
-    
+
     // TODO: Re-enable when Rust integration is fixed
     // // Make the compiler test depend on the Rust build
     // compiler_test.step.dependOn(rust_step);
-    
+
     // // Link the Rust library to the compiler test
     // compiler_test.addObjectFile(b.path("zig-out/lib/libfoundry_wrapper.a"));
     // compiler_test.linkLibC();
-    
+
     // // Link system libraries required by Rust static lib
     // if (target.result.os.tag == .linux) {
     //     compiler_test.linkSystemLibrary("unwind");
@@ -833,11 +816,11 @@ pub fn build(b: *std.Build) void {
     //     compiler_test.linkFramework("CoreFoundation");
     //     compiler_test.linkFramework("Security");
     // }
-    
+
     const run_compiler_test = b.addRunArtifact(compiler_test);
     const compiler_test_step = b.step("test-compiler", "Run Compiler tests");
     compiler_test_step.dependOn(&run_compiler_test.step);
-    
+
     // Add Snail Tracer test
     const snail_tracer_test = b.addTest(.{
         .name = "snail-tracer-test",
@@ -859,7 +842,7 @@ pub fn build(b: *std.Build) void {
     const run_constructor_bug_test = b.addRunArtifact(constructor_bug_test);
     const constructor_bug_test_step = b.step("test-constructor-bug", "Run Constructor Bug test");
     constructor_bug_test_step.dependOn(&run_constructor_bug_test.step);
-    
+
     // Add Solidity Constructor test
     const solidity_constructor_test = b.addTest(.{
         .name = "solidity-constructor-test",
@@ -873,7 +856,7 @@ pub fn build(b: *std.Build) void {
     const run_solidity_constructor_test = b.addRunArtifact(solidity_constructor_test);
     const solidity_constructor_test_step = b.step("test-solidity-constructor", "Run Solidity Constructor test");
     solidity_constructor_test_step.dependOn(&run_solidity_constructor_test.step);
-    
+
     const contract_call_test = b.addTest(.{
         .name = "contract-call-test",
         .root_source_file = b.path("test/evm/contract_call_test.zig"),
@@ -886,9 +869,9 @@ pub fn build(b: *std.Build) void {
     const run_contract_call_test = b.addRunArtifact(contract_call_test);
     const contract_call_test_step = b.step("test-contract-call", "Run Contract Call tests");
     contract_call_test_step.dependOn(&run_contract_call_test.step);
-    
+
     // Hardfork tests removed - provider implementation is broken
-    
+
     // Add DELEGATECALL test
     const delegatecall_test = b.addTest(.{
         .name = "delegatecall-test",
@@ -901,11 +884,11 @@ pub fn build(b: *std.Build) void {
     const run_delegatecall_test = b.addRunArtifact(delegatecall_test);
     const delegatecall_test_step = b.step("test-delegatecall", "Run DELEGATECALL tests");
     delegatecall_test_step.dependOn(&run_delegatecall_test.step);
-    
+
     snail_tracer_test.root_module.addImport("primitives", primitives_mod);
     snail_tracer_test.root_module.addImport("evm", evm_mod);
     snail_tracer_test.root_module.addImport("compilers", compilers_mod);
-    
+
     const run_snail_tracer_test = b.addRunArtifact(snail_tracer_test);
     const snail_tracer_test_step = b.step("test-snail-tracer", "Run Snail Tracer tests");
     snail_tracer_test_step.dependOn(&run_snail_tracer_test.step);

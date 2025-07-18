@@ -11,7 +11,6 @@ const kzg_verification = @import("../blob/kzg_verification.zig");
 /// which extends EIP-1559 transactions to include blob data for L2 data availability.
 /// Blob transactions include versioned hashes of blob commitments and separate
 /// blob gas pricing.
-
 /// Transaction type identifier for blob transactions (EIP-2718)
 pub const BLOB_TX_TYPE = 0x03;
 
@@ -347,7 +346,7 @@ pub const BlobTransaction = struct {
         // TODO: Implement proper RLP encoding
         // For now, this is a placeholder implementation
         // A real implementation would RLP encode:
-        // [chain_id, nonce, max_priority_fee_per_gas, max_fee_per_gas, gas_limit, 
+        // [chain_id, nonce, max_priority_fee_per_gas, max_fee_per_gas, gas_limit,
         //  to, value, data, access_list, max_fee_per_blob_gas, blob_versioned_hashes]
 
         // Placeholder: serialize key fields as bytes

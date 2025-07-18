@@ -18,22 +18,25 @@ pub fn add_rust_integration(b: *std.Build, target: std.Build.ResolvedTarget, opt
     // Generate C bindings using cbindgen
     // Print debug information
     std.debug.print("Looking for cbindgen...\n", .{});
-    
+
     // Try to use cbindgen directly from PATH first
     const cbindgen_cmd = b.addSystemCommand(&.{
         "cbindgen",
-        "--config", "cbindgen.toml",
-        "--crate", "foundry_wrapper",
-        "--output", "../../include/foundry_wrapper.h",
+        "--config",
+        "cbindgen.toml",
+        "--crate",
+        "foundry_wrapper",
+        "--output",
+        "../../include/foundry_wrapper.h",
     });
-    
+
     // Set the working directory to the Rust crate
     cbindgen_cmd.setCwd(b.path("src/compilers"));
-    
+
     // Set environment to ensure PATH is available
     // Include both Linux and macOS paths for cargo
     // cbindgen_cmd.setEnvironmentVariable("PATH", "/Users/williamcory/.cargo/bin:/root/.cargo/bin:/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin");
-    
+
     std.debug.print("cbindgen command configured\n", .{});
 
     cbindgen_cmd.step.dependOn(&cargo_build.step);
@@ -46,15 +49,15 @@ pub fn add_rust_integration(b: *std.Build, target: std.Build.ResolvedTarget, opt
         .target = target,
         .optimize = optimize,
     });
-    
+
     // Create a module for the Compiler
     const compiler_mod = b.createModule(.{
         .root_source_file = b.path("src/compilers/compiler.zig"),
     });
-    
+
     // Add zabi to the compiler module
     compiler_mod.addImport("zabi", zabi_dep.module("zabi"));
-    
+
     // Add include path to the module for C imports
     compiler_mod.addIncludePath(b.path("include"));
 
@@ -78,13 +81,13 @@ pub fn add_rust_integration(b: *std.Build, target: std.Build.ResolvedTarget, opt
 
     // Link required system libraries
     artifacts[0].linkLibC();
-    
+
     // Link unwinder libraries for Rust std
     if (target.result.os.tag == .linux) {
         artifacts[0].linkSystemLibrary("unwind");
         artifacts[0].linkSystemLibrary("gcc_s");
     }
-    
+
     if (target.result.os.tag == .macos) {
         artifacts[0].linkFramework("Security");
         artifacts[0].linkFramework("SystemConfiguration");
@@ -110,21 +113,21 @@ pub fn add_rust_integration(b: *std.Build, target: std.Build.ResolvedTarget, opt
         .target = target,
         .optimize = optimize,
     });
-    
+
     // Add zabi dependency to test
     foundry_test.root_module.addImport("zabi", zabi_dep.module("zabi"));
-    
+
     // Link frameworks for test executable
     foundry_test.linkLibC();
     foundry_test.addObjectFile(b.path(rust_lib_path));
     foundry_test.addIncludePath(b.path("include"));
-    
+
     // Link unwinder libraries for Rust std
     if (target.result.os.tag == .linux) {
         foundry_test.linkSystemLibrary("unwind");
         foundry_test.linkSystemLibrary("gcc_s");
     }
-    
+
     if (target.result.os.tag == .macos) {
         foundry_test.linkFramework("Security");
         foundry_test.linkFramework("SystemConfiguration");

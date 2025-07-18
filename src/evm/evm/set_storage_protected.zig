@@ -29,6 +29,6 @@ pub fn set_storage_protected(self: *Vm, address: primitives.Address.Address, slo
     if (self.read_only) {
         return ExecutionError.Error.WriteProtection;
     }
-    
+
     try self.state.set_storage(address, slot, value);
 }

@@ -14,11 +14,11 @@ const opcodes = Evm.opcodes;
 // Test basic arithmetic sequences
 test "Integration: arithmetic calculation sequence" {
     const allocator = testing.allocator;
-    
+
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -26,7 +26,7 @@ test "Integration: arithmetic calculation sequence" {
     // Create a test contract
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     var contract = Contract.init(
         caller_addr,
         contract_addr,
@@ -53,7 +53,7 @@ test "Integration: arithmetic calculation sequence" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // ADD: 5 + 3 = 8
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
     const add_result = frame.stack.peek_n(0) catch unreachable;
@@ -78,11 +78,11 @@ test "Integration: arithmetic calculation sequence" {
 // Test stack manipulation sequences
 test "Integration: stack manipulation with DUP and SWAP" {
     const allocator = testing.allocator;
-    
+
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -90,7 +90,7 @@ test "Integration: stack manipulation with DUP and SWAP" {
     // Create a test contract
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     var contract = Contract.init(
         caller_addr,
         contract_addr,
@@ -118,7 +118,7 @@ test "Integration: stack manipulation with DUP and SWAP" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // DUP2 - duplicate second item
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x81);
 
@@ -148,11 +148,11 @@ test "Integration: stack manipulation with DUP and SWAP" {
 // Test memory and storage interaction
 test "Integration: memory to storage workflow" {
     const allocator = testing.allocator;
-    
+
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -160,7 +160,7 @@ test "Integration: memory to storage workflow" {
     // Create a test contract
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     var contract = Contract.init(
         caller_addr,
         contract_addr,
@@ -181,7 +181,7 @@ test "Integration: memory to storage workflow" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Store value in memory
     const test_value: u256 = 0x123456789ABCDEF;
     try frame.stack.append(32); // offset
@@ -209,11 +209,11 @@ test "Integration: memory to storage workflow" {
 // Test conditional logic with JUMPI
 test "Integration: conditional branching" {
     const allocator = testing.allocator;
-    
+
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -221,22 +221,22 @@ test "Integration: conditional branching" {
     // Create a test contract with code
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     // Set up contract code with jump destinations
     var code: [50]u8 = undefined;
     @memset(&code, 0x00); // Fill with STOP
     code[10] = 0x5B; // JUMPDEST at 10
     code[20] = 0x5B; // JUMPDEST at 20
-    
+
     // Set code in state
     try vm.state.set_code(contract_addr, &code);
-    
+
     // Calculate code hash
     var code_hash: [32]u8 = undefined;
     var hasher = std.crypto.hash.sha3.Keccak256.init(.{});
     hasher.update(&code);
     hasher.final(&code_hash);
-    
+
     var contract = Contract.init(
         caller_addr,
         contract_addr,
@@ -257,7 +257,7 @@ test "Integration: conditional branching" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Test 1: Jump taken (condition true)
     try frame.stack.append(100);
     try frame.stack.append(200);
@@ -293,11 +293,11 @@ test "Integration: conditional branching" {
 // Test hash calculation and comparison
 test "Integration: hash and compare workflow" {
     const allocator = testing.allocator;
-    
+
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -305,7 +305,7 @@ test "Integration: hash and compare workflow" {
     // Create a test contract
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     var contract = Contract.init(
         caller_addr,
         contract_addr,
@@ -326,7 +326,7 @@ test "Integration: hash and compare workflow" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Write data to memory
     const data1 = [_]u8{ 0x01, 0x02, 0x03, 0x04 };
     const data2 = [_]u8{ 0x01, 0x02, 0x03, 0x04 };
@@ -373,11 +373,11 @@ test "Integration: hash and compare workflow" {
 // Test call data handling
 test "Integration: call data processing" {
     const allocator = testing.allocator;
-    
+
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -385,7 +385,7 @@ test "Integration: call data processing" {
     // Create a test contract
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     // Set up call data (function selector + parameters)
     const call_data = [_]u8{
         0xa9, 0x05, 0x9c, 0xbb, // transfer(address,uint256) selector
@@ -401,7 +401,7 @@ test "Integration: call data processing" {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xe8, // amount (1000)
     };
-    
+
     var contract = Contract.init(
         caller_addr,
         contract_addr,
@@ -423,7 +423,7 @@ test "Integration: call data processing" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Get call data size
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x36);
     const size_result = try frame.stack.pop();
@@ -458,11 +458,11 @@ test "Integration: call data processing" {
 // Test gas consumption across operations
 test "Integration: gas tracking through operations" {
     const allocator = testing.allocator;
-    
+
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -470,7 +470,7 @@ test "Integration: gas tracking through operations" {
     // Create a test contract
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     var contract = Contract.init(
         caller_addr,
         contract_addr,
@@ -491,7 +491,7 @@ test "Integration: gas tracking through operations" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Memory operation (expansion cost)
     try frame.stack.append(1000); // Large offset causes expansion
     try frame.stack.append(0x123456);
@@ -531,11 +531,11 @@ test "Integration: gas tracking through operations" {
 // Test error propagation through sequences
 test "Integration: error handling in sequences" {
     const allocator = testing.allocator;
-    
+
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -543,7 +543,7 @@ test "Integration: error handling in sequences" {
     // Create a test contract
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     var contract = Contract.init(
         caller_addr,
         contract_addr,
@@ -564,7 +564,7 @@ test "Integration: error handling in sequences" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Try sequence that will run out of gas
     try frame.stack.append(1000000); // Large value
     try frame.stack.append(1000000); // Large value
@@ -587,11 +587,11 @@ test "Integration: error handling in sequences" {
 // Test transient storage workflow (EIP-1153)
 test "Integration: transient storage usage" {
     const allocator = testing.allocator;
-    
+
     // Initialize memory database and EVM
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
@@ -599,7 +599,7 @@ test "Integration: transient storage usage" {
     // Create a test contract
     const contract_addr = primitives.Address.from_u256(0x3333333333333333333333333333333333333333);
     const caller_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     var contract = Contract.init(
         caller_addr,
         contract_addr,
@@ -620,7 +620,7 @@ test "Integration: transient storage usage" {
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
-    
+
     // Store in both regular and transient storage
     const test_value: u256 = 0xDEADBEEF;
     const slot: u256 = 42;

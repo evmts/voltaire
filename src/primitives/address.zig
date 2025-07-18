@@ -44,7 +44,7 @@ pub fn fromHex(hex_str: []const u8) !Address {
     if (hex_str.len != 42 or !startsWith(u8, hex_str, "0x")) {
         return error.InvalidHexFormat;
     }
-    
+
     var addr: Address = undefined;
     _ = hexToBytes(&addr, hex_str[2..]) catch return error.InvalidHexString;
     return addr;
@@ -54,10 +54,10 @@ pub fn fromPublicKey(public_key_x: u256, public_key_y: u256) Address {
     var pub_key_bytes: [64]u8 = undefined;
     std.mem.writeInt(u256, pub_key_bytes[0..32], public_key_x, .big);
     std.mem.writeInt(u256, pub_key_bytes[32..64], public_key_y, .big);
-    
+
     var hash: [32]u8 = undefined;
     Keccak256.hash(&pub_key_bytes, &hash, .{});
-    
+
     var address: Address = undefined;
     @memcpy(&address, hash[12..32]);
     return address;
@@ -353,15 +353,15 @@ pub fn getCreate2Address(creator: Address, salt: [32]u8, init_code_hash: [32]u8)
     @memcpy(data[1..21], &creator);
     @memcpy(data[21..53], &salt);
     @memcpy(data[53..85], &init_code_hash);
-    
+
     // Hash the data
     var hash: [32]u8 = undefined;
     Keccak256.hash(&data, &hash, .{});
-    
+
     // Take last 20 bytes as address
     var address: Address = undefined;
     @memcpy(&address, hash[12..32]);
-    
+
     return address;
 }
 
@@ -456,7 +456,7 @@ test "Address - equality" {
 test "contract address generation - CREATE" {
     const deployer = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
     const nonce: u64 = 0;
-    
+
     const addr = getContractAddress(deployer, nonce);
     const expected = try fromHex("0xcd234a471b72ba2f1ccf0a70fcaba648a5eecd8d");
     try std.testing.expectEqual(expected, addr);
@@ -465,7 +465,7 @@ test "contract address generation - CREATE" {
 test "contract address generation - CREATE with nonce 1" {
     const deployer = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
     const nonce: u64 = 1;
-    
+
     const addr = getContractAddress(deployer, nonce);
     const expected = try fromHex("0x343c43a37d37dff08ae8c4a11544c718abb4fcf8");
     try std.testing.expectEqual(expected, addr);
@@ -473,7 +473,7 @@ test "contract address generation - CREATE with nonce 1" {
 
 test "contract address generation - CREATE multiple nonces" {
     const deployer = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-    
+
     const testCases = [_]struct {
         nonce: u64,
         expected: []const u8,
@@ -483,7 +483,7 @@ test "contract address generation - CREATE multiple nonces" {
         .{ .nonce = 2, .expected = "0xf778b86fa74e846c4f0a1fbd1335fe81c00a0c91" },
         .{ .nonce = 3, .expected = "0xfffd933a0bc612844eaf0c6fe3e5b8e9b6c1d19c" },
     };
-    
+
     for (testCases) |tc| {
         const addr = getContractAddress(deployer, tc.nonce);
         const expected = try fromHex(tc.expected);
@@ -495,7 +495,7 @@ test "contract address generation - CREATE2" {
     const deployer = try fromHex("0x0000000000000000000000000000000000000000");
     const salt = [_]u8{0} ** 32;
     const initCodeHash = [_]u8{0} ** 32;
-    
+
     const addr = getCreate2Address(deployer, salt, initCodeHash);
     const expected = try fromHex("0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38");
     try std.testing.expectEqual(expected, addr);
@@ -505,9 +505,9 @@ test "contract address generation - CREATE2 deterministic" {
     const deployer = try fromHex("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
     const salt: [32]u8 = .{ 0x12, 0x34, 0x56, 0x78 } ++ .{0} ** 28;
     const initCodeHash: [32]u8 = .{ 0xab, 0xcd, 0xef } ++ .{0} ** 29;
-    
+
     const addr = getCreate2Address(deployer, salt, initCodeHash);
-    
+
     // Should generate deterministic address
     const addr2 = getCreate2Address(deployer, salt, initCodeHash);
     try std.testing.expectEqual(addr, addr2);
@@ -516,7 +516,7 @@ test "contract address generation - CREATE2 deterministic" {
 test "calculate_create_address with allocator" {
     const allocator = std.testing.allocator;
     const deployer = try fromHex("0xa0cf798816d4b9b9866b5330eea46a18382f251e");
-    
+
     const addr = try calculate_create_address(allocator, deployer, 0);
     const expected = try fromHex("0xcd234a471b72ba2f1ccf0a70fcaba648a5eecd8d");
     try std.testing.expectEqual(expected, addr);
@@ -527,13 +527,13 @@ test "calculate_create2_address with allocator" {
     const deployer = try fromHex("0x0000000000000000000000000000000000000000");
     const salt: u256 = 0;
     const init_code: []const u8 = "";
-    
+
     const addr = try calculate_create2_address(allocator, deployer, salt, init_code);
-    
+
     // Hash of empty init code
     var expected_hash: [32]u8 = undefined;
     Keccak256.hash(init_code, &expected_hash, .{});
-    
+
     const expected_addr = getCreate2Address(deployer, @bitCast(salt), expected_hash);
     try std.testing.expectEqual(expected_addr, addr);
 }

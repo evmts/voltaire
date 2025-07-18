@@ -5,7 +5,6 @@ const std = @import("std");
 /// This module provides common gas calculation patterns used by precompiles.
 /// Many precompiles use linear gas costs (base + per_word * word_count) or other
 /// standard patterns defined here.
-
 /// Calculates linear gas cost: base_cost + per_word_cost * ceil(input_size / 32)
 ///
 /// This is the most common gas calculation pattern for precompiles. The cost consists
@@ -36,7 +35,7 @@ pub fn calculate_linear_cost_checked(input_size: usize, base_cost: u64, per_word
         @branchHint(.cold);
         return error.Overflow;
     };
-    
+
     const word_cost = std.math.mul(u64, per_word_cost, word_count_u64) catch {
         @branchHint(.cold);
         return error.Overflow;
@@ -45,7 +44,7 @@ pub fn calculate_linear_cost_checked(input_size: usize, base_cost: u64, per_word
         @branchHint(.cold);
         return error.Overflow;
     };
-    
+
     return total_cost;
 }
 
@@ -61,12 +60,12 @@ pub fn calculate_linear_cost_checked(input_size: usize, base_cost: u64, per_word
 /// @return The calculated gas cost if within limit, error otherwise
 pub fn validate_gas_limit(input_size: usize, base_cost: u64, per_word_cost: u64, gas_limit: u64) !u64 {
     const gas_cost = try calculate_linear_cost_checked(input_size, base_cost, per_word_cost);
-    
+
     if (gas_cost > gas_limit) {
         @branchHint(.cold);
         return error.OutOfGas;
     }
-    
+
     return gas_cost;
 }
 
@@ -91,11 +90,7 @@ pub fn bytes_to_words(byte_size: usize) usize {
 /// @param base_cost Base gas cost
 /// @param calculate_dynamic_cost Function to calculate additional cost based on input
 /// @return Total gas cost
-pub fn calculate_dynamic_cost(
-    input_data: []const u8, 
-    base_cost: u64, 
-    calculate_dynamic_cost_fn: fn([]const u8) u64
-) u64 {
+pub fn calculate_dynamic_cost(input_data: []const u8, base_cost: u64, calculate_dynamic_cost_fn: fn ([]const u8) u64) u64 {
     const dynamic_cost = calculate_dynamic_cost_fn(input_data);
     return base_cost + dynamic_cost;
 }

@@ -14,7 +14,7 @@ const crypto = @import("crypto");
 /// ## Input Format
 /// - Any length byte array (no restrictions)
 ///
-/// ## Output Format  
+/// ## Output Format
 /// - Always 32 bytes: 20-byte RIPEMD160 hash + 12 zero bytes (left-padding)
 ///
 /// ## Gas Cost
@@ -28,12 +28,11 @@ const crypto = @import("crypto");
 /// const empty_result = execute(&[_]u8{}, &output, 1000);
 /// // RIPEMD160("") = 9c1185a5c5e9fc54612808977ee8f548b2258d31
 ///
-/// // "abc" hash  
+/// // "abc" hash
 /// const abc_input = "abc";
 /// const abc_result = execute(abc_input, &output, 1000);
 /// // RIPEMD160("abc") = 8eb208f7e05d987a9b044a8e98c6b087f15a0bfc
 /// ```
-
 /// Gas constants for RIPEMD160 precompile (per Ethereum specification)
 pub const RIPEMD160_BASE_GAS_COST: u64 = 600;
 pub const RIPEMD160_WORD_GAS_COST: u64 = 120;
@@ -68,21 +67,21 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
     if (input_size > std.math.maxInt(u64) - 31) {
         return error.Overflow;
     }
-    
+
     const word_count = (input_size + 31) / 32;
-    
+
     // Check for overflow in multiplication
     if (word_count > std.math.maxInt(u64) / RIPEMD160_WORD_GAS_COST) {
         return error.Overflow;
     }
-    
+
     const word_gas = RIPEMD160_WORD_GAS_COST * @as(u64, @intCast(word_count));
-    
+
     // Check for overflow in addition
     if (word_gas > std.math.maxInt(u64) - RIPEMD160_BASE_GAS_COST) {
         return error.Overflow;
     }
-    
+
     return RIPEMD160_BASE_GAS_COST + word_gas;
 }
 
@@ -95,32 +94,32 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
 /// 4. Returns execution result with gas usage
 ///
 /// @param input Input data to hash (any length)
-/// @param output Output buffer to write result (must be >= 32 bytes)  
+/// @param output Output buffer to write result (must be >= 32 bytes)
 /// @param gas_limit Maximum gas available for this operation
 /// @return PrecompileOutput containing success/failure and gas usage
 pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput {
     const gas_cost = calculate_gas(input.len);
-    
+
     // Check if we have enough gas
     if (gas_cost > gas_limit) {
         @branchHint(.cold);
         return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
     }
-    
+
     // Validate output buffer size
     if (output.len < RIPEMD160_OUTPUT_SIZE) {
         @branchHint(.cold);
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     }
-    
+
     // Compute RIPEMD160 hash using primitives
     const hash = crypto.HashAlgorithms.RIPEMD160.hashFixed(input);
-    
+
     // Format output: 12 zero bytes + 20-byte hash (left-padding)
     // This follows Ethereum specification for RIPEMD160 output format
     @memset(output[0..RIPEMD160_OUTPUT_SIZE], 0);
     @memcpy(output[12..32], &hash);
-    
+
     return PrecompileOutput.success_result(gas_cost, RIPEMD160_OUTPUT_SIZE);
 }
 
@@ -148,7 +147,6 @@ pub fn get_output_size(input_size: usize) usize {
     _ = input_size; // Unused parameter
     return RIPEMD160_OUTPUT_SIZE;
 }
-
 
 /// Known RIPEMD160 test vectors for validation
 pub const TestVector = struct {

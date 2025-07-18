@@ -571,7 +571,7 @@ test "KECCAK256: Stack behavior" {
 
     // Set up initial stack state
     try frame.stack.append(0x12345678); // [bottom]
-    try frame.stack.append(0xABCDEF); // 
+    try frame.stack.append(0xABCDEF); //
     try frame.stack.append(0x0); // offset
     try frame.stack.append(0x55); // size [top]
 

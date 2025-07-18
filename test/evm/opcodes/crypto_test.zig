@@ -130,7 +130,7 @@ test "Crypto: KECCAK256 memory expansion and gas" {
     // Test memory expansion gas cost
     const initial_gas = frame.gas_remaining;
     try frame.stack.append(256); // size (8 words) (will be popped 2nd)
-    try frame.stack.append(0);   // offset (will be popped 1st)
+    try frame.stack.append(0); // offset (will be popped 1st)
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
 
     // Gas should include:
@@ -145,7 +145,7 @@ test "Crypto: KECCAK256 memory expansion and gas" {
     frame.gas_remaining = 10000;
     const large_size = 1024; // 32 words
     try frame.stack.append(large_size); // size (will be popped 2nd)
-    try frame.stack.append(0);          // offset (will be popped 1st)
+    try frame.stack.append(0); // offset (will be popped 1st)
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
 
     // Should consume more gas for larger data
@@ -188,7 +188,7 @@ test "Crypto: KECCAK256 edge cases" {
     // Test with maximum offset that fits in memory
     const max_offset = std.math.maxInt(usize) - 32;
     if (max_offset <= std.math.maxInt(u256)) {
-        try frame.stack.append(0);          // size (will be popped 2nd)
+        try frame.stack.append(0); // size (will be popped 2nd)
         try frame.stack.append(max_offset); // offset (will be popped 1st)
         const err = evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
         try testing.expectError(ExecutionError.Error.OutOfOffset, err);
@@ -199,7 +199,7 @@ test "Crypto: KECCAK256 edge cases" {
     frame.gas_remaining = 100; // Very limited gas
     const huge_size = 10000; // Would require lots of gas
     try frame.stack.append(huge_size); // size (will be popped 2nd)
-    try frame.stack.append(0);         // offset (will be popped 1st)
+    try frame.stack.append(0); // offset (will be popped 1st)
     const err2 = evm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
     try testing.expectError(ExecutionError.Error.OutOfGas, err2);
 }
@@ -237,15 +237,9 @@ test "Crypto: Stack underflow errors" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Test SHA3 with empty stack
-    try testing.expectError(
-        ExecutionError.Error.StackUnderflow,
-        evm.table.execute(0, interpreter_ptr, state_ptr, 0x20)
-    );
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter_ptr, state_ptr, 0x20));
 
     // Test SHA3 with only one item
     try frame.stack.append(32);
-    try testing.expectError(
-        ExecutionError.Error.StackUnderflow,
-        evm.table.execute(0, interpreter_ptr, state_ptr, 0x20)
-    );
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter_ptr, state_ptr, 0x20));
 }

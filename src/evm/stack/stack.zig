@@ -181,7 +181,7 @@ pub fn set_top_unsafe(self: *Stack, value: u256) void {
     self.data[self.size - 1] = value;
 }
 
-/// CamelCase alias used by existing execution code  
+/// CamelCase alias used by existing execution code
 pub fn swapUnsafe(self: *Stack, n: usize) void {
     @branchHint(.likely);
     std.mem.swap(u256, &self.data[self.size - 1], &self.data[self.size - n - 1]);

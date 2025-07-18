@@ -12,9 +12,7 @@ const Vm = @import("../evm.zig");
 /// gas consumption and handling control flow changes.
 pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8, is_static: bool) ExecutionError.Error!RunResult {
     @branchHint(.likely);
-    Log.debug("VM.interpret_with_context: Starting execution, depth={}, gas={}, static={}, code_size={}, input_size={}", .{ 
-        self.depth, contract.gas, is_static, contract.code_size, input.len 
-    });
+    Log.debug("VM.interpret_with_context: Starting execution, depth={}, gas={}, static={}, code_size={}, input_size={}", .{ self.depth, contract.gas, is_static, contract.code_size, input.len });
 
     self.depth += 1;
     defer self.depth -= 1;
@@ -41,10 +39,7 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
         @branchHint(.likely);
         const opcode = contract.get_op(pc);
         frame.pc = pc;
-        
-        
 
-        
         const result = self.table.execute(pc, interpreter_ptr, state_ptr, opcode) catch |err| {
             @branchHint(.cold);
             contract.gas = frame.gas_remaining;
@@ -115,7 +110,7 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
     const output_data = frame.output;
     Log.debug("VM.interpret_with_context: Normal completion, output_size={}", .{output_data.len});
     const output: ?[]const u8 = if (output_data.len > 0) try self.allocator.dupe(u8, output_data) else null;
-    
+
     Log.debug("VM.interpret_with_context: Execution completed, gas_used={}, output_size={}, output_ptr={any}", .{
         initial_gas - frame.gas_remaining,
         if (output) |o| o.len else 0,

@@ -10,15 +10,15 @@ pub const PrecompileError = error{
     /// Insufficient gas provided to complete the precompile operation
     /// This occurs when the calculated gas cost exceeds the provided gas limit
     OutOfGas,
-    
+
     /// Input data is invalid for the specific precompile
     /// Each precompile has its own input validation requirements
     InvalidInput,
-    
+
     /// The precompile operation failed during execution
     /// This covers cryptographic failures, computation errors, etc.
     ExecutionFailed,
-    
+
     /// Memory allocation failed during precompile execution
     /// Not a normal precompile error - indicates system resource exhaustion
     OutOfMemory,
@@ -31,7 +31,7 @@ pub const PrecompileError = error{
 pub const PrecompileResult = struct {
     /// Amount of gas consumed by the precompile execution
     gas_used: u64,
-    
+
     /// Length of the output data produced
     /// The actual output data is written to the provided output buffer
     output_size: usize,
@@ -44,30 +44,25 @@ pub const PrecompileResult = struct {
 pub const PrecompileOutput = union(enum) {
     /// Successful execution with gas usage and output
     success: PrecompileResult,
-    
+
     /// Failed execution with specific error
     failure: PrecompileError,
-    
+
     /// Creates a successful result
     /// @param gas_used The amount of gas consumed
     /// @param output_size The size of the output data
     /// @return A successful PrecompileOutput
     pub fn success_result(gas_used: u64, output_size: usize) PrecompileOutput {
-        return PrecompileOutput{ 
-            .success = PrecompileResult{ 
-                .gas_used = gas_used, 
-                .output_size = output_size 
-            } 
-        };
+        return PrecompileOutput{ .success = PrecompileResult{ .gas_used = gas_used, .output_size = output_size } };
     }
-    
+
     /// Creates a failure result
     /// @param err The error that occurred
     /// @return A failed PrecompileOutput
     pub fn failure_result(err: PrecompileError) PrecompileOutput {
         return PrecompileOutput{ .failure = err };
     }
-    
+
     /// Checks if the result represents success
     /// @return true if successful, false if failed
     pub fn is_success(self: PrecompileOutput) bool {
@@ -76,13 +71,13 @@ pub const PrecompileOutput = union(enum) {
             .failure => false,
         };
     }
-    
+
     /// Checks if the result represents failure
     /// @return true if failed, false if successful
     pub fn is_failure(self: PrecompileOutput) bool {
         return !self.is_success();
     }
-    
+
     /// Gets the gas used from a successful result
     /// @return The gas used, or 0 if the result is a failure
     pub fn get_gas_used(self: PrecompileOutput) u64 {
@@ -97,7 +92,7 @@ pub const PrecompileOutput = union(enum) {
             },
         };
     }
-    
+
     /// Gets the output size from a successful result
     /// @return The output size, or 0 if the result is a failure
     pub fn get_output_size(self: PrecompileOutput) usize {
@@ -112,7 +107,7 @@ pub const PrecompileOutput = union(enum) {
             },
         };
     }
-    
+
     /// Gets the error from a failed result
     /// @return The error, or null if the result is successful
     pub fn get_error(self: PrecompileOutput) ?PrecompileError {

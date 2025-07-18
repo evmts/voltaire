@@ -9,7 +9,7 @@ const crypto = @import("crypto");
 ///
 /// This module implements the SHA256 cryptographic hash function precompile at address 0x02.
 /// The precompile follows the Ethereum specification:
-/// 
+///
 /// - Address: 0x0000000000000000000000000000000000000002
 /// - Gas cost: 60 + 12 * ceil(input_size / 32)
 /// - Output: Always 32 bytes (SHA256 hash)
@@ -26,12 +26,11 @@ const crypto = @import("crypto");
 /// ## Security
 /// SHA256 is a cryptographically secure hash function that produces a 256-bit (32-byte) digest.
 /// The implementation is resistant to length extension attacks and produces deterministic output.
-
 /// Base gas cost for SHA256 precompile
 /// This is the minimum cost regardless of input size
 const SHA256_BASE_COST: u64 = 60;
 
-/// Gas cost per 32-byte word for SHA256 precompile  
+/// Gas cost per 32-byte word for SHA256 precompile
 /// Total cost = SHA256_BASE_COST + (word_count * SHA256_WORD_COST)
 const SHA256_WORD_COST: u64 = 12;
 
@@ -62,18 +61,18 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
     if (input_size > std.math.maxInt(usize) - 31) {
         return error.Overflow;
     }
-    
+
     const word_count = (input_size + 31) / 32;
-    
+
     // Check for potential overflow in gas calculation
     const gas_from_words = std.math.mul(u64, SHA256_WORD_COST, word_count) catch {
         return error.Overflow;
     };
-    
+
     const total_gas = std.math.add(u64, SHA256_BASE_COST, gas_from_words) catch {
         return error.Overflow;
     };
-    
+
     return total_gas;
 }
 
@@ -89,20 +88,20 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
 pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput {
     // Calculate required gas
     const required_gas = calculate_gas(input.len);
-    
+
     // Check if we have enough gas
     if (required_gas > gas_limit) {
         return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
     }
-    
+
     // Validate output buffer size
     if (output.len < SHA256_OUTPUT_SIZE) {
         return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
     }
-    
+
     // Compute SHA256 hash using primitives
     crypto.HashAlgorithms.SHA256.hash(input, output[0..SHA256_OUTPUT_SIZE]);
-    
+
     return PrecompileOutput.success_result(required_gas, SHA256_OUTPUT_SIZE);
 }
 

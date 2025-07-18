@@ -25,7 +25,6 @@
 /// - Invalid points (not on curve): Return (0, 0)
 /// - Malformed input: Return (0, 0)
 /// - Out of gas: Standard precompile error
-
 const std = @import("std");
 const builtin = @import("builtin");
 const log = @import("../log.zig");
@@ -35,10 +34,10 @@ const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const ChainRules = @import("../hardforks/chain_rules.zig");
 
 // Conditional imports based on target
-const bn254_backend = if (builtin.target.cpu.arch == .wasm32) 
-    @import("bn254.zig")  // Pure Zig implementation for WASM
-else 
-    @import("bn254_rust_wrapper.zig");  // Rust implementation for native
+const bn254_backend = if (builtin.target.cpu.arch == .wasm32)
+    @import("bn254.zig") // Pure Zig implementation for WASM
+else
+    @import("bn254_rust_wrapper.zig"); // Rust implementation for native
 
 /// Calculate gas cost for ECMUL based on chain rules
 ///
@@ -110,7 +109,7 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64, chain_rules: Cha
         // TODO: Implement full scalar multiplication in pure Zig for WASM
         // For now, return point at infinity for all scalar multiplications
         @memset(output[0..64], 0);
-        
+
         // Log that this is a placeholder implementation
         log.warn("ECMUL in WASM build: using placeholder implementation (returns point at infinity)", .{});
     } else {
@@ -185,7 +184,7 @@ test "ECMUL generator point by zero" {
 
     // Test multiplying generator point (1, 2) by scalar 0
     var input = [_]u8{0} ** 96;
-    
+
     // Set point to (1, 2)
     input[31] = 1; // x = 1
     input[63] = 2; // y = 2
@@ -193,7 +192,7 @@ test "ECMUL generator point by zero" {
 
     var output = [_]u8{0} ** 64;
     const result = execute(&input, &output, 10000, chain_rules);
-    
+
     try testing.expect(result.is_success());
     try testing.expectEqual(@as(u64, 6000), result.get_gas_used());
 
@@ -208,7 +207,7 @@ test "ECMUL generator point by one" {
 
     // Test multiplying generator point (1, 2) by scalar 1
     var input = [_]u8{0} ** 96;
-    
+
     // Set point to (1, 2)
     input[31] = 1; // x = 1
     input[63] = 2; // y = 2
@@ -217,7 +216,7 @@ test "ECMUL generator point by one" {
 
     var output = [_]u8{0} ** 64;
     const result = execute(&input, &output, 10000, chain_rules);
-    
+
     try testing.expect(result.is_success());
     try testing.expectEqual(@as(u64, 6000), result.get_gas_used());
 
@@ -237,7 +236,7 @@ test "ECMUL invalid point" {
 
     var output = [_]u8{0} ** 64;
     const result = execute(&input, &output, 10000, chain_rules);
-    
+
     try testing.expect(result.is_success());
     try testing.expectEqual(@as(u64, 6000), result.get_gas_used());
 
@@ -267,7 +266,7 @@ test "ECMUL out of gas" {
 
     // Provide insufficient gas
     const result = execute(&input, &output, 1000, chain_rules);
-    
+
     try testing.expect(result.is_failure());
     try testing.expectEqual(PrecompileError.OutOfGas, result.get_error().?);
 }
@@ -276,11 +275,11 @@ test "ECMUL short input handling" {
     const chain_rules = ChainRules.for_hardfork(.ISTANBUL);
 
     // Test with short input (should be zero-padded)
-    var input = [_]u8{1, 2, 3}; // Only 3 bytes
+    var input = [_]u8{ 1, 2, 3 }; // Only 3 bytes
     var output = [_]u8{0} ** 64;
 
     const result = execute(&input, &output, 10000, chain_rules);
-    
+
     try testing.expect(result.is_success());
     try testing.expectEqual(@as(u64, 6000), result.get_gas_used());
 

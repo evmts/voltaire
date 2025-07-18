@@ -124,7 +124,7 @@ test "GAS (0x5A): Get remaining gas" {
     for (test_cases) |initial_gas| {
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-    frame.memory.finalize_root();
+        frame.memory.finalize_root();
         frame.gas_remaining = initial_gas;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);

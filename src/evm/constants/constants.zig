@@ -433,7 +433,7 @@ pub fn is_create(op: u8) bool {
 /// ## Parameters
 /// - `op`: The opcode to check
 ///
-/// ## Returns  
+/// ## Returns
 /// - `true` for operations that modify storage, create contracts, or emit logs
 /// - `false` for read-only operations
 ///

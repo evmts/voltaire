@@ -29,7 +29,7 @@ test "MLOAD (0x51): Basic memory load operations" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x51 }; // MLOAD
+    const bytecode = [_]u8{0x51}; // MLOAD
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -83,7 +83,7 @@ test "MLOAD: Memory alignment and boundary conditions" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x51 }; // MLOAD
+    const bytecode = [_]u8{0x51}; // MLOAD
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -126,12 +126,12 @@ test "MLOAD: Memory alignment and boundary conditions" {
     // Store data at word boundary, then load crossing the boundary
     const pattern: u256 = 0xaabbccddeeff112233445566778899aa;
     try frame.memory.set_u256(32, pattern);
-    
+
     // Load starting from offset 16 (half way through previous word, half way through stored word)
     try frame.stack.append(16);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
     const result = try frame.stack.pop();
-    
+
     // Should load 16 zero bytes followed by 16 bytes of the pattern
     const expected = pattern >> 128; // Shift right to get upper 16 bytes
     try testing.expectEqual(expected, result);
@@ -149,7 +149,7 @@ test "MLOAD: Large offset handling and gas consumption" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x51 }; // MLOAD
+    const bytecode = [_]u8{0x51}; // MLOAD
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -208,7 +208,7 @@ test "MLOAD: Stack underflow protection" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x51 }; // MLOAD
+    const bytecode = [_]u8{0x51}; // MLOAD
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -235,7 +235,7 @@ test "MLOAD: Stack underflow protection" {
 }
 
 // ============================
-// 0x52: MSTORE opcode  
+// 0x52: MSTORE opcode
 // ============================
 
 test "MSTORE (0x52): Basic memory store operations" {
@@ -250,7 +250,7 @@ test "MSTORE (0x52): Basic memory store operations" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x52 }; // MSTORE
+    const bytecode = [_]u8{0x52}; // MSTORE
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -312,7 +312,7 @@ test "MSTORE: Overwrite and partial overlap scenarios" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x52 }; // MSTORE
+    const bytecode = [_]u8{0x52}; // MSTORE
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -384,7 +384,7 @@ test "MSTORE: Memory expansion and gas costs" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x52 }; // MSTORE
+    const bytecode = [_]u8{0x52}; // MSTORE
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -455,7 +455,7 @@ test "MSTORE: Stack underflow protection" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x52 }; // MSTORE
+    const bytecode = [_]u8{0x52}; // MSTORE
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -502,7 +502,7 @@ test "MSTORE8 (0x53): Basic single byte store operations" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x53 }; // MSTORE8
+    const bytecode = [_]u8{0x53}; // MSTORE8
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -570,7 +570,7 @@ test "MSTORE8: Precision and non-interference" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x53 }; // MSTORE8
+    const bytecode = [_]u8{0x53}; // MSTORE8
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -591,7 +591,7 @@ test "MSTORE8: Precision and non-interference" {
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
-    // Test 1: Initialize memory with a pattern  
+    // Test 1: Initialize memory with a pattern
     const initial_pattern: u256 = 0x1111111111111111222222222222222233333333333333334444444444444444;
     try frame.memory.set_u256(0, initial_pattern);
 
@@ -666,7 +666,7 @@ test "MSTORE8: Memory expansion and gas costs" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x53 }; // MSTORE8
+    const bytecode = [_]u8{0x53}; // MSTORE8
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -743,7 +743,7 @@ test "MSTORE8: Stack underflow protection" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x53 }; // MSTORE8
+    const bytecode = [_]u8{0x53}; // MSTORE8
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -790,7 +790,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
     const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-    const bytecode = [_]u8{ 0x59 }; // MSIZE
+    const bytecode = [_]u8{0x59}; // MSIZE
     var contract = Contract.init(
         caller,
         contract_addr,
@@ -842,8 +842,8 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     defer test_vm.deinit(allocator);
 //
 //     // Test simple word alignment cases to avoid memory reinitialization issues
-//     const simple_test_cases = [_]struct { 
-//         offset: u256, 
+//     const simple_test_cases = [_]struct {
+//         offset: u256,
 //         expected_msize: u256,
 //         description: []const u8,
 //     }{
@@ -898,7 +898,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     // Test 1: MSIZE after MSTORE operations
 //     try test_frame.pushStack(&[_]u256{ 0x123456, 0 }); // value, offset
 //     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame); // MSTORE
-    
+
 //     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame); // MSIZE
 //     try helpers.expectStackValue(test_frame.frame, 0, 32);
 //     _ = try test_frame.popStack();
@@ -921,11 +921,11 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     _ = try test_frame.popStack();
 
 //     // Test 4: Sequential memory operations and size tracking
-//     const operations = [_]struct { 
-//         opcode: u8, 
+//     const operations = [_]struct {
+//         opcode: u8,
 //         value: ?u256,
-//         offset: u256, 
-//         expected_size: u256 
+//         offset: u256,
+//         expected_size: u256
 //     }{
 //         .{ .opcode = 0x52, .value = 0x111, .offset = 300, .expected_size = 352 }, // MSTORE at 300
 //         .{ .opcode = 0x53, .value = 0x22, .offset = 350, .expected_size = 352 },  // MSTORE8 at 350 (same word)
@@ -940,7 +940,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //             try test_frame.pushStack(&[_]u256{op.offset});
 //         }
 //         _ = try helpers.executeOpcode(op.opcode, test_vm.evm, test_frame.frame);
-        
+
 //         if (op.opcode == 0x51) { // MLOAD pushes a value
 //             _ = try test_frame.popStack();
 //         }
@@ -1122,7 +1122,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     try testing.expectEqual(max_value, max_loaded);
 // }
 
-// TODO: Re-enable this test after resolving stack overflow issue  
+// TODO: Re-enable this test after resolving stack overflow issue
 // test "Memory Instructions: Error condition coverage" {
 //     const allocator = testing.allocator;
 //     var test_vm = try helpers.TestVm.init(allocator);
@@ -1188,7 +1188,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     defer test_frame.deinit();
 
 //     // Test 1: Basic gas costs verification
-    
+
 //     // MSIZE should always cost 2 gas
 //     const gas_before_msize = test_frame.frame.gas_remaining;
 //     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
@@ -1203,7 +1203,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
 //     const gas_after_expansion = test_frame.frame.gas_remaining;
 //     const expansion_cost = gas_before_expansion - gas_after_expansion;
-    
+
 //     // Should cost significantly more than just the base cost
 //     try testing.expect(expansion_cost > 10);
 // }

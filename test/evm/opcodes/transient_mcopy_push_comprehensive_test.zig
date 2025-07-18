@@ -29,7 +29,7 @@ test "TLOAD (0x5C): Load from transient storage" {
         contract_addr,
         0,
         1000,
-        &[_]u8{0x5C, 0x5D}, // TLOAD, TSTORE opcodes
+        &[_]u8{ 0x5C, 0x5D }, // TLOAD, TSTORE opcodes
         [_]u8{0} ** 32,
         &[_]u8{},
         false,
@@ -173,7 +173,7 @@ test "MCOPY (0x5E): Memory to memory copy" {
         contract_addr,
         0,
         1000,
-        &[_]u8{0x5E, 0x51, 0x52, 0x59}, // MCOPY, MLOAD, MSTORE, MSIZE opcodes
+        &[_]u8{ 0x5E, 0x51, 0x52, 0x59 }, // MCOPY, MLOAD, MSTORE, MSIZE opcodes
         [_]u8{0} ** 32,
         &[_]u8{},
         false,
@@ -633,7 +633,7 @@ test "Transient storage: Isolation between addresses" {
         contract_addr1,
         0,
         1000,
-        &[_]u8{0x5C, 0x5D}, // TLOAD, TSTORE opcodes
+        &[_]u8{ 0x5C, 0x5D }, // TLOAD, TSTORE opcodes
         [_]u8{0} ** 32,
         &[_]u8{},
         false,
@@ -645,7 +645,7 @@ test "Transient storage: Isolation between addresses" {
         contract_addr2,
         0,
         1000,
-        &[_]u8{0x5C, 0x5D}, // TLOAD, TSTORE opcodes
+        &[_]u8{ 0x5C, 0x5D }, // TLOAD, TSTORE opcodes
         [_]u8{0} ** 32,
         &[_]u8{},
         false,

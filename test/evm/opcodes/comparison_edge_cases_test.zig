@@ -95,7 +95,7 @@ test "Comparison: Signed comparisons with boundary values" {
     // Test MIN_I256 < -1
     const min_i256 = @as(u256, 1) << 255; // 0x80000...0 (most negative)
     const neg_one = std.math.maxInt(u256); // 0xFFFF...F (-1 in two's complement)
-    
+
     try frame.stack.append(neg_one);
     try frame.stack.append(min_i256);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x12); // SLT
@@ -148,10 +148,7 @@ test "Comparison: Gas edge case - ensure gas is consumed before operation" {
     try frame.stack.append(5);
 
     // Should fail with OutOfGas since we need 3 gas for comparison
-    try testing.expectError(
-        ExecutionError.Error.OutOfGas,
-        evm.table.execute(0, interpreter_ptr, state_ptr, 0x10)
-    );
+    try testing.expectError(ExecutionError.Error.OutOfGas, evm.table.execute(0, interpreter_ptr, state_ptr, 0x10));
 }
 
 test "Bitwise: XOR properties verification" {
@@ -309,11 +306,11 @@ test "Comparison: Chained comparisons behavior" {
     try frame.stack.append(10);
     try frame.stack.append(5);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x10); // LT
-    
+
     try frame.stack.append(15);
     try frame.stack.append(10);
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x10); // LT
-    
+
     _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16); // AND
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result); // Both comparisons true

@@ -6,7 +6,6 @@ const KZG = @import("primitives").KZG;
 ///
 /// This module provides the real KZG polynomial commitment verification
 /// used in EIP-4844 blob transactions using the c-kzg-4844 library.
-
 /// Error types for KZG verification operations
 pub const KZGVerificationError = error{
     InvalidCommitment,

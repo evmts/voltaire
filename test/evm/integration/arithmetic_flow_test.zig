@@ -59,7 +59,7 @@ test "Integration: Arithmetic with conditional jumps" {
     // Execute sequence: PUSH 5, PUSH 10, ADD
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x60);
     frame.pc += 2; // Advance past PUSH1 data
 
@@ -132,10 +132,10 @@ test "Integration: Complex arithmetic expression evaluation" {
     // Push values and execute
     try frame.stack.push(10);
     try frame.stack.push(5);
-    
+
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
 
     try frame.stack.push(3);
@@ -187,10 +187,10 @@ test "Integration: Modular arithmetic chain" {
     try frame.stack.push(10);
     try frame.stack.push(15);
     try frame.stack.push(7);
-    
+
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x08);
     const addmod_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 4), addmod_result);
@@ -237,10 +237,10 @@ test "Integration: Division by zero handling in expression" {
     // Test: 10 / 0 = 0, then 0 + 5 = 5
     try frame.stack.push(10);
     try frame.stack.push(0);
-    
+
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x04);
     const div_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 0), div_result); // Division by zero returns 0
@@ -288,10 +288,10 @@ test "Integration: Bitwise operations with arithmetic" {
 
     try frame.stack.push(0xFF);
     try frame.stack.push(0x0F);
-    
+
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
     const and_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 0x0F), and_result);
@@ -348,10 +348,10 @@ test "Integration: Stack manipulation with arithmetic" {
 
     try frame.stack.push(10);
     try frame.stack.push(20);
-    
+
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x80);
     try testing.expectEqual(@as(usize, 3), frame.stack.size());
 
@@ -471,10 +471,10 @@ test "Integration: EXP with modular arithmetic" {
     // Calculate (2^8) % 100 = 256 % 100 = 56
     try frame.stack.push(2);
     try frame.stack.push(8);
-    
+
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x0A);
     const exp_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 256), exp_result);
@@ -523,10 +523,10 @@ test "Integration: Signed arithmetic with comparisons" {
 
     try frame.stack.push(neg_5);
     try frame.stack.push(10);
-    
+
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    
+
     _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x12);
     const slt_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 1), slt_result); // -5 < 10 is true

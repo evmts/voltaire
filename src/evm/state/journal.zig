@@ -18,11 +18,11 @@
 //! ```zig
 //! // Create snapshot before risky operation
 //! const snapshot_id = try journal.snapshot();
-//! 
+//!
 //! // Perform state modifications
 //! try state.set_storage(addr, slot, value);
 //! try state.set_balance(addr, new_balance);
-//! 
+//!
 //! // Either commit or revert
 //! if (operation_successful) {
 //!     journal.commit(snapshot_id);
@@ -135,10 +135,10 @@ pub const SnapshotId = usize;
 pub const Journal = struct {
     /// Sequential list of all state modifications
     entries: std.ArrayList(JournalEntry),
-    
+
     /// Snapshot points - each entry is the journal length at snapshot time
     snapshots: std.ArrayList(usize),
-    
+
     /// Memory allocator for journal operations
     allocator: std.mem.Allocator,
 
@@ -176,13 +176,11 @@ pub const Journal = struct {
     /// This function does NOT revert any pending changes - it simply
     /// frees memory. Call revert() first if state restoration is needed.
     pub fn deinit(self: *Journal) void {
-        Log.debug("Journal.deinit: Cleaning up journal, entries={}, snapshots={}", .{
-            self.entries.items.len, self.snapshots.items.len
-        });
-        
+        Log.debug("Journal.deinit: Cleaning up journal, entries={}, snapshots={}", .{ self.entries.items.len, self.snapshots.items.len });
+
         self.entries.deinit();
         self.snapshots.deinit();
-        
+
         Log.debug("Journal.deinit: Journal cleanup complete", .{});
     }
 
@@ -208,11 +206,11 @@ pub const Journal = struct {
     pub fn snapshot(self: *Journal) std.mem.Allocator.Error!SnapshotId {
         const snapshot_id = self.snapshots.items.len;
         const journal_length = self.entries.items.len;
-        
+
         Log.debug("Journal.snapshot: Creating snapshot id={}, journal_len={}", .{ snapshot_id, journal_length });
-        
+
         try self.snapshots.append(journal_length);
-        
+
         Log.debug("Journal.snapshot: Snapshot created successfully", .{});
         return snapshot_id;
     }
@@ -243,12 +241,12 @@ pub const Journal = struct {
             @branchHint(.cold);
             unreachable;
         }
-        
+
         Log.debug("Journal.commit: Committing snapshot id={}", .{snapshot_id});
-        
+
         // Remove the snapshot - this commits all changes since snapshot
         _ = self.snapshots.swapRemove(snapshot_id);
-        
+
         Log.debug("Journal.commit: Snapshot committed, remaining_snapshots={}", .{self.snapshots.items.len});
     }
 
@@ -283,24 +281,22 @@ pub const Journal = struct {
             @branchHint(.cold);
             unreachable;
         }
-        
+
         const snapshot_point = self.snapshots.items[snapshot_id];
         const entries_to_revert = self.entries.items.len - snapshot_point;
-        
+
         Log.debug("Journal.revert: Reverting snapshot id={}, entries_to_revert={}", .{ snapshot_id, entries_to_revert });
-        
+
         // Revert all entries from the end back to snapshot point (reverse order)
         while (self.entries.items.len > snapshot_point) {
             const entry = self.entries.orderedRemove(self.entries.items.len - 1);
             try self.revert_entry(entry, state);
         }
-        
+
         // Remove the snapshot
         _ = self.snapshots.swapRemove(snapshot_id);
-        
-        Log.debug("Journal.revert: Revert complete, remaining_entries={}, remaining_snapshots={}", .{
-            self.entries.items.len, self.snapshots.items.len
-        });
+
+        Log.debug("Journal.revert: Revert complete, remaining_entries={}, remaining_snapshots={}", .{ self.entries.items.len, self.snapshots.items.len });
     }
 
     /// Add a journal entry for a state modification
@@ -319,14 +315,14 @@ pub const Journal = struct {
     /// ```zig
     /// // Get current value before change
     /// const old_value = state.get_storage(addr, slot);
-    /// 
+    ///
     /// // Record the change in journal
     /// try journal.add_entry(.{ .storage_changed = .{
     ///     .address = addr,
     ///     .slot = slot,
     ///     .previous_value = old_value,
     /// }});
-    /// 
+    ///
     /// // Apply the change
     /// try state.set_storage_direct(addr, slot, new_value);
     /// ```
@@ -365,13 +361,11 @@ pub const Journal = struct {
     /// This does NOT revert any changes - it simply clears the
     /// journal history. Use only when discarding transaction state.
     pub fn clear(self: *Journal) void {
-        Log.debug("Journal.clear: Clearing journal, entries={}, snapshots={}", .{
-            self.entries.items.len, self.snapshots.items.len
-        });
-        
+        Log.debug("Journal.clear: Clearing journal, entries={}, snapshots={}", .{ self.entries.items.len, self.snapshots.items.len });
+
         self.entries.clearRetainingCapacity();
         self.snapshots.clearRetainingCapacity();
-        
+
         Log.debug("Journal.clear: Journal cleared", .{});
     }
 
@@ -389,7 +383,7 @@ pub const Journal = struct {
     /// - Error: OutOfMemory or other state modification errors
     fn revert_entry(self: *Journal, entry: JournalEntry, state: anytype) !void {
         _ = self; // Unused parameter
-        
+
         switch (entry) {
             .account_touched => |touch| {
                 Log.debug("Journal.revert_entry: Reverting account_touched addr={x}", .{primitives.Address.to_u256(touch.address)});
@@ -406,13 +400,13 @@ pub const Journal = struct {
                 } else {
                     _ = state.remove_balance(load.address);
                 }
-                
+
                 if (load.previous_nonce) |nonce| {
                     try state.set_nonce_direct(load.address, nonce);
                 } else {
                     _ = state.remove_nonce(load.address);
                 }
-                
+
                 if (load.previous_code) |code| {
                     try state.set_code_direct(load.address, code);
                 } else {
@@ -421,30 +415,22 @@ pub const Journal = struct {
             },
 
             .storage_changed => |change| {
-                Log.debug("Journal.revert_entry: Reverting storage_changed addr={x}, slot={}, prev_value={}", .{
-                    primitives.Address.to_u256(change.address), change.slot, change.previous_value
-                });
+                Log.debug("Journal.revert_entry: Reverting storage_changed addr={x}, slot={}, prev_value={}", .{ primitives.Address.to_u256(change.address), change.slot, change.previous_value });
                 try state.set_storage_direct(change.address, change.slot, change.previous_value);
             },
 
             .transient_storage_changed => |change| {
-                Log.debug("Journal.revert_entry: Reverting transient_storage_changed addr={x}, slot={}, prev_value={}", .{
-                    primitives.Address.to_u256(change.address), change.slot, change.previous_value
-                });
+                Log.debug("Journal.revert_entry: Reverting transient_storage_changed addr={x}, slot={}, prev_value={}", .{ primitives.Address.to_u256(change.address), change.slot, change.previous_value });
                 try state.set_transient_storage_direct(change.address, change.slot, change.previous_value);
             },
 
             .balance_changed => |change| {
-                Log.debug("Journal.revert_entry: Reverting balance_changed addr={x}, prev_balance={}", .{
-                    primitives.Address.to_u256(change.address), change.previous_balance
-                });
+                Log.debug("Journal.revert_entry: Reverting balance_changed addr={x}, prev_balance={}", .{ primitives.Address.to_u256(change.address), change.previous_balance });
                 try state.set_balance_direct(change.address, change.previous_balance);
             },
 
             .nonce_changed => |change| {
-                Log.debug("Journal.revert_entry: Reverting nonce_changed addr={x}, prev_nonce={}", .{
-                    primitives.Address.to_u256(change.address), change.previous_nonce
-                });
+                Log.debug("Journal.revert_entry: Reverting nonce_changed addr={x}, prev_nonce={}", .{ primitives.Address.to_u256(change.address), change.previous_nonce });
                 try state.set_nonce_direct(change.address, change.previous_nonce);
             },
 

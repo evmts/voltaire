@@ -24,7 +24,7 @@ const Log = @import("../log.zig");
 /// ```zig
 /// // Create rules for a specific hardfork
 /// const rules = ChainRules.for_hardfork(.LONDON);
-/// 
+///
 /// // Check if specific features are enabled
 /// if (rules.IsEIP1559) {
 ///     // Use EIP-1559 fee market logic
@@ -94,7 +94,7 @@ IsEIP150: bool = true,
 /// State size reduction through removal of empty accounts,
 /// complementing EIP-150's gas repricing.
 ///
-/// ## Key Changes  
+/// ## Key Changes
 /// - Empty account deletion (nonce=0, balance=0, code empty)
 /// - Changed SELFDESTRUCT refund behavior
 /// - Introduced EXP cost increase for large exponents
@@ -169,7 +169,7 @@ IsPetersburg: bool = true,
 /// ## Key Changes
 /// - EIP-152: Blake2b precompile for interoperability
 /// - EIP-1108: Reduced alt_bn128 precompile gas costs
-/// - EIP-1344: CHAINID opcode (0x46) for replay protection  
+/// - EIP-1344: CHAINID opcode (0x46) for replay protection
 /// - EIP-1884: Repricing for trie-size dependent opcodes
 /// - EIP-2028: Reduced calldata gas cost (16 gas per non-zero byte)
 /// - EIP-2200: Rebalanced SSTORE gas cost with stipend
@@ -206,7 +206,7 @@ IsBerlin: bool = true,
 
 /// London hardfork activation (August 2021).
 ///
-/// ## Purpose  
+/// ## Purpose
 /// Most significant economic change to Ethereum, introducing base fee
 /// burning and dramatically improving fee predictability.
 ///
@@ -581,7 +581,7 @@ IsEIP3541: bool = true,
 /// ```zig
 /// // Configure EVM for London hardfork rules
 /// const london_rules = ChainRules.for_hardfork(.LONDON);
-/// 
+///
 /// // Configure EVM for historical execution (e.g., replaying old blocks)
 /// const byzantium_rules = ChainRules.for_hardfork(.BYZANTIUM);
 /// ```
@@ -630,7 +630,7 @@ const HARDFORK_RULES = [_]HardforkRule{
 
 pub fn for_hardfork(hardfork: Hardfork) ChainRules {
     var rules = ChainRules{}; // All fields default to true
-    
+
     // Disable features that were introduced after the target hardfork
     inline for (HARDFORK_RULES) |rule| {
         // Use branch hint for the common case (later hardforks with more features)
@@ -641,6 +641,6 @@ pub fn for_hardfork(hardfork: Hardfork) ChainRules {
             @branchHint(.likely);
         }
     }
-    
+
     return rules;
 }

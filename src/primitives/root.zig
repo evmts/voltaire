@@ -46,10 +46,10 @@
 //! ### Address Operations
 //! ```zig
 //! const primitives = @import("primitives");
-//! 
+//!
 //! // Create address from hex string
 //! const addr = primitives.Address.fromHex("0x742d35Cc6641C91B6E...d");
-//! 
+//!
 //! // Generate contract address
 //! const contract_addr = primitives.Address.getContractAddress(deployer, nonce);
 //! ```
@@ -69,7 +69,7 @@
 //! ```zig
 //! // Hash data with Keccak256
 //! const hash = primitives.Crypto.keccak256(data);
-//! 
+//!
 //! // Verify signature
 //! const valid = try primitives.secp256k1.verify(signature, message_hash, public_key);
 //! ```
@@ -79,7 +79,7 @@
 //! // RLP encode a list
 //! const encoded = try primitives.Rlp.encode(allocator, data);
 //! defer allocator.free(encoded);
-//! 
+//!
 //! // Hex encode bytes
 //! const hex_string = primitives.Hex.encode(bytes);
 //! ```

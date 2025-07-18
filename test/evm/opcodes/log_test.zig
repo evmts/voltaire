@@ -96,7 +96,7 @@ test "LOG0: emit log with empty data" {
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
     // Push size and offset for empty data
-    try frame.stack.append(0); // size  
+    try frame.stack.append(0); // size
     try frame.stack.append(0); // offset
 
     // Execute LOG0
@@ -462,7 +462,7 @@ test "LOG0: gas consumption" {
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
 
-    // Push size and offset for 32 bytes  
+    // Push size and offset for 32 bytes
     try frame.stack.append(32); // size
     try frame.stack.append(0); // offset
 
@@ -656,7 +656,7 @@ test "LOG4: stack underflow" {
     try frame.stack.append(0x2); // topic2
     try frame.stack.append(0x3); // topic3
     try frame.stack.append(0x4); // topic4
-    try frame.stack.append(0);   // length
+    try frame.stack.append(0); // length
     // Missing offset
 
     // Execute LOG4 - should fail

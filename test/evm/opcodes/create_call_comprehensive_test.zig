@@ -719,7 +719,7 @@ test "CALL operations: Depth limit" {
 
         var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-    frame.memory.finalize_root();
+        frame.memory.finalize_root();
         frame.gas_remaining = 10000;
 
         // Set depth to maximum

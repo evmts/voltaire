@@ -186,7 +186,7 @@ pub fn formatGasCost(allocator: std.mem.Allocator, gas_used: u64, gas_price_gwei
 // Helper functions
 fn parseInteger(str: []const u8) !u256 {
     if (str.len == 0) return 0;
-    
+
     return std.fmt.parseInt(u256, str, 10) catch |err| switch (err) {
         error.Overflow => NumericError.ValueTooLarge,
         error.InvalidCharacter => NumericError.InvalidInput,

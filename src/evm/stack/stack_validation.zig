@@ -67,7 +67,7 @@ pub fn validate_stack_requirements(
         Log.debug("StackValidation.validate_stack_requirements: Stack overflow, size={} > max_stack={}", .{ stack_size, operation.max_stack });
         return ExecutionError.Error.StackOverflow;
     }
-    
+
     Log.debug("StackValidation.validate_stack_requirements: Validation passed", .{});
 }
 
@@ -114,7 +114,7 @@ pub fn validate_stack_operation(
         Log.debug("StackValidation.validate_stack_operation: Stack overflow, new_size={} > capacity={}", .{ new_size, Stack.CAPACITY });
         return ExecutionError.Error.StackOverflow;
     }
-    
+
     Log.debug("StackValidation.validate_stack_operation: Validation passed, new_size={}", .{new_size});
 }
 
@@ -144,7 +144,6 @@ pub fn calculate_max_stack(pop_count: u32, push_count: u32) u32 {
     // If operation reduces stack or is neutral, max is CAPACITY
     return Stack.CAPACITY;
 }
-
 
 // Tests
 const testing = std.testing;
