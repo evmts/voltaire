@@ -189,7 +189,8 @@ pub fn build(b: *std.Build) void {
 
     // BN254 Rust library integration for ECMUL and ECPAIRING precompiles
     // Uses arkworks ecosystem for production-grade elliptic curve operations
-    const rust_profile = if (optimize == .ReleaseFast) "release-fast" else "release";
+    const rust_profile = if (optimize == .Debug) "dev" else "release";
+    const rust_target_dir = if (optimize == .Debug) "debug" else "release";
 
     const rust_build = b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml" });
 
@@ -204,7 +205,7 @@ pub fn build(b: *std.Build) void {
     });
 
     // Link the compiled Rust library
-    const rust_lib_path = b.fmt("target/{s}/libbn254_wrapper.a", .{rust_profile});
+    const rust_lib_path = b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
     bn254_lib.addObjectFile(b.path(rust_lib_path));
     bn254_lib.linkLibC();
 
