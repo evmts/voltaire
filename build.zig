@@ -225,16 +225,8 @@ pub fn build(b: *std.Build) void {
     // Add include path for C header
     bn254_lib.addIncludePath(b.path("src/bn254_wrapper"));
 
-    // Add a step to verify the library exists and check symbols
-    const verify_lib = b.addSystemCommand(&[_][]const u8{ "ls", "-la", rust_lib_path });
-    verify_lib.step.dependOn(&rust_build.step);
-    
-    // Add a step to check what symbols are exported  
-    const check_symbols = b.addSystemCommand(&[_][]const u8{ "nm", rust_lib_path });
-    check_symbols.step.dependOn(&verify_lib.step);
-
     // Make the rust build a dependency
-    bn254_lib.step.dependOn(&check_symbols.step);
+    bn254_lib.step.dependOn(&rust_build.step);
 
     // C-KZG-4844 Zig bindings from evmts/c-kzg-4844
     const c_kzg_dep = b.dependency("c_kzg_4844", .{
