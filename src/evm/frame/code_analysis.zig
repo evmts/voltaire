@@ -1,5 +1,6 @@
 const std = @import("std");
 const bitvec = @import("bitvec.zig");
+const BitVec64 = bitvec.BitVec64;
 
 /// Advanced code analysis for EVM bytecode optimization.
 ///
@@ -39,7 +40,7 @@ const CodeAnalysis = @This();
 ///
 /// This is critical for JUMPDEST validation since jump destinations
 /// must point to actual code, not data bytes within PUSH instructions.
-code_segments: bitvec,
+code_segments: BitVec64,
 
 /// Sorted array of all valid JUMPDEST positions in the bytecode.
 ///
