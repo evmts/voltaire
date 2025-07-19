@@ -889,9 +889,9 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
     };
 
     // Use SIMD for finding special opcodes
-    analysis.has_dynamic_jumps = contains_op_simd(code, &[_]u8{ @intFromEnum(opcode.Opcode.JUMP), @intFromEnum(opcode.Opcode.JUMPI) });
-    analysis.has_selfdestruct = contains_op_simd(code, &[_]u8{@intFromEnum(opcode.Opcode.SELFDESTRUCT)});
-    analysis.has_create = contains_op_simd(code, &[_]u8{ @intFromEnum(opcode.Opcode.CREATE), @intFromEnum(opcode.Opcode.CREATE2) });
+    analysis.has_dynamic_jumps = contains_op_simd(code, &[_]u8{ @intFromEnum(opcode.Enum.JUMP), @intFromEnum(opcode.Enum.JUMPI) });
+    analysis.has_selfdestruct = contains_op_simd(code, &[_]u8{@intFromEnum(opcode.Enum.SELFDESTRUCT)});
+    analysis.has_create = contains_op_simd(code, &[_]u8{ @intFromEnum(opcode.Enum.CREATE), @intFromEnum(opcode.Enum.CREATE2) });
     
     analysis.max_stack_depth = 0;
     analysis.block_gas_costs = null;
