@@ -193,6 +193,9 @@ pub const fee_market = @import("primitives").FeeMarket;
 /// Gas cost constants from primitives
 pub const GasConstants = @import("primitives").GasConstants;
 
+/// Alias for backwards compatibility with test files
+pub const gas_constants = @import("primitives").GasConstants;
+
 /// Memory size limits and expansion rules
 pub const memory_limits = @import("constants/memory_limits.zig");
 

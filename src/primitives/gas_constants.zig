@@ -231,6 +231,9 @@ pub const TxDataNonZeroGas: u64 = 16;
 /// Applied to CODECOPY, EXTCODECOPY, RETURNDATACOPY, etc.
 pub const CopyGas: u64 = 3;
 
+// Alias for backwards compatibility
+pub const COPY_GAS: u64 = CopyGas;
+
 /// Maximum gas refund as a fraction of gas used
 /// EIP-3529: Reduced from 1/2 to 1/5 to prevent refund abuse
 pub const MaxRefundQuotient: u64 = 5;

@@ -17,3 +17,4 @@ pub const system = @import("system.zig");
 
 // Re-export gas constants for access through execution package
 pub const GasConstants = @import("primitives").GasConstants;
+pub const gas_constants = @import("primitives").GasConstants;

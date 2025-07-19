@@ -771,7 +771,7 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
     while (i < code.len) {
         const op = code[i];
 
-        if (op == @intFromEnum(opcode.Enum.JUMPDEST) and analysis.code_segments.is_set_unchecked(i)) {
+        if (op == @intFromEnum(opcode.Enum.JUMPDEST) and analysis.code_segments.isSetUnchecked(i)) {
             jumpdests.append(@as(u32, @intCast(i))) catch |err| {
                 Log.debug("Failed to append jumpdest position {d}: {any}", .{ i, err });
                 return err;
@@ -839,7 +839,7 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
 
     // SIMD optimization: Process 16 bytes at a time
     const vec_size = 16;
-    const jumpdest_vec = @as(@Vector(vec_size, u8), @splat(constants.JUMPDEST));
+    const jumpdest_vec = @as(@Vector(vec_size, u8), @splat(@intFromEnum(opcode.Opcode.JUMPDEST)));
     
     var i: usize = 0;
     
@@ -856,7 +856,7 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
             if (cmp_result[j]) {
                 const pos = i + j;
                 // Check if this position is code (not data)
-                if (analysis.code_segments.is_set_unchecked(pos)) {
+                if (analysis.code_segments.isSetUnchecked(pos)) {
                     jumpdests.append(@as(u32, @intCast(pos))) catch |err| {
                         Log.debug("Failed to append jumpdest position {d}: {any}", .{ pos, err });
                         return err;
@@ -870,7 +870,7 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
     
     // Handle remaining bytes
     while (i < code.len) {
-        if (code[i] == constants.JUMPDEST and analysis.code_segments.is_set_unchecked(i)) {
+        if (code[i] == @intFromEnum(opcode.Opcode.JUMPDEST) and analysis.code_segments.isSetUnchecked(i)) {
             jumpdests.append(@as(u32, @intCast(i))) catch |err| {
                 Log.debug("Failed to append jumpdest position {d}: {any}", .{ i, err });
                 return err;
@@ -889,9 +889,9 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
     };
 
     // Use SIMD for finding special opcodes
-    analysis.has_dynamic_jumps = contains_op_simd(code, &[_]u8{ constants.JUMP, constants.JUMPI });
-    analysis.has_selfdestruct = contains_op_simd(code, &[_]u8{constants.SELFDESTRUCT});
-    analysis.has_create = contains_op_simd(code, &[_]u8{ constants.CREATE, constants.CREATE2 });
+    analysis.has_dynamic_jumps = contains_op_simd(code, &[_]u8{ @intFromEnum(opcode.Opcode.JUMP), @intFromEnum(opcode.Opcode.JUMPI) });
+    analysis.has_selfdestruct = contains_op_simd(code, &[_]u8{@intFromEnum(opcode.Opcode.SELFDESTRUCT)});
+    analysis.has_create = contains_op_simd(code, &[_]u8{ @intFromEnum(opcode.Opcode.CREATE), @intFromEnum(opcode.Opcode.CREATE2) });
     
     analysis.max_stack_depth = 0;
     analysis.block_gas_costs = null;

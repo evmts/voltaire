@@ -152,8 +152,8 @@ pub fn BitVec(comptime T: type) type {
                 const op = code[i];
 
                 // If the opcode is a PUSH, skip the pushed bytes
-                if (constants.is_push(op)) {
-                    const push_bytes = constants.get_push_size(op); // Get number of bytes to push
+                if (opcode.is_push(op)) {
+                    const push_bytes = opcode.get_push_size(op); // Get number of bytes to push
 
                     // Mark pushed bytes as data (not code)
                     var j: usize = 1;
