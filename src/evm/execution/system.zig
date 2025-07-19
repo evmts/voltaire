@@ -171,6 +171,193 @@ fn calculate_63_64_gas(remaining_gas: u64) u64 {
     return remaining_gas - (remaining_gas / 64);
 }
 
+// ============================================================================
+// Shared Validation Functions for Call Operations
+// ============================================================================
+
+/// Check call depth limit shared by all call operations
+/// Returns true if depth limit is exceeded, false otherwise
+fn validate_call_depth(frame: *Frame) bool {
+    return frame.depth >= 1024;
+}
+
+/// Handle memory expansion for call arguments
+/// Returns the arguments slice or empty slice if size is 0
+fn get_call_args(frame: *Frame, args_offset: u256, args_size: u256) ExecutionError.Error![]const u8 {
+    if (args_size == 0) return &[_]u8{};
+    
+    try check_offset_bounds(args_offset);
+    try check_offset_bounds(args_size);
+    
+    const args_offset_usize = @as(usize, @intCast(args_offset));
+    const args_size_usize = @as(usize, @intCast(args_size));
+    
+    _ = try frame.memory.ensure_context_capacity(args_offset_usize + args_size_usize);
+    return try frame.memory.get_slice(args_offset_usize, args_size_usize);
+}
+
+/// Ensure return memory is available for writing results
+fn ensure_return_memory(frame: *Frame, ret_offset: u256, ret_size: u256) ExecutionError.Error!void {
+    if (ret_size == 0) return;
+    
+    try check_offset_bounds(ret_offset);
+    try check_offset_bounds(ret_size);
+    
+    const ret_offset_usize = @as(usize, @intCast(ret_offset));
+    const ret_size_usize = @as(usize, @intCast(ret_size));
+    
+    _ = try frame.memory.ensure_context_capacity(ret_offset_usize + ret_size_usize);
+}
+
+/// Handle address conversion and EIP-2929 access cost
+/// Returns the target address
+fn handle_address_access(vm: *Vm, frame: *Frame, to: u256) ExecutionError.Error!primitives.Address.Address {
+    const to_address = from_u256(to);
+    
+    // EIP-2929: Check if address is cold and consume appropriate gas
+    const access_cost = try vm.access_list.access_address(to_address);
+    const is_cold = access_cost == AccessList.COLD_ACCOUNT_ACCESS_COST;
+    if (is_cold) {
+        @branchHint(.unlikely);
+        // Cold address access costs more (2600 gas)
+        try frame.consume_gas(gas_constants.ColdAccountAccessCost);
+    }
+    
+    return to_address;
+}
+
+/// Calculate gas for call operations using 63/64 rule and value stipend
+fn calculate_call_gas_amount(frame: *Frame, gas: u256, value: u256) u64 {
+    var gas_for_call = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
+    gas_for_call = @min(gas_for_call, frame.gas_remaining - (frame.gas_remaining / 64));
+    
+    if (value != 0) {
+        gas_for_call += 2300; // Stipend
+    }
+    
+    return gas_for_call;
+}
+
+/// Write return data to memory if requested and update gas
+fn handle_call_result(frame: *Frame, result: anytype, ret_offset: u256, ret_size: u256, gas_for_call: u64) ExecutionError.Error!void {
+    // Update gas remaining
+    frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;
+    
+    // Write return data to memory if requested
+    if (ret_size > 0 and result.output != null) {
+        const ret_offset_usize = @as(usize, @intCast(ret_offset));
+        const ret_size_usize = @as(usize, @intCast(ret_size));
+        const output = result.output.?;
+        
+        const copy_size = @min(ret_size_usize, output.len);
+        const memory_slice = frame.memory.slice();
+        std.mem.copyForwards(u8, memory_slice[ret_offset_usize .. ret_offset_usize + copy_size], output[0..copy_size]);
+        
+        // Zero out remaining bytes if output was smaller than requested
+        if (copy_size < ret_size_usize) {
+            @branchHint(.unlikely);
+            @memset(memory_slice[ret_offset_usize + copy_size .. ret_offset_usize + ret_size_usize], 0);
+        }
+    }
+    
+    // Set return data
+    try frame.return_data.set(result.output orelse &[_]u8{});
+    
+    // Push success status (bounds checking already done by jump table)
+    frame.stack.append_unsafe(if (result.success) 1 else 0);
+}
+
+// ============================================================================
+// Shared Validation Functions for CREATE Operations
+// ============================================================================
+
+/// Check static call restrictions for CREATE operations
+fn validate_create_static_context(frame: *Frame) ExecutionError.Error!void {
+    if (frame.is_static) {
+        @branchHint(.unlikely);
+        return ExecutionError.Error.WriteProtection;
+    }
+}
+
+/// Extract initcode from memory with bounds checking and gas accounting
+fn get_initcode_from_memory(frame: *Frame, vm: *Vm, offset: u256, size: u256) ExecutionError.Error![]const u8 {
+    // Check initcode size bounds
+    try check_offset_bounds(size);
+    const size_usize = @as(usize, @intCast(size));
+    
+    // EIP-3860: Check initcode size limit (Shanghai and later)
+    if (vm.chain_rules.is_eip3860 and size_usize > gas_constants.MaxInitcodeSize) {
+        @branchHint(.unlikely);
+        return ExecutionError.Error.MaxCodeSizeExceeded;
+    }
+    
+    if (size == 0) return &[_]u8{};
+    
+    try check_offset_bounds(offset);
+    const offset_usize = @as(usize, @intCast(offset));
+    
+    // Calculate memory expansion gas cost
+    const current_size = frame.memory.total_size();
+    const new_size = offset_usize + size_usize;
+    const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
+    try frame.consume_gas(memory_gas);
+    
+    // Ensure memory is available and get the slice
+    _ = try frame.memory.ensure_context_capacity(offset_usize + size_usize);
+    return try frame.memory.get_slice(offset_usize, size_usize);
+}
+
+/// Calculate and consume gas for CREATE operations
+fn consume_create_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
+    const init_code_cost = @as(u64, @intCast(init_code.len)) * gas_constants.CreateDataGas;
+    
+    // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
+    const initcode_word_cost = if (vm.chain_rules.is_eip3860)
+        @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.InitcodeWordGas
+    else
+        0;
+    
+    try frame.consume_gas(init_code_cost + initcode_word_cost);
+}
+
+/// Calculate and consume gas for CREATE2 operations (includes hash cost)
+fn consume_create2_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
+    const init_code_cost = @as(u64, @intCast(init_code.len)) * gas_constants.CreateDataGas;
+    const hash_cost = @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.Keccak256WordGas;
+    
+    // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
+    const initcode_word_cost = if (vm.chain_rules.is_eip3860)
+        @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.InitcodeWordGas
+    else
+        0;
+    
+    try frame.consume_gas(init_code_cost + hash_cost + initcode_word_cost);
+}
+
+/// Handle CREATE result with gas updates and return data
+fn handle_create_result(frame: *Frame, vm: *Vm, result: anytype, gas_for_call: u64) ExecutionError.Error!void {
+    _ = gas_for_call;
+    // Update gas remaining
+    frame.gas_remaining = frame.gas_remaining / 64 + result.gas_left;
+    
+    if (!result.success) {
+        @branchHint(.unlikely);
+        try frame.stack.append(0);
+        try frame.return_data.set(result.output orelse &[_]u8{});
+        return;
+    }
+    
+    // EIP-2929: Mark the newly created address as warm
+    _ = try vm.access_list.access_address(result.address);
+    try frame.stack.append(to_u256(result.address));
+    
+    // Clear old return data before setting new data to reduce memory pressure
+    frame.return_data.clear();
+    
+    // Set return data
+    try frame.return_data.set(result.output orelse &[_]u8{});
+}
+
 /// Calculate complete gas cost for call operations
 ///
 /// Implements the complete gas calculation as per EVM specification including:
@@ -315,60 +502,25 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     const frame = @as(*Frame, @ptrCast(@alignCast(state)));
     const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
 
-    // Check if we're in a static call
-    if (frame.is_static) {
-        @branchHint(.unlikely);
-        return ExecutionError.Error.WriteProtection;
-    }
+    // Check static call restrictions
+    try validate_create_static_context(frame);
 
     const value = try frame.stack.pop();
     const offset = try frame.stack.pop();
     const size = try frame.stack.pop();
 
-    // Debug: CREATE opcode: value, offset, size
-
     // Check depth
-    if (frame.depth >= 1024) {
+    if (validate_call_depth(frame)) {
         @branchHint(.cold);
         try frame.stack.append(0);
         return Operation.ExecutionResult{};
     }
 
-    // EIP-3860: Check initcode size limit FIRST (Shanghai and later)
-    try check_offset_bounds(size);
-    const size_usize = @as(usize, @intCast(size));
-    if (vm.chain_rules.is_eip3860 and size_usize > gas_constants.MaxInitcodeSize) {
-        @branchHint(.unlikely);
-        return ExecutionError.Error.MaxCodeSizeExceeded;
-    }
+    // Get init code from memory with validation
+    const init_code = try get_initcode_from_memory(frame, vm, offset, size);
 
-    // Get init code from memory
-    var init_code: []const u8 = &[_]u8{};
-    if (size > 0) {
-        try check_offset_bounds(offset);
-
-        const offset_usize = @as(usize, @intCast(offset));
-
-        // Calculate memory expansion gas cost
-        const current_size = frame.memory.total_size();
-        const new_size = offset_usize + size_usize;
-        const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
-        try frame.consume_gas(memory_gas);
-
-        // Ensure memory is available and get the slice
-        _ = try frame.memory.ensure_context_capacity(offset_usize + size_usize);
-        init_code = try frame.memory.get_slice(offset_usize, size_usize);
-    }
-
-    // Calculate gas for creation
-    const init_code_cost = @as(u64, @intCast(init_code.len)) * gas_constants.CreateDataGas;
-
-    // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
-    const initcode_word_cost = if (vm.chain_rules.is_eip3860)
-        @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.InitcodeWordGas
-    else
-        0;
-    try frame.consume_gas(init_code_cost + initcode_word_cost);
+    // Calculate and consume gas for creation
+    try consume_create_gas(frame, vm, init_code);
 
     // Calculate gas to give to the new contract (all but 1/64th)
     const gas_for_call = frame.gas_remaining - (frame.gas_remaining / 64);
@@ -380,25 +532,8 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     // Create the contract
     const result = try vm.create_contract(frame.contract.address, value, init_code, gas_for_call);
 
-    // Update gas remaining
-    frame.gas_remaining = frame.gas_remaining / 64 + result.gas_left;
-
-    if (!result.success) {
-        @branchHint(.unlikely);
-        try frame.stack.append(0);
-        try frame.return_data.set(result.output orelse &[_]u8{});
-        return Operation.ExecutionResult{};
-    }
-
-    // EIP-2929: Mark the newly created address as warm
-    _ = try vm.access_list.access_address(result.address);
-    try frame.stack.append(to_u256(result.address));
-
-    // Clear old return data before setting new data to reduce memory pressure
-    frame.return_data.clear();
-    
-    // Set return data
-    try frame.return_data.set(result.output orelse &[_]u8{});
+    // Handle result
+    try handle_create_result(frame, vm, result, gas_for_call);
 
     return Operation.ExecutionResult{};
 }
@@ -410,56 +545,25 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     const frame = @as(*Frame, @ptrCast(@alignCast(state)));
     const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
 
-    if (frame.is_static) {
-        @branchHint(.unlikely);
-        return ExecutionError.Error.WriteProtection;
-    }
+    // Check static call restrictions
+    try validate_create_static_context(frame);
 
     const value = try frame.stack.pop();
     const offset = try frame.stack.pop();
     const size = try frame.stack.pop();
     const salt = try frame.stack.pop();
 
-    if (frame.depth >= 1024) {
+    // Check depth
+    if (validate_call_depth(frame)) {
         try frame.stack.append(0);
         return Operation.ExecutionResult{};
     }
 
-    // EIP-3860: Check initcode size limit FIRST (Shanghai and later)
-    try check_offset_bounds(size);
-    const size_usize = @as(usize, @intCast(size));
-    if (vm.chain_rules.is_eip3860 and size_usize > gas_constants.MaxInitcodeSize) {
-        @branchHint(.unlikely);
-        return ExecutionError.Error.MaxCodeSizeExceeded;
-    }
+    // Get init code from memory with validation
+    const init_code = try get_initcode_from_memory(frame, vm, offset, size);
 
-    // Get init code from memory
-    var init_code: []const u8 = &[_]u8{};
-    if (size > 0) {
-        try check_offset_bounds(offset);
-
-        const offset_usize = @as(usize, @intCast(offset));
-
-        // Calculate memory expansion gas cost
-        const current_size = frame.memory.total_size();
-        const new_size = offset_usize + size_usize;
-        const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
-        try frame.consume_gas(memory_gas);
-
-        // Ensure memory is available and get the slice
-        _ = try frame.memory.ensure_context_capacity(offset_usize + size_usize);
-        init_code = try frame.memory.get_slice(offset_usize, size_usize);
-    }
-
-    const init_code_cost = @as(u64, @intCast(init_code.len)) * gas_constants.CreateDataGas;
-    const hash_cost = @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.Keccak256WordGas;
-
-    // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
-    const initcode_word_cost = if (vm.chain_rules.is_eip3860)
-        @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.InitcodeWordGas
-    else
-        0;
-    try frame.consume_gas(init_code_cost + hash_cost + initcode_word_cost);
+    // Calculate and consume gas for CREATE2 (includes hash cost)
+    try consume_create2_gas(frame, vm, init_code);
 
     // Calculate gas to give to the new contract (all but 1/64th)
     const gas_for_call = frame.gas_remaining - (frame.gas_remaining / 64);
@@ -471,25 +575,8 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     // Create the contract with CREATE2
     const result = try vm.create2_contract(frame.contract.address, value, init_code, salt, gas_for_call);
 
-    // Update gas remaining
-    frame.gas_remaining = frame.gas_remaining / 64 + result.gas_left;
-
-    if (!result.success) {
-        @branchHint(.unlikely);
-        try frame.stack.append(0);
-        try frame.return_data.set(result.output orelse &[_]u8{});
-        return Operation.ExecutionResult{};
-    }
-
-    // EIP-2929: Mark the newly created address as warm
-    _ = try vm.access_list.access_address(result.address);
-    try frame.stack.append(to_u256(result.address));
-
-    // Clear old return data before setting new data to reduce memory pressure
-    frame.return_data.clear();
-    
-    // Set return data
-    try frame.return_data.set(result.output orelse &[_]u8{});
+    // Handle result
+    try handle_create_result(frame, vm, result, gas_for_call);
 
     return Operation.ExecutionResult{};
 }
@@ -515,55 +602,21 @@ pub fn op_call(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
     }
 
     // Check depth
-    if (frame.depth >= 1024) {
+    if (validate_call_depth(frame)) {
         @branchHint(.cold);
         try frame.stack.append(0);
         return Operation.ExecutionResult{};
     }
 
-    // Get call data
-    var args: []const u8 = &[_]u8{};
-    if (args_size > 0) {
-        try check_offset_bounds(args_offset);
-        try check_offset_bounds(args_size);
+    // Get call data and ensure return memory
+    const args = try get_call_args(frame, args_offset, args_size);
+    try ensure_return_memory(frame, ret_offset, ret_size);
 
-        const args_offset_usize = @as(usize, @intCast(args_offset));
-        const args_size_usize = @as(usize, @intCast(args_size));
-
-        _ = try frame.memory.ensure_context_capacity(args_offset_usize + args_size_usize);
-        args = try frame.memory.get_slice(args_offset_usize, args_size_usize);
-    }
-
-    // Ensure return memory
-    if (ret_size > 0) {
-        try check_offset_bounds(ret_offset);
-        try check_offset_bounds(ret_size);
-
-        const ret_offset_usize = @as(usize, @intCast(ret_offset));
-        const ret_size_usize = @as(usize, @intCast(ret_size));
-
-        _ = try frame.memory.ensure_context_capacity(ret_offset_usize + ret_size_usize);
-    }
-
-    // Convert to address
-    const to_address = from_u256(to);
-
-    // EIP-2929: Check if address is cold and consume appropriate gas
-    const access_cost = try vm.access_list.access_address(to_address);
-    const is_cold = access_cost == AccessList.COLD_ACCOUNT_ACCESS_COST;
-    if (is_cold) {
-        @branchHint(.unlikely);
-        // Cold address access costs more (2600 gas)
-        try frame.consume_gas(gas_constants.ColdAccountAccessCost);
-    }
+    // Handle address access and gas cost
+    const to_address = try handle_address_access(vm, frame, to);
 
     // Calculate gas to give to the call
-    var gas_for_call = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
-    gas_for_call = @min(gas_for_call, frame.gas_remaining - (frame.gas_remaining / 64));
-
-    if (value != 0) {
-        gas_for_call += 2300; // Stipend
-    }
+    const gas_for_call = calculate_call_gas_amount(frame, gas, value);
 
     // Clear return data before making new call to reduce memory pressure
     // Previous return data is no longer needed once we make a new call
@@ -573,31 +626,8 @@ pub fn op_call(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
     const result = try vm.call_contract(frame.contract.address, to_address, value, args, gas_for_call, frame.is_static);
     defer if (result.output) |output| vm.allocator.free(output);
 
-    // Update gas remaining
-    frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;
-
-    // Write return data to memory if requested
-    if (ret_size > 0 and result.output != null) {
-        const ret_offset_usize = @as(usize, @intCast(ret_offset));
-        const ret_size_usize = @as(usize, @intCast(ret_size));
-        const output = result.output.?;
-
-        const copy_size = @min(ret_size_usize, output.len);
-        const memory_slice = frame.memory.slice();
-        std.mem.copyForwards(u8, memory_slice[ret_offset_usize .. ret_offset_usize + copy_size], output[0..copy_size]);
-
-        // Zero out remaining bytes if output was smaller than requested
-        if (copy_size < ret_size_usize) {
-            @branchHint(.unlikely);
-            @memset(memory_slice[ret_offset_usize + copy_size .. ret_offset_usize + ret_size_usize], 0);
-        }
-    }
-
-    // Set return data
-    try frame.return_data.set(result.output orelse &[_]u8{});
-
-    // Push success status (bounds checking already done by jump table)
-    frame.stack.append_unsafe(if (result.success) 1 else 0);
+    // Handle result and update state
+    try handle_call_result(frame, result, ret_offset, ret_size, gas_for_call);
 
     return Operation.ExecutionResult{};
 }
@@ -617,55 +647,21 @@ pub fn op_callcode(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     const ret_size = try frame.stack.pop();
 
     // Check depth
-    if (frame.depth >= 1024) {
+    if (validate_call_depth(frame)) {
         @branchHint(.cold);
         try frame.stack.append(0);
         return Operation.ExecutionResult{};
     }
 
-    // Get call data
-    var args: []const u8 = &[_]u8{};
-    if (args_size > 0) {
-        try check_offset_bounds(args_offset);
-        try check_offset_bounds(args_size);
+    // Get call data and ensure return memory
+    const args = try get_call_args(frame, args_offset, args_size);
+    try ensure_return_memory(frame, ret_offset, ret_size);
 
-        const args_offset_usize = @as(usize, @intCast(args_offset));
-        const args_size_usize = @as(usize, @intCast(args_size));
-
-        _ = try frame.memory.ensure_context_capacity(args_offset_usize + args_size_usize);
-        args = try frame.memory.get_slice(args_offset_usize, args_size_usize);
-    }
-
-    // Ensure return memory
-    if (ret_size > 0) {
-        try check_offset_bounds(ret_offset);
-        try check_offset_bounds(ret_size);
-
-        const ret_offset_usize = @as(usize, @intCast(ret_offset));
-        const ret_size_usize = @as(usize, @intCast(ret_size));
-
-        _ = try frame.memory.ensure_context_capacity(ret_offset_usize + ret_size_usize);
-    }
-
-    // Convert to address
-    const to_address = from_u256(to);
-
-    // EIP-2929: Check if address is cold and consume appropriate gas
-    const access_cost = try vm.access_list.access_address(to_address);
-    const is_cold = access_cost == AccessList.COLD_ACCOUNT_ACCESS_COST;
-    if (is_cold) {
-        @branchHint(.unlikely);
-        // Cold address access costs more (2600 gas)
-        try frame.consume_gas(gas_constants.ColdAccountAccessCost);
-    }
+    // Handle address access and gas cost
+    const to_address = try handle_address_access(vm, frame, to);
 
     // Calculate gas to give to the call
-    var gas_for_call = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
-    gas_for_call = @min(gas_for_call, frame.gas_remaining - (frame.gas_remaining / 64));
-
-    if (value != 0) {
-        gas_for_call += 2300; // Stipend
-    }
+    const gas_for_call = calculate_call_gas_amount(frame, gas, value);
 
     // Clear return data before making new call to reduce memory pressure
     // Previous return data is no longer needed once we make a new call
@@ -676,31 +672,8 @@ pub fn op_callcode(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     const result = try vm.callcode_contract(frame.contract.address, to_address, value, args, gas_for_call, frame.is_static);
     defer if (result.output) |output| vm.allocator.free(output);
 
-    // Update gas remaining
-    frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;
-
-    // Write return data to memory if requested
-    if (ret_size > 0 and result.output != null) {
-        const ret_offset_usize = @as(usize, @intCast(ret_offset));
-        const ret_size_usize = @as(usize, @intCast(ret_size));
-        const output = result.output.?;
-
-        const copy_size = @min(ret_size_usize, output.len);
-        const memory_slice = frame.memory.slice();
-        std.mem.copyForwards(u8, memory_slice[ret_offset_usize .. ret_offset_usize + copy_size], output[0..copy_size]);
-
-        // Zero out remaining bytes if output was smaller than requested
-        if (copy_size < ret_size_usize) {
-            @branchHint(.unlikely);
-            @memset(memory_slice[ret_offset_usize + copy_size .. ret_offset_usize + ret_size_usize], 0);
-        }
-    }
-
-    // Set return data
-    try frame.return_data.set(result.output orelse &[_]u8{});
-
-    // Push success status (bounds checking already done by jump table)
-    frame.stack.append_unsafe(if (result.success) 1 else 0);
+    // Handle result and update state
+    try handle_call_result(frame, result, ret_offset, ret_size, gas_for_call);
 
     return Operation.ExecutionResult{};
 }
@@ -720,51 +693,21 @@ pub fn op_delegatecall(pc: usize, interpreter: *Operation.Interpreter, state: *O
     const ret_size = try frame.stack.pop();
 
     // Check call depth limit
-    if (frame.depth >= 1024) {
+    if (validate_call_depth(frame)) {
         @branchHint(.cold);
         try frame.stack.append(0);
         return Operation.ExecutionResult{};
     }
 
-    // Get call data
-    var args: []const u8 = &[_]u8{};
-    if (args_size > 0) {
-        try check_offset_bounds(args_offset);
-        try check_offset_bounds(args_size);
+    // Get call data and ensure return memory
+    const args = try get_call_args(frame, args_offset, args_size);
+    try ensure_return_memory(frame, ret_offset, ret_size);
 
-        const args_offset_usize = @as(usize, @intCast(args_offset));
-        const args_size_usize = @as(usize, @intCast(args_size));
+    // Handle address access and gas cost
+    const to_address = try handle_address_access(vm, frame, to);
 
-        _ = try frame.memory.ensure_context_capacity(args_offset_usize + args_size_usize);
-        args = try frame.memory.get_slice(args_offset_usize, args_size_usize);
-    }
-
-    // Ensure return memory
-    if (ret_size > 0) {
-        try check_offset_bounds(ret_offset);
-        try check_offset_bounds(ret_size);
-
-        const ret_offset_usize = @as(usize, @intCast(ret_offset));
-        const ret_size_usize = @as(usize, @intCast(ret_size));
-
-        _ = try frame.memory.ensure_context_capacity(ret_offset_usize + ret_size_usize);
-    }
-
-    // Convert to address
-    const to_address = from_u256(to);
-
-    // EIP-2929: Check if address is cold and consume appropriate gas
-    const access_cost = try vm.access_list.access_address(to_address);
-    const is_cold = access_cost == AccessList.COLD_ACCOUNT_ACCESS_COST;
-    if (is_cold) {
-        @branchHint(.unlikely);
-        // Cold address access costs more (2600 gas)
-        try frame.consume_gas(gas_constants.ColdAccountAccessCost);
-    }
-
-    // Calculate gas to give to the call
-    var gas_for_call = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
-    gas_for_call = @min(gas_for_call, frame.gas_remaining - (frame.gas_remaining / 64));
+    // Calculate gas to give to the call (no value for delegatecall)
+    const gas_for_call = calculate_call_gas_amount(frame, gas, 0);
 
     // DELEGATECALL preserves the current context:
     // - Uses current contract's storage
@@ -787,31 +730,8 @@ pub fn op_delegatecall(pc: usize, interpreter: *Operation.Interpreter, state: *O
     );
     defer if (result.output) |output| vm.allocator.free(output);
 
-    // Update gas remaining
-    frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;
-
-    // Write return data to memory if requested
-    if (ret_size > 0 and result.output != null) {
-        const ret_offset_usize = @as(usize, @intCast(ret_offset));
-        const ret_size_usize = @as(usize, @intCast(ret_size));
-        const output = result.output.?;
-
-        const copy_size = @min(ret_size_usize, output.len);
-        const memory_slice = frame.memory.slice();
-        std.mem.copyForwards(u8, memory_slice[ret_offset_usize .. ret_offset_usize + copy_size], output[0..copy_size]);
-
-        // Zero out remaining bytes if output was smaller than requested
-        if (copy_size < ret_size_usize) {
-            @branchHint(.unlikely);
-            @memset(memory_slice[ret_offset_usize + copy_size .. ret_offset_usize + ret_size_usize], 0);
-        }
-    }
-
-    // Set return data
-    try frame.return_data.set(result.output orelse &[_]u8{});
-
-    // Push success status (bounds checking already done by jump table)
-    frame.stack.append_unsafe(if (result.success) 1 else 0);
+    // Handle result and update state
+    try handle_call_result(frame, result, ret_offset, ret_size, gas_for_call);
 
     return Operation.ExecutionResult{};
 }
@@ -831,51 +751,21 @@ pub fn op_staticcall(pc: usize, interpreter: *Operation.Interpreter, state: *Ope
     const ret_size = try frame.stack.pop();
 
     // Check call depth limit
-    if (frame.depth >= 1024) {
+    if (validate_call_depth(frame)) {
         @branchHint(.cold);
         try frame.stack.append(0);
         return Operation.ExecutionResult{};
     }
 
-    // Get call data
-    var args: []const u8 = &[_]u8{};
-    if (args_size > 0) {
-        try check_offset_bounds(args_offset);
-        try check_offset_bounds(args_size);
+    // Get call data and ensure return memory
+    const args = try get_call_args(frame, args_offset, args_size);
+    try ensure_return_memory(frame, ret_offset, ret_size);
 
-        const args_offset_usize = @as(usize, @intCast(args_offset));
-        const args_size_usize = @as(usize, @intCast(args_size));
+    // Handle address access and gas cost
+    const to_address = try handle_address_access(vm, frame, to);
 
-        _ = try frame.memory.ensure_context_capacity(args_offset_usize + args_size_usize);
-        args = try frame.memory.get_slice(args_offset_usize, args_size_usize);
-    }
-
-    // Ensure return memory
-    if (ret_size > 0) {
-        try check_offset_bounds(ret_offset);
-        try check_offset_bounds(ret_size);
-
-        const ret_offset_usize = @as(usize, @intCast(ret_offset));
-        const ret_size_usize = @as(usize, @intCast(ret_size));
-
-        _ = try frame.memory.ensure_context_capacity(ret_offset_usize + ret_size_usize);
-    }
-
-    // Convert to address
-    const to_address = from_u256(to);
-
-    // EIP-2929: Check if address is cold and consume appropriate gas
-    const access_cost = try vm.access_list.access_address(to_address);
-    const is_cold = access_cost == AccessList.COLD_ACCOUNT_ACCESS_COST;
-    if (is_cold) {
-        @branchHint(.unlikely);
-        // Cold address access costs more (2600 gas)
-        try frame.consume_gas(gas_constants.ColdAccountAccessCost);
-    }
-
-    // Calculate gas to give to the call
-    var gas_for_call = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
-    gas_for_call = @min(gas_for_call, frame.gas_remaining - (frame.gas_remaining / 64));
+    // Calculate gas to give to the call (no value for staticcall)
+    const gas_for_call = calculate_call_gas_amount(frame, gas, 0);
 
     // STATICCALL characteristics:
     // - Forces static context (no state changes allowed in called contract)
@@ -891,31 +781,8 @@ pub fn op_staticcall(pc: usize, interpreter: *Operation.Interpreter, state: *Ope
     const result = try vm.staticcall_contract(frame.contract.address, to_address, args, gas_for_call);
     defer if (result.output) |output| vm.allocator.free(output);
 
-    // Update gas remaining
-    frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;
-
-    // Write return data to memory if requested
-    if (ret_size > 0 and result.output != null) {
-        const ret_offset_usize = @as(usize, @intCast(ret_offset));
-        const ret_size_usize = @as(usize, @intCast(ret_size));
-        const output = result.output.?;
-
-        const copy_size = @min(ret_size_usize, output.len);
-        const memory_slice = frame.memory.slice();
-        std.mem.copyForwards(u8, memory_slice[ret_offset_usize .. ret_offset_usize + copy_size], output[0..copy_size]);
-
-        // Zero out remaining bytes if output was smaller than requested
-        if (copy_size < ret_size_usize) {
-            @branchHint(.unlikely);
-            @memset(memory_slice[ret_offset_usize + copy_size .. ret_offset_usize + ret_size_usize], 0);
-        }
-    }
-
-    // Set return data
-    try frame.return_data.set(result.output orelse &[_]u8{});
-
-    // Push success status (bounds checking already done by jump table)
-    frame.stack.append_unsafe(if (result.success) 1 else 0);
+    // Handle result and update state
+    try handle_call_result(frame, result, ret_offset, ret_size, gas_for_call);
 
     return Operation.ExecutionResult{};
 }
