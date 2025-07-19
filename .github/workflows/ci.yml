@@ -86,8 +86,10 @@ jobs:
           docker run --rm \
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
+            --memory=4g \
+            --cpu-quota=200000 \
             guillotine-${{ matrix.container }}:latest \
-            bash -c "cd /workspace && rm -rf .zig-cache && rm -rf ~/.cache/zig && rm -rf target && node --version && zig version && zig build --verbose && zig build test --verbose"
+            bash -c "cd /workspace && rm -rf .zig-cache && rm -rf ~/.cache/zig && rm -rf target && echo 'Node version:' && node --version && echo 'Zig version:' && zig version && echo 'Starting build...' && zig build --verbose && echo 'Build completed. Starting tests...' && zig build test --verbose && echo 'All tests completed successfully.'"
 
       - name: Report Results
         if: always()
