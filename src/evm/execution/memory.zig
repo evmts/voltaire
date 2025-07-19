@@ -257,10 +257,12 @@ pub fn op_calldataload(pc: usize, interpreter: *Operation.Interpreter, state: *O
     // Read 32 bytes from calldata (pad with zeros)
     var result: u256 = 0;
 
-    for (0..32) |i| {
-        if (offset_usize + i < frame.input.len) {
+    var i: isize = -32;
+    while (i < 0) : (i += 1) {
+        const idx = @as(usize, @intCast(i + 32));
+        if (offset_usize + idx < frame.input.len) {
             @branchHint(.likely);
-            result = (result << 8) | frame.input[offset_usize + i];
+            result = (result << 8) | frame.input[offset_usize + idx];
         } else {
             result = result << 8;
         }

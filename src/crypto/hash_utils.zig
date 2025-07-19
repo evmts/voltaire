@@ -138,32 +138,40 @@ pub fn greater_than(a: Hash, b: Hash) bool {
 // Hash arithmetic (for Merkle tree operations)
 pub fn xor(a: Hash, b: Hash) Hash {
     var result: Hash = undefined;
-    for (0..32) |i| {
-        result[i] = a[i] ^ b[i];
+    var i: isize = -32;
+    while (i < 0) : (i += 1) {
+        const idx = @as(usize, @intCast(i + 32));
+        result[idx] = a[idx] ^ b[idx];
     }
     return result;
 }
 
 pub fn bit_and(a: Hash, b: Hash) Hash {
     var result: Hash = undefined;
-    for (0..32) |i| {
-        result[i] = a[i] & b[i];
+    var i: isize = -32;
+    while (i < 0) : (i += 1) {
+        const idx = @as(usize, @intCast(i + 32));
+        result[idx] = a[idx] & b[idx];
     }
     return result;
 }
 
 pub fn bit_or(a: Hash, b: Hash) Hash {
     var result: Hash = undefined;
-    for (0..32) |i| {
-        result[i] = a[i] | b[i];
+    var i: isize = -32;
+    while (i < 0) : (i += 1) {
+        const idx = @as(usize, @intCast(i + 32));
+        result[idx] = a[idx] | b[idx];
     }
     return result;
 }
 
 pub fn bit_not(a: Hash) Hash {
     var result: Hash = undefined;
-    for (0..32) |i| {
-        result[i] = ~a[i];
+    var i: isize = -32;
+    while (i < 0) : (i += 1) {
+        const idx = @as(usize, @intCast(i + 32));
+        result[idx] = ~a[idx];
     }
     return result;
 }
@@ -180,8 +188,10 @@ pub fn to_u256(hash: Hash) u256 {
 pub fn from_u256(value: u256) Hash {
     var hash: Hash = undefined;
     var v = value;
-    for (0..32) |i| {
-        hash[31 - i] = @truncate(v & 0xFF);
+    var i: isize = -32;
+    while (i < 0) : (i += 1) {
+        const idx = @as(usize, @intCast(i + 32));
+        hash[31 - idx] = @truncate(v & 0xFF);
         v >>= 8;
     }
     return hash;

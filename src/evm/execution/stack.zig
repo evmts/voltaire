@@ -93,10 +93,12 @@ pub fn make_push(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.S
             var value: u256 = 0;
             const code = frame.contract.code;
 
-            for (0..n) |i| {
-                if (pc + 1 + i < code.len) {
+            var i: isize = -@as(isize, @intCast(n));
+            while (i < 0) : (i += 1) {
+                const idx = @as(usize, @intCast(i + @as(isize, @intCast(n))));
+                if (pc + 1 + idx < code.len) {
                     @branchHint(.likely);
-                    value = (value << 8) | code[pc + 1 + i];
+                    value = (value << 8) | code[pc + 1 + idx];
                 } else {
                     value = value << 8;
                 }
@@ -127,10 +129,12 @@ pub fn push_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
     var value: u256 = 0;
     const code = frame.contract.code;
 
-    for (0..n) |i| {
-        if (pc + 1 + i < code.len) {
+    var i: isize = -@as(isize, @intCast(n));
+    while (i < 0) : (i += 1) {
+        const idx = @as(usize, @intCast(i + @as(isize, @intCast(n))));
+        if (pc + 1 + idx < code.len) {
             @branchHint(.likely);
-            value = (value << 8) | code[pc + 1 + i];
+            value = (value << 8) | code[pc + 1 + idx];
         } else {
             value = value << 8;
         }
