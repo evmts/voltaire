@@ -135,8 +135,19 @@ pub fn execute(self: *const JumpTable, pc: usize, interpreter: *operation_module
         return ExecutionError.Error.InvalidOpcode;
     }
 
-    const stack_validation = @import("../stack/stack_validation.zig");
-    try stack_validation.validate_stack_requirements(&frame.stack, operation);
+    // Use fast stack validation in ReleaseFast mode, traditional in other modes
+    if (comptime builtin.mode == .ReleaseFast) {
+        const stack_height_changes = @import("../opcodes/stack_height_changes.zig");
+        try stack_height_changes.validate_stack_requirements_fast(
+            @intCast(frame.stack.size),
+            opcode,
+            operation.min_stack,
+            operation.max_stack,
+        );
+    } else {
+        const stack_validation = @import("../stack/stack_validation.zig");
+        try stack_validation.validate_stack_requirements(&frame.stack, operation);
+    }
 
     // Gas consumption (likely path)
     if (operation.constant_gas > 0) {

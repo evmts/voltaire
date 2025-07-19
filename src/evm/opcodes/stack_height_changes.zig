@@ -135,22 +135,20 @@ pub fn get_stack_height_change(opcode: u8) i8 {
 }
 
 /// Validate stack requirements using pre-computed height changes.
-/// This is faster than the traditional approach as it uses a simple lookup.
+/// This is faster than the traditional approach as it uses a simple lookup for overflow.
 pub fn validate_stack_requirements_fast(
     current_height: u16,
-    opcode: u8,
+    _: u8, // opcode - currently unused but kept for future optimizations
     min_stack: u32,
+    max_stack: u32,
 ) !void {
-    const delta = STACK_HEIGHT_CHANGES[opcode];
-    
-    // Check underflow: ensure we have enough items to pop
-    if (delta < 0 and current_height < min_stack) {
+    // Check underflow: same as traditional validation
+    if (current_height < min_stack) {
         return error.StackUnderflow;
     }
     
-    // Check overflow: ensure result won't exceed capacity  
-    const new_height = @as(i32, current_height) + delta;
-    if (new_height > 1024) { // Stack.CAPACITY
+    // Check overflow: same as traditional validation
+    if (current_height > max_stack) {
         return error.StackOverflow;
     }
 }
@@ -239,23 +237,23 @@ test "stack height changes system operations" {
 
 test "validate stack requirements fast underflow" {
     // Test underflow detection
-    try testing.expectError(error.StackUnderflow, validate_stack_requirements_fast(1, 0x01, 2)); // ADD needs 2 items
-    try testing.expectError(error.StackUnderflow, validate_stack_requirements_fast(0, 0x50, 1)); // POP needs 1 item
+    try testing.expectError(error.StackUnderflow, validate_stack_requirements_fast(1, 0x01, 2, 1024)); // ADD needs 2 items
+    try testing.expectError(error.StackUnderflow, validate_stack_requirements_fast(0, 0x50, 1, 1024)); // POP needs 1 item
     
     // Test success cases
-    try validate_stack_requirements_fast(2, 0x01, 2); // ADD with 2 items
-    try validate_stack_requirements_fast(1, 0x50, 1); // POP with 1 item
+    try validate_stack_requirements_fast(2, 0x01, 2, 1024); // ADD with 2 items
+    try validate_stack_requirements_fast(1, 0x50, 1, 1024); // POP with 1 item
 }
 
 test "validate stack requirements fast overflow" {
     // Test overflow detection
-    try testing.expectError(error.StackOverflow, validate_stack_requirements_fast(1024, 0x60, 0)); // PUSH1 at capacity
-    try testing.expectError(error.StackOverflow, validate_stack_requirements_fast(1024, 0x80, 1)); // DUP1 at capacity
+    try testing.expectError(error.StackOverflow, validate_stack_requirements_fast(1024, 0x60, 0, 1023)); // PUSH1 at capacity exceeds max_stack
+    try testing.expectError(error.StackOverflow, validate_stack_requirements_fast(1024, 0x80, 1, 1023)); // DUP1 at capacity exceeds max_stack
     
     // Test success cases  
-    try validate_stack_requirements_fast(1023, 0x01, 2); // ADD reducing stack
-    try validate_stack_requirements_fast(1023, 0x60, 0); // PUSH1 at capacity-1
-    try validate_stack_requirements_fast(1023, 0x80, 1); // DUP1 at capacity-1
+    try validate_stack_requirements_fast(1023, 0x01, 2, 1024); // ADD reducing stack
+    try validate_stack_requirements_fast(1023, 0x60, 0, 1023); // PUSH1 at capacity-1
+    try validate_stack_requirements_fast(1023, 0x80, 1, 1023); // DUP1 at capacity-1
 }
 
 test "stack height changes match known operation patterns" {
