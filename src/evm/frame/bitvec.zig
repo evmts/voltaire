@@ -23,6 +23,8 @@ pub fn BitVec(comptime T: type) type {
         size: usize,
         /// Whether this bitvec owns its memory (and should free it)
         owned: bool,
+        /// Cached raw pointer for optimized bit access
+        cached_ptr: [*]T,
 
         /// Error types for BitVec operations
         pub const BitVecError = error{
@@ -46,6 +48,7 @@ pub fn BitVec(comptime T: type) type {
                 .bits = bits,
                 .size = size,
                 .owned = true,
+                .cached_ptr = bits.ptr,
             };
         }
 
@@ -55,6 +58,7 @@ pub fn BitVec(comptime T: type) type {
                 .bits = bits,
                 .size = size,
                 .owned = false,
+                .cached_ptr = bits.ptr,
             };
         }
 
@@ -64,6 +68,7 @@ pub fn BitVec(comptime T: type) type {
                 allocator.free(self.bits);
                 self.bits = &.{};
                 self.size = 0;
+                self.cached_ptr = undefined;
             }
         }
 
@@ -72,14 +77,14 @@ pub fn BitVec(comptime T: type) type {
             if (pos >= self.size) return BitVecError.PositionOutOfBounds;
             const idx = pos / bits_per_element;
             const bit = @as(T, 1) << @intCast(pos % bits_per_element);
-            self.bits[idx] |= bit;
+            self.cached_ptr[idx] |= bit;
         }
 
         /// Set a bit at the given position without bounds checking
         pub fn setUnchecked(self: *Self, pos: usize) void {
             const idx = pos / bits_per_element;
             const bit = @as(T, 1) << @intCast(pos % bits_per_element);
-            self.bits[idx] |= bit;
+            self.cached_ptr[idx] |= bit;
         }
 
         /// Clear a bit at the given position
@@ -87,14 +92,14 @@ pub fn BitVec(comptime T: type) type {
             if (pos >= self.size) return BitVecError.PositionOutOfBounds;
             const idx = pos / bits_per_element;
             const bit = @as(T, 1) << @intCast(pos % bits_per_element);
-            self.bits[idx] &= ~bit;
+            self.cached_ptr[idx] &= ~bit;
         }
 
         /// Clear a bit at the given position without bounds checking
         pub fn clearUnchecked(self: *Self, pos: usize) void {
             const idx = pos / bits_per_element;
             const bit = @as(T, 1) << @intCast(pos % bits_per_element);
-            self.bits[idx] &= ~bit;
+            self.cached_ptr[idx] &= ~bit;
         }
 
         /// Check if a bit is set at the given position
@@ -102,14 +107,14 @@ pub fn BitVec(comptime T: type) type {
             if (pos >= self.size) return BitVecError.PositionOutOfBounds;
             const idx = pos / bits_per_element;
             const bit = @as(T, 1) << @intCast(pos % bits_per_element);
-            return (self.bits[idx] & bit) != 0;
+            return (self.cached_ptr[idx] & bit) != 0;
         }
 
         /// Check if a bit is set at the given position without bounds checking
         pub fn isSetUnchecked(self: *const Self, pos: usize) bool {
             const idx = pos / bits_per_element;
             const bit = @as(T, 1) << @intCast(pos % bits_per_element);
-            return (self.bits[idx] & bit) != 0;
+            return (self.cached_ptr[idx] & bit) != 0;
         }
 
         /// Check if the position represents a valid code segment
