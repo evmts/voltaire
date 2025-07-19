@@ -5,7 +5,7 @@ const MemoryError = @import("errors.zig").MemoryError;
 const constants = @import("constants.zig");
 
 /// Returns the size of the memory region visible to the current context.
-pub fn context_size(self: *const Memory) usize {
+pub inline fn context_size(self: *const Memory) usize {
     const total_len = self.shared_buffer_ref.items.len;
     if (total_len < self.my_checkpoint) {
         // This indicates a bug or inconsistent state
@@ -17,7 +17,7 @@ pub fn context_size(self: *const Memory) usize {
 /// Ensures the current context's memory region is at least `min_context_size` bytes.
 /// Returns the number of *new 32-byte words added to the shared_buffer* if it expanded.
 /// This is crucial for EVM gas calculation.
-pub fn ensure_context_capacity(self: *Memory, min_context_size: usize) MemoryError!u64 {
+pub noinline fn ensure_context_capacity(self: *Memory, min_context_size: usize) MemoryError!u64 {
     const required_total_len = self.my_checkpoint + min_context_size;
     Log.debug("Memory.ensure_context_capacity: Ensuring capacity, min_context_size={}, required_total_len={}, memory_limit={}", .{ min_context_size, required_total_len, self.memory_limit });
 
@@ -70,16 +70,16 @@ pub fn ensure_context_capacity(self: *Memory, min_context_size: usize) MemoryErr
 }
 
 /// Resize the context to the specified size (for test compatibility)
-pub fn resize_context(self: *Memory, new_size: usize) MemoryError!void {
+pub noinline fn resize_context(self: *Memory, new_size: usize) MemoryError!void {
     _ = try self.ensure_context_capacity(new_size);
 }
 
 /// Get the memory size (alias for context_size for test compatibility)
-pub fn size(self: *const Memory) usize {
+pub inline fn size(self: *const Memory) usize {
     return self.context_size();
 }
 
 /// Get total size of memory (context size)
-pub fn total_size(self: *const Memory) usize {
+pub inline fn total_size(self: *const Memory) usize {
     return self.context_size();
 }
