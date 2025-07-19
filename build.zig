@@ -192,7 +192,25 @@ pub fn build(b: *std.Build) void {
     const rust_profile = if (optimize == .Debug) "dev" else "release";
     const rust_target_dir = if (optimize == .Debug) "debug" else "release";
 
-    const rust_build = b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
+    // Determine the Rust target triple based on the Zig target
+    const rust_target = switch (target.result.os.tag) {
+        .linux => switch (target.result.cpu.arch) {
+            .x86_64 => "x86_64-unknown-linux-gnu",
+            .aarch64 => "aarch64-unknown-linux-gnu",
+            else => null,
+        },
+        .macos => switch (target.result.cpu.arch) {
+            .x86_64 => "x86_64-apple-darwin",
+            .aarch64 => "aarch64-apple-darwin",
+            else => null,
+        },
+        else => null,
+    };
+    
+    const rust_build = if (rust_target) |target_triple|
+        b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
+    else
+        b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
 
     // Fix for macOS linking issues (only on macOS)
     if (target.result.os.tag == .macos) {
@@ -207,7 +225,10 @@ pub fn build(b: *std.Build) void {
     });
 
     // Link the compiled Rust library
-    const rust_lib_path = b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
+    const rust_lib_path = if (rust_target) |target_triple|
+        b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, rust_target_dir })
+    else
+        b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
     bn254_lib.addObjectFile(b.path(rust_lib_path));
     bn254_lib.linkLibC();
 
@@ -278,7 +299,10 @@ pub fn build(b: *std.Build) void {
     const bench_rust_profile = "release";
     const bench_rust_target_dir = "release";
     
-    const bench_rust_build = b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
+    const bench_rust_build = if (rust_target) |target_triple|
+        b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
+    else
+        b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
     
     // Fix for macOS linking issues (only on macOS)
     if (target.result.os.tag == .macos) {
@@ -293,7 +317,10 @@ pub fn build(b: *std.Build) void {
     });
     
     // Link the compiled Rust library
-    const bench_rust_lib_path = b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
+    const bench_rust_lib_path = if (rust_target) |target_triple|
+        b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, bench_rust_target_dir })
+    else
+        b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
     bench_bn254_lib.addObjectFile(b.path(bench_rust_lib_path));
     bench_bn254_lib.linkLibC();
     
