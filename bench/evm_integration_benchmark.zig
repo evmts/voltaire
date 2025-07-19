@@ -19,7 +19,8 @@ const Timer = std.time.Timer;
 
 const Evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
+const AddressType = Address.Address;
 const timing = @import("timing.zig");
 
 // Test constants for benchmarking
@@ -142,7 +143,7 @@ const BenchmarkContext = struct {
         // Warmup
         var i: u32 = 0;
         while (i < WARMUP_ITERATIONS) : (i += 1) {
-            _ = @call(.auto, benchmark_fn, args);
+            @call(.auto, benchmark_fn, args) catch {};
         }
         
         // Actual benchmark
@@ -151,7 +152,7 @@ const BenchmarkContext = struct {
             const start_memory = self.get_memory_usage();
             
             self.timer.reset();
-            _ = @call(.auto, benchmark_fn, args);
+            @call(.auto, benchmark_fn, args) catch {};
             const elapsed = self.timer.read();
             
             const end_memory = self.get_memory_usage();
@@ -190,11 +191,11 @@ const BenchmarkContext = struct {
     }
     
     pub fn print_summary(self: *Self) void {
-        print("\n=== EVM Integration Benchmark Summary ===\n");
+        print("\n=== EVM Integration Benchmark Summary ===\n", .{});
         for (self.results.items) |result| {
             print("{}\n", .{result});
         }
-        print("==========================================\n\n");
+        print("==========================================\n\n", .{});
     }
 };
 
@@ -225,8 +226,8 @@ fn benchmark_contract_deployment(allocator: Allocator) !void {
     defer vm.deinit();
     
     // Deploy contract
-    const caller = Address.ZERO_ADDRESS;
-    const target = Address.ZERO_ADDRESS;
+    const caller = Address.ZERO;
+    const target = Address.ZERO;
     
     var contract = Evm.Contract.init_at_address(
         caller, 
@@ -257,8 +258,8 @@ fn benchmark_cross_contract_calls(allocator: Allocator) !void {
     defer vm.deinit();
     
     // Set up caller contract
-    const caller_addr = Address.fromBytes(&[_]u8{0x10} ** 20);
-    const target_addr = Address.fromBytes(&[_]u8{0x20} ** 20);
+    const caller_addr: AddressType = [_]u8{0x10} ** 20;
+    const target_addr: AddressType = [_]u8{0x20} ** 20;
     
     // Set both contracts in state
     try vm.state.set_code(caller_addr, &CALLER_CONTRACT_BYTECODE);
@@ -266,7 +267,7 @@ fn benchmark_cross_contract_calls(allocator: Allocator) !void {
     
     // Create caller contract
     var caller_contract = Evm.Contract.init_at_address(
-        Address.ZERO_ADDRESS, 
+        Address.ZERO, 
         caller_addr, 
         0, // value
         1000000, // gas_limit
@@ -290,10 +291,10 @@ fn benchmark_error_propagation(allocator: Allocator) !void {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const target = Address.ZERO_ADDRESS;
+    const target = Address.ZERO;
     
     var contract = Evm.Contract.init_at_address(
-        Address.ZERO_ADDRESS, 
+        Address.ZERO, 
         target, 
         0, // value
         100, // low gas limit to trigger error
@@ -319,7 +320,7 @@ fn benchmark_state_transitions(allocator: Allocator) !void {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const addr = Address.ZERO_ADDRESS;
+    const addr = Address.ZERO;
     
     // Perform multiple state operations
     try vm.state.set_balance(addr, 1000);
@@ -360,7 +361,7 @@ fn benchmark_component_integration(allocator: Allocator) !void {
         try vm.state.set_code(addr, &COMPLEX_CONTRACT_BYTECODE);
         
         var contract = Evm.Contract.init_at_address(
-            Address.ZERO_ADDRESS, 
+            Address.ZERO, 
             addr, 
             100, // value
             1000000, // gas_limit
@@ -399,11 +400,11 @@ fn benchmark_memory_expansion(allocator: Allocator) !void {
         0x00,             // STOP
     };
     
-    const target = Address.ZERO_ADDRESS;
+    const target = Address.ZERO;
     try vm.state.set_code(target, &memory_test_bytecode);
     
     var contract = Evm.Contract.init_at_address(
-        Address.ZERO_ADDRESS, 
+        Address.ZERO, 
         target, 
         0, // value
         1000000, // gas_limit
@@ -418,42 +419,42 @@ fn benchmark_memory_expansion(allocator: Allocator) !void {
 
 /// Main benchmark runner
 pub fn run_integration_benchmarks(allocator: Allocator) !void {
-    print("\n=== Starting EVM Integration Benchmarks (Issue #49) ===\n\n");
+    print("\n=== Starting EVM Integration Benchmarks (Issue #49) ===\n\n", .{});
     
     var ctx = try BenchmarkContext.init(allocator);
     defer ctx.deinit();
     
     // Run all benchmarks
-    print("1. Module Loading Performance...\n");
+    print("1. Module Loading Performance...\n", .{});
     try ctx.run_benchmark("Module Loading", benchmark_module_loading, .{allocator});
     
-    print("2. Contract Deployment Flow...\n");
+    print("2. Contract Deployment Flow...\n", .{});
     try ctx.run_benchmark("Contract Deployment", benchmark_contract_deployment, .{allocator});
     
-    print("3. Cross-Contract Call Integration...\n");
+    print("3. Cross-Contract Call Integration...\n", .{});
     try ctx.run_benchmark("Cross-Contract Calls", benchmark_cross_contract_calls, .{allocator});
     
-    print("4. Error Propagation Performance...\n");
+    print("4. Error Propagation Performance...\n", .{});
     try ctx.run_benchmark("Error Propagation", benchmark_error_propagation, .{allocator});
     
-    print("5. State Transitions with Journaling...\n");
+    print("5. State Transitions with Journaling...\n", .{});
     try ctx.run_benchmark("State Transitions", benchmark_state_transitions, .{allocator});
     
-    print("6. Component Integration Stress Test...\n");
+    print("6. Component Integration Stress Test...\n", .{});
     try ctx.run_benchmark("Component Integration", benchmark_component_integration, .{allocator});
     
-    print("7. Memory Expansion Performance...\n");
+    print("7. Memory Expansion Performance...\n", .{});
     try ctx.run_benchmark("Memory Expansion", benchmark_memory_expansion, .{allocator});
     
     // Print comprehensive summary
     ctx.print_summary();
     
-    print("=== EVM Integration Benchmarks Complete ===\n\n");
+    print("=== EVM Integration Benchmarks Complete ===\n\n", .{});
 }
 
 /// Specific error handling benchmarks
 pub fn run_error_handling_benchmarks(allocator: Allocator) !void {
-    print("\n=== Error Handling Performance Benchmarks ===\n\n");
+    print("\n=== Error Handling Performance Benchmarks ===\n\n", .{});
     
     var ctx = try BenchmarkContext.init(allocator);
     defer ctx.deinit();
@@ -466,7 +467,7 @@ pub fn run_error_handling_benchmarks(allocator: Allocator) !void {
     
     ctx.print_summary();
     
-    print("=== Error Handling Benchmarks Complete ===\n\n");
+    print("=== Error Handling Benchmarks Complete ===\n\n", .{});
 }
 
 /// Stack overflow error benchmark
@@ -490,11 +491,11 @@ fn benchmark_stack_overflow_error(allocator: Allocator) !void {
     }
     try overflow_bytecode.append(0x00); // STOP
     
-    const target = Address.ZERO_ADDRESS;
+    const target = Address.ZERO;
     try vm.state.set_code(target, overflow_bytecode.items);
     
     var contract = Evm.Contract.init_at_address(
-        Address.ZERO_ADDRESS, 
+        Address.ZERO, 
         target, 
         0, // value
         1000000, // gas_limit
@@ -517,11 +518,11 @@ fn benchmark_out_of_gas_error(allocator: Allocator) !void {
     var vm = try Evm.Evm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const target = Address.ZERO_ADDRESS;
+    const target = Address.ZERO;
     try vm.state.set_code(target, &COMPLEX_CONTRACT_BYTECODE);
     
     var contract = Evm.Contract.init_at_address(
-        Address.ZERO_ADDRESS, 
+        Address.ZERO, 
         target, 
         0, // value
         10, // Very low gas limit
@@ -551,11 +552,11 @@ fn benchmark_invalid_opcode_error(allocator: Allocator) !void {
         0x00,       // STOP
     };
     
-    const target = Address.ZERO_ADDRESS;
+    const target = Address.ZERO;
     try vm.state.set_code(target, &invalid_bytecode);
     
     var contract = Evm.Contract.init_at_address(
-        Address.ZERO_ADDRESS, 
+        Address.ZERO, 
         target, 
         0, // value
         1000000, // gas_limit
@@ -588,11 +589,11 @@ fn benchmark_memory_bounds_error(allocator: Allocator) !void {
         0x00,       // STOP
     };
     
-    const target = Address.ZERO_ADDRESS;
+    const target = Address.ZERO;
     try vm.state.set_code(target, &bounds_test_bytecode);
     
     var contract = Evm.Contract.init_at_address(
-        Address.ZERO_ADDRESS, 
+        Address.ZERO, 
         target, 
         0, // value
         1000000, // gas_limit

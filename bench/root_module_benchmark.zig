@@ -91,7 +91,7 @@ fn benchmark_c_api_execution() !void {
     // Initialize the VM
     const init_result = root.guillotine_init();
     if (init_result != 0) {
-        print("Failed to initialize VM for C API execution benchmark\n");
+        print("Failed to initialize VM for C API execution benchmark\n", .{});
         return;
     }
     defer root.guillotine_deinit();
@@ -264,7 +264,7 @@ fn benchmark_c_api_memory_patterns() !void {
 
 /// Comprehensive root module performance test
 fn benchmark_comprehensive_root_usage() !void {
-    print("Comprehensive Root Module Usage Benchmark...\n");
+    print("Comprehensive Root Module Usage Benchmark...\n", .{});
     
     var overall_timer = try Timer.start();
     
@@ -311,33 +311,33 @@ fn benchmark_comprehensive_root_usage() !void {
 /// Main entry point for root module benchmarks
 pub fn run_root_module_benchmarks(allocator: Allocator) !void {
     _ = allocator;
-    print("\n=== Root Module (root.zig) Performance Benchmarks ===\n\n");
+    print("\n=== Root Module (root.zig) Performance Benchmarks ===\n\n", .{});
     
-    print("1. Module Import Cost...\n");
+    print("1. Module Import Cost...\n", .{});
     try benchmark_module_import_cost();
     
-    print("\n2. C API Initialization...\n");
+    print("\n2. C API Initialization...\n", .{});
     try benchmark_c_api_init();
     
-    print("\n3. C API Execution...\n");
+    print("\n3. C API Execution...\n", .{});
     try benchmark_c_api_execution();
     
-    print("\n4. Error Code Conversion...\n");
+    print("\n4. Error Code Conversion...\n", .{});
     try benchmark_error_code_conversion();
     
-    print("\n5. Global State Access...\n");
+    print("\n5. Global State Access...\n", .{});
     try benchmark_global_state_access();
     
-    print("\n6. Version Access...\n");
+    print("\n6. Version Access...\n", .{});
     try benchmark_version_access();
     
-    print("\n7. Memory Allocation Patterns...\n");
+    print("\n7. Memory Allocation Patterns...\n", .{});
     try benchmark_c_api_memory_patterns();
     
-    print("\n8. Comprehensive Usage...\n");
+    print("\n8. Comprehensive Usage...\n", .{});
     try benchmark_comprehensive_root_usage();
     
-    print("\n=== Root Module Benchmarks Complete ===\n\n");
+    print("\n=== Root Module Benchmarks Complete ===\n\n", .{});
 }
 
 // Test to ensure compilation
