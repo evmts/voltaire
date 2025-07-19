@@ -116,13 +116,13 @@ pub const slice = slice_ops.slice;
 /// Lookup table for small memory sizes (0-4KB in 32-byte increments)
 /// Provides O(1) access for common small memory allocations
 const SMALL_MEMORY_LOOKUP_SIZE = 128; // Covers 0-4KB in 32-byte words
-const SMALL_MEMORY_LOOKUP_TABLE = blk: {
+const SMALL_MEMORY_LOOKUP_TABLE = generate_memory_expansion_lut: {
     var table: [SMALL_MEMORY_LOOKUP_SIZE + 1]u64 = undefined;
-    for (0..SMALL_MEMORY_LOOKUP_SIZE + 1) |i| {
-        const words = @as(u64, @intCast(i));
-        table[i] = 3 * words + (words * words) / 512;
+    for (&table, 0..) |*cost, words| {
+        const word_count = @as(u64, @intCast(words));
+        cost.* = 3 * word_count + (word_count * word_count) / 512;
     }
-    break :blk table;
+    break :generate_memory_expansion_lut table;
 };
 
 /// Get memory expansion gas cost with caching optimization
