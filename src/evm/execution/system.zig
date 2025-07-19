@@ -904,3 +904,550 @@ pub fn op_extstaticcall(pc: usize, interpreter: *Operation.Interpreter, state: *
     // This is an EOF (EVM Object Format) opcode, not yet implemented
     return ExecutionError.Error.EOFNotSupported;
 }
+
+// Testing imports and definitions
+const testing = std.testing;
+const MemoryDatabase = @import("../state/memory_database.zig");
+const ReturnData = @import("../evm/return_data.zig");
+const ArrayList = std.ArrayList;
+
+const FuzzSystemOperation = struct {
+    op_type: SystemOpType,
+    gas: u256 = 0,
+    to: u256 = 0,
+    value: u256 = 0,
+    args_offset: u256 = 0,
+    args_size: u256 = 0,
+    ret_offset: u256 = 0,
+    ret_size: u256 = 0,
+    salt: u256 = 0,
+    init_offset: u256 = 0,
+    init_size: u256 = 0,
+    gas_limit: u64 = 1000000,
+    depth: u32 = 0,
+    is_static: bool = false,
+    calldata: []const u8 = &.{},
+    init_code: []const u8 = &.{},
+    expected_error: ?ExecutionError.Error = null,
+    expect_success: bool = true,
+    target_exists: bool = true,
+    target_has_code: bool = false,
+};
+
+const SystemOpType = enum {
+    gas,
+    create,
+    create2,
+    call,
+    callcode,
+    delegatecall,
+    staticcall,
+    selfdestruct,
+};
+
+fn fuzz_system_operations(allocator: std.mem.Allocator, operations: []const FuzzSystemOperation) !void {
+    for (operations) |op| {
+        var memory_db = MemoryDatabase.init(allocator);
+        defer memory_db.deinit();
+        
+        const db_interface = memory_db.to_database_interface();
+        var vm = try Vm.init(allocator, db_interface, null, null);
+        defer vm.deinit();
+        
+        // Set up target contract if needed for call operations
+        if (op.target_exists) {
+            const target_address = from_u256(op.to);
+            if (op.target_has_code) {
+                // Simple contract that returns data
+                const simple_code = [_]u8{0x60, 0x42, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3}; // PUSH1 0x42 PUSH1 0 MSTORE PUSH1 32 PUSH1 0 RETURN
+                try vm.state.set_code(target_address, &simple_code);
+            }
+            // Set some balance to the target
+            try vm.state.set_balance(target_address, 1000000);
+        }
+        
+        var contract = try Contract.init(allocator, &[_]u8{0x00}, .{
+            .address = primitives.Address.from_u256(0x1234),
+            .caller = primitives.Address.from_u256(0x5678),
+            .value = 1000,
+        });
+        defer contract.deinit(allocator, null);
+        
+        // Give the contract some balance for transfers
+        try vm.state.set_balance(contract.address, 10000000);
+        
+        var frame = try Frame.init(allocator, &vm, op.gas_limit, contract, primitives.Address.from_u256(0x5678), op.calldata);
+        defer frame.deinit();
+        
+        frame.depth = op.depth;
+        frame.is_static = op.is_static;
+        
+        // Pre-populate memory if needed for init code or call data
+        if (op.init_code.len > 0 and op.init_size > 0) {
+            const init_offset_usize = @as(usize, @intCast(op.init_offset));
+            _ = try frame.memory.ensure_context_capacity(init_offset_usize + op.init_code.len);
+            try frame.memory.set_data(init_offset_usize, op.init_code);
+        }
+        
+        // Execute the operation based on type
+        const result = switch (op.op_type) {
+            .gas => blk: {
+                break :blk gas_op(0, @ptrCast(&vm), @ptrCast(&frame));
+            },
+            .create => blk: {
+                try frame.stack.append(op.value);
+                try frame.stack.append(op.init_offset);
+                try frame.stack.append(op.init_size);
+                break :blk op_create(0, @ptrCast(&vm), @ptrCast(&frame));
+            },
+            .create2 => blk: {
+                try frame.stack.append(op.value);
+                try frame.stack.append(op.init_offset);
+                try frame.stack.append(op.init_size);
+                try frame.stack.append(op.salt);
+                break :blk op_create2(0, @ptrCast(&vm), @ptrCast(&frame));
+            },
+            .call => blk: {
+                try frame.stack.append(op.gas);
+                try frame.stack.append(op.to);
+                try frame.stack.append(op.value);
+                try frame.stack.append(op.args_offset);
+                try frame.stack.append(op.args_size);
+                try frame.stack.append(op.ret_offset);
+                try frame.stack.append(op.ret_size);
+                break :blk op_call(0, @ptrCast(&vm), @ptrCast(&frame));
+            },
+            .callcode => blk: {
+                try frame.stack.append(op.gas);
+                try frame.stack.append(op.to);
+                try frame.stack.append(op.value);
+                try frame.stack.append(op.args_offset);
+                try frame.stack.append(op.args_size);
+                try frame.stack.append(op.ret_offset);
+                try frame.stack.append(op.ret_size);
+                break :blk op_callcode(0, @ptrCast(&vm), @ptrCast(&frame));
+            },
+            .delegatecall => blk: {
+                try frame.stack.append(op.gas);
+                try frame.stack.append(op.to);
+                try frame.stack.append(op.args_offset);
+                try frame.stack.append(op.args_size);
+                try frame.stack.append(op.ret_offset);
+                try frame.stack.append(op.ret_size);
+                break :blk op_delegatecall(0, @ptrCast(&vm), @ptrCast(&frame));
+            },
+            .staticcall => blk: {
+                try frame.stack.append(op.gas);
+                try frame.stack.append(op.to);
+                try frame.stack.append(op.args_offset);
+                try frame.stack.append(op.args_size);
+                try frame.stack.append(op.ret_offset);
+                try frame.stack.append(op.ret_size);
+                break :blk op_staticcall(0, @ptrCast(&vm), @ptrCast(&frame));
+            },
+            .selfdestruct => blk: {
+                try frame.stack.append(op.to);
+                break :blk op_selfdestruct(0, @ptrCast(&vm), @ptrCast(&frame));
+            },
+        };
+        
+        // Validate the result
+        try validate_system_result(&frame, op, result);
+    }
+}
+
+fn validate_system_result(frame: *const Frame, op: FuzzSystemOperation, result: anyerror!Operation.ExecutionResult) !void {
+    if (op.expected_error) |expected_err| {
+        try testing.expectError(expected_err, result);
+        return;
+    }
+    
+    // Special handling for SELFDESTRUCT which returns STOP
+    if (op.op_type == .selfdestruct and !op.is_static) {
+        try testing.expectError(ExecutionError.Error.STOP, result);
+        return;
+    }
+    
+    try result;
+    
+    // Validate stack results for operations
+    switch (op.op_type) {
+        .gas => {
+            try testing.expectEqual(@as(usize, 1), frame.stack.size);
+            // Gas value should be less than or equal to initial gas limit
+            const gas_value = frame.stack.data[0];
+            try testing.expect(gas_value <= op.gas_limit);
+        },
+        .create, .create2 => {
+            try testing.expectEqual(@as(usize, 1), frame.stack.size);
+            // Result is either 0 (failure) or an address
+            const result_value = frame.stack.data[0];
+            if (!op.expect_success) {
+                try testing.expectEqual(@as(u256, 0), result_value);
+            }
+        },
+        .call, .callcode, .delegatecall, .staticcall => {
+            try testing.expectEqual(@as(usize, 1), frame.stack.size);
+            // Result is 1 (success) or 0 (failure)
+            const result_value = frame.stack.data[0];
+            if (op.expect_success) {
+                try testing.expectEqual(@as(u256, 1), result_value);
+            } else {
+                try testing.expectEqual(@as(u256, 0), result_value);
+            }
+        },
+        .selfdestruct => {
+            // SELFDESTRUCT doesn't push to stack
+            try testing.expectEqual(@as(usize, 0), frame.stack.size);
+        },
+    }
+}
+
+test "fuzz_system_basic_operations" {
+    const allocator = std.testing.allocator;
+    
+    const simple_init_code = [_]u8{0x60, 0x00, 0x60, 0x00, 0xf3}; // PUSH1 0 PUSH1 0 RETURN
+    
+    const operations = [_]FuzzSystemOperation{
+        // GAS opcode
+        .{
+            .op_type = .gas,
+            .gas_limit = 100000,
+        },
+        // Basic CREATE
+        .{
+            .op_type = .create,
+            .value = 0,
+            .init_offset = 0,
+            .init_size = simple_init_code.len,
+            .init_code = &simple_init_code,
+        },
+        // Basic CREATE2
+        .{
+            .op_type = .create2,
+            .value = 0,
+            .init_offset = 0,
+            .init_size = simple_init_code.len,
+            .salt = 0x1234,
+            .init_code = &simple_init_code,
+        },
+        // Basic CALL
+        .{
+            .op_type = .call,
+            .gas = 50000,
+            .to = 0x9999,
+            .value = 0,
+            .args_offset = 0,
+            .args_size = 0,
+            .ret_offset = 0,
+            .ret_size = 32,
+            .target_exists = true,
+            .target_has_code = true,
+        },
+        // Basic DELEGATECALL
+        .{
+            .op_type = .delegatecall,
+            .gas = 50000,
+            .to = 0x9999,
+            .args_offset = 0,
+            .args_size = 0,
+            .ret_offset = 0,
+            .ret_size = 32,
+            .target_exists = true,
+            .target_has_code = true,
+        },
+        // Basic STATICCALL
+        .{
+            .op_type = .staticcall,
+            .gas = 50000,
+            .to = 0x9999,
+            .args_offset = 0,
+            .args_size = 0,
+            .ret_offset = 0,
+            .ret_size = 32,
+            .target_exists = true,
+            .target_has_code = true,
+        },
+    };
+    
+    try fuzz_system_operations(allocator, &operations);
+}
+
+test "fuzz_system_static_context" {
+    const allocator = std.testing.allocator;
+    
+    const operations = [_]FuzzSystemOperation{
+        // CREATE in static context (should fail)
+        .{
+            .op_type = .create,
+            .value = 0,
+            .init_offset = 0,
+            .init_size = 5,
+            .is_static = true,
+            .expected_error = ExecutionError.Error.WriteProtection,
+        },
+        // CREATE2 in static context (should fail)
+        .{
+            .op_type = .create2,
+            .value = 0,
+            .init_offset = 0,
+            .init_size = 5,
+            .salt = 0,
+            .is_static = true,
+            .expected_error = ExecutionError.Error.WriteProtection,
+        },
+        // CALL with value in static context (should fail)
+        .{
+            .op_type = .call,
+            .gas = 50000,
+            .to = 0x9999,
+            .value = 100,
+            .is_static = true,
+            .expected_error = ExecutionError.Error.WriteProtection,
+        },
+        // SELFDESTRUCT in static context (should fail)
+        .{
+            .op_type = .selfdestruct,
+            .to = 0x9999,
+            .is_static = true,
+            .expected_error = ExecutionError.Error.WriteProtection,
+        },
+    };
+    
+    try fuzz_system_operations(allocator, &operations);
+}
+
+test "fuzz_system_depth_limit" {
+    const allocator = std.testing.allocator;
+    
+    const operations = [_]FuzzSystemOperation{
+        // CREATE at max depth
+        .{
+            .op_type = .create,
+            .value = 0,
+            .init_offset = 0,
+            .init_size = 5,
+            .depth = 1024,
+            .expect_success = false,
+        },
+        // CALL at max depth
+        .{
+            .op_type = .call,
+            .gas = 50000,
+            .to = 0x9999,
+            .value = 0,
+            .depth = 1024,
+            .expect_success = false,
+        },
+        // DELEGATECALL at max depth
+        .{
+            .op_type = .delegatecall,
+            .gas = 50000,
+            .to = 0x9999,
+            .depth = 1024,
+            .expect_success = false,
+        },
+    };
+    
+    try fuzz_system_operations(allocator, &operations);
+}
+
+test "fuzz_system_gas_calculations" {
+    const allocator = std.testing.allocator;
+    
+    const large_init_code = [_]u8{0x00} ** 1000; // Large init code for gas testing
+    
+    const operations = [_]FuzzSystemOperation{
+        // CREATE with insufficient gas
+        .{
+            .op_type = .create,
+            .value = 0,
+            .init_offset = 0,
+            .init_size = large_init_code.len,
+            .init_code = &large_init_code,
+            .gas_limit = 1000, // Not enough for large init code
+            .expected_error = ExecutionError.Error.OutOfGas,
+        },
+        // CALL with low gas limit
+        .{
+            .op_type = .call,
+            .gas = 100,
+            .to = 0x9999,
+            .value = 0,
+            .gas_limit = 5000,
+            .target_exists = true,
+            .expect_success = false,
+        },
+    };
+    
+    try fuzz_system_operations(allocator, &operations);
+}
+
+test "fuzz_system_edge_cases" {
+    const allocator = std.testing.allocator;
+    
+    const operations = [_]FuzzSystemOperation{
+        // CREATE with zero size init code
+        .{
+            .op_type = .create,
+            .value = 0,
+            .init_offset = 0,
+            .init_size = 0,
+        },
+        // CALL to non-existent account
+        .{
+            .op_type = .call,
+            .gas = 50000,
+            .to = 0xdeadbeef,
+            .value = 0,
+            .target_exists = false,
+            .expect_success = false,
+        },
+        // CALL with value to new account
+        .{
+            .op_type = .call,
+            .gas = 50000,
+            .to = 0xbadbeef,
+            .value = 1000,
+            .target_exists = false,
+            .expect_success = false, // Will fail because we're not handling value transfers in mock
+        },
+        // CALLCODE to self
+        .{
+            .op_type = .callcode,
+            .gas = 50000,
+            .to = 0x1234, // Same as contract address
+            .value = 0,
+        },
+    };
+    
+    try fuzz_system_operations(allocator, &operations);
+}
+
+test "fuzz_system_random_operations" {
+    const allocator = std.testing.allocator;
+    var prng = std.Random.DefaultPrng.init(42);
+    const random = prng.random();
+    
+    var operations = ArrayList(FuzzSystemOperation).init(allocator);
+    defer operations.deinit();
+    
+    // Generate random init code
+    var random_init_code: [64]u8 = undefined;
+    random.bytes(&random_init_code);
+    
+    var i: usize = 0;
+    while (i < 20) : (i += 1) {
+        const op_type_idx = random.intRangeAtMost(usize, 0, 7);
+        const op_types = [_]SystemOpType{
+            .gas, .create, .create2, .call,
+            .callcode, .delegatecall, .staticcall, .selfdestruct
+        };
+        const op_type = op_types[op_type_idx];
+        
+        const gas = random.intRangeAtMost(u256, 1000, 100000);
+        const to = random.int(u256);
+        const value = random.intRangeAtMost(u256, 0, 1000);
+        const salt = random.int(u256);
+        const depth = random.intRangeAtMost(u32, 0, 1025);
+        const is_static = random.boolean();
+        const gas_limit = random.intRangeAtMost(u64, 10000, 1000000);
+        
+        try operations.append(.{
+            .op_type = op_type,
+            .gas = gas,
+            .to = to,
+            .value = value,
+            .args_offset = 0,
+            .args_size = 0,
+            .ret_offset = 0,
+            .ret_size = 32,
+            .salt = salt,
+            .init_offset = 0,
+            .init_size = if (op_type == .create or op_type == .create2) 32 else 0,
+            .gas_limit = gas_limit,
+            .depth = depth,
+            .is_static = is_static,
+            .init_code = &random_init_code,
+        });
+    }
+    
+    try fuzz_system_operations(allocator, operations.items);
+}
+
+test "calculate_call_gas" {
+    // Test basic CALL gas calculation
+    {
+        const gas = calculate_call_gas(
+            .Call,
+            0, // no value
+            true, // target exists
+            false, // warm access
+            100000, // remaining gas
+            0, // no memory expansion
+            50000, // requested gas
+        );
+        // Base cost (100) + no memory + min(50000, (99900 * 63)/64)
+        try testing.expect(gas > 100);
+    }
+    
+    // Test CALL with value transfer
+    {
+        const gas = calculate_call_gas(
+            .Call,
+            100, // with value
+            true, // target exists
+            false, // warm access
+            100000, // remaining gas
+            0, // no memory expansion
+            50000, // requested gas
+        );
+        // Base cost (9000 for value) + forwarded gas
+        try testing.expect(gas >= 9000);
+    }
+    
+    // Test CALL with cold access
+    {
+        const gas = calculate_call_gas(
+            .Call,
+            0, // no value
+            true, // target exists
+            true, // cold access
+            100000, // remaining gas
+            0, // no memory expansion
+            50000, // requested gas
+        );
+        // Base cost + cold access (2600) + forwarded gas
+        try testing.expect(gas >= 2700);
+    }
+    
+    // Test CALL to new account with value
+    {
+        const gas = calculate_call_gas(
+            .Call,
+            100, // with value
+            false, // target doesn't exist
+            true, // cold access
+            100000, // remaining gas
+            0, // no memory expansion
+            50000, // requested gas
+        );
+        // Base cost (9000) + cold (2600) + new account (25000) + forwarded
+        try testing.expect(gas >= 36600);
+    }
+    
+    // Test insufficient gas scenario
+    {
+        const gas = calculate_call_gas(
+            .Call,
+            0, // no value
+            true, // target exists
+            false, // warm access
+            50, // very low remaining gas
+            0, // no memory expansion
+            50000, // requested gas (more than available)
+        );
+        // Should return at least base cost even if can't forward
+        try testing.expect(gas >= 100);
+    }
+}
