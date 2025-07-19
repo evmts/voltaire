@@ -53,22 +53,29 @@ pub fn calculate_gas(input_size: usize) u64 {
 ///
 /// Same as calculate_gas but returns an error if the calculation would overflow.
 /// This is important for very large inputs that could cause arithmetic overflow.
+/// Uses std.math functions for cleaner and more robust overflow handling.
 ///
 /// @param input_size Size of input data in bytes
 /// @return Gas cost or error.Overflow if calculation overflows
 pub fn calculate_gas_checked(input_size: usize) !u64 {
-    // Check for potential overflow in word count calculation
-    if (input_size > std.math.maxInt(usize) - 31) {
+    // Use std.math.add with overflow checking for word count calculation
+    const input_plus_31 = std.math.add(usize, input_size, 31) catch {
         return error.Overflow;
-    }
+    };
+    
+    const word_count = input_plus_31 / 32;
 
-    const word_count = (input_size + 31) / 32;
-
-    // Check for potential overflow in gas calculation
-    const gas_from_words = std.math.mul(u64, SHA256_WORD_COST, word_count) catch {
+    // Convert word_count to u64 with overflow checking
+    const word_count_u64 = std.math.cast(u64, word_count) orelse {
         return error.Overflow;
     };
 
+    // Use std.math.mul for gas calculation with overflow checking
+    const gas_from_words = std.math.mul(u64, SHA256_WORD_COST, word_count_u64) catch {
+        return error.Overflow;
+    };
+
+    // Use std.math.add for total gas calculation with overflow checking
     const total_gas = std.math.add(u64, SHA256_BASE_COST, gas_from_words) catch {
         return error.Overflow;
     };
