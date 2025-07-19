@@ -48,7 +48,7 @@ fn perform_copy_operation(frame: *Frame, mem_offset: usize, size: usize) !void {
     
     // Dynamic gas for copy operation
     const word_size = (size + 31) / 32;
-    try frame.consume_gas(GasConstants.COPY_GAS * word_size);
+    try frame.consume_gas(GasConstants.CopyGas * word_size);
     
     // Ensure memory is available
     _ = try frame.memory.ensure_context_capacity(new_size);
@@ -209,7 +209,7 @@ pub fn op_mcopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
 
     // Dynamic gas for copy operation
     const word_size = (size_usize + 31) / 32;
-    try frame.consume_gas(GasConstants.COPY_GAS * word_size);
+    try frame.consume_gas(GasConstants.CopyGas * word_size);
 
     // Ensure memory is available for both source and destination
     _ = try frame.memory.ensure_context_capacity(max_addr);
