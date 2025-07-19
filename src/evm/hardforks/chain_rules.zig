@@ -601,6 +601,26 @@ const HardforkRule = struct {
 /// Pre-generated at compile time for zero runtime overhead.
 pub const DEFAULT = for_hardfork(.DEFAULT);
 
+/// Determine the hardfork from a given ChainRules configuration.
+/// This is a reverse lookup that identifies which hardfork a set of rules represents.
+/// Returns the earliest hardfork that matches all enabled features.
+pub fn getHardfork(rules: ChainRules) Hardfork {
+    // Check from newest to oldest to find the matching hardfork
+    if (rules.is_cancun) return .CANCUN;
+    if (rules.is_shanghai) return .SHANGHAI;
+    if (rules.is_merge) return .MERGE;
+    if (rules.is_london) return .LONDON;
+    if (rules.is_berlin) return .BERLIN;
+    if (rules.is_istanbul) return .ISTANBUL;
+    if (rules.is_petersburg) return .PETERSBURG;
+    if (rules.is_constantinople) return .CONSTANTINOPLE;
+    if (rules.is_byzantium) return .BYZANTIUM;
+    if (rules.is_eip158) return .SPURIOUS_DRAGON;
+    if (rules.is_eip150) return .TANGERINE_WHISTLE;
+    if (rules.is_homestead) return .HOMESTEAD;
+    return .FRONTIER;
+}
+
 const HARDFORK_RULES = [_]HardforkRule{
     .{ .field_name = "is_homestead", .introduced_in = .HOMESTEAD },
     .{ .field_name = "is_eip150", .introduced_in = .TANGERINE_WHISTLE },
