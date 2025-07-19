@@ -91,23 +91,21 @@ selfdestructs: std.AutoHashMap(Address, Address),
 pub fn init(allocator: std.mem.Allocator, database: DatabaseInterface) std.mem.Allocator.Error!EvmState {
     Log.debug("EvmState.init: Initializing EVM state with database interface", .{});
 
-    var transient_storage = std.AutoHashMap(StorageKey, u256).init(allocator);
-    errdefer transient_storage.deinit();
-
-    var logs = std.ArrayList(EvmLog).init(allocator);
-    errdefer logs.deinit();
-
-    var selfdestructs = std.AutoHashMap(Address, Address).init(allocator);
-    errdefer selfdestructs.deinit();
-
-    Log.debug("EvmState.init: EVM state initialization complete", .{});
-    return EvmState{
+    var state = EvmState{
         .allocator = allocator,
         .database = database,
-        .transient_storage = transient_storage,
-        .logs = logs,
-        .selfdestructs = selfdestructs,
+        .transient_storage = std.AutoHashMap(StorageKey, u256).init(allocator),
+        .logs = std.ArrayList(EvmLog).init(allocator),
+        .selfdestructs = std.AutoHashMap(Address, Address).init(allocator),
     };
+    errdefer {
+        state.transient_storage.deinit();
+        state.logs.deinit();
+        state.selfdestructs.deinit();
+    }
+
+    Log.debug("EvmState.init: EVM state initialization complete", .{});
+    return state;
 }
 
 /// Clean up all allocated resources
@@ -1808,7 +1806,7 @@ test "EvmState clear_selfdestructs" {
     for (0..100) |i| {
         const addr = testAddress(@as(u160, @intCast(i)));
         const recipient = testAddress(@as(u160, @intCast(i + 1000)));
-        try state.mark_selfdestruct(addr, recipient);
+        try state.mark_for_destruction(addr, recipient);
     }
 
     try testing.expectEqual(@as(usize, 100), state.selfdestructs.count());
@@ -1820,7 +1818,7 @@ test "EvmState clear_selfdestructs" {
     // Verify we can add more
     const addr = testAddress(0x9999);
     const recipient = testAddress(0xAAAA);
-    try state.mark_selfdestruct(addr, recipient);
+    try state.mark_for_destruction(addr, recipient);
     try testing.expectEqual(@as(usize, 1), state.selfdestructs.count());
 }
 
@@ -1849,8 +1847,8 @@ test "EvmState clear_transaction_state clears all transaction data" {
     try state.emit_log(addr2, &topics[0..2], data);
 
     // Mark selfdestructs
-    try state.mark_selfdestruct(addr1, addr2);
-    try state.mark_selfdestruct(addr2, addr1);
+    try state.mark_for_destruction(addr1, addr2);
+    try state.mark_for_destruction(addr2, addr1);
 
     // Verify all data exists
     try testing.expect(state.transient_storage.count() > 0);
@@ -1911,7 +1909,7 @@ test "EvmState memory leak prevention in transaction simulation" {
         // Mark some selfdestructs
         if (tx_num % 10 == 0) {
             const recipient = testAddress(@as(u160, @intCast(tx_num + 10000)));
-            try state.mark_selfdestruct(addr, recipient);
+            try state.mark_for_destruction(addr, recipient);
         }
 
         // Clear transaction state at the end of each transaction
