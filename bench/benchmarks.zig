@@ -6,6 +6,11 @@ const BenchmarkConfig = timing.BenchmarkConfig;
 const opcode_benchmarks = @import("opcode_benchmarks.zig");
 const comprehensive_precompile_benchmark = @import("comprehensive_precompile_benchmark.zig");
 
+// Import frame management benchmark suites
+const frame_benchmarks = @import("frame_benchmarks.zig");
+const code_analysis_benchmarks = @import("code_analysis_benchmarks.zig");
+const comprehensive_frame_benchmarks = @import("comprehensive_frame_benchmarks.zig");
+
 pub fn run_all_benchmarks(allocator: Allocator) !void {
     std.debug.print("=== Running All Guillotine Benchmarks ===\n", .{});
     
@@ -70,6 +75,13 @@ pub fn run_all_benchmarks(allocator: Allocator) !void {
     }, HelloWorldBench.memory_allocation);
     
     suite.print_results();
+    
+    // Run the new frame management benchmark suites
+    std.debug.print("\n=== Running Frame Management Benchmarks ===\n");
+    try frame_benchmarks.runFrameBenchmarks(allocator);
+    try code_analysis_benchmarks.runCodeAnalysisBenchmarks(allocator);
+    try comprehensive_frame_benchmarks.runComprehensiveFrameBenchmarks(allocator);
+    std.debug.print("=== All Frame Management Benchmarks Complete ===\n\n");
     
     std.debug.print("\n=== All Benchmarks Completed ===\n", .{});
 }

@@ -339,54 +339,54 @@ test "setRangeVectorized sets range of bits correctly" {
     const allocator = std.testing.allocator;
     
     // Test with large bit vector
-    var bitvec = try BitVec.init(allocator, 1024);
+    var bitvec = try BitVec64.init(allocator, 1024);
     defer bitvec.deinit(allocator);
     
     // Set range crossing multiple words
-    try bitvec.setRangeVectorized(100, 900);
+    try setRangeVectorized(&bitvec, 100, 900);
     
     // Verify bits before range are unset
     var i: usize = 0;
     while (i < 100) : (i += 1) {
-        try std.testing.expect(!bitvec.is_set_unchecked(i));
+        try std.testing.expect(!bitvec.isSetUnchecked(i));
     }
     
     // Verify bits in range are set
     i = 100;
     while (i < 900) : (i += 1) {
-        try std.testing.expect(bitvec.is_set_unchecked(i));
+        try std.testing.expect(bitvec.isSetUnchecked(i));
     }
     
     // Verify bits after range are unset
     i = 900;
     while (i < 1024) : (i += 1) {
-        try std.testing.expect(!bitvec.is_set_unchecked(i));
+        try std.testing.expect(!bitvec.isSetUnchecked(i));
     }
 }
 
 test "setRangeVectorized handles single word case" {
     const allocator = std.testing.allocator;
     
-    var bitvec = try BitVec.init(allocator, 128);
+    var bitvec = try BitVec64.init(allocator, 128);
     defer bitvec.deinit(allocator);
     
     // Set range within single word
-    try bitvec.setRangeVectorized(10, 20);
+    try setRangeVectorized(&bitvec, 10, 20);
     
     // Verify only specified bits are set
     var i: usize = 0;
     while (i < 10) : (i += 1) {
-        try std.testing.expect(!bitvec.is_set_unchecked(i));
+        try std.testing.expect(!bitvec.isSetUnchecked(i));
     }
     
     i = 10;
     while (i < 20) : (i += 1) {
-        try std.testing.expect(bitvec.is_set_unchecked(i));
+        try std.testing.expect(bitvec.isSetUnchecked(i));
     }
     
     i = 20;
     while (i < 128) : (i += 1) {
-        try std.testing.expect(!bitvec.is_set_unchecked(i));
+        try std.testing.expect(!bitvec.isSetUnchecked(i));
     }
 }
 
@@ -394,100 +394,100 @@ test "countSetBitsVectorized counts correctly" {
     const allocator = std.testing.allocator;
     
     // Test with large bit vector
-    var bitvec = try BitVec.init(allocator, 1024);
+    var bitvec = try BitVec64.init(allocator, 1024);
     defer bitvec.deinit(allocator);
     
     // Set specific pattern of bits
     var i: usize = 0;
     while (i < 1024) : (i += 3) {
-        bitvec.set_unchecked(i);
+        bitvec.setUnchecked(i);
     }
     
-    const count = bitvec.countSetBitsVectorized();
+    const count = countSetBitsVectorized(&bitvec);
     try std.testing.expectEqual(@as(usize, 342), count); // ceil(1024/3) = 342
 }
 
 test "bitwiseAndVectorized performs AND correctly" {
     const allocator = std.testing.allocator;
     
-    var bitvec1 = try BitVec.init(allocator, 512);
+    var bitvec1 = try BitVec64.init(allocator, 512);
     defer bitvec1.deinit(allocator);
     
-    var bitvec2 = try BitVec.init(allocator, 512);
+    var bitvec2 = try BitVec64.init(allocator, 512);
     defer bitvec2.deinit(allocator);
     
     // Set alternating patterns
     var i: usize = 0;
     while (i < 512) : (i += 2) {
-        bitvec1.set_unchecked(i);
+        bitvec1.setUnchecked(i);
     }
     
     i = 0;
     while (i < 512) : (i += 3) {
-        bitvec2.set_unchecked(i);
+        bitvec2.setUnchecked(i);
     }
     
-    try bitvec1.bitwiseAndVectorized(&bitvec2);
+    try bitwiseAndVectorized(&bitvec1, &bitvec2);
     
     // Check result: bits should be set only where both were set
     i = 0;
     while (i < 512) : (i += 1) {
         const shouldBeSet = (i % 2 == 0) and (i % 3 == 0);
-        try std.testing.expectEqual(shouldBeSet, bitvec1.is_set_unchecked(i));
+        try std.testing.expectEqual(shouldBeSet, bitvec1.isSetUnchecked(i));
     }
 }
 
 test "bitwiseOrVectorized performs OR correctly" {
     const allocator = std.testing.allocator;
     
-    var bitvec1 = try BitVec.init(allocator, 512);
+    var bitvec1 = try BitVec64.init(allocator, 512);
     defer bitvec1.deinit(allocator);
     
-    var bitvec2 = try BitVec.init(allocator, 512);
+    var bitvec2 = try BitVec64.init(allocator, 512);
     defer bitvec2.deinit(allocator);
     
     // Set different patterns
     var i: usize = 0;
     while (i < 512) : (i += 4) {
-        bitvec1.set_unchecked(i);
+        bitvec1.setUnchecked(i);
     }
     
     i = 1;
     while (i < 512) : (i += 4) {
-        bitvec2.set_unchecked(i);
+        bitvec2.setUnchecked(i);
     }
     
-    try bitvec1.bitwiseOrVectorized(&bitvec2);
+    try bitwiseOrVectorized(&bitvec1, &bitvec2);
     
     // Check result: bits should be set where either was set
     i = 0;
     while (i < 512) : (i += 1) {
         const shouldBeSet = (i % 4 == 0) or (i % 4 == 1);
-        try std.testing.expectEqual(shouldBeSet, bitvec1.is_set_unchecked(i));
+        try std.testing.expectEqual(shouldBeSet, bitvec1.isSetUnchecked(i));
     }
 }
 
 test "bitwiseXorVectorized performs XOR correctly" {
     const allocator = std.testing.allocator;
     
-    var bitvec1 = try BitVec.init(allocator, 512);
+    var bitvec1 = try BitVec64.init(allocator, 512);
     defer bitvec1.deinit(allocator);
     
-    var bitvec2 = try BitVec.init(allocator, 512);
+    var bitvec2 = try BitVec64.init(allocator, 512);
     defer bitvec2.deinit(allocator);
     
     // Set overlapping patterns
     var i: usize = 0;
     while (i < 512) : (i += 2) {
-        bitvec1.set_unchecked(i);
+        bitvec1.setUnchecked(i);
     }
     
     i = 0;
     while (i < 512) : (i += 3) {
-        bitvec2.set_unchecked(i);
+        bitvec2.setUnchecked(i);
     }
     
-    try bitvec1.bitwiseXorVectorized(&bitvec2);
+    try bitwiseXorVectorized(&bitvec1, &bitvec2);
     
     // Check result: bits should be set where exactly one was set
     i = 0;
@@ -495,7 +495,7 @@ test "bitwiseXorVectorized performs XOR correctly" {
         const was1Set = (i % 2 == 0);
         const was2Set = (i % 3 == 0);
         const shouldBeSet = was1Set != was2Set; // XOR logic
-        try std.testing.expectEqual(shouldBeSet, bitvec1.is_set_unchecked(i));
+        try std.testing.expectEqual(shouldBeSet, bitvec1.isSetUnchecked(i));
     }
 }
 
@@ -503,12 +503,12 @@ test "vectorized operations handle non-aligned sizes" {
     const allocator = std.testing.allocator;
     
     // Test with size not divisible by 8*64
-    var bitvec = try BitVec.init(allocator, 777);
+    var bitvec = try BitVec64.init(allocator, 777);
     defer bitvec.deinit(allocator);
     
-    try bitvec.setRangeVectorized(0, 777);
+    try setRangeVectorized(&bitvec, 0, 777);
     
-    const count = bitvec.countSetBitsVectorized();
+    const count = countSetBitsVectorized(&bitvec);
     try std.testing.expectEqual(@as(usize, 777), count);
 }
 
@@ -516,17 +516,17 @@ test "vectorized operations handle edge cases" {
     const allocator = std.testing.allocator;
     
     // Small bitvec (less than vector size)
-    var small = try BitVec.init(allocator, 100);
+    var small = try BitVec64.init(allocator, 100);
     defer small.deinit(allocator);
     
-    try small.setRangeVectorized(20, 80);
+    try setRangeVectorized(&small, 20, 80);
     
-    const count = small.countSetBitsVectorized();
+    const count = countSetBitsVectorized(&small);
     try std.testing.expectEqual(@as(usize, 60), count);
     
     // Test error cases
-    try std.testing.expectError(BitVec64.BitVecError.PositionOutOfBounds, small.setRangeVectorized(50, 150));
-    try std.testing.expectError(BitVec64.BitVecError.PositionOutOfBounds, small.setRangeVectorized(80, 20));
+    try std.testing.expectError(BitVec64.BitVecError.PositionOutOfBounds, setRangeVectorized(&small, 50, 150));
+    try std.testing.expectError(BitVec64.BitVecError.PositionOutOfBounds, setRangeVectorized(&small, 80, 20));
 }
 
 // Tests
