@@ -499,7 +499,7 @@ fn ensure_analysis(self: *Contract, allocator: std.mem.Allocator) void {
 pub fn is_code(self: *const Contract, pos: u64) bool {
     if (self.analysis) |analysis| {
         // We know pos is within bounds if analysis exists, so use unchecked version
-        return analysis.code_segments.is_set_unchecked(@intCast(pos));
+        return analysis.code_segments.isSetUnchecked(@intCast(pos));
     }
     return true;
 }
@@ -764,7 +764,7 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
     };
     errdefer allocator.destroy(analysis);
 
-    analysis.code_segments = try bitvec.code_bitmap(allocator, code);
+    analysis.code_segments = try bitvec.BitVec64.codeBitmap(allocator, code);
     errdefer analysis.code_segments.deinit(allocator);
 
     var jumpdests = std.ArrayList(u32).init(allocator);
@@ -774,7 +774,7 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
     while (i < code.len) {
         const op = code[i];
 
-        if (op == constants.JUMPDEST and analysis.code_segments.is_set_unchecked(i)) {
+        if (op == constants.JUMPDEST and analysis.code_segments.isSetUnchecked(i)) {
             jumpdests.append(@as(u32, @intCast(i))) catch |err| {
                 Log.debug("Failed to append jumpdest position {d}: {any}", .{ i, err });
                 return err;
