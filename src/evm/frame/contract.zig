@@ -745,6 +745,10 @@ pub fn deinit(self: *Contract, allocator: std.mem.Allocator, pool: ?*StoragePool
 /// // Analysis is now cached for future use
 /// ```
 pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [32]u8) CodeAnalysisError!*const CodeAnalysis {
+    // Use SIMD-optimized version if available
+    if (comptime std.Target.x86.featureSetHas(builtin.cpu.features, .avx2)) {
+        return analyze_code_simd(allocator, code, code_hash);
+    }
     if (comptime !is_wasm) {
         cache_mutex.lock();
         defer cache_mutex.unlock();
@@ -811,6 +815,131 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
     };
 
     return analysis;
+}
+
+/// SIMD-optimized version of analyze_code for x86_64 with AVX2
+fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: [32]u8) CodeAnalysisError!*const CodeAnalysis {
+    if (comptime !is_wasm) {
+        cache_mutex.lock();
+        defer cache_mutex.unlock();
+    }
+
+    if (analysis_cache == null) {
+        analysis_cache = std.AutoHashMap([32]u8, *CodeAnalysis).init(allocator);
+    }
+
+    if (analysis_cache.?.get(code_hash)) |cached| {
+        return cached;
+    }
+
+    const analysis = allocator.create(CodeAnalysis) catch |err| {
+        Log.debug("Failed to allocate CodeAnalysis: {any}", .{err});
+        return err;
+    };
+    errdefer allocator.destroy(analysis);
+
+    analysis.code_segments = try bitvec.code_bitmap(allocator, code);
+    errdefer analysis.code_segments.deinit(allocator);
+
+    var jumpdests = std.ArrayList(u32).init(allocator);
+    defer jumpdests.deinit();
+
+    // SIMD optimization: Process 16 bytes at a time
+    const vec_size = 16;
+    const jumpdest_vec = @as(@Vector(vec_size, u8), @splat(constants.JUMPDEST));
+    
+    var i: usize = 0;
+    
+    // Process aligned chunks with SIMD
+    while (i + vec_size <= code.len) {
+        // Load 16 bytes from code
+        const code_vec: @Vector(vec_size, u8) = code[i..][0..vec_size].*;
+        
+        // Compare with JUMPDEST
+        const cmp_result = code_vec == jumpdest_vec;
+        
+        // Check each element of the comparison result
+        inline for (0..vec_size) |j| {
+            if (cmp_result[j]) {
+                const pos = i + j;
+                // Check if this position is code (not data)
+                if (analysis.code_segments.is_set_unchecked(pos)) {
+                    jumpdests.append(@as(u32, @intCast(pos))) catch |err| {
+                        Log.debug("Failed to append jumpdest position {d}: {any}", .{ pos, err });
+                        return err;
+                    };
+                }
+            }
+        }
+        
+        i += vec_size;
+    }
+    
+    // Handle remaining bytes
+    while (i < code.len) {
+        if (code[i] == constants.JUMPDEST and analysis.code_segments.is_set_unchecked(i)) {
+            jumpdests.append(@as(u32, @intCast(i))) catch |err| {
+                Log.debug("Failed to append jumpdest position {d}: {any}", .{ i, err });
+                return err;
+            };
+        }
+        i += 1;
+    }
+
+    // Sort for binary search (skip in ReleaseSmall mode to save ~49KB)
+    if (comptime builtin.mode != .ReleaseSmall) {
+        std.mem.sort(u32, jumpdests.items, {}, comptime std.sort.asc(u32));
+    }
+    analysis.jumpdest_positions = jumpdests.toOwnedSlice() catch |err| {
+        Log.debug("Failed to convert jumpdests to owned slice: {any}", .{err});
+        return err;
+    };
+
+    // Use SIMD for finding special opcodes
+    analysis.has_dynamic_jumps = contains_op_simd(code, &[_]u8{ constants.JUMP, constants.JUMPI });
+    analysis.has_selfdestruct = contains_op_simd(code, &[_]u8{constants.SELFDESTRUCT});
+    analysis.has_create = contains_op_simd(code, &[_]u8{ constants.CREATE, constants.CREATE2 });
+    
+    analysis.max_stack_depth = 0;
+    analysis.block_gas_costs = null;
+    analysis.has_static_jumps = false;
+
+    analysis_cache.?.put(code_hash, analysis) catch |err| {
+        Log.debug("Failed to cache code analysis: {any}", .{err});
+        // Continue without caching - return the analysis anyway
+    };
+
+    return analysis;
+}
+
+/// SIMD-optimized opcode search
+fn contains_op_simd(code: []const u8, opcodes: []const u8) bool {
+    const vec_size = 16;
+    
+    for (opcodes) |target_op| {
+        const target_vec = @as(@Vector(vec_size, u8), @splat(target_op));
+        
+        var i: usize = 0;
+        while (i + vec_size <= code.len) {
+            const code_vec: @Vector(vec_size, u8) = code[i..][0..vec_size].*;
+            const cmp_result = code_vec == target_vec;
+            
+            // Check if any element matches
+            inline for (0..vec_size) |j| {
+                if (cmp_result[j]) return true;
+            }
+            
+            i += vec_size;
+        }
+        
+        // Check remaining bytes
+        while (i < code.len) {
+            if (code[i] == target_op) return true;
+            i += 1;
+        }
+    }
+    
+    return false;
 }
 
 /// Check if code contains any of the given opcodes
