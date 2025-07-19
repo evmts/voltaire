@@ -480,12 +480,9 @@ pub fn op_addmod(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     if (n == 0) {
         result = 0;
     } else {
-        // The EVM ADDMOD operation computes (a + b) % n
-        // Since we're working with u256, overflow wraps automatically
-        // So (a +% b) gives us (a + b) mod 2^256
-        // Then we just need to compute that result mod n
-        const sum = a +% b; // Wrapping addition
-        result = sum % n;
+        // Use @addWithOverflow for more idiomatic overflow handling
+        const overflow = @addWithOverflow(a, b);
+        result = overflow[0] % n;
     }
 
     frame.stack.set_top_unsafe(result);
@@ -604,11 +601,11 @@ pub fn op_mulmod(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 /// 6. Push result to stack
 ///
 /// ## Algorithm
-/// Uses binary exponentiation (square-and-multiply):
-/// - Processes exponent bit by bit
-/// - Squares base for each bit position
-/// - Multiplies result when bit is set
-/// - All operations modulo 2^256
+/// Uses optimized square-and-multiply algorithm:
+/// - Processes exponent bit by bit from right to left
+/// - Only multiplies when a bit is set in the exponent
+/// - Reduces operations from O(n) to O(log n)
+/// - Example: 2^255 requires only 8 multiplications instead of 255
 ///
 /// ## Example
 /// Stack: [2, 10] => [1024]
@@ -635,6 +632,7 @@ pub fn op_exp(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
     const exp = frame.stack.pop_unsafe();
     const base = frame.stack.peek_unsafe().*;
 
+    // Calculate gas cost based on exponent byte size
     var exp_copy = exp;
     var byte_size: u64 = 0;
     while (exp_copy > 0) : (exp_copy >>= 8) {
@@ -646,15 +644,38 @@ pub fn op_exp(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
         try frame.consume_gas(gas_cost);
     }
 
+    // Early exit optimizations
+    if (exp == 0) {
+        frame.stack.set_top_unsafe(1);
+        return Operation.ExecutionResult{};
+    }
+    if (base == 0) {
+        frame.stack.set_top_unsafe(0);
+        return Operation.ExecutionResult{};
+    }
+    if (base == 1) {
+        frame.stack.set_top_unsafe(1);
+        return Operation.ExecutionResult{};
+    }
+    if (exp == 1) {
+        frame.stack.set_top_unsafe(base);
+        return Operation.ExecutionResult{};
+    }
+
+    // Square-and-multiply algorithm
     var result: u256 = 1;
     var b = base;
     var e = exp;
 
     while (e > 0) {
         if ((e & 1) == 1) {
-            result *%= b;
+            const mul_result = @mulWithOverflow(result, b);
+            result = mul_result[0];
         }
-        b *%= b;
+        if (e > 1) {
+            const square_result = @mulWithOverflow(b, b);
+            b = square_result[0];
+        }
         e >>= 1;
     }
 
