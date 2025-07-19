@@ -6,27 +6,7 @@ const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const gas_constants = @import("../constants/gas_constants.zig");
 const primitives = @import("primitives");
-
-// EIP-3529 (London) gas costs for SSTORE
-const SSTORE_SET_GAS: u64 = 20000;
-const SSTORE_RESET_GAS: u64 = 2900;
-const SSTORE_CLEARS_REFUND: u64 = 4800;
-
-fn calculate_sstore_gas(current: u256, new: u256) u64 {
-    if (current == new) {
-        @branchHint(.likely);
-        return 0;
-    }
-    if (current == 0) {
-        @branchHint(.unlikely);
-        return SSTORE_SET_GAS;
-    }
-    if (new == 0) {
-        @branchHint(.unlikely);
-        return SSTORE_RESET_GAS;
-    }
-    return SSTORE_RESET_GAS;
-}
+const storage_costs = @import("../gas/storage_costs.zig");
 
 pub fn op_sload(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
@@ -95,14 +75,20 @@ pub fn op_sstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         total_gas += gas_constants.ColdSloadCost;
     }
 
-    // Add dynamic gas based on value change
-    const dynamic_gas = calculate_sstore_gas(current_value, value);
-    total_gas += dynamic_gas;
+    // Get storage cost based on current hardfork and value change
+    const hardfork = vm.chain_rules.getHardfork();
+    const cost = storage_costs.calculateStorageCost(hardfork, current_value, value);
+    total_gas += cost.gas;
 
     // Consume all gas at once
     try frame.consume_gas(total_gas);
 
     try vm.state.set_storage(frame.contract.address, slot, value);
+    
+    // Apply refund if any
+    if (cost.refund > 0) {
+        frame.contract.add_gas_refund(cost.refund);
+    }
 
     return Operation.ExecutionResult{};
 }

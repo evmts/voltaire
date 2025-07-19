@@ -136,10 +136,14 @@ pub fn build(b: *std.Build) void {
 
     // Custom build option to disable precompiles
     const no_precompiles = b.option(bool, "no_precompiles", "Disable all EVM precompiles for minimal build") orelse false;
+    
+    // Custom build option to optimize for size
+    const optimize_size = b.option(bool, "optimize_size", "Optimize for binary size by using runtime calculations instead of lookup tables") orelse false;
 
     // Create build options module
     const build_options = b.addOptions();
     build_options.addOption(bool, "no_precompiles", no_precompiles);
+    build_options.addOption(bool, "optimize_size", optimize_size);
 
     const lib_mod = b.createModule(.{
         .root_source_file = b.path("src/root.zig"),
