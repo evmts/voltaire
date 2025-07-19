@@ -177,13 +177,13 @@ fn calculate_63_64_gas(remaining_gas: u64) u64 {
 
 /// Check call depth limit shared by all call operations
 /// Returns true if depth limit is exceeded, false otherwise
-inline fn validate_call_depth(frame: *Frame) bool {
+fn validate_call_depth(frame: *Frame) bool {
     return frame.depth >= 1024;
 }
 
 /// Handle memory expansion for call arguments
 /// Returns the arguments slice or empty slice if size is 0
-inline fn get_call_args(frame: *Frame, args_offset: u256, args_size: u256) ExecutionError.Error![]const u8 {
+fn get_call_args(frame: *Frame, args_offset: u256, args_size: u256) ExecutionError.Error![]const u8 {
     if (args_size == 0) return &[_]u8{};
     
     try check_offset_bounds(args_offset);
@@ -197,7 +197,7 @@ inline fn get_call_args(frame: *Frame, args_offset: u256, args_size: u256) Execu
 }
 
 /// Ensure return memory is available for writing results
-inline fn ensure_return_memory(frame: *Frame, ret_offset: u256, ret_size: u256) ExecutionError.Error!void {
+fn ensure_return_memory(frame: *Frame, ret_offset: u256, ret_size: u256) ExecutionError.Error!void {
     if (ret_size == 0) return;
     
     try check_offset_bounds(ret_offset);
@@ -211,7 +211,7 @@ inline fn ensure_return_memory(frame: *Frame, ret_offset: u256, ret_size: u256) 
 
 /// Handle address conversion and EIP-2929 access cost
 /// Returns the target address
-inline fn handle_address_access(vm: *Vm, frame: *Frame, to: u256) ExecutionError.Error!primitives.Address.Address {
+fn handle_address_access(vm: *Vm, frame: *Frame, to: u256) ExecutionError.Error!primitives.Address.Address {
     const to_address = from_u256(to);
     
     // EIP-2929: Check if address is cold and consume appropriate gas
@@ -227,7 +227,7 @@ inline fn handle_address_access(vm: *Vm, frame: *Frame, to: u256) ExecutionError
 }
 
 /// Calculate gas for call operations using 63/64 rule and value stipend
-inline fn calculate_call_gas_amount(frame: *Frame, gas: u256, value: u256) u64 {
+fn calculate_call_gas_amount(frame: *Frame, gas: u256, value: u256) u64 {
     var gas_for_call = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
     gas_for_call = @min(gas_for_call, frame.gas_remaining - (frame.gas_remaining / 64));
     
@@ -239,7 +239,7 @@ inline fn calculate_call_gas_amount(frame: *Frame, gas: u256, value: u256) u64 {
 }
 
 /// Write return data to memory if requested and update gas
-inline fn handle_call_result(frame: *Frame, result: anytype, ret_offset: u256, ret_size: u256, gas_for_call: u64) ExecutionError.Error!void {
+fn handle_call_result(frame: *Frame, result: anytype, ret_offset: u256, ret_size: u256, gas_for_call: u64) ExecutionError.Error!void {
     // Update gas remaining
     frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;
     
@@ -272,7 +272,7 @@ inline fn handle_call_result(frame: *Frame, result: anytype, ret_offset: u256, r
 // ============================================================================
 
 /// Check static call restrictions for CREATE operations
-inline fn validate_create_static_context(frame: *Frame) ExecutionError.Error!void {
+fn validate_create_static_context(frame: *Frame) ExecutionError.Error!void {
     if (frame.is_static) {
         @branchHint(.unlikely);
         return ExecutionError.Error.WriteProtection;
@@ -280,7 +280,7 @@ inline fn validate_create_static_context(frame: *Frame) ExecutionError.Error!voi
 }
 
 /// Extract initcode from memory with bounds checking and gas accounting
-inline fn get_initcode_from_memory(frame: *Frame, vm: *Vm, offset: u256, size: u256) ExecutionError.Error![]const u8 {
+fn get_initcode_from_memory(frame: *Frame, vm: *Vm, offset: u256, size: u256) ExecutionError.Error![]const u8 {
     // Check initcode size bounds
     try check_offset_bounds(size);
     const size_usize = @as(usize, @intCast(size));
@@ -308,7 +308,7 @@ inline fn get_initcode_from_memory(frame: *Frame, vm: *Vm, offset: u256, size: u
 }
 
 /// Calculate and consume gas for CREATE operations
-inline fn consume_create_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
+fn consume_create_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
     const init_code_cost = @as(u64, @intCast(init_code.len)) * gas_constants.CreateDataGas;
     
     // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
@@ -321,7 +321,7 @@ inline fn consume_create_gas(frame: *Frame, vm: *Vm, init_code: []const u8) Exec
 }
 
 /// Calculate and consume gas for CREATE2 operations (includes hash cost)
-inline fn consume_create2_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
+fn consume_create2_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
     const init_code_cost = @as(u64, @intCast(init_code.len)) * gas_constants.CreateDataGas;
     const hash_cost = @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.Keccak256WordGas;
     
@@ -335,7 +335,7 @@ inline fn consume_create2_gas(frame: *Frame, vm: *Vm, init_code: []const u8) Exe
 }
 
 /// Handle CREATE result with gas updates and return data
-inline fn handle_create_result(frame: *Frame, vm: *Vm, result: anytype, gas_for_call: u64) ExecutionError.Error!void {
+fn handle_create_result(frame: *Frame, vm: *Vm, result: anytype, gas_for_call: u64) ExecutionError.Error!void {
     _ = gas_for_call;
     // Update gas remaining
     frame.gas_remaining = frame.gas_remaining / 64 + result.gas_left;
