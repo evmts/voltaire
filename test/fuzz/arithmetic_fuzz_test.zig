@@ -25,9 +25,14 @@ test "fuzz_arithmetic_basic_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init_minimal(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test ADD operation
     try frame.stack.append(5);
@@ -63,9 +68,14 @@ test "fuzz_arithmetic_overflow_cases" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init_minimal(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test ADD with max values (should wrap around)
     try frame.stack.append(std.math.maxInt(u256));
@@ -101,9 +111,14 @@ test "fuzz_arithmetic_division_by_zero" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init_minimal(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test DIV by zero
     try frame.stack.append(0);  // divisor
@@ -139,9 +154,14 @@ test "fuzz_arithmetic_modulo_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init_minimal(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test MOD operation: 10 % 3 = 1
     try frame.stack.append(10); // dividend (a)

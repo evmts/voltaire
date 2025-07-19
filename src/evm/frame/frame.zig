@@ -142,43 +142,6 @@ pub fn init(allocator: std.mem.Allocator, contract: *Contract) !Frame {
     };
 }
 
-/// Create a new execution frame with minimal settings.
-///
-/// Initializes a frame with empty stack and memory, ready for execution.
-/// Gas and other parameters must be set after initialization.
-///
-/// @param allocator Memory allocator for dynamic allocations
-/// @param contract The contract to execute
-/// @return New frame instance
-/// @throws OutOfMemory if memory initialization fails
-///
-/// Example:
-/// ```zig
-/// var frame = try Frame.init_minimal(allocator, &contract);
-/// defer frame.deinit();
-/// frame.gas_remaining = gas_limit;
-/// frame.input = calldata;
-/// ```
-pub fn init_minimal(allocator: std.mem.Allocator, contract: *Contract) !Frame {
-    return Frame{
-        .gas_remaining = 0,
-        .pc = 0,
-        .contract = contract,
-        .allocator = allocator,
-        .stop = false,
-        .is_static = false,
-        .depth = 0,
-        .cost = 0,
-        .err = null,
-        .input = &[_]u8{},
-        .output = &[_]u8{},
-        .op = &.{},
-        .memory = try Memory.init_default(allocator),
-        .stack = .{},
-        .return_data = ReturnData.init(allocator),
-    };
-}
-
 /// Create a new execution frame with specified parameters.
 ///
 /// Creates a frame with the provided execution context. This is the main
@@ -332,7 +295,7 @@ pub const FrameBuilder = struct {
     vm: ?*Vm = null,
     gas: u64 = 1000000,
     contract: ?*Contract = null,
-    caller: primitives.Address = primitives.Address.zero(),
+    caller: primitives.Address = .{},
     input: []const u8 = &.{},
     value: u256 = 0,
     is_static: bool = false,
@@ -449,15 +412,22 @@ pub const FrameBuilder = struct {
         if (self.vm == null) return BuildError.MissingVm;
         if (self.contract == null) return BuildError.MissingContract;
         
-        return Frame.init_full(
-            self.allocator,
-            self.vm.?,
-            self.gas,
-            self.contract.?,
-            self.caller,
-            self.input,
-        ) catch |err| switch (err) {
-            error.OutOfMemory => BuildError.OutOfMemory,
+        return Frame{
+            .gas_remaining = self.gas,
+            .pc = 0,
+            .contract = self.contract.?,
+            .allocator = self.allocator,
+            .stop = false,
+            .is_static = self.is_static,
+            .depth = self.depth,
+            .cost = 0,
+            .err = null,
+            .input = self.input,
+            .output = &[_]u8{},
+            .op = &.{},
+            .memory = Memory.init_default(self.allocator) catch return BuildError.OutOfMemory,
+            .stack = .{},
+            .return_data = ReturnData.init(self.allocator),
         };
     }
 };

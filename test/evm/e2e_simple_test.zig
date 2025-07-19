@@ -139,11 +139,15 @@ test "E2E: Arithmetic operations" {
     var frame = try allocator.create(Frame);
     defer allocator.destroy(frame);
 
-    frame.* = try Frame.init_minimal(allocator, &test_contract);
+    var builder = Frame.builder(allocator);
+    frame.* = try builder
+        .withVm(evm_instance)
+        .withContract(&test_contract)
+        .withGas(100_000)
+        .withCaller(.{})
+        .withInput(test_contract.input)
+        .build();
     defer frame.deinit();
-
-    frame.gas_remaining = 100_000;
-    frame.input = test_contract.input;
 
     // Test ADD operation: 25 + 17 = 42
     try frame.stack.append(25);

@@ -25,9 +25,14 @@ test "fuzz_comparison_lt_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init_minimal(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test LT operation: 5 < 10
     try frame.stack.append(5);  // a
@@ -63,9 +68,14 @@ test "fuzz_comparison_eq_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init_minimal(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test EQ operation: 42 == 42
     try frame.stack.append(42); // b
@@ -101,9 +111,14 @@ test "fuzz_comparison_iszero_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init_minimal(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test ISZERO operation with zero
     try frame.stack.append(0);

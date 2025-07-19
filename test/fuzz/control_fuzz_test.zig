@@ -25,9 +25,14 @@ test "fuzz_control_pc_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init_minimal(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test PC operation
     const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
@@ -60,9 +65,14 @@ test "fuzz_control_gas_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init_minimal(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     const initial_gas = frame.gas_remaining;
     
@@ -97,9 +107,14 @@ test "fuzz_control_jumpdest_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init_minimal(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test JUMPDEST operation (should be a no-op)
     const initial_stack_size = frame.stack.size;

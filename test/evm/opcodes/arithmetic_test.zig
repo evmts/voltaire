@@ -32,9 +32,14 @@ test "Arithmetic: ADD basic operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var builder = Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test 1: Simple addition
     try frame.stack.append(5);
@@ -97,9 +102,14 @@ test "Arithmetic: SUB basic operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var builder = Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -153,9 +163,14 @@ test "Arithmetic: MUL basic operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var builder = Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -211,9 +226,14 @@ test "Arithmetic: DIV basic operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var builder = Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -266,9 +286,14 @@ test "Arithmetic: MOD basic operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var builder = Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -321,9 +346,14 @@ test "Arithmetic: ADDMOD complex operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var builder = Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -380,9 +410,14 @@ test "Arithmetic: MULMOD complex operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var builder = Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -440,9 +475,14 @@ test "Arithmetic: EXP exponential operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var builder = Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -506,9 +546,14 @@ test "Arithmetic: Stack underflow errors" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var builder = Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
