@@ -245,8 +245,7 @@ pub fn init_with_state(
     var memory_to_use = memory orelse try Memory.init_default(allocator);
     errdefer if (memory == null) memory_to_use.deinit();
     
-    var stack_to_use = stack orelse try Stack.init(allocator);
-    errdefer if (stack == null) stack_to_use.deinit();
+    const stack_to_use = stack orelse Stack{};
     
     return Frame{
         .gas_remaining = gas_remaining orelse 0,
@@ -430,7 +429,7 @@ pub const FrameBuilder = struct {
             .output = &[_]u8{},
             .op = &.{},
             .memory = Memory.init_default(self.allocator) catch return BuildError.OutOfMemory,
-            .stack = Stack.init(self.allocator) catch return BuildError.OutOfMemory,
+            .stack = .{},
             .return_data = ReturnData.init(self.allocator),
         };
     }
