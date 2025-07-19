@@ -1,4 +1,5 @@
 const std = @import("std");
+const primitives = @import("primitives");
 const Memory = @import("../memory/memory.zig");
 const Stack = @import("../stack/stack.zig");
 const Contract = @import("./contract.zig");
@@ -231,4 +232,727 @@ pub fn consume_gas(self: *Frame, amount: u64) ConsumeGasError!void {
         return ConsumeGasError.OutOfGas;
     }
     self.gas_remaining -= amount;
+}
+
+// ============================================================================
+// COMPREHENSIVE TESTS FOR FRAME MODULE
+// ============================================================================
+
+test "Frame.init creates frame with default settings" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Test basic frame initialization
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    
+    // Verify default values
+    try std.testing.expect(frame.stop == false);
+    try std.testing.expect(frame.gas_remaining == 0);
+    try std.testing.expect(frame.is_static == false);
+    try std.testing.expect(frame.depth == 0);
+    try std.testing.expect(frame.pc == 0);
+    try std.testing.expect(frame.cost == 0);
+    try std.testing.expect(frame.err == null);
+    try std.testing.expect(frame.input.len == 0);
+    try std.testing.expect(frame.output.len == 0);
+    
+    // Verify contract reference
+    try std.testing.expect(frame.contract == &contract);
+    try std.testing.expect(frame.allocator.ptr == allocator.ptr);
+}
+
+test "Frame.init_with_state creates frame with custom settings" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    const test_input = &[_]u8{0x01, 0x02, 0x03, 0x04};
+    const test_output = &[_]u8{0x05, 0x06, 0x07, 0x08};
+    
+    // Test frame initialization with custom state
+    var frame = try Frame.init_with_state(
+        allocator,
+        &contract,
+        "TEST_OP",
+        42,
+        ExecutionError.Error.StackUnderflow,
+        null,
+        null,
+        true,
+        1000000,
+        true,
+        test_input,
+        5,
+        test_output,
+        100
+    );
+    defer frame.deinit();
+    
+    // Verify custom values were set correctly
+    try std.testing.expectEqualStrings("TEST_OP", frame.op);
+    try std.testing.expect(frame.cost == 42);
+    try std.testing.expect(frame.err == ExecutionError.Error.StackUnderflow);
+    try std.testing.expect(frame.stop == true);
+    try std.testing.expect(frame.gas_remaining == 1000000);
+    try std.testing.expect(frame.is_static == true);
+    try std.testing.expect(frame.depth == 5);
+    try std.testing.expect(frame.pc == 100);
+    try std.testing.expectEqualSlices(u8, test_input, frame.input);
+    try std.testing.expectEqualSlices(u8, test_output, frame.output);
+}
+
+test "Frame.init_with_state uses defaults for null parameters" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Test frame initialization with null parameters (should use defaults)
+    var frame = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+    defer frame.deinit();
+    
+    // Verify defaults were used
+    try std.testing.expect(frame.cost == 0);
+    try std.testing.expect(frame.err == null);
+    try std.testing.expect(frame.stop == false);
+    try std.testing.expect(frame.gas_remaining == 0);
+    try std.testing.expect(frame.is_static == false);
+    try std.testing.expect(frame.depth == 0);
+    try std.testing.expect(frame.pc == 0);
+    try std.testing.expect(frame.input.len == 0);
+    try std.testing.expect(frame.output.len == 0);
+}
+
+test "Frame.consume_gas with sufficient gas" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Create frame with initial gas
+    var frame = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1000,
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+    defer frame.deinit();
+    
+    // Test consuming gas within limits
+    try frame.consume_gas(100);
+    try std.testing.expect(frame.gas_remaining == 900);
+    
+    try frame.consume_gas(400);
+    try std.testing.expect(frame.gas_remaining == 500);
+    
+    try frame.consume_gas(500);
+    try std.testing.expect(frame.gas_remaining == 0);
+}
+
+test "Frame.consume_gas with insufficient gas returns OutOfGas" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Create frame with limited gas
+    var frame = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        100,
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+    defer frame.deinit();
+    
+    // Test insufficient gas scenario
+    try std.testing.expectError(ConsumeGasError.OutOfGas, frame.consume_gas(101));
+    
+    // Gas should remain unchanged after failed consumption
+    try std.testing.expect(frame.gas_remaining == 100);
+    
+    // Test exact gas consumption
+    try frame.consume_gas(100);
+    try std.testing.expect(frame.gas_remaining == 0);
+    
+    // Test consumption when gas is zero
+    try std.testing.expectError(ConsumeGasError.OutOfGas, frame.consume_gas(1));
+}
+
+test "Frame.consume_gas with zero amount" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Create frame with some gas
+    var frame = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1000,
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+    defer frame.deinit();
+    
+    // Test consuming zero gas
+    try frame.consume_gas(0);
+    try std.testing.expect(frame.gas_remaining == 1000);
+}
+
+test "Frame.deinit properly cleans up memory" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Create frame and expand memory to test cleanup
+    var frame = try Frame.init(allocator, &contract);
+    
+    // Force memory allocation by expanding memory
+    _ = try frame.memory.ensure_capacity(1024);
+    
+    // This should not leak memory
+    frame.deinit();
+}
+
+test "Frame stack operations work correctly" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    
+    // Test stack operations
+    try frame.stack.push(42);
+    try frame.stack.push(100);
+    
+    const value1 = try frame.stack.pop();
+    try std.testing.expect(value1 == 100);
+    
+    const value2 = try frame.stack.pop();
+    try std.testing.expect(value2 == 42);
+    
+    // Stack should be empty now
+    try std.testing.expectError(Stack.StackError.StackUnderflow, frame.stack.pop());
+}
+
+test "Frame memory operations work correctly" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    
+    // Test memory operations
+    const test_data = [_]u8{0x01, 0x02, 0x03, 0x04};
+    
+    // Write to memory
+    try frame.memory.write(0, &test_data);
+    
+    // Read from memory
+    var read_buffer: [4]u8 = undefined;
+    try frame.memory.read(0, &read_buffer);
+    
+    try std.testing.expectEqualSlices(u8, &test_data, &read_buffer);
+}
+
+test "Frame static call restrictions" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Create static frame
+    var frame = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        true, // is_static = true
+        null,
+        null,
+        null,
+        null
+    );
+    defer frame.deinit();
+    
+    // Verify static flag is set
+    try std.testing.expect(frame.is_static == true);
+}
+
+test "Frame call depth tracking" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Test different call depths
+    var frame_depth_0 = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        0,
+        null,
+        null
+    );
+    defer frame_depth_0.deinit();
+    
+    var frame_depth_5 = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        5,
+        null,
+        null
+    );
+    defer frame_depth_5.deinit();
+    
+    var frame_depth_1024 = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1024,
+        null,
+        null
+    );
+    defer frame_depth_1024.deinit();
+    
+    try std.testing.expect(frame_depth_0.depth == 0);
+    try std.testing.expect(frame_depth_5.depth == 5);
+    try std.testing.expect(frame_depth_1024.depth == 1024);
+}
+
+test "Frame return data handling" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Create frame
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    
+    // Test return data operations
+    const test_return_data = [_]u8{0xde, 0xad, 0xbe, 0xef};
+    
+    // Set return data
+    try frame.return_data.set_data(&test_return_data);
+    
+    // Verify return data
+    try std.testing.expectEqualSlices(u8, &test_return_data, frame.return_data.data());
+    try std.testing.expect(frame.return_data.size() == test_return_data.len);
+}
+
+test "Frame calldata handling" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    const test_calldata = [_]u8{0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0};
+    
+    // Create frame with calldata
+    var frame = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        &test_calldata,
+        null,
+        null,
+        null
+    );
+    defer frame.deinit();
+    
+    // Verify calldata
+    try std.testing.expectEqualSlices(u8, &test_calldata, frame.input);
+}
+
+test "Frame program counter manipulation" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Test PC manipulation
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    
+    // Initial PC should be 0
+    try std.testing.expect(frame.pc == 0);
+    
+    // Modify PC
+    frame.pc = 42;
+    try std.testing.expect(frame.pc == 42);
+    
+    frame.pc += 10;
+    try std.testing.expect(frame.pc == 52);
+}
+
+test "Frame error state management" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Test error state
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    
+    // Initially no error
+    try std.testing.expect(frame.err == null);
+    
+    // Set error
+    frame.err = ExecutionError.Error.OutOfGas;
+    try std.testing.expect(frame.err == ExecutionError.Error.OutOfGas);
+    
+    // Clear error
+    frame.err = null;
+    try std.testing.expect(frame.err == null);
+}
+
+test "Frame stop flag management" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Test stop flag
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    
+    // Initially not stopped
+    try std.testing.expect(frame.stop == false);
+    
+    // Set stop flag
+    frame.stop = true;
+    try std.testing.expect(frame.stop == true);
+    
+    // Clear stop flag
+    frame.stop = false;
+    try std.testing.expect(frame.stop == false);
+}
+
+test "Frame with empty contract" {
+    const allocator = std.testing.allocator;
+    
+    // Create an empty contract
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{}, // Empty bytecode
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Test frame with empty contract
+    var frame = try Frame.init(allocator, &contract);
+    defer frame.deinit();
+    
+    // Should work normally
+    try std.testing.expect(frame.contract == &contract);
+    try std.testing.expect(frame.pc == 0);
+    try std.testing.expect(frame.stop == false);
+}
+
+test "Frame gas consumption edge cases" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Test with maximum u64 gas
+    var frame_max_gas = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        std.math.maxInt(u64),
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+    defer frame_max_gas.deinit();
+    
+    // Should be able to consume large amounts
+    try frame_max_gas.consume_gas(1000000);
+    try std.testing.expect(frame_max_gas.gas_remaining == std.math.maxInt(u64) - 1000000);
+    
+    // Test with zero gas
+    var frame_zero_gas = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+    defer frame_zero_gas.deinit();
+    
+    // Should fail immediately
+    try std.testing.expectError(ConsumeGasError.OutOfGas, frame_zero_gas.consume_gas(1));
+}
+
+test "Frame multiple initialization and cleanup cycles" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Test multiple init/deinit cycles
+    var i: u32 = 0;
+    while (i < 10) : (i += 1) {
+        var frame = try Frame.init(allocator, &contract);
+        
+        // Use the frame
+        try frame.stack.push(i);
+        try frame.consume_gas(i * 10);
+        
+        frame.deinit();
+    }
+}
+
+test "Frame memory allocation and stack operations stress test" {
+    const allocator = std.testing.allocator;
+    
+    // Create a minimal contract for testing
+    var contract = Contract.init(
+        allocator,
+        &[_]u8{0x60, 0x10, 0x60, 0x00, 0x52}, // PUSH1 16 PUSH1 0 MSTORE
+        .{ .address = primitives.Address.zero() }
+    ) catch unreachable;
+    defer contract.deinit(allocator, null);
+    
+    // Test frame with intensive operations
+    var frame = try Frame.init_with_state(
+        allocator,
+        &contract,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        1000000,
+        null,
+        null,
+        null,
+        null,
+        null
+    );
+    defer frame.deinit();
+    
+    // Stress test stack operations
+    var i: u32 = 0;
+    while (i < 100) : (i += 1) {
+        try frame.stack.push(i);
+    }
+    
+    // Pop all values back
+    i = 100;
+    while (i > 0) : (i -= 1) {
+        const value = try frame.stack.pop();
+        try std.testing.expect(value == i - 1);
+    }
+    
+    // Stress test memory operations
+    const test_data = [_]u8{0xaa} ** 1024;
+    try frame.memory.write(0, &test_data);
+    
+    var read_buffer: [1024]u8 = undefined;
+    try frame.memory.read(0, &read_buffer);
+    
+    try std.testing.expectEqualSlices(u8, &test_data, &read_buffer);
 }
