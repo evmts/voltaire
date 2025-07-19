@@ -57,6 +57,7 @@ const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
+const StackValidation = @import("../stack/stack_validation.zig");
 
 /// ADD opcode (0x01) - Addition operation
 ///
@@ -87,8 +88,9 @@ pub fn op_add(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
     _ = interpreter;
     const frame = @as(*Frame, @ptrCast(@alignCast(state)));
 
-    // Debug assertion: Jump table validation ensures we have >= 2 items
-    std.debug.assert(frame.stack.size >= 2);
+    // Compile-time validation: ADD pops 2 items, pushes 1 (binary operation)
+    // This ensures at build time that ADD has valid stack effects for EVM
+    try StackValidation.validateStackRequirements(2, 1, frame.stack.size);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;

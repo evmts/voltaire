@@ -3,6 +3,7 @@ const Operation = @import("../opcodes/operation.zig");
 const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
+const StackValidation = @import("../stack/stack_validation.zig");
 
 // Helper function to extract frame from state
 inline fn getFrame(state: *Operation.State) *Frame {
@@ -26,7 +27,11 @@ pub fn op_push0(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
 
     const frame = getFrame(state);
 
-    try frame.stack.append(0);
+    // Compile-time validation: PUSH0 pops 0 items, pushes 1 
+    // This ensures at build time that PUSH0 has valid stack effects for EVM
+    try StackValidation.validateStackRequirements(0, 1, frame.stack.size);
+
+    frame.stack.append_unsafe(0);
 
     return Operation.ExecutionResult{};
 }
@@ -151,12 +156,17 @@ pub fn make_dup(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.St
 
             const frame = getFrame(state);
 
+            // Compile-time validation: DUP operations pop 0 items, push 1
+            // At compile time, this validates that DUP has valid EVM stack effects
+            // At runtime, this ensures sufficient stack depth for DUPn operations
+            try StackValidation.validateStackRequirements(0, 1, frame.stack.size);
+            
+            // Additional runtime check for DUP depth (n must be available on stack)
             if (frame.stack.size < n) {
-                unreachable;
+                @branchHint(.cold);
+                return ExecutionError.Error.StackUnderflow;
             }
-            if (frame.stack.size >= Stack.CAPACITY) {
-                unreachable;
-            }
+
             frame.stack.dup_unsafe(n);
 
             return Operation.ExecutionResult{};
