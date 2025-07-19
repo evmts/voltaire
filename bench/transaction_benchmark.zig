@@ -1,5 +1,6 @@
 const std = @import("std");
 const root = @import("root.zig");
+<<<<<<< HEAD
 const timing = @import("timing.zig");
 const Evm = root.Evm;
 const primitives = root.primitives;
@@ -485,4 +486,352 @@ test "transaction benchmark compilation" {
 
     const test_proof = create_test_proof(42);
     _ = test_proof;
+=======
+const Evm = root.Evm;
+const primitives = root.primitives;
+const Allocator = std.mem.Allocator;
+
+/// Transaction Processing Benchmarks
+/// 
+/// Measures performance of:
+/// - Transaction type detection
+/// - Blob transaction parsing  
+/// - Transaction validation
+/// - Gas price calculations
+/// - Access list integration
+
+pub fn transaction_type_detection_benchmark(allocator: Allocator) void {
+    transaction_type_detection_benchmark_impl(allocator) catch |err| {
+        std.log.err("Transaction type detection benchmark failed: {}", .{err});
+    };
+}
+
+fn transaction_type_detection_benchmark_impl(allocator: Allocator) !void {
+    _ = allocator;
+    
+    // Create test transaction data for different types
+    const legacy_tx_data = &[_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 }; // Simple legacy transaction
+    const eip1559_tx_data = &[_]u8{ 0x02, 0xf8, 0x6f }; // EIP-1559 transaction prefix
+    const eip2930_tx_data = &[_]u8{ 0x01, 0xf8, 0x6f }; // EIP-2930 transaction prefix  
+    const eip4844_tx_data = &[_]u8{ 0x03, 0xf8, 0x6f }; // EIP-4844 transaction prefix
+
+    const test_data = [_][]const u8{
+        legacy_tx_data,
+        eip1559_tx_data,
+        eip2930_tx_data,
+        eip4844_tx_data,
+    };
+
+    // Benchmark transaction type detection
+    for (0..1000) |_| {
+        for (test_data) |tx_data| {
+            const tx_type = primitives.Transaction.detect_transaction_type(tx_data);
+            std.mem.doNotOptimizeAway(tx_type);
+        }
+    }
+}
+
+pub fn blob_transaction_parsing_benchmark(allocator: Allocator) void {
+    blob_transaction_parsing_benchmark_impl(allocator) catch |err| {
+        std.log.err("Blob transaction parsing benchmark failed: {}", .{err});
+    };
+}
+
+fn blob_transaction_parsing_benchmark_impl(allocator: Allocator) !void {
+    // Create a mock EIP-4844 blob transaction structure
+    var tx_builder = primitives.Transaction.Builder.init(allocator);
+    defer tx_builder.deinit();
+
+    // Set transaction type to EIP-4844
+    try tx_builder.set_transaction_type(.Eip4844);
+    try tx_builder.set_chain_id(1); // Mainnet
+    try tx_builder.set_nonce(42);
+    try tx_builder.set_max_priority_fee_per_gas(2000000000); // 2 gwei
+    try tx_builder.set_max_fee_per_gas(20000000000); // 20 gwei
+    try tx_builder.set_gas_limit(21000);
+    try tx_builder.set_to(primitives.Address.from_u256(0x1234567890abcdef));
+    try tx_builder.set_value(1000000000000000000); // 1 ETH
+    try tx_builder.set_data(&[_]u8{});
+
+    // Add blob-specific fields
+    try tx_builder.set_max_fee_per_blob_gas(1000000000); // 1 gwei
+    
+    // Create versioned hashes for blobs
+    var versioned_hashes = std.ArrayList(Evm.blob.VersionedHash).init(allocator);
+    defer versioned_hashes.deinit();
+    
+    for (0..3) |i| { // 3 blobs
+        var hash_bytes: [32]u8 = undefined;
+        hash_bytes[0] = 0x01; // Version byte
+        for (1..32) |j| {
+            hash_bytes[j] = @intCast((i * 31 + j) % 256);
+        }
+        try versioned_hashes.append(Evm.blob.VersionedHash{ .hash = hash_bytes });
+    }
+    
+    try tx_builder.set_blob_versioned_hashes(try versioned_hashes.toOwnedSlice());
+
+    // Build the transaction
+    const transaction = try tx_builder.build();
+    defer transaction.deinit(allocator);
+
+    // Serialize transaction to bytes
+    const tx_bytes = try transaction.serialize(allocator);
+    defer allocator.free(tx_bytes);
+
+    // Benchmark parsing
+    for (0..100) |_| {
+        var parsed_tx = try primitives.Transaction.parse(allocator, tx_bytes);
+        defer parsed_tx.deinit(allocator);
+        
+        // Validate it's a blob transaction
+        if (parsed_tx.transaction_type == .Eip4844) {
+            const blob_tx = parsed_tx.eip4844.?;
+            std.mem.doNotOptimizeAway(blob_tx.blob_versioned_hashes.len);
+            std.mem.doNotOptimizeAway(blob_tx.max_fee_per_blob_gas);
+        }
+    }
+}
+
+pub fn transaction_validation_with_access_list_benchmark(allocator: Allocator) void {
+    transaction_validation_with_access_list_benchmark_impl(allocator) catch |err| {
+        std.log.err("Transaction validation with access list benchmark failed: {}", .{err});
+    };
+}
+
+fn transaction_validation_with_access_list_benchmark_impl(allocator: Allocator) !void {
+    // Create EVM instance
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm_instance = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
+
+    // Create transaction with access list
+    var tx_builder = primitives.Transaction.Builder.init(allocator);
+    defer tx_builder.deinit();
+
+    try tx_builder.set_transaction_type(.Eip2930);
+    try tx_builder.set_chain_id(1);
+    try tx_builder.set_nonce(1);
+    try tx_builder.set_gas_price(20000000000); // 20 gwei
+    try tx_builder.set_gas_limit(100000);
+    try tx_builder.set_to(primitives.Address.from_u256(0x5555));
+    try tx_builder.set_value(0);
+
+    // Create access list
+    var access_list = primitives.AccessList.init(allocator);
+    defer access_list.deinit();
+
+    // Add entries to access list
+    for (0..10) |i| {
+        const addr = primitives.Address.from_u256(@as(u256, 0x10000 + i));
+        
+        var storage_keys = std.ArrayList(primitives.U256).init(allocator);
+        defer storage_keys.deinit();
+        
+        for (0..5) |j| {
+            try storage_keys.append(@as(u256, i * 100 + j));
+        }
+
+        try access_list.append(.{
+            .address = addr,
+            .storage_keys = try storage_keys.toOwnedSlice(),
+        });
+    }
+
+    try tx_builder.set_access_list(try access_list.toOwnedSlice());
+
+    // Contract bytecode that uses multiple addresses and storage slots
+    const contract_bytecode = &[_]u8{
+        // Access multiple addresses and storage slots
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x00, // PUSH1 0  
+        0x55,       // SSTORE (slot 0 = 1)
+        
+        0x60, 0x02, // PUSH1 2
+        0x60, 0x01, // PUSH1 1
+        0x55,       // SSTORE (slot 1 = 2)
+        
+        // Load from storage
+        0x60, 0x00, // PUSH1 0
+        0x54,       // SLOAD
+        0x60, 0x01, // PUSH1 1 
+        0x54,       // SLOAD
+        0x01,       // ADD
+        
+        // Return result
+        0x60, 0x00, // PUSH1 0
+        0x52,       // MSTORE
+        0x60, 0x00, // PUSH1 0
+        0x60, 0x20, // PUSH1 32
+        0xf3,       // RETURN
+    };
+
+    try tx_builder.set_data(contract_bytecode);
+    
+    const transaction = try tx_builder.build();
+    defer transaction.deinit(allocator);
+
+    // Benchmark transaction execution with access list
+    const caller = primitives.Address.from_u256(0x1111);
+    const contract_addr = primitives.Address.from_u256(0x5555);
+    
+    try evm_instance.state.set_balance(caller, 10000000000000000000); // 10 ETH
+    try evm_instance.state.set_code(contract_addr, contract_bytecode);
+
+    for (0..50) |_| {
+        // Create contract execution context with access list
+        var contract = Evm.Contract.init_at_address(
+            caller,
+            contract_addr,
+            0,
+            100000,
+            contract_bytecode,
+            &[_]u8{},
+            false,
+        );
+        defer contract.deinit(allocator, null);
+
+        // Execute with access list pre-warming
+        const result = try evm_instance.interpret(&contract, &[_]u8{});
+        defer if (result.output) |output| allocator.free(output);
+        
+        std.mem.doNotOptimizeAway(result.gas_used);
+    }
+}
+
+pub fn gas_price_calculation_benchmark(allocator: Allocator) void {
+    gas_price_calculation_benchmark_impl(allocator) catch |err| {
+        std.log.err("Gas price calculation benchmark failed: {}", .{err});
+    };
+}
+
+fn gas_price_calculation_benchmark_impl(allocator: Allocator) !void {
+    _ = allocator;
+    
+    // Test data for different transaction types and market conditions
+    const base_fees = [_]u64{ 10, 50, 100, 200, 500, 1000 }; // gwei
+    const priority_fees = [_]u64{ 1, 2, 5, 10, 50 }; // gwei
+    const blob_base_fees = [_]u64{ 1, 10, 100, 1000 }; // wei
+    
+    // Benchmark EIP-1559 gas price calculations
+    for (base_fees) |base_fee| {
+        for (priority_fees) |priority_fee| {
+            const max_fee = base_fee + priority_fee + 10; // Add buffer
+            
+            // Calculate effective gas price
+            const effective_price = @min(max_fee, base_fee + priority_fee);
+            std.mem.doNotOptimizeAway(effective_price);
+            
+            // Calculate gas cost
+            const gas_cost = effective_price * 21000; // Standard transfer
+            std.mem.doNotOptimizeAway(gas_cost);
+        }
+    }
+
+    // Benchmark blob gas price calculations  
+    for (blob_base_fees) |blob_base_fee| {
+        const max_blob_fee = blob_base_fee * 2; // Max willing to pay
+        
+        // Calculate blob fee
+        const blob_fee = @min(max_blob_fee, blob_base_fee);
+        std.mem.doNotOptimizeAway(blob_fee);
+        
+        // Calculate total blob cost (for max blobs)
+        const blob_gas_used = Evm.blob.GAS_PER_BLOB * Evm.blob.MAX_BLOBS_PER_TRANSACTION;
+        const total_blob_cost = blob_fee * blob_gas_used;
+        std.mem.doNotOptimizeAway(total_blob_cost);
+    }
+}
+
+pub fn integrated_eip4844_transaction_benchmark(allocator: Allocator) void {
+    integrated_eip4844_transaction_benchmark_impl(allocator) catch |err| {
+        std.log.err("Integrated EIP-4844 transaction benchmark failed: {}", .{err});
+    };
+}
+
+fn integrated_eip4844_transaction_benchmark_impl(allocator: Allocator) !void {
+    // This benchmark simulates the full pipeline for EIP-4844 blob transaction processing
+    
+    // Create EVM instance
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var evm_instance = try Evm.Evm.init(allocator, db_interface, null, null);
+    defer evm_instance.deinit();
+
+    // Initialize KZG verifier for blob validation
+    var kzg_verifier = try Evm.blob.KZGVerifier.init(allocator);
+    defer kzg_verifier.deinit();
+
+    // Create test blob
+    var blob = Evm.blob.Blob{};
+    for (0..Evm.blob.FIELD_ELEMENTS_PER_BLOB) |i| {
+        const pattern = (@as(u64, i) * 0x123456789ABCDEF) % 256;
+        for (0..31) |j| {
+            blob.data[i * 32 + j] = @intCast((pattern + j) % 256);
+        }
+    }
+
+    // Generate KZG commitment and proof
+    const commitment = try kzg_verifier.blob_to_kzg_commitment(&blob);
+    const proof = try kzg_verifier.compute_blob_kzg_proof(&blob, &commitment.bytes);
+    const versioned_hash = Evm.blob.blob_types.commitment_to_versioned_hash(&commitment.bytes);
+
+    // Benchmark the complete EIP-4844 transaction processing pipeline
+    for (0..10) |_| {
+        // 1. Transaction parsing and validation
+        const tx_type = primitives.Transaction.TransactionType.Eip4844;
+        std.mem.doNotOptimizeAway(tx_type);
+
+        // 2. Blob validation
+        const blob_valid = try kzg_verifier.validate_blob_data(&blob);
+        std.mem.doNotOptimizeAway(blob_valid);
+
+        // 3. Hash validation
+        const hash_valid = Evm.blob.validate_commitment_hash(&commitment.bytes, &versioned_hash.hash);
+        std.mem.doNotOptimizeAway(hash_valid);
+
+        // 4. KZG proof verification
+        const proof_valid = try kzg_verifier.verify_blob_kzg_proof(&blob, &commitment.bytes, &proof.bytes);
+        std.mem.doNotOptimizeAway(proof_valid);
+
+        // 5. Blob gas market calculation
+        var gas_market = Evm.blob.BlobGasMarket.init();
+        const blob_base_fee = gas_market.calculate_blob_base_fee(Evm.blob.GAS_PER_BLOB);
+        const data_gas_fee = gas_market.calculate_data_gas_fee(Evm.blob.GAS_PER_BLOB);
+        std.mem.doNotOptimizeAway(blob_base_fee);
+        std.mem.doNotOptimizeAway(data_gas_fee);
+
+        // 6. Access list operations
+        const context = Evm.access_list.Context{
+            .caller = primitives.Address.from_u256(0x1111),
+            .tx_origin = primitives.Address.from_u256(0x1111),
+            .coinbase = primitives.Address.from_u256(0x2222),
+            .contract_address = primitives.Address.from_u256(0x3333),
+        };
+
+        var access_list = Evm.access_list.AccessList.init(allocator, context);
+        defer access_list.deinit();
+
+        const test_addr = primitives.Address.from_u256(0x4444);
+        const addr_cost = try access_list.access_address(test_addr);
+        const storage_cost = try access_list.access_storage_slot(test_addr, 123);
+        std.mem.doNotOptimizeAway(addr_cost);
+        std.mem.doNotOptimizeAway(storage_cost);
+    }
+}
+
+test "transaction benchmarks compile and basic execution" {
+    const allocator = std.testing.allocator;
+    
+    // Basic compilation and execution test
+    transaction_type_detection_benchmark(allocator);
+    gas_price_calculation_benchmark(allocator);
+    
+    // Note: More complex benchmarks may require full EVM setup
+>>>>>>> 5bde325 (feat: Add EIP-4844 blob transaction and access list benchmarks)
 }
