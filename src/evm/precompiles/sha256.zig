@@ -73,33 +73,52 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
     return total_gas;
 }
 
+/// Hash function wrapper for SHA256
+///
+/// Wrapper that matches the signature expected by executeHashPrecompile template.
+/// This allows SHA256 to use the generic hash precompile implementation.
+///
+/// @param input Input data to hash
+/// @param output Output buffer for hash result
+fn sha256Hash(input: []const u8, output: []u8) void {
+    crypto.HashAlgorithms.SHA256.hash(input, output[0..SHA256_OUTPUT_SIZE]);
+}
+
+/// Output formatter for SHA256
+///
+/// SHA256 outputs exactly 32 bytes which matches the expected output size,
+/// so no padding is required. This directly copies the hash.
+///
+/// @param hash_bytes The hash to copy
+/// @param output The output buffer to fill
+fn sha256Format(hash_bytes: []const u8, output: []u8) void {
+    @memcpy(output[0..SHA256_OUTPUT_SIZE], hash_bytes[0..SHA256_OUTPUT_SIZE]);
+}
+
 /// Execute SHA256 precompile
 ///
 /// Computes the SHA256 hash of the input data and writes it to the output buffer.
 /// Performs gas checking and validates output buffer size before execution.
+///
+/// This implementation now uses the shared executeHashPrecompile template for
+/// consistency and potential size reduction through code reuse.
 ///
 /// @param input Input data to hash
 /// @param output Output buffer for the 32-byte hash (must be at least 32 bytes)
 /// @param gas_limit Maximum gas available for execution
 /// @return PrecompileOutput with success/failure status and gas usage
 pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput {
-    // Calculate required gas
-    const required_gas = calculate_gas(input.len);
-
-    // Check if we have enough gas
-    if (required_gas > gas_limit) {
-        return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
-    }
-
-    // Validate output buffer size
-    if (output.len < SHA256_OUTPUT_SIZE) {
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-    }
-
-    // Compute SHA256 hash using primitives
-    crypto.HashAlgorithms.SHA256.hash(input, output[0..SHA256_OUTPUT_SIZE]);
-
-    return PrecompileOutput.success_result(required_gas, SHA256_OUTPUT_SIZE);
+    const precompile_utils = @import("precompile_gas.zig");
+    return precompile_utils.executeHashPrecompile(
+        SHA256_BASE_COST,
+        SHA256_WORD_COST,
+        sha256Hash,
+        SHA256_OUTPUT_SIZE,
+        sha256Format,
+        input,
+        output,
+        gas_limit,
+    );
 }
 
 /// Validate that sufficient gas is available for the given input size

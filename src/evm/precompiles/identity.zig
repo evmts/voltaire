@@ -43,6 +43,7 @@ pub const IDENTITY_WORD_COST: u64 = 3;
 ///
 /// Uses the standard linear gas calculation: base + word_cost * word_count
 /// Where word_count = ceil(input_size / 32)
+/// Now using the shared gas calculation utilities for consistency.
 ///
 /// @param input_size Size of the input data in bytes
 /// @return Gas cost for processing the given input size
@@ -54,6 +55,7 @@ pub fn calculate_gas(input_size: usize) u64 {
 ///
 /// Same as calculate_gas but returns an error if the calculation would overflow.
 /// Important for very large input sizes in adversarial scenarios.
+/// Now using the shared gas calculation utilities for consistency.
 ///
 /// @param input_size Size of the input data in bytes
 /// @return Gas cost or error if calculation overflows
