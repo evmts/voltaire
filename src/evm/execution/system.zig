@@ -237,10 +237,10 @@ fn handle_address_access(vm: *Vm, frame: *Frame, to: u256) ExecutionError.Error!
 /// Calculate gas for call operations using 63/64 rule and value stipend
 fn calculate_call_gas_amount(frame: *Frame, gas: u256, value: u256) u64 {
     var gas_for_call = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
-    gas_for_call = @min(gas_for_call, frame.gas_remaining - (frame.gas_remaining / 64));
+    gas_for_call = @min(gas_for_call, frame.gas_remaining - (frame.gas_remaining / GasConstants.CALL_GAS_RETENTION_DIVISOR));
     
     if (value != 0) {
-        gas_for_call += 2300; // Stipend
+        gas_for_call += GasConstants.GAS_STIPEND_VALUE_TRANSFER;
     }
     
     return gas_for_call;
@@ -346,7 +346,7 @@ fn consume_create2_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionE
 fn handle_create_result(frame: *Frame, vm: *Vm, result: anytype, gas_for_call: u64) ExecutionError.Error!void {
     _ = gas_for_call;
     // Update gas remaining
-    frame.gas_remaining = frame.gas_remaining / 64 + result.gas_left;
+    frame.gas_remaining = frame.gas_remaining / GasConstants.CALL_GAS_RETENTION_DIVISOR + result.gas_left;
     
     if (!result.success) {
         @branchHint(.unlikely);
@@ -424,7 +424,7 @@ pub fn calculate_call_gas(
     const gas_after_operation = remaining_gas - gas_cost;
 
     // Apply 63/64th rule to determine maximum forwardable gas (EIP-150)
-    const max_forwardable = (gas_after_operation * 63) / 64;
+    const max_forwardable = (gas_after_operation * (GasConstants.CALL_GAS_RETENTION_DIVISOR - 1)) / GasConstants.CALL_GAS_RETENTION_DIVISOR;
 
     // Use minimum of requested gas and maximum forwardable
     const gas_to_forward = @min(local_gas_limit, max_forwardable);
@@ -530,7 +530,7 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     // Calculate and consume gas for creation
     try consume_create_gas(frame, vm, init_code);
     // Calculate gas to give to the new contract (EIP-150: 63/64 forwarding rule)
-    const gas_for_call = (frame.gas_remaining * 63) / 64;
+    const gas_for_call = (frame.gas_remaining * (GasConstants.CALL_GAS_RETENTION_DIVISOR - 1)) / GasConstants.CALL_GAS_RETENTION_DIVISOR;
 
     // Clear return data before making new call to reduce memory pressure
     // Previous return data is no longer needed once we make a new call
@@ -572,7 +572,7 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     // Calculate and consume gas for CREATE2 (includes hash cost)
     try consume_create2_gas(frame, vm, init_code);
     // Calculate gas to give to the new contract (EIP-150: 63/64 forwarding rule)
-    const gas_for_call = (frame.gas_remaining * 63) / 64;
+    const gas_for_call = (frame.gas_remaining * (GasConstants.CALL_GAS_RETENTION_DIVISOR - 1)) / GasConstants.CALL_GAS_RETENTION_DIVISOR;
 
     // Clear return data before making new call to reduce memory pressure
     // Previous return data is no longer needed once we make a new call
