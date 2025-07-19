@@ -52,6 +52,14 @@ data: [CAPACITY]u256 align(32) = [_]u256{0} ** CAPACITY,
 /// Invariant: 0 <= size <= CAPACITY
 size: usize = 0,
 
+// Compile-time validations for stack design assumptions
+comptime {
+    // Ensure stack capacity matches EVM specification
+    std.debug.assert(CAPACITY == 1024);
+    // Ensure proper alignment for performance
+    std.debug.assert(@alignOf(Stack) >= 32);
+}
+
 /// Push a value onto the stack (safe version).
 ///
 /// @param self The stack to push onto
@@ -178,10 +186,17 @@ pub fn set_top_unsafe(self: *Stack, value: u256) void {
     self.data[self.size - 1] = value;
 }
 
-/// Swap unsafe function following snake_case convention
+/// Swap the top element with the nth element below it (unsafe version).
+///
+/// Swaps the top stack element with the element n positions below it.
+/// For SWAP1, n=1 swaps top with second element.
+/// For SWAP2, n=2 swaps top with third element, etc.
+///
+/// @param self The stack to operate on
+/// @param n Position below top to swap with (1-16)
 pub fn swap_unsafe(self: *Stack, n: usize) void {
     @branchHint(.likely);
-    std.mem.swap(u256, &self.data[self.size - 1], &self.data[self.size - n - 1]);
+    std.mem.swap(u256, &self.data[self.size - 1], &self.data[self.size - 1 - n]);
 }
 
 /// Peek at the nth element from the top (for test compatibility)
