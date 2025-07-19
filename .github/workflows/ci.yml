@@ -47,7 +47,7 @@ jobs:
       - name: Install Zig
         uses: mlugg/setup-zig@v1
         with:
-          version: master
+          version: 0.14.0
 
       - name: Run CI Pipeline
         run: zig build && zig build test && zig build bench
