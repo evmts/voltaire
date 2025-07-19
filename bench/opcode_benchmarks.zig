@@ -54,6 +54,7 @@ fn benchmark_add_opcode(allocator: Allocator) void {
 /// Benchmark arithmetic operations
 pub fn benchmark_arithmetic_operations(allocator: Allocator) !BenchmarkSuite {
     var suite = BenchmarkSuite.init(allocator);
+    const alloc = allocator; // Make allocator available to inner functions
     
     // Store allocator for use in inner functions
     
@@ -64,9 +65,6 @@ pub fn benchmark_arithmetic_operations(allocator: Allocator) !BenchmarkSuite {
         .warmup_iterations = 500,
     }, struct {
         fn run() void {
-            var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-            defer _ = gpa.deinit();
-            const alloc = gpa.allocator();
             benchmark_add_opcode(alloc);
         }
     }.run);
@@ -381,10 +379,10 @@ fn analyze_performance(suites: []*BenchmarkSuite) !void {
 }
 
 test "opcode benchmark infrastructure" {
-    const allocator = std.testing.allocator;
+    const test_allocator = std.testing.allocator;
     
     // Test that we can run a simple bytecode benchmark
-    try benchmark_bytecode(allocator, &[_]u8{
+    try benchmark_bytecode(test_allocator, &[_]u8{
         0x60, 0x01, // PUSH1 1
         0x60, 0x01, // PUSH1 1
         0x01,       // ADD
