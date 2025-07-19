@@ -4,6 +4,13 @@ const Memory = @import("./memory.zig").Memory;
 const MemoryError = @import("errors.zig").MemoryError;
 const context = @import("context.zig");
 
+// NOTE: This file has been reviewed for issue #8 optimization opportunities.
+// All manual loops have been replaced with std.mem functions:
+// - @memcpy is used for data copying (lines 21, 52-55)
+// - @memset is used for zero-filling (lines 42, 60)
+// - std.mem.writeInt is used for u256 conversion (line 69)
+// No further optimizations are needed.
+
 /// Write arbitrary data at context-relative offset.
 pub fn set_data(self: *Memory, relative_offset: usize, data: []const u8) MemoryError!void {
     // Debug logging removed for fuzz testing compatibility
