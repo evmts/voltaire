@@ -305,9 +305,8 @@ fn get_initcode_from_memory(frame: *Frame, vm: *Vm, offset: u256, size: u256) Ex
     const offset_usize = @as(usize, @intCast(offset));
     
     // Calculate memory expansion gas cost
-    const current_size = frame.memory.total_size();
     const new_size = offset_usize + size_usize;
-    const memory_gas = GasConstants.memory_gas_cost(current_size, new_size);
+    const memory_gas = frame.memory.get_expansion_cost(@as(u64, @intCast(new_size)));
     try frame.consume_gas(memory_gas);
     
     // Ensure memory is available and get the slice

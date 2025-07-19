@@ -18,8 +18,8 @@ fn check_offset_bounds(value: u256) ExecutionError.Error!usize {
 
 // Helper to calculate memory expansion gas cost and consume it
 fn calculate_memory_gas(frame: *Frame, new_size: usize) !void {
-    const current_size = frame.memory.context_size();
-    const gas_cost = GasConstants.memory_gas_cost(current_size, new_size);
+    const new_size_u64 = @as(u64, @intCast(new_size));
+    const gas_cost = frame.memory.get_expansion_cost(new_size_u64);
     try frame.consume_gas(gas_cost);
 }
 
@@ -202,9 +202,8 @@ pub fn op_mcopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     const size_usize = try check_offset_bounds(size);
 
     // Calculate memory expansion gas cost
-    const current_size = frame.memory.context_size();
     const max_addr = @max(dest_usize + size_usize, src_usize + size_usize);
-    const memory_gas = GasConstants.memory_gas_cost(current_size, max_addr);
+    const memory_gas = frame.memory.get_expansion_cost(@as(u64, @intCast(max_addr)));
     try frame.consume_gas(memory_gas);
 
     // Dynamic gas for copy operation

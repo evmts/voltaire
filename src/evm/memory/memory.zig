@@ -31,6 +31,15 @@ allocator: std.mem.Allocator,
 /// Small bool field placed last to minimize padding
 owns_buffer: bool,
 
+/// Cache for memory expansion gas cost calculations
+/// Stores the last expansion calculation to avoid redundant quadratic computations
+cached_expansion: struct {
+    /// Last calculated memory size in bytes
+    last_size: u64,
+    /// Gas cost for the last calculated size
+    last_cost: u64,
+} = .{ .last_size = 0, .last_cost = 0 },
+
 /// Initializes the root Memory context that owns the shared buffer.
 /// This is the safe API that eliminates the undefined pointer footgun.
 pub fn init(
@@ -103,6 +112,42 @@ pub const set_u256 = write_ops.set_u256;
 
 // Slice operations
 pub const slice = slice_ops.slice;
+
+/// Get memory expansion gas cost with caching optimization
+/// Returns the gas cost for expanding memory from current size to new_size.
+/// Uses cached values when possible to avoid redundant quadratic calculations.
+pub fn get_expansion_cost(self: *Memory, new_size: u64) u64 {
+    const current_size = @as(u64, @intCast(self.context_size()));
+    
+    // No expansion needed if new size is not larger than current
+    if (new_size <= current_size) {
+        return 0;
+    }
+    
+    // Check if we can use cached calculation
+    if (new_size == self.cached_expansion.last_size) {
+        // Return cached cost minus cost for current size
+        const current_cost = if (current_size == 0) 0 else calculate_memory_total_cost(current_size);
+        return self.cached_expansion.last_cost -| current_cost;
+    }
+    
+    // Calculate new cost and update cache
+    const new_cost = calculate_memory_total_cost(new_size);
+    const current_cost = if (current_size == 0) 0 else calculate_memory_total_cost(current_size);
+    const expansion_cost = new_cost - current_cost;
+    
+    // Update cache
+    self.cached_expansion.last_size = new_size;
+    self.cached_expansion.last_cost = new_cost;
+    
+    return expansion_cost;
+}
+
+/// Calculate total memory cost for a given size (internal helper)
+inline fn calculate_memory_total_cost(size_bytes: u64) u64 {
+    const words = (size_bytes + 31) / 32;
+    return 3 * words + (words * words) / 512;
+}
 
 // Fuzz testing functions
 pub fn fuzz_memory_operations(allocator: std.mem.Allocator, operations: []const FuzzMemoryOperation) !void {
@@ -855,4 +900,128 @@ test "concurrent_pattern_checkpoint_isolation" {
     
     try std.testing.expectEqualSlices(u8, "child1 data", child1_read);
     try std.testing.expectEqualSlices(u8, "child2 data", child2_read);
+}
+
+// Memory Expansion Caching Tests
+
+test "memory_expansion_cache_basic_functionality" {
+    const allocator = std.testing.allocator;
+    
+    var memory = try init(allocator, INITIAL_CAPACITY, DEFAULT_MEMORY_LIMIT);
+    defer memory.deinit();
+    
+    // First call should calculate and cache
+    const cost1 = memory.get_expansion_cost(64);
+    try std.testing.expect(cost1 > 0);
+    try std.testing.expectEqual(@as(u64, 64), memory.cached_expansion.last_size);
+    try std.testing.expect(memory.cached_expansion.last_cost > 0);
+    
+    // Second call with same size should use cache
+    const cost2 = memory.get_expansion_cost(64);
+    try std.testing.expectEqual(cost1, cost2);
+    try std.testing.expectEqual(@as(u64, 64), memory.cached_expansion.last_size);
+}
+
+test "memory_expansion_cache_no_expansion_needed" {
+    const allocator = std.testing.allocator;
+    
+    var memory = try init(allocator, INITIAL_CAPACITY, DEFAULT_MEMORY_LIMIT);
+    defer memory.deinit();
+    
+    // Expand memory first
+    _ = try memory.ensure_context_capacity(128);
+    
+    // Requesting expansion to smaller or equal size should return 0
+    const cost = memory.get_expansion_cost(64);
+    try std.testing.expectEqual(@as(u64, 0), cost);
+    
+    const same_cost = memory.get_expansion_cost(128);
+    try std.testing.expectEqual(@as(u64, 0), same_cost);
+}
+
+test "memory_expansion_cache_sequential_expansions" {
+    const allocator = std.testing.allocator;
+    
+    var memory = try init(allocator, INITIAL_CAPACITY, DEFAULT_MEMORY_LIMIT);
+    defer memory.deinit();
+    
+    // Sequential expansions should each update cache
+    const cost1 = memory.get_expansion_cost(32);
+    const cost2 = memory.get_expansion_cost(64);
+    const cost3 = memory.get_expansion_cost(128);
+    
+    // Each expansion should cost more than the previous
+    try std.testing.expect(cost2 >= cost1);
+    try std.testing.expect(cost3 >= cost2);
+    
+    // Cache should reflect last calculation
+    try std.testing.expectEqual(@as(u64, 128), memory.cached_expansion.last_size);
+}
+
+test "memory_expansion_cache_repeated_access" {
+    const allocator = std.testing.allocator;
+    
+    var memory = try init(allocator, INITIAL_CAPACITY, DEFAULT_MEMORY_LIMIT);
+    defer memory.deinit();
+    
+    // Make multiple calls to same expansion size
+    const target_size: u64 = 256;
+    var i: usize = 0;
+    var last_cost: u64 = 0;
+    
+    while (i < 10) : (i += 1) {
+        const cost = memory.get_expansion_cost(target_size);
+        if (i == 0) {
+            last_cost = cost;
+        } else {
+            // All subsequent calls should return same cost (cache hit)
+            try std.testing.expectEqual(last_cost, cost);
+        }
+    }
+    
+    // Cache should be consistently set
+    try std.testing.expectEqual(target_size, memory.cached_expansion.last_size);
+}
+
+test "memory_expansion_cache_after_real_expansion" {
+    const allocator = std.testing.allocator;
+    
+    var memory = try init(allocator, INITIAL_CAPACITY, DEFAULT_MEMORY_LIMIT);
+    defer memory.deinit();
+    
+    // Calculate expansion cost first
+    const predicted_cost = memory.get_expansion_cost(512);
+    try std.testing.expect(predicted_cost > 0);
+    
+    // Actually expand memory
+    _ = try memory.ensure_context_capacity(256);
+    
+    // Now expansion to 512 should cost less since we're already at 256
+    const actual_cost = memory.get_expansion_cost(512);
+    try std.testing.expect(actual_cost < predicted_cost);
+}
+
+test "memory_expansion_cache_corner_cases" {
+    const allocator = std.testing.allocator;
+    
+    var memory = try init(allocator, INITIAL_CAPACITY, DEFAULT_MEMORY_LIMIT);
+    defer memory.deinit();
+    
+    // Test edge cases
+    
+    // Zero expansion
+    const zero_cost = memory.get_expansion_cost(0);
+    try std.testing.expectEqual(@as(u64, 0), zero_cost);
+    
+    // Very small expansion (1 byte)
+    const tiny_cost = memory.get_expansion_cost(1);
+    try std.testing.expect(tiny_cost > 0);
+    
+    // Word boundary (32 bytes)
+    const word_cost = memory.get_expansion_cost(32);
+    try std.testing.expect(word_cost > 0);
+    
+    // Large expansion
+    const large_cost = memory.get_expansion_cost(65536); // 64KB
+    try std.testing.expect(large_cost > word_cost);
 }
