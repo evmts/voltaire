@@ -13,6 +13,7 @@ pub const benchmarks = @import("benchmarks.zig");
 pub const evm_integration_benchmark = @import("evm_integration_benchmark.zig");
 pub const root_module_benchmark = @import("root_module_benchmark.zig");
 pub const hardfork_benchmark = @import("hardfork_benchmark.zig");
+pub const stack_performance_benchmark = @import("stack_performance_benchmark.zig");
 
 pub fn run(allocator: Allocator) !void {
     std.log.info("Starting EVM benchmark suite", .{});
@@ -47,6 +48,10 @@ pub fn run(allocator: Allocator) !void {
     // Run hardfork logic benchmarks (Issue #71)
     std.log.info("Running hardfork logic and chain rules benchmarks (Issue #71)", .{});
     try hardfork_benchmark.run_all_hardfork_benchmarks(allocator);
+    
+    // Run stack performance benchmarks (Issue #34)
+    std.log.info("Running stack performance benchmarks (Issue #34)", .{});
+    try stack_performance_benchmark.run_stack_performance_benchmarks(allocator);
     
     std.log.info("Benchmark suite completed", .{});
 }

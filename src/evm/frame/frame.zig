@@ -122,9 +122,6 @@ pub fn init(allocator: std.mem.Allocator, contract: *Contract) !Frame {
     var memory = try Memory.init_default(allocator);
     errdefer memory.deinit();
     
-    var stack = try Stack.init(allocator);
-    errdefer stack.deinit(allocator);
-    
     return Frame{
         .gas_remaining = 0,
         .pc = 0,
@@ -139,7 +136,7 @@ pub fn init(allocator: std.mem.Allocator, contract: *Contract) !Frame {
         .output = &[_]u8{},
         .op = undefined,
         .memory = memory,
-        .stack = stack,
+        .stack = Stack{},
         .return_data = ReturnData.init(allocator),
     };
 }
@@ -195,8 +192,7 @@ pub fn init_with_state(
     var memory_to_use = memory orelse try Memory.init_default(allocator);
     errdefer if (memory == null) memory_to_use.deinit();
     
-    var stack_to_use = stack orelse try Stack.init(allocator);
-    errdefer if (stack == null) stack_to_use.deinit(allocator);
+    const stack_to_use = stack orelse Stack{};
     
     return Frame{
         .gas_remaining = gas_remaining orelse 0,
@@ -225,7 +221,6 @@ pub fn init_with_state(
 /// @param self The frame to clean up
 pub fn deinit(self: *Frame) void {
     self.memory.deinit();
-    self.stack.deinit(self.allocator);
     self.return_data.deinit();
 }
 
