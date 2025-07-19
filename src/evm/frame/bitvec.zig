@@ -1,6 +1,9 @@
 const std = @import("std");
 const constants = @import("../constants/constants.zig");
 
+// Default BitVec type using u64 for optimal performance on 64-bit systems
+pub const BitVec64 = BitVec(u64);
+
 /// Creates a generic BitVec type over any unsigned integer storage type
 pub fn BitVec(comptime T: type) type {
     // Compile-time validation that T is an unsigned integer
@@ -125,8 +128,23 @@ pub fn BitVec(comptime T: type) type {
             errdefer bitmap.deinit(allocator);
 
             // Mark all positions as valid code initially
-            for (0..code.len) |i| {
-                bitmap.setUnchecked(i);
+            if (T == u64 and code.len > 64) {
+                // Use vectorized operation for larger bit vectors with u64 storage
+                const bitvec64: *BitVec64 = @ptrCast(&bitmap);
+                setRangeVectorized(bitvec64, 0, code.len) catch |err| switch (err) {
+                    error.PositionOutOfBounds => {
+                        // This should never happen since we're using valid range [0, code.len)
+                        // Fall back to individual setting
+                        for (0..code.len) |i| {
+                            bitmap.setUnchecked(i);
+                        }
+                    },
+                };
+            } else {
+                // Fallback to individual bit setting for smaller vectors or other storage types
+                for (0..code.len) |i| {
+                    bitmap.setUnchecked(i);
+                }
             }
 
             var i: usize = 0;
@@ -159,8 +177,357 @@ pub fn BitVec(comptime T: type) type {
     };
 }
 
-// Default BitVec type using u64 for optimal performance on 64-bit systems
-pub const BitVec64 = BitVec(u64);
+/// Set a range of bits to 1 using vectorized operations
+pub fn setRangeVectorized(self: *BitVec64, start: usize, end: usize) BitVec64.BitVecError!void {
+    if (start >= self.size or end > self.size or start >= end) return BitVec64.BitVecError.PositionOutOfBounds;
+    
+    const startWord = start / 64;
+    const endWord = (end - 1) / 64;
+    const startBit = start % 64;
+    const endBit = end % 64;
+    
+    // Handle single word case
+    if (startWord == endWord) {
+        const mask = ((~@as(u64, 0)) >> @intCast(64 - (end - start))) << @intCast(startBit);
+        self.bits[startWord] |= mask;
+        return;
+    }
+    
+    // Set first partial word
+    if (startBit != 0) {
+        const mask = (~@as(u64, 0)) << @intCast(startBit);
+        self.bits[startWord] |= mask;
+    }
+    
+    // Process middle words using @Vector
+    const fullWordStart = if (startBit == 0) startWord else startWord + 1;
+    const fullWordEnd = if (endBit == 0) endWord + 1 else endWord;
+    
+    if (fullWordStart < fullWordEnd) {
+        const vectorSize = 8;
+        const numFullWords = fullWordEnd - fullWordStart;
+        const numVectors = numFullWords / vectorSize;
+        
+        // Process 8 words at a time
+        var i: usize = 0;
+        while (i < numVectors) : (i += 1) {
+            const idx = fullWordStart + i * vectorSize;
+            const vec: @Vector(vectorSize, u64) = @splat(~@as(u64, 0));
+            const ptr: *[vectorSize]u64 = @ptrCast(self.bits[idx..idx + vectorSize]);
+            const currentVec: @Vector(vectorSize, u64) = ptr.*;
+            ptr.* = currentVec | vec;
+        }
+        
+        // Process remaining words
+        var j = fullWordStart + numVectors * vectorSize;
+        while (j < fullWordEnd) : (j += 1) {
+            self.bits[j] = ~@as(u64, 0);
+        }
+    }
+    
+    // Set last partial word
+    if (endBit != 0 and endWord < self.bits.len) {
+        const mask = (~@as(u64, 0)) >> @intCast(64 - endBit);
+        self.bits[endWord] |= mask;
+    }
+}
+
+/// Count the number of set bits using vectorized operations
+pub fn countSetBitsVectorized(self: *const BitVec64) usize {
+    const vectorSize = 8;
+    const numVectors = self.bits.len / vectorSize;
+    var count: usize = 0;
+    
+    // Process 8 words at a time
+    var i: usize = 0;
+    while (i < numVectors) : (i += 1) {
+        const idx = i * vectorSize;
+        const ptr: *const [vectorSize]u64 = @ptrCast(self.bits[idx..idx + vectorSize]);
+        const vec: @Vector(vectorSize, u64) = ptr.*;
+        
+        // Count bits in each element of the vector
+        inline for (0..vectorSize) |j| {
+            count += @popCount(vec[j]);
+        }
+    }
+    
+    // Process remaining words
+    var j = numVectors * vectorSize;
+    while (j < self.bits.len) : (j += 1) {
+        count += @popCount(self.bits[j]);
+    }
+    
+    return count;
+}
+
+/// Perform bitwise AND with another BitVec using vectorized operations
+pub fn bitwiseAndVectorized(self: *BitVec64, other: *const BitVec64) BitVec64.BitVecError!void {
+    if (self.size != other.size) return BitVec64.BitVecError.PositionOutOfBounds;
+    
+    const vectorSize = 8;
+    const numVectors = self.bits.len / vectorSize;
+    
+    // Process 8 words at a time
+    var i: usize = 0;
+    while (i < numVectors) : (i += 1) {
+        const idx = i * vectorSize;
+        const selfPtr: *[vectorSize]u64 = @ptrCast(self.bits[idx..idx + vectorSize]);
+        const otherPtr: *const [vectorSize]u64 = @ptrCast(other.bits[idx..idx + vectorSize]);
+        const selfVec: @Vector(vectorSize, u64) = selfPtr.*;
+        const otherVec: @Vector(vectorSize, u64) = otherPtr.*;
+        selfPtr.* = selfVec & otherVec;
+    }
+    
+    // Process remaining words
+    var j = numVectors * vectorSize;
+    while (j < self.bits.len) : (j += 1) {
+        self.bits[j] &= other.bits[j];
+    }
+}
+
+/// Perform bitwise OR with another BitVec using vectorized operations
+pub fn bitwiseOrVectorized(self: *BitVec64, other: *const BitVec64) BitVec64.BitVecError!void {
+    if (self.size != other.size) return BitVec64.BitVecError.PositionOutOfBounds;
+    
+    const vectorSize = 8;
+    const numVectors = self.bits.len / vectorSize;
+    
+    // Process 8 words at a time
+    var i: usize = 0;
+    while (i < numVectors) : (i += 1) {
+        const idx = i * vectorSize;
+        const selfPtr: *[vectorSize]u64 = @ptrCast(self.bits[idx..idx + vectorSize]);
+        const otherPtr: *const [vectorSize]u64 = @ptrCast(other.bits[idx..idx + vectorSize]);
+        const selfVec: @Vector(vectorSize, u64) = selfPtr.*;
+        const otherVec: @Vector(vectorSize, u64) = otherPtr.*;
+        selfPtr.* = selfVec | otherVec;
+    }
+    
+    // Process remaining words
+    var j = numVectors * vectorSize;
+    while (j < self.bits.len) : (j += 1) {
+        self.bits[j] |= other.bits[j];
+    }
+}
+
+/// Perform bitwise XOR with another BitVec using vectorized operations
+pub fn bitwiseXorVectorized(self: *BitVec64, other: *const BitVec64) BitVec64.BitVecError!void {
+    if (self.size != other.size) return BitVec64.BitVecError.PositionOutOfBounds;
+    
+    const vectorSize = 8;
+    const numVectors = self.bits.len / vectorSize;
+    
+    // Process 8 words at a time
+    var i: usize = 0;
+    while (i < numVectors) : (i += 1) {
+        const idx = i * vectorSize;
+        const selfPtr: *[vectorSize]u64 = @ptrCast(self.bits[idx..idx + vectorSize]);
+        const otherPtr: *const [vectorSize]u64 = @ptrCast(other.bits[idx..idx + vectorSize]);
+        const selfVec: @Vector(vectorSize, u64) = selfPtr.*;
+        const otherVec: @Vector(vectorSize, u64) = otherPtr.*;
+        selfPtr.* = selfVec ^ otherVec;
+    }
+    
+    // Process remaining words
+    var j = numVectors * vectorSize;
+    while (j < self.bits.len) : (j += 1) {
+        self.bits[j] ^= other.bits[j];
+    }
+}
+
+test "setRangeVectorized sets range of bits correctly" {
+    const allocator = std.testing.allocator;
+    
+    // Test with large bit vector
+    var bitvec = try BitVec.init(allocator, 1024);
+    defer bitvec.deinit(allocator);
+    
+    // Set range crossing multiple words
+    try bitvec.setRangeVectorized(100, 900);
+    
+    // Verify bits before range are unset
+    var i: usize = 0;
+    while (i < 100) : (i += 1) {
+        try std.testing.expect(!bitvec.is_set_unchecked(i));
+    }
+    
+    // Verify bits in range are set
+    i = 100;
+    while (i < 900) : (i += 1) {
+        try std.testing.expect(bitvec.is_set_unchecked(i));
+    }
+    
+    // Verify bits after range are unset
+    i = 900;
+    while (i < 1024) : (i += 1) {
+        try std.testing.expect(!bitvec.is_set_unchecked(i));
+    }
+}
+
+test "setRangeVectorized handles single word case" {
+    const allocator = std.testing.allocator;
+    
+    var bitvec = try BitVec.init(allocator, 128);
+    defer bitvec.deinit(allocator);
+    
+    // Set range within single word
+    try bitvec.setRangeVectorized(10, 20);
+    
+    // Verify only specified bits are set
+    var i: usize = 0;
+    while (i < 10) : (i += 1) {
+        try std.testing.expect(!bitvec.is_set_unchecked(i));
+    }
+    
+    i = 10;
+    while (i < 20) : (i += 1) {
+        try std.testing.expect(bitvec.is_set_unchecked(i));
+    }
+    
+    i = 20;
+    while (i < 128) : (i += 1) {
+        try std.testing.expect(!bitvec.is_set_unchecked(i));
+    }
+}
+
+test "countSetBitsVectorized counts correctly" {
+    const allocator = std.testing.allocator;
+    
+    // Test with large bit vector
+    var bitvec = try BitVec.init(allocator, 1024);
+    defer bitvec.deinit(allocator);
+    
+    // Set specific pattern of bits
+    var i: usize = 0;
+    while (i < 1024) : (i += 3) {
+        bitvec.set_unchecked(i);
+    }
+    
+    const count = bitvec.countSetBitsVectorized();
+    try std.testing.expectEqual(@as(usize, 342), count); // ceil(1024/3) = 342
+}
+
+test "bitwiseAndVectorized performs AND correctly" {
+    const allocator = std.testing.allocator;
+    
+    var bitvec1 = try BitVec.init(allocator, 512);
+    defer bitvec1.deinit(allocator);
+    
+    var bitvec2 = try BitVec.init(allocator, 512);
+    defer bitvec2.deinit(allocator);
+    
+    // Set alternating patterns
+    var i: usize = 0;
+    while (i < 512) : (i += 2) {
+        bitvec1.set_unchecked(i);
+    }
+    
+    i = 0;
+    while (i < 512) : (i += 3) {
+        bitvec2.set_unchecked(i);
+    }
+    
+    try bitvec1.bitwiseAndVectorized(&bitvec2);
+    
+    // Check result: bits should be set only where both were set
+    i = 0;
+    while (i < 512) : (i += 1) {
+        const shouldBeSet = (i % 2 == 0) and (i % 3 == 0);
+        try std.testing.expectEqual(shouldBeSet, bitvec1.is_set_unchecked(i));
+    }
+}
+
+test "bitwiseOrVectorized performs OR correctly" {
+    const allocator = std.testing.allocator;
+    
+    var bitvec1 = try BitVec.init(allocator, 512);
+    defer bitvec1.deinit(allocator);
+    
+    var bitvec2 = try BitVec.init(allocator, 512);
+    defer bitvec2.deinit(allocator);
+    
+    // Set different patterns
+    var i: usize = 0;
+    while (i < 512) : (i += 4) {
+        bitvec1.set_unchecked(i);
+    }
+    
+    i = 1;
+    while (i < 512) : (i += 4) {
+        bitvec2.set_unchecked(i);
+    }
+    
+    try bitvec1.bitwiseOrVectorized(&bitvec2);
+    
+    // Check result: bits should be set where either was set
+    i = 0;
+    while (i < 512) : (i += 1) {
+        const shouldBeSet = (i % 4 == 0) or (i % 4 == 1);
+        try std.testing.expectEqual(shouldBeSet, bitvec1.is_set_unchecked(i));
+    }
+}
+
+test "bitwiseXorVectorized performs XOR correctly" {
+    const allocator = std.testing.allocator;
+    
+    var bitvec1 = try BitVec.init(allocator, 512);
+    defer bitvec1.deinit(allocator);
+    
+    var bitvec2 = try BitVec.init(allocator, 512);
+    defer bitvec2.deinit(allocator);
+    
+    // Set overlapping patterns
+    var i: usize = 0;
+    while (i < 512) : (i += 2) {
+        bitvec1.set_unchecked(i);
+    }
+    
+    i = 0;
+    while (i < 512) : (i += 3) {
+        bitvec2.set_unchecked(i);
+    }
+    
+    try bitvec1.bitwiseXorVectorized(&bitvec2);
+    
+    // Check result: bits should be set where exactly one was set
+    i = 0;
+    while (i < 512) : (i += 1) {
+        const was1Set = (i % 2 == 0);
+        const was2Set = (i % 3 == 0);
+        const shouldBeSet = was1Set != was2Set; // XOR logic
+        try std.testing.expectEqual(shouldBeSet, bitvec1.is_set_unchecked(i));
+    }
+}
+
+test "vectorized operations handle non-aligned sizes" {
+    const allocator = std.testing.allocator;
+    
+    // Test with size not divisible by 8*64
+    var bitvec = try BitVec.init(allocator, 777);
+    defer bitvec.deinit(allocator);
+    
+    try bitvec.setRangeVectorized(0, 777);
+    
+    const count = bitvec.countSetBitsVectorized();
+    try std.testing.expectEqual(@as(usize, 777), count);
+}
+
+test "vectorized operations handle edge cases" {
+    const allocator = std.testing.allocator;
+    
+    // Small bitvec (less than vector size)
+    var small = try BitVec.init(allocator, 100);
+    defer small.deinit(allocator);
+    
+    try small.setRangeVectorized(20, 80);
+    
+    const count = small.countSetBitsVectorized();
+    try std.testing.expectEqual(@as(usize, 60), count);
+    
+    // Test error cases
+    try std.testing.expectError(BitVec64.BitVecError.PositionOutOfBounds, small.setRangeVectorized(50, 150));
+    try std.testing.expectError(BitVec64.BitVecError.PositionOutOfBounds, small.setRangeVectorized(80, 20));
+}
 
 // Tests
 test "BitVec with u8 storage" {
