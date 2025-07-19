@@ -4,7 +4,7 @@ const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
-const gas_constants = @import("../constants/gas_constants.zig");
+const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
 
 // Compile-time verification that this file is being used
@@ -64,14 +64,14 @@ pub fn make_log(comptime num_topics: u8) fn (usize, *Operation.Interpreter, *Ope
             // 1. Calculate memory expansion gas cost
             const current_size = frame.memory.context_size();
             const new_size = offset_usize + size_usize;
-            const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
+            const memory_gas = GasConstants.memory_gas_cost(current_size, new_size);
 
             // Memory expansion gas calculated
 
             try frame.consume_gas(memory_gas);
 
             // 2. Dynamic gas for data
-            const byte_cost = gas_constants.LogDataGas * size_usize;
+            const byte_cost = GasConstants.LogDataGas * size_usize;
 
             // Calculate dynamic gas for data
 
@@ -133,12 +133,12 @@ pub fn log_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.S
     // 1. Calculate memory expansion gas cost
     const current_size = frame.memory.context_size();
     const new_size = offset_usize + size_usize;
-    const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
+    const memory_gas = GasConstants.memory_gas_cost(current_size, new_size);
 
     try frame.consume_gas(memory_gas);
 
     // 2. Dynamic gas for data
-    const byte_cost = gas_constants.LogDataGas * size_usize;
+    const byte_cost = GasConstants.LogDataGas * size_usize;
     try frame.consume_gas(byte_cost);
 
     // Ensure memory is available

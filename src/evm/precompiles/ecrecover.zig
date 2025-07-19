@@ -2,7 +2,7 @@ const std = @import("std");
 const PrecompileResult = @import("precompile_result.zig").PrecompileResult;
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
-const gas_constants = @import("../constants/gas_constants.zig");
+const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
 const crypto = @import("crypto");
 const secp256k1 = crypto.secp256k1;
@@ -36,7 +36,7 @@ const secp256k1 = crypto.secp256k1;
 /// // result.output_size == 32 on success, 0 on failure
 /// ```
 /// Gas constant for ECRECOVER precompile - fixed cost
-pub const ECRECOVER_GAS_COST: u64 = gas_constants.ECRECOVER_COST;
+pub const ECRECOVER_GAS_COST: u64 = GasConstants.ECRECOVER_COST;
 
 /// secp256k1 curve order for signature validation
 const SECP256K1_ORDER: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;

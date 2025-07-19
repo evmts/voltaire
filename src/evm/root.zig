@@ -178,8 +178,8 @@ pub const hardforks = struct {
     pub const hardfork = @import("hardforks/hardfork.zig");
 };
 
-/// EVM constants (stack size, memory limits, etc.)
-pub const constants = @import("constants/constants.zig");
+/// EVM opcode definitions and utilities
+pub const opcode = @import("opcodes/opcode.zig");
 
 /// Logger for EVM operations
 pub const Log = @import("log.zig");
@@ -190,8 +190,8 @@ pub const eip_7702_bytecode = @import("frame/eip_7702_bytecode.zig");
 /// Fee market calculations (EIP-1559)
 pub const fee_market = @import("primitives").FeeMarket;
 
-/// Gas cost constants and calculations
-pub const gas_constants = @import("constants/gas_constants.zig");
+/// Gas cost constants from primitives
+pub const GasConstants = @import("primitives").GasConstants;
 
 /// Memory size limits and expansion rules
 pub const memory_limits = @import("constants/memory_limits.zig");

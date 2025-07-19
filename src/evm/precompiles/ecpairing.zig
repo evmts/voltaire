@@ -32,7 +32,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const log = @import("../log.zig");
-const gas_constants = @import("../constants/gas_constants.zig");
+const GasConstants = @import("primitives").GasConstants;
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const ChainRules = @import("../hardforks/chain_rules.zig");
@@ -55,12 +55,12 @@ else
 pub fn calculate_gas(num_pairs: usize, chain_rules: ChainRules) u64 {
     if (chain_rules.is_istanbul) {
         @branchHint(.likely);
-        return gas_constants.ECPAIRING_BASE_GAS_COST +
-            gas_constants.ECPAIRING_PER_PAIR_GAS_COST * @as(u64, @intCast(num_pairs));
+        return GasConstants.ECPAIRING_BASE_GAS_COST +
+            GasConstants.ECPAIRING_PER_PAIR_GAS_COST * @as(u64, @intCast(num_pairs));
     } else {
         @branchHint(.cold);
-        return gas_constants.ECPAIRING_BASE_GAS_COST_BYZANTIUM +
-            gas_constants.ECPAIRING_PER_PAIR_GAS_COST_BYZANTIUM * @as(u64, @intCast(num_pairs));
+        return GasConstants.ECPAIRING_BASE_GAS_COST_BYZANTIUM +
+            GasConstants.ECPAIRING_PER_PAIR_GAS_COST_BYZANTIUM * @as(u64, @intCast(num_pairs));
     }
 }
 
@@ -77,16 +77,16 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
     const num_pairs = input_size / 192;
 
     // Check for overflow in gas calculation
-    const max_pairs = (std.math.maxInt(u64) - gas_constants.ECPAIRING_BASE_GAS_COST) /
-        gas_constants.ECPAIRING_PER_PAIR_GAS_COST;
+    const max_pairs = (std.math.maxInt(u64) - GasConstants.ECPAIRING_BASE_GAS_COST) /
+        GasConstants.ECPAIRING_PER_PAIR_GAS_COST;
 
     if (num_pairs > max_pairs) {
         return error.GasOverflow;
     }
 
     // Return Istanbul gas cost as default (most common case)
-    return gas_constants.ECPAIRING_BASE_GAS_COST +
-        gas_constants.ECPAIRING_PER_PAIR_GAS_COST * @as(u64, @intCast(num_pairs));
+    return GasConstants.ECPAIRING_BASE_GAS_COST +
+        GasConstants.ECPAIRING_PER_PAIR_GAS_COST * @as(u64, @intCast(num_pairs));
 }
 
 /// Execute ECPAIRING precompile

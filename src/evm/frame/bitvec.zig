@@ -1,5 +1,5 @@
 const std = @import("std");
-const constants = @import("../constants/constants.zig");
+const opcode = @import("../opcodes/opcode.zig");
 
 // Default BitVec type using u64 for optimal performance on 64-bit systems
 pub const BitVec64 = BitVec(u64);

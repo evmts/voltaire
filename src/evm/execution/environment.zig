@@ -7,7 +7,7 @@ const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
 const to_u256 = primitives.Address.to_u256;
 const from_u256 = primitives.Address.from_u256;
-const gas_constants = @import("../constants/gas_constants.zig");
+const GasConstants = @import("primitives").GasConstants;
 const AccessList = @import("../access_list/access_list.zig").AccessList;
 
 pub fn op_address(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
@@ -146,12 +146,12 @@ pub fn op_extcodecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Op
     // Calculate memory expansion gas cost
     const current_size = frame.memory.context_size();
     const new_size = mem_offset_usize + size_usize;
-    const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
+    const memory_gas = GasConstants.memory_gas_cost(current_size, new_size);
     try frame.consume_gas(memory_gas);
 
     // Dynamic gas for copy operation
     const word_size = (size_usize + 31) / 32;
-    try frame.consume_gas(gas_constants.CopyGas * word_size);
+    try frame.consume_gas(GasConstants.CopyGas * word_size);
 
     // Get external code from VM state
     const code = vm.state.get_code(address);
@@ -307,12 +307,12 @@ pub fn op_calldatacopy(pc: usize, interpreter: *Operation.Interpreter, state: *O
     // Calculate memory expansion gas cost
     const current_size = frame.memory.context_size();
     const new_size = mem_offset_usize + size_usize;
-    const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
+    const memory_gas = GasConstants.memory_gas_cost(current_size, new_size);
     try frame.consume_gas(memory_gas);
 
     // Dynamic gas for copy operation (VERYLOW * word_count)
     const word_size = (size_usize + 31) / 32;
-    try frame.consume_gas(gas_constants.CopyGas * word_size);
+    try frame.consume_gas(GasConstants.CopyGas * word_size);
 
     // Get calldata from frame.input
     const calldata = frame.input;
@@ -354,12 +354,12 @@ pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     // Calculate memory expansion gas cost
     const current_size = frame.memory.context_size();
     const new_size = mem_offset_usize + size_usize;
-    const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
+    const memory_gas = GasConstants.memory_gas_cost(current_size, new_size);
     try frame.consume_gas(memory_gas);
 
     // Dynamic gas for copy operation
     const word_size = (size_usize + 31) / 32;
-    try frame.consume_gas(gas_constants.CopyGas * word_size);
+    try frame.consume_gas(GasConstants.CopyGas * word_size);
 
     // Get current contract code
     const code = frame.contract.code;
