@@ -32,6 +32,7 @@ const gas_constants = @import("../constants/gas_constants.zig");
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const ChainRules = @import("../hardforks/chain_rules.zig");
+const ec_validation = @import("ec_validation.zig");
 
 // Conditional imports based on target
 const bn254_backend = if (builtin.target.cpu.arch == .wasm32)
@@ -88,30 +89,24 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
 pub fn execute(input: []const u8, output: []u8, gas_limit: u64, chain_rules: ChainRules) PrecompileOutput {
     // Calculate and validate gas cost
     const gas_cost = calculate_gas(chain_rules);
-    if (gas_cost > gas_limit) {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
+    if (ec_validation.validate_gas_requirement(gas_cost, gas_limit)) |failure_result| {
+        return failure_result;
     }
 
     // Validate output buffer size
-    if (output.len < 64) {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
+    if (ec_validation.validate_output_buffer_size(output, 64)) |failure_result| {
+        return failure_result;
     }
 
     // Pad input to exactly 96 bytes (zero-padding for shorter inputs)
-    var padded_input: [96]u8 = [_]u8{0} ** 96;
-    const copy_len = @min(input.len, 96);
-    @memcpy(padded_input[0..copy_len], input[0..copy_len]);
+    const padded_input = ec_validation.pad_input(input, 96);
 
     if (builtin.target.cpu.arch == .wasm32) {
         // WASM builds: Use limited pure Zig implementation
         // TODO: Implement full scalar multiplication in pure Zig for WASM
         // For now, return point at infinity for all scalar multiplications
-        @memset(output[0..64], 0);
-
-        // Log that this is a placeholder implementation
         log.warn("ECMUL in WASM build: using placeholder implementation (returns point at infinity)", .{});
+        return ec_validation.return_point_at_infinity(output, gas_cost);
     } else {
         // Use Rust implementation for native targets
         // Ensure BN254 Rust library is initialized
@@ -124,8 +119,7 @@ pub fn execute(input: []const u8, output: []u8, gas_limit: u64, chain_rules: Cha
         bn254_backend.ecmul(&padded_input, output[0..64]) catch {
             @branchHint(.cold);
             // Invalid input results in point at infinity (0, 0)
-            @memset(output[0..64], 0);
-            return PrecompileOutput.success_result(gas_cost, 64);
+            return ec_validation.return_point_at_infinity(output, gas_cost);
         };
     }
 
