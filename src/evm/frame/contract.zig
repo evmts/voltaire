@@ -44,8 +44,11 @@ const bitvec = @import("bitvec.zig");
 const primitives = @import("primitives");
 const ExecutionError = @import("../execution/execution_error.zig");
 const CodeAnalysis = @import("code_analysis.zig");
+const AnalysisLRUCache = @import("analysis_lru_cache.zig").AnalysisLRUCache;
+const AnalysisCacheConfig = @import("analysis_lru_cache.zig").AnalysisCacheConfig;
 const StoragePool = @import("storage_pool.zig");
 const Log = @import("../log.zig");
+const build_options = @import("build_options");
 
 /// Maximum gas refund allowed (EIP-3529)
 const MAX_REFUND_QUOTIENT = 5;
@@ -75,10 +78,39 @@ pub const CodeAnalysisError = std.mem.Allocator.Error;
 const is_wasm = builtin.target.cpu.arch == .wasm32;
 
 /// Global analysis cache
-var analysis_cache: ?std.AutoHashMap([32]u8, *CodeAnalysis) = null;
+var analysis_cache: ?AnalysisLRUCache = null;
+var simple_cache: ?std.AutoHashMap([32]u8, *CodeAnalysis) = null;
 
 // Only include mutex for non-WASM builds
 var cache_mutex = if (!is_wasm) std.Thread.Mutex{} else {};
+
+/// Initialize the global analysis cache with build-configured size
+fn initAnalysisCache(allocator: std.mem.Allocator) !void {
+    if (analysis_cache != null) return;
+    
+    // Parse cache size configuration
+    const cache_size = if (@hasDecl(build_options, "cache_size")) blk: {
+        const size_str = build_options.cache_size;
+        if (std.mem.eql(u8, size_str, "embedded")) {
+            break :blk AnalysisLRUCache.CacheSize.embedded;
+        } else if (std.mem.eql(u8, size_str, "light_client")) {
+            break :blk AnalysisLRUCache.CacheSize.light_client;
+        } else if (std.mem.eql(u8, size_str, "full_node")) {
+            break :blk AnalysisLRUCache.CacheSize.full_node;
+        } else if (std.mem.eql(u8, size_str, "custom")) {
+            break :blk AnalysisLRUCache.CacheSize.custom;
+        } else {
+            break :blk AnalysisLRUCache.CacheSize.light_client;
+        }
+    } else AnalysisLRUCache.CacheSize.light_client;
+    
+    const custom_size = if (@hasDecl(build_options, "custom_cache_size")) 
+        build_options.custom_cache_size 
+    else 
+        null;
+    
+    analysis_cache = AnalysisLRUCache.init(allocator, cache_size, custom_size);
+}
 
 /// Contract represents the execution context for a single call frame in the EVM.
 ///
@@ -483,7 +515,6 @@ pub fn valid_jumpdest(self: *Contract, allocator: std.mem.Allocator, dest: u256)
 fn ensure_analysis(self: *Contract, allocator: std.mem.Allocator) void {
     if (self.analysis == null and self.code.len > 0) {
         self.analysis = analyze_code(allocator, self.code, self.code_hash) catch |err| {
-            // Log analysis failure for debugging - but continue execution
             logError("Contract.ensure_analysis: analyze_code failed", err);
             return;
         };
@@ -699,7 +730,7 @@ pub fn deinit(self: *Contract, allocator: std.mem.Allocator, pool: ?*StoragePool
             self.original_storage = null;
         }
     }
-    // Analysis is typically cached globally, so don't free
+    // Analysis is cached globally, so don't free
 }
 
 /// Analyzes bytecode and caches the results globally for reuse.
@@ -742,17 +773,41 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
     if (comptime std.Target.x86.featureSetHas(builtin.cpu.features, .avx2)) {
         return analyze_code_simd(allocator, code, code_hash);
     }
+    
     if (comptime !is_wasm) {
         cache_mutex.lock();
         defer cache_mutex.unlock();
     }
 
-    if (analysis_cache == null) {
-        analysis_cache = std.AutoHashMap([32]u8, *CodeAnalysis).init(allocator);
-    }
+    // Use simple cache when LRU cache is disabled for size optimization
+    if (comptime !AnalysisCacheConfig.ENABLE_CACHE) {
+        if (simple_cache == null) {
+            simple_cache = std.AutoHashMap([32]u8, *CodeAnalysis).init(allocator);
+        }
+        
+        if (simple_cache.?.get(code_hash)) |cached| {
+            return cached;
+        }
+    } else {
+        if (analysis_cache == null) {
+            initAnalysisCache(allocator) catch |err| {
+                Log.debug("Failed to initialize analysis cache: {any}", .{err});
+                // Fall back to simple cache
+                if (simple_cache == null) {
+                    simple_cache = std.AutoHashMap([32]u8, *CodeAnalysis).init(allocator);
+                }
+            };
+        }
 
-    if (analysis_cache.?.get(code_hash)) |cached| {
-        return cached;
+        if (analysis_cache) |*cache| {
+            if (cache.get(code_hash)) |cached| {
+                return cached;
+            }
+        } else if (simple_cache) |cache| {
+            if (cache.get(code_hash)) |cached| {
+                return cached;
+            }
+        }
     }
 
     const analysis = allocator.create(CodeAnalysis) catch |err| {
@@ -802,10 +857,82 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
     analysis.has_selfdestruct = contains_op(code, &[_]u8{@intFromEnum(opcode.Enum.SELFDESTRUCT)});
     analysis.has_create = contains_op(code, &[_]u8{ @intFromEnum(opcode.Enum.CREATE), @intFromEnum(opcode.Enum.CREATE2) });
 
-    analysis_cache.?.put(code_hash, analysis) catch |err| {
-        Log.debug("Failed to cache code analysis: {any}", .{err});
-        // Continue without caching - return the analysis anyway
+    // Cache the analysis in appropriate cache
+    if (comptime !AnalysisCacheConfig.ENABLE_CACHE) {
+        simple_cache.?.put(code_hash, analysis) catch |err| {
+            Log.debug("Failed to cache code analysis in simple cache: {any}", .{err});
+        };
+    } else {
+        if (analysis_cache) |*cache| {
+            cache.put(code_hash, analysis) catch |err| {
+                Log.debug("Failed to cache code analysis in LRU cache: {any}", .{err});
+                // Try simple cache as fallback
+                if (simple_cache) |*simple| {
+                    simple.put(code_hash, analysis) catch |simple_err| {
+                        Log.debug("Failed to cache code analysis in simple cache fallback: {any}", .{simple_err});
+                    };
+                }
+            };
+        } else if (simple_cache) |*cache| {
+            cache.put(code_hash, analysis) catch |err| {
+                Log.debug("Failed to cache code analysis in simple cache: {any}", .{err});
+            };
+        }
+    }
+
+    return analysis;
+}
+
+/// Direct bytecode analysis without caching (for size-optimized builds)
+fn analyze_code_direct(allocator: std.mem.Allocator, code: []const u8) CodeAnalysisError!*const CodeAnalysis {
+    // When caching is disabled, we still need to manage memory properly
+    // The caller (ensure_analysis) is responsible for cleanup
+    const analysis = allocator.create(CodeAnalysis) catch |err| {
+        Log.debug("Failed to allocate CodeAnalysis: {any}", .{err});
+        return err;
     };
+    errdefer allocator.destroy(analysis);
+
+    analysis.code_segments = try bitvec.BitVec64.codeBitmap(allocator, code);
+    errdefer analysis.code_segments.deinit(allocator);
+
+    var jumpdests = std.ArrayList(u32).init(allocator);
+    defer jumpdests.deinit();
+
+    var i: usize = 0;
+    while (i < code.len) {
+        const op = code[i];
+
+        if (op == @intFromEnum(opcode.Enum.JUMPDEST) and analysis.code_segments.isSetUnchecked(i)) {
+            jumpdests.append(@as(u32, @intCast(i))) catch |err| {
+                Log.debug("Failed to append jumpdest position {d}: {any}", .{ i, err });
+                return err;
+            };
+        }
+
+        if (opcode.is_push(op)) {
+            const push_size = opcode.get_push_size(op);
+            i += push_size + 1;
+        } else {
+            i += 1;
+        }
+    }
+
+    // Sort for binary search (skip in ReleaseSmall mode to save ~49KB)
+    if (comptime builtin.mode != .ReleaseSmall) {
+        std.mem.sort(u32, jumpdests.items, {}, comptime std.sort.asc(u32));
+    }
+    analysis.jumpdest_positions = jumpdests.toOwnedSlice() catch |err| {
+        Log.debug("Failed to convert jumpdests to owned slice: {any}", .{err});
+        return err;
+    };
+
+    analysis.max_stack_depth = 0;
+    analysis.block_gas_costs = null;
+    analysis.has_dynamic_jumps = contains_op(code, &[_]u8{ @intFromEnum(opcode.Enum.JUMP), @intFromEnum(opcode.Enum.JUMPI) });
+    analysis.has_static_jumps = false;
+    analysis.has_selfdestruct = contains_op(code, &[_]u8{@intFromEnum(opcode.Enum.SELFDESTRUCT)});
+    analysis.has_create = contains_op(code, &[_]u8{ @intFromEnum(opcode.Enum.CREATE), @intFromEnum(opcode.Enum.CREATE2) });
 
     return analysis;
 }
@@ -817,12 +944,35 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
         defer cache_mutex.unlock();
     }
 
-    if (analysis_cache == null) {
-        analysis_cache = std.AutoHashMap([32]u8, *CodeAnalysis).init(allocator);
-    }
+    // Use simple cache when LRU cache is disabled for size optimization
+    if (comptime !AnalysisCacheConfig.ENABLE_CACHE) {
+        if (simple_cache == null) {
+            simple_cache = std.AutoHashMap([32]u8, *CodeAnalysis).init(allocator);
+        }
+        
+        if (simple_cache.?.get(code_hash)) |cached| {
+            return cached;
+        }
+    } else {
+        if (analysis_cache == null) {
+            initAnalysisCache(allocator) catch |err| {
+                Log.debug("Failed to initialize analysis cache: {any}", .{err});
+                // Fall back to simple cache
+                if (simple_cache == null) {
+                    simple_cache = std.AutoHashMap([32]u8, *CodeAnalysis).init(allocator);
+                }
+            };
+        }
 
-    if (analysis_cache.?.get(code_hash)) |cached| {
-        return cached;
+        if (analysis_cache) |*cache| {
+            if (cache.get(code_hash)) |cached| {
+                return cached;
+            }
+        } else if (simple_cache) |cache| {
+            if (cache.get(code_hash)) |cached| {
+                return cached;
+            }
+        }
     }
 
     const analysis = allocator.create(CodeAnalysis) catch |err| {
@@ -897,10 +1047,105 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
     analysis.block_gas_costs = null;
     analysis.has_static_jumps = false;
 
-    analysis_cache.?.put(code_hash, analysis) catch |err| {
-        Log.debug("Failed to cache code analysis: {any}", .{err});
-        // Continue without caching - return the analysis anyway
+    // Cache the analysis in appropriate cache
+    if (comptime !AnalysisCacheConfig.ENABLE_CACHE) {
+        simple_cache.?.put(code_hash, analysis) catch |err| {
+            Log.debug("Failed to cache code analysis in simple cache: {any}", .{err});
+        };
+    } else {
+        if (analysis_cache) |*cache| {
+            cache.put(code_hash, analysis) catch |err| {
+                Log.debug("Failed to cache code analysis in LRU cache: {any}", .{err});
+                // Try simple cache as fallback
+                if (simple_cache) |*simple| {
+                    simple.put(code_hash, analysis) catch |simple_err| {
+                        Log.debug("Failed to cache code analysis in simple cache fallback: {any}", .{simple_err});
+                    };
+                }
+            };
+        } else if (simple_cache) |*cache| {
+            cache.put(code_hash, analysis) catch |err| {
+                Log.debug("Failed to cache code analysis in simple cache: {any}", .{err});
+            };
+        }
+    }
+
+    return analysis;
+}
+
+/// Direct SIMD analysis without caching (for size-optimized builds)
+fn analyze_code_simd_direct(allocator: std.mem.Allocator, code: []const u8) CodeAnalysisError!*const CodeAnalysis {
+    const analysis = allocator.create(CodeAnalysis) catch |err| {
+        Log.debug("Failed to allocate CodeAnalysis: {any}", .{err});
+        return err;
     };
+    errdefer allocator.destroy(analysis);
+
+    analysis.code_segments = try bitvec.BitVec64.codeBitmap(allocator, code);
+    errdefer analysis.code_segments.deinit(allocator);
+
+    var jumpdests = std.ArrayList(u32).init(allocator);
+    defer jumpdests.deinit();
+
+    // SIMD optimization: Process 16 bytes at a time
+    const vec_size = 16;
+    const jumpdest_vec = @as(@Vector(vec_size, u8), @splat(@intFromEnum(opcode.Enum.JUMPDEST)));
+    
+    var i: usize = 0;
+    
+    // Process aligned chunks with SIMD
+    while (i + vec_size <= code.len) {
+        // Load 16 bytes from code
+        const code_vec: @Vector(vec_size, u8) = code[i..][0..vec_size].*;
+        
+        // Compare with JUMPDEST
+        const cmp_result = code_vec == jumpdest_vec;
+        
+        // Check each element of the comparison result
+        inline for (0..vec_size) |j| {
+            if (cmp_result[j]) {
+                const pos = i + j;
+                // Check if this position is code (not data)
+                if (analysis.code_segments.isSetUnchecked(pos)) {
+                    jumpdests.append(@as(u32, @intCast(pos))) catch |err| {
+                        Log.debug("Failed to append jumpdest position {d}: {any}", .{ pos, err });
+                        return err;
+                    };
+                }
+            }
+        }
+        
+        i += vec_size;
+    }
+    
+    // Handle remaining bytes
+    while (i < code.len) {
+        if (code[i] == @intFromEnum(opcode.Enum.JUMPDEST) and analysis.code_segments.isSetUnchecked(i)) {
+            jumpdests.append(@as(u32, @intCast(i))) catch |err| {
+                Log.debug("Failed to append jumpdest position {d}: {any}", .{ i, err });
+                return err;
+            };
+        }
+        i += 1;
+    }
+
+    // Sort for binary search (skip in ReleaseSmall mode to save ~49KB)
+    if (comptime builtin.mode != .ReleaseSmall) {
+        std.mem.sort(u32, jumpdests.items, {}, comptime std.sort.asc(u32));
+    }
+    analysis.jumpdest_positions = jumpdests.toOwnedSlice() catch |err| {
+        Log.debug("Failed to convert jumpdests to owned slice: {any}", .{err});
+        return err;
+    };
+
+    // Use SIMD for finding special opcodes
+    analysis.has_dynamic_jumps = contains_op_simd(code, &[_]u8{ @intFromEnum(opcode.Enum.JUMP), @intFromEnum(opcode.Enum.JUMPI) });
+    analysis.has_selfdestruct = contains_op_simd(code, &[_]u8{@intFromEnum(opcode.Enum.SELFDESTRUCT)});
+    analysis.has_create = contains_op_simd(code, &[_]u8{ @intFromEnum(opcode.Enum.CREATE), @intFromEnum(opcode.Enum.CREATE2) });
+    
+    analysis.max_stack_depth = 0;
+    analysis.block_gas_costs = null;
+    analysis.has_static_jumps = false;
 
     return analysis;
 }
@@ -953,13 +1198,18 @@ pub fn clear_analysis_cache(allocator: std.mem.Allocator) void {
     }
 
     if (analysis_cache) |*cache| {
+        cache.deinit();
+        analysis_cache = null;
+    }
+    
+    if (simple_cache) |*cache| {
         var iter = cache.iterator();
         while (iter.next()) |entry| {
             entry.value_ptr.*.deinit(allocator);
             allocator.destroy(entry.value_ptr.*);
         }
         cache.deinit();
-        analysis_cache = null;
+        simple_cache = null;
     }
 }
 
