@@ -1,3 +1,4 @@
+const std = @import("std");
 const primitives = @import("primitives");
 
 /// Precompile addresses as defined by the Ethereum specification
@@ -36,12 +37,13 @@ pub const POINT_EVALUATION_ADDRESS: primitives.Address.Address = [_]u8{ 0, 0, 0,
 /// @param address The address to check
 /// @return true if the address is a known precompile, false otherwise
 pub fn is_precompile(address: primitives.Address.Address) bool {
-    // Check if the first 19 bytes are zero
-    for (address[0..19]) |byte| {
-        if (byte != 0) {
-            @branchHint(.cold);
-            return false;
-        }
+    // Optimized check using larger integer comparisons
+    const part1 = std.mem.readInt(u64, address[0..8], .big);
+    const part2 = std.mem.readInt(u64, address[8..16], .big);
+    // check bytes 16, 17, 18
+    if (part1 != 0 or part2 != 0 or address[16] != 0 or address[17] != 0 or address[18] != 0) {
+        @branchHint(.cold);
+        return false;
     }
 
     // Check if the last byte is in the precompile range (1-10)

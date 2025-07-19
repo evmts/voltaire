@@ -6,21 +6,12 @@ const context = @import("context.zig");
 
 /// Read 32 bytes as u256 at context-relative offset.
 pub fn get_u256(self: *const Memory, relative_offset: usize) MemoryError!u256 {
-    // Debug logging removed for fuzz testing compatibility
     if (relative_offset + 32 > self.context_size()) {
-        // Debug logging removed for fuzz testing compatibility
         return MemoryError.InvalidOffset;
     }
     const abs_offset = self.my_checkpoint + relative_offset;
     const bytes = self.shared_buffer_ref.items[abs_offset .. abs_offset + 32];
-
-    // Convert big-endian bytes to u256
-    var value: u256 = 0;
-    for (bytes) |byte| {
-        value = (value << 8) | byte;
-    }
-    // Debug logging removed for fuzz testing compatibility
-    return value;
+    return std.mem.readInt(u256, bytes[0..32], .big);
 }
 
 /// Read arbitrary slice of memory at context-relative offset.

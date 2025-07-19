@@ -152,13 +152,11 @@ pub fn dup_unsafe(self: *Stack, n: usize) void {
 
 /// Pop 2 values without pushing (unsafe version)
 pub fn pop2_unsafe(self: *Stack) struct { a: u256, b: u256 } {
-    @branchHint(.likely);
-    @setRuntimeSafety(false);
+    @branchHint(.likely); @setRuntimeSafety(false);
+    const a = self.data[self.size - 2];
+    const b = self.data[self.size - 1];
     self.size -= 2;
-    return .{
-        .a = self.data[self.size],
-        .b = self.data[self.size + 1],
-    };
+    return .{ .a = a, .b = b };
 }
 
 /// Pop 3 values without pushing (unsafe version)

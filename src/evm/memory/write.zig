@@ -63,20 +63,8 @@ pub fn set_data_bounded(
 
 /// Write u256 value at context-relative offset (for test compatibility)
 pub fn set_u256(self: *Memory, relative_offset: usize, value: u256) MemoryError!void {
-    // Debug logging removed for fuzz testing compatibility
     _ = try self.ensure_context_capacity(relative_offset + 32);
     const abs_offset = self.my_checkpoint + relative_offset;
-
-    // Convert u256 to big-endian bytes
-    var bytes: [32]u8 = undefined;
-    var val = value;
-    var i: usize = 32;
-    while (i > 0) {
-        i -= 1;
-        bytes[i] = @intCast(val & 0xFF);
-        val >>= 8;
-    }
-
-    // Debug logging removed for fuzz testing compatibility
-    @memcpy(self.shared_buffer_ref.items[abs_offset .. abs_offset + 32], &bytes);
+    const bytes_ptr: *[32]u8 = @ptrCast(self.shared_buffer_ref.items[abs_offset..abs_offset + 32].ptr);
+    std.mem.writeInt(u256, bytes_ptr, value, .big);
 }
