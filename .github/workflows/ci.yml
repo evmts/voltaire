@@ -8,14 +8,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-test:
-    name: Build and Test
+  build-and-test-native:
+    name: Build and Test (Native)
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Focus on macOS for now as it's passing consistently
-          # Other platforms have Rust library linking issues that need separate fixes
           - os: macos-latest
             runs-on: macos-latest
     
@@ -43,3 +41,51 @@ jobs:
           echo "Build and test completed for ${{ matrix.os }}"
           echo "OS: ${{ matrix.os }}"
         shell: bash
+
+  build-and-test-docker:
+    name: Build and Test (Docker)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - container: ubuntu
+            dockerfile: .docker/Dockerfile.ubuntu
+          - container: alpine
+            dockerfile: .docker/Dockerfile.alpine
+          - container: debian
+            dockerfile: .docker/Dockerfile.debian
+    
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          tags: guillotine-${{ matrix.container }}:latest
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run CI Pipeline in Docker
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            guillotine-${{ matrix.container }}:latest \
+            bash -c "zig build && zig build test && zig build bench"
+
+      - name: Report Results
+        if: always()
+        run: |
+          echo "Build and test completed for ${{ matrix.container }}"
+          echo "Container: ${{ matrix.container }}"

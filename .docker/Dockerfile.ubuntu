@@ -1,0 +1,41 @@
+# Ubuntu-based Docker image for Guillotine CI
+FROM ubuntu:22.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential \
+    libssl-dev \
+    pkg-config \
+    clang \
+    lld \
+    nodejs \
+    npm \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust (needed for bn254_wrapper)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Zig 0.14.0
+RUN curl -L https://ziglang.org/builds/zig-linux-x86_64-0.14.0.tar.xz | tar -xJ -C /opt && \
+    ln -s /opt/zig-linux-x86_64-0.14.0/zig /usr/local/bin/zig
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy the project files
+COPY . .
+
+# Pre-download dependencies to cache them
+RUN npm install && \
+    cd src/bn254_wrapper && \
+    cargo fetch
+
+# Default command
+CMD ["bash", "-c", "zig build && zig build test && zig build bench"]
