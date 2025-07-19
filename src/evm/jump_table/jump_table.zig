@@ -241,7 +241,28 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             };
         }
     } else {
-        inline for (0..32) |i| {
+        // Optimized implementations for common small PUSH operations
+        // PUSH1 - most common, optimized with direct byte access
+        jt.table[0x60] = &Operation{
+            .execute = stack_ops.op_push1,
+            .constant_gas = execution.gas_constants.GasFastestStep,
+            .min_stack = 0,
+            .max_stack = Stack.CAPACITY - 1,
+        };
+        
+        // PUSH2-PUSH8 - optimized with u64 arithmetic
+        inline for (1..8) |i| {
+            const n = i + 1;
+            jt.table[0x60 + i] = &Operation{
+                .execute = stack_ops.make_push_small(n),
+                .constant_gas = execution.gas_constants.GasFastestStep,
+                .min_stack = 0,
+                .max_stack = Stack.CAPACITY - 1,
+            };
+        }
+        
+        // PUSH9-PUSH32 - use generic implementation
+        inline for (8..32) |i| {
             const n = i + 1;
             jt.table[0x60 + i] = &Operation{
                 .execute = stack_ops.make_push(n),
