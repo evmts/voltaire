@@ -30,13 +30,5 @@ RUN curl -L https://ziglang.org/builds/zig-linux-x86_64-0.14.0.tar.xz | tar -xJ 
 # Set working directory
 WORKDIR /workspace
 
-# Copy the project files
-COPY . .
-
-# Pre-download dependencies to cache them
-RUN npm install && \
-    cd src/bn254_wrapper && \
-    cargo fetch
-
 # Default command
 CMD ["bash", "-c", "zig build && zig build test && zig build bench"]
