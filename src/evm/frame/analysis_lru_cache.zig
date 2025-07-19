@@ -1,6 +1,6 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const CodeAnalysis = @import("code_analysis.zig");
-const build_options = @import("build_options");
 
 /// LRU cache for bytecode analysis results
 /// 
@@ -227,18 +227,15 @@ pub const AnalysisLRUCache = struct {
 // Compile-time configuration for cache inclusion
 pub const AnalysisCacheConfig = struct {
     /// Whether to include the LRU cache (disabled when optimizing for size)
-    pub const ENABLE_CACHE = if (@hasDecl(build_options, "optimize_size")) 
-        !build_options.optimize_size 
-    else 
-        true;
+    pub const ENABLE_CACHE = builtin.mode != .ReleaseSmall;
         
-    /// Default cache size based on build configuration
-    pub const DEFAULT_CACHE_SIZE = if (@hasDecl(build_options, "cache_size"))
-        build_options.cache_size
-    else if (@hasDecl(build_options, "optimize_size") and build_options.optimize_size)
-        AnalysisLRUCache.CacheSize.embedded
-    else
-        AnalysisLRUCache.CacheSize.light_client;
+    /// Default cache size based on build mode
+    pub const DEFAULT_CACHE_SIZE = switch (builtin.mode) {
+        .Debug => AnalysisLRUCache.CacheSize.light_client,
+        .ReleaseSafe => AnalysisLRUCache.CacheSize.light_client,
+        .ReleaseFast => AnalysisLRUCache.CacheSize.full_node,
+        .ReleaseSmall => AnalysisLRUCache.CacheSize.embedded, // Smallest cache for size optimization
+    };
 };
 
 test "AnalysisLRUCache basic functionality" {

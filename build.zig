@@ -137,19 +137,9 @@ pub fn build(b: *std.Build) void {
     // Custom build option to disable precompiles
     const no_precompiles = b.option(bool, "no_precompiles", "Disable all EVM precompiles for minimal build") orelse false;
     
-    // Custom build option to optimize for size
-    const optimize_size = b.option(bool, "optimize_size", "Optimize for binary size by using runtime calculations instead of lookup tables") orelse false;
-    
-    // Custom build options for bytecode analysis cache
-    const cache_size_str = b.option([]const u8, "cache_size", "Bytecode analysis cache size: embedded (100), light_client (1000), full_node (10000), or custom number") orelse "default";
-    const custom_cache_size = b.option(u32, "custom_cache_size", "Custom cache size when cache_size=custom") orelse 1000;
-
     // Create build options module
     const build_options = b.addOptions();
     build_options.addOption(bool, "no_precompiles", no_precompiles);
-    build_options.addOption(bool, "optimize_size", optimize_size);
-    build_options.addOption([]const u8, "cache_size", cache_size_str);
-    build_options.addOption(u32, "custom_cache_size", custom_cache_size);
 
     const lib_mod = b.createModule(.{
         .root_source_file = b.path("src/root.zig"),

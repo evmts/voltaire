@@ -1,6 +1,6 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const Hardfork = @import("../hardforks/hardfork.zig").Hardfork;
-const build_options = @import("build_options");
 
 /// Storage slot status for gas calculation
 pub const StorageStatus = enum(u8) {
@@ -39,7 +39,7 @@ const STATUS_COUNT = @typeInfo(StorageStatus).@"enum".fields.len;
 /// Pre-computed storage cost table indexed by [hardfork][status]
 /// This provides O(1) lookup for storage costs across all hardforks
 /// Only generated when not optimizing for size
-pub const STORAGE_COST_TABLE = if (build_options.optimize_size) void else blk: {
+pub const STORAGE_COST_TABLE = if (builtin.mode == .ReleaseSmall) void else blk: {
     @setEvalBranchQuota(10000);
     var table: [HARDFORK_COUNT][STATUS_COUNT]StorageCost = undefined;
     
@@ -109,7 +109,7 @@ pub const STORAGE_COST_TABLE = if (build_options.optimize_size) void else blk: {
 /// Get storage cost for a given hardfork and storage status
 /// Uses pre-computed table for O(1) lookup when available, otherwise calculates at runtime
 pub fn getStorageCost(hardfork: Hardfork, status: StorageStatus) StorageCost {
-    if (build_options.optimize_size) {
+    if (builtin.mode == .ReleaseSmall) {
         return calculateStorageCostRuntime(hardfork, status);
     } else {
         const fork_idx = @intFromEnum(hardfork);
@@ -126,7 +126,7 @@ pub fn calculateStorageCost(hardfork: Hardfork, current: u256, new: u256) Storag
 }
 
 /// Calculate storage cost for a given hardfork and status at runtime
-/// Used internally when optimize_size is enabled
+/// Used internally when ReleaseSmall mode is enabled
 fn calculateStorageCostRuntime(hardfork: Hardfork, status: StorageStatus) StorageCost {
     // Handle unchanged case first (most common)
     if (status == .Unchanged) {
@@ -309,7 +309,7 @@ test "storage cost table compile-time verification" {
     const testing = std.testing;
     
     // Skip test if optimizing for size
-    if (build_options.optimize_size) {
+    if (builtin.mode == .ReleaseSmall) {
         return;
     }
     

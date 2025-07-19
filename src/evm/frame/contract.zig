@@ -84,32 +84,12 @@ var simple_cache: ?std.AutoHashMap([32]u8, *CodeAnalysis) = null;
 // Only include mutex for non-WASM builds
 var cache_mutex = if (!is_wasm) std.Thread.Mutex{} else {};
 
-/// Initialize the global analysis cache with build-configured size
+/// Initialize the global analysis cache with default size based on build mode
 fn initAnalysisCache(allocator: std.mem.Allocator) !void {
     if (analysis_cache != null) return;
     
-    // Parse cache size configuration
-    const cache_size = if (@hasDecl(build_options, "cache_size")) blk: {
-        const size_str = build_options.cache_size;
-        if (std.mem.eql(u8, size_str, "embedded")) {
-            break :blk AnalysisLRUCache.CacheSize.embedded;
-        } else if (std.mem.eql(u8, size_str, "light_client")) {
-            break :blk AnalysisLRUCache.CacheSize.light_client;
-        } else if (std.mem.eql(u8, size_str, "full_node")) {
-            break :blk AnalysisLRUCache.CacheSize.full_node;
-        } else if (std.mem.eql(u8, size_str, "custom")) {
-            break :blk AnalysisLRUCache.CacheSize.custom;
-        } else {
-            break :blk AnalysisLRUCache.CacheSize.light_client;
-        }
-    } else AnalysisLRUCache.CacheSize.light_client;
-    
-    const custom_size = if (@hasDecl(build_options, "custom_cache_size")) 
-        build_options.custom_cache_size 
-    else 
-        null;
-    
-    analysis_cache = AnalysisLRUCache.init(allocator, cache_size, custom_size);
+    const cache_size = AnalysisCacheConfig.DEFAULT_CACHE_SIZE;
+    analysis_cache = AnalysisLRUCache.init(allocator, cache_size, null);
 }
 
 /// Contract represents the execution context for a single call frame in the EVM.
