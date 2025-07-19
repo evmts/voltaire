@@ -7,11 +7,7 @@ const constants = @import("constants.zig");
 /// Returns the size of the memory region visible to the current context.
 pub inline fn context_size(self: *const Memory) usize {
     const total_len = self.shared_buffer_ref.items.len;
-    if (total_len < self.my_checkpoint) {
-        // This indicates a bug or inconsistent state
-        return 0;
-    }
-    return total_len - self.my_checkpoint;
+    return total_len -| self.my_checkpoint;
 }
 
 /// Ensures the current context's memory region is at least `min_context_size` bytes.
@@ -64,7 +60,7 @@ pub noinline fn ensure_context_capacity(self: *Memory, min_context_size: usize) 
     @memset(shared_buffer.items[old_total_buffer_len..new_total_len], 0);
 
     const new_total_words = constants.calculate_num_words(new_total_len);
-    const words_added = if (new_total_words > old_total_words) new_total_words - old_total_words else 0;
+    const words_added = new_total_words -| old_total_words;
     Log.debug("Memory.ensure_context_capacity: Expansion complete, old_words={}, new_words={}, words_added={}", .{ old_total_words, new_total_words, words_added });
     return words_added;
 }
