@@ -45,7 +45,7 @@ const SHA256_OUTPUT_SIZE: usize = crypto.HashAlgorithms.SHA256.OUTPUT_SIZE;
 /// @param input_size Size of input data in bytes
 /// @return Gas cost for processing this input
 pub fn calculate_gas(input_size: usize) u64 {
-    const word_count = (input_size + 31) / 32; // Ceiling division
+    const word_count = gas_utils.wordCount(input_size);
     return SHA256_BASE_COST + SHA256_WORD_COST * word_count;
 }
 

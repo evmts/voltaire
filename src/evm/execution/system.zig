@@ -159,17 +159,6 @@ pub const CallResult = struct {
     }
 };
 
-/// Calculate the 63/64th gas forwarding rule (EIP-150)
-///
-/// EIP-150 specifies that a maximum of 63/64 of remaining gas can be forwarded to subcalls.
-/// This prevents griefing attacks where all gas is forwarded, leaving no gas for cleanup.
-///
-/// @param remaining_gas Available gas before the call
-/// @return Maximum gas that can be forwarded (63/64 of remaining)
-fn calculate_63_64_gas(remaining_gas: u64) u64 {
-    if (remaining_gas == 0) return 0;
-    return remaining_gas - (remaining_gas / 64);
-}
 
 // ============================================================================
 // Shared Validation Functions for Call Operations
@@ -415,8 +404,8 @@ pub fn calculate_call_gas(
 
     const gas_after_operation = remaining_gas - gas_cost;
 
-    // Apply 63/64th rule to determine maximum forwardable gas
-    const max_forwardable = calculate_63_64_gas(gas_after_operation);
+    // Apply 63/64th rule to determine maximum forwardable gas (EIP-150)
+    const max_forwardable = (gas_after_operation * 63) / 64;
 
     // Use minimum of requested gas and maximum forwardable
     const gas_to_forward = @min(local_gas_limit, max_forwardable);
@@ -522,8 +511,8 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     // Calculate and consume gas for creation
     try consume_create_gas(frame, vm, init_code);
 
-    // Calculate gas to give to the new contract (all but 1/64th)
-    const gas_for_call = frame.gas_remaining - (frame.gas_remaining / 64);
+    // Calculate gas to give to the new contract (EIP-150: 63/64 forwarding rule)
+    const gas_for_call = (frame.gas_remaining * 63) / 64;
 
     // Clear return data before making new call to reduce memory pressure
     // Previous return data is no longer needed once we make a new call
@@ -565,8 +554,8 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     // Calculate and consume gas for CREATE2 (includes hash cost)
     try consume_create2_gas(frame, vm, init_code);
 
-    // Calculate gas to give to the new contract (all but 1/64th)
-    const gas_for_call = frame.gas_remaining - (frame.gas_remaining / 64);
+    // Calculate gas to give to the new contract (EIP-150: 63/64 forwarding rule)
+    const gas_for_call = (frame.gas_remaining * 63) / 64;
 
     // Clear return data before making new call to reduce memory pressure
     // Previous return data is no longer needed once we make a new call
