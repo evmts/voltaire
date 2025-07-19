@@ -1,0 +1,35 @@
+# Alpine-based Docker image for Guillotine CI
+FROM --platform=linux/amd64 alpine:3.19
+
+# Install system dependencies
+RUN apk add --no-cache \
+    curl \
+    git \
+    build-base \
+    openssl-dev \
+    pkgconfig \
+    clang \
+    lld \
+    python3 \
+    bash \
+    tar \
+    xz \
+    ca-certificates
+
+# Install Node.js 18
+RUN apk add --no-cache nodejs npm && \
+    node --version
+
+# Install Rust (needed for bn254_wrapper)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Zig 0.14.0
+RUN curl -L https://ziglang.org/download/0.14.0/zig-linux-x86_64-0.14.0.tar.xz | tar -xJ -C /opt && \
+    ln -s /opt/zig-linux-x86_64-0.14.0/zig /usr/local/bin/zig
+
+# Set working directory
+WORKDIR /workspace
+
+# Default command
+CMD ["bash", "-c", "zig build && zig build test && zig build bench"]

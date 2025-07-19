@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  ubuntu-build:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.ubuntu
+    container_name: guillotine-ubuntu
+    volumes:
+      - .:/workspace
+    command: bash -c "zig build && zig build test && zig build bench"
+
+  alpine-build:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.alpine
+    container_name: guillotine-alpine
+    volumes:
+      - .:/workspace
+    command: bash -c "zig build && zig build test && zig build bench"
+
+  debian-build:
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile.debian
+    container_name: guillotine-debian
+    volumes:
+      - .:/workspace
+    command: bash -c "zig build && zig build test && zig build bench"

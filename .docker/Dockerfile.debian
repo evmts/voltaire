@@ -1,0 +1,39 @@
+# Debian-based Docker image for Guillotine CI
+FROM --platform=linux/amd64 debian:12
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential \
+    libssl-dev \
+    pkg-config \
+    clang \
+    lld \
+    python3 \
+    xz-utils \
+    ca-certificates \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 18 from NodeSource
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Rust (needed for bn254_wrapper)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Zig 0.14.0
+RUN curl -L https://ziglang.org/download/0.14.0/zig-linux-x86_64-0.14.0.tar.xz | tar -xJ -C /opt && \
+    ln -s /opt/zig-linux-x86_64-0.14.0/zig /usr/local/bin/zig
+
+# Set working directory
+WORKDIR /workspace
+
+# Default command
+CMD ["bash", "-c", "zig build && zig build test && zig build bench"]
