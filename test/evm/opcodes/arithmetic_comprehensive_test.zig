@@ -37,9 +37,13 @@ test "STOP (0x00): Halt execution" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -80,9 +84,13 @@ test "ADD (0x01): Basic addition" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test basic addition: 5 + 10 = 15
     try frame.stack.append(5);
@@ -122,9 +130,13 @@ test "ADD: Overflow wraps to zero" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test overflow: MAX + 1 = 0
     const max_u256 = std.math.maxInt(u256);
@@ -164,9 +176,13 @@ test "ADD: Large numbers" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test large number addition
     const large1 = std.math.maxInt(u256) / 2;
@@ -212,9 +228,13 @@ test "MUL (0x02): Basic multiplication" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test basic multiplication: 5 * 10 = 50
     try frame.stack.append(5);
@@ -253,9 +273,13 @@ test "MUL: Multiplication by zero" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test multiplication by zero
     try frame.stack.append(1000);
@@ -294,9 +318,13 @@ test "MUL: Overflow behavior" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test overflow: (2^128) * (2^128) should wrap
     const half_max = @as(u256, 1) << 128;
@@ -341,9 +369,13 @@ test "SUB (0x03): Basic subtraction" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test basic subtraction: 10 - 5 = 5
     try frame.stack.append(10);
@@ -382,9 +414,13 @@ test "SUB: Underflow wraps to max" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test underflow: 0 - 1 = MAX
     try frame.stack.append(0);
@@ -427,9 +463,13 @@ test "DIV (0x04): Basic division" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test basic division: 20 / 5 = 4
     try frame.stack.append(20);
@@ -468,9 +508,13 @@ test "DIV: Division by zero returns zero" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test division by zero: 100 / 0 = 0
     try frame.stack.append(100);
@@ -509,9 +553,13 @@ test "DIV: Integer division truncates" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test truncation: 7 / 3 = 2 (not 2.33...)
     try frame.stack.append(7);
@@ -554,9 +602,13 @@ test "SDIV (0x05): Signed division positive" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test positive division: 20 / 5 = 4
     try frame.stack.append(20);
@@ -595,9 +647,13 @@ test "SDIV: Signed division negative" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test negative division: -20 / 5 = -4
     // In two's complement: -20 = MAX - 19
@@ -639,9 +695,13 @@ test "SDIV: Division by zero returns zero" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test division by zero
     try frame.stack.append(100);
@@ -680,9 +740,13 @@ test "SDIV: Edge case MIN / -1" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test MIN / -1 = MIN (special case)
     const min_i256 = @as(u256, 1) << 255; // -2^255 in two's complement
@@ -727,9 +791,13 @@ test "MOD (0x06): Basic modulo" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test basic modulo: 17 % 5 = 2
     try frame.stack.append(17);
@@ -768,9 +836,13 @@ test "MOD: Modulo by zero returns zero" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test modulo by zero: 100 % 0 = 0
     try frame.stack.append(100);
@@ -813,9 +885,13 @@ test "SMOD (0x07): Signed modulo positive" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test positive modulo: 17 % 5 = 2
     try frame.stack.append(17);
@@ -854,9 +930,13 @@ test "SMOD: Signed modulo negative" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test negative modulo: -17 % 5 = -2
     const neg_17 = std.math.maxInt(u256) - 16;
@@ -901,9 +981,13 @@ test "ADDMOD (0x08): Basic modular addition" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: (10 + 10) % 8 = 4
     try frame.stack.append(10);
@@ -943,9 +1027,13 @@ test "ADDMOD: Modulo zero returns zero" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: (10 + 10) % 0 = 0
     try frame.stack.append(10);
@@ -985,9 +1073,13 @@ test "ADDMOD: No intermediate overflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test with values that would overflow u256
     const max = std.math.maxInt(u256);
@@ -1035,9 +1127,13 @@ test "MULMOD (0x09): Basic modular multiplication" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: (10 * 10) % 8 = 4
     try frame.stack.append(10);
@@ -1077,9 +1173,13 @@ test "MULMOD: No intermediate overflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test with values that would overflow u256
     const large = @as(u256, 1) << 200;
@@ -1125,9 +1225,13 @@ test "EXP (0x0A): Basic exponentiation" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: 2^8 = 256
     try frame.stack.append(2);
@@ -1166,9 +1270,13 @@ test "EXP: Zero exponent" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: 100^0 = 1
     try frame.stack.append(100);
@@ -1207,9 +1315,13 @@ test "EXP: Zero base with non-zero exponent" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: 0^10 = 0
     try frame.stack.append(0);
@@ -1248,9 +1360,13 @@ test "EXP: Gas consumption scales with exponent size" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Test with large exponent
     try frame.stack.append(2);
@@ -1297,9 +1413,13 @@ test "SIGNEXTEND (0x0B): Extend positive byte" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: sign extend 0x7F (positive) from byte 0
     try frame.stack.append(0x7F); // value (pushed first, popped second)
@@ -1338,9 +1458,13 @@ test "SIGNEXTEND: Extend negative byte" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: sign extend 0xFF (negative) from byte 0
     try frame.stack.append(0xFF); // value (pushed first, popped second)
@@ -1381,9 +1505,13 @@ test "SIGNEXTEND: Extend from higher byte position" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: sign extend 0x00FF from byte 1 (second byte)
     try frame.stack.append(0x00FF); // value (pushed first, popped second)
@@ -1423,9 +1551,13 @@ test "SIGNEXTEND: Byte position >= 31 returns value unchanged" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: byte position >= 31 returns original value
     const test_value = 0x123456789ABCDEF;
@@ -1508,9 +1640,13 @@ test "Arithmetic opcodes: Gas consumption" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init_minimal(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer frame.deinit();
-            frame.gas_remaining = 1000;
 
         try tc.setup(&frame);
 
@@ -1558,9 +1694,13 @@ test "Arithmetic opcodes: Stack underflow" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init_minimal(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer frame.deinit();
-            frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1591,9 +1731,13 @@ test "Arithmetic opcodes: Stack underflow" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init_minimal(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer frame.deinit();
-            frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);

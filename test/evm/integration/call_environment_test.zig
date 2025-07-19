@@ -50,9 +50,13 @@ test "Integration: Call with value transfer and balance check" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -137,9 +141,13 @@ test "Integration: Environment opcodes in context" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -219,9 +227,13 @@ test "Integration: CREATE with init code from memory" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Build init code that stores a value and returns runtime code
     // PUSH1 42, PUSH1 0, SSTORE (store 42 at slot 0)
@@ -310,9 +322,13 @@ test "Integration: DELEGATECALL preserves context" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -372,9 +388,13 @@ test "Integration: STATICCALL prevents state changes" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -434,9 +454,13 @@ test "Integration: Call depth limit handling" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -503,9 +527,13 @@ test "Integration: Return data handling across calls" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -587,9 +615,13 @@ test "Integration: Gas forwarding in calls" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);

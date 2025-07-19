@@ -6,6 +6,7 @@ const OperationModule = Evm.OperationModule;
 const Stack = Evm.Stack;
 const Frame = Evm.Frame;
 const Contract = Evm.Contract;
+const MemoryDatabase = Evm.MemoryDatabase;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const execution = Evm.execution;
@@ -77,18 +78,24 @@ test "JumpTable execute consumes gas before opcode execution" {
         &[_]u8{}, // input
         false, // is_static
     );
-    var test_frame = try Frame.init_minimal(test_allocator, &test_contract);
+    // Create a proper EVM instance
+    var memory_db = MemoryDatabase.init(test_allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    var test_vm = try Evm.Evm.init(test_allocator, db_interface, null, null);
+    defer test_vm.deinit();
+    
+    var builder = Frame.builder(test_allocator);
+    var test_frame = try builder
+        .withVm(&test_vm)
+        .withContract(&test_contract)
+        .withGas(100)
+        .build();
     defer test_frame.deinit();
-    test_frame.gas_remaining = 100;
 
     // Push two values for ADD operation
     try test_frame.stack.append(10);
     try test_frame.stack.append(20);
-
-    // Create interpreter and state pointers
-    var test_vm = struct {
-        allocator: std.mem.Allocator,
-    }{ .allocator = test_allocator };
     const interpreter_ptr: *OperationModule.Interpreter = @ptrCast(&test_vm);
     const state_ptr: *OperationModule.State = @ptrCast(&test_frame);
 

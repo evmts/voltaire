@@ -36,9 +36,13 @@ test "MSIZE (0x59): Get current memory size" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -121,9 +125,13 @@ test "GAS (0x5A): Get remaining gas" {
     };
 
     for (test_cases) |initial_gas| {
-        var frame = try Frame.init_minimal(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(initial_gas)
+            .build();
         defer frame.deinit();
-        frame.gas_remaining = initial_gas;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -188,9 +196,13 @@ test "JUMPDEST (0x5B): Mark valid jump destination" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -251,9 +263,13 @@ test "MSIZE, GAS, JUMPDEST: Gas consumption" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -308,9 +324,13 @@ test "MSIZE: Memory expansion scenarios" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -360,9 +380,13 @@ test "GAS: Low gas scenarios" {
     defer contract.deinit(allocator, null);
 
     // Test with exactly enough gas for GAS opcode
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(2)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 2;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -423,9 +447,13 @@ test "JUMPDEST: Code analysis integration" {
     // The JUMPDEST at position 8 should be valid
     try testing.expect(contract.valid_jumpdest(allocator, 8));
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -466,9 +494,13 @@ test "Stack operations: MSIZE and GAS push exactly one value" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);

@@ -32,9 +32,13 @@ test "Integration: stack limit boundary conditions" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Fill stack to near limit (1024 items)
     var i: usize = 0;
@@ -93,9 +97,13 @@ test "Integration: memory expansion limits" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(30000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 30000;
 
     // Try moderate memory expansion
     try frame.stack.push(0x1234);
@@ -149,9 +157,13 @@ test "Integration: arithmetic overflow and underflow" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const max_u256 = std.math.maxInt(u256);
 
@@ -217,9 +229,13 @@ test "Integration: signed arithmetic boundaries" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Maximum positive signed value (2^255 - 1)
     const max_signed: u256 = (@as(u256, 1) << 255) - 1;
@@ -276,9 +292,13 @@ test "Integration: bitwise operation boundaries" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -347,9 +367,13 @@ test "Integration: call gas calculation edge cases" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Set up call result expectation
     vm.call_result = .{
@@ -408,9 +432,13 @@ test "Integration: return data boundary conditions" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Set return data
     const return_data = [_]u8{ 0x11, 0x22, 0x33, 0x44 };
@@ -483,9 +511,13 @@ test "Integration: exponentiation edge cases" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -557,9 +589,13 @@ test "Integration: jump destination validation" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -609,9 +645,13 @@ test "Integration: storage slot temperature transitions" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -675,9 +715,13 @@ test "Integration: MCOPY overlap handling" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Write pattern to memory
     var i: usize = 0;

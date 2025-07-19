@@ -41,9 +41,13 @@ test "Integration: contract creation and initialization" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Create simple init code that stores a value and returns runtime code
     // PUSH1 0x42 PUSH1 0x00 SSTORE   (store 0x42 at slot 0)
@@ -118,9 +122,13 @@ test "Integration: inter-contract calls" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Set up accounts
     try vm.set_balance(contract_address, 10000);
@@ -195,9 +203,13 @@ test "Integration: delegatecall context preservation" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(50000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 50000;
     frame.value = 1000;
 
     // Prepare call data
@@ -265,9 +277,13 @@ test "Integration: staticcall restrictions" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(50000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 50000;
 
     // Set up for STATICCALL
     vm.call_result = .{
@@ -348,9 +364,13 @@ test "Integration: CREATE2 deterministic deployment" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Simple init code
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }; // PUSH1 0 PUSH1 0 RETURN
@@ -425,9 +445,13 @@ test "Integration: selfdestruct with balance transfer" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Set up contract with balance
     const contract_balance: u256 = 5000;
@@ -481,9 +505,13 @@ test "Integration: call depth limit enforcement" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Set depth to maximum
     frame.depth = 1024;
@@ -550,9 +578,13 @@ test "Integration: return data buffer management" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(50000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 50000;
 
     // Initial state - no return data
     const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);

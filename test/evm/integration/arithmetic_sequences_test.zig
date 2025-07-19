@@ -48,10 +48,14 @@ test "Integration: Complex arithmetic calculation" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .withInput(contract.input)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
-    frame_ptr.input = contract.input;
 
     // Push values and execute: (10 + 20) * 3 - 15
     try frame_ptr.stack.append(20);
@@ -108,10 +112,14 @@ test "Integration: Modular arithmetic with overflow" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .withInput(contract.input)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
-    frame_ptr.input = contract.input;
 
     const max_u256 = std.math.maxInt(u256);
 
@@ -166,10 +174,14 @@ test "Integration: Fibonacci sequence calculation" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .withInput(contract.input)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
-    frame_ptr.input = contract.input;
 
     // Initialize with 0, 1
     try frame_ptr.stack.append(0); // fib(0)
@@ -237,10 +249,14 @@ test "Integration: Conditional arithmetic based on comparison" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .withInput(contract.input)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
-    frame_ptr.input = contract.input;
 
     // Setup for opcode execution
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -323,10 +339,14 @@ test "Integration: Calculate average of multiple values" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .withInput(contract.input)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
-    frame_ptr.input = contract.input;
 
     // Setup for opcode execution
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -387,10 +407,14 @@ test "Integration: Complex ADDMOD and MULMOD calculations" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .withInput(contract.input)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
-    frame_ptr.input = contract.input;
 
     // Setup for opcode execution
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -468,10 +492,14 @@ test "Integration: Exponentiation chain" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(50000)
+        .withInput(contract.input)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 50000;
-    frame_ptr.input = contract.input;
 
     // Setup for opcode execution
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);

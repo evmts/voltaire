@@ -37,9 +37,13 @@ test "AND (0x16): Basic bitwise AND" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: 0xFF00 & 0x0FF0 = 0x0F00
     try frame.stack.append(0xFF00);
@@ -79,9 +83,13 @@ test "AND: All zeros" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: 0xFFFF & 0x0000 = 0x0000
     try frame.stack.append(0xFFFF);
@@ -120,9 +128,13 @@ test "AND: All ones" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: MAX & MAX = MAX
     const max = std.math.maxInt(u256);
@@ -162,9 +174,13 @@ test "AND: Masking operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: Extract lower byte with mask
     try frame.stack.append(0x123456);
@@ -207,9 +223,13 @@ test "OR (0x17): Basic bitwise OR" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: 0xF000 | 0x00F0 = 0xF0F0
     try frame.stack.append(0xF000);
@@ -248,9 +268,13 @@ test "OR: With zero" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: 0x1234 | 0x0000 = 0x1234
     try frame.stack.append(0x1234);
@@ -289,9 +313,13 @@ test "OR: Setting bits" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: Set specific bits
     try frame.stack.append(0x1000);
@@ -334,9 +362,13 @@ test "XOR (0x18): Basic bitwise XOR" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: 0xFF00 ^ 0x0FF0 = 0xF0F0
     try frame.stack.append(0xFF00);
@@ -375,9 +407,13 @@ test "XOR: Self XOR equals zero" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: X ^ X = 0
     try frame.stack.append(0x123456);
@@ -416,9 +452,13 @@ test "XOR: Toggle bits" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: Toggle specific bits
     try frame.stack.append(0b1010);
@@ -461,9 +501,13 @@ test "NOT (0x19): Basic bitwise NOT" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: NOT 0 = MAX
     try frame.stack.append(0);
@@ -501,9 +545,13 @@ test "NOT: Invert all bits" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: NOT MAX = 0
     try frame.stack.append(std.math.maxInt(u256));
@@ -541,9 +589,13 @@ test "NOT: Double NOT returns original" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: NOT(NOT(X)) = X
     const original = 0x123456789ABCDEF;
@@ -592,9 +644,13 @@ test "BYTE (0x1A): Extract first byte" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: Extract byte 0 (most significant) from 0x123456...
     try frame.stack.append(0x1234567890ABCDEF); // value (pushed first, popped second)
@@ -633,9 +689,13 @@ test "BYTE: Extract last byte" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: Extract byte 31 (least significant) from value
     try frame.stack.append(0x1234567890ABCDEF); // value (pushed first, popped second)
@@ -674,9 +734,13 @@ test "BYTE: Out of bounds returns zero" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test: Byte index >= 32 returns 0
     try frame.stack.append(0xFFFFFFFFFFFFFFFF); // value (pushed first, popped second)
@@ -715,9 +779,13 @@ test "BYTE: Extract from full u256" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Create a value with known byte pattern
     // Bytes 24-31: 0x0102030405060708
@@ -821,9 +889,13 @@ test "Bitwise opcodes: Gas consumption" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init_minimal(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer frame.deinit();
-        frame.gas_remaining = 1000;
 
         try tc.setup(&frame);
 
@@ -871,9 +943,13 @@ test "Bitwise opcodes: Stack underflow" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init_minimal(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer frame.deinit();
-        frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -904,9 +980,13 @@ test "Bitwise opcodes: Stack underflow" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init_minimal(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer frame.deinit();
-        frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -945,9 +1025,13 @@ test "Bitwise operations: Large values" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test with maximum values
     const max = std.math.maxInt(u256);
@@ -989,9 +1073,13 @@ test "BYTE: Byte extraction patterns" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Create a value with distinct byte pattern
     // Each byte has value equal to its position (31-i)

@@ -61,9 +61,13 @@ test "integration: simple arithmetic sequence" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -116,9 +120,13 @@ test "integration: memory operations sequence" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -172,9 +180,13 @@ test "integration: storage operations sequence" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(50000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 50000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -228,9 +240,13 @@ test "integration: control flow with jumps" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -285,9 +301,13 @@ test "integration: environment access sequence" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -343,9 +363,13 @@ test "integration: stack operations sequence" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -394,9 +418,13 @@ test "integration: return data handling" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -449,9 +477,13 @@ test "integration: revert with reason" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -504,9 +536,13 @@ test "integration: gas consumption tracking" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(initial_gas)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = initial_gas;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -554,9 +590,13 @@ test "integration: out of gas scenario" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(5)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 5;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -599,9 +639,13 @@ test "integration: invalid opcode handling" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -653,9 +697,13 @@ test "integration: transient storage operations" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -708,9 +756,13 @@ test "integration: logging operations" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -768,9 +820,13 @@ test "integration: cold/warm storage access (EIP-2929)" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(initial_gas)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = initial_gas;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -822,9 +878,13 @@ test "integration: push0 operation (Shanghai)" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -912,9 +972,13 @@ test "integration: mcopy operation (Cancun)" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);

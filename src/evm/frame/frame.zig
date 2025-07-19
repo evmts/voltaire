@@ -35,10 +35,13 @@ const Vm = @import("../evm.zig");
 ///
 /// Example:
 /// ```zig
-/// var frame = try Frame.init_minimal(allocator, &contract);
+/// var builder = Frame.builder(allocator);
+/// var frame = try builder
+///     .withContract(&contract)
+///     .withGas(1000000)
+///     .build();
 /// defer frame.deinit();
-/// frame.gas_remaining = 1000000;
-/// try frame.stack.append(42);
+/// try frame.stack.push(42);
 /// ```
 const Frame = @This();
 
@@ -478,7 +481,7 @@ pub fn consume_gas(self: *Frame, amount: u64) ConsumeGasError!void {
 // COMPREHENSIVE TESTS FOR FRAME MODULE
 // ============================================================================
 
-test "Frame.init_minimal creates frame with default settings" {
+test "Frame.builder creates frame with default settings" {
     const allocator = std.testing.allocator;
     
     // Create a minimal contract for testing
@@ -489,8 +492,15 @@ test "Frame.init_minimal creates frame with default settings" {
     ) catch unreachable;
     defer contract.deinit(allocator, null);
     
+    var vm = Vm.init(allocator, undefined, null, null) catch unreachable;
+    defer vm.deinit();
+    
     // Test basic frame initialization
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .build();
     defer frame.deinit();
     
     // Verify default values
@@ -728,8 +738,15 @@ test "Frame.deinit properly cleans up memory" {
     ) catch unreachable;
     defer contract.deinit(allocator, null);
     
+    var vm = Vm.init(allocator, undefined, null, null) catch unreachable;
+    defer vm.deinit();
+    
     // Create frame and expand memory to test cleanup
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .build();
     
     // Force memory allocation by expanding memory
     _ = try frame.memory.ensure_capacity(1024);
@@ -749,8 +766,15 @@ test "Frame stack operations work correctly" {
     ) catch unreachable;
     defer contract.deinit(allocator, null);
     
+    var vm = Vm.init(allocator, undefined, null, null) catch unreachable;
+    defer vm.deinit();
+    
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .build();
     defer frame.deinit();
     
     // Test stack operations
@@ -778,8 +802,15 @@ test "Frame memory operations work correctly" {
     ) catch unreachable;
     defer contract.deinit(allocator, null);
     
+    var vm = Vm.init(allocator, undefined, null, null) catch unreachable;
+    defer vm.deinit();
+    
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .build();
     defer frame.deinit();
     
     // Test memory operations
@@ -911,8 +942,15 @@ test "Frame return data handling" {
     ) catch unreachable;
     defer contract.deinit(allocator, null);
     
+    var vm = Vm.init(allocator, undefined, null, null) catch unreachable;
+    defer vm.deinit();
+    
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .build();
     defer frame.deinit();
     
     // Test return data operations
@@ -973,8 +1011,15 @@ test "Frame program counter manipulation" {
     ) catch unreachable;
     defer contract.deinit(allocator, null);
     
+    var vm = Vm.init(allocator, undefined, null, null) catch unreachable;
+    defer vm.deinit();
+    
     // Test PC manipulation
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .build();
     defer frame.deinit();
     
     // Initial PC should be 0
@@ -999,8 +1044,15 @@ test "Frame error state management" {
     ) catch unreachable;
     defer contract.deinit(allocator, null);
     
+    var vm = Vm.init(allocator, undefined, null, null) catch unreachable;
+    defer vm.deinit();
+    
     // Test error state
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .build();
     defer frame.deinit();
     
     // Initially no error
@@ -1026,8 +1078,15 @@ test "Frame stop flag management" {
     ) catch unreachable;
     defer contract.deinit(allocator, null);
     
+    var vm = Vm.init(allocator, undefined, null, null) catch unreachable;
+    defer vm.deinit();
+    
     // Test stop flag
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .build();
     defer frame.deinit();
     
     // Initially not stopped
@@ -1053,8 +1112,15 @@ test "Frame with empty contract" {
     ) catch unreachable;
     defer contract.deinit(allocator, null);
     
+    var vm = Vm.init(allocator, undefined, null, null) catch unreachable;
+    defer vm.deinit();
+    
     // Test frame with empty contract
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .build();
     defer frame.deinit();
     
     // Should work normally
@@ -1131,10 +1197,17 @@ test "Frame multiple initialization and cleanup cycles" {
     ) catch unreachable;
     defer contract.deinit(allocator, null);
     
+    var vm = Vm.init(allocator, undefined, null, null) catch unreachable;
+    defer vm.deinit();
+    
     // Test multiple init/deinit cycles
     var i: u32 = 0;
     while (i < 10) : (i += 1) {
-        var frame = try Frame.init_minimal(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&vm)
+            .withContract(&contract)
+            .build();
         
         // Use the frame
         try frame.stack.push(i);

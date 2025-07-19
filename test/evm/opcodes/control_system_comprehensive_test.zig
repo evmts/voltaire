@@ -42,9 +42,13 @@ test "RETURN (0xF3): Return data from execution" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Write data to memory
     const return_data = "Hello from RETURN!" ++ ([_]u8{0} ** 14);
@@ -99,9 +103,13 @@ test "RETURN: Empty return data" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Execute push operations
     frame.pc = 0;
@@ -154,9 +162,13 @@ test "REVERT (0xFD): Revert with data" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Write revert reason to memory
     const revert_data = "Revert reason!" ++ ([_]u8{0} ** 2);
@@ -211,9 +223,13 @@ test "REVERT: Empty revert data" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Execute instructions
     for (0..2) |i| {
@@ -264,9 +280,13 @@ test "INVALID (0xFE): Consume all gas and fail" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const gas_before = frame.gas_remaining;
 
@@ -338,9 +358,13 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute PUSH20
     frame.pc = 0;
@@ -382,9 +406,13 @@ test "SELFDESTRUCT: Static call protection" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Set static mode
     frame.is_static = true;
@@ -426,9 +454,13 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Ensure beneficiary is cold
     evm.access_list.clear();
@@ -480,9 +512,13 @@ test "Control opcodes: Gas consumption" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Return large data requiring memory expansion
     try frame.stack.append(0); // offset
@@ -530,9 +566,13 @@ test "RETURN/REVERT: Large memory offset" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init_minimal(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var test_frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(10000)
+            .build();
         defer test_frame.deinit();
-        test_frame.gas_remaining = 10000;
 
         // Push large offset
         try test_frame.stack.append(0x1000); // offset = 4096
@@ -582,9 +622,13 @@ test "RETURN/REVERT: Stack underflow" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init_minimal(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var test_frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer test_frame.deinit();
-        test_frame.gas_remaining = 1000;
 
         // Empty stack
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -625,9 +669,13 @@ test "Control flow interaction: Call with REVERT" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Push CALL parameters in reverse order (stack is LIFO)
     // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size

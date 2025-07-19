@@ -51,9 +51,13 @@ test "Integration: Complete ERC20 transfer simulation" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Transfer amount
     const transfer_amount: u256 = 100;
@@ -168,9 +172,13 @@ test "Integration: Smart contract deployment flow" {
     defer deployer_contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &deployer_contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&deployer_contract)
+        .withGas(200000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 200000;
 
     // Build constructor arguments
     const initial_supply: u256 = 1_000_000;
@@ -337,9 +345,13 @@ test "Integration: Complex control flow with nested conditions" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the contract logic step by step
     // We'll test with value = 150, which should result in 300 (150 * 2)
@@ -491,9 +503,13 @@ test "Integration: Gas metering across operations" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const initial_gas = frame.gas_remaining;
     var total_gas_used: u64 = 0;
@@ -586,9 +602,13 @@ test "Integration: Error propagation and recovery" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Test 1: Stack underflow recovery
     const div_result = opcodes.arithmetic.op_div(0, &vm, &frame);

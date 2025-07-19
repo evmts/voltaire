@@ -225,11 +225,14 @@ test "E2E: Memory operations" {
     var frame = try allocator.create(Frame);
     defer allocator.destroy(frame);
 
-    frame.* = try Frame.init_minimal(allocator, &test_contract);
+    var frame_builder = Frame.builder(allocator);
+    frame.* = try frame_builder
+        .withVm(evm_instance)
+        .withContract(&test_contract)
+        .withGas(100_000)
+        .withInput(test_contract.input)
+        .build();
     defer frame.deinit();
-
-    frame.gas_remaining = 100_000;
-    frame.input = test_contract.input;
 
     // Test MSTORE operation
     try frame.stack.append(0xDEADBEEF);
@@ -306,11 +309,14 @@ test "E2E: Storage operations" {
     var frame = try allocator.create(Frame);
     defer allocator.destroy(frame);
 
-    frame.* = try Frame.init_minimal(allocator, &test_contract);
+    var frame_builder = Frame.builder(allocator);
+    frame.* = try frame_builder
+        .withVm(evm_instance)
+        .withContract(&test_contract)
+        .withGas(100_000)
+        .withInput(test_contract.input)
+        .build();
     defer frame.deinit();
-
-    frame.gas_remaining = 100_000;
-    frame.input = test_contract.input;
 
     // Test SSTORE operation
     try frame.stack.append(0x12345678);
@@ -373,11 +379,14 @@ test "E2E: Stack operations" {
     var frame = try allocator.create(Frame);
     defer allocator.destroy(frame);
 
-    frame.* = try Frame.init_minimal(allocator, &test_contract);
+    var frame_builder = Frame.builder(allocator);
+    frame.* = try frame_builder
+        .withVm(evm_instance)
+        .withContract(&test_contract)
+        .withGas(100_000)
+        .withInput(test_contract.input)
+        .build();
     defer frame.deinit();
-
-    frame.gas_remaining = 100_000;
-    frame.input = test_contract.input;
 
     // Push some values
     try frame.stack.append(100);
@@ -454,11 +463,14 @@ test "E2E: Gas consumption patterns" {
     var frame = try allocator.create(Frame);
     defer allocator.destroy(frame);
 
-    frame.* = try Frame.init_minimal(allocator, &test_contract);
+    var frame_builder = Frame.builder(allocator);
+    frame.* = try frame_builder
+        .withVm(evm_instance)
+        .withContract(&test_contract)
+        .withGas(100_000)
+        .withInput(test_contract.input)
+        .build();
     defer frame.deinit();
-
-    frame.gas_remaining = 100_000;
-    frame.input = test_contract.input;
 
     const initial_gas = frame.gas_remaining;
 

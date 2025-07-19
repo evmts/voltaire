@@ -103,9 +103,13 @@ test "complex: fibonacci calculation" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -183,9 +187,13 @@ test "complex: storage-based counter with access patterns" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -245,9 +253,13 @@ test "complex: memory expansion with large offsets" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -335,9 +347,13 @@ test "complex: nested conditionals with multiple jumps" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -407,9 +423,13 @@ test "complex: event emission with multiple topics" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -470,9 +490,13 @@ test "complex: keccak256 hash computation" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -626,9 +650,13 @@ test "complex: bit manipulation operations" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);
@@ -772,9 +800,13 @@ test "complex: modular arithmetic edge cases" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute the contract
     const result = try evm.run_frame(&frame, 0);

@@ -380,7 +380,12 @@ test "VMCore: Frame initialization and cleanup" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(0)
+        .build();
     defer frame.deinit();
 
     // Verify frame initialization
@@ -432,7 +437,12 @@ test "VMCore: Frame state inheritance and context switching" {
     defer child_contract.deinit(allocator, null);
 
     // Create parent frame
-    var parent_frame = try Frame.init_minimal(allocator, &parent_contract);
+    var parent_frame_builder = Frame.builder(allocator);
+    var parent_frame = try parent_frame_builder
+        .withVm(&evm)
+        .withContract(&parent_contract)
+        .withGas(0)
+        .build();
     defer parent_frame.deinit();
     parent_frame.depth = 5;
     parent_frame.is_static = true;
@@ -486,9 +496,13 @@ test "VMCore: Frame gas consumption and tracking" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test successful gas consumption
     try frame.consume_gas(100);
@@ -528,7 +542,12 @@ test "VMCore: Frame call depth limits" {
 
     // Test depth progression
     const max_depth = 1024;
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(0)
+        .build();
     defer frame.deinit();
 
     // Test various depth levels
@@ -562,9 +581,13 @@ test "VMCore: Frame stack and memory integration" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Test stack operations
     try frame.stack.append(42);

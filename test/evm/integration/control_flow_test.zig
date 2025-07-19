@@ -59,9 +59,13 @@ test "Integration: Conditional jump patterns" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
 
     // Test 1: Jump when condition is true
@@ -142,9 +146,13 @@ test "Integration: Loop implementation with JUMP" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 100000;
     frame_ptr.input = contract.input;
 
     // Initialize counter to 5
@@ -210,9 +218,13 @@ test "Integration: Return data handling" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -270,9 +282,13 @@ test "Integration: Revert with reason" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -329,9 +345,13 @@ test "Integration: PC tracking through operations" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -387,9 +407,13 @@ test "Integration: Invalid opcode handling" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -447,9 +471,13 @@ test "Integration: Nested conditions with jumps" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -531,9 +559,13 @@ test "Integration: Self-destruct with beneficiary" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    frame_ptr.* = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame_ptr.deinit();
-    frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);

@@ -55,9 +55,13 @@ test "JUMP (0x56): Basic unconditional jump" {
     // Analyze jumpdests in the contract
     contract.analyze_jumpdests(allocator);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Push jump destination
     try frame.stack.append(5);
@@ -157,9 +161,13 @@ test "JUMP: Jump to various valid destinations" {
     // Position 0: 0x5B, Position 3: 0x5B, Position 6: 0x5B, Position 9: 0x5B, Position 12: 0x5B, Position 16: 0x5B
     const destinations = [_]u256{ 0, 3, 6, 9, 12, 16 };
     for (destinations) |dest| {
-        var test_frame = try Frame.init_minimal(allocator, &contract);
+        var test_frame_builder = Frame.builder(allocator);
+        var test_frame = try test_frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer test_frame.deinit();
-        test_frame.gas_remaining = 1000;
 
         try test_frame.stack.append(dest);
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -208,9 +216,13 @@ test "JUMP: Invalid jump destinations" {
     const invalid_destinations = [_]u256{ 1, 2, 3, 5, 100, std.math.maxInt(usize) };
 
     for (invalid_destinations) |dest| {
-        var test_frame = try Frame.init_minimal(allocator, &contract);
+        var test_frame_builder = Frame.builder(allocator);
+        var test_frame = try test_frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer test_frame.deinit();
-        test_frame.gas_remaining = 1000;
 
         try test_frame.stack.append(dest);
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -249,9 +261,13 @@ test "JUMP: Stack underflow" {
     // Analyze jumpdests in the contract
     contract.analyze_jumpdests(allocator);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Don't push anything to stack - should cause stack underflow
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -303,9 +319,13 @@ test "JUMPI (0x57): Conditional jump with true condition" {
     // Force analysis to identify JUMPDEST positions
     contract.analyze_jumpdests(allocator);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute the PUSH1 instructions in the bytecode
     // PUSH1 1 (condition)
@@ -364,9 +384,13 @@ test "JUMPI: Conditional jump with false condition" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Set PC to start of JUMPI instruction
     frame.pc = 4; // Position of JUMPI
@@ -417,9 +441,13 @@ test "JUMPI: Various condition values" {
     const true_conditions = [_]u256{ 1, 255, 1000, std.math.maxInt(u256) };
 
     for (true_conditions) |condition| {
-        var test_frame = try Frame.init_minimal(allocator, &contract);
+        var test_frame_builder = Frame.builder(allocator);
+        var test_frame = try test_frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer test_frame.deinit();
-        test_frame.gas_remaining = 1000;
 
         test_frame.pc = 10; // Set to non-zero position
         try test_frame.stack.append(condition); // condition
@@ -432,9 +460,13 @@ test "JUMPI: Various condition values" {
 
     // Test false condition (only zero)
     {
-        var test_frame = try Frame.init_minimal(allocator, &contract);
+        var test_frame_builder = Frame.builder(allocator);
+        var test_frame = try test_frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer test_frame.deinit();
-        test_frame.gas_remaining = 1000;
 
         test_frame.pc = 10;
         try test_frame.stack.append(0); // condition=0
@@ -472,9 +504,13 @@ test "JUMPI: Invalid destination with true condition" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Try to jump to invalid destination with true condition
     try frame.stack.append(1); // condition=1 (true)
@@ -511,9 +547,13 @@ test "JUMPI: Stack underflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     // Test with empty stack
     {
@@ -570,9 +610,13 @@ test "PC (0x58): Get program counter at various positions" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -626,9 +670,13 @@ test "PC: Stack overflow protection" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Fill stack to capacity - 1 (so PC can still push one value)
     const stack_capacity = Evm.Stack.CAPACITY;
@@ -684,9 +732,13 @@ test "GAS (0x5A): Get remaining gas" {
     const test_gas_amounts = [_]u64{ 100, 1000, 10000, 100000, 1000000 };
 
     for (test_gas_amounts) |initial_gas| {
-        var test_frame = try Frame.init_minimal(allocator, &contract);
+        var test_frame_builder = Frame.builder(allocator);
+        var test_frame = try test_frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(initial_gas)
+            .build();
         defer test_frame.deinit();
-        test_frame.gas_remaining = initial_gas;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
@@ -723,9 +775,13 @@ test "GAS: After consuming gas with operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const initial_gas = frame.gas_remaining;
 
@@ -777,9 +833,13 @@ test "GAS: Low gas scenarios" {
 
     // Test with exactly enough gas for GAS opcode
     {
-        var test_frame = try Frame.init_minimal(allocator, &contract);
+        var test_frame_builder = Frame.builder(allocator);
+        var test_frame = try test_frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(2)
+            .build();
         defer test_frame.deinit();
-        test_frame.gas_remaining = 2;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
@@ -790,9 +850,13 @@ test "GAS: Low gas scenarios" {
 
     // Test with not enough gas
     {
-        var test_frame = try Frame.init_minimal(allocator, &contract);
+        var test_frame_builder = Frame.builder(allocator);
+        var test_frame = try test_frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1)
+            .build();
         defer test_frame.deinit();
-        test_frame.gas_remaining = 1;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
@@ -825,9 +889,13 @@ test "GAS: Stack overflow protection" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Fill stack to capacity
     const stack_capacity = Evm.Stack.CAPACITY;
@@ -877,9 +945,13 @@ test "JUMPDEST (0x5B): Basic operation" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // JUMPDEST should be a no-op
     const stack_size_before = frame.stack.size;
@@ -950,9 +1022,13 @@ test "JUMPDEST: Jump destination validation" {
     try testing.expect(!contract.valid_jumpdest(allocator, 8)); // padding
 
     // Test actual jumping to valid JUMPDEST
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     frame.pc = 5; // Position before JUMP
     try frame.stack.append(9); // Jump to JUMPDEST at position 9
@@ -1006,9 +1082,13 @@ test "JUMPDEST: Code analysis edge cases" {
     try testing.expect(contract.valid_jumpdest(allocator, 3));
 
     // Test jumping to the valid JUMPDEST
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     try frame.stack.append(3);
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
@@ -1116,9 +1196,13 @@ test "Control Flow: Gas consumption verification" {
     };
 
     for (opcodes) |op| {
-        var test_frame = try Frame.init_minimal(allocator, &contract);
+        var test_frame_builder = Frame.builder(allocator);
+        var test_frame = try test_frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer test_frame.deinit();
-        test_frame.gas_remaining = 1000;
 
         const gas_before = test_frame.gas_remaining;
 
@@ -1195,9 +1279,13 @@ test "Control Flow: Complex jump sequences" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1309,9 +1397,13 @@ test "Control Flow: Stack operations validation" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1388,9 +1480,13 @@ test "Control Flow: Program counter tracking" {
     // Analyze jumpdests in the contract
     contract.analyze_jumpdests(allocator);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1472,9 +1568,13 @@ test "Control Flow: Out of gas scenarios" {
 
     for (test_cases) |case| {
         // Test with insufficient gas
-        var test_frame = try Frame.init_minimal(allocator, &contract);
+        var test_frame_builder = Frame.builder(allocator);
+        var test_frame = try test_frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(case.min_gas - 1)
+            .build();
         defer test_frame.deinit();
-        test_frame.gas_remaining = case.min_gas - 1;
 
         if (case.setup) |setup_fn| {
             try setup_fn(&test_frame);
@@ -1515,9 +1615,13 @@ test "Control Flow: Stack operations edge cases" {
     // Analyze jumpdests in the contract
     contract.analyze_jumpdests(allocator);
 
-    var frame = try Frame.init_minimal(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);

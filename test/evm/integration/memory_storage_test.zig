@@ -38,8 +38,12 @@ test "Integration: Memory operations with arithmetic" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
-    frame.gas_remaining = 10000;
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
 
     // Store result of arithmetic operation in memory
@@ -96,8 +100,12 @@ test "Integration: Storage with conditional updates" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
-    frame.gas_remaining = 10000;
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
 
     // Set initial storage value
@@ -171,8 +179,12 @@ test "Integration: Memory copy operations" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
-    frame.gas_remaining = 10000;
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -237,8 +249,12 @@ test "Integration: Transient storage with arithmetic" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
-    frame.gas_remaining = 10000;
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -306,8 +322,12 @@ test "Integration: MSTORE8 with bitwise operations" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
-    frame.gas_remaining = 10000;
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -361,8 +381,12 @@ test "Integration: Storage slot calculation" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
-    frame.gas_remaining = 30000;
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(30000)
+        .build();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -426,8 +450,12 @@ test "Integration: Memory expansion tracking" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
-    frame.gas_remaining = 10000;
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
@@ -500,8 +528,12 @@ test "Integration: Cold/warm storage access patterns" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init_minimal(allocator, &contract);
-    frame.gas_remaining = 10000;
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
