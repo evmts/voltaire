@@ -373,6 +373,10 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     // Calculate gas to give to the new contract (all but 1/64th)
     const gas_for_call = frame.gas_remaining - (frame.gas_remaining / 64);
 
+    // Clear return data before making new call to reduce memory pressure
+    // Previous return data is no longer needed once we make a new call
+    frame.return_data.clear();
+
     // Create the contract
     const result = try vm.create_contract(frame.contract.address, value, init_code, gas_for_call);
 
@@ -390,6 +394,9 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     _ = try vm.access_list.access_address(result.address);
     try frame.stack.append(to_u256(result.address));
 
+    // Clear old return data before setting new data to reduce memory pressure
+    frame.return_data.clear();
+    
     // Set return data
     try frame.return_data.set(result.output orelse &[_]u8{});
 
@@ -457,6 +464,10 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     // Calculate gas to give to the new contract (all but 1/64th)
     const gas_for_call = frame.gas_remaining - (frame.gas_remaining / 64);
 
+    // Clear return data before making new call to reduce memory pressure
+    // Previous return data is no longer needed once we make a new call
+    frame.return_data.clear();
+
     // Create the contract with CREATE2
     const result = try vm.create2_contract(frame.contract.address, value, init_code, salt, gas_for_call);
 
@@ -474,6 +485,9 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     _ = try vm.access_list.access_address(result.address);
     try frame.stack.append(to_u256(result.address));
 
+    // Clear old return data before setting new data to reduce memory pressure
+    frame.return_data.clear();
+    
     // Set return data
     try frame.return_data.set(result.output orelse &[_]u8{});
 
@@ -550,6 +564,10 @@ pub fn op_call(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
     if (value != 0) {
         gas_for_call += 2300; // Stipend
     }
+
+    // Clear return data before making new call to reduce memory pressure
+    // Previous return data is no longer needed once we make a new call
+    frame.return_data.clear();
 
     // Execute the call
     const result = try vm.call_contract(frame.contract.address, to_address, value, args, gas_for_call, frame.is_static);
@@ -648,6 +666,10 @@ pub fn op_callcode(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     if (value != 0) {
         gas_for_call += 2300; // Stipend
     }
+
+    // Clear return data before making new call to reduce memory pressure
+    // Previous return data is no longer needed once we make a new call
+    frame.return_data.clear();
 
     // Execute the callcode (execute target's code with current storage context)
     // For callcode, we use the current contract's address as the execution context
@@ -749,6 +771,10 @@ pub fn op_delegatecall(pc: usize, interpreter: *Operation.Interpreter, state: *O
     // - Preserves msg.sender and msg.value from parent call
     // - Executes target contract's code in current context
     // - Cannot transfer value (no value parameter)
+
+    // Clear return data before making new call to reduce memory pressure
+    // Previous return data is no longer needed once we make a new call
+    frame.return_data.clear();
 
     // Execute the delegatecall (execute target's code with current context)
     const result = try vm.delegatecall_contract(frame.contract.address, // current contract's address
@@ -856,6 +882,10 @@ pub fn op_staticcall(pc: usize, interpreter: *Operation.Interpreter, state: *Ope
     // - Cannot transfer value (value is implicitly 0)
     // - Prevents SSTORE, CREATE, SELFDESTRUCT in called contract
     // - Uses clean call context (new msg.sender)
+
+    // Clear return data before making new call to reduce memory pressure
+    // Previous return data is no longer needed once we make a new call
+    frame.return_data.clear();
 
     // Execute the staticcall (read-only call with static restrictions)
     const result = try vm.staticcall_contract(frame.contract.address, to_address, args, gas_for_call);
