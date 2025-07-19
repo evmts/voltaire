@@ -831,7 +831,7 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
     };
     errdefer allocator.destroy(analysis);
 
-    analysis.code_segments = try bitvec.code_bitmap(allocator, code);
+    analysis.code_segments = try bitvec.BitVec64.codeBitmap(allocator, code);
     errdefer analysis.code_segments.deinit(allocator);
 
     var jumpdests = std.ArrayList(u32).init(allocator);
@@ -839,7 +839,7 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
 
     // SIMD optimization: Process 16 bytes at a time
     const vec_size = 16;
-    const jumpdest_vec = @as(@Vector(vec_size, u8), @splat(@intFromEnum(opcode.Opcode.JUMPDEST)));
+    const jumpdest_vec = @as(@Vector(vec_size, u8), @splat(@intFromEnum(opcode.Enum.JUMPDEST)));
     
     var i: usize = 0;
     
@@ -870,7 +870,7 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
     
     // Handle remaining bytes
     while (i < code.len) {
-        if (code[i] == @intFromEnum(opcode.Opcode.JUMPDEST) and analysis.code_segments.isSetUnchecked(i)) {
+        if (code[i] == @intFromEnum(opcode.Enum.JUMPDEST) and analysis.code_segments.isSetUnchecked(i)) {
             jumpdests.append(@as(u32, @intCast(i))) catch |err| {
                 Log.debug("Failed to append jumpdest position {d}: {any}", .{ i, err });
                 return err;
