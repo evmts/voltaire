@@ -25,7 +25,7 @@ test "fuzz_storage_sload_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     
@@ -64,7 +64,7 @@ test "fuzz_storage_sstore_sload_roundtrip" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     
@@ -109,7 +109,7 @@ test "fuzz_storage_tload_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     
@@ -148,7 +148,7 @@ test "fuzz_storage_tstore_tload_roundtrip" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     

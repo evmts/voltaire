@@ -37,7 +37,7 @@ test "ADDRESS (0x30): Push current contract address" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -77,7 +77,7 @@ test "BALANCE (0x31): Get account balance" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -140,7 +140,7 @@ test "ORIGIN (0x32): Get transaction origin" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -185,7 +185,7 @@ test "CALLER (0x33): Get immediate caller" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -234,7 +234,7 @@ test "CALLVALUE (0x34): Get msg.value" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 1000;
 
@@ -282,7 +282,7 @@ test "CALLDATALOAD (0x35): Load 32 bytes from calldata" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -361,7 +361,7 @@ test "CALLDATASIZE (0x36): Get calldata size" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 1000;
 
@@ -408,7 +408,7 @@ test "CALLDATACOPY (0x37): Copy calldata to memory" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -495,7 +495,7 @@ test "CODESIZE (0x38): Get code size" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 1000;
 
@@ -543,7 +543,7 @@ test "CODECOPY (0x39): Copy code to memory" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -623,7 +623,7 @@ test "GASPRICE (0x3A): Get gas price" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 1000;
 
@@ -667,7 +667,7 @@ test "Environmental opcodes: Gas consumption" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -728,7 +728,7 @@ test "Environmental opcodes: Stack underflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -776,7 +776,7 @@ test "Environmental opcodes: Memory expansion limits" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100; // Limited gas
 
@@ -817,7 +817,7 @@ test "BALANCE: EIP-2929 cold/warm account access" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 

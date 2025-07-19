@@ -32,7 +32,7 @@ test "Control: STOP halts execution" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -75,7 +75,7 @@ test "Control: JUMP basic operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -135,7 +135,7 @@ test "Control: JUMPI conditional jump" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -198,7 +198,7 @@ test "Control: PC returns program counter" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -249,7 +249,7 @@ test "Control: JUMPDEST is a no-op" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -298,7 +298,7 @@ test "Control: RETURN with data" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -364,7 +364,7 @@ test "Control: REVERT with data" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -425,7 +425,7 @@ test "Control: INVALID always fails" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -467,7 +467,7 @@ test "Control: SELFDESTRUCT basic operation" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -535,7 +535,7 @@ test "Control: Stack underflow errors" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 

@@ -380,7 +380,7 @@ test "VMCore: Frame initialization and cleanup" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
 
     // Verify frame initialization
@@ -432,7 +432,7 @@ test "VMCore: Frame state inheritance and context switching" {
     defer child_contract.deinit(allocator, null);
 
     // Create parent frame
-    var parent_frame = try Frame.init(allocator, &parent_contract);
+    var parent_frame = try Frame.init_minimal(allocator, &parent_contract);
     defer parent_frame.deinit();
     parent_frame.depth = 5;
     parent_frame.is_static = true;
@@ -486,7 +486,7 @@ test "VMCore: Frame gas consumption and tracking" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -528,7 +528,7 @@ test "VMCore: Frame call depth limits" {
 
     // Test depth progression
     const max_depth = 1024;
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
 
     // Test various depth levels
@@ -562,7 +562,7 @@ test "VMCore: Frame stack and memory integration" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 

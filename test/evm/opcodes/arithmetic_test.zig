@@ -32,7 +32,7 @@ test "Arithmetic: ADD basic operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -97,7 +97,7 @@ test "Arithmetic: SUB basic operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -153,7 +153,7 @@ test "Arithmetic: MUL basic operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -211,7 +211,7 @@ test "Arithmetic: DIV basic operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -266,7 +266,7 @@ test "Arithmetic: MOD basic operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -321,7 +321,7 @@ test "Arithmetic: ADDMOD complex operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -380,7 +380,7 @@ test "Arithmetic: MULMOD complex operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -440,7 +440,7 @@ test "Arithmetic: EXP exponential operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -506,7 +506,7 @@ test "Arithmetic: Stack underflow errors" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 

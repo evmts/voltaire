@@ -48,7 +48,7 @@ test "Integration: Complex arithmetic calculation" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init(allocator, &contract);
+    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
@@ -108,7 +108,7 @@ test "Integration: Modular arithmetic with overflow" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init(allocator, &contract);
+    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
@@ -166,7 +166,7 @@ test "Integration: Fibonacci sequence calculation" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init(allocator, &contract);
+    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
@@ -237,7 +237,7 @@ test "Integration: Conditional arithmetic based on comparison" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init(allocator, &contract);
+    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
@@ -323,7 +323,7 @@ test "Integration: Calculate average of multiple values" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init(allocator, &contract);
+    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
@@ -387,7 +387,7 @@ test "Integration: Complex ADDMOD and MULMOD calculations" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init(allocator, &contract);
+    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 10000;
     frame_ptr.input = contract.input;
@@ -468,7 +468,7 @@ test "Integration: Exponentiation chain" {
     const frame_ptr = try allocator.create(Frame);
     defer allocator.destroy(frame_ptr);
 
-    frame_ptr.* = try Frame.init(allocator, &contract);
+    frame_ptr.* = try Frame.init_minimal(allocator, &contract);
     defer frame_ptr.deinit();
     frame_ptr.gas_remaining = 50000;
     frame_ptr.input = contract.input;

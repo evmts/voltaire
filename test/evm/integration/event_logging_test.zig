@@ -51,7 +51,7 @@ test "Integration: ERC20 Transfer event logging" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -124,7 +124,7 @@ test "Integration: multiple event emissions" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -215,7 +215,7 @@ test "Integration: event with dynamic array data" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -283,7 +283,7 @@ test "Integration: log gas consumption patterns" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 50000;
 
@@ -355,7 +355,7 @@ test "Integration: logging restrictions in static calls" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -408,7 +408,7 @@ test "Integration: event topics for bloom filter" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -490,7 +490,7 @@ test "Integration: log memory expansion costs" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -541,7 +541,7 @@ test "Integration: event filtering by topics" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 

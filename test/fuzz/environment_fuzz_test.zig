@@ -26,7 +26,7 @@ test "fuzz_environment_address_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     
@@ -62,7 +62,7 @@ test "fuzz_environment_caller_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     
@@ -98,7 +98,7 @@ test "fuzz_environment_callvalue_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     
@@ -133,7 +133,7 @@ test "fuzz_environment_codesize_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     

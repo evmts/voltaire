@@ -24,7 +24,7 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
 
     const initial_gas = contract.gas;
     var pc: usize = 0;
-    var frame = try Frame.init(self.allocator, contract);
+    var frame = try Frame.init_minimal(self.allocator, contract);
     defer frame.deinit();
     frame.is_static = self.read_only;
     frame.depth = @as(u32, @intCast(self.depth));

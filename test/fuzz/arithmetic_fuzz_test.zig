@@ -25,7 +25,7 @@ test "fuzz_arithmetic_basic_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     
@@ -63,7 +63,7 @@ test "fuzz_arithmetic_overflow_cases" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     
@@ -101,7 +101,7 @@ test "fuzz_arithmetic_division_by_zero" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     
@@ -139,7 +139,7 @@ test "fuzz_arithmetic_modulo_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     

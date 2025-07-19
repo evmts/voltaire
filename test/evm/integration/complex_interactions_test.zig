@@ -47,7 +47,7 @@ test "Integration: Token balance check pattern" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -133,7 +133,7 @@ test "Integration: Packed struct storage" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -214,7 +214,7 @@ test "Integration: Dynamic array length update" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -277,7 +277,7 @@ test "Integration: Reentrancy guard pattern" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -350,7 +350,7 @@ test "Integration: Bitfield manipulation" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -439,7 +439,7 @@ test "Integration: Safe math operations" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -518,7 +518,7 @@ test "Integration: Signature verification simulation" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -587,7 +587,7 @@ test "Integration: Multi-sig wallet threshold check" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 

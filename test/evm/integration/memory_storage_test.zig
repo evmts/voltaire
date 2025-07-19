@@ -38,7 +38,7 @@ test "Integration: Memory operations with arithmetic" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 10000;
     defer frame.deinit();
 
@@ -96,7 +96,7 @@ test "Integration: Storage with conditional updates" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 10000;
     defer frame.deinit();
 
@@ -171,7 +171,7 @@ test "Integration: Memory copy operations" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 10000;
     defer frame.deinit();
 
@@ -237,7 +237,7 @@ test "Integration: Transient storage with arithmetic" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 10000;
     defer frame.deinit();
 
@@ -306,7 +306,7 @@ test "Integration: MSTORE8 with bitwise operations" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 10000;
     defer frame.deinit();
 
@@ -361,7 +361,7 @@ test "Integration: Storage slot calculation" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 30000;
     defer frame.deinit();
 
@@ -426,7 +426,7 @@ test "Integration: Memory expansion tracking" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 10000;
     defer frame.deinit();
 
@@ -500,7 +500,7 @@ test "Integration: Cold/warm storage access patterns" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 10000;
     defer frame.deinit();
 

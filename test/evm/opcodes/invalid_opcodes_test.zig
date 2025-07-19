@@ -38,7 +38,7 @@ test "Invalid Opcodes: 0x21-0x24 should fail" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 1000;
     defer frame.deinit();
 
@@ -96,7 +96,7 @@ test "Invalid Opcodes: Full 0x21-0x2F range" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 1000;
     defer frame.deinit();
 

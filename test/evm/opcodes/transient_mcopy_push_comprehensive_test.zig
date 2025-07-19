@@ -36,7 +36,7 @@ test "TLOAD (0x5C): Load from transient storage" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -105,7 +105,7 @@ test "TSTORE (0x5D): Store to transient storage" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -178,7 +178,7 @@ test "MCOPY (0x5E): Memory to memory copy" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -273,7 +273,7 @@ test "PUSH0 (0x5F): Push zero onto stack" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 3000;
 
@@ -342,7 +342,7 @@ test "PUSH1 (0x60): Push 1 byte onto stack" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -396,7 +396,7 @@ test "PUSH2 (0x61): Push 2 bytes onto stack" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -449,7 +449,7 @@ test "PUSH3 (0x62): Push 3 bytes onto stack" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -500,7 +500,7 @@ test "Transient storage and memory opcodes: Gas consumption" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -590,7 +590,7 @@ test "MCOPY: Edge cases" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100; // Limited gas
 
@@ -643,11 +643,11 @@ test "Transient storage: Isolation between addresses" {
     );
     defer contract2.deinit(allocator, null);
 
-    var frame1 = try Frame.init(allocator, &contract1);
+    var frame1 = try Frame.init_minimal(allocator, &contract1);
     defer frame1.deinit();
     frame1.gas_remaining = 10000;
 
-    var frame2 = try Frame.init(allocator, &contract2);
+    var frame2 = try Frame.init_minimal(allocator, &contract2);
     defer frame2.deinit();
     frame2.gas_remaining = 10000;
 
@@ -699,7 +699,7 @@ test "PUSH operations: Boundary conditions" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 

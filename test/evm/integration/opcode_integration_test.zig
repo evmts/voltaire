@@ -61,7 +61,7 @@ test "integration: simple arithmetic sequence" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -116,7 +116,7 @@ test "integration: memory operations sequence" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -172,7 +172,7 @@ test "integration: storage operations sequence" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 50000;
 
@@ -228,7 +228,7 @@ test "integration: control flow with jumps" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -285,7 +285,7 @@ test "integration: environment access sequence" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -343,7 +343,7 @@ test "integration: stack operations sequence" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -394,7 +394,7 @@ test "integration: return data handling" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -449,7 +449,7 @@ test "integration: revert with reason" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -504,7 +504,7 @@ test "integration: gas consumption tracking" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = initial_gas;
 
@@ -554,7 +554,7 @@ test "integration: out of gas scenario" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 5;
 
@@ -599,7 +599,7 @@ test "integration: invalid opcode handling" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -653,7 +653,7 @@ test "integration: transient storage operations" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -708,7 +708,7 @@ test "integration: logging operations" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -768,7 +768,7 @@ test "integration: cold/warm storage access (EIP-2929)" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = initial_gas;
 
@@ -822,7 +822,7 @@ test "integration: push0 operation (Shanghai)" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -912,7 +912,7 @@ test "integration: mcopy operation (Cancun)" {
     try evm.state.set_code(Address.ZERO_ADDRESS, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 

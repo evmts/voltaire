@@ -30,7 +30,7 @@ test "fuzz_crypto_keccak256_empty" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     
@@ -70,7 +70,7 @@ test "fuzz_crypto_keccak256_basic" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     
@@ -118,7 +118,7 @@ test "fuzz_crypto_keccak256_edge_cases" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var frame = try evm.Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
     

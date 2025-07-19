@@ -42,7 +42,7 @@ test "CREATE (0xF0): Basic contract creation with valid init code" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
 
@@ -103,7 +103,7 @@ test "CREATE: Empty init code creates empty contract" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
 
@@ -145,7 +145,7 @@ test "CREATE: Static call protection" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -188,7 +188,7 @@ test "CREATE: Depth limit enforcement" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -236,7 +236,7 @@ test "CREATE: EIP-3860 initcode size limit (Shanghai+)" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -279,7 +279,7 @@ test "CREATE: EIP-3860 initcode word gas cost" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -326,7 +326,7 @@ test "CREATE: Memory expansion gas cost" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -376,7 +376,7 @@ test "CREATE: Stack underflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -419,7 +419,7 @@ test "CREATE2 (0xF5): Deterministic address generation" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
 
@@ -470,7 +470,7 @@ test "CREATE2: Same parameters produce same address" {
     );
     defer contract1.deinit(allocator, null);
 
-    var frame1 = try Frame.init(allocator, &contract1);
+    var frame1 = try Frame.init_minimal(allocator, &contract1);
     defer frame1.deinit();
     frame1.gas_remaining = 1000000;
 
@@ -499,7 +499,7 @@ test "CREATE2: Same parameters produce same address" {
     );
     defer contract2.deinit(allocator, null);
 
-    var frame2 = try Frame.init(allocator, &contract2);
+    var frame2 = try Frame.init_minimal(allocator, &contract2);
     defer frame2.deinit();
     frame2.gas_remaining = 1000000;
 
@@ -545,7 +545,7 @@ test "CREATE2: Additional gas for keccak256 hashing" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -596,7 +596,7 @@ test "CALL (0xF1): Basic external call" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -647,7 +647,7 @@ test "CALL: Value transfer in static context fails" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -695,7 +695,7 @@ test "CALL: Cold address access (EIP-2929)" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -745,7 +745,7 @@ test "CALL: Return data handling" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -799,7 +799,7 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -850,7 +850,7 @@ test "DELEGATECALL (0xF4): Execute with current context (no value transfer)" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -900,7 +900,7 @@ test "STATICCALL (0xFA): Read-only external call" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -950,7 +950,7 @@ test "RETURN (0xF3): Return data from execution" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -996,7 +996,7 @@ test "RETURN: Empty return data" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -1037,7 +1037,7 @@ test "RETURN: Memory expansion gas cost" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -1084,7 +1084,7 @@ test "REVERT (0xFD): Revert with error data" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -1130,7 +1130,7 @@ test "REVERT: Empty revert data" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -1175,7 +1175,7 @@ test "INVALID (0xFE): Consume all gas and fail" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -1216,7 +1216,7 @@ test "INVALID: No stack manipulation" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -1264,7 +1264,7 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -1303,7 +1303,7 @@ test "SELFDESTRUCT: Static call protection" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -1345,7 +1345,7 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -1412,7 +1412,7 @@ test "System opcodes: Stack underflow validation" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init(allocator, &contract);
+        var test_frame = try Frame.init_minimal(allocator, &contract);
         defer test_frame.deinit();
         test_frame.gas_remaining = 100000;
 
@@ -1463,7 +1463,7 @@ test "System opcodes: Depth limit enforcement" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init(allocator, &contract);
+        var test_frame = try Frame.init_minimal(allocator, &contract);
         defer test_frame.deinit();
         test_frame.gas_remaining = 100000;
 
@@ -1530,7 +1530,7 @@ test "System opcodes: Gas consumption verification" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init(allocator, &contract);
+        var test_frame = try Frame.init_minimal(allocator, &contract);
         defer test_frame.deinit();
         test_frame.gas_remaining = 1000000;
 
@@ -1590,7 +1590,7 @@ test "System opcodes: CREATE followed by CALL" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
 
@@ -1645,7 +1645,7 @@ test "System opcodes: Nested STATICCALL restrictions" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -1697,7 +1697,7 @@ test "System opcodes: REVERT vs RETURN data handling" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init(allocator, &contract);
+        var test_frame = try Frame.init_minimal(allocator, &contract);
         defer test_frame.deinit();
         test_frame.gas_remaining = 10000;
 
@@ -1729,7 +1729,7 @@ test "System opcodes: REVERT vs RETURN data handling" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init(allocator, &contract);
+        var test_frame = try Frame.init_minimal(allocator, &contract);
         defer test_frame.deinit();
         test_frame.gas_remaining = 10000;
 
@@ -1777,7 +1777,7 @@ test "System opcodes: Large memory offsets" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init(allocator, &contract);
+        var test_frame = try Frame.init_minimal(allocator, &contract);
         defer test_frame.deinit();
         test_frame.gas_remaining = 10000;
 
@@ -1831,7 +1831,7 @@ test "System opcodes: Zero gas scenarios" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100;
 
@@ -1892,7 +1892,7 @@ test "System opcodes: Hardfork feature availability" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init(allocator, &contract);
+        var test_frame = try Frame.init_minimal(allocator, &contract);
         defer test_frame.deinit();
         test_frame.gas_remaining = 100000;
 
@@ -1937,7 +1937,7 @@ test "System opcodes: Hardfork feature availability" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init(allocator, &contract);
+        var test_frame = try Frame.init_minimal(allocator, &contract);
         defer test_frame.deinit();
         test_frame.gas_remaining = 100000;
 
@@ -1987,7 +1987,7 @@ test "System opcodes: Memory bounds checking" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
 
@@ -2036,7 +2036,7 @@ test "System opcodes: Gas optimization for warm addresses" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 

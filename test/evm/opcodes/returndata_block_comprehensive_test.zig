@@ -50,7 +50,7 @@ test "EXTCODESIZE (0x3B): Get external code size" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -113,7 +113,7 @@ test "EXTCODECOPY (0x3C): Copy external code to memory" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -181,7 +181,7 @@ test "RETURNDATASIZE (0x3D): Get return data size" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -234,7 +234,7 @@ test "RETURNDATACOPY (0x3E): Copy return data to memory" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -304,7 +304,7 @@ test "EXTCODEHASH (0x3F): Get external code hash" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -375,7 +375,7 @@ test "BLOCKHASH (0x40): Get block hash" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -464,7 +464,7 @@ test "COINBASE (0x41): Get block coinbase" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -527,7 +527,7 @@ test "TIMESTAMP (0x42): Get block timestamp" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
             frame.gas_remaining = 1000;
 
@@ -591,7 +591,7 @@ test "NUMBER (0x43): Get block number" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
             frame.gas_remaining = 1000;
 
@@ -654,7 +654,7 @@ test "PREVRANDAO (0x44): Get previous RANDAO" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
             frame.gas_remaining = 1000;
 
@@ -703,7 +703,7 @@ test "EXTCODE* opcodes: Gas consumption with EIP-2929" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -750,7 +750,7 @@ test "Block opcodes: Gas consumption" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -819,7 +819,7 @@ test "RETURNDATACOPY: Out of bounds access" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -882,7 +882,7 @@ test "Memory copy opcodes: Memory expansion" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100; // Limited gas
 
@@ -941,7 +941,7 @@ test "BLOCKHASH: Edge cases" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 

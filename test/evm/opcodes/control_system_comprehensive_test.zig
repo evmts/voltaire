@@ -42,7 +42,7 @@ test "RETURN (0xF3): Return data from execution" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -99,7 +99,7 @@ test "RETURN: Empty return data" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -154,7 +154,7 @@ test "REVERT (0xFD): Revert with data" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -211,7 +211,7 @@ test "REVERT: Empty revert data" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -264,7 +264,7 @@ test "INVALID (0xFE): Consume all gas and fail" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -338,7 +338,7 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -382,7 +382,7 @@ test "SELFDESTRUCT: Static call protection" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -426,7 +426,7 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -480,7 +480,7 @@ test "Control opcodes: Gas consumption" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -530,7 +530,7 @@ test "RETURN/REVERT: Large memory offset" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init(allocator, &contract);
+        var test_frame = try Frame.init_minimal(allocator, &contract);
         defer test_frame.deinit();
         test_frame.gas_remaining = 10000;
 
@@ -582,7 +582,7 @@ test "RETURN/REVERT: Stack underflow" {
         );
         defer contract.deinit(allocator, null);
 
-        var test_frame = try Frame.init(allocator, &contract);
+        var test_frame = try Frame.init_minimal(allocator, &contract);
         defer test_frame.deinit();
         test_frame.gas_remaining = 1000;
 
@@ -625,7 +625,7 @@ test "Control flow interaction: Call with REVERT" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 

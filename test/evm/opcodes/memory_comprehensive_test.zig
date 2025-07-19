@@ -42,7 +42,7 @@ test "MLOAD (0x51): Basic memory load operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -95,7 +95,7 @@ test "MLOAD: Memory alignment and boundary conditions" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -160,7 +160,7 @@ test "MLOAD: Large offset handling and gas consumption" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
 
@@ -218,7 +218,7 @@ test "MLOAD: Stack underflow protection" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -259,7 +259,7 @@ test "MSTORE (0x52): Basic memory store operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -320,7 +320,7 @@ test "MSTORE: Overwrite and partial overlap scenarios" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -391,7 +391,7 @@ test "MSTORE: Memory expansion and gas costs" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
 
@@ -461,7 +461,7 @@ test "MSTORE: Stack underflow protection" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -507,7 +507,7 @@ test "MSTORE8 (0x53): Basic single byte store operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -574,7 +574,7 @@ test "MSTORE8: Precision and non-interference" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -669,7 +669,7 @@ test "MSTORE8: Memory expansion and gas costs" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
 
@@ -745,7 +745,7 @@ test "MSTORE8: Stack underflow protection" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -791,7 +791,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -850,7 +850,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //         );
 //         defer contract.deinit(allocator, null);
 //
-//         var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000);
+//         var test_frame = try helpers.TestFrame.init_minimal(allocator, &contract, 10000);
 //         defer test_frame.deinit();
 //
 //         // Use MSTORE to set memory at the offset (this will expand memory)
@@ -879,7 +879,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     );
 //     defer contract.deinit(allocator, null);
 
-//     var test_frame = try helpers.TestFrame.init(allocator, &contract, 50000);
+//     var test_frame = try helpers.TestFrame.init_minimal(allocator, &contract, 50000);
 //     defer test_frame.deinit();
 
 //     // Test 1: MSIZE after MSTORE operations
@@ -953,7 +953,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     );
 //     defer contract.deinit(allocator, null);
 
-//     var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
+//     var test_frame = try helpers.TestFrame.init_minimal(allocator, &contract, 1000);
 //     defer test_frame.deinit();
 
 //     // MSIZE should always cost exactly 2 gas (GasQuickStep)
@@ -991,7 +991,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     );
 //     defer contract.deinit(allocator, null);
 
-//     var test_frame = try helpers.TestFrame.init(allocator, &contract, 1000);
+//     var test_frame = try helpers.TestFrame.init_minimal(allocator, &contract, 1000);
 //     defer test_frame.deinit();
 
 //     // Fill the stack to capacity
@@ -1023,7 +1023,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     );
 //     defer contract.deinit(allocator, null);
 
-//     var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000);
+//     var test_frame = try helpers.TestFrame.init_minimal(allocator, &contract, 100000);
 //     defer test_frame.deinit();
 
 //     // Test pattern: MSTORE -> MLOAD -> MSTORE8 -> MLOAD -> MSIZE
@@ -1071,7 +1071,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     );
 //     defer contract.deinit(allocator, null);
 
-//     var test_frame = try helpers.TestFrame.init(allocator, &contract, 10000000);
+//     var test_frame = try helpers.TestFrame.init_minimal(allocator, &contract, 10000000);
 //     defer test_frame.deinit();
 
 //     // Test 1: Operations at maximum valid offsets
@@ -1125,7 +1125,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     defer contract.deinit(allocator, null);
 
 //     // Test 1: Out of gas scenarios
-//     var test_frame_low_gas = try helpers.TestFrame.init(allocator, &contract, 10);
+//     var test_frame_low_gas = try helpers.TestFrame.init_minimal(allocator, &contract, 10);
 //     defer test_frame_low_gas.deinit();
 
 //     // Should fail with out of gas for memory expansion
@@ -1134,7 +1134,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     try testing.expectError(helpers.ExecutionError.Error.OutOfGas, result_oog);
 
 //     // Test 2: Invalid large offsets
-//     var test_frame_normal = try helpers.TestFrame.init(allocator, &contract, 1000);
+//     var test_frame_normal = try helpers.TestFrame.init_minimal(allocator, &contract, 1000);
 //     defer test_frame_normal.deinit();
 
 //     // Test just one invalid offset to avoid potential stack overflow
@@ -1171,7 +1171,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     );
 //     defer contract.deinit(allocator, null);
 
-//     var test_frame = try helpers.TestFrame.init(allocator, &contract, 100000000);
+//     var test_frame = try helpers.TestFrame.init_minimal(allocator, &contract, 100000000);
 //     defer test_frame.deinit();
 
 //     // Test 1: Basic gas costs verification

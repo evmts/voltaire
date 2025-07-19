@@ -51,7 +51,7 @@ test "Integration: Arithmetic with conditional jumps" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -120,7 +120,7 @@ test "Integration: Complex arithmetic expression evaluation" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -173,7 +173,7 @@ test "Integration: Modular arithmetic chain" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -226,7 +226,7 @@ test "Integration: Division by zero handling in expression" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -274,7 +274,7 @@ test "Integration: Bitwise operations with arithmetic" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -329,7 +329,7 @@ test "Integration: Stack manipulation with arithmetic" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -394,7 +394,7 @@ test "Integration: Comparison chain for range checking" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -456,7 +456,7 @@ test "Integration: EXP with modular arithmetic" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -504,7 +504,7 @@ test "Integration: Signed arithmetic with comparisons" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 

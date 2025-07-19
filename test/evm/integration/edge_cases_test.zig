@@ -32,7 +32,7 @@ test "Integration: stack limit boundary conditions" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -93,7 +93,7 @@ test "Integration: memory expansion limits" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 30000;
 
@@ -149,7 +149,7 @@ test "Integration: arithmetic overflow and underflow" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -217,7 +217,7 @@ test "Integration: signed arithmetic boundaries" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -276,7 +276,7 @@ test "Integration: bitwise operation boundaries" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -347,7 +347,7 @@ test "Integration: call gas calculation edge cases" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -408,7 +408,7 @@ test "Integration: return data boundary conditions" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -483,7 +483,7 @@ test "Integration: exponentiation edge cases" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -557,7 +557,7 @@ test "Integration: jump destination validation" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -609,7 +609,7 @@ test "Integration: storage slot temperature transitions" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -675,7 +675,7 @@ test "Integration: MCOPY overlap handling" {
     defer contract.deinit(allocator, null);
 
     // Create frame directly
-    var frame = try Evm.Frame.init(allocator, &contract, .Call, false);
+    var frame = try Evm.Frame.init_minimal(allocator, &contract, .Call, false);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 

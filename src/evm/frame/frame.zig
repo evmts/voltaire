@@ -6,6 +6,7 @@ const Contract = @import("./contract.zig");
 const ExecutionError = @import("../execution/execution_error.zig");
 const Log = @import("../log.zig");
 const ReturnData = @import("../evm/return_data.zig").ReturnData;
+const Vm = @import("../evm.zig");
 
 /// EVM execution frame representing a single call context.
 ///
@@ -34,7 +35,7 @@ const ReturnData = @import("../evm/return_data.zig").ReturnData;
 ///
 /// Example:
 /// ```zig
-/// var frame = try Frame.init(allocator, &contract);
+/// var frame = try Frame.init_minimal(allocator, &contract);
 /// defer frame.deinit();
 /// frame.gas_remaining = 1000000;
 /// try frame.stack.append(42);
@@ -86,7 +87,7 @@ input: []const u8 = &[_]u8{},
 output: []const u8 = &[_]u8{},
 
 /// Current opcode being executed (for debugging/tracing).
-op: []const u8 = undefined,
+op: []const u8 = &.{},
 
 // Large allocations (placed last to avoid increasing offsets of hot fields)
 /// Frame's memory space for temporary data storage.
@@ -137,6 +138,92 @@ pub fn init(allocator: std.mem.Allocator, contract: *Contract) !Frame {
         .op = undefined,
         .memory = memory,
         .stack = Stack{},
+        .return_data = ReturnData.init(allocator),
+    };
+}
+
+/// Create a new execution frame with minimal settings.
+///
+/// Initializes a frame with empty stack and memory, ready for execution.
+/// Gas and other parameters must be set after initialization.
+///
+/// @param allocator Memory allocator for dynamic allocations
+/// @param contract The contract to execute
+/// @return New frame instance
+/// @throws OutOfMemory if memory initialization fails
+///
+/// Example:
+/// ```zig
+/// var frame = try Frame.init_minimal(allocator, &contract);
+/// defer frame.deinit();
+/// frame.gas_remaining = gas_limit;
+/// frame.input = calldata;
+/// ```
+pub fn init_minimal(allocator: std.mem.Allocator, contract: *Contract) !Frame {
+    return Frame{
+        .gas_remaining = 0,
+        .pc = 0,
+        .contract = contract,
+        .allocator = allocator,
+        .stop = false,
+        .is_static = false,
+        .depth = 0,
+        .cost = 0,
+        .err = null,
+        .input = &[_]u8{},
+        .output = &[_]u8{},
+        .op = &.{},
+        .memory = try Memory.init_default(allocator),
+        .stack = .{},
+        .return_data = ReturnData.init(allocator),
+    };
+}
+
+/// Create a new execution frame with specified parameters.
+///
+/// Creates a frame with the provided execution context. This is the main
+/// initialization function used throughout the codebase for creating frames
+/// with specific gas limits, caller information, and input data.
+///
+/// @param allocator Memory allocator for dynamic allocations
+/// @param vm Virtual machine instance for state access
+/// @param gas_limit Initial gas available for execution
+/// @param contract The contract to execute
+/// @param caller Address of the calling account
+/// @param input Call data for the execution
+/// @return New frame instance configured for execution
+/// @throws OutOfMemory if memory initialization fails
+///
+/// Example:
+/// ```zig
+/// var frame = try Frame.init_full(allocator, &vm, 1000000, &contract, caller_addr, call_data);
+/// defer frame.deinit();
+/// ```
+pub fn init_full(
+    allocator: std.mem.Allocator,
+    vm: *Vm,
+    gas_limit: u64,
+    contract: *Contract,
+    caller: primitives.Address,
+    input: []const u8,
+) !Frame {
+    _ = vm; // VM parameter for future use
+    _ = caller; // Caller parameter for future use
+    return Frame{
+        .gas_remaining = gas_limit,
+        .pc = 0,
+        .contract = contract,
+        .allocator = allocator,
+        .stop = false,
+        .is_static = false,
+        .depth = 0,
+        .cost = 0,
+        .err = null,
+        .input = input,
+        .output = &[_]u8{},
+        .op = &.{},
+        .memory = try Memory.init_default(allocator),
+        .stack = .{},
         .return_data = ReturnData.init(allocator),
     };
 }
@@ -206,7 +293,7 @@ pub fn init_with_state(
         .err = err,
         .input = input orelse &[_]u8{},
         .output = output orelse &[_]u8{},
-        .op = op orelse undefined,
+        .op = op orelse &.{},
         .memory = memory_to_use,
         .stack = stack_to_use,
         .return_data = ReturnData.init(allocator),
@@ -222,6 +309,167 @@ pub fn init_with_state(
 pub fn deinit(self: *Frame) void {
     self.memory.deinit();
     self.return_data.deinit();
+}
+
+/// Builder pattern for Frame initialization.
+///
+/// Provides a fluent interface for creating Frame instances with optional parameters.
+/// Required fields (vm and contract) are validated at build time to prevent errors.
+///
+/// Example usage:
+/// ```zig
+/// const frame = try Frame.builder(allocator)
+///     .withVm(&vm)
+///     .withContract(&contract)
+///     .withGas(2000000)
+///     .withCaller(caller_address)
+///     .withInput(call_data)
+///     .isStatic(true)
+///     .build();
+/// ```
+pub const FrameBuilder = struct {
+    allocator: std.mem.Allocator,
+    vm: ?*Vm = null,
+    gas: u64 = 1000000,
+    contract: ?*Contract = null,
+    caller: primitives.Address = primitives.Address.zero(),
+    input: []const u8 = &.{},
+    value: u256 = 0,
+    is_static: bool = false,
+    depth: u32 = 0,
+    
+    /// Initialize a new FrameBuilder.
+    ///
+    /// @param allocator Memory allocator for Frame creation
+    /// @return New FrameBuilder instance with default values
+    pub fn init(allocator: std.mem.Allocator) FrameBuilder {
+        return .{ .allocator = allocator };
+    }
+    
+    /// Set the virtual machine instance.
+    ///
+    /// @param self Builder instance
+    /// @param vm Virtual machine pointer
+    /// @return Builder instance for method chaining
+    pub fn withVm(self: *FrameBuilder, vm: *Vm) *FrameBuilder {
+        self.vm = vm;
+        return self;
+    }
+    
+    /// Set the gas limit for execution.
+    ///
+    /// @param self Builder instance
+    /// @param gas Gas limit
+    /// @return Builder instance for method chaining
+    pub fn withGas(self: *FrameBuilder, gas: u64) *FrameBuilder {
+        self.gas = gas;
+        return self;
+    }
+    
+    /// Set the contract to execute.
+    ///
+    /// @param self Builder instance
+    /// @param contract Contract pointer
+    /// @return Builder instance for method chaining
+    pub fn withContract(self: *FrameBuilder, contract: *Contract) *FrameBuilder {
+        self.contract = contract;
+        return self;
+    }
+    
+    /// Set the caller address.
+    ///
+    /// @param self Builder instance
+    /// @param caller Calling address
+    /// @return Builder instance for method chaining
+    pub fn withCaller(self: *FrameBuilder, caller: primitives.Address) *FrameBuilder {
+        self.caller = caller;
+        return self;
+    }
+    
+    /// Set the input data (calldata).
+    ///
+    /// @param self Builder instance
+    /// @param input Input data slice
+    /// @return Builder instance for method chaining
+    pub fn withInput(self: *FrameBuilder, input: []const u8) *FrameBuilder {
+        self.input = input;
+        return self;
+    }
+    
+    /// Set the value being transferred.
+    ///
+    /// @param self Builder instance
+    /// @param value Transfer value
+    /// @return Builder instance for method chaining
+    pub fn withValue(self: *FrameBuilder, value: u256) *FrameBuilder {
+        self.value = value;
+        return self;
+    }
+    
+    /// Set the static call flag.
+    ///
+    /// @param self Builder instance
+    /// @param static Whether this is a static call
+    /// @return Builder instance for method chaining
+    pub fn isStatic(self: *FrameBuilder, static: bool) *FrameBuilder {
+        self.is_static = static;
+        return self;
+    }
+    
+    /// Set the call depth.
+    ///
+    /// @param self Builder instance
+    /// @param depth Call stack depth
+    /// @return Builder instance for method chaining
+    pub fn withDepth(self: *FrameBuilder, depth: u32) *FrameBuilder {
+        self.depth = depth;
+        return self;
+    }
+    
+    /// Error type for frame building operations.
+    pub const BuildError = error{
+        /// VM instance is required but not provided
+        MissingVm,
+        /// Contract instance is required but not provided
+        MissingContract,
+        /// Memory allocation failed during frame creation
+        OutOfMemory,
+    };
+    
+    /// Build the Frame instance.
+    ///
+    /// Validates that required fields are set and creates the Frame.
+    /// This method consumes the builder.
+    ///
+    /// @param self Builder instance
+    /// @return Frame instance ready for execution
+    /// @throws BuildError if required fields are missing
+    /// @throws OutOfMemory if frame initialization fails
+    pub fn build(self: FrameBuilder) BuildError!Frame {
+        if (self.vm == null) return BuildError.MissingVm;
+        if (self.contract == null) return BuildError.MissingContract;
+        
+        return Frame.init_full(
+            self.allocator,
+            self.vm.?,
+            self.gas,
+            self.contract.?,
+            self.caller,
+            self.input,
+        ) catch |err| switch (err) {
+            error.OutOfMemory => BuildError.OutOfMemory,
+        };
+    }
+};
+
+/// Create a new FrameBuilder instance.
+///
+/// Convenience function for starting the builder pattern.
+///
+/// @param allocator Memory allocator for Frame creation
+/// @return New FrameBuilder instance
+pub fn builder(allocator: std.mem.Allocator) FrameBuilder {
+    return FrameBuilder.init(allocator);
 }
 
 /// Error type for gas consumption operations.
@@ -260,7 +508,7 @@ pub fn consume_gas(self: *Frame, amount: u64) ConsumeGasError!void {
 // COMPREHENSIVE TESTS FOR FRAME MODULE
 // ============================================================================
 
-test "Frame.init creates frame with default settings" {
+test "Frame.init_minimal creates frame with default settings" {
     const allocator = std.testing.allocator;
     
     // Create a minimal contract for testing
@@ -272,7 +520,7 @@ test "Frame.init creates frame with default settings" {
     defer contract.deinit(allocator, null);
     
     // Test basic frame initialization
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     
     // Verify default values
@@ -511,7 +759,7 @@ test "Frame.deinit properly cleans up memory" {
     defer contract.deinit(allocator, null);
     
     // Create frame and expand memory to test cleanup
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     
     // Force memory allocation by expanding memory
     _ = try frame.memory.ensure_capacity(1024);
@@ -532,7 +780,7 @@ test "Frame stack operations work correctly" {
     defer contract.deinit(allocator, null);
     
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     
     // Test stack operations
@@ -561,7 +809,7 @@ test "Frame memory operations work correctly" {
     defer contract.deinit(allocator, null);
     
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     
     // Test memory operations
@@ -694,7 +942,7 @@ test "Frame return data handling" {
     defer contract.deinit(allocator, null);
     
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     
     // Test return data operations
@@ -756,7 +1004,7 @@ test "Frame program counter manipulation" {
     defer contract.deinit(allocator, null);
     
     // Test PC manipulation
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     
     // Initial PC should be 0
@@ -782,7 +1030,7 @@ test "Frame error state management" {
     defer contract.deinit(allocator, null);
     
     // Test error state
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     
     // Initially no error
@@ -809,7 +1057,7 @@ test "Frame stop flag management" {
     defer contract.deinit(allocator, null);
     
     // Test stop flag
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     
     // Initially not stopped
@@ -836,7 +1084,7 @@ test "Frame with empty contract" {
     defer contract.deinit(allocator, null);
     
     // Test frame with empty contract
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     
     // Should work normally
@@ -916,7 +1164,7 @@ test "Frame multiple initialization and cleanup cycles" {
     // Test multiple init/deinit cycles
     var i: u32 = 0;
     while (i < 10) : (i += 1) {
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         
         // Use the frame
         try frame.stack.push(i);
@@ -977,4 +1225,33 @@ test "Frame memory allocation and stack operations stress test" {
     try frame.memory.read(0, &read_buffer);
     
     try std.testing.expectEqualSlices(u8, &test_data, &read_buffer);
+}
+
+// ============================================================================
+// COMPREHENSIVE TESTS FOR FRAME BUILDER PATTERN
+// ============================================================================
+
+test "FrameBuilder.init creates builder with default values" {
+    const allocator = std.testing.allocator;
+    
+    const frame_builder = FrameBuilder.init(allocator);
+    
+    try std.testing.expect(frame_builder.vm == null);
+    try std.testing.expect(frame_builder.gas == 1000000);
+    try std.testing.expect(frame_builder.contract == null);
+    try std.testing.expect(primitives.Address.eql(frame_builder.caller, primitives.Address.zero()));
+    try std.testing.expect(frame_builder.input.len == 0);
+    try std.testing.expect(frame_builder.value == 0);
+    try std.testing.expect(frame_builder.is_static == false);
+    try std.testing.expect(frame_builder.depth == 0);
+}
+
+test "Frame.builder convenience function works" {
+    const allocator = std.testing.allocator;
+    
+    const frame_builder = Frame.builder(allocator);
+    
+    try std.testing.expect(frame_builder.vm == null);
+    try std.testing.expect(frame_builder.gas == 1000000);
+    try std.testing.expect(frame_builder.contract == null);
 }

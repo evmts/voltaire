@@ -103,7 +103,7 @@ test "complex: fibonacci calculation" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -183,7 +183,7 @@ test "complex: storage-based counter with access patterns" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -245,7 +245,7 @@ test "complex: memory expansion with large offsets" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -335,7 +335,7 @@ test "complex: nested conditionals with multiple jumps" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -407,7 +407,7 @@ test "complex: event emission with multiple topics" {
     try evm.state.set_code(contract_address, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -470,7 +470,7 @@ test "complex: keccak256 hash computation" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -626,7 +626,7 @@ test "complex: bit manipulation operations" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -772,7 +772,7 @@ test "complex: modular arithmetic edge cases" {
     try evm.state.set_code(Address.ZERO, &bytecode);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 

@@ -60,7 +60,7 @@ test "GASLIMIT (0x45): Get block gas limit" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
             frame.gas_remaining = 1000;
 
@@ -126,7 +126,7 @@ test "CHAINID (0x46): Get chain ID" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
             frame.gas_remaining = 1000;
 
@@ -177,7 +177,7 @@ test "SELFBALANCE (0x47): Get contract's own balance" {
         // Set the contract's balance directly in the state
         try evm.state.set_balance(contract.address, balance);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
             frame.gas_remaining = 1000;
 
@@ -241,7 +241,7 @@ test "BASEFEE (0x48): Get block base fee" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
             frame.gas_remaining = 1000;
 
@@ -301,7 +301,7 @@ test "BLOBHASH (0x49): Get blob versioned hash" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -388,7 +388,7 @@ test "BLOBBASEFEE (0x4A): Get blob base fee" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
             frame.gas_remaining = 1000;
 
@@ -448,7 +448,7 @@ test "Block info opcodes: Gas consumption" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -513,7 +513,7 @@ test "Invalid opcodes 0x4B-0x4E: Should revert" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -565,7 +565,7 @@ test "SELFBALANCE: Balance changes during execution" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -629,7 +629,7 @@ test "BLOBHASH: Empty blob list" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -683,7 +683,7 @@ test "CHAINID: EIP-1344 behavior" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -739,7 +739,7 @@ test "Stack operations: All opcodes push exactly one value" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 

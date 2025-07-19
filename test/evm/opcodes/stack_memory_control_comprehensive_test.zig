@@ -36,7 +36,7 @@ test "POP (0x50): Remove top stack item" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -94,7 +94,7 @@ test "MLOAD (0x51): Load word from memory" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -149,7 +149,7 @@ test "MSTORE (0x52): Store 32 bytes to memory" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -213,7 +213,7 @@ test "MSTORE8 (0x53): Store single byte to memory" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -277,7 +277,7 @@ test "SLOAD (0x54): Load from storage" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 50000;
 
@@ -345,7 +345,7 @@ test "SSTORE (0x55): Store to storage" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 30000;
 
@@ -416,7 +416,7 @@ test "JUMP (0x56): Unconditional jump" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -477,7 +477,7 @@ test "JUMPI (0x57): Conditional jump" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -537,7 +537,7 @@ test "PC (0x58): Get program counter" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -594,7 +594,7 @@ test "Stack, Memory, and Control opcodes: Gas consumption" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -620,7 +620,7 @@ test "Stack, Memory, and Control opcodes: Gas consumption" {
     try testing.expectEqual(@as(u64, 6), gas_used); // Base (3) + memory expansion (3)
 
     // Test MSTORE gas (with fresh memory to avoid interference from MLOAD)
-    var frame2 = try Frame.init(allocator, &contract);
+    var frame2 = try Frame.init_minimal(allocator, &contract);
     defer frame2.deinit();
     frame2.gas_remaining = 1000;
     const state_ptr2: *Evm.Operation.State = @ptrCast(&frame2);
@@ -633,7 +633,7 @@ test "Stack, Memory, and Control opcodes: Gas consumption" {
     try testing.expectEqual(@as(u64, 6), gas_used); // Base (3) + memory expansion (3)
 
     // Test MSTORE8 gas (with fresh memory)
-    var frame3 = try Frame.init(allocator, &contract);
+    var frame3 = try Frame.init_minimal(allocator, &contract);
     defer frame3.deinit();
     frame3.gas_remaining = 1000;
     const state_ptr3: *Evm.Operation.State = @ptrCast(&frame3);
@@ -678,7 +678,7 @@ test "SLOAD/SSTORE: EIP-2929 gas costs" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 50000;
 
@@ -730,7 +730,7 @@ test "Invalid opcode 0x4F" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -766,7 +766,7 @@ test "Memory operations: Large offset handling" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100; // Limited gas
 
@@ -827,7 +827,7 @@ test "Jump operations: Code analysis integration" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 

@@ -70,7 +70,7 @@ test "Security: Stack overflow protection across all operation types" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 100000;
 
@@ -152,7 +152,7 @@ test "Security: Stack underflow protection across all operation types" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 100000;
 
@@ -196,7 +196,7 @@ test "Security: SWAP operations at stack capacity should succeed" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -237,7 +237,7 @@ test "Security: Stack boundary conditions at exactly 1024 elements" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -300,7 +300,7 @@ test "Security: Memory bounds checking with invalid offsets" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 100000;
 
@@ -366,7 +366,7 @@ test "Security: Memory expansion limit enforcement (32MB default)" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = std.math.maxInt(u64);
 
@@ -411,7 +411,7 @@ test "Security: Memory gas cost grows quadratically" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 1000000;
 
@@ -474,7 +474,7 @@ test "Security: Gas limit enforcement across operation categories" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = test_case.gas_limit;
 
@@ -519,7 +519,7 @@ test "Security: Gas exhaustion in complex operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000; // Very limited gas
 
@@ -570,7 +570,7 @@ test "Security: Gas refund limits and calculations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -641,7 +641,7 @@ test "Security: Call depth limit enforcement at 1024 levels" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 1000000;
 
@@ -724,7 +724,7 @@ test "Security: Depth tracking in nested calls" {
     const test_depths = [_]u32{ 0, 100, 500, 1000, 1023 };
 
     for (test_depths) |depth| {
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 1000000;
 
@@ -797,7 +797,7 @@ test "Security: Arithmetic operations handle integer overflow correctly" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 100000;
 
@@ -856,7 +856,7 @@ test "Security: Division by zero handling" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 100000;
 
@@ -916,7 +916,7 @@ test "Security: Modular arithmetic overflow protection" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 100000;
 
@@ -974,7 +974,7 @@ test "Security: Zero-value transfer handling" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -1025,7 +1025,7 @@ test "Security: Zero-value CREATE operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
 
@@ -1073,7 +1073,7 @@ test "Security: Empty contract code execution" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -1107,7 +1107,7 @@ test "Security: CALL to empty contract" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -1160,7 +1160,7 @@ test "Security: Self-call detection and handling" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -1208,7 +1208,7 @@ test "Security: Reentrancy with depth tracking" {
     defer contract.deinit(allocator, null);
 
     // Simulate deep recursion approaching limit
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000000;
 
@@ -1277,7 +1277,7 @@ test "Security: Invalid jump destination handling" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 100000;
 
@@ -1330,7 +1330,7 @@ test "Security: Valid jump destination validation" {
 
     // Test valid JUMP to position 0 (which has JUMPDEST)
     {
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 100000;
 
@@ -1350,7 +1350,7 @@ test "Security: Valid jump destination validation" {
 
     // Test conditional jump with false condition
     {
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 100000;
 
@@ -1407,7 +1407,7 @@ test "Security: Static call protection for state modification" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 100000;
 
@@ -1464,7 +1464,7 @@ test "Security: Combined boundary conditions stress test" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 5000; // Limited gas
 
@@ -1521,7 +1521,7 @@ test "Security: Attack vector simulation - DoS via resource exhaustion" {
 
     // Try to create many contracts in sequence
     while (i < 100 and successful_creates < 10) : (i += 1) {
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
         frame.gas_remaining = 1000000;
 

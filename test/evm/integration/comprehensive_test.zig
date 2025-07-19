@@ -51,7 +51,7 @@ test "Integration: Complete ERC20 transfer simulation" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -168,7 +168,7 @@ test "Integration: Smart contract deployment flow" {
     defer deployer_contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &deployer_contract);
+    var frame = try Frame.init_minimal(allocator, &deployer_contract);
     defer frame.deinit();
     frame.gas_remaining = 200000;
 
@@ -337,7 +337,7 @@ test "Integration: Complex control flow with nested conditions" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -491,7 +491,7 @@ test "Integration: Gas metering across operations" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -586,7 +586,7 @@ test "Integration: Error propagation and recovery" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 

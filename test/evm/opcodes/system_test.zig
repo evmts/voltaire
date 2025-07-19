@@ -40,7 +40,7 @@ test "CREATE: create new contract" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -97,7 +97,7 @@ test "CREATE: empty init code creates empty contract" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -144,7 +144,7 @@ test "CREATE: write protection in static call" {
     defer contract.deinit(allocator, null);
 
     // Create frame with static call
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     frame.is_static = true;
     defer frame.deinit();
@@ -189,7 +189,7 @@ test "CREATE: depth limit" {
     defer contract.deinit(allocator, null);
 
     // Create frame with max depth
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -239,7 +239,7 @@ test "CREATE2: create with deterministic address" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -298,7 +298,7 @@ test "CALL: basic call behavior" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -362,7 +362,7 @@ test "CALL: failed call" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -416,7 +416,7 @@ test "CALL: cold address access costs more gas" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 10000;
     defer frame.deinit();
 
@@ -474,7 +474,7 @@ test "CALL: value transfer in static call fails" {
     defer contract.deinit(allocator, null);
 
     // Create frame with static call
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     frame.is_static = true;
     defer frame.deinit();
@@ -525,7 +525,7 @@ test "DELEGATECALL: execute code in current context" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -582,7 +582,7 @@ test "STATICCALL: read-only call" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -639,7 +639,7 @@ test "CALL: depth limit" {
     defer contract.deinit(allocator, null);
 
     // Create frame with max depth
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -694,7 +694,7 @@ test "CREATE: gas consumption" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -750,7 +750,7 @@ test "CREATE2: additional gas for hashing" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -808,7 +808,7 @@ test "CREATE: stack underflow" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -851,7 +851,7 @@ test "CALL: stack underflow" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -899,7 +899,7 @@ test "CREATE: memory expansion for init code" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -958,7 +958,7 @@ test "CREATE: EIP-3860 initcode size limit" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 10000000;
     defer frame.deinit();
 
@@ -1002,7 +1002,7 @@ test "CREATE: EIP-3860 initcode word gas" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 100000;
     defer frame.deinit();
 
@@ -1060,7 +1060,7 @@ test "CREATE2: EIP-3860 initcode size limit" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     frame.gas_remaining = 10000000;
     defer frame.deinit();
 

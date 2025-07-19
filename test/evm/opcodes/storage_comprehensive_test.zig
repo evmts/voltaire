@@ -41,7 +41,7 @@ test "SLOAD (0x54): Load from storage" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 3000;
 
@@ -85,7 +85,7 @@ test "SLOAD: Load from uninitialized slot returns zero" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 3000;
 
@@ -125,7 +125,7 @@ test "SLOAD: Multiple loads from same slot" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 6000;
 
@@ -168,7 +168,7 @@ test "SLOAD: EIP-2929 cold/warm access" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -228,7 +228,7 @@ test "SSTORE (0x55): Store to storage" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 30000;
 
@@ -270,7 +270,7 @@ test "SSTORE: Static call protection" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -302,7 +302,7 @@ test "SSTORE: Static call protection" {
 //     );
 //     defer contract.deinit(allocator, null);
 //
-//     var test_frame = try helpers.TestFrame.init(allocator, &contract, 50000);
+//     var test_frame = try helpers.TestFrame.init_minimal(allocator, &contract, 50000);
 //     defer test_frame.deinit();
 //
 //     // First set a non-zero value
@@ -346,7 +346,7 @@ test "SSTORE: EIP-2200 gas cost scenarios" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -403,7 +403,7 @@ test "SSTORE: Large storage values" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 50000;
 
@@ -456,7 +456,7 @@ test "Storage opcodes: Gas consumption patterns" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -517,7 +517,7 @@ test "Storage opcodes: Stack underflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 1000;
 
@@ -540,7 +540,7 @@ test "Storage opcodes: Stack underflow" {
     );
     defer contract2.deinit(allocator, null);
 
-    var frame2 = try Frame.init(allocator, &contract2);
+    var frame2 = try Frame.init_minimal(allocator, &contract2);
     defer frame2.deinit();
     frame2.gas_remaining = 1000;
 
@@ -597,7 +597,7 @@ test "Storage: Multiple consecutive operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -667,7 +667,7 @@ test "SSTORE: Overwriting values" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
             frame.gas_remaining = 30000;
 
@@ -712,7 +712,7 @@ test "SSTORE: EIP-2200 complete gas cost scenarios" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -777,7 +777,7 @@ test "SSTORE: Zero value edge cases" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -824,7 +824,7 @@ test "SSTORE: Same value edge cases" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -898,7 +898,7 @@ test "Storage: Boundary value testing" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
             frame.gas_remaining = 50000;
 
@@ -956,7 +956,7 @@ test "Storage: Large slot number testing" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame = try Frame.init_minimal(allocator, &contract);
         defer frame.deinit();
             frame.gas_remaining = 50000;
 
@@ -1009,7 +1009,7 @@ test "Storage: Contract slot warming pattern" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 10000;
 
@@ -1060,7 +1060,7 @@ test "Storage: Complex access patterns" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 100000;
 
@@ -1114,7 +1114,7 @@ test "SSTORE: EIP-1706 gas stipend protection" {
     defer contract.deinit(allocator, null);
 
     // Set gas remaining to exactly the stipend limit (2300)
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 2300;
 
@@ -1153,7 +1153,7 @@ test "Storage: Rapid alternating operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame = try Frame.init_minimal(allocator, &contract);
     defer frame.deinit();
     frame.gas_remaining = 200000;
 
@@ -1221,11 +1221,11 @@ test "Storage: Multiple contracts isolation" {
     );
     defer contract2.deinit(allocator, null);
 
-    var frame1 = try Frame.init(allocator, &contract1);
+    var frame1 = try Frame.init_minimal(allocator, &contract1);
     defer frame1.deinit();
     frame1.gas_remaining = 30000;
 
-    var frame2 = try Frame.init(allocator, &contract2);
+    var frame2 = try Frame.init_minimal(allocator, &contract2);
     defer frame2.deinit();
     frame2.gas_remaining = 30000;
 
