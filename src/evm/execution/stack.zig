@@ -4,11 +4,16 @@ const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 
+// Helper function to extract frame from state
+inline fn getFrame(state: *Operation.State) *Frame {
+    return @as(*Frame, @ptrCast(@alignCast(state)));
+}
+
 pub fn op_pop(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = getFrame(state);
 
     _ = try frame.stack.pop();
 
@@ -19,7 +24,7 @@ pub fn op_push0(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = getFrame(state);
 
     try frame.stack.append(0);
 
@@ -83,17 +88,17 @@ pub fn make_push(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.S
         pub fn push(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
             _ = interpreter;
 
-            const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+            const frame = getFrame(state);
 
+            if (frame.stack.size >= Stack.CAPACITY) {
+                unreachable;
+            }
             var value: u256 = 0;
             const code = frame.contract.code;
 
-            var i: isize = -@as(isize, @intCast(n));
-            while (i < 0) : (i += 1) {
-                const idx = @as(usize, @intCast(i + @as(isize, @intCast(n))));
-                if (pc + 1 + idx < code.len) {
-                    @branchHint(.likely);
-                    value = (value << 8) | code[pc + 1 + idx];
+            for (0..n) |i| {
+                if (pc + 1 + i < code.len) {
+                    value = (value << 8) | code[pc + 1 + i];
                 } else {
                     value = value << 8;
                 }
@@ -112,19 +117,19 @@ pub fn make_push(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.S
 pub fn push_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = getFrame(state);
     const opcode = frame.contract.code[pc];
     const n = opcode - 0x5f; // PUSH1 is 0x60, so n = opcode - 0x5f
 
+    if (frame.stack.size >= Stack.CAPACITY) {
+        unreachable;
+    }
     var value: u256 = 0;
     const code = frame.contract.code;
 
-    var i: isize = -@as(isize, @intCast(n));
-    while (i < 0) : (i += 1) {
-        const idx = @as(usize, @intCast(i + @as(isize, @intCast(n))));
-        if (pc + 1 + idx < code.len) {
-            @branchHint(.likely);
-            value = (value << 8) | code[pc + 1 + idx];
+    for (0..n) |i| {
+        if (pc + 1 + i < code.len) {
+            value = (value << 8) | code[pc + 1 + i];
         } else {
             value = value << 8;
         }
@@ -144,8 +149,14 @@ pub fn make_dup(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.St
             _ = pc;
             _ = interpreter;
 
-            const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+            const frame = getFrame(state);
 
+            if (frame.stack.size < n) {
+                unreachable;
+            }
+            if (frame.stack.size >= Stack.CAPACITY) {
+                unreachable;
+            }
             frame.stack.dup_unsafe(n);
 
             return Operation.ExecutionResult{};
@@ -157,10 +168,16 @@ pub fn make_dup(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.St
 pub fn dup_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = getFrame(state);
     const opcode = frame.contract.code[pc];
     const n = opcode - 0x7f; // DUP1 is 0x80, so n = opcode - 0x7f
 
+    if (frame.stack.size < n) {
+        unreachable;
+    }
+    if (frame.stack.size >= Stack.CAPACITY) {
+        unreachable;
+    }
     frame.stack.dup_unsafe(@intCast(n));
 
     return Operation.ExecutionResult{};
@@ -175,8 +192,11 @@ pub fn make_swap(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.S
             _ = pc;
             _ = interpreter;
 
-            const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+            const frame = getFrame(state);
 
+            if (frame.stack.size < n + 1) {
+                unreachable;
+            }
             frame.stack.swap_unsafe(n);
 
             return Operation.ExecutionResult{};
@@ -188,10 +208,13 @@ pub fn make_swap(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.S
 pub fn swap_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = getFrame(state);
     const opcode = frame.contract.code[pc];
     const n = opcode - 0x8f; // SWAP1 is 0x90, so n = opcode - 0x8f
 
+    if (frame.stack.size < n + 1) {
+        unreachable;
+    }
     frame.stack.swap_unsafe(@intCast(n));
 
     return Operation.ExecutionResult{};
