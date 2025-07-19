@@ -14,25 +14,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # x86_64 platforms
+          # Native builds only for now - cross-compilation requires additional setup
           - os: ubuntu-latest
-            target: x86_64-linux
             runs-on: ubuntu-latest
           - os: macos-latest
-            target: x86_64-macos
             runs-on: macos-latest
           - os: windows-latest
-            target: x86_64-windows
-            runs-on: windows-latest
-          # aarch64 platforms
-          - os: ubuntu-latest
-            target: aarch64-linux
-            runs-on: ubuntu-latest
-          - os: macos-latest
-            target: aarch64-macos
-            runs-on: macos-latest
-          - os: windows-latest
-            target: aarch64-windows
             runs-on: windows-latest
     
     runs-on: ${{ matrix.runs-on }}
@@ -56,7 +43,6 @@ jobs:
       - name: Report Results
         if: always()
         run: |
-          echo "Build and test completed for ${{ matrix.target }}"
+          echo "Build and test completed for ${{ matrix.os }}"
           echo "OS: ${{ matrix.os }}"
-          echo "Target: ${{ matrix.target }}"
         shell: bash

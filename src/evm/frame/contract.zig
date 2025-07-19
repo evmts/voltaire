@@ -831,7 +831,7 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
     };
     errdefer allocator.destroy(analysis);
 
-    analysis.code_segments = try bitvec.code_bitmap(allocator, code);
+    analysis.code_segments = try bitvec.BitVec64.codeBitmap(allocator, code);
     errdefer analysis.code_segments.deinit(allocator);
 
     var jumpdests = std.ArrayList(u32).init(allocator);
