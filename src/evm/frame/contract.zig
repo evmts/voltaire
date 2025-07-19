@@ -839,7 +839,7 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
 
     // SIMD optimization: Process 16 bytes at a time
     const vec_size = 16;
-    const jumpdest_vec = @as(@Vector(vec_size, u8), @splat(@intFromEnum(opcode.Opcode.JUMPDEST)));
+    const jumpdest_vec = @as(@Vector(vec_size, u8), @splat(@intFromEnum(opcode.Enum.JUMPDEST)));
     
     var i: usize = 0;
     
