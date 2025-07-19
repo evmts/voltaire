@@ -119,6 +119,12 @@ return_data: ReturnData,
 /// frame.input = calldata;
 /// ```
 pub fn init(allocator: std.mem.Allocator, contract: *Contract) !Frame {
+    var memory = try Memory.init_default(allocator);
+    errdefer memory.deinit();
+    
+    var stack = try Stack.init(allocator);
+    errdefer stack.deinit(allocator);
+    
     return Frame{
         .gas_remaining = 0,
         .pc = 0,
@@ -132,8 +138,8 @@ pub fn init(allocator: std.mem.Allocator, contract: *Contract) !Frame {
         .input = &[_]u8{},
         .output = &[_]u8{},
         .op = undefined,
-        .memory = try Memory.init_default(allocator),
-        .stack = .{},
+        .memory = memory,
+        .stack = stack,
         .return_data = ReturnData.init(allocator),
     };
 }
@@ -186,6 +192,12 @@ pub fn init_with_state(
     output: ?[]const u8,
     pc: ?usize,
 ) !Frame {
+    var memory_to_use = memory orelse try Memory.init_default(allocator);
+    errdefer if (memory == null) memory_to_use.deinit();
+    
+    var stack_to_use = stack orelse try Stack.init(allocator);
+    errdefer if (stack == null) stack_to_use.deinit(allocator);
+    
     return Frame{
         .gas_remaining = gas_remaining orelse 0,
         .pc = pc orelse 0,
@@ -199,8 +211,8 @@ pub fn init_with_state(
         .input = input orelse &[_]u8{},
         .output = output orelse &[_]u8{},
         .op = op orelse undefined,
-        .memory = memory orelse try Memory.init_default(allocator),
-        .stack = stack orelse .{},
+        .memory = memory_to_use,
+        .stack = stack_to_use,
         .return_data = ReturnData.init(allocator),
     };
 }
@@ -213,6 +225,7 @@ pub fn init_with_state(
 /// @param self The frame to clean up
 pub fn deinit(self: *Frame) void {
     self.memory.deinit();
+    self.stack.deinit(self.allocator);
     self.return_data.deinit();
 }
 
