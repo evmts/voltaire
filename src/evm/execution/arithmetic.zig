@@ -59,48 +59,45 @@ const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const StackValidation = @import("../stack/stack_validation.zig");
 
-/// ADD opcode (0x01) - Addition operation
-///
-/// Pops two values from the stack, adds them with wrapping overflow,
-/// and pushes the result.
-///
-/// ## Stack Input
-/// - `a`: First operand (second from top)
-/// - `b`: Second operand (top)
-///
-/// ## Stack Output
-/// - `a + b`: Sum with 256-bit wrapping overflow
-///
-/// ## Gas Cost
-/// 3 gas (GasFastestStep)
-///
-/// ## Execution
-/// 1. Pop b from stack
-/// 2. Pop a from stack
-/// 3. Calculate sum = (a + b) mod 2^256
-/// 4. Push sum to stack
-///
-/// ## Example
-/// Stack: [10, 20] => [30]
-/// Stack: [MAX_U256, 1] => [0] (overflow wraps)
-pub fn op_add(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    _ = pc;
-    _ = interpreter;
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+/// Helper for binary arithmetic operations with common stack manipulation pattern.
+/// Uses comptime to generate efficient operation-specific code with zero runtime overhead.
+fn binaryOp(comptime op_fn: fn (u256, u256) u256) fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    return struct {
+        fn execute(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+            _ = pc;
+            _ = interpreter;
+            const frame = @as(*Frame, @ptrCast(@alignCast(state)));
 
-    // Compile-time validation: ADD pops 2 items, pushes 1 (binary operation)
-    // This ensures at build time that ADD has valid stack effects for EVM
-    try StackValidation.validateStackRequirements(2, 1, frame.stack.size);
+            if (frame.stack.size < 2) {
+                @branchHint(.cold);
+                unreachable;
+            }
 
-    const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+            const b = frame.stack.pop_unsafe();
+            const a = frame.stack.peek_unsafe().*;
+            const result = op_fn(a, b);
+            frame.stack.set_top_unsafe(result);
 
-    const sum = a +% b;
-
-    frame.stack.set_top_unsafe(sum);
-
-    return Operation.ExecutionResult{};
+            return Operation.ExecutionResult{};
+        }
+    }.execute;
 }
+
+// Arithmetic operation functions for use with binaryOp helper
+inline fn addOp(a: u256, b: u256) u256 {
+    return a +% b;
+}
+
+inline fn mulOp(a: u256, b: u256) u256 {
+    return a *% b;
+}
+
+inline fn subOp(a: u256, b: u256) u256 {
+    return a -% b;
+}
+
+/// ADD opcode (0x01) - Addition with wrapping overflow
+pub const op_add = binaryOp(addOp);
 
 /// MUL opcode (0x02) - Multiplication operation
 ///
