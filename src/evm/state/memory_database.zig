@@ -37,53 +37,37 @@ const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 const DatabaseError = @import("database_interface.zig").DatabaseError;
 const Account = @import("database_interface.zig").Account;
 
-/// Context for address hash map operations
-const AddressContext = struct {
-    pub fn hash(self: @This(), addr: [20]u8) u64 {
-        _ = self;
-        return std.hash_map.hashString(&addr);
-    }
+/// Generic hash context for different key types
+fn HashContext(comptime T: type) type {
+    return struct {
+        pub fn hash(_: @This(), key: T) u64 {
+            return switch (T) {
+                [20]u8, [32]u8 => std.hash_map.hashString(&key),
+                StorageKey => blk: {
+                    var hasher = std.hash.Wyhash.init(0);
+                    key.hash(&hasher);
+                    break :blk hasher.final();
+                },
+                else => @compileError("Unsupported hash context type: " ++ @typeName(T)),
+            };
+        }
 
-    pub fn eql(self: @This(), a: [20]u8, b: [20]u8) bool {
-        _ = self;
-        return std.mem.eql(u8, &a, &b);
-    }
-};
-
-/// Context for storage key hash map operations
-const StorageKeyContext = struct {
-    pub fn hash(self: @This(), key: StorageKey) u64 {
-        _ = self;
-        var hasher = std.hash.Wyhash.init(0);
-        key.hash(&hasher);
-        return hasher.final();
-    }
-
-    pub fn eql(self: @This(), a: StorageKey, b: StorageKey) bool {
-        _ = self;
-        return StorageKey.eql(a, b);
-    }
-};
-
-/// Context for code hash (32-byte array) hash map operations
-const CodeHashContext = struct {
-    pub fn hash(self: @This(), code_hash: [32]u8) u64 {
-        _ = self;
-        return std.hash_map.hashString(&code_hash);
-    }
-
-    pub fn eql(self: @This(), a: [32]u8, b: [32]u8) bool {
-        _ = self;
-        return std.mem.eql(u8, &a, &b);
-    }
-};
+        pub fn eql(_: @This(), a: T, b: T) bool {
+            return switch (T) {
+                [20]u8, [32]u8 => std.mem.eql(u8, &a, &b),
+                StorageKey => StorageKey.eql(a, b),
+                else => @compileError("Unsupported hash context type: " ++ @typeName(T)),
+            };
+        }
+    };
+}
 
 /// Snapshot of database state for rollback support
 const Snapshot = struct {
     id: u64,
-    accounts: std.HashMap([20]u8, Account, AddressContext, 80),
-    storage: std.HashMap(StorageKey, u256, StorageKeyContext, 80),
-    code_storage: std.HashMap([32]u8, []u8, CodeHashContext, 80),
+    accounts: std.HashMap([20]u8, Account, HashContext([20]u8), 80),
+    storage: std.HashMap(StorageKey, u256, HashContext(StorageKey), 80),
+    code_storage: std.HashMap([32]u8, []u8, HashContext([32]u8), 80),
 
     fn deinit(self: *Snapshot, allocator: std.mem.Allocator) void {
         self.accounts.deinit();
@@ -97,12 +81,12 @@ const Snapshot = struct {
         self.code_storage.deinit();
     }
 
-    fn clone_from(allocator: std.mem.Allocator, source_accounts: *const std.HashMap([20]u8, Account, AddressContext, 80), source_storage: *const std.HashMap(StorageKey, u256, StorageKeyContext, 80), source_code: *const std.HashMap([32]u8, []u8, CodeHashContext, 80), snapshot_id: u64) !Snapshot {
+    fn clone_from(allocator: std.mem.Allocator, source_accounts: *const std.HashMap([20]u8, Account, HashContext([20]u8), 80), source_storage: *const std.HashMap(StorageKey, u256, HashContext(StorageKey), 80), source_code: *const std.HashMap([32]u8, []u8, HashContext([32]u8), 80), snapshot_id: u64) !Snapshot {
         var snapshot = Snapshot{
             .id = snapshot_id,
-            .accounts = std.HashMap([20]u8, Account, AddressContext, 80).init(allocator),
-            .storage = std.HashMap(StorageKey, u256, StorageKeyContext, 80).init(allocator),
-            .code_storage = std.HashMap([32]u8, []u8, CodeHashContext, 80).init(allocator),
+            .accounts = std.HashMap([20]u8, Account, HashContext([20]u8), 80).init(allocator),
+            .storage = std.HashMap(StorageKey, u256, HashContext(StorageKey), 80).init(allocator),
+            .code_storage = std.HashMap([32]u8, []u8, HashContext([32]u8), 80).init(allocator),
         };
 
         // Clone accounts
@@ -153,13 +137,13 @@ pub const MemoryDatabase = struct {
     allocator: std.mem.Allocator,
 
     /// Account data storage
-    accounts: std.HashMap([20]u8, Account, AddressContext, 80),
+    accounts: std.HashMap([20]u8, Account, HashContext([20]u8), 80),
 
     /// Contract storage (address, slot) -> value mapping
-    storage: std.HashMap(StorageKey, u256, StorageKeyContext, 80),
+    storage: std.HashMap(StorageKey, u256, HashContext(StorageKey), 80),
 
     /// Code storage by hash
-    code_storage: std.HashMap([32]u8, []u8, CodeHashContext, 80),
+    code_storage: std.HashMap([32]u8, []u8, HashContext([32]u8), 80),
 
     /// State snapshots for rollback support
     snapshots: std.ArrayList(Snapshot),
@@ -177,9 +161,9 @@ pub const MemoryDatabase = struct {
     pub fn init(allocator: std.mem.Allocator) MemoryDatabase {
         return MemoryDatabase{
             .allocator = allocator,
-            .accounts = std.HashMap([20]u8, Account, AddressContext, 80).init(allocator),
-            .storage = std.HashMap(StorageKey, u256, StorageKeyContext, 80).init(allocator),
-            .code_storage = std.HashMap([32]u8, []u8, CodeHashContext, 80).init(allocator),
+            .accounts = std.HashMap([20]u8, Account, HashContext([20]u8), 80).init(allocator),
+            .storage = std.HashMap(StorageKey, u256, HashContext(StorageKey), 80).init(allocator),
+            .code_storage = std.HashMap([32]u8, []u8, HashContext([32]u8), 80).init(allocator),
             .snapshots = std.ArrayList(Snapshot).init(allocator),
             .next_snapshot_id = 1,
             .batch_operations = null,
