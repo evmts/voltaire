@@ -430,7 +430,7 @@ pub fn runComprehensiveFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.storageAccessPatterns();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     try suite.benchmark(BenchmarkConfig{
         .name = "storage_pool_reuse",
@@ -441,7 +441,7 @@ pub fn runComprehensiveFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.storagePoolReuse();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // Call stack benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -453,7 +453,7 @@ pub fn runComprehensiveFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.callStackDepth();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     try suite.benchmark(BenchmarkConfig{
         .name = "recursive_call_simulation",
@@ -464,7 +464,7 @@ pub fn runComprehensiveFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.recursiveCallSimulation();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // Gas accounting benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -476,7 +476,7 @@ pub fn runComprehensiveFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.complexGasAccounting();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // Memory pattern benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -488,7 +488,7 @@ pub fn runComprehensiveFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.memoryFragmentationPattern();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // Concurrent operation benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -500,7 +500,7 @@ pub fn runComprehensiveFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.concurrentFrameOperations();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     std.debug.print("=== Comprehensive Frame Management Benchmarks Complete ===\n\n");
 }

@@ -202,7 +202,7 @@ pub const FrameBenchmarks = struct {
     /// Benchmark large bytecode contract
     pub fn largeBytecodeContract(self: *Self) !void {
         // Create large bytecode (simulating complex contract)
-        var large_bytecode = try self.allocator.alloc(u8, 10000);
+        const large_bytecode = try self.allocator.alloc(u8, 10000);
         defer self.allocator.free(large_bytecode);
         
         // Fill with valid EVM opcodes
@@ -297,7 +297,7 @@ pub fn runFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.frameLifecycle();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     try suite.benchmark(BenchmarkConfig{
         .name = "frame_with_memory_ops",
@@ -308,7 +308,7 @@ pub fn runFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.frameWithMemoryOps();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     try suite.benchmark(BenchmarkConfig{
         .name = "frame_with_stack_ops",
@@ -319,7 +319,7 @@ pub fn runFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.frameWithStackOps();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // Contract management benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -331,7 +331,7 @@ pub fn runFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.contractCreation();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     try suite.benchmark(BenchmarkConfig{
         .name = "contract_with_storage",
@@ -342,7 +342,7 @@ pub fn runFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.contractWithStorage();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // Call stack benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -354,7 +354,7 @@ pub fn runFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.multipleFrames();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // Large contract benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -366,7 +366,7 @@ pub fn runFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.largeBytecodeContract();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // Storage pool benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -378,7 +378,7 @@ pub fn runFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.storagePoolEfficiency();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // Gas accounting benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -390,7 +390,7 @@ pub fn runFrameBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.gasAccountingOverhead();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     std.debug.print("=== Frame Management Benchmarks Complete ===\n\n");
 }

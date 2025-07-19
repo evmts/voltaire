@@ -34,7 +34,7 @@ pub const CodeAnalysisBenchmarks = struct {
         };
         
         // Medium contract (~5KB) - simulate complex DeFi contract
-        var medium = try allocator.alloc(u8, 5000);
+        const medium = try allocator.alloc(u8, 5000);
         for (medium, 0..) |*byte, idx| {
             // Pattern that includes JUMPDESTs and actual opcodes
             if (idx % 50 == 0) {
@@ -49,7 +49,7 @@ pub const CodeAnalysisBenchmarks = struct {
         }
         
         // Large contract (~20KB) - simulate very complex contract
-        var large = try allocator.alloc(u8, 20000);
+        const large = try allocator.alloc(u8, 20000);
         for (large, 0..) |*byte, idx| {
             if (idx % 100 == 0) {
                 byte.* = 0x5b; // JUMPDEST
@@ -63,7 +63,7 @@ pub const CodeAnalysisBenchmarks = struct {
         }
         
         // JUMPDEST-heavy contract for worst-case analysis
-        var jumpdest_heavy = try allocator.alloc(u8, 2000);
+        const jumpdest_heavy = try allocator.alloc(u8, 2000);
         for (jumpdest_heavy, 0..) |*byte, idx| {
             if (idx % 5 == 0) {
                 byte.* = 0x5b; // JUMPDEST - every 5th byte
@@ -228,7 +228,7 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.analyzeSmallContract();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     try suite.benchmark(BenchmarkConfig{
         .name = "analyze_medium_contract",
@@ -239,7 +239,7 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.analyzeMediumContract();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     try suite.benchmark(BenchmarkConfig{
         .name = "analyze_large_contract",
@@ -250,7 +250,7 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.analyzeLargeContract();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // JUMPDEST validation benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -262,7 +262,7 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.validateJumpdestsSmall();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     try suite.benchmark(BenchmarkConfig{
         .name = "validate_jumpdests_large",
@@ -273,7 +273,7 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.validateJumpdestsLarge();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // BitVec operations benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -285,7 +285,7 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.bitvecOperations();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     try suite.benchmark(BenchmarkConfig{
         .name = "create_code_bitmap",
@@ -296,7 +296,7 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.createCodeBitmap();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     // Cache and memory pattern benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -308,7 +308,7 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.repeatedAnalysis();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     try suite.benchmark(BenchmarkConfig{
         .name = "worst_case_jumpdests",
@@ -319,7 +319,7 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.worstCaseJumpdests();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     try suite.benchmark(BenchmarkConfig{
         .name = "analysis_memory_pattern",
@@ -330,7 +330,7 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
         fn run(self: @This()) !void {
             try self.bench.analysisMemoryPattern();
         }
-    }{ .bench = &benchmarks }.run);
+    }{ .bench = &benchmarks });
     
     std.debug.print("=== Code Analysis Benchmarks Complete ===\n\n");
 }
