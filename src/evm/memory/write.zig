@@ -12,7 +12,7 @@ const context = @import("context.zig");
 // No further optimizations are needed.
 
 /// Write arbitrary data at context-relative offset.
-pub fn set_data(self: *Memory, relative_offset: usize, data: []const u8) MemoryError!void {
+pub inline fn set_data(self: *Memory, relative_offset: usize, data: []const u8) MemoryError!void {
     // Debug logging removed for fuzz testing compatibility
     if (data.len == 0) return;
 
@@ -69,7 +69,7 @@ pub fn set_data_bounded(
 }
 
 /// Write u256 value at context-relative offset (for test compatibility)
-pub fn set_u256(self: *Memory, relative_offset: usize, value: u256) MemoryError!void {
+pub inline fn set_u256(self: *Memory, relative_offset: usize, value: u256) MemoryError!void {
     _ = try self.ensure_context_capacity(relative_offset + 32);
     const abs_offset = self.my_checkpoint + relative_offset;
     const bytes_ptr: *[32]u8 = @ptrCast(self.shared_buffer_ref.items[abs_offset..abs_offset + 32].ptr);

@@ -5,7 +5,7 @@ const MemoryError = @import("errors.zig").MemoryError;
 const context = @import("context.zig");
 
 /// Read 32 bytes as u256 at context-relative offset.
-pub fn get_u256(self: *const Memory, relative_offset: usize) MemoryError!u256 {
+pub inline fn get_u256(self: *const Memory, relative_offset: usize) MemoryError!u256 {
     if (relative_offset + 32 > self.context_size()) {
         return MemoryError.InvalidOffset;
     }
@@ -15,7 +15,7 @@ pub fn get_u256(self: *const Memory, relative_offset: usize) MemoryError!u256 {
 }
 
 /// Read arbitrary slice of memory at context-relative offset.
-pub fn get_slice(self: *const Memory, relative_offset: usize, len: usize) MemoryError![]const u8 {
+pub inline fn get_slice(self: *const Memory, relative_offset: usize, len: usize) MemoryError![]const u8 {
     // Debug logging removed for fuzz testing compatibility
     if (len == 0) return &[_]u8{};
     const end = std.math.add(usize, relative_offset, len) catch {
@@ -33,7 +33,7 @@ pub fn get_slice(self: *const Memory, relative_offset: usize, len: usize) Memory
 }
 
 /// Read a single byte at context-relative offset (for test compatibility)
-pub fn get_byte(self: *const Memory, relative_offset: usize) MemoryError!u8 {
+pub inline fn get_byte(self: *const Memory, relative_offset: usize) MemoryError!u8 {
     if (relative_offset >= self.context_size()) return MemoryError.InvalidOffset;
     const abs_offset = self.my_checkpoint + relative_offset;
     return self.shared_buffer_ref.items[abs_offset];
