@@ -3,6 +3,7 @@
 /// This module defines all gas cost constants used in EVM execution according
 /// to the Ethereum Yellow Paper and various EIPs. Gas costs are critical for
 /// preventing denial-of-service attacks and fairly pricing computational resources.
+const std = @import("std");
 ///
 /// ## Gas Cost Categories
 ///
@@ -414,5 +415,9 @@ pub fn memory_gas_cost(current_size: u64, new_size: u64) u64 {
 /// ## Formula
 /// word_count = ceil(bytes / 32) = (bytes + 31) / 32
 pub inline fn wordCount(bytes: usize) usize {
+    // Handle potential overflow when adding 31
+    if (bytes > std.math.maxInt(usize) - 31) {
+        return std.math.maxInt(usize) / 32;
+    }
     return (bytes + 31) / 32;
 }
