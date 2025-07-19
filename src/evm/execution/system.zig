@@ -8,7 +8,7 @@ const Contract = @import("../frame/contract.zig");
 const primitives = @import("primitives");
 const to_u256 = primitives.Address.to_u256;
 const from_u256 = primitives.Address.from_u256;
-const gas_constants = @import("../constants/gas_constants.zig");
+const GasConstants = @import("primitives").GasConstants;
 const AccessList = @import("../access_list/access_list.zig").AccessList;
 const Log = @import("../log.zig");
 
@@ -208,7 +208,7 @@ fn handle_address_access(vm: *Vm, frame: *Frame, to: u256) ExecutionError.Error!
     if (is_cold) {
         @branchHint(.unlikely);
         // Cold address access costs more (2600 gas)
-        try frame.consume_gas(gas_constants.ColdAccountAccessCost);
+        try frame.consume_gas(GasConstants.ColdAccountAccessCost);
     }
     
     return to_address;
@@ -274,7 +274,7 @@ fn get_initcode_from_memory(frame: *Frame, vm: *Vm, offset: u256, size: u256) Ex
     const size_usize = @as(usize, @intCast(size));
     
     // EIP-3860: Check initcode size limit (Shanghai and later)
-    if (vm.chain_rules.is_eip3860 and size_usize > gas_constants.MaxInitcodeSize) {
+    if (vm.chain_rules.is_eip3860 and size_usize > GasConstants.MaxInitcodeSize) {
         @branchHint(.unlikely);
         return ExecutionError.Error.MaxCodeSizeExceeded;
     }
@@ -287,7 +287,7 @@ fn get_initcode_from_memory(frame: *Frame, vm: *Vm, offset: u256, size: u256) Ex
     // Calculate memory expansion gas cost
     const current_size = frame.memory.total_size();
     const new_size = offset_usize + size_usize;
-    const memory_gas = gas_constants.memory_gas_cost(current_size, new_size);
+    const memory_gas = GasConstants.memory_gas_cost(current_size, new_size);
     try frame.consume_gas(memory_gas);
     
     // Ensure memory is available and get the slice
@@ -297,11 +297,11 @@ fn get_initcode_from_memory(frame: *Frame, vm: *Vm, offset: u256, size: u256) Ex
 
 /// Calculate and consume gas for CREATE operations
 fn consume_create_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
-    const init_code_cost = @as(u64, @intCast(init_code.len)) * gas_constants.CreateDataGas;
+    const init_code_cost = @as(u64, @intCast(init_code.len)) * GasConstants.CreateDataGas;
     
     // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
     const initcode_word_cost = if (vm.chain_rules.is_eip3860)
-        @as(u64, @intCast(gas_constants.wordCount(init_code.len))) * gas_constants.InitcodeWordGas
+        @as(u64, @intCast(GasConstants.wordCount(init_code.len))) * GasConstants.InitcodeWordGas
     else
         0;
     
@@ -310,12 +310,12 @@ fn consume_create_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionEr
 
 /// Calculate and consume gas for CREATE2 operations (includes hash cost)
 fn consume_create2_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
-    const init_code_cost = @as(u64, @intCast(init_code.len)) * gas_constants.CreateDataGas;
-    const hash_cost = @as(u64, @intCast(gas_constants.wordCount(init_code.len))) * gas_constants.Keccak256WordGas;
+    const init_code_cost = @as(u64, @intCast(init_code.len)) * GasConstants.CreateDataGas;
+    const hash_cost = @as(u64, @intCast(GasConstants.wordCount(init_code.len))) * GasConstants.Keccak256WordGas;
     
     // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
     const initcode_word_cost = if (vm.chain_rules.is_eip3860)
-        @as(u64, @intCast(gas_constants.wordCount(init_code.len))) * gas_constants.InitcodeWordGas
+        @as(u64, @intCast(GasConstants.wordCount(init_code.len))) * GasConstants.InitcodeWordGas
     else
         0;
     
@@ -377,15 +377,15 @@ pub fn calculate_call_gas(
 
     // Base cost for call operation type
     gas_cost += switch (call_type) {
-        .Call => if (value > 0) gas_constants.CallValueCost else gas_constants.CallCodeCost,
-        .CallCode => gas_constants.CallCodeCost,
-        .DelegateCall => gas_constants.DelegateCallCost,
-        .StaticCall => gas_constants.StaticCallCost,
+        .Call => if (value > 0) GasConstants.CallValueCost else GasConstants.CallCodeCost,
+        .CallCode => GasConstants.CallCodeCost,
+        .DelegateCall => GasConstants.DelegateCallCost,
+        .StaticCall => GasConstants.StaticCallCost,
     };
 
     // Account access cost (EIP-2929)
     if (is_cold_access) {
-        gas_cost += gas_constants.ColdAccountAccessCost;
+        gas_cost += GasConstants.ColdAccountAccessCost;
     }
 
     // Memory expansion cost
@@ -393,7 +393,7 @@ pub fn calculate_call_gas(
 
     // Account creation cost for new accounts with value transfer
     if (!target_exists and call_type == .Call and value > 0) {
-        gas_cost += gas_constants.NewAccountCost;
+        gas_cost += GasConstants.NewAccountCost;
     }
 
     // Calculate available gas for forwarding after subtracting operation costs
@@ -811,7 +811,7 @@ pub fn op_selfdestruct(pc: usize, interpreter: *Operation.Interpreter, state: *O
 
     // Calculate base gas cost based on hardfork
     if (chain_rules.is_eip150) {
-        gas_cost += gas_constants.SelfdestructGas; // 5000 gas
+        gas_cost += GasConstants.SelfdestructGas; // 5000 gas
     }
     // Before Tangerine Whistle: 0 gas cost
 
@@ -823,7 +823,7 @@ pub fn op_selfdestruct(pc: usize, interpreter: *Operation.Interpreter, state: *O
         const recipient_exists = vm.state.account_exists(recipient_address);
         if (!recipient_exists) {
             @branchHint(.cold);
-            gas_cost += gas_constants.CallNewAccountGas; // 25000 gas
+            gas_cost += GasConstants.CallNewAccountGas; // 25000 gas
         }
     }
 

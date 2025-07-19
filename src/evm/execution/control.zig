@@ -6,7 +6,7 @@ const ExecutionResult = @import("execution_result.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
-const gas_constants = @import("../constants/gas_constants.zig");
+const GasConstants = @import("primitives").GasConstants;
 const AccessList = @import("../access_list/access_list.zig").AccessList;
 const primitives = @import("primitives");
 const from_u256 = primitives.Address.from_u256;
@@ -147,7 +147,7 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         const current_size = frame.memory.context_size();
         const end = offset_usize + size_usize;
         if (end > offset_usize) { // Check for overflow
-            const memory_gas = gas_constants.memory_gas_cost(current_size, end);
+            const memory_gas = GasConstants.memory_gas_cost(current_size, end);
             try frame.consume_gas(memory_gas);
 
             _ = try frame.memory.ensure_context_capacity(end);
@@ -207,7 +207,7 @@ pub fn op_revert(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
         const current_size = frame.memory.context_size();
         const end = offset_usize + size_usize;
         if (end > offset_usize) { // Check for overflow
-            const memory_gas = gas_constants.memory_gas_cost(current_size, end);
+            const memory_gas = GasConstants.memory_gas_cost(current_size, end);
             try frame.consume_gas(memory_gas);
 
             _ = try frame.memory.ensure_context_capacity(end);
@@ -268,7 +268,7 @@ pub fn op_selfdestruct(pc: usize, interpreter: *Operation.Interpreter, state: *O
     if (is_cold) {
         @branchHint(.likely);
         // Cold address access costs more (2600 gas)
-        try frame.consume_gas(gas_constants.ColdAccountAccessCost);
+        try frame.consume_gas(GasConstants.ColdAccountAccessCost);
     }
 
     // Mark contract for destruction at end of transaction

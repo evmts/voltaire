@@ -5,7 +5,7 @@ const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Memory = @import("../memory/memory.zig");
-const gas_constants = @import("../constants/gas_constants.zig");
+const GasConstants = @import("primitives").GasConstants;
 
 // Helper to check if u256 fits in usize and convert to usize
 fn check_offset_bounds(value: u256) ExecutionError.Error!usize {
@@ -19,7 +19,7 @@ fn check_offset_bounds(value: u256) ExecutionError.Error!usize {
 // Helper to calculate memory expansion gas cost and consume it
 fn calculate_memory_gas(frame: *Frame, new_size: usize) !void {
     const current_size = frame.memory.context_size();
-    const gas_cost = gas_constants.memory_gas_cost(current_size, new_size);
+    const gas_cost = GasConstants.memory_gas_cost(current_size, new_size);
     try frame.consume_gas(gas_cost);
 }
 
@@ -48,7 +48,7 @@ fn perform_copy_operation(frame: *Frame, mem_offset: usize, size: usize) !void {
     
     // Dynamic gas for copy operation
     const word_size = (size + 31) / 32;
-    try frame.consume_gas(gas_constants.COPY_GAS * word_size);
+    try frame.consume_gas(GasConstants.COPY_GAS * word_size);
     
     // Ensure memory is available
     _ = try frame.memory.ensure_context_capacity(new_size);
@@ -204,12 +204,12 @@ pub fn op_mcopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     // Calculate memory expansion gas cost
     const current_size = frame.memory.context_size();
     const max_addr = @max(dest_usize + size_usize, src_usize + size_usize);
-    const memory_gas = gas_constants.memory_gas_cost(current_size, max_addr);
+    const memory_gas = GasConstants.memory_gas_cost(current_size, max_addr);
     try frame.consume_gas(memory_gas);
 
     // Dynamic gas for copy operation
     const word_size = (size_usize + 31) / 32;
-    try frame.consume_gas(gas_constants.COPY_GAS * word_size);
+    try frame.consume_gas(GasConstants.COPY_GAS * word_size);
 
     // Ensure memory is available for both source and destination
     _ = try frame.memory.ensure_context_capacity(max_addr);

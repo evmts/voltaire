@@ -39,7 +39,7 @@
 //! - evmone: https://github.com/ethereum/evmone/blob/master/lib/evmone/execution_state.hpp
 const std = @import("std");
 const builtin = @import("builtin");
-const constants = @import("../constants/constants.zig");
+const opcode = @import("../opcodes/opcode.zig");
 const bitvec = @import("bitvec.zig");
 const primitives = @import("primitives");
 const ExecutionError = @import("../execution/execution_error.zig");
@@ -421,7 +421,7 @@ pub fn init_deployment(
 /// - `false`: No JUMPDEST opcodes present
 fn contains_jumpdest(code: []const u8) bool {
     for (code) |op| {
-        if (op == constants.JUMPDEST) return true;
+        if (op == @intFromEnum(opcode.Enum.JUMPDEST)) return true;
     }
     return false;
 }
@@ -474,7 +474,7 @@ pub fn valid_jumpdest(self: *Contract, allocator: std.mem.Allocator, dest: u256)
     }
     // Fallback: check if position is code and contains JUMPDEST opcode
     if (self.is_code(pos) and pos < self.code_size) {
-        return self.code[@intCast(pos)] == constants.JUMPDEST;
+        return self.code[@intCast(pos)] == @intFromEnum(opcode.Enum.JUMPDEST);
     }
     return false;
 }
@@ -658,7 +658,7 @@ pub fn get_original_storage_value(self: *const Contract, slot: u256) ?u256 {
 }
 
 pub fn get_op(self: *const Contract, n: u64) u8 {
-    return if (n < self.code_size) self.code[@intCast(n)] else constants.STOP;
+    return if (n < self.code_size) self.code[@intCast(n)] else @intFromEnum(opcode.Enum.STOP);
 }
 
 /// Get opcode at position without bounds check
@@ -771,15 +771,15 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
     while (i < code.len) {
         const op = code[i];
 
-        if (op == constants.JUMPDEST and analysis.code_segments.isSetUnchecked(i)) {
+        if (op == @intFromEnum(opcode.Enum.JUMPDEST) and analysis.code_segments.isSetUnchecked(i)) {
             jumpdests.append(@as(u32, @intCast(i))) catch |err| {
                 Log.debug("Failed to append jumpdest position {d}: {any}", .{ i, err });
                 return err;
             };
         }
 
-        if (constants.is_push(op)) {
-            const push_size = constants.get_push_size(op);
+        if (opcode.is_push(op)) {
+            const push_size = opcode.get_push_size(op);
             i += push_size + 1;
         } else {
             i += 1;
@@ -797,10 +797,10 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
 
     analysis.max_stack_depth = 0;
     analysis.block_gas_costs = null;
-    analysis.has_dynamic_jumps = contains_op(code, &[_]u8{ constants.JUMP, constants.JUMPI });
+    analysis.has_dynamic_jumps = contains_op(code, &[_]u8{ @intFromEnum(opcode.Enum.JUMP), @intFromEnum(opcode.Enum.JUMPI) });
     analysis.has_static_jumps = false;
-    analysis.has_selfdestruct = contains_op(code, &[_]u8{constants.SELFDESTRUCT});
-    analysis.has_create = contains_op(code, &[_]u8{ constants.CREATE, constants.CREATE2 });
+    analysis.has_selfdestruct = contains_op(code, &[_]u8{@intFromEnum(opcode.Enum.SELFDESTRUCT)});
+    analysis.has_create = contains_op(code, &[_]u8{ @intFromEnum(opcode.Enum.CREATE), @intFromEnum(opcode.Enum.CREATE2) });
 
     analysis_cache.?.put(code_hash, analysis) catch |err| {
         Log.debug("Failed to cache code analysis: {any}", .{err});
@@ -839,7 +839,7 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
 
     // SIMD optimization: Process 16 bytes at a time
     const vec_size = 16;
-    const jumpdest_vec = @as(@Vector(vec_size, u8), @splat(constants.JUMPDEST));
+    const jumpdest_vec = @as(@Vector(vec_size, u8), @splat(@intFromEnum(opcode.Opcode.JUMPDEST)));
     
     var i: usize = 0;
     
@@ -856,7 +856,7 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
             if (cmp_result[j]) {
                 const pos = i + j;
                 // Check if this position is code (not data)
-                if (analysis.code_segments.is_set_unchecked(pos)) {
+                if (analysis.code_segments.isSetUnchecked(pos)) {
                     jumpdests.append(@as(u32, @intCast(pos))) catch |err| {
                         Log.debug("Failed to append jumpdest position {d}: {any}", .{ pos, err });
                         return err;
@@ -870,7 +870,7 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
     
     // Handle remaining bytes
     while (i < code.len) {
-        if (code[i] == constants.JUMPDEST and analysis.code_segments.is_set_unchecked(i)) {
+        if (code[i] == @intFromEnum(opcode.Opcode.JUMPDEST) and analysis.code_segments.isSetUnchecked(i)) {
             jumpdests.append(@as(u32, @intCast(i))) catch |err| {
                 Log.debug("Failed to append jumpdest position {d}: {any}", .{ i, err });
                 return err;
@@ -889,9 +889,9 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
     };
 
     // Use SIMD for finding special opcodes
-    analysis.has_dynamic_jumps = contains_op_simd(code, &[_]u8{ constants.JUMP, constants.JUMPI });
-    analysis.has_selfdestruct = contains_op_simd(code, &[_]u8{constants.SELFDESTRUCT});
-    analysis.has_create = contains_op_simd(code, &[_]u8{ constants.CREATE, constants.CREATE2 });
+    analysis.has_dynamic_jumps = contains_op_simd(code, &[_]u8{ @intFromEnum(opcode.Opcode.JUMP), @intFromEnum(opcode.Opcode.JUMPI) });
+    analysis.has_selfdestruct = contains_op_simd(code, &[_]u8{@intFromEnum(opcode.Opcode.SELFDESTRUCT)});
+    analysis.has_create = contains_op_simd(code, &[_]u8{ @intFromEnum(opcode.Opcode.CREATE), @intFromEnum(opcode.Opcode.CREATE2) });
     
     analysis.max_stack_depth = 0;
     analysis.block_gas_costs = null;

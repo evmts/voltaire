@@ -4,7 +4,7 @@ const Contract = @import("../frame/contract.zig");
 const ExecutionError = @import("../execution/execution_error.zig");
 const CreateResult = @import("create_result.zig").CreateResult;
 const Keccak256 = std.crypto.hash.sha3.Keccak256;
-const constants = @import("../constants/constants.zig");
+const opcode = @import("../opcodes/opcode.zig");
 const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
 
@@ -80,11 +80,11 @@ pub fn create_contract_internal(self: *Vm, creator: primitives.Address.Address, 
     }
 
     // Check EIP-170 MAX_CODE_SIZE limit on the returned bytecode (24,576 bytes)
-    if (deployment_code.len > constants.MAX_CODE_SIZE) {
+    if (deployment_code.len > opcode.MAX_CODE_SIZE) {
         return CreateResult.init_failure(0, null);
     }
 
-    const deploy_code_gas = @as(u64, @intCast(deployment_code.len)) * constants.DEPLOY_CODE_GAS_PER_BYTE;
+    const deploy_code_gas = @as(u64, @intCast(deployment_code.len)) * opcode.DEPLOY_CODE_GAS_PER_BYTE;
 
     if (deploy_code_gas > init_result.gas_left) {
         return CreateResult.init_failure(0, null);

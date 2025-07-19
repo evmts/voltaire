@@ -4,7 +4,7 @@ const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
-const gas_constants = @import("../constants/gas_constants.zig");
+const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
 const storage_costs = @import("../gas/storage_costs.zig");
 
@@ -22,7 +22,7 @@ pub fn op_sload(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
         const is_cold = frame.contract.mark_storage_slot_warm(frame.allocator, slot, null) catch {
             return ExecutionError.Error.OutOfMemory;
         };
-        const gas_cost = if (is_cold) gas_constants.ColdSloadCost else gas_constants.WarmStorageReadCost;
+        const gas_cost = if (is_cold) GasConstants.ColdSloadCost else GasConstants.WarmStorageReadCost;
         try frame.consume_gas(gas_cost);
     } else {
         // Pre-Berlin: gas is handled by jump table constant_gas
@@ -50,7 +50,7 @@ pub fn op_sstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 
     // EIP-1706: Disable SSTORE with gasleft lower than call stipend (2300)
     // This prevents reentrancy attacks by ensuring enough gas remains for exception handling
-    if (vm.chain_rules.is_istanbul and frame.gas_remaining <= gas_constants.SstoreSentryGas) {
+    if (vm.chain_rules.is_istanbul and frame.gas_remaining <= GasConstants.SstoreSentryGas) {
         @branchHint(.unlikely);
         return ExecutionError.Error.OutOfGas;
     }
@@ -72,7 +72,7 @@ pub fn op_sstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 
     if (is_cold) {
         @branchHint(.unlikely);
-        total_gas += gas_constants.ColdSloadCost;
+        total_gas += GasConstants.ColdSloadCost;
     }
 
     // Get storage cost based on current hardfork and value change
@@ -237,7 +237,7 @@ fn validate_storage_result(frame: *const Frame, vm: *const Vm, op: FuzzStorageOp
             }
             
             // Check for insufficient gas (EIP-1706)
-            if (op.is_istanbul and frame.gas_remaining <= gas_constants.SstoreSentryGas) {
+            if (op.is_istanbul and frame.gas_remaining <= GasConstants.SstoreSentryGas) {
                 try testing.expectError(ExecutionError.Error.OutOfGas, result);
                 return;
             }

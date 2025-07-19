@@ -2,7 +2,7 @@ const std = @import("std");
 const PrecompileResult = @import("precompile_result.zig").PrecompileResult;
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
-const gas_constants = @import("../constants/gas_constants.zig");
+const GasConstants = @import("primitives").GasConstants;
 
 /// BLS12-381 G2MSM precompile implementation (address 0x0E)
 ///

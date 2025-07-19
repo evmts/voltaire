@@ -1,7 +1,7 @@
 const std = @import("std");
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
-const gas_utils = @import("../constants/gas_constants.zig");
+const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
 const crypto = @import("crypto");
 
@@ -45,7 +45,7 @@ const SHA256_OUTPUT_SIZE: usize = crypto.HashAlgorithms.SHA256.OUTPUT_SIZE;
 /// @param input_size Size of input data in bytes
 /// @return Gas cost for processing this input
 pub fn calculate_gas(input_size: usize) u64 {
-    const word_count = gas_utils.wordCount(input_size);
+    const word_count = GasConstants.wordCount(input_size);
     return SHA256_BASE_COST + SHA256_WORD_COST * word_count;
 }
 
@@ -63,7 +63,7 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
         return error.Overflow;
     };
     const word_count = input_plus_31 / 32;
-    
+
     // Convert word_count to u64 with overflow checking
     const word_count_u64 = std.math.cast(u64, word_count) orelse {
         return error.Overflow;

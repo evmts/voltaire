@@ -28,7 +28,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const log = @import("../log.zig");
-const gas_constants = @import("../constants/gas_constants.zig");
+const GasConstants = @import("primitives").GasConstants;
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const ChainRules = @import("../hardforks/chain_rules.zig");
@@ -50,10 +50,10 @@ else
 pub fn calculate_gas(chain_rules: ChainRules) u64 {
     if (chain_rules.is_istanbul) {
         @branchHint(.likely);
-        return gas_constants.ECMUL_GAS_COST;
+        return GasConstants.ECMUL_GAS_COST;
     } else {
         @branchHint(.cold);
-        return gas_constants.ECMUL_GAS_COST_BYZANTIUM;
+        return GasConstants.ECMUL_GAS_COST_BYZANTIUM;
     }
 }
 
@@ -69,7 +69,7 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
     _ = input_size; // ECMUL has fixed gas cost regardless of input size
     // Return Istanbul gas cost as default (most common case)
     // The actual hardfork-specific gas cost will be calculated in execute()
-    return gas_constants.ECMUL_GAS_COST;
+    return GasConstants.ECMUL_GAS_COST;
 }
 
 /// Execute ECMUL precompile
