@@ -54,6 +54,10 @@ For applications requiring full BN254 support in WASM, consider:
 - Using WASM-compatible cryptographic libraries
 - Implementing pure Zig scalar multiplication and pairing
 
+## Prerequisites
+
+- **Zig 0.14.1 or later** (required for fuzzing support on macOS)
+
 ## Build Targets
 
 ```bash
@@ -65,6 +69,9 @@ zig build wasm
 
 # Run tests
 zig build test
+
+# Run fuzzing tests (requires Zig 0.14.1+)
+zig build test --fuzz
 ```
 
 ## Architecture
