@@ -28,15 +28,24 @@ pub const CallType = enum {
 ///
 /// Contains all necessary information to execute a contract call including
 /// addresses, value, call data, gas limits, and context information.
+///
+/// ## Field Ordering Optimization
+/// Fields are ordered for optimal memory layout and cache performance:
+/// - Large fields (u256) first
+/// - Address fields grouped together
+/// - Smaller integer fields grouped
+/// - Optional fields last
 pub const CallInput = struct {
+    /// Value to transfer (ETH amount in wei)
+    /// Largest field first for optimal alignment
+    value: u256,
+
+    /// Address fields grouped for better cache locality
     /// primitives.Address.Address of the contract to call
     contract_address: primitives.Address.Address,
 
     /// primitives.Address.Address of the caller (msg.sender in the called contract)
     caller: primitives.Address.Address,
-
-    /// Value to transfer (ETH amount in wei)
-    value: u256,
 
     /// Input data (calldata) to pass to the contract
     input: []const u8,
@@ -44,12 +53,14 @@ pub const CallInput = struct {
     /// Gas limit for the call execution
     gas_limit: u64,
 
-    /// Whether this is a static call (read-only, no state changes)
-    is_static: bool,
-
     /// Current call depth in the call stack
     depth: u32,
 
+    /// Whether this is a static call (read-only, no state changes)
+    /// Small bool field placed with other small fields
+    is_static: bool,
+
+    /// Optional fields last to minimize padding impact
     /// Original caller for DELEGATECALL context preservation (optional)
     original_caller: ?primitives.Address.Address = null,
 
@@ -67,13 +78,13 @@ pub const CallInput = struct {
         depth: u32,
     ) CallInput {
         return CallInput{
+            .value = value,
             .contract_address = contract_address,
             .caller = caller,
-            .value = value,
             .input = input,
             .gas_limit = gas_limit,
-            .is_static = is_static,
             .depth = depth,
+            .is_static = is_static,
         };
     }
 
@@ -89,13 +100,13 @@ pub const CallInput = struct {
         depth: u32,
     ) CallInput {
         return CallInput{
+            .value = original_value, // Preserve original value
             .contract_address = contract_address,
             .caller = original_caller, // Preserve original caller
-            .value = original_value, // Preserve original value
             .input = input,
             .gas_limit = gas_limit,
-            .is_static = is_static,
             .depth = depth,
+            .is_static = is_static,
             .original_caller = original_caller,
             .original_value = original_value,
         };
@@ -111,13 +122,13 @@ pub const CallInput = struct {
         depth: u32,
     ) CallInput {
         return CallInput{
+            .value = 0, // Static calls cannot transfer value
             .contract_address = contract_address,
             .caller = caller,
-            .value = 0, // Static calls cannot transfer value
             .input = input,
             .gas_limit = gas_limit,
-            .is_static = true, // Force static context
             .depth = depth,
+            .is_static = true, // Force static context
         };
     }
 };
@@ -125,36 +136,45 @@ pub const CallInput = struct {
 /// Result of a contract call operation
 ///
 /// Contains the execution result, gas usage, output data, and success status.
+///
+/// ## Field Ordering Optimization  
+/// Fields ordered for optimal memory layout:
+/// - Gas fields grouped together for better cache locality
+/// - Pointer field next
+/// - Small bool field last to minimize padding
 pub const CallResult = struct {
-    /// Whether the call succeeded (true) or reverted (false)
-    success: bool,
-
     /// Gas consumed during execution
+    /// Frequently accessed field placed first
     gas_used: u64,
 
-    /// Gas remaining after execution
+    /// Gas remaining after execution  
+    /// Grouped with gas_used for cache locality
     gas_left: u64,
 
     /// Output data returned by the called contract
     output: ?[]const u8,
 
+    /// Whether the call succeeded (true) or reverted (false)
+    /// Small bool field placed last to minimize padding
+    success: bool,
+
     /// Create a successful call result
     pub fn success_result(gas_used: u64, gas_left: u64, output: ?[]const u8) CallResult {
         return CallResult{
-            .success = true,
             .gas_used = gas_used,
             .gas_left = gas_left,
             .output = output,
+            .success = true,
         };
     }
 
     /// Create a failed call result
     pub fn failure_result(gas_used: u64, gas_left: u64, output: ?[]const u8) CallResult {
         return CallResult{
-            .success = false,
             .gas_used = gas_used,
             .gas_left = gas_left,
             .output = output,
+            .success = false,
         };
     }
 };

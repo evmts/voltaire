@@ -96,7 +96,14 @@ pub const MemorySizeFunc = *const fn (stack: *Stack) Opcode.MemorySize;
 /// Each entry in the jump table is an Operation that fully describes
 /// how to execute an opcode, including validation, gas calculation,
 /// and the actual execution logic.
+///
+/// ## Field Ordering Optimization
+/// Fields are ordered for optimal cache performance and memory layout:
+/// - Hot fields (frequently accessed during execution) first
+/// - Function pointers grouped together for better locality
+/// - Smaller fields grouped to minimize padding
 pub const Operation = struct {
+    // Hot fields: Most frequently accessed during opcode execution
     /// Execution function implementing the opcode logic.
     /// This is called after all validations pass.
     execute: ExecutionFunc,
@@ -106,11 +113,7 @@ pub const Operation = struct {
     /// Defined by the Ethereum Yellow Paper and EIPs.
     constant_gas: u64,
 
-    /// Optional dynamic gas calculation function.
-    /// Operations with variable costs (storage, memory, calls) use this
-    /// to calculate additional gas based on runtime parameters.
-    dynamic_gas: ?GasFunc = null,
-
+    // Validation fields: Accessed during stack validation (hot path)
     /// Minimum stack items required before execution.
     /// The operation will fail with StackUnderflow if the stack
     /// has fewer than this many items.
@@ -121,11 +124,18 @@ pub const Operation = struct {
     /// Calculated as: CAPACITY - (pushes - pops)
     max_stack: u32,
 
+    // Function pointers: Grouped together for better cache locality
+    /// Optional dynamic gas calculation function.
+    /// Operations with variable costs (storage, memory, calls) use this
+    /// to calculate additional gas based on runtime parameters.
+    dynamic_gas: ?GasFunc = null,
+
     /// Optional memory size calculation function.
     /// Operations that access memory use this to determine
     /// memory expansion requirements before execution.
     memory_size: ?MemorySizeFunc = null,
 
+    // Flags: Smaller field placed last to minimize padding
     /// Indicates if this is an undefined/invalid opcode.
     /// Undefined opcodes consume all gas and fail execution.
     /// Used for opcodes not assigned in the current hardfork.
