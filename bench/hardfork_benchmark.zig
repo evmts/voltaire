@@ -5,8 +5,8 @@ const BenchmarkConfig = timing.BenchmarkConfig;
 const BenchmarkResult = timing.BenchmarkResult;
 
 // Import hardfork types
-const Hardfork = @import("evm").Hardfork;
-const ChainRules = @import("evm").ChainRules;
+const Hardfork = @import("evm").Hardfork.Hardfork;
+const ChainRules = @import("evm").chain_rules;
 
 /// Comprehensive benchmarks for hardfork logic and chain rules.
 /// These benchmarks measure the overhead of hardfork checks that are
@@ -15,15 +15,14 @@ const ChainRules = @import("evm").ChainRules;
 /// Benchmark hardfork flag checks (is_byzantium, is_berlin, etc.)
 /// Tests the performance of individual boolean flag checks across all hardforks
 pub fn hardfork_flag_checks_benchmark(allocator: Allocator) !BenchmarkResult {
-    const rules_frontier = ChainRules.for_hardfork(.FRONTIER);
-    const rules_byzantium = ChainRules.for_hardfork(.BYZANTIUM);
-    const rules_berlin = ChainRules.for_hardfork(.BERLIN);
-    const rules_london = ChainRules.for_hardfork(.LONDON);
-    const rules_shanghai = ChainRules.for_hardfork(.SHANGHAI);
-    const rules_cancun = ChainRules.for_hardfork(.CANCUN);
-    
     const TestFunc = struct {
         fn run() void {
+            const rules_frontier = ChainRules.for_hardfork(.FRONTIER);
+            const rules_byzantium = ChainRules.for_hardfork(.BYZANTIUM);
+            const rules_berlin = ChainRules.for_hardfork(.BERLIN);
+            const rules_london = ChainRules.for_hardfork(.LONDON);
+            const rules_shanghai = ChainRules.for_hardfork(.SHANGHAI);
+            const rules_cancun = ChainRules.for_hardfork(.CANCUN);
             // Test common hardfork checks that happen frequently
             var counter: u32 = 0;
             
@@ -89,13 +88,12 @@ pub fn chain_rules_initialization_benchmark(allocator: Allocator) !BenchmarkResu
 /// Benchmark feature availability lookups
 /// Tests the performance of determining which features are available for specific hardforks
 pub fn feature_availability_lookup_benchmark(allocator: Allocator) !BenchmarkResult {
-    const rules_cancun = ChainRules.for_hardfork(.CANCUN);
-    const rules_london = ChainRules.for_hardfork(.LONDON);
-    const rules_berlin = ChainRules.for_hardfork(.BERLIN);
-    const rules_byzantium = ChainRules.for_hardfork(.BYZANTIUM);
-    
     const TestFunc = struct {
         fn run() void {
+            const rules_cancun = ChainRules.for_hardfork(.CANCUN);
+            const rules_london = ChainRules.for_hardfork(.LONDON);
+            const rules_berlin = ChainRules.for_hardfork(.BERLIN);
+            const rules_byzantium = ChainRules.for_hardfork(.BYZANTIUM);
             var feature_count: u32 = 0;
             
             // Check for various features across different hardforks
