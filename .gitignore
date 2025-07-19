@@ -75,6 +75,8 @@ _
 ./debug/
 **/*.pdb
 *.o
+*.a
+*.a.o
 *.so
 *.dylib
 *.dll
