@@ -128,8 +128,23 @@ pub fn BitVec(comptime T: type) type {
             errdefer bitmap.deinit(allocator);
 
             // Mark all positions as valid code initially
-            for (0..code.len) |i| {
-                bitmap.setUnchecked(i);
+            if (T == u64 and code.len > 64) {
+                // Use vectorized operation for larger bit vectors with u64 storage
+                const bitvec64: *BitVec64 = @ptrCast(&bitmap);
+                setRangeVectorized(bitvec64, 0, code.len) catch |err| switch (err) {
+                    error.PositionOutOfBounds => {
+                        // This should never happen since we're using valid range [0, code.len)
+                        // Fall back to individual setting
+                        for (0..code.len) |i| {
+                            bitmap.setUnchecked(i);
+                        }
+                    },
+                };
+            } else {
+                // Fallback to individual bit setting for smaller vectors or other storage types
+                for (0..code.len) |i| {
+                    bitmap.setUnchecked(i);
+                }
             }
 
             var i: usize = 0;
@@ -163,8 +178,8 @@ pub fn BitVec(comptime T: type) type {
 }
 
 /// Set a range of bits to 1 using vectorized operations
-pub fn setRangeVectorized(self: *BitVec, start: usize, end: usize) BitVecError!void {
-    if (start >= self.size or end > self.size or start >= end) return BitVecError.PositionOutOfBounds;
+pub fn setRangeVectorized(self: *BitVec64, start: usize, end: usize) BitVec64.BitVecError!void {
+    if (start >= self.size or end > self.size or start >= end) return BitVec64.BitVecError.PositionOutOfBounds;
     
     const startWord = start / 64;
     const endWord = (end - 1) / 64;
@@ -218,7 +233,7 @@ pub fn setRangeVectorized(self: *BitVec, start: usize, end: usize) BitVecError!v
 }
 
 /// Count the number of set bits using vectorized operations
-pub fn countSetBitsVectorized(self: *const BitVec) usize {
+pub fn countSetBitsVectorized(self: *const BitVec64) usize {
     const vectorSize = 8;
     const numVectors = self.bits.len / vectorSize;
     var count: usize = 0;
@@ -246,8 +261,8 @@ pub fn countSetBitsVectorized(self: *const BitVec) usize {
 }
 
 /// Perform bitwise AND with another BitVec using vectorized operations
-pub fn bitwiseAndVectorized(self: *BitVec, other: *const BitVec) BitVecError!void {
-    if (self.size != other.size) return BitVecError.PositionOutOfBounds;
+pub fn bitwiseAndVectorized(self: *BitVec64, other: *const BitVec64) BitVec64.BitVecError!void {
+    if (self.size != other.size) return BitVec64.BitVecError.PositionOutOfBounds;
     
     const vectorSize = 8;
     const numVectors = self.bits.len / vectorSize;
@@ -271,8 +286,8 @@ pub fn bitwiseAndVectorized(self: *BitVec, other: *const BitVec) BitVecError!voi
 }
 
 /// Perform bitwise OR with another BitVec using vectorized operations
-pub fn bitwiseOrVectorized(self: *BitVec, other: *const BitVec) BitVecError!void {
-    if (self.size != other.size) return BitVecError.PositionOutOfBounds;
+pub fn bitwiseOrVectorized(self: *BitVec64, other: *const BitVec64) BitVec64.BitVecError!void {
+    if (self.size != other.size) return BitVec64.BitVecError.PositionOutOfBounds;
     
     const vectorSize = 8;
     const numVectors = self.bits.len / vectorSize;
@@ -296,8 +311,8 @@ pub fn bitwiseOrVectorized(self: *BitVec, other: *const BitVec) BitVecError!void
 }
 
 /// Perform bitwise XOR with another BitVec using vectorized operations
-pub fn bitwiseXorVectorized(self: *BitVec, other: *const BitVec) BitVecError!void {
-    if (self.size != other.size) return BitVecError.PositionOutOfBounds;
+pub fn bitwiseXorVectorized(self: *BitVec64, other: *const BitVec64) BitVec64.BitVecError!void {
+    if (self.size != other.size) return BitVec64.BitVecError.PositionOutOfBounds;
     
     const vectorSize = 8;
     const numVectors = self.bits.len / vectorSize;
@@ -510,8 +525,8 @@ test "vectorized operations handle edge cases" {
     try std.testing.expectEqual(@as(usize, 60), count);
     
     // Test error cases
-    try std.testing.expectError(BitVecError.PositionOutOfBounds, small.setRangeVectorized(50, 150));
-    try std.testing.expectError(BitVecError.PositionOutOfBounds, small.setRangeVectorized(80, 20));
+    try std.testing.expectError(BitVec64.BitVecError.PositionOutOfBounds, small.setRangeVectorized(50, 150));
+    try std.testing.expectError(BitVec64.BitVecError.PositionOutOfBounds, small.setRangeVectorized(80, 20));
 }
 
 // Tests
