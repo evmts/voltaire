@@ -55,8 +55,8 @@ return_data: []u8 = &[_]u8{},
 state: EvmState,
 /// Warm/cold access tracking for EIP-2929 gas costs
 access_list: AccessList,
-/// Legacy stack field (unused in current implementation)
-stack: Stack = .{},
+/// Stack field (used in tests)
+stack: Stack,
 
 /// Initialize VM with a jump table and corresponding chain rules.
 ///
@@ -87,6 +87,9 @@ pub fn init(allocator: std.mem.Allocator, database: @import("state/database_inte
     var access_list = AccessList.init(allocator, context);
     errdefer access_list.deinit();
 
+    var stack = try Stack.init(allocator);
+    errdefer stack.deinit(allocator);
+
     Log.debug("Evm.init: VM initialization complete", .{});
     return Evm{
         .allocator = allocator,
@@ -98,7 +101,7 @@ pub fn init(allocator: std.mem.Allocator, database: @import("state/database_inte
         .return_data = &[_]u8{},
         .state = state,
         .access_list = access_list,
-        .stack = .{},
+        .stack = stack,
     };
 }
 
@@ -120,6 +123,7 @@ pub fn init_with_hardfork(allocator: std.mem.Allocator, database: @import("state
 /// Must be called when finished with the VM to prevent memory leaks.
 pub fn deinit(self: *Evm) void {
     self.state.deinit();
+    self.stack.deinit(self.allocator);
     self.access_list.deinit();
     Contract.clear_analysis_cache(self.allocator);
 }
@@ -321,7 +325,7 @@ test "Evm initialization memory invariants" {
     try testing.expectEqual(@as(u16, 0), evm.depth);
     try testing.expectEqual(false, evm.read_only);
     
-    for (evm.stack.data) |value| {
+    for (evm.stack.storage.data[0..Stack.CAPACITY]) |value| {
         try testing.expectEqual(@as(u256, 0), value);
     }
 }
