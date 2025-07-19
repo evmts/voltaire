@@ -32,6 +32,7 @@ const gas_constants = @import("../constants/gas_constants.zig");
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const ChainRules = @import("../hardforks/chain_rules.zig");
+const ec_validation = @import("ec_validation.zig");
 
 /// Calculate gas cost for ECADD based on chain rules
 ///
@@ -82,45 +83,37 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
 pub fn execute(input: []const u8, output: []u8, gas_limit: u64, chain_rules: ChainRules) PrecompileOutput {
     // Calculate and validate gas cost
     const gas_cost = calculate_gas(chain_rules);
-    if (gas_cost > gas_limit) {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
+    if (ec_validation.validate_gas_requirement(gas_cost, gas_limit)) |failure_result| {
+        return failure_result;
     }
 
     // Validate output buffer size
-    if (output.len < 64) {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
+    if (ec_validation.validate_output_buffer_size(output, 64)) |failure_result| {
+        return failure_result;
     }
 
     // Pad input to exactly 128 bytes (zero-padding for shorter inputs)
-    var padded_input: [128]u8 = [_]u8{0} ** 128;
-    const copy_len = @min(input.len, 128);
-    @memcpy(padded_input[0..copy_len], input[0..copy_len]);
+    const padded_input = ec_validation.pad_input(input, 128);
 
     // Parse first point (bytes 0-63)
-    const point1 = bn254.G1Point.from_bytes(padded_input[0..64]) catch {
-        @branchHint(.cold);
-        // Invalid points result in point at infinity (0, 0)
-        @memset(output[0..64], 0);
-        return PrecompileOutput.success_result(gas_cost, 64);
+    const point1_result = ec_validation.parse_and_validate_point(padded_input[0..64], output, gas_cost);
+    const point1 = switch (point1_result) {
+        .point => |p| p,
+        .early_return => |r| return r,
     };
 
     // Parse second point (bytes 64-127)
-    const point2 = bn254.G1Point.from_bytes(padded_input[64..128]) catch {
-        @branchHint(.cold);
-        // Invalid points result in point at infinity (0, 0)
-        @memset(output[0..64], 0);
-        return PrecompileOutput.success_result(gas_cost, 64);
+    const point2_result = ec_validation.parse_and_validate_point(padded_input[64..128], output, gas_cost);
+    const point2 = switch (point2_result) {
+        .point => |p| p,
+        .early_return => |r| return r,
     };
 
     // Perform elliptic curve point addition using pure Zig implementation
     const result_point = point1.add(point2);
 
-    // Convert result to bytes and write to output
-    result_point.to_bytes(output[0..64]);
-
-    return PrecompileOutput.success_result(gas_cost, 64);
+    // Format result and return
+    return ec_validation.format_g1_point_result(result_point, output, gas_cost);
 }
 
 /// Get expected output size for ECADD
