@@ -271,19 +271,78 @@ pub fn build(b: *std.Build) void {
     compilers_mod.addImport("primitives", primitives_mod);
     compilers_mod.addImport("evm", evm_mod);
 
-    // Create bench module
+    // Create bench module - always use ReleaseFast for benchmarks
+    const bench_optimize = if (optimize == .Debug) .ReleaseFast else optimize;
+    
+    // Create a separate BN254 library for benchmarks that always uses release mode
+    const bench_rust_profile = "release";
+    const bench_rust_target_dir = "release";
+    
+    const bench_rust_build = b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
+    
+    // Fix for macOS linking issues (only on macOS)
+    if (target.result.os.tag == .macos) {
+        bench_rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+    }
+    
+    // Create static library artifact for the Rust BN254 wrapper (bench version)
+    const bench_bn254_lib = b.addStaticLibrary(.{
+        .name = "bn254_wrapper_bench",
+        .target = target,
+        .optimize = bench_optimize,
+    });
+    
+    // Link the compiled Rust library
+    const bench_rust_lib_path = b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
+    bench_bn254_lib.addObjectFile(b.path(bench_rust_lib_path));
+    bench_bn254_lib.linkLibC();
+    
+    // Link additional system libraries that Rust might need
+    if (target.result.os.tag == .linux) {
+        bench_bn254_lib.linkSystemLibrary("dl");
+        bench_bn254_lib.linkSystemLibrary("pthread");
+        bench_bn254_lib.linkSystemLibrary("m");
+        bench_bn254_lib.linkSystemLibrary("rt");
+    } else if (target.result.os.tag == .macos) {
+        bench_bn254_lib.linkFramework("Security");
+        bench_bn254_lib.linkFramework("CoreFoundation");
+    }
+    
+    // Add include path for C header
+    bench_bn254_lib.addIncludePath(b.path("src/bn254_wrapper"));
+    
+    // Make the rust build a dependency
+    bench_bn254_lib.step.dependOn(&bench_rust_build.step);
+    
+    // Create a separate EVM module for benchmarks with release-mode Rust dependencies
+    const bench_evm_mod = b.createModule(.{
+        .root_source_file = b.path("src/evm/root.zig"),
+        .target = target,
+        .optimize = bench_optimize,
+    });
+    bench_evm_mod.addImport("primitives", primitives_mod);
+    bench_evm_mod.addImport("crypto", crypto_mod);
+    bench_evm_mod.addImport("build_options", build_options.createModule());
+    
+    // Link BN254 Rust library to bench EVM module (native targets only)
+    bench_evm_mod.linkLibrary(bench_bn254_lib);
+    bench_evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
+    
+    // Link c-kzg library to bench EVM module
+    bench_evm_mod.linkLibrary(c_kzg_lib);
+    
     const zbench_dep = b.dependency("zbench", .{
         .target = target,
-        .optimize = optimize,
+        .optimize = bench_optimize,
     });
     
     const bench_mod = b.createModule(.{
         .root_source_file = b.path("bench/root.zig"),
         .target = target,
-        .optimize = optimize,
+        .optimize = bench_optimize,
     });
     bench_mod.addImport("primitives", primitives_mod);
-    bench_mod.addImport("evm", evm_mod);
+    bench_mod.addImport("evm", bench_evm_mod);  // Use the bench-specific EVM module
     bench_mod.addImport("zbench", zbench_dep.module("zbench"));
 
     // Add modules to lib_mod so tests can access them
@@ -437,10 +496,12 @@ pub fn build(b: *std.Build) void {
         .name = "guillotine-bench",
         .root_source_file = b.path("bench/main.zig"),
         .target = target,
-        .optimize = optimize,
+        .optimize = bench_optimize,
     });
     bench_exe.root_module.addImport("bench", bench_mod);
     bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+    bench_exe.root_module.addImport("evm", bench_evm_mod);  // Use the bench-specific EVM module
+    bench_exe.root_module.addImport("primitives", primitives_mod);
     
     b.installArtifact(bench_exe);
     
