@@ -275,6 +275,76 @@ pub const FrameBenchmarks = struct {
             if (frame.gas_remaining == 0) break;
         }
     }
+    
+    /// Baseline benchmark for frame allocation overhead (pre-optimization)
+    /// This measures the current allocation/deallocation cost pattern
+    /// that will be optimized with the frame pool implementation.
+    pub fn frameAllocationBaseline(self: *Self) !void {
+        var memory_db = MemoryDatabase.init(self.allocator);
+        defer memory_db.deinit();
+        
+        const contract = try Contract.init(
+            self.allocator,
+            self.sample_bytecode,
+            .{ .address = Address.ZERO },
+        );
+        defer contract.deinit(self.allocator, &self.storage_pool);
+        
+        // Simulate nested calls with multiple frame allocations
+        // This is the hot path that will be optimized
+        var depth: usize = 0;
+        while (depth < 10) : (depth += 1) {
+            var frame = try Frame.init(
+                self.allocator,
+                null, // vm ptr
+                1000000 - @as(u64, @intCast(depth * 10000)), // decreasing gas
+                contract,
+                Address.ZERO,
+                &.{},
+            );
+            defer frame.deinit();
+            
+            // Simulate some frame operations
+            try frame.stack.push(42 + depth);
+            try frame.stack.push(depth * 2);
+            _ = try frame.stack.pop();
+            
+            // Simulate memory allocation within frame
+            _ = try frame.memory.ensure_context_capacity(32 * (depth + 1));
+        }
+    }
+    
+    /// Benchmark rapid frame allocation/deallocation cycles
+    /// Simulates the allocation pressure during contract execution
+    pub fn frameAllocationPressure(self: *Self) !void {
+        var memory_db = MemoryDatabase.init(self.allocator);
+        defer memory_db.deinit();
+        
+        const contract = try Contract.init(
+            self.allocator,
+            self.sample_bytecode,
+            .{ .address = Address.ZERO },
+        );
+        defer contract.deinit(self.allocator, &self.storage_pool);
+        
+        // Rapid allocation/deallocation cycles
+        var i: usize = 0;
+        while (i < 100) : (i += 1) {
+            var frame = try Frame.init(
+                self.allocator,
+                null,
+                1000000,
+                contract,
+                Address.ZERO,
+                &.{},
+            );
+            defer frame.deinit();
+            
+            // Minimal operations to measure pure allocation overhead
+            try frame.stack.push(@as(u256, @intCast(i)));
+            _ = try frame.stack.pop();
+        }
+    }
 };
 
 /// Run all frame management benchmarks
@@ -389,6 +459,29 @@ pub fn runFrameBenchmarks(allocator: Allocator) !void {
         bench: *FrameBenchmarks,
         fn run(self: @This()) !void {
             try self.bench.gasAccountingOverhead();
+        }
+    }{ .bench = &benchmarks });
+    
+    // Frame allocation baseline benchmarks (pre-optimization)
+    try suite.benchmark(BenchmarkConfig{
+        .name = "frame_allocation_baseline",
+        .iterations = 1000,
+        .warmup_iterations = 100,
+    }, struct {
+        bench: *FrameBenchmarks,
+        fn run(self: @This()) !void {
+            try self.bench.frameAllocationBaseline();
+        }
+    }{ .bench = &benchmarks });
+    
+    try suite.benchmark(BenchmarkConfig{
+        .name = "frame_allocation_pressure",
+        .iterations = 1000, 
+        .warmup_iterations = 100,
+    }, struct {
+        bench: *FrameBenchmarks,
+        fn run(self: @This()) !void {
+            try self.bench.frameAllocationPressure();
         }
     }{ .bench = &benchmarks });
     
