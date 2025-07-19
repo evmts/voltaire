@@ -32,7 +32,12 @@ test "SELFDESTRUCT: Basic functionality" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Evm.Frame.init(allocator, &contract, 10000, false, 0);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
 
     // Set contract balance
@@ -88,7 +93,13 @@ test "SELFDESTRUCT: Forbidden in static call" {
     defer contract.deinit(allocator, null);
 
     // Create frame with static call flag
-    var frame = try Evm.Frame.init(allocator, &contract, 10000, true, 0);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .withStaticFlag(true)
+        .build();
     defer frame.deinit();
 
     // Push recipient address to stack
@@ -136,7 +147,12 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
         defer contract.deinit(allocator, null);
 
         // Create frame
-        var frame = try Evm.Frame.init(allocator, &contract, 10000, false, 0);
+        var frame_builder = Evm.Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(10000)
+            .build();
         defer frame.deinit();
 
         // Push recipient address to stack
@@ -184,7 +200,12 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
         defer contract.deinit(allocator, null);
 
         // Create frame
-        var frame = try Evm.Frame.init(allocator, &contract, 50000, false, 0);
+        var frame_builder = Evm.Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(50000)
+            .build();
         defer frame.deinit();
 
         // Push recipient address to stack
@@ -234,7 +255,12 @@ test "SELFDESTRUCT: Account creation cost (EIP-161)" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Evm.Frame.init(allocator, &contract, 50000, false, 0);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(50000)
+        .build();
     defer frame.deinit();
 
     // Use a fresh address that doesn't exist (no balance, code, or nonce)

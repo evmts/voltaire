@@ -43,9 +43,13 @@ test "Integration: SHA3 with dynamic data" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Store some data in memory to hash
     const data1: u256 = 0x1234567890ABCDEF;
@@ -127,9 +131,13 @@ test "Integration: Logging with topics and data" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Store event data in memory
     const event_data = [_]u8{
@@ -197,9 +205,13 @@ test "Integration: LOG operations with multiple topics" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Prepare log data
     const log_data = "Hello, Ethereum!";
@@ -270,9 +282,13 @@ test "Integration: Hash-based address calculation" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Simulate CREATE2 address calculation
     // address = keccak256(0xff ++ deployer ++ salt ++ keccak256(init_code))[12:]
@@ -352,9 +368,13 @@ test "Integration: Event emission patterns" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Simulate ERC20 Transfer event
     // Transfer(address indexed from, address indexed to, uint256 value)
@@ -445,9 +465,13 @@ test "Integration: Dynamic log data with memory expansion" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Create dynamic-sized log data
     const message = "This is a longer message that will cause memory expansion when logged!";
@@ -519,9 +543,13 @@ test "Integration: SHA3 for signature verification" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Simulate function selector calculation
     // keccak256("transfer(address,uint256)")[:4]
@@ -578,9 +606,13 @@ test "Integration: Log in static context fails" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Set static context
     frame.is_static = true;

@@ -26,9 +26,14 @@ test "fuzz_environment_address_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test ADDRESS operation
     const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
@@ -62,9 +67,14 @@ test "fuzz_environment_caller_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test CALLER operation
     const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
@@ -98,9 +108,14 @@ test "fuzz_environment_callvalue_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test CALLVALUE operation
     const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
@@ -133,9 +148,14 @@ test "fuzz_environment_codesize_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test CODESIZE operation
     const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);

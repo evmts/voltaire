@@ -42,9 +42,13 @@ test "DUP1 (0x80): Duplicate 1st stack item" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -102,9 +106,13 @@ test "DUP2 (0x81): Duplicate 2nd stack item" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -151,9 +159,13 @@ test "DUP3-DUP5: Various duplications" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -213,9 +225,13 @@ test "DUP6-DUP10: Mid-range duplications" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -278,9 +294,13 @@ test "DUP11-DUP16: High-range duplications" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -348,9 +368,13 @@ test "DUP16 (0x8F): Duplicate 16th stack item (maximum)" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -402,9 +426,13 @@ test "DUP1-DUP16: Gas consumption" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -461,9 +489,13 @@ test "DUP operations: Stack underflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -527,9 +559,13 @@ test "DUP operations: Stack overflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -577,9 +613,13 @@ test "DUP operations: Sequential duplications" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -642,9 +682,13 @@ test "DUP operations: Pattern verification" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -709,9 +753,13 @@ test "DUP operations: Boundary test with exact stack size" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);

@@ -39,9 +39,13 @@ test "Integration: arithmetic calculation sequence" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Simulate: (5 + 3) * 2 - 1 = 15
 
@@ -102,9 +106,13 @@ test "Integration: stack manipulation with DUP and SWAP" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Push initial values
     try frame.stack.append(10);
@@ -171,9 +179,13 @@ test "Integration: memory to storage workflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -246,9 +258,13 @@ test "Integration: conditional branching" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -314,9 +330,13 @@ test "Integration: hash and compare workflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -409,10 +429,14 @@ test "Integration: call data processing" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .withInput(&call_data)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
-    frame.input = &call_data;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -477,9 +501,13 @@ test "Integration: gas tracking through operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -549,9 +577,13 @@ test "Integration: error handling in sequences" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
@@ -604,9 +636,13 @@ test "Integration: transient storage usage" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute opcodes through jump table
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);

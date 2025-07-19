@@ -6,6 +6,7 @@ const Operation = @import("../opcodes/operation.zig");
 const RunResult = @import("run_result.zig").RunResult;
 const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
+const primitives = @import("primitives");
 
 /// Core bytecode execution with configurable static context.
 /// Runs the main VM loop, executing opcodes sequentially while tracking
@@ -24,12 +25,21 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
 
     const initial_gas = contract.gas;
     var pc: usize = 0;
-    var frame = try Frame.init(self.allocator, contract);
+    var builder = Frame.builder(self.allocator);
+    var frame = builder
+        .withVm(self)
+        .withContract(contract)
+        .withGas(contract.gas)
+        .withCaller(.{})
+        .withInput(input)
+        .isStatic(self.read_only)
+        .withDepth(@as(u32, @intCast(self.depth)))
+        .build() catch |err| switch (err) {
+            error.OutOfMemory => return ExecutionError.Error.OutOfMemory,
+            error.MissingVm => unreachable, // We pass a VM
+            error.MissingContract => unreachable, // We pass a contract
+        };
     defer frame.deinit();
-    frame.is_static = self.read_only;
-    frame.depth = @as(u32, @intCast(self.depth));
-    frame.input = input;
-    frame.gas_remaining = contract.gas;
 
     const interpreter_ptr = @as(*Operation.Interpreter, @ptrCast(self));
     const state_ptr = @as(*Operation.State, @ptrCast(&frame));

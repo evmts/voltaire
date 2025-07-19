@@ -51,9 +51,13 @@ test "Integration: ERC20 Transfer event logging" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Transfer event: Transfer(address indexed from, address indexed to, uint256 value)
     // Event signature hash (topic0)
@@ -124,9 +128,13 @@ test "Integration: multiple event emissions" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
@@ -215,9 +223,13 @@ test "Integration: event with dynamic array data" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Simulate logging a dynamic array
     // In Solidity: event DataLogged(uint256 indexed id, bytes data);
@@ -283,9 +295,13 @@ test "Integration: log gas consumption patterns" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(50000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 50000;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
@@ -355,9 +371,13 @@ test "Integration: logging restrictions in static calls" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
@@ -408,9 +428,13 @@ test "Integration: event topics for bloom filter" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
@@ -490,9 +514,13 @@ test "Integration: log memory expansion costs" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Operation.State = @ptrCast(&frame);
@@ -541,9 +569,13 @@ test "Integration: event filtering by topics" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Operation.State = @ptrCast(&frame);

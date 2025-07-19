@@ -41,9 +41,13 @@ test "SLOAD (0x54): Load from storage" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(3000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 3000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -85,9 +89,13 @@ test "SLOAD: Load from uninitialized slot returns zero" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(3000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 3000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -125,9 +133,13 @@ test "SLOAD: Multiple loads from same slot" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(6000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 6000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -168,9 +180,13 @@ test "SLOAD: EIP-2929 cold/warm access" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -228,9 +244,13 @@ test "SSTORE (0x55): Store to storage" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(30000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 30000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -270,9 +290,13 @@ test "SSTORE: Static call protection" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -302,7 +326,7 @@ test "SSTORE: Static call protection" {
 //     );
 //     defer contract.deinit(allocator, null);
 //
-//     var test_frame = try helpers.TestFrame.init(allocator, &contract, 50000);
+//     var test_frame = try helpers.TestFrame.init_minimal(allocator, &contract, 50000);
 //     defer test_frame.deinit();
 //
 //     // First set a non-zero value
@@ -346,9 +370,13 @@ test "SSTORE: EIP-2200 gas cost scenarios" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -403,9 +431,13 @@ test "SSTORE: Large storage values" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(50000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 50000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -456,9 +488,13 @@ test "Storage opcodes: Gas consumption patterns" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -517,9 +553,13 @@ test "Storage opcodes: Stack underflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -540,9 +580,13 @@ test "Storage opcodes: Stack underflow" {
     );
     defer contract2.deinit(allocator, null);
 
-    var frame2 = try Frame.init(allocator, &contract2);
+    var frame_builder2 = Frame.builder(allocator);
+    var frame2 = try frame_builder2
+        .withVm(&evm)
+        .withContract(&contract2)
+        .withGas(1000)
+        .build();
     defer frame2.deinit();
-    frame2.gas_remaining = 1000;
 
     const state_ptr2: *Evm.Operation.State = @ptrCast(&frame2);
 
@@ -597,9 +641,13 @@ test "Storage: Multiple consecutive operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -667,9 +715,13 @@ test "SSTORE: Overwriting values" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(30000)
+            .build();
         defer frame.deinit();
-            frame.gas_remaining = 30000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -712,9 +764,13 @@ test "SSTORE: EIP-2200 complete gas cost scenarios" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -777,9 +833,13 @@ test "SSTORE: Zero value edge cases" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -824,9 +884,13 @@ test "SSTORE: Same value edge cases" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -898,9 +962,13 @@ test "Storage: Boundary value testing" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(50000)
+            .build();
         defer frame.deinit();
-            frame.gas_remaining = 50000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -956,9 +1024,13 @@ test "Storage: Large slot number testing" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(50000)
+            .build();
         defer frame.deinit();
-            frame.gas_remaining = 50000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1009,9 +1081,13 @@ test "Storage: Contract slot warming pattern" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1060,9 +1136,13 @@ test "Storage: Complex access patterns" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1114,9 +1194,13 @@ test "SSTORE: EIP-1706 gas stipend protection" {
     defer contract.deinit(allocator, null);
 
     // Set gas remaining to exactly the stipend limit (2300)
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(2300)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 2300;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1153,9 +1237,13 @@ test "Storage: Rapid alternating operations" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(200000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 200000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -1221,13 +1309,21 @@ test "Storage: Multiple contracts isolation" {
     );
     defer contract2.deinit(allocator, null);
 
-    var frame1 = try Frame.init(allocator, &contract1);
+    var frame_builder1 = Frame.builder(allocator);
+    var frame1 = try frame_builder1
+        .withVm(&evm)
+        .withContract(&contract1)
+        .withGas(30000)
+        .build();
     defer frame1.deinit();
-    frame1.gas_remaining = 30000;
 
-    var frame2 = try Frame.init(allocator, &contract2);
+    var frame_builder2 = Frame.builder(allocator);
+    var frame2 = try frame_builder2
+        .withVm(&evm)
+        .withContract(&contract2)
+        .withGas(30000)
+        .build();
     defer frame2.deinit();
-    frame2.gas_remaining = 30000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr1: *Evm.Operation.State = @ptrCast(&frame1);

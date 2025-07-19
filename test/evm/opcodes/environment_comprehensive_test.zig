@@ -37,9 +37,13 @@ test "ADDRESS (0x30): Push current contract address" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -77,9 +81,13 @@ test "BALANCE (0x31): Get account balance" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -140,9 +148,13 @@ test "ORIGIN (0x32): Get transaction origin" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -185,9 +197,13 @@ test "CALLER (0x33): Get immediate caller" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -234,9 +250,13 @@ test "CALLVALUE (0x34): Get msg.value" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer frame.deinit();
-        frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -282,9 +302,13 @@ test "CALLDATALOAD (0x35): Load 32 bytes from calldata" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -361,9 +385,13 @@ test "CALLDATASIZE (0x36): Get calldata size" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer frame.deinit();
-        frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -408,9 +436,13 @@ test "CALLDATACOPY (0x37): Copy calldata to memory" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -495,9 +527,13 @@ test "CODESIZE (0x38): Get code size" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer frame.deinit();
-        frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -543,9 +579,13 @@ test "CODECOPY (0x39): Copy code to memory" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -623,9 +663,13 @@ test "GASPRICE (0x3A): Get gas price" {
         );
         defer contract.deinit(allocator, null);
 
-        var frame = try Frame.init(allocator, &contract);
+        var frame_builder = Frame.builder(allocator);
+        var frame = try frame_builder
+            .withVm(&evm)
+            .withContract(&contract)
+            .withGas(1000)
+            .build();
         defer frame.deinit();
-        frame.gas_remaining = 1000;
 
         const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
         const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -667,9 +711,13 @@ test "Environmental opcodes: Gas consumption" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -728,9 +776,13 @@ test "Environmental opcodes: Stack underflow" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(1000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -776,9 +828,13 @@ test "Environmental opcodes: Memory expansion limits" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(100)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100; // Limited gas
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -817,9 +873,13 @@ test "BALANCE: EIP-2929 cold/warm account access" {
     );
     defer contract.deinit(allocator, null);
 
-    var frame = try Frame.init(allocator, &contract);
+    var frame_builder = Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&evm)
+        .withContract(&contract)
+        .withGas(10000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 10000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);

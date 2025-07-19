@@ -25,9 +25,14 @@ test "fuzz_bitwise_and_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test AND operation
     try frame.stack.append(0xF0F0F0F0F0F0F0F0);
@@ -63,9 +68,14 @@ test "fuzz_bitwise_or_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test OR operation
     try frame.stack.append(0xF0F0F0F0F0F0F0F0);
@@ -101,9 +111,14 @@ test "fuzz_bitwise_xor_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test XOR operation
     try frame.stack.append(0xAAAAAAAAAAAAAAAA);
@@ -139,9 +154,14 @@ test "fuzz_bitwise_not_operations" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test NOT operation
     try frame.stack.append(0);

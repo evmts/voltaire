@@ -30,9 +30,14 @@ test "fuzz_crypto_keccak256_empty" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test KECCAK256 of empty data: stack order [size, offset] where offset is on top
     try frame.stack.append(0); // size
@@ -70,9 +75,14 @@ test "fuzz_crypto_keccak256_basic" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Set up test data in memory
     const test_data = "Hello, World!";
@@ -118,9 +128,14 @@ test "fuzz_crypto_keccak256_edge_cases" {
     );
     defer contract.deinit(allocator, null);
     
-    var frame = try evm.Frame.init(allocator, &contract);
+    var builder = evm.Frame.builder(allocator);
+    var frame = try builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(1000000)
+        .withCaller(.{})
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 1000000;
     
     // Test with single byte
     try frame.memory.set_data(0, &[_]u8{0x42});

@@ -47,9 +47,13 @@ test "Integration: Token balance check pattern" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Simulate ERC20 balance mapping: mapping(address => uint256)
     // Storage slot = keccak256(address . uint256(0))
@@ -133,9 +137,13 @@ test "Integration: Packed struct storage" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Simulate struct { uint128 a; uint128 b; } packed in one slot
     const a: u256 = 12345; // Lower 128 bits
@@ -214,9 +222,13 @@ test "Integration: Dynamic array length update" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Dynamic array base slot
     const array_slot: u256 = 10;
@@ -277,9 +289,13 @@ test "Integration: Reentrancy guard pattern" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const guard_slot: u256 = 99;
     _ = 1; // NOT_ENTERED constant (not used in this test)
@@ -350,9 +366,13 @@ test "Integration: Bitfield manipulation" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -439,9 +459,13 @@ test "Integration: Safe math operations" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
     const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
@@ -518,9 +542,13 @@ test "Integration: Signature verification simulation" {
     defer contract.deinit(allocator, null);
 
     // Create frame
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Simulate message hash computation
     const message = "Hello, Ethereum!";
@@ -587,9 +615,13 @@ test "Integration: Multi-sig wallet threshold check" {
     defer contract.deinit(allocator, null);
 
     // Create frame with gas
-    var frame = try Evm.Frame.init(allocator, &contract);
+    var frame_builder = Evm.Frame.builder(allocator);
+    var frame = try frame_builder
+        .withVm(&vm)
+        .withContract(&contract)
+        .withGas(100000)
+        .build();
     defer frame.deinit();
-    frame.gas_remaining = 100000;
 
     // Execute SSTORE through jump table
     const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
