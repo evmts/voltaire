@@ -1,6 +1,5 @@
 const std = @import("std");
 const Contract = @import("frame/contract.zig");
-const Stack = @import("stack/stack.zig");
 const JumpTable = @import("jump_table/jump_table.zig");
 const Frame = @import("frame/frame.zig");
 const Operation = @import("opcodes/operation.zig");
@@ -55,8 +54,12 @@ return_data: []u8 = &[_]u8{},
 state: EvmState,
 /// Warm/cold access tracking for EIP-2929 gas costs
 access_list: AccessList,
-/// Stack field (used in tests)
-stack: Stack,
+
+// Compile-time validation and optimizations
+comptime {
+    std.debug.assert(@alignOf(Evm) >= 8); // Ensure proper alignment for performance
+    std.debug.assert(@sizeOf(Evm) > 0); // Struct must have size
+}
 
 /// Initialize VM with a jump table and corresponding chain rules.
 ///
@@ -87,9 +90,6 @@ pub fn init(allocator: std.mem.Allocator, database: @import("state/database_inte
     var access_list = AccessList.init(allocator, context);
     errdefer access_list.deinit();
 
-    var stack = try Stack.init(allocator);
-    errdefer stack.deinit(allocator);
-
     Log.debug("Evm.init: VM initialization complete", .{});
     return Evm{
         .allocator = allocator,
@@ -101,7 +101,6 @@ pub fn init(allocator: std.mem.Allocator, database: @import("state/database_inte
         .return_data = &[_]u8{},
         .state = state,
         .access_list = access_list,
-        .stack = stack,
     };
 }
 
@@ -123,7 +122,6 @@ pub fn init_with_hardfork(allocator: std.mem.Allocator, database: @import("state
 /// Must be called when finished with the VM to prevent memory leaks.
 pub fn deinit(self: *Evm) void {
     self.state.deinit();
-    self.stack.deinit(self.allocator);
     self.access_list.deinit();
     Contract.clear_analysis_cache(self.allocator);
 }
@@ -169,7 +167,6 @@ test "Evm.init default configuration" {
     
     try testing.expect(evm.allocator.ptr == allocator.ptr);
     try testing.expectEqual(@as(usize, 0), evm.return_data.len);
-    try testing.expectEqual(@as(usize, 0), evm.stack.size);
     try testing.expectEqual(@as(u16, 0), evm.depth);
     try testing.expectEqual(false, evm.read_only);
 }
@@ -321,13 +318,8 @@ test "Evm initialization memory invariants" {
     defer evm.deinit();
     
     try testing.expectEqual(@as(usize, 0), evm.return_data.len);
-    try testing.expectEqual(@as(usize, 0), evm.stack.size);
     try testing.expectEqual(@as(u16, 0), evm.depth);
     try testing.expectEqual(false, evm.read_only);
-    
-    for (evm.stack.storage.data[0..Stack.CAPACITY]) |value| {
-        try testing.expectEqual(@as(u256, 0), value);
-    }
 }
 
 test "Evm depth tracking" {
@@ -425,25 +417,6 @@ test "Evm access list operations" {
     try testing.expectEqual(true, evm.access_list.is_address_warm(test_addr));
 }
 
-test "Evm stack operations via stack field" {
-    const allocator = testing.allocator;
-    
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-    
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null);
-    defer evm.deinit();
-    
-    try testing.expectEqual(@as(usize, 0), evm.stack.size);
-    
-    try evm.stack.append(42);
-    try testing.expectEqual(@as(usize, 1), evm.stack.size);
-    
-    const value = try evm.stack.pop();
-    try testing.expectEqual(@as(u256, 42), value);
-    try testing.expectEqual(@as(usize, 0), evm.stack.size);
-}
 
 test "Evm jump table access" {
     const allocator = testing.allocator;
@@ -620,7 +593,6 @@ test "Evm invariant: all fields properly initialized after init" {
     
     try testing.expect(evm.allocator.ptr == allocator.ptr);
     try testing.expectEqual(@as(usize, 0), evm.return_data.len);
-    try testing.expectEqual(@as(usize, 0), evm.stack.size);
     try testing.expectEqual(@as(u16, 0), evm.depth);
     try testing.expectEqual(false, evm.read_only);
     
@@ -685,14 +657,4 @@ test "Evm resource exhaustion simulation" {
     
     evm.depth = 1023;
     try testing.expectEqual(@as(u16, 1023), evm.depth);
-    
-    try evm.stack.append(1);
-    try evm.stack.append(2);
-    try evm.stack.append(3);
-    try testing.expectEqual(@as(usize, 3), evm.stack.size);
-    
-    _ = try evm.stack.pop();
-    _ = try evm.stack.pop();
-    _ = try evm.stack.pop();
-    try testing.expectEqual(@as(usize, 0), evm.stack.size);
 }
