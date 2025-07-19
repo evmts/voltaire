@@ -159,7 +159,6 @@ pub const CallResult = struct {
     }
 };
 
-
 // ============================================================================
 // Shared Validation Functions for Call Operations
 // ============================================================================
@@ -302,7 +301,7 @@ fn consume_create_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionEr
     
     // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
     const initcode_word_cost = if (vm.chain_rules.is_eip3860)
-        @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.InitcodeWordGas
+        @as(u64, @intCast(gas_constants.wordCount(init_code.len))) * gas_constants.InitcodeWordGas
     else
         0;
     
@@ -312,11 +311,11 @@ fn consume_create_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionEr
 /// Calculate and consume gas for CREATE2 operations (includes hash cost)
 fn consume_create2_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
     const init_code_cost = @as(u64, @intCast(init_code.len)) * gas_constants.CreateDataGas;
-    const hash_cost = @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.Keccak256WordGas;
+    const hash_cost = @as(u64, @intCast(gas_constants.wordCount(init_code.len))) * gas_constants.Keccak256WordGas;
     
     // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
     const initcode_word_cost = if (vm.chain_rules.is_eip3860)
-        @as(u64, @intCast((init_code.len + 31) / 32)) * gas_constants.InitcodeWordGas
+        @as(u64, @intCast(gas_constants.wordCount(init_code.len))) * gas_constants.InitcodeWordGas
     else
         0;
     
