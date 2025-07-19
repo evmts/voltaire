@@ -36,6 +36,7 @@ const gas_constants = @import("../constants/gas_constants.zig");
 const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
 const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const ChainRules = @import("../hardforks/chain_rules.zig");
+const ec_validation = @import("ec_validation.zig");
 
 // Conditional imports based on target
 const bn254_backend = if (builtin.target.cpu.arch == .wasm32)
@@ -104,24 +105,21 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
 /// @return PrecompileOutput with success/failure and gas usage
 pub fn execute(input: []const u8, output: []u8, gas_limit: u64, chain_rules: ChainRules) PrecompileOutput {
     // Validate output buffer size
-    if (output.len < 32) {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
+    if (ec_validation.validate_output_buffer_size(output, 32)) |failure_result| {
+        return failure_result;
     }
 
     // Validate input length (must be multiple of 192 bytes)
-    if (input.len % 192 != 0) {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
+    if (ec_validation.validate_input_size_multiple(input.len, 192)) |failure_result| {
+        return failure_result;
     }
 
     const num_pairs = input.len / 192;
 
     // Calculate and validate gas cost
     const gas_cost = calculate_gas(num_pairs, chain_rules);
-    if (gas_cost > gas_limit) {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
+    if (ec_validation.validate_gas_requirement(gas_cost, gas_limit)) |failure_result| {
+        return failure_result;
     }
 
     if (builtin.target.cpu.arch == .wasm32) {
