@@ -130,51 +130,6 @@ pub fn create_database(allocator: std.mem.Allocator, config: DatabaseConfig) !Da
             return memory_db.to_database_interface();
         },
 
-        // Future database types can be implemented here:
-        //
-        // .Fork => |fork_config| {
-        //     const fork_db = try allocator.create(ForkDatabase);
-        //     fork_db.* = try ForkDatabase.init(allocator, fork_config.remote_url, fork_config.block_number);
-        //
-        //     const metadata = DatabaseMetadata{
-        //         .database_type = .Fork,
-        //         .allocation_ptr = fork_db,
-        //         .allocation_size = @sizeOf(ForkDatabase),
-        //     };
-        //     try database_metadata_map.put(fork_db, metadata);
-        //
-        //     return fork_db.to_database_interface();
-        // },
-        //
-        // .File => |file_config| {
-        //     const file_db = try allocator.create(FileDatabase);
-        //     file_db.* = try FileDatabase.init(allocator, file_config.file_path, file_config.create_if_missing);
-        //
-        //     const metadata = DatabaseMetadata{
-        //         .database_type = .File,
-        //         .allocation_ptr = file_db,
-        //         .allocation_size = @sizeOf(FileDatabase),
-        //     };
-        //     try database_metadata_map.put(file_db, metadata);
-        //
-        //     return file_db.to_database_interface();
-        // },
-        //
-        // .Cached => |cached_config| {
-        //     const backend_db = try create_database(allocator, cached_config.backend_config.*);
-        //
-        //     const cached_db = try allocator.create(CachedDatabase);
-        //     cached_db.* = try CachedDatabase.init(allocator, backend_db, cached_config.cache_size);
-        //
-        //     const metadata = DatabaseMetadata{
-        //         .database_type = .Cached,
-        //         .allocation_ptr = cached_db,
-        //         .allocation_size = @sizeOf(CachedDatabase),
-        //     };
-        //     try database_metadata_map.put(cached_db, metadata);
-        //
-        //     return cached_db.to_database_interface();
-        // },
     }
 }
 
@@ -266,22 +221,6 @@ pub fn create_memory_database(allocator: std.mem.Allocator) !DatabaseInterface {
     return create_database(allocator, DatabaseConfig{ .Memory = {} });
 }
 
-// Future convenience functions:
-//
-// /// Convenience function to create a fork database
-// pub fn create_fork_database(allocator: std.mem.Allocator, remote_url: []const u8, block_number: ?u64) !DatabaseInterface {
-//     return create_database(allocator, DatabaseConfig{ .Fork = .{ .remote_url = remote_url, .block_number = block_number } });
-// }
-//
-// /// Convenience function to create a file database
-// pub fn create_file_database(allocator: std.mem.Allocator, file_path: []const u8) !DatabaseInterface {
-//     return create_database(allocator, DatabaseConfig{ .File = .{ .file_path = file_path } });
-// }
-//
-// /// Convenience function to create a cached database
-// pub fn create_cached_database(allocator: std.mem.Allocator, backend_config: DatabaseConfig, cache_size: usize) !DatabaseInterface {
-//     return create_database(allocator, DatabaseConfig{ .Cached = .{ .backend_config = &backend_config, .cache_size = cache_size } });
-// }
 
 // Tests
 const testing = std.testing;

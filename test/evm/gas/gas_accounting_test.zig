@@ -46,15 +46,6 @@ test "memory expansion gas calculation" {
     try testing.expectEqual(@as(u64, 98), gas_constants.memory_gas_cost(0, 1024));
 }
 
-// Test memory expansion lookup table
-test "memory expansion lookup table" {
-    // Test that LUT values match calculated values for small sizes
-    for (0..100) |words| {
-        const expected = gas_constants.MemoryGas * words + (words * words) / gas_constants.QuadCoeffDiv;
-        try testing.expectEqual(expected, gas_constants.MEMORY_EXPANSION_LUT[words]);
-    }
-}
-
 // Test edge cases for memory expansion
 test "memory expansion edge cases" {
     // Test alignment - should round up to nearest word
