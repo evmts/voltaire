@@ -265,7 +265,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         for (0..32) |i| {
             jt.table[0x60 + i] = &Operation{
                 .execute = stack_ops.push_n,
-                .constant_gas = execution.gas_constants.GasFastestStep,
+                .constant_gas = execution.GasConstants.GasFastestStep,
                 .min_stack = 0,
                 .max_stack = Stack.CAPACITY - 1,
             };
@@ -296,7 +296,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             const n = i + 1;
             jt.table[0x60 + i] = &Operation{
                 .execute = stack_ops.make_push(n),
-                .constant_gas = execution.gas_constants.GasFastestStep,
+                .constant_gas = execution.GasConstants.GasFastestStep,
                 .min_stack = 0,
                 .max_stack = Stack.CAPACITY - 1,
             };
@@ -307,7 +307,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         for (1..17) |n| {
             jt.table[0x80 + n - 1] = &Operation{
                 .execute = stack_ops.dup_n,
-                .constant_gas = execution.gas_constants.GasFastestStep,
+                .constant_gas = execution.GasConstants.GasFastestStep,
                 .min_stack = @intCast(n),
                 .max_stack = Stack.CAPACITY - 1,
             };
@@ -316,7 +316,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         inline for (1..17) |n| {
             jt.table[0x80 + n - 1] = &Operation{
                 .execute = stack_ops.make_dup(n),
-                .constant_gas = execution.gas_constants.GasFastestStep,
+                .constant_gas = execution.GasConstants.GasFastestStep,
                 .min_stack = @intCast(n),
                 .max_stack = Stack.CAPACITY - 1,
             };
@@ -327,7 +327,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         for (1..17) |n| {
             jt.table[0x90 + n - 1] = &Operation{
                 .execute = stack_ops.swap_n,
-                .constant_gas = execution.gas_constants.GasFastestStep,
+                .constant_gas = execution.GasConstants.GasFastestStep,
                 .min_stack = @intCast(n + 1),
                 .max_stack = Stack.CAPACITY,
             };
@@ -336,7 +336,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         inline for (1..17) |n| {
             jt.table[0x90 + n - 1] = &Operation{
                 .execute = stack_ops.make_swap(n),
-                .constant_gas = execution.gas_constants.GasFastestStep,
+                .constant_gas = execution.GasConstants.GasFastestStep,
                 .min_stack = @intCast(n + 1),
                 .max_stack = Stack.CAPACITY,
             };
@@ -347,7 +347,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         for (0..5) |n| {
             jt.table[0xa0 + n] = &Operation{
                 .execute = log.log_n,
-                .constant_gas = execution.gas_constants.LogGas + execution.gas_constants.LogTopicGas * n,
+                .constant_gas = execution.GasConstants.LogGas + execution.GasConstants.LogTopicGas * n,
                 .min_stack = @intCast(n + 2),
                 .max_stack = Stack.CAPACITY,
             };
@@ -356,7 +356,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         inline for (0..5) |n| {
             jt.table[0xa0 + n] = &Operation{
                 .execute = log.make_log(n),
-                .constant_gas = execution.gas_constants.LogGas + execution.gas_constants.LogTopicGas * n,
+                .constant_gas = execution.GasConstants.LogGas + execution.GasConstants.LogTopicGas * n,
                 .min_stack = @intCast(n + 2),
                 .max_stack = Stack.CAPACITY,
             };
