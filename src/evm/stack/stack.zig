@@ -685,6 +685,28 @@ test "extended_fuzzing_unsafe_operations" {
     try std.testing.expectEqual(@as(u256, 0), stack.peek_unsafe().*);
     try std.testing.expectEqual(@as(usize, 17), stack.size);
     
+    // Test edge case: operations on stack with exactly 1 element
+    stack.clear();
+    stack.append_unsafe(42);
+    stack.dup_unsafe(1);
+    try std.testing.expectEqual(@as(u256, 42), stack.peek_unsafe().*);
+    try std.testing.expectEqual(@as(usize, 2), stack.size);
+    
+    // Test edge case: consecutive pop2/pop3 operations
+    stack.clear();
+    i = 0;
+    while (i < 6) : (i += 1) {
+        stack.append_unsafe(i * 10);
+    }
+    const first_pop3 = stack.pop3_unsafe();
+    const second_pop3 = stack.pop3_unsafe();
+    try std.testing.expectEqual(@as(u256, 30), first_pop3.a);
+    try std.testing.expectEqual(@as(u256, 40), first_pop3.b);
+    try std.testing.expectEqual(@as(u256, 50), first_pop3.c);
+    try std.testing.expectEqual(@as(u256, 0), second_pop3.a);
+    try std.testing.expectEqual(@as(u256, 10), second_pop3.b);
+    try std.testing.expectEqual(@as(u256, 20), second_pop3.c);
+    
     // Random fuzz testing of unsafe operations
     stack.clear();
     
@@ -783,20 +805,22 @@ test "real_evm_patterns" {
     // Simulates: (a + b) * c - d
     stack.append_unsafe(10); // a
     stack.append_unsafe(20); // b
-    stack.append_unsafe(3);  // c
-    stack.append_unsafe(5);  // d
     
     // ADD: pop b, pop a, push (a + b)
     const add_result = stack.pop2_unsafe();
     stack.append_unsafe(add_result.a + add_result.b); // 30
     
+    stack.append_unsafe(3);  // c
+    
     // MUL: pop c, pop result, push (result * c)
     const mul_result = stack.pop2_unsafe();
     stack.append_unsafe(mul_result.a * mul_result.b); // 90
     
+    stack.append_unsafe(5);  // d
+    
     // SUB: pop d, pop result, push (result - d)
     const sub_result = stack.pop2_unsafe();
-    stack.append_unsafe(sub_result.b - sub_result.a); // 85
+    stack.append_unsafe(sub_result.a - sub_result.b); // 85
     
     try std.testing.expectEqual(@as(u256, 85), stack.pop_unsafe());
     
@@ -1120,6 +1144,86 @@ test "performance_benchmarks" {
     std.log.debug("  swap operations: {} ns", .{swap_ns});
 }
 
+test "branch_hint_effectiveness" {
+    // This test verifies that branch hints are used effectively
+    // by checking that the hot path (likely) and cold path (unlikely)
+    // cases are handled as expected
+    
+    var stack = Stack{};
+    var prng = std.Random.DefaultPrng.init(42);
+    const random = prng.random();
+    
+    // Test 1: append() - overflow is cold path
+    // Fill stack almost to capacity
+    var i: usize = 0;
+    while (i < CAPACITY - 1) : (i += 1) {
+        try stack.append(i);
+    }
+    
+    // Normal append (likely path)
+    try stack.append(999);
+    
+    // Overflow (cold path with @branchHint(.cold))
+    try std.testing.expectError(Error.StackOverflow, stack.append(1000));
+    
+    // Test 2: pop() - underflow is cold path
+    stack.clear();
+    
+    // Fill with some values
+    i = 0;
+    while (i < 100) : (i += 1) {
+        try stack.append(i);
+    }
+    
+    // Normal pops (likely path)
+    i = 0;
+    while (i < 100) : (i += 1) {
+        _ = try stack.pop();
+    }
+    
+    // Underflow (cold path with @branchHint(.cold))
+    try std.testing.expectError(Error.StackUnderflow, stack.pop());
+    
+    // Test 3: Unsafe operations assume likely path
+    // These should be optimized for the success case
+    stack.clear();
+    
+    // Fill stack for unsafe operations
+    i = 0;
+    while (i < 500) : (i += 1) {
+        stack.append_unsafe(i);
+    }
+    
+    // Rapid unsafe operations (all likely paths)
+    i = 0;
+    while (i < 10000) : (i += 1) {
+        if (stack.size < CAPACITY - 10) {
+            stack.append_unsafe(random.int(u256));
+        }
+        if (stack.size > 10) {
+            _ = stack.pop_unsafe();
+        }
+        if (stack.size > 0) {
+            _ = stack.peek_unsafe();
+        }
+    }
+    
+    // Test 4: peek_n boundary checks (cold path for errors)
+    stack.clear();
+    try stack.append(100);
+    try stack.append(200);
+    try stack.append(300);
+    
+    // Normal peek_n (likely path)
+    try std.testing.expectEqual(@as(u256, 300), try stack.peek_n(0));
+    try std.testing.expectEqual(@as(u256, 200), try stack.peek_n(1));
+    try std.testing.expectEqual(@as(u256, 100), try stack.peek_n(2));
+    
+    // Out of bounds (cold path)
+    try std.testing.expectError(Error.StackUnderflow, stack.peek_n(3));
+    try std.testing.expectError(Error.StackUnderflow, stack.peek_n(100));
+}
+
 test "security_focused_tests" {
     var stack = Stack{};
     
@@ -1170,15 +1274,20 @@ test "security_focused_tests" {
         stack.append_unsafe(i * 0x10101010);
     }
     
-    // Clear half
+    // Store the original size
+    const pattern_size = stack.size;
+    
+    // Clear half by popping
     i = 0;
     while (i < 25) : (i += 1) {
         _ = stack.pop_unsafe();
     }
     
     // Verify cleared slots don't reveal pattern
-    i = 25;
-    while (i < 50) : (i += 1) {
+    // After popping 25 items, stack.size is 25
+    // The cleared slots are from index 25 to 49
+    i = stack.size;
+    while (i < pattern_size) : (i += 1) {
         try std.testing.expectEqual(@as(u256, 0), stack.data[i]);
     }
     
@@ -1297,4 +1406,66 @@ test "security_focused_tests" {
     try std.testing.expectEqual(CAPACITY, stack.size);
     try std.testing.expectEqual(@as(u256, 999), try stack.pop());
     try std.testing.expectEqual(size_before_error, stack.size);
+    
+    // Test 10: Verify cleared memory is truly unrecoverable
+    stack.clear();
+    
+    // Fill with sensitive pattern
+    const sensitive_pattern = 0xC0FFEE_DEADBEEF_CAFEBABE_F00DFACE;
+    i = 0;
+    while (i < 100) : (i += 1) {
+        stack.append_unsafe(sensitive_pattern ^ @as(u256, i));
+    }
+    
+    // Store original size
+    const original_size = stack.size;
+    
+    // Clear using different methods
+    // Method 1: Pop all values
+    while (stack.size > 50) {
+        _ = stack.pop_unsafe();
+    }
+    
+    // Method 2: Use clear()
+    stack.clear();
+    
+    // Attempt to recover data through various means
+    // 1. Direct access to data array
+    var found_pattern = false;
+    for (stack.data[0..original_size]) |value| {
+        if (value != 0) {
+            // Check if value matches our pattern (XOR with small number)
+            const xor_result = value ^ sensitive_pattern;
+            if (xor_result < 100) {
+                found_pattern = true;
+                break;
+            }
+        }
+    }
+    try std.testing.expect(!found_pattern);
+    
+    // 2. Verify all cleared slots are zero
+    for (stack.data) |value| {
+        try std.testing.expectEqual(@as(u256, 0), value);
+    }
+    
+    // 3. Try to access beyond current size
+    try std.testing.expectEqual(@as(usize, 0), stack.size);
+    
+    // 4. Refill and verify no old data appears
+    i = 0;
+    while (i < 100) : (i += 1) {
+        stack.append_unsafe(0xAAAAAAAA);
+    }
+    
+    // Pop all and check no sensitive pattern appears
+    while (stack.size > 0) {
+        const value = stack.pop_unsafe();
+        try std.testing.expect(value != sensitive_pattern);
+        // Ensure value doesn't match our XOR pattern
+        if (value != 0xAAAAAAAA) {
+            const xor_result = value ^ sensitive_pattern;
+            try std.testing.expect(xor_result >= 100);
+        }
+    }
 }
