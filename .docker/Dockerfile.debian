@@ -1,5 +1,5 @@
 # Debian-based Docker image for Guillotine CI
-FROM debian:12
+FROM --platform=linux/amd64 debian:12
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -13,11 +13,16 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     clang \
     lld \
-    nodejs \
-    npm \
     python3 \
     xz-utils \
+    ca-certificates \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 18 from NodeSource
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Rust (needed for bn254_wrapper)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

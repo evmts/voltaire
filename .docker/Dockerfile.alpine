@@ -1,5 +1,5 @@
 # Alpine-based Docker image for Guillotine CI
-FROM alpine:3.19
+FROM --platform=linux/amd64 alpine:3.19
 
 # Install system dependencies
 RUN apk add --no-cache \
@@ -10,12 +10,15 @@ RUN apk add --no-cache \
     pkgconfig \
     clang \
     lld \
-    nodejs \
-    npm \
     python3 \
     bash \
     tar \
-    xz
+    xz \
+    ca-certificates
+
+# Install Node.js 18
+RUN apk add --no-cache nodejs npm && \
+    node --version
 
 # Install Rust (needed for bn254_wrapper)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
