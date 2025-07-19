@@ -509,7 +509,6 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 
     // Calculate and consume gas for creation
     try consume_create_gas(frame, vm, init_code);
-
     // Calculate gas to give to the new contract (EIP-150: 63/64 forwarding rule)
     const gas_for_call = (frame.gas_remaining * 63) / 64;
 
@@ -552,7 +551,6 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
 
     // Calculate and consume gas for CREATE2 (includes hash cost)
     try consume_create2_gas(frame, vm, init_code);
-
     // Calculate gas to give to the new contract (EIP-150: 63/64 forwarding rule)
     const gas_for_call = (frame.gas_remaining * 63) / 64;
 

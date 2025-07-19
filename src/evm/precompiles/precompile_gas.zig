@@ -96,3 +96,149 @@ pub fn calculate_dynamic_cost(input_data: []const u8, base_cost: u64, calculate_
     const dynamic_cost = calculate_dynamic_cost_fn(input_data);
     return base_cost + dynamic_cost;
 }
+
+// ============================================================================
+// SHARED PRECOMPILE UTILITIES
+// ============================================================================
+
+/// Generic hash precompile execution template
+///
+/// This template consolidates the common execution pattern used by hash-based
+/// precompiles like SHA256 and RIPEMD160. It handles gas checking, output
+/// validation, hash computation, and result formatting in a unified way.
+///
+/// @param comptime base_cost Base gas cost for the precompile
+/// @param comptime per_word_cost Gas cost per 32-byte word of input
+/// @param comptime hash_fn Hash function that takes input bytes and produces fixed-size hash
+/// @param comptime hash_size Size of the hash output in bytes
+/// @param comptime output_size Total output size (may include padding)
+/// @param comptime format_output Function to format hash into final output
+/// @param input Input data to hash
+/// @param output Output buffer to write result
+/// @param gas_limit Maximum gas available for execution
+/// @return PrecompileOutput with success/failure status and gas usage
+pub inline fn executeHashPrecompile(
+    comptime base_cost: u64,
+    comptime per_word_cost: u64,
+    comptime hash_fn: fn ([]const u8, []u8) void,
+    comptime output_size: usize,
+    comptime format_output: fn ([]const u8, []u8) void,
+    input: []const u8,
+    output: []u8,
+    gas_limit: u64,
+) @import("precompile_result.zig").PrecompileOutput {
+    const PrecompileOutput = @import("precompile_result.zig").PrecompileOutput;
+    const PrecompileError = @import("precompile_result.zig").PrecompileError;
+
+    // Calculate required gas using common linear cost function
+    const gas_cost = calculate_linear_cost(input.len, base_cost, per_word_cost);
+
+    // Check if we have enough gas
+    if (gas_cost > gas_limit) {
+        @branchHint(.cold);
+        return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
+    }
+
+    // Validate output buffer size
+    if (output.len < output_size) {
+        @branchHint(.cold);
+        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
+    }
+
+    // Create temporary buffer for hash result
+    var hash_buffer: [64]u8 = undefined; // Generous size for any hash
+    
+    // Compute hash
+    hash_fn(input, hash_buffer[0..]);
+    
+    // Format output using the provided formatting function
+    format_output(hash_buffer[0..], output);
+
+    return PrecompileOutput.success_result(gas_cost, output_size);
+}
+
+/// Formats hash output with left padding (for RIPEMD160)
+///
+/// RIPEMD160 outputs a 20-byte hash but must be formatted as 32 bytes with
+/// 12 zero bytes of left padding according to Ethereum specification.
+///
+/// @param hash_bytes The 20-byte hash to format
+/// @param output The 32-byte output buffer to fill
+pub inline fn formatLeftPaddedHash(comptime hash_size: usize, hash_bytes: []const u8, output: []u8) void {
+    const output_size = 32;
+    const padding_size = output_size - hash_size;
+    
+    // Zero out the entire output buffer
+    @memset(output[0..output_size], 0);
+    
+    // Copy hash to the right position (after padding)
+    @memcpy(output[padding_size..output_size], hash_bytes[0..hash_size]);
+}
+
+/// Formats hash output without padding (for SHA256)
+///
+/// SHA256 outputs exactly 32 bytes which matches the expected output size,
+/// so no padding is required.
+///
+/// @param hash_bytes The 32-byte hash to copy
+/// @param output The 32-byte output buffer to fill
+pub inline fn formatDirectHash(comptime hash_size: usize, hash_bytes: []const u8, output: []u8) void {
+    @memcpy(output[0..hash_size], hash_bytes[0..hash_size]);
+}
+
+/// Common input padding utility
+///
+/// Many precompiles need to pad input to specific sizes. This utility provides
+/// a common implementation for zero-padding input data.
+///
+/// @param input Source input data
+/// @param padded_buffer Target buffer to fill (must be pre-allocated)
+/// @param target_size Size to pad to
+pub inline fn padInput(input: []const u8, padded_buffer: []u8, target_size: usize) void {
+    std.debug.assert(padded_buffer.len >= target_size);
+    
+    // Zero out the entire buffer
+    @memset(padded_buffer[0..target_size], 0);
+    
+    // Copy input data (truncate if longer than target)
+    const copy_len = @min(input.len, target_size);
+    @memcpy(padded_buffer[0..copy_len], input[0..copy_len]);
+}
+
+/// Converts bytes to u256 (big-endian)
+///
+/// Common utility for converting byte arrays to 256-bit integers.
+/// Used by various precompiles for coordinate and field element parsing.
+///
+/// @param bytes Input bytes (up to 32 bytes)
+/// @return u256 value in big-endian representation
+pub inline fn bytesToU256(bytes: []const u8) u256 {
+    var result: u256 = 0;
+    const len = @min(bytes.len, 32);
+    
+    for (bytes[0..len]) |byte| {
+        result = (result << 8) | @as(u256, byte);
+    }
+    
+    return result;
+}
+
+/// Converts u256 to bytes (big-endian, 32 bytes)
+///
+/// Common utility for converting 256-bit integers to byte arrays.
+/// Always produces exactly 32 bytes with leading zeros if necessary.
+///
+/// @param value u256 value to convert
+/// @param output Output buffer (must be at least 32 bytes)
+pub inline fn u256ToBytes(value: u256, output: []u8) void {
+    std.debug.assert(output.len >= 32);
+    
+    var temp_value = value;
+    var i: usize = 32;
+    
+    while (i > 0) {
+        i -= 1;
+        output[i] = @as(u8, @intCast(temp_value & 0xFF));
+        temp_value >>= 8;
+    }
+}

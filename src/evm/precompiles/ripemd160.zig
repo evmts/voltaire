@@ -86,6 +86,33 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
     return RIPEMD160_BASE_GAS_COST + word_gas;
 }
 
+/// Hash function wrapper for RIPEMD160
+///
+/// Wrapper that matches the signature expected by executeHashPrecompile template.
+/// This allows RIPEMD160 to use the generic hash precompile implementation.
+///
+/// @param input Input data to hash
+/// @param output Output buffer for hash result (will receive 20 bytes)
+fn ripemd160Hash(input: []const u8, output: []u8) void {
+    const hash = crypto.HashAlgorithms.RIPEMD160.hash_fixed(input);
+    @memcpy(output[0..RIPEMD160_HASH_SIZE], &hash);
+}
+
+/// Output formatter for RIPEMD160
+///
+/// RIPEMD160 outputs a 20-byte hash but must be formatted as 32 bytes with
+/// 12 zero bytes of left padding according to Ethereum specification.
+///
+/// @param hash_bytes The 20-byte hash to format
+/// @param output The 32-byte output buffer to fill
+fn ripemd160Format(hash_bytes: []const u8, output: []u8) void {
+    // Zero out the entire output buffer
+    @memset(output[0..RIPEMD160_OUTPUT_SIZE], 0);
+    
+    // Copy hash to the right position (after 12 bytes of padding)
+    @memcpy(output[12..32], hash_bytes[0..RIPEMD160_HASH_SIZE]);
+}
+
 /// Executes the RIPEMD160 precompile
 ///
 /// This function performs the complete RIPEMD160 precompile execution:
@@ -94,34 +121,25 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
 /// 3. Formats output as 32 bytes with zero padding
 /// 4. Returns execution result with gas usage
 ///
+/// This implementation now uses the shared executeHashPrecompile template for
+/// consistency and potential size reduction through code reuse.
+///
 /// @param input Input data to hash (any length)
 /// @param output Output buffer to write result (must be >= 32 bytes)
 /// @param gas_limit Maximum gas available for this operation
 /// @return PrecompileOutput containing success/failure and gas usage
 pub fn execute(input: []const u8, output: []u8, gas_limit: u64) PrecompileOutput {
-    const gas_cost = calculate_gas(input.len);
-
-    // Check if we have enough gas
-    if (gas_cost > gas_limit) {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.OutOfGas);
-    }
-
-    // Validate output buffer size
-    if (output.len < RIPEMD160_OUTPUT_SIZE) {
-        @branchHint(.cold);
-        return PrecompileOutput.failure_result(PrecompileError.ExecutionFailed);
-    }
-
-    // Compute RIPEMD160 hash using primitives
-    const hash = crypto.HashAlgorithms.RIPEMD160.hash_fixed(input);
-
-    // Format output: 12 zero bytes + 20-byte hash (left-padding)
-    // This follows Ethereum specification for RIPEMD160 output format
-    @memset(output[0..RIPEMD160_OUTPUT_SIZE], 0);
-    @memcpy(output[12..32], &hash);
-
-    return PrecompileOutput.success_result(gas_cost, RIPEMD160_OUTPUT_SIZE);
+    const precompile_utils = @import("precompile_gas.zig");
+    return precompile_utils.executeHashPrecompile(
+        RIPEMD160_BASE_GAS_COST,
+        RIPEMD160_WORD_GAS_COST,
+        ripemd160Hash,
+        RIPEMD160_OUTPUT_SIZE,
+        ripemd160Format,
+        input,
+        output,
+        gas_limit,
+    );
 }
 
 /// Validates that a precompile call would succeed without executing
