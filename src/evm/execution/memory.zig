@@ -25,18 +25,13 @@ fn calculate_memory_gas(frame: *Frame, new_size: usize) !void {
 
 // Helper to calculate word-aligned size
 fn word_aligned_size(size: usize) usize {
-    return ((size + 31) / 32) * 32;
+    return std.mem.alignForward(usize, size, 32);
 }
 
 // Helper to convert u256 to big-endian bytes
 fn u256_to_big_endian_bytes(value: u256) [32]u8 {
     var bytes: [32]u8 = undefined;
-    var temp = value;
-    var i: usize = 0;
-    while (i < 32) : (i += 1) {
-        bytes[31 - i] = @intCast(temp & 0xFF);
-        temp = temp >> 8;
-    }
+    std.mem.writeInt(u256, &bytes, value, .big);
     return bytes;
 }
 
