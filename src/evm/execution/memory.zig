@@ -7,13 +7,6 @@ const Frame = @import("../frame/frame.zig");
 const Memory = @import("../memory/memory.zig");
 const gas_constants = @import("../constants/gas_constants.zig");
 
-// Helper to check if u256 fits in usize
-fn check_offset_bounds(value: u256) ExecutionError.Error!void {
-    if (value > std.math.maxInt(usize)) {
-        @branchHint(.unlikely);
-        return ExecutionError.Error.InvalidOffset;
-    }
-}
 
 pub fn op_mload(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;

@@ -98,15 +98,3 @@ pub const CALL_GAS_RETENTION_DIVISOR = GasConstants.CALL_GAS_RETENTION_DIVISOR;
 // Re-export functions
 pub const memory_gas_cost = GasConstants.memory_gas_cost;
 
-// Re-export the lookup table if needed
-pub const MEMORY_EXPANSION_LUT = blk: {
-    @setEvalBranchQuota(10000);
-    const max_words = 1024; // Pre-compute for up to 32KB of memory
-    var costs: [max_words]u64 = undefined;
-
-    for (0..max_words) |words| {
-        costs[words] = MemoryGas * words + (words * words) / QuadCoeffDiv;
-    }
-
-    break :blk costs;
-};
