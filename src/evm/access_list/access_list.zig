@@ -274,3 +274,137 @@ test "AccessList call costs" {
     // After getting cost, cold address should now be warm
     try testing.expect(access_list.is_address_warm(cold_address));
 }
+
+test "access_list_benchmarks" {
+    const Timer = std.time.Timer;
+    var timer = try Timer.start();
+    const testing_allocator = std.testing.allocator;
+    
+    const context = Context.init();
+    var access_list = AccessList.init(testing_allocator, context);
+    defer access_list.deinit();
+    
+    const iterations = 100000;
+    
+    // Benchmark 1: Address access performance under high load
+    timer.reset();
+    var i: usize = 0;
+    while (i < iterations) : (i += 1) {
+        const address = std.mem.toBytes(@as(u160, @intCast(i % 10000)));
+        _ = try access_list.access_address(address);
+    }
+    const address_access_ns = timer.read();
+    
+    // Benchmark 2: Storage slot access performance
+    access_list.clear();
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        const address = std.mem.toBytes(@as(u160, @intCast(i % 1000)));
+        const slot: u256 = @intCast(i % 5000);
+        _ = try access_list.access_storage_slot(address, slot);
+    }
+    const storage_access_ns = timer.read();
+    
+    // Benchmark 3: Large access list insertion performance
+    access_list.clear();
+    const large_addresses = try testing_allocator.alloc(primitives.Address.Address, 10000);
+    defer testing_allocator.free(large_addresses);
+    
+    for (large_addresses, 0..) |*address, idx| {
+        address.* = std.mem.toBytes(@as(u160, @intCast(idx)));
+    }
+    
+    timer.reset();
+    try access_list.pre_warm_addresses(large_addresses);
+    const large_prewarm_ns = timer.read();
+    
+    // Benchmark 4: Hash collision handling efficiency
+    access_list.clear();
+    timer.reset();
+    // Create addresses that might cause hash collisions
+    i = 0;
+    while (i < 1000) : (i += 1) {
+        var collision_address: [20]u8 = undefined;
+        // Create addresses with similar patterns
+        collision_address[0] = @intCast(i % 256);
+        collision_address[1] = @intCast((i >> 8) % 256);
+        std.mem.set(u8, collision_address[2..], 0xAA);
+        _ = try access_list.access_address(collision_address);
+    }
+    const collision_handling_ns = timer.read();
+    
+    // Benchmark 5: Memory usage scaling test
+    access_list.clear();
+    var scaling_lists = std.ArrayList(AccessList).init(testing_allocator);
+    defer {
+        for (scaling_lists.items) |*list| {
+            list.deinit();
+        }
+        scaling_lists.deinit();
+    }
+    
+    timer.reset();
+    i = 0;
+    while (i < 100) : (i += 1) {
+        var list = AccessList.init(testing_allocator, context);
+        
+        // Fill each list with different sized data
+        const fill_size = (i + 1) * 10;
+        var j: usize = 0;
+        while (j < fill_size) : (j += 1) {
+            const address = std.mem.toBytes(@as(u160, @intCast(j)));
+            _ = try list.access_address(address);
+            _ = try list.access_storage_slot(address, @intCast(j));
+        }
+        
+        try scaling_lists.append(list);
+    }
+    const scaling_ns = timer.read();
+    
+    // Benchmark 6: Random vs sequential access patterns
+    access_list.clear();
+    var rng = std.Random.DefaultPrng.init(12345);
+    const random = rng.random();
+    
+    // Sequential access pattern
+    timer.reset();
+    i = 0;
+    while (i < 10000) : (i += 1) {
+        const address = std.mem.toBytes(@as(u160, @intCast(i)));
+        _ = try access_list.access_address(address);
+    }
+    const sequential_ns = timer.read();
+    
+    access_list.clear();
+    
+    // Random access pattern
+    timer.reset();
+    i = 0;
+    while (i < 10000) : (i += 1) {
+        const random_val = random.int(u160);
+        const address = std.mem.toBytes(random_val);
+        _ = try access_list.access_address(address);
+    }
+    const random_access_ns = timer.read();
+    
+    // Print benchmark results for analysis
+    std.log.debug("Access List Benchmarks:", .{});
+    std.log.debug("  Address access ({} ops): {} ns", .{ iterations, address_access_ns });
+    std.log.debug("  Storage access ({} ops): {} ns", .{ iterations, storage_access_ns });
+    std.log.debug("  Large pre-warm (10k addresses): {} ns", .{large_prewarm_ns});
+    std.log.debug("  Hash collision handling (1k ops): {} ns", .{collision_handling_ns});
+    std.log.debug("  Memory scaling (100 lists): {} ns", .{scaling_ns});
+    std.log.debug("  Sequential access (10k ops): {} ns", .{sequential_ns});
+    std.log.debug("  Random access (10k ops): {} ns", .{random_access_ns});
+    
+    // Performance analysis hints
+    if (sequential_ns < random_access_ns) {
+        std.log.debug("✓ Sequential access shows expected performance benefit");
+    }
+    
+    const avg_address_access_ns = address_access_ns / iterations;
+    const avg_storage_access_ns = storage_access_ns / iterations;
+    std.log.debug("  Average address access: {} ns/op", .{avg_address_access_ns});
+    std.log.debug("  Average storage access: {} ns/op", .{avg_storage_access_ns});
+}

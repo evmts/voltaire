@@ -365,3 +365,170 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     jt.validate();
     return jt;
 }
+
+test "jump_table_benchmarks" {
+    const Timer = std.time.Timer;
+    var timer = try Timer.start();
+    const allocator = std.testing.allocator;
+    
+    // Setup test environment
+    var memory_db = @import("../state/memory_database.zig").MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    var vm = try @import("../evm.zig").Vm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
+    
+    const iterations = 100000;
+    
+    // Benchmark 1: Opcode dispatch performance comparison
+    const cancun_table = JumpTable.init_from_hardfork(.CANCUN);
+    const shanghai_table = JumpTable.init_from_hardfork(.SHANGHAI);
+    const berlin_table = JumpTable.init_from_hardfork(.BERLIN);
+    
+    timer.reset();
+    var i: usize = 0;
+    while (i < iterations) : (i += 1) {
+        // Test common opcodes across different hardforks
+        const opcode: u8 = @intCast(i % 256);
+        _ = cancun_table.get_operation(opcode);
+    }
+    const cancun_dispatch_ns = timer.read();
+    
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        const opcode: u8 = @intCast(i % 256);
+        _ = shanghai_table.get_operation(opcode);
+    }
+    const shanghai_dispatch_ns = timer.read();
+    
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        const opcode: u8 = @intCast(i % 256);
+        _ = berlin_table.get_operation(opcode);
+    }
+    const berlin_dispatch_ns = timer.read();
+    
+    // Benchmark 2: Hot path opcode execution (common operations)
+    const hot_opcodes = [_]u8{ 0x60, 0x80, 0x01, 0x50, 0x90 }; // PUSH1, DUP1, ADD, POP, SWAP1
+    
+    timer.reset();
+    for (hot_opcodes) |opcode| {
+        i = 0;
+        while (i < iterations / hot_opcodes.len) : (i += 1) {
+            const operation = cancun_table.get_operation(opcode);
+            // Simulate getting operation metadata
+            _ = operation.constant_gas;
+            _ = operation.min_stack;
+            _ = operation.max_stack;
+        }
+    }
+    const hot_path_ns = timer.read();
+    
+    // Benchmark 3: Cold path opcode handling (undefined/invalid opcodes)
+    timer.reset();
+    const invalid_opcodes = [_]u8{ 0x0c, 0x0d, 0x0e, 0x0f, 0x1e, 0x1f }; // Invalid opcodes
+    
+    for (invalid_opcodes) |opcode| {
+        i = 0;
+        while (i < 1000) : (i += 1) { // Fewer iterations for cold path
+            const operation = cancun_table.get_operation(opcode);
+            // These should return null or undefined operation
+            _ = operation;
+        }
+    }
+    const cold_path_ns = timer.read();
+    
+    // Benchmark 4: Hardfork-specific opcode availability
+    timer.reset();
+    const hardfork_specific_opcodes = [_]struct { opcode: u8, hardfork: Hardfork }{
+        .{ .opcode = 0x5f, .hardfork = .SHANGHAI }, // PUSH0 - only available from Shanghai
+        .{ .opcode = 0x46, .hardfork = .BERLIN },   // CHAINID - available from Istanbul
+        .{ .opcode = 0x48, .hardfork = .LONDON },   // BASEFEE - available from London
+    };
+    
+    for (hardfork_specific_opcodes) |test_case| {
+        const table = JumpTable.init_from_hardfork(test_case.hardfork);
+        i = 0;
+        while (i < 10000) : (i += 1) {
+            const operation = table.get_operation(test_case.opcode);
+            _ = operation;
+        }
+    }
+    const hardfork_specific_ns = timer.read();
+    
+    // Benchmark 5: Branch prediction impact (predictable vs unpredictable patterns)
+    var rng = std.Random.DefaultPrng.init(12345);
+    const random = rng.random();
+    
+    // Predictable pattern - sequential opcodes
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        const opcode: u8 = @intCast(i % 50); // Sequential pattern
+        _ = cancun_table.get_operation(opcode);
+    }
+    const predictable_ns = timer.read();
+    
+    // Unpredictable pattern - random opcodes
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        const opcode: u8 = random.int(u8); // Random pattern
+        _ = cancun_table.get_operation(opcode);
+    }
+    const unpredictable_ns = timer.read();
+    
+    // Benchmark 6: Cache locality test with table scanning
+    timer.reset();
+    i = 0;
+    while (i < 1000) : (i += 1) { // Fewer iterations due to full scan cost
+        // Scan entire jump table (tests cache locality)
+        for (0..256) |opcode_idx| {
+            _ = cancun_table.get_operation(@intCast(opcode_idx));
+        }
+    }
+    const table_scan_ns = timer.read();
+    
+    // Print benchmark results
+    std.log.debug("Jump Table Benchmarks:", .{});
+    std.log.debug("  Cancun dispatch ({} ops): {} ns", .{ iterations, cancun_dispatch_ns });
+    std.log.debug("  Shanghai dispatch ({} ops): {} ns", .{ iterations, shanghai_dispatch_ns });
+    std.log.debug("  Berlin dispatch ({} ops): {} ns", .{ iterations, berlin_dispatch_ns });
+    std.log.debug("  Hot path operations: {} ns", .{hot_path_ns});
+    std.log.debug("  Cold path operations: {} ns", .{cold_path_ns});
+    std.log.debug("  Hardfork-specific ops: {} ns", .{hardfork_specific_ns});
+    std.log.debug("  Predictable pattern ({} ops): {} ns", .{ iterations, predictable_ns });
+    std.log.debug("  Unpredictable pattern ({} ops): {} ns", .{ iterations, unpredictable_ns });
+    std.log.debug("  Full table scan (1000x): {} ns", .{table_scan_ns});
+    
+    // Performance analysis
+    const avg_dispatch_ns = cancun_dispatch_ns / iterations;
+    const avg_predictable_ns = predictable_ns / iterations;
+    const avg_unpredictable_ns = unpredictable_ns / iterations;
+    
+    std.log.debug("  Average dispatch time: {} ns/op", .{avg_dispatch_ns});
+    std.log.debug("  Average predictable: {} ns/op", .{avg_predictable_ns});
+    std.log.debug("  Average unpredictable: {} ns/op", .{avg_unpredictable_ns});
+    
+    // Branch prediction analysis
+    if (avg_predictable_ns < avg_unpredictable_ns) {
+        std.log.debug("✓ Branch prediction benefit observed");
+    }
+    
+    // Hardfork dispatch performance comparison
+    const cancun_avg = cancun_dispatch_ns / iterations;
+    const shanghai_avg = shanghai_dispatch_ns / iterations;
+    const berlin_avg = berlin_dispatch_ns / iterations;
+    
+    std.log.debug("  Hardfork dispatch comparison:");
+    std.log.debug("    Berlin avg: {} ns/op", .{berlin_avg});
+    std.log.debug("    Shanghai avg: {} ns/op", .{shanghai_avg});
+    std.log.debug("    Cancun avg: {} ns/op", .{cancun_avg});
+    
+    // Expect very fast dispatch (should be just array indexing)
+    if (avg_dispatch_ns < 10) {
+        std.log.debug("✓ Jump table showing expected O(1) performance");
+    }
+}

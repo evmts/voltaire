@@ -1472,3 +1472,185 @@ test "stack operations maintain consistency under stress" {
         try std.testing.expect(frame.stack.size <= Stack.CAPACITY);
     }
 }
+
+test "stack_operation_benchmarks" {
+    const Timer = std.time.Timer;
+    var timer = try Timer.start();
+    const allocator = std.testing.allocator;
+    
+    // Setup test environment
+    var memory_db = @import("../state/memory_database.zig").MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    var vm = try @import("../evm.zig").Vm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
+    
+    const iterations = 100000;
+    
+    // Benchmark 1: Basic PUSH operations (optimized vs general)
+    timer.reset();
+    var i: usize = 0;
+    while (i < iterations) : (i += 1) {
+        const test_code = [_]u8{ 0x60, 0x42 }; // PUSH1 0x42
+        var contract = try @import("../frame/contract.zig").Contract.init(allocator, &test_code, .{ .address = [_]u8{0} ** 20 });
+        defer contract.deinit(allocator, null);
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+        defer frame.deinit();
+        
+        _ = try op_push1(0, @ptrCast(&vm), @ptrCast(&frame));
+    }
+    const push1_optimized_ns = timer.read();
+    
+    // Benchmark 2: POP operations
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x50}, .{ .address = [_]u8{0} ** 20 });
+        defer contract.deinit(allocator, null);
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+        defer frame.deinit();
+        
+        // Pre-populate stack
+        try frame.stack.append(@intCast(i));
+        
+        _ = try op_pop(0, @ptrCast(&vm), @ptrCast(&frame));
+    }
+    const pop_operations_ns = timer.read();
+    
+    // Benchmark 3: DUP operations (comparing different positions)
+    timer.reset();
+    i = 0;
+    while (i < iterations / 10) : (i += 1) { // Fewer iterations due to complexity
+        var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x80}, .{ .address = [_]u8{0} ** 20 });
+        defer contract.deinit(allocator, null);
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+        defer frame.deinit();
+        
+        // Pre-populate stack with test values
+        var j: usize = 0;
+        while (j < 10) : (j += 1) {
+            try frame.stack.append(@intCast(j + i));
+        }
+        
+        // Test DUP1 (most common)
+        const dup1_fn = make_dup(1);
+        _ = try dup1_fn(0, @ptrCast(&vm), @ptrCast(&frame));
+    }
+    const dup_operations_ns = timer.read();
+    
+    // Benchmark 4: SWAP operations (comparing different positions)
+    timer.reset();
+    i = 0;
+    while (i < iterations / 10) : (i += 1) {
+        var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x90}, .{ .address = [_]u8{0} ** 20 });
+        defer contract.deinit(allocator, null);
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+        defer frame.deinit();
+        
+        // Pre-populate stack
+        var j: usize = 0;
+        while (j < 10) : (j += 1) {
+            try frame.stack.append(@intCast(j + i));
+        }
+        
+        // Test SWAP1 (most common)
+        const swap1_fn = make_swap(1);
+        _ = try swap1_fn(0, @ptrCast(&vm), @ptrCast(&frame));
+    }
+    const swap_operations_ns = timer.read();
+    
+    // Benchmark 5: Mixed operation patterns (realistic workload)
+    timer.reset();
+    i = 0;
+    const mixed_iterations = 10000;
+    while (i < mixed_iterations) : (i += 1) {
+        const test_code = [_]u8{ 0x60, 0x01, 0x60, 0x02 }; // PUSH1 1, PUSH1 2
+        var contract = try @import("../frame/contract.zig").Contract.init(allocator, &test_code, .{ .address = [_]u8{0} ** 20 });
+        defer contract.deinit(allocator, null);
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+        defer frame.deinit();
+        
+        // Realistic pattern: PUSH, PUSH, DUP, SWAP, POP
+        _ = try op_push1(0, @ptrCast(&vm), @ptrCast(&frame)); // PUSH 1
+        _ = try op_push1(2, @ptrCast(&vm), @ptrCast(&frame)); // PUSH 2
+        
+        if (frame.stack.size >= 1 and frame.stack.size < Stack.CAPACITY) {
+            const dup1_fn = make_dup(1);
+            _ = try dup1_fn(0, @ptrCast(&vm), @ptrCast(&frame)); // DUP1
+        }
+        
+        if (frame.stack.size >= 2) {
+            const swap1_fn = make_swap(1);
+            _ = try swap1_fn(0, @ptrCast(&vm), @ptrCast(&frame)); // SWAP1
+        }
+        
+        if (frame.stack.size > 0) {
+            _ = try op_pop(0, @ptrCast(&vm), @ptrCast(&frame)); // POP
+        }
+    }
+    const mixed_pattern_ns = timer.read();
+    
+    // Benchmark 6: Stack depth impact on performance
+    timer.reset();
+    const depth_test_code = [_]u8{ 0x60, 0x01 }; // PUSH1 1
+    var contract = try @import("../frame/contract.zig").Contract.init(allocator, &depth_test_code, .{ .address = [_]u8{0} ** 20 });
+    defer contract.deinit(allocator, null);
+    var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+    defer frame.deinit();
+    
+    // Test performance at different stack depths
+    const depth_iterations = 1000;
+    var depth_tests = [_]struct { depth: usize, ns: u64 }{
+        .{ .depth = 10, .ns = 0 },
+        .{ .depth = 100, .ns = 0 },
+        .{ .depth = 500, .ns = 0 },
+        .{ .depth = 1000, .ns = 0 },
+    };
+    
+    for (depth_tests[0..], 0..) |*test_case, test_idx| {
+        // Setup stack to target depth
+        while (frame.stack.size < test_case.depth) {
+            try frame.stack.append(@intCast(frame.stack.size));
+        }
+        
+        timer.reset();
+        i = 0;
+        while (i < depth_iterations) : (i += 1) {
+            // Test PUSH/POP at this depth
+            _ = try op_push1(0, @ptrCast(&vm), @ptrCast(&frame));
+            if (frame.stack.size > test_case.depth) {
+                _ = try op_pop(0, @ptrCast(&vm), @ptrCast(&frame));
+            }
+        }
+        depth_tests[test_idx].ns = timer.read();
+    }
+    
+    // Print benchmark results
+    std.log.debug("Stack Operation Benchmarks:", .{});
+    std.log.debug("  PUSH1 optimized ({} ops): {} ns", .{ iterations, push1_optimized_ns });
+    std.log.debug("  POP operations ({} ops): {} ns", .{ iterations, pop_operations_ns });
+    std.log.debug("  DUP operations ({} ops): {} ns", .{ iterations / 10, dup_operations_ns });
+    std.log.debug("  SWAP operations ({} ops): {} ns", .{ iterations / 10, swap_operations_ns });
+    std.log.debug("  Mixed patterns ({} ops): {} ns", .{ mixed_iterations, mixed_pattern_ns });
+    
+    // Performance analysis
+    const avg_push1_ns = push1_optimized_ns / iterations;
+    const avg_pop_ns = pop_operations_ns / iterations;
+    const avg_mixed_ns = mixed_pattern_ns / mixed_iterations;
+    
+    std.log.debug("  Average PUSH1: {} ns/op", .{avg_push1_ns});
+    std.log.debug("  Average POP: {} ns/op", .{avg_pop_ns});
+    std.log.debug("  Average mixed pattern: {} ns/op", .{avg_mixed_ns});
+    
+    // Stack depth impact results
+    std.log.debug("  Stack depth impact on operations:");
+    for (depth_tests) |test_case| {
+        const avg_depth_ns = test_case.ns / depth_iterations;
+        std.log.debug("    Depth {}: {} ns/op", .{ test_case.depth, avg_depth_ns });
+    }
+    
+    // Optimization verification
+    if (avg_push1_ns < 50) { // Expect very fast optimized PUSH1
+        std.log.debug("✓ PUSH1 optimization showing expected performance");
+    }
+}

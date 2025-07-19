@@ -179,3 +179,126 @@ pub fn return_storage_map(self: *StoragePool, map: *std.AutoHashMap(u256, u256))
     map.clearRetainingCapacity();
     self.storage_maps.append(map) catch {};
 }
+
+test "storage_pool_benchmarks" {
+    const Timer = std.time.Timer;
+    var timer = try Timer.start();
+    const allocator = std.testing.allocator;
+    
+    var pool = StoragePool.init(allocator);
+    defer pool.deinit();
+    
+    const iterations = 10000;
+    
+    // Benchmark 1: Pool vs Direct Allocation for Access Maps
+    timer.reset();
+    var i: usize = 0;
+    while (i < iterations) : (i += 1) {
+        const map = try pool.borrow_access_map();
+        defer pool.return_access_map(map);
+        
+        // Simulate usage
+        try map.put(42, true);
+        try map.put(123, false);
+        _ = map.get(42);
+        _ = map.get(999);
+    }
+    const pool_access_ns = timer.read();
+    
+    // Direct allocation comparison
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        var map = std.AutoHashMap(u256, bool).init(allocator);
+        defer map.deinit();
+        
+        // Same usage pattern
+        try map.put(42, true);
+        try map.put(123, false);
+        _ = map.get(42);
+        _ = map.get(999);
+    }
+    const direct_access_ns = timer.read();
+    
+    // Benchmark 2: Pool vs Direct Allocation for Storage Maps
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        const map = try pool.borrow_storage_map();
+        defer pool.return_storage_map(map);
+        
+        // Simulate storage operations
+        try map.put(0x1234, 0xABCD);
+        try map.put(0x5678, 0xEF01);
+        _ = map.get(0x1234);
+        _ = map.get(0x9999);
+    }
+    const pool_storage_ns = timer.read();
+    
+    // Direct allocation comparison
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        var map = std.AutoHashMap(u256, u256).init(allocator);
+        defer map.deinit();
+        
+        // Same usage pattern
+        try map.put(0x1234, 0xABCD);
+        try map.put(0x5678, 0xEF01);
+        _ = map.get(0x1234);
+        _ = map.get(0x9999);
+    }
+    const direct_storage_ns = timer.read();
+    
+    // Benchmark 3: Memory Fragmentation Impact
+    timer.reset();
+    var large_maps = std.ArrayList(*std.AutoHashMap(u256, u256)).init(allocator);
+    defer {
+        for (large_maps.items) |map| {
+            pool.return_storage_map(map);
+        }
+        large_maps.deinit();
+    }
+    
+    // Borrow many maps and fill them
+    i = 0;
+    while (i < 100) : (i += 1) {
+        const map = try pool.borrow_storage_map();
+        try large_maps.append(map);
+        
+        // Fill each map with data to cause expansion
+        var j: u256 = 0;
+        while (j < 50) : (j += 1) {
+            try map.put(j, j * j);
+        }
+    }
+    const fragmentation_setup_ns = timer.read();
+    
+    // Now test allocation performance in fragmented state
+    timer.reset();
+    i = 0;
+    while (i < 1000) : (i += 1) {
+        const map = try pool.borrow_storage_map();
+        defer pool.return_storage_map(map);
+        try map.put(i, i);
+    }
+    const fragmented_allocation_ns = timer.read();
+    
+    // Print benchmark results for analysis
+    std.log.debug("Storage Pool Benchmarks ({} iterations):", .{iterations});
+    std.log.debug("  Pool access maps: {} ns", .{pool_access_ns});
+    std.log.debug("  Direct access maps: {} ns", .{direct_access_ns});
+    std.log.debug("  Pool storage maps: {} ns", .{pool_storage_ns});
+    std.log.debug("  Direct storage maps: {} ns", .{direct_storage_ns});
+    std.log.debug("  Fragmentation setup: {} ns", .{fragmentation_setup_ns});
+    std.log.debug("  Fragmented allocation (1000x): {} ns", .{fragmented_allocation_ns});
+    
+    // Verify pool provides performance benefit
+    // Note: These are performance hints, not strict requirements
+    if (pool_access_ns < direct_access_ns) {
+        std.log.debug("✓ Pool shows access map performance benefit");
+    }
+    if (pool_storage_ns < direct_storage_ns) {
+        std.log.debug("✓ Pool shows storage map performance benefit");
+    }
+}

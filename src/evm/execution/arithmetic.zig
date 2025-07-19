@@ -1389,3 +1389,166 @@ test "fuzz_performance_stress" {
         try validate_and_test_arithmetic_operation(op);
     }
 }
+
+test "arithmetic_benchmarks" {
+    const Timer = std.time.Timer;
+    var timer = try Timer.start();
+    const allocator = std.testing.allocator;
+    
+    // Setup test environment
+    var memory_db = @import("../state/memory_database.zig").MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    var vm = try Vm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
+    
+    const iterations = 100000;
+    
+    // Benchmark 1: Basic arithmetic operations (ADD, SUB, MUL)
+    timer.reset();
+    var i: usize = 0;
+    while (i < iterations) : (i += 1) {
+        var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x01}, .{ .address = [_]u8{0} ** 20 });
+        defer contract.deinit(allocator, null);
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+        defer frame.deinit();
+        
+        // Test ADD operation
+        try frame.stack.append(@intCast(i));
+        try frame.stack.append(@intCast(i * 2));
+        _ = try op_add(0, @ptrCast(&vm), @ptrCast(&frame));
+    }
+    const basic_arithmetic_ns = timer.read();
+    
+    // Benchmark 2: Division operations (handling edge cases)
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x04}, .{ .address = [_]u8{0} ** 20 });
+        defer contract.deinit(allocator, null);
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+        defer frame.deinit();
+        
+        // Test DIV with various values including edge cases
+        const dividend: u256 = @intCast(if (i == 0) 1 else i);
+        const divisor: u256 = @intCast(if (i % 100 == 0) 0 else (i % 1000) + 1); // Include div by zero
+        try frame.stack.append(dividend);
+        try frame.stack.append(divisor);
+        _ = try op_div(0, @ptrCast(&vm), @ptrCast(&frame));
+    }
+    const division_ops_ns = timer.read();
+    
+    // Benchmark 3: Modular arithmetic (ADDMOD, MULMOD)
+    timer.reset();
+    i = 0;
+    while (i < iterations / 10) : (i += 1) { // Fewer iterations due to complexity
+        var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x08}, .{ .address = [_]u8{0} ** 20 });
+        defer contract.deinit(allocator, null);
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+        defer frame.deinit();
+        
+        // Test ADDMOD operation
+        try frame.stack.append(@intCast(i * 1000));
+        try frame.stack.append(@intCast(i * 2000));
+        try frame.stack.append(@intCast(if (i == 0) 1 else i + 1)); // Avoid mod by zero
+        _ = try op_addmod(0, @ptrCast(&vm), @ptrCast(&frame));
+    }
+    const modular_arithmetic_ns = timer.read();
+    
+    // Benchmark 4: Exponentiation with various exponent sizes
+    timer.reset();
+    const exp_cases = [_]struct { base: u256, exp: u256 }{
+        .{ .base = 2, .exp = 1 },     // Small exponent
+        .{ .base = 2, .exp = 8 },     // Medium exponent
+        .{ .base = 2, .exp = 256 },   // Large exponent
+        .{ .base = 3, .exp = 100 },   // Different base
+        .{ .base = 0, .exp = 100 },   // Zero base
+        .{ .base = 100, .exp = 0 },   // Zero exponent
+    };
+    
+    for (exp_cases) |exp_case| {
+        var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x0a}, .{ .address = [_]u8{0} ** 20 });
+        defer contract.deinit(allocator, null);
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+        defer frame.deinit();
+        
+        try frame.stack.append(exp_case.base);
+        try frame.stack.append(exp_case.exp);
+        _ = try op_exp(0, @ptrCast(&vm), @ptrCast(&frame));
+    }
+    const exponentiation_ns = timer.read();
+    
+    // Benchmark 5: Sign extension with different byte positions
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x0b}, .{ .address = [_]u8{0} ** 20 });
+        defer contract.deinit(allocator, null);
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+        defer frame.deinit();
+        
+        // Test SIGNEXTEND with various byte positions
+        const byte_pos: u256 = i % 32; // Valid byte positions 0-31
+        const value: u256 = @intCast(i * 0x123456);
+        try frame.stack.append(byte_pos);
+        try frame.stack.append(value);
+        _ = try op_signextend(0, @ptrCast(&vm), @ptrCast(&frame));
+    }
+    const sign_extension_ns = timer.read();
+    
+    // Benchmark 6: Signed arithmetic (SDIV, SMOD)
+    timer.reset();
+    i = 0;
+    while (i < iterations) : (i += 1) {
+        var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x05}, .{ .address = [_]u8{0} ** 20 });
+        defer contract.deinit(allocator, null);
+        var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+        defer frame.deinit();
+        
+        // Test SDIV with mix of positive and negative values
+        const a: u256 = if (i % 2 == 0) @intCast(i + 1) else std.math.maxInt(u256) - @as(u256, @intCast(i)); // Simulate negative
+        const b: u256 = @intCast(if (i % 100 == 0) 1 else (i % 1000) + 1); // Avoid div by zero
+        try frame.stack.append(a);
+        try frame.stack.append(b);
+        _ = try op_sdiv(0, @ptrCast(&vm), @ptrCast(&frame));
+    }
+    const signed_arithmetic_ns = timer.read();
+    
+    // Print benchmark results
+    std.log.debug("Arithmetic Operation Benchmarks:", .{});
+    std.log.debug("  Basic arithmetic ({} ops): {} ns", .{ iterations, basic_arithmetic_ns });
+    std.log.debug("  Division operations ({} ops): {} ns", .{ iterations, division_ops_ns });
+    std.log.debug("  Modular arithmetic ({} ops): {} ns", .{ iterations / 10, modular_arithmetic_ns });
+    std.log.debug("  Exponentiation (6 cases): {} ns", .{exponentiation_ns});
+    std.log.debug("  Sign extension ({} ops): {} ns", .{ iterations, sign_extension_ns });
+    std.log.debug("  Signed arithmetic ({} ops): {} ns", .{ iterations, signed_arithmetic_ns });
+    
+    // Performance analysis
+    const avg_basic_ns = basic_arithmetic_ns / iterations;
+    const avg_division_ns = division_ops_ns / iterations;
+    const avg_signed_ns = signed_arithmetic_ns / iterations;
+    
+    std.log.debug("  Average basic arithmetic: {} ns/op", .{avg_basic_ns});
+    std.log.debug("  Average division: {} ns/op", .{avg_division_ns});
+    std.log.debug("  Average signed arithmetic: {} ns/op", .{avg_signed_ns});
+    
+    // Gas calculation throughput benchmark
+    timer.reset();
+    i = 0;
+    const gas_iterations = 1000000;
+    while (i < gas_iterations) : (i += 1) {
+        // Simulate gas cost calculation for EXP with varying exponent sizes
+        const exp: u256 = @intCast(i % 10000);
+        var byte_size: u64 = 0;
+        var exp_copy = exp;
+        while (exp_copy > 0) : (exp_copy >>= 8) {
+            byte_size += 1;
+        }
+        // Simulate gas calculation: 10 + 50 * byte_size
+        _ = 10 + 50 * byte_size;
+    }
+    const gas_calculation_ns = timer.read();
+    
+    std.log.debug("  Gas calculation throughput ({} calcs): {} ns", .{ gas_iterations, gas_calculation_ns });
+    std.log.debug("  Average gas calculation: {} ns/calc", .{gas_calculation_ns / gas_iterations});
+}
