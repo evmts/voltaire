@@ -10,15 +10,26 @@ pub const INITIAL_CAPACITY = constants.INITIAL_CAPACITY;
 pub const DEFAULT_MEMORY_LIMIT = constants.DEFAULT_MEMORY_LIMIT;
 pub const calculate_num_words = constants.calculate_num_words;
 
-// Core memory struct fields
-// Frequently accessed fields placed first for better cache performance
+// Core memory struct fields optimized for cache locality and minimal padding
+/// Memory checkpoint for child memory isolation
+/// Frequently accessed during memory operations
 my_checkpoint: usize,
-memory_limit: u64,
-owns_buffer: bool,
 
-// Less frequently accessed fields
+/// Maximum memory size limit
+/// Used for bounds checking, frequently accessed
+memory_limit: u64,
+
+/// Reference to shared buffer for all memory contexts
+/// Frequently accessed for actual memory operations
 shared_buffer_ref: *std.ArrayList(u8),
+
+/// Memory allocator for dynamic allocations
+/// Less frequently accessed
 allocator: std.mem.Allocator,
+
+/// Whether this Memory instance owns the buffer
+/// Small bool field placed last to minimize padding
+owns_buffer: bool,
 
 /// Initializes the root Memory context that owns the shared buffer.
 /// This is the safe API that eliminates the undefined pointer footgun.
@@ -37,9 +48,9 @@ pub fn init(
     return Memory{
         .my_checkpoint = 0,
         .memory_limit = memory_limit,
-        .owns_buffer = true,
         .shared_buffer_ref = shared_buffer,
         .allocator = allocator,
+        .owns_buffer = true,
     };
 }
 
@@ -49,9 +60,9 @@ pub fn init_child_memory(self: *Memory, checkpoint: usize) !Memory {
     return Memory{
         .my_checkpoint = checkpoint,
         .memory_limit = self.memory_limit,
-        .owns_buffer = false,
         .shared_buffer_ref = self.shared_buffer_ref,
         .allocator = self.allocator,
+        .owns_buffer = false,
     };
 }
 

@@ -40,26 +40,22 @@ const Log = @import("../log.zig");
 /// Each entry contains the information needed to revert a specific
 /// type of state change. The entries store the previous state values
 /// so they can be restored during revert operations.
+///
+/// ## Layout Optimization
+/// Union fields are ordered by frequency of use and size for optimal memory layout.
+/// Most common operations (storage changes, balance changes) are placed first.
 pub const JournalEntry = union(enum) {
-    /// Account was touched (for EIP-158 empty account tracking)
-    account_touched: struct {
-        address: primitives.Address.Address,
-    },
-
-    /// Account was loaded from external state
-    account_loaded: struct {
-        address: primitives.Address.Address,
-        /// Previous account state (null if account didn't exist)
-        previous_balance: ?u256,
-        previous_nonce: ?u64,
-        previous_code: ?[]const u8,
-    },
-
-    /// Storage slot was modified
+    /// Storage slot was modified (most common operation)
     storage_changed: struct {
         address: primitives.Address.Address,
         slot: u256,
         previous_value: u256,
+    },
+
+    /// Account balance was modified (frequent operation)
+    balance_changed: struct {
+        address: primitives.Address.Address,
+        previous_balance: u256,
     },
 
     /// Transient storage slot was modified (EIP-1153)
@@ -69,16 +65,19 @@ pub const JournalEntry = union(enum) {
         previous_value: u256,
     },
 
-    /// Account balance was modified
-    balance_changed: struct {
-        address: primitives.Address.Address,
-        previous_balance: u256,
-    },
-
     /// Account nonce was modified
     nonce_changed: struct {
         address: primitives.Address.Address,
         previous_nonce: u64,
+    },
+
+    /// Account was loaded from external state
+    account_loaded: struct {
+        address: primitives.Address.Address,
+        /// Previous account state (null if account didn't exist)
+        previous_balance: ?u256,
+        previous_nonce: ?u64,
+        previous_code: ?[]const u8,
     },
 
     /// Contract code was modified
@@ -97,12 +96,17 @@ pub const JournalEntry = union(enum) {
         previous_code: []const u8,
     },
 
+    /// Account was touched (for EIP-158 empty account tracking)
+    account_touched: struct {
+        address: primitives.Address.Address,
+    },
+
     /// Account was created
     account_created: struct {
         address: primitives.Address.Address,
     },
 
-    /// Log was emitted
+    /// Log was emitted (least frequent, smallest payload)
     log_created: struct {
         /// Index of the log in the logs array
         log_index: usize,
@@ -132,7 +136,11 @@ pub const SnapshotId = usize;
 ///
 /// This implementation is NOT thread-safe. External synchronization
 /// is required for concurrent access.
+///
+/// ## Field Ordering
+/// Fields ordered for optimal cache locality and memory alignment.
 pub const Journal = struct {
+    // Most frequently accessed fields first for better cache performance
     /// Sequential list of all state modifications
     entries: std.ArrayList(JournalEntry),
 
@@ -140,6 +148,7 @@ pub const Journal = struct {
     snapshots: std.ArrayList(usize),
 
     /// Memory allocator for journal operations
+    /// Less frequently accessed, placed last
     allocator: std.mem.Allocator,
 
     /// Initialize a new journal with the given allocator

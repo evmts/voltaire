@@ -62,23 +62,34 @@ pub const DatabaseError = error{
 };
 
 /// Account state data structure
+///
+/// ## Field Ordering Optimization
+/// Fields are ordered to minimize padding and improve cache locality:
+/// - Large fields (u256, [32]u8) grouped together
+/// - Smaller fields (u64) grouped together
+/// - Most frequently accessed fields (balance, nonce) first
 pub const Account = struct {
-    /// Account balance in wei
+    /// Account balance in wei (frequently accessed)
     balance: u256,
-    /// Transaction nonce (number of transactions sent from this account)
-    nonce: u64,
+
     /// Hash of the contract code (keccak256 hash)
+    /// Grouped with storage_root for better cache locality
     code_hash: [32]u8,
+
     /// Storage root hash (merkle root of account's storage trie)
     storage_root: [32]u8,
+
+    /// Transaction nonce (number of transactions sent from this account)
+    /// Smaller field placed last to minimize padding
+    nonce: u64,
 
     /// Creates a new account with zero values
     pub fn zero() Account {
         return Account{
             .balance = 0,
-            .nonce = 0,
             .code_hash = [_]u8{0} ** 32,
             .storage_root = [_]u8{0} ** 32,
+            .nonce = 0,
         };
     }
 
