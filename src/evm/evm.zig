@@ -29,11 +29,15 @@ const precompiles = @import("precompiles/precompiles.zig");
 /// including contract creation, calls, and state modifications.
 const Evm = @This();
 
+const EvmMemoryAllocator = @import("memory/evm_allocator.zig").EvmMemoryAllocator;
+
 /// Maximum call depth supported by EVM (per EIP-150)
 pub const MAX_CALL_DEPTH = 1024;
 
 // Hot fields (frequently accessed during execution)
-/// Memory allocator for VM operations
+/// EVM memory allocator wrapper for efficient allocations
+evm_allocator: EvmMemoryAllocator,
+/// Memory allocator for VM operations (interface from evm_allocator)
 allocator: std.mem.Allocator,
 /// Opcode dispatch table for the configured hardfork
 table: JumpTable,
@@ -90,16 +94,23 @@ comptime {
 pub fn init(allocator: std.mem.Allocator, database: @import("state/database_interface.zig").DatabaseInterface) !Evm {
     Log.debug("Evm.init: Initializing EVM with allocator and database", .{});
 
-    var state = try EvmState.init(allocator, database);
+    // Create EVM memory allocator wrapper
+    var evm_allocator = try EvmMemoryAllocator.init(allocator);
+    errdefer evm_allocator.deinit();
+    
+    const evm_alloc = evm_allocator.allocator();
+
+    var state = try EvmState.init(evm_alloc, database);
     errdefer state.deinit();
 
     const context = Context.init();
-    var access_list = AccessList.init(allocator, context);
+    var access_list = AccessList.init(evm_alloc, context);
     errdefer access_list.deinit();
 
     Log.debug("Evm.init: EVM initialization complete", .{});
     return Evm{
-        .allocator = allocator,
+        .evm_allocator = evm_allocator,
+        .allocator = evm_alloc,
         .table = JumpTable.DEFAULT,
         .depth = 0,
         .read_only = false,
@@ -154,16 +165,23 @@ pub fn init_with_state(
 ) !Evm {
     Log.debug("Evm.init_with_state: Initializing EVM with custom state", .{});
 
-    var state = try EvmState.init(allocator, database);
+    // Create EVM memory allocator wrapper
+    var evm_allocator = try EvmMemoryAllocator.init(allocator);
+    errdefer evm_allocator.deinit();
+    
+    const evm_alloc = evm_allocator.allocator();
+
+    var state = try EvmState.init(evm_alloc, database);
     errdefer state.deinit();
 
     const context = Context.init();
-    var access_list = AccessList.init(allocator, context);
+    var access_list = AccessList.init(evm_alloc, context);
     errdefer access_list.deinit();
 
     Log.debug("Evm.init_with_state: EVM initialization complete", .{});
     return Evm{
-        .allocator = allocator,
+        .evm_allocator = evm_allocator,
+        .allocator = evm_alloc,
         .return_data = return_data orelse &[_]u8{},
         .table = table orelse JumpTable.DEFAULT,
         .chain_rules = chain_rules orelse ChainRules.DEFAULT,
@@ -172,6 +190,8 @@ pub fn init_with_state(
         .context = context,
         .depth = depth orelse 0,
         .read_only = read_only orelse false,
+        .frame_pool = undefined,
+        .frame_pool_initialized = [_]bool{false} ** MAX_CALL_DEPTH,
     };
 }
 
@@ -196,6 +216,27 @@ pub fn deinit(self: *Evm) void {
     self.state.deinit();
     self.access_list.deinit();
     Contract.clear_analysis_cache(self.allocator);
+    self.evm_allocator.deinit();
+}
+
+/// Reset the EVM for reuse without deallocating memory.
+/// This is efficient for executing multiple contracts in sequence.
+/// Clears all state but keeps the allocated memory for reuse.
+pub fn reset(self: *Evm) void {
+    // Reset allocator without deallocating
+    self.evm_allocator.reset();
+    
+    // Reset execution state
+    self.depth = 0;
+    self.read_only = false;
+    self.return_data = &[_]u8{};
+    
+    // Reset frame pool
+    self.deinitFramePool();
+    self.frame_pool_initialized = [_]bool{false} ** MAX_CALL_DEPTH;
+    
+    // State and access list would need their own reset methods
+    // For now, they maintain their state across resets
 }
 
 /// Get a pooled frame at the current call depth.

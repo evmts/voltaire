@@ -87,6 +87,8 @@ pub const JumpTable = @import("jump_table/jump_table.zig");
 
 /// Byte-addressable memory implementation
 pub const Memory = @import("memory/memory.zig");
+/// Memory module package for additional memory utilities
+pub const memory = @import("memory/package.zig");
 
 /// Opcode metadata (gas costs, stack effects)
 pub const Operation = @import("opcodes/operation.zig");
