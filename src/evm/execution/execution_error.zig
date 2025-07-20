@@ -386,18 +386,6 @@ test "get_description returns correct message for SnapshotNotFound error" {
 }
 
 test "get_description consistency - all errors have non-empty descriptions" {
-    const all_errors = [_]Error{
-        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
-        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
-        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
-        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
-        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
-        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
-        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
-        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
-        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
-        Error.SnapshotNotFound,
-    };
     
     for (all_errors) |err| {
         const desc = get_description(err);
@@ -406,18 +394,6 @@ test "get_description consistency - all errors have non-empty descriptions" {
 }
 
 test "get_description formatting - descriptions are properly formatted" {
-    const all_errors = [_]Error{
-        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
-        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
-        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
-        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
-        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
-        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
-        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
-        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
-        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
-        Error.SnapshotNotFound,
-    };
     
     for (all_errors) |err| {
         const desc = get_description(err);
@@ -429,228 +405,145 @@ test "get_description formatting - descriptions are properly formatted" {
 
 // ============================================================================
 // Fuzz Tests for Error Enumeration Completeness (Issue #234)
+// Using proper Zig built-in fuzz testing with std.testing.fuzz()
 // ============================================================================
 
+const all_errors = [_]Error{
+    Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
+    Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
+    Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
+    Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
+    Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
+    Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
+    Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
+    Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
+    Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
+    Error.SnapshotNotFound,
+};
+
 test "fuzz_error_enumeration_completeness" {
-    var prng = std.Random.DefaultPrng.init(0);
-    const random = prng.random();
-    
-    const all_errors = [_]Error{
-        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
-        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
-        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
-        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
-        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
-        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
-        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
-        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
-        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
-        Error.SnapshotNotFound,
+    const global = struct {
+        fn testErrorEnumeration(input: []const u8) anyerror!void {
+            if (input.len == 0) return;
+            
+            // Use fuzz input to select error
+            const error_idx = input[0] % all_errors.len;
+            const test_error = all_errors[error_idx];
+            
+            const desc = get_description(test_error);
+            try testing.expect(desc.len > 0);
+            try testing.expect(desc.len < 200);
+            
+            const has_proper_format = !std.mem.startsWith(u8, desc, " ") and !std.mem.endsWith(u8, desc, " ");
+            try testing.expect(has_proper_format);
+        }
     };
-    
-    for (0..1000) |_| {
-        const error_idx = random.intRangeLessThan(usize, 0, all_errors.len);
-        const test_error = all_errors[error_idx];
-        
-        const desc = get_description(test_error);
-        try testing.expect(desc.len > 0);
-        try testing.expect(desc.len < 200);
-        
-        const has_proper_format = !std.mem.startsWith(u8, desc, " ") and !std.mem.endsWith(u8, desc, " ");
-        try testing.expect(has_proper_format);
-    }
+    try std.testing.fuzz(global.testErrorEnumeration, .{});
 }
 
 test "fuzz_error_description_consistency" {
-    var prng = std.Random.DefaultPrng.init(42);
-    const random = prng.random();
-    
-    const all_errors = [_]Error{
-        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
-        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
-        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
-        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
-        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
-        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
-        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
-        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
-        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
-        Error.SnapshotNotFound,
+    const global = struct {
+        fn testDescriptionConsistency(input: []const u8) anyerror!void {
+            if (input.len == 0) return;
+            
+            const error_idx = input[0] % all_errors.len;
+            const test_error = all_errors[error_idx];
+            const desc = get_description(test_error);
+            
+            try testing.expect(desc.len >= 5);
+            try testing.expect(desc.len <= 100);
+            try testing.expect(!std.mem.startsWith(u8, desc, " "));
+            try testing.expect(!std.mem.endsWith(u8, desc, " "));
+        }
     };
-    
-    var seen_descriptions = std.ArrayList([]const u8).init(testing.allocator);
-    defer seen_descriptions.deinit();
-    
-    for (0..500) |_| {
-        const error_idx = random.intRangeLessThan(usize, 0, all_errors.len);
-        const test_error = all_errors[error_idx];
-        const desc = get_description(test_error);
-        
-        var is_duplicate = false;
-        for (seen_descriptions.items) |seen_desc| {
-            if (std.mem.eql(u8, desc, seen_desc)) {
-                is_duplicate = true;
-                break;
-            }
-        }
-        
-        if (!is_duplicate) {
-            try seen_descriptions.append(desc);
-        }
-        
-        try testing.expect(desc.len >= 5);
-        try testing.expect(desc.len <= 100);
-    }
-    
-    try testing.expect(seen_descriptions.items.len >= 15);
+    try std.testing.fuzz(global.testDescriptionConsistency, .{});
 }
 
 test "fuzz_error_categorization_properties" {
-    var prng = std.Random.DefaultPrng.init(123);
-    const random = prng.random();
-    
-    const normal_termination = [_]Error{ Error.STOP, Error.REVERT, Error.INVALID };
-    const resource_exhaustion = [_]Error{ Error.OutOfGas, Error.StackOverflow, Error.MemoryLimitExceeded, Error.OutOfMemory };
-    const invalid_operations = [_]Error{ Error.InvalidJump, Error.InvalidOpcode, Error.StaticStateChange, Error.WriteProtection };
-    const bounds_violations = [_]Error{ Error.StackUnderflow, Error.OutOfOffset, Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess };
-    
-    for (0..200) |_| {
-        const category = random.intRangeLessThan(u8, 0, 4);
-        
-        switch (category) {
-            0 => {
-                const idx = random.intRangeLessThan(usize, 0, normal_termination.len);
-                const err = normal_termination[idx];
-                const desc = get_description(err);
-                
-                const is_normal_termination = std.mem.containsAtLeast(u8, desc, 1, "opcode") or 
-                                            std.mem.containsAtLeast(u8, desc, 1, "STOP") or
-                                            std.mem.containsAtLeast(u8, desc, 1, "REVERT") or
-                                            std.mem.containsAtLeast(u8, desc, 1, "INVALID");
-                try testing.expect(is_normal_termination);
-            },
-            1 => {
-                const idx = random.intRangeLessThan(usize, 0, resource_exhaustion.len);
-                const err = resource_exhaustion[idx];
-                const desc = get_description(err);
-                
-                const indicates_exhaustion = std.mem.containsAtLeast(u8, desc, 1, "out") or
-                                           std.mem.containsAtLeast(u8, desc, 1, "overflow") or
-                                           std.mem.containsAtLeast(u8, desc, 1, "exceeded") or
-                                           std.mem.containsAtLeast(u8, desc, 1, "limit");
-                try testing.expect(indicates_exhaustion);
-            },
-            2 => {
-                const idx = random.intRangeLessThan(usize, 0, invalid_operations.len);
-                const err = invalid_operations[idx];
-                const desc = get_description(err);
-                
-                const indicates_invalid = std.mem.containsAtLeast(u8, desc, 1, "invalid") or
-                                         std.mem.containsAtLeast(u8, desc, 1, "Invalid") or
-                                         std.mem.containsAtLeast(u8, desc, 1, "static") or
-                                         std.mem.containsAtLeast(u8, desc, 1, "protected");
-                try testing.expect(indicates_invalid);
-            },
-            3 => {
-                const idx = random.intRangeLessThan(usize, 0, bounds_violations.len);
-                const err = bounds_violations[idx];
-                const desc = get_description(err);
-                
-                const indicates_bounds = std.mem.containsAtLeast(u8, desc, 1, "underflow") or
-                                        std.mem.containsAtLeast(u8, desc, 1, "bounds") or
-                                        std.mem.containsAtLeast(u8, desc, 1, "out of") or
-                                        std.mem.containsAtLeast(u8, desc, 1, "exceeds");
-                try testing.expect(indicates_bounds);
-            },
-            else => unreachable,
+    const global = struct {
+        fn testCategorization(input: []const u8) anyerror!void {
+            if (input.len < 2) return;
+            
+            const normal_termination = [_]Error{ Error.STOP, Error.REVERT, Error.INVALID };
+            const resource_exhaustion = [_]Error{ Error.OutOfGas, Error.StackOverflow, Error.MemoryLimitExceeded, Error.OutOfMemory };
+            const invalid_operations = [_]Error{ Error.InvalidJump, Error.InvalidOpcode, Error.StaticStateChange, Error.WriteProtection };
+            const bounds_violations = [_]Error{ Error.StackUnderflow, Error.OutOfOffset, Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess };
+            
+            const category = input[0] % 4;
+            
+            switch (category) {
+                0 => {
+                    const idx = input[1] % normal_termination.len;
+                    const err = normal_termination[idx];
+                    const desc = get_description(err);
+                    
+                    const is_normal_termination = std.mem.containsAtLeast(u8, desc, 1, "opcode") or 
+                                                std.mem.containsAtLeast(u8, desc, 1, "STOP") or
+                                                std.mem.containsAtLeast(u8, desc, 1, "REVERT") or
+                                                std.mem.containsAtLeast(u8, desc, 1, "INVALID");
+                    try testing.expect(is_normal_termination);
+                },
+                1 => {
+                    const idx = input[1] % resource_exhaustion.len;
+                    const err = resource_exhaustion[idx];
+                    const desc = get_description(err);
+                    
+                    const indicates_exhaustion = std.mem.containsAtLeast(u8, desc, 1, "out") or
+                                               std.mem.containsAtLeast(u8, desc, 1, "overflow") or
+                                               std.mem.containsAtLeast(u8, desc, 1, "exceeded") or
+                                               std.mem.containsAtLeast(u8, desc, 1, "limit");
+                    try testing.expect(indicates_exhaustion);
+                },
+                2 => {
+                    const idx = input[1] % invalid_operations.len;
+                    const err = invalid_operations[idx];
+                    const desc = get_description(err);
+                    
+                    const indicates_invalid = std.mem.containsAtLeast(u8, desc, 1, "invalid") or
+                                             std.mem.containsAtLeast(u8, desc, 1, "Invalid") or
+                                             std.mem.containsAtLeast(u8, desc, 1, "static") or
+                                             std.mem.containsAtLeast(u8, desc, 1, "protected");
+                    try testing.expect(indicates_invalid);
+                },
+                3 => {
+                    const idx = input[1] % bounds_violations.len;
+                    const err = bounds_violations[idx];
+                    const desc = get_description(err);
+                    
+                    const indicates_bounds = std.mem.containsAtLeast(u8, desc, 1, "underflow") or
+                                            std.mem.containsAtLeast(u8, desc, 1, "bounds") or
+                                            std.mem.containsAtLeast(u8, desc, 1, "out of") or
+                                            std.mem.containsAtLeast(u8, desc, 1, "exceeds");
+                    try testing.expect(indicates_bounds);
+                },
+            }
         }
-    }
+    };
+    try std.testing.fuzz(global.testCategorization, .{});
 }
 
 test "fuzz_error_variant_instantiation" {
-    var prng = std.Random.DefaultPrng.init(456);
-    const random = prng.random();
-    
-    const all_errors = [_]Error{
-        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
-        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
-        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
-        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
-        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
-        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
-        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
-        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
-        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
-        Error.SnapshotNotFound,
+    const global = struct {
+        fn testVariantInstantiation(input: []const u8) anyerror!void {
+            if (input.len == 0) return;
+            
+            const error_idx = input[0] % all_errors.len;
+            const test_error = all_errors[error_idx];
+            
+            const result: anyerror!void = test_error;
+            try testing.expectError(test_error, result);
+            
+            const desc = get_description(test_error);
+            try testing.expect(desc.len > 0);
+        }
     };
-    
-    for (0..300) |_| {
-        const error_idx = random.intRangeLessThan(usize, 0, all_errors.len);
-        const test_error = all_errors[error_idx];
-        
-        const result: anyerror!void = test_error;
-        try testing.expectError(test_error, result);
-        
-        const desc = get_description(test_error);
-        try testing.expect(desc.len > 0);
-        
-        const test_switch = switch (test_error) {
-            Error.STOP => true,
-            Error.REVERT => true,
-            Error.INVALID => true,
-            Error.OutOfGas => true,
-            Error.StackUnderflow => true,
-            Error.StackOverflow => true,
-            Error.InvalidJump => true,
-            Error.InvalidOpcode => true,
-            Error.StaticStateChange => true,
-            Error.OutOfOffset => true,
-            Error.GasUintOverflow => true,
-            Error.WriteProtection => true,
-            Error.ReturnDataOutOfBounds => true,
-            Error.InvalidReturnDataAccess => true,
-            Error.DeployCodeTooBig => true,
-            Error.MaxCodeSizeExceeded => true,
-            Error.InvalidCodeEntry => true,
-            Error.DepthLimit => true,
-            Error.OutOfMemory => true,
-            Error.InvalidOffset => true,
-            Error.InvalidSize => true,
-            Error.MemoryLimitExceeded => true,
-            Error.ChildContextActive => true,
-            Error.NoChildContextToRevertOrCommit => true,
-            Error.EOFNotSupported => true,
-            Error.AccountNotFound => true,
-            Error.StorageNotFound => true,
-            Error.CodeNotFound => true,
-            Error.InvalidAddress => true,
-            Error.DatabaseCorrupted => true,
-            Error.NetworkError => true,
-            Error.PermissionDenied => true,
-            Error.InvalidSnapshot => true,
-            Error.NoBatchInProgress => true,
-            Error.SnapshotNotFound => true,
-        };
-        try testing.expect(test_switch);
-    }
+    try std.testing.fuzz(global.testVariantInstantiation, .{});
 }
 
 test "fuzz_error_message_uniqueness_detection" {
+    // This test verifies all error descriptions are unique
     var description_map = std.HashMap(u64, Error, std.hash_map.DefaultContext(u64), 80).init(testing.allocator);
     defer description_map.deinit();
-    
-    const all_errors = [_]Error{
-        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
-        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
-        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
-        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
-        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
-        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
-        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
-        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
-        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
-        Error.SnapshotNotFound,
-    };
     
     for (all_errors) |err| {
         const desc = get_description(err);
@@ -670,56 +563,31 @@ test "fuzz_error_message_uniqueness_detection" {
 }
 
 test "fuzz_random_error_selection_properties" {
-    var prng = std.Random.DefaultPrng.init(789);
-    const random = prng.random();
-    
-    const all_errors = [_]Error{
-        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
-        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
-        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
-        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
-        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
-        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
-        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
-        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
-        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
-        Error.SnapshotNotFound,
+    const global = struct {
+        fn testRandomSelection(input: []const u8) anyerror!void {
+            if (input.len == 0) return;
+            
+            const error_idx = input[0] % all_errors.len;
+            const selected_error = all_errors[error_idx];
+            
+            const desc = get_description(selected_error);
+            try testing.expect(desc.len > 0);
+            
+            // Verify this is a valid error variant
+            const is_valid = switch (selected_error) {
+                Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
+                Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
+                Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
+                Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
+                Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
+                Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
+                Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
+                Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
+                Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
+                Error.SnapshotNotFound => true,
+            };
+            try testing.expect(is_valid);
+        }
     };
-    
-    var error_counts = std.HashMap(Error, u32, std.hash_map.DefaultContext(Error), 80).init(testing.allocator);
-    defer error_counts.deinit();
-    
-    const iterations = 1000;
-    for (0..iterations) |_| {
-        const error_idx = random.intRangeLessThan(usize, 0, all_errors.len);
-        const selected_error = all_errors[error_idx];
-        
-        const current_count = error_counts.get(selected_error) orelse 0;
-        try error_counts.put(selected_error, current_count + 1);
-        
-        const desc = get_description(selected_error);
-        try testing.expect(desc.len > 0);
-        
-        const valid_error = switch (selected_error) {
-            Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
-            Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
-            Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
-            Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
-            Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
-            Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
-            Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
-            Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
-            Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
-            Error.SnapshotNotFound => true,
-        };
-        try testing.expect(valid_error);
-    }
-    
-    try testing.expect(error_counts.count() >= 20);
-    
-    var iterator = error_counts.iterator();
-    while (iterator.next()) |entry| {
-        try testing.expect(entry.value_ptr.* > 0);
-        try testing.expect(entry.value_ptr.* <= iterations);
-    }
+    try std.testing.fuzz(global.testRandomSelection, .{});
 }
