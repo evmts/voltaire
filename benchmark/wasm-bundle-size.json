@@ -1,22 +1,50 @@
 {
   "targets": {
     "releaseSmall": {
-      "withPrecompiles": 290000,
-      "withoutPrecompiles": 230000
+      "main": {
+        "withPrecompiles": 290000,
+        "withoutPrecompiles": 230000
+      },
+      "primitives": 1000,
+      "evm": {
+        "withPrecompiles": 290000,
+        "withoutPrecompiles": 230000
+      }
     },
     "releaseFast": {
-      "withPrecompiles": 2560000,
-      "withoutPrecompiles": 2048000
+      "main": {
+        "withPrecompiles": 2560000,
+        "withoutPrecompiles": 2048000
+      },
+      "primitives": 12000,
+      "evm": {
+        "withPrecompiles": 2560000,
+        "withoutPrecompiles": 2048000
+      }
     }
   },
   "current": {
     "releaseSmall": {
-      "withPrecompiles": 286173,
-      "withoutPrecompiles": 218137
+      "main": {
+        "withPrecompiles": 287744,
+        "withoutPrecompiles": 218741
+      },
+      "primitives": 862,
+      "evm": {
+        "withPrecompiles": 286720,
+        "withoutPrecompiles": 218741
+      }
     },
     "releaseFast": {
-      "withPrecompiles": 2220457,
-      "withoutPrecompiles": 1661421
+      "main": {
+        "withPrecompiles": 2202009,
+        "withoutPrecompiles": 1676180
+      },
+      "primitives": 11264,
+      "evm": {
+        "withPrecompiles": 2202009,
+        "withoutPrecompiles": 1676180
+      }
     }
   },
   "lastUpdated": "2025-07-20T17:18:09.738136Z"
