@@ -12,7 +12,6 @@ const Address = primitives.Address.Address;
 const execution = Evm.execution;
 const gas_constants = Evm.gas_constants;
 const testing = std.testing;
-const MemoryDatabase = Evm.MemoryDatabase;
 const Vm = Evm.Evm;
 const Context = Evm.Context;
 
@@ -75,7 +74,7 @@ test "JumpTable execute consumes gas before opcode execution" {
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    var test_vm = try Vm.init(test_allocator, db_interface, null, null);
+    var test_vm = try Vm.init(test_allocator, db_interface);
     defer test_vm.deinit();
     
     const context = Context.init_with_values(
@@ -95,8 +94,16 @@ test "JumpTable execute consumes gas before opcode execution" {
     
     // Create test contract and frame
     const test_code = [_]u8{0x01}; // ADD opcode
-    var test_contract = try Contract.init(test_allocator, &test_code, .{ .address = primitives.Address.ZERO });
-    defer test_contract.deinit(test_allocator, null);
+    var test_contract = Contract.init(
+        primitives.Address.ZERO, // caller
+        primitives.Address.ZERO, // addr
+        0, // value
+        1000, // gas
+        &test_code, // code
+        [_]u8{0} ** 32, // code_hash
+        &[_]u8{}, // input
+        false, // is_static
+    );
     
     var test_frame = try Frame.init(test_allocator, &test_contract);
     defer test_frame.deinit();
