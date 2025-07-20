@@ -23,7 +23,7 @@ const Hardfork = @import("hardforks/hardfork.zig").Hardfork;
 const precompiles = @import("precompiles/precompiles.zig");
 const basic_blocks = @import("analysis/basic_blocks.zig");
 const BlockExecutionConfig = @import("execution/block_executor.zig").BlockExecutionConfig;
-const interpret_with_blocks = @import("evm/interpret_with_blocks.zig").interpret_with_blocks;
+const interpret_with_blocks = @import("evm/evm/interpret_with_blocks.zig").interpret_with_blocks;
 
 /// Virtual Machine for executing Ethereum bytecode.
 ///
