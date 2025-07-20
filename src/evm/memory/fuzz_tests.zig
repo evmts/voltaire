@@ -142,54 +142,76 @@ test "fuzz_memory_overflow_cases" {
 }
 
 test "fuzz_memory_random_operations" {
-    const allocator = std.testing.allocator;
-    var prng = std.Random.DefaultPrng.init(42);
-    const random = prng.random();
-    
-    var operations = std.ArrayList(FuzzMemoryOperation).init(allocator);
-    defer operations.deinit();
-    
-    var test_data_storage = std.ArrayList([]u8).init(allocator);
-    defer {
-        for (test_data_storage.items) |data| {
-            allocator.free(data);
-        }
-        test_data_storage.deinit();
-    }
-    
-    var i: usize = 0;
-    while (i < 50) : (i += 1) {
-        const op_type = random.intRangeAtMost(u8, 0, 3);
-        
-        switch (op_type) {
-            0 => {
-                const data_len = random.intRangeAtMost(usize, 0, 100);
-                const data = try allocator.alloc(u8, data_len);
-                random.bytes(data);
-                try test_data_storage.append(data);
+    const global = struct {
+        fn testRandomMemoryOperations(input: []const u8) anyerror!void {
+            if (input.len < 16) return;
+            
+            const allocator = std.testing.allocator;
+            var operations = std.ArrayList(FuzzMemoryOperation).init(allocator);
+            defer operations.deinit();
+            
+            var test_data_storage = std.ArrayList([]u8).init(allocator);
+            defer {
+                for (test_data_storage.items) |data| {
+                    allocator.free(data);
+                }
+                test_data_storage.deinit();
+            }
+            
+            // Limit operations for performance, using input length as a guide
+            const max_ops = @min((input.len / 16), 50);
+            
+            for (0..max_ops) |i| {
+                const base_idx = i * 16;
+                if (base_idx + 16 > input.len) break;
                 
-                const offset = random.intRangeAtMost(usize, 0, 1000);
-                try operations.append(.{ .set_data = .{ .offset = offset, .data = data } });
-            },
-            1 => {
-                const offset = random.intRangeAtMost(usize, 0, 1000);
-                const value = random.int(u256);
-                try operations.append(.{ .set_u256 = .{ .offset = offset, .value = value } });
-            },
-            2 => {
-                const offset = random.intRangeAtMost(usize, 0, 1000);
-                const length = random.intRangeAtMost(usize, 0, 100);
-                try operations.append(.{ .get_data = .{ .offset = offset, .length = length } });
-            },
-            3 => {
-                const new_size = random.intRangeAtMost(usize, 0, 2000);
-                try operations.append(.{ .resize = new_size });
-            },
-            else => unreachable,
+                const op_type = input[base_idx] % 4; // 0-3 operation types
+                
+                switch (op_type) {
+                    0 => {
+                        // set_data operation
+                        const data_len = (input[base_idx + 1] % 100); // 0-99 bytes
+                        const data = try allocator.alloc(u8, data_len);
+                        
+                        // Fill data with fuzz input
+                        for (data, 0..) |*byte, data_idx| {
+                            const src_idx = base_idx + 2 + (data_idx % 14);
+                            if (src_idx < input.len) {
+                                byte.* = input[src_idx];
+                            } else {
+                                byte.* = @as(u8, @intCast(data_idx % 256));
+                            }
+                        }
+                        try test_data_storage.append(data);
+                        
+                        const offset = std.mem.readInt(u16, input[base_idx + 2..base_idx + 4], .little) % 1000;
+                        try operations.append(.{ .set_data = .{ .offset = offset, .data = data } });
+                    },
+                    1 => {
+                        // set_u256 operation
+                        const offset = std.mem.readInt(u16, input[base_idx + 1..base_idx + 3], .little) % 1000;
+                        const value = std.mem.readInt(u64, input[base_idx + 3..base_idx + 11], .little);
+                        try operations.append(.{ .set_u256 = .{ .offset = offset, .value = @as(u256, value) } });
+                    },
+                    2 => {
+                        // get_data operation
+                        const offset = std.mem.readInt(u16, input[base_idx + 1..base_idx + 3], .little) % 1000;
+                        const length = input[base_idx + 3] % 100;
+                        try operations.append(.{ .get_data = .{ .offset = offset, .length = length } });
+                    },
+                    3 => {
+                        // resize operation
+                        const new_size = std.mem.readInt(u16, input[base_idx + 1..base_idx + 3], .little) % 2000;
+                        try operations.append(.{ .resize = new_size });
+                    },
+                    else => unreachable,
+                }
+            }
+            
+            try fuzz_memory_operations(allocator, operations.items);
         }
-    }
-    
-    try fuzz_memory_operations(allocator, operations.items);
+    };
+    try std.testing.fuzz(global.testRandomMemoryOperations, .{}, .{});
 }
 
 test "fuzz_memory_edge_values" {
