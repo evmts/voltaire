@@ -84,15 +84,15 @@ fn binaryOp(comptime op_fn: fn (u256, u256) u256) fn (usize, *Operation.Interpre
 }
 
 // Arithmetic operation functions for use with binaryOp helper
-inline fn addOp(a: u256, b: u256) u256 {
+fn addOp(a: u256, b: u256) u256 {
     return a +% b;
 }
 
-inline fn mulOp(a: u256, b: u256) u256 {
+fn mulOp(a: u256, b: u256) u256 {
     return a *% b;
 }
 
-inline fn subOp(a: u256, b: u256) u256 {
+fn subOp(a: u256, b: u256) u256 {
     return a -% b;
 }
 
