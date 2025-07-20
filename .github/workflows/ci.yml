@@ -31,6 +31,10 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: Install Rust (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install Zig
         uses: mlugg/setup-zig@v2
         with:
