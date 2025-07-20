@@ -7,8 +7,6 @@ const RunResult = @import("run_result.zig").RunResult;
 const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
-const BlockExecutor = @import("../execution/block_executor.zig").BlockExecutor;
-const BlockExecutionConfig = @import("../execution/block_executor.zig").BlockExecutionConfig;
 
 /// Core bytecode execution with configurable static context.
 /// Runs the main VM loop, executing opcodes sequentially while tracking
