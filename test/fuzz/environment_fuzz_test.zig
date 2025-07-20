@@ -37,7 +37,7 @@ test "fuzz_environment_address_operations" {
     
     // Test ADDRESS operation
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x30); // ADDRESS opcode
     
     const result = try frame.stack.pop();
@@ -78,7 +78,7 @@ test "fuzz_environment_caller_operations" {
     
     // Test CALLER operation
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x33); // CALLER opcode
     
     const result = try frame.stack.pop();
@@ -119,7 +119,7 @@ test "fuzz_environment_callvalue_operations" {
     
     // Test CALLVALUE operation
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x34); // CALLVALUE opcode
     
     const result = try frame.stack.pop();
@@ -159,7 +159,7 @@ test "fuzz_environment_codesize_operations" {
     
     // Test CODESIZE operation
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x38); // CODESIZE opcode
     
     const result = try frame.stack.pop();

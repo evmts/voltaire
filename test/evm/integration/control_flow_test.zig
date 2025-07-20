@@ -74,8 +74,8 @@ test "Integration: Conditional jump patterns" {
     try frame_ptr.stack.append(1); // condition=1
     try frame_ptr.stack.append(10); // destination=10
 
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = frame_ptr };
     _ = try vm.table.execute(0, &interpreter, &state, 0x57); // JUMPI
 
     try testing.expectEqual(@as(usize, 10), frame_ptr.pc);
@@ -158,8 +158,8 @@ test "Integration: Loop implementation with JUMP" {
     // Initialize counter to 5
     try frame_ptr.stack.append(5);
 
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // Simulate loop iterations
     var iterations: u32 = 0;
@@ -227,8 +227,8 @@ test "Integration: Return data handling" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // Store data in memory
     const return_value: u256 = 0x42424242;
@@ -291,8 +291,8 @@ test "Integration: Revert with reason" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // Store error message in memory
     const error_msg = "Insufficient balance";
@@ -354,8 +354,8 @@ test "Integration: PC tracking through operations" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // Set PC to a specific value
     frame_ptr.pc = 42;
@@ -416,8 +416,8 @@ test "Integration: Invalid opcode handling" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // Execute INVALID opcode
     // Check gas before execution
@@ -480,8 +480,8 @@ test "Integration: Nested conditions with jumps" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // Test values: a=10, b=5, c=3, d=8
     const a: u256 = 10;
@@ -568,8 +568,8 @@ test "Integration: Self-destruct with beneficiary" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // Get initial beneficiary balance directly from the HashMap
     const initial_balance = vm.state.get_balance(bob_address);

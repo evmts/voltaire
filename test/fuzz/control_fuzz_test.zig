@@ -36,7 +36,7 @@ test "fuzz_control_pc_operations" {
     
     // Test PC operation
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(42, &interpreter, &state, 0x58); // PC opcode
     
     const result = try frame.stack.pop();
@@ -78,7 +78,7 @@ test "fuzz_control_gas_operations" {
     
     // Test GAS operation
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x5A); // GAS opcode
     
     const result = try frame.stack.pop();
@@ -120,7 +120,7 @@ test "fuzz_control_jumpdest_operations" {
     const initial_stack_size = frame.stack.size;
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x5B); // JUMPDEST opcode
     
     // Stack size should be unchanged

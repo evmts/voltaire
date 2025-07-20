@@ -62,8 +62,8 @@ test "Integration: Complex arithmetic calculation" {
     try frame_ptr.stack.append(10);
 
     // Execute ADD opcode
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = frame_ptr };
     _ = try evm.table.execute(0, &interpreter, &state, 0x01); // ADD = 30
 
     try frame_ptr.stack.append(3);
@@ -128,8 +128,8 @@ test "Integration: Modular arithmetic with overflow" {
     try frame_ptr.stack.append(max_u256);
 
     // Execute ADD opcode (will overflow to 4)
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = frame_ptr };
     _ = try evm.table.execute(0, &interpreter, &state, 0x01); // ADD
 
     try frame_ptr.stack.append(1000); // Push modulus
@@ -188,8 +188,8 @@ test "Integration: Fibonacci sequence calculation" {
     try frame_ptr.stack.append(1); // fib(1), Stack: [0, 1] (top is 1)
 
     // Setup for opcode execution
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // Calculate fib(2) = fib(1) + fib(0) = 1 + 0 = 1
     _ = try evm.table.execute(0, &interpreter, &state, 0x80); // DUP1: Stack: [0, 1, 1]
@@ -259,8 +259,8 @@ test "Integration: Conditional arithmetic based on comparison" {
     defer frame_ptr.deinit();
 
     // Setup for opcode execution
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // Test case 1: a=30, b=20 (a > b)
     try frame_ptr.stack.append(20); // b
@@ -349,8 +349,8 @@ test "Integration: Calculate average of multiple values" {
     defer frame_ptr.deinit();
 
     // Setup for opcode execution
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // Push all values
     try frame_ptr.stack.append(50);
@@ -417,8 +417,8 @@ test "Integration: Complex ADDMOD and MULMOD calculations" {
     defer frame_ptr.deinit();
 
     // Setup for opcode execution
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // Test ADDMOD with values that would overflow
     const a: u256 = std.math.maxInt(u256) - 10; // MAX - 10
@@ -502,8 +502,8 @@ test "Integration: Exponentiation chain" {
     defer frame_ptr.deinit();
 
     // Setup for opcode execution
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = frame_ptr);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = frame_ptr };
 
     // First calculate 3^2
     // EXP pops exponent then base, so for 3^2 we need [3, 2] on stack

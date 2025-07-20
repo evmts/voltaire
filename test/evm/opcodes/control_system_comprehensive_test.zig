@@ -580,7 +580,7 @@ test "RETURN/REVERT: Large memory offset" {
 
         const gas_before = test_frame.gas_remaining;
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         const result = evm.table.execute(0, &interpreter, &state, opcode);
 
         if (opcode == 0xF3) {
@@ -632,7 +632,7 @@ test "RETURN/REVERT: Stack underflow" {
 
         // Empty stack
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         const result = evm.table.execute(0, &interpreter, &state, opcode);
         try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 

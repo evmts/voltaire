@@ -52,8 +52,8 @@ test "Integration: Memory operations with arithmetic" {
     try frame.stack.append(20);
 
     // Execute ADD opcode
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
     _ = try evm.table.execute(0, &interpreter, &state, 0x01);
 
     // Store result in memory
@@ -116,8 +116,8 @@ test "Integration: Storage with conditional updates" {
     // Load value, add 50, store back if result > 120
     try frame.stack.append(slot);
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
     _ = try evm.table.execute(0, &interpreter, &state, 0x54);
 
     const loaded_value = try frame.stack.pop();
@@ -187,8 +187,8 @@ test "Integration: Memory copy operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Store some data in memory
     const data1: u256 = 0xDEADBEEF;
@@ -257,8 +257,8 @@ test "Integration: Transient storage with arithmetic" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     const slot: u256 = 123;
 
@@ -330,8 +330,8 @@ test "Integration: MSTORE8 with bitwise operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Store individual bytes to build a word
     var offset: u256 = 0;
@@ -389,8 +389,8 @@ test "Integration: Storage slot calculation" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Simulate array access: array[index] where base slot = 5
     const base_slot: u256 = 5;
@@ -458,8 +458,8 @@ test "Integration: Memory expansion tracking" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Track memory size as we expand
     _ = try evm.table.execute(0, &interpreter, &state, 0x59);
@@ -536,8 +536,8 @@ test "Integration: Cold/warm storage access patterns" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     const slot: u256 = 777;
 

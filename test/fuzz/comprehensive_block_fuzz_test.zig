@@ -192,7 +192,7 @@ test "fuzz_blockhash_operation_edge_cases" {
         try ctx.frame.stack.append(test_case.query_block);
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = try ctx.vm.table.execute(0, &interpreter, &state, 0x40);
         _ = result;
@@ -530,7 +530,7 @@ test "fuzz_block_info_operations" {
         ctx.vm.context.blob_base_fee = test_case.blob_base_fee;
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = try ctx.vm.table.execute(0, &interpreter, &state, test_case.opcode);
         _ = result;
@@ -711,7 +711,7 @@ test "fuzz_blobhash_operation_edge_cases" {
         try ctx.frame.stack.append(test_case.query_index);
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = try ctx.vm.table.execute(0, &interpreter, &state, 0x49);
         _ = result;
@@ -774,7 +774,7 @@ test "fuzz_block_operations_random_stress" {
         }
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = try ctx.vm.table.execute(0, &interpreter, &state, opcode);
         _ = result;
@@ -852,7 +852,7 @@ test "fuzz_block_context_consistency" {
         ctx.vm.context.blob_base_fee = 1000000000;
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // First call
         const result1 = try ctx.vm.table.execute(0, &interpreter, &state, test_case.opcode);
@@ -919,7 +919,7 @@ test "fuzz_block_operations_gas_consumption" {
         const gas_before = ctx.frame.gas_remaining;
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = ctx.vm.table.execute(0, &interpreter, &state, test_case.opcode);
         

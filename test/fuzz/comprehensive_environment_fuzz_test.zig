@@ -147,7 +147,7 @@ test "fuzz_address_current_contract_address" {
         }
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x30); // ADDRESS
         
         const result = try ctx.frame.stack.pop();
@@ -205,7 +205,7 @@ test "fuzz_caller_address_edge_cases" {
         }
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x33); // CALLER
         
         const result = try ctx.frame.stack.pop();
@@ -258,7 +258,7 @@ test "fuzz_callvalue_edge_cases" {
         }
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x34); // CALLVALUE
         
         const result = try ctx.frame.stack.pop();
@@ -314,7 +314,7 @@ test "fuzz_origin_transaction_originator" {
         }
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x32); // ORIGIN
         
         const result = try ctx.frame.stack.pop();
@@ -366,7 +366,7 @@ test "fuzz_gasprice_edge_cases" {
         }
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x3A); // GASPRICE
         
         const result = try ctx.frame.stack.pop();
@@ -441,7 +441,7 @@ test "fuzz_block_environment_opcodes" {
         defer deinit_evm_context(ctx, allocator);
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // Test COINBASE
         {
@@ -542,7 +542,7 @@ test "fuzz_chainid_edge_cases" {
         }
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x46); // CHAINID
         
         const result = try ctx.frame.stack.pop();
@@ -587,7 +587,7 @@ test "fuzz_basefee_eip1559_edge_cases" {
         }
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x48); // BASEFEE
         
         const result = try ctx.frame.stack.pop();
@@ -641,7 +641,7 @@ test "fuzz_environment_consistency" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test multiple calls to each opcode to ensure consistency
     for (0..5) |_| {
@@ -762,7 +762,7 @@ test "fuzz_environment_random_stress_test" {
         defer deinit_evm_context(ctx, allocator);
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // Test random opcode selection
         const opcodes = [_]u8{ 0x30, 0x32, 0x33, 0x34, 0x3A, 0x41, 0x42, 0x43, 0x45, 0x46, 0x48 };

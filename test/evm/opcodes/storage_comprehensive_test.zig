@@ -338,7 +338,7 @@ test "SSTORE: Static call protection" {
 //
 //     // TODO: gas_refund is not exposed in the current VM API
 //     // const gas_refund_before = test_vm.evm.gas_refund;
-//     _ = try helpers.execute_opcode(0x55, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.execute_opcode(0x55, test_vm.evm, test_frame.frame);
 //     // const gas_refund_after = test_vm.evm.gas_refund;
 //
 //     // Should receive refund for clearing storage
@@ -588,15 +588,15 @@ test "Storage opcodes: Stack underflow" {
         .build();
     defer frame2.deinit();
 
-    const &state2: *Evm.Operation.State = @ptrCast(&frame2);
+    const state2: *Evm.Operation.State = @ptrCast(&frame2);
 
     // Empty stack
-    const result2 = evm.table.execute(0, &interpreter, &state2, 0x55);
+    const result2 = evm.table.execute(0, &interpreter, state2, 0x55);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result2);
 
     // Only one item (need two)
     try frame2.stack.append(0x10);
-    const result3 = evm.table.execute(0, &interpreter, &state2, 0x55);
+    const result3 = evm.table.execute(0, &interpreter, state2, 0x55);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result3);
 }
 
@@ -1326,7 +1326,7 @@ test "Storage: Multiple contracts isolation" {
     defer frame2.deinit();
 
     var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    const &state1: *Evm.Operation.State = @ptrCast(&frame1);
+    const state1: *Evm.Operation.State = @ptrCast(&frame1);
 
     const slot: u256 = 0x888;
     const value1: u256 = 0xAAA;
@@ -1335,7 +1335,7 @@ test "Storage: Multiple contracts isolation" {
     // Store value1 in contract1
     try frame1.stack.append(value1);
     try frame1.stack.append(slot);
-    _ = try evm.table.execute(0, &interpreter, &state1, 0x55);
+    _ = try evm.table.execute(0, &interpreter, state1, 0x55);
 
     // Store value2 in contract2 (same slot, different contract)
     try evm.state.set_storage(contract_addr2, slot, value2);

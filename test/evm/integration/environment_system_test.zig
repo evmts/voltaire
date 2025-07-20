@@ -72,8 +72,8 @@ test "Integration: Contract deployment simulation" {
     try frame.stack.append(1_000_000_000); // value (1 Gwei)
 
     // Execute CREATE (will fail with placeholder implementation)
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
     _ = vm.table.execute(0, &interpreter, &state, 0xF0) catch |err| {
         // CREATE is not fully implemented, but we can verify it tries to execute
         try testing.expect(err == ExecutionError.Error.OutOfGas or
@@ -137,8 +137,8 @@ test "Integration: Call with value transfer" {
     try frame.stack.append(50000); // gas
 
     // Execute CALL (placeholder implementation)
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
     _ = vm.table.execute(0, &interpreter, &state, 0xF1) catch |err| {
         // CALL is not fully implemented
         try testing.expect(err == ExecutionError.Error.OutOfGas or
@@ -190,8 +190,8 @@ test "Integration: Environment data access" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test ADDRESS
     _ = try vm.table.execute(0, &interpreter, &state, 0x30);
@@ -273,8 +273,8 @@ test "Integration: Block information access" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test NUMBER
     _ = try vm.table.execute(0, &interpreter, &state, 0x43);
@@ -364,8 +364,8 @@ test "Integration: Log emission with topics" {
     const initial_log_count = vm.state.logs.items.len;
 
     // Execute LOG3 through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0xA3);
 
     // Verify log was emitted
@@ -434,8 +434,8 @@ test "Integration: External code operations" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test EXTCODESIZE
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
@@ -514,8 +514,8 @@ test "Integration: Calldata operations" {
     frame.input = &calldata;
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test CALLDATASIZE
     _ = try vm.table.execute(0, &interpreter, &state, 0x36);
@@ -606,8 +606,8 @@ test "Integration: Self balance and code operations" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test SELFBALANCE
     _ = try vm.table.execute(0, &interpreter, &state, 0x47);

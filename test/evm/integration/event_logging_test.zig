@@ -86,8 +86,8 @@ test "Integration: ERC20 Transfer event logging" {
     try frame.stack.push(0); // offset
 
     // Execute LOG3 (3 topics)
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
     _ = try evm.table.execute(0, &interpreter, &state, 0xA3);
 
     // Verify log was emitted
@@ -136,8 +136,8 @@ test "Integration: multiple event emissions" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Emit event 1: Simple notification (LOG0)
     const data1 = [_]u8{ 0x01, 0x02, 0x03, 0x04 };
@@ -256,8 +256,8 @@ test "Integration: event with dynamic array data" {
     try frame.stack.push(0); // offset
 
     // Execute LOG2
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
     _ = try evm.table.execute(0, &interpreter, &state, 0xA2);
 
     // Verify
@@ -303,8 +303,8 @@ test "Integration: log gas consumption patterns" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test 1: LOG0 with small data
     const small_data = [_]u8{ 0x01, 0x02, 0x03, 0x04 };
@@ -379,8 +379,8 @@ test "Integration: logging restrictions in static calls" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Try LOG0
     try frame.stack.push(0); // size
@@ -436,8 +436,8 @@ test "Integration: event topics for bloom filter" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Emit events that would be used for bloom filters
     // Topic patterns that represent different event types
@@ -522,8 +522,8 @@ test "Integration: log memory expansion costs" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Log with data at high memory offset (causes expansion)
     try frame.stack.push(32); // size
@@ -577,8 +577,8 @@ test "Integration: event filtering by topics" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Emit various events with different topic patterns
     const event_type_1: u256 = 0x1111111111111111;

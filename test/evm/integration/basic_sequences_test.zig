@@ -54,8 +54,8 @@ test "Integration: arithmetic calculation sequence" {
     try frame.stack.append(3);
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // ADD: 5 + 3 = 8
     _ = try vm.table.execute(0, &interpreter, &state, 0x01);
@@ -122,8 +122,8 @@ test "Integration: stack manipulation with DUP and SWAP" {
     // Stack: [10, 20, 30] (top is 30)
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // DUP2 - duplicate second item
     _ = try vm.table.execute(0, &interpreter, &state, 0x81);
@@ -188,8 +188,8 @@ test "Integration: memory to storage workflow" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Store value in memory
     const test_value: u256 = 0x123456789ABCDEF;
@@ -267,8 +267,8 @@ test "Integration: conditional branching" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test 1: Jump taken (condition true)
     try frame.stack.append(100);
@@ -339,8 +339,8 @@ test "Integration: hash and compare workflow" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Write data to memory
     const data1 = [_]u8{ 0x01, 0x02, 0x03, 0x04 };
@@ -439,8 +439,8 @@ test "Integration: call data processing" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Get call data size
     _ = try vm.table.execute(0, &interpreter, &state, 0x36);
@@ -510,8 +510,8 @@ test "Integration: gas tracking through operations" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Memory operation (expansion cost)
     try frame.stack.append(1000); // Large offset causes expansion
@@ -586,8 +586,8 @@ test "Integration: error handling in sequences" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Try sequence that will run out of gas
     try frame.stack.append(1000000); // Large value
@@ -645,8 +645,8 @@ test "Integration: transient storage usage" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Store in both regular and transient storage
     const test_value: u256 = 0xDEADBEEF;

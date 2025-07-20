@@ -62,7 +62,7 @@ test "Integration: Token balance check pattern" {
     const alice_addr = Evm.primitives.Address.to_u256(alice_address);
     try frame.stack.append(alice_addr); // value
     try frame.stack.append(0); // offset
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0x52); // MSTORE
 
@@ -152,7 +152,7 @@ test "Integration: Packed struct storage" {
     // Pack values: b << 128 | a
     try frame.stack.append(b);
     try frame.stack.append(128);
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0x1B); // SHL
 
@@ -235,7 +235,7 @@ test "Integration: Dynamic array length update" {
 
     // Load current length
     try frame.stack.append(array_slot);
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0x54); // SLOAD
 
@@ -303,7 +303,7 @@ test "Integration: Reentrancy guard pattern" {
 
     // Check guard status
     try frame.stack.append(guard_slot);
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0x54); // SLOAD
 
@@ -374,7 +374,7 @@ test "Integration: Bitfield manipulation" {
         .build();
     defer frame.deinit();
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Create a bitfield with flags at different positions
@@ -467,7 +467,7 @@ test "Integration: Safe math operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Safe addition: check if a + b overflows
@@ -559,7 +559,7 @@ test "Integration: Signature verification simulation" {
     // Hash the message
     try frame.stack.append(0); // offset
     try frame.stack.append(message.len); // size
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0x20); // SHA3
     const message_hash = try frame.stack.pop();
@@ -624,7 +624,7 @@ test "Integration: Multi-sig wallet threshold check" {
     defer frame.deinit();
 
     // Execute SSTORE through jump table
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Storage layout:

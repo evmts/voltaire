@@ -39,7 +39,7 @@ test "fuzz_arithmetic_basic_operations" {
     try frame.stack.append(10);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x01);
     
     const result = try frame.stack.pop();
@@ -82,7 +82,7 @@ test "fuzz_arithmetic_overflow_cases" {
     try frame.stack.append(1);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x01);
     
     const result = try frame.stack.pop();
@@ -125,7 +125,7 @@ test "fuzz_arithmetic_division_by_zero" {
     try frame.stack.append(10); // dividend
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x04);
     
     const result = try frame.stack.pop();
@@ -168,7 +168,7 @@ test "fuzz_arithmetic_modulo_operations" {
     try frame.stack.append(3);  // modulus (b)
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x06);
     
     const result = try frame.stack.pop();

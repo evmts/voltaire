@@ -522,8 +522,8 @@ test "CREATE2: Same parameters produce same address" {
     try frame1.stack.append(0);
 
     var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    const &state1: *Evm.Operation.State = @ptrCast(&frame1);
-    _ = try evm.table.execute(0, &interpreter, &state1, 0xF5);
+    const state1: *Evm.Operation.State = @ptrCast(&frame1);
+    _ = try evm.table.execute(0, &interpreter, state1, 0xF5);
     const address1 = try frame1.stack.pop();
 
     // Second creation with same parameters
@@ -554,8 +554,8 @@ test "CREATE2: Same parameters produce same address" {
     try frame2.stack.append(0);
     try frame2.stack.append(0);
 
-    const &state2: *Evm.Operation.State = @ptrCast(&frame2);
-    _ = try evm.table.execute(0, &interpreter, &state2, 0xF5);
+    const state2: *Evm.Operation.State = @ptrCast(&frame2);
+    _ = try evm.table.execute(0, &interpreter, state2, 0xF5);
     const address2 = try frame2.stack.pop();
 
     // Addresses should be the same (deterministic)
@@ -1544,7 +1544,7 @@ test "System opcodes: Stack underflow validation" {
 
         // Should fail with StackUnderflow
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         const result = evm.table.execute(0, &interpreter, &state, test_case.opcode);
         testing.expectError(ExecutionError.Error.StackUnderflow, result) catch |err| {
             return err;
@@ -1613,7 +1613,7 @@ test "System opcodes: Depth limit enforcement" {
         }
 
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         _ = try evm.table.execute(0, &interpreter, &state, opcode);
 
         // Should push 0 (failure) due to depth limit
@@ -1676,7 +1676,7 @@ test "System opcodes: Gas consumption verification" {
 
         const gas_before = test_frame.gas_remaining;
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
         const gas_used = gas_before - test_frame.gas_remaining;
 
@@ -1847,7 +1847,7 @@ test "System opcodes: REVERT vs RETURN data handling" {
         try test_frame.stack.append(test_data.len); // size (pushed second, will be on top)
 
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         const result = evm.table.execute(0, &interpreter, &state, 0xF3);
         try testing.expectError(ExecutionError.Error.STOP, result);
         try testing.expectEqualSlices(u8, test_data, test_frame.return_data_buffer);
@@ -1883,7 +1883,7 @@ test "System opcodes: REVERT vs RETURN data handling" {
         try test_frame.stack.append(test_data.len); // size (pushed second, will be on top)
 
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         const result = evm.table.execute(0, &interpreter, &state, 0xFD);
         try testing.expectError(ExecutionError.Error.REVERT, result);
         try testing.expectEqualSlices(u8, test_data, test_frame.return_data_buffer);
@@ -1948,7 +1948,7 @@ test "System opcodes: Large memory offsets" {
 
         // Should fail with appropriate error (OutOfGas due to memory expansion or InvalidOffset)
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         const result = evm.table.execute(0, &interpreter, &state, opcode);
         try testing.expect(result == ExecutionError.Error.OutOfGas or result == ExecutionError.Error.OutOfOffset or result == ExecutionError.Error.InvalidOffset);
     }
@@ -2062,7 +2062,7 @@ test "System opcodes: Hardfork feature availability" {
 
         // DELEGATECALL may not be available in Frontier
         var interpreter = *Evm.Operation.Interpreter = @ptrCast(&test_vm);
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         if (test_vm.table.execute(0, &interpreter, &state, 0xF4)) |_| {
             // May succeed in some implementations
         } else |_| {
@@ -2109,7 +2109,7 @@ test "System opcodes: Hardfork feature availability" {
 
         // CREATE2 may not be available in Byzantium
         var interpreter = *Evm.Operation.Interpreter = @ptrCast(&test_vm);
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         if (test_vm.table.execute(0, &interpreter, &state, 0xF5)) |_| {
             // May succeed in some implementations
         } else |_| {

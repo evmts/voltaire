@@ -39,7 +39,7 @@ test "fuzz_comparison_lt_operations" {
     try frame.stack.append(10); // b
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x10);
     
     const result = try frame.stack.pop();
@@ -82,7 +82,7 @@ test "fuzz_comparison_eq_operations" {
     try frame.stack.append(42); // a
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x14);
     
     const result = try frame.stack.pop();
@@ -124,7 +124,7 @@ test "fuzz_comparison_iszero_operations" {
     try frame.stack.append(0);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
-    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x15);
     
     const result = try frame.stack.pop();

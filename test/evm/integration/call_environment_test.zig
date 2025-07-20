@@ -59,8 +59,8 @@ test "Integration: Call with value transfer and balance check" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Check balance of BOB before call
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
@@ -150,8 +150,8 @@ test "Integration: Environment opcodes in context" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test ADDRESS
     _ = try vm.table.execute(0, &interpreter, &state, 0x30);
@@ -257,8 +257,8 @@ test "Integration: CREATE with init code from memory" {
     try frame.memory.set_data(0, &init_code);
 
     // Execute CREATE through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Execute CREATE
     // CREATE(value, offset, size)
@@ -331,8 +331,8 @@ test "Integration: DELEGATECALL preserves context" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Note: In black box testing, we don't mock internal state.
     // The DELEGATECALL opcode will execute and return its actual result.
@@ -397,8 +397,8 @@ test "Integration: STATICCALL prevents state changes" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Note: In black box testing, we don't mock internal state.
     // The STATICCALL opcode will execute and return its actual result.
@@ -463,8 +463,8 @@ test "Integration: Call depth limit handling" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test at maximum depth
     frame.depth = 1024;
@@ -536,8 +536,8 @@ test "Integration: Return data handling across calls" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // First call returns some data
     const return_data = [_]u8{ 0xAA, 0xBB, 0xCC, 0xDD };
@@ -624,8 +624,8 @@ test "Integration: Gas forwarding in calls" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm);
-    var state = Operation.State{ .frame = &frame);frame };
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test gas calculation for CALL
     const initial_gas = frame.gas_remaining;

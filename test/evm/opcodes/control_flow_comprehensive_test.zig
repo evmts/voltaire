@@ -171,7 +171,7 @@ test "JUMP: Jump to various valid destinations" {
 
         try test_frame.stack.append(dest);
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         _ = try evm.table.execute(0, &interpreter, &state, 0x56);
         try testing.expectEqual(@as(usize, @intCast(dest)), test_frame.pc);
     }
@@ -226,7 +226,7 @@ test "JUMP: Invalid jump destinations" {
 
         try test_frame.stack.append(dest);
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         const result = evm.table.execute(0, &interpreter, &state, 0x56);
         try testing.expectError(ExecutionError.Error.InvalidJump, result);
     }
@@ -453,7 +453,7 @@ test "JUMPI: Various condition values" {
         try test_frame.stack.append(condition); // condition
         try test_frame.stack.append(0); // dest=0
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         _ = try evm.table.execute(0, &interpreter, &state, 0x57);
         try testing.expectEqual(@as(usize, 0), test_frame.pc); // Should jump
     }
@@ -472,7 +472,7 @@ test "JUMPI: Various condition values" {
         try test_frame.stack.append(0); // condition=0
         try test_frame.stack.append(0); // dest=0
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         _ = try evm.table.execute(0, &interpreter, &state, 0x57);
         try testing.expectEqual(@as(usize, 10), test_frame.pc); // Should not jump
     }
@@ -741,7 +741,7 @@ test "GAS (0x5A): Get remaining gas" {
         defer test_frame.deinit();
 
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         _ = try evm.table.execute(0, &interpreter, &state, 0x5A);
 
         // GAS opcode should return remaining gas minus its own cost (2)
@@ -842,7 +842,7 @@ test "GAS: Low gas scenarios" {
         defer test_frame.deinit();
 
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         _ = try evm.table.execute(0, &interpreter, &state, 0x5A);
         const val = try test_frame.stack.pop();
         try testing.expectEqual(@as(u256, 0), val); // All gas consumed
@@ -859,7 +859,7 @@ test "GAS: Low gas scenarios" {
         defer test_frame.deinit();
 
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         const result = evm.table.execute(0, &interpreter, &state, 0x5A);
         try testing.expectError(ExecutionError.Error.OutOfGas, result);
     }
@@ -1207,11 +1207,11 @@ test "Control Flow: Gas consumption verification" {
         const gas_before = test_frame.gas_remaining;
 
         if (op.setup) |setup_fn| {
-            try setup_fn(&test_frame);frame };
+            try setup_fn(&test_frame);
         }
 
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         _ = try evm.table.execute(0, &interpreter, &state, op.opcode);
 
         const gas_used = gas_before - test_frame.gas_remaining;
@@ -1577,11 +1577,11 @@ test "Control Flow: Out of gas scenarios" {
         defer test_frame.deinit();
 
         if (case.setup) |setup_fn| {
-            try setup_fn(&test_frame);frame };
+            try setup_fn(&test_frame);
         }
 
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        var state = Evm.Operation.State{ .frame = &test_frame };
         const result = evm.table.execute(0, &interpreter, &state, case.opcode);
         try testing.expectError(ExecutionError.Error.OutOfGas, result);
     }

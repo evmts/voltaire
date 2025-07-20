@@ -1648,7 +1648,7 @@ test "Arithmetic opcodes: Gas consumption" {
             .build();
         defer frame.deinit();
 
-        try tc.setup(&frame);frame };
+        try tc.setup(&frame);
 
         const gas_before = frame.gas_remaining;
         var interpreter = Evm.Operation.Interpreter{ .vm = &evm };

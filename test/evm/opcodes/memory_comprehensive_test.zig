@@ -907,10 +907,10 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //
 //         // Use MSTORE to set memory at the offset (this will expand memory)
 //         try test_frame.pushStack(&[_]u256{ 0x123456, tc.offset }); // value, offset
-//         _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);frame }; // MSTORE
+//         _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame); // MSTORE
 //
 //         // Check MSIZE
-//         _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);frame };
+//         _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
 //         try helpers.expectStackValue(test_frame.frame, 0, tc.expected_msize);
 //         _ = try test_frame.popStack();
 //     }
@@ -936,26 +936,26 @@ test "MSIZE (0x59): Basic memory size tracking" {
 
 //     // Test 1: MSIZE after MSTORE operations
 //     try test_frame.pushStack(&[_]u256{ 0x123456, 0 }); // value, offset
-//     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);frame }; // MSTORE
+//     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame); // MSTORE
 
-//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);frame }; // MSIZE
+//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame); // MSIZE
 //     try helpers.expectStackValue(test_frame.frame, 0, 32);
 //     _ = try test_frame.popStack();
 
 //     // Test 2: MSIZE after MSTORE8 operations
 //     try test_frame.pushStack(&[_]u256{ 0xAB, 100 }); // value, offset
-//     _ = try helpers.executeOpcode(0x53, test_vm.evm, test_frame.frame);frame }; // MSTORE8
+//     _ = try helpers.executeOpcode(0x53, test_vm.evm, test_frame.frame); // MSTORE8
 
-//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);frame }; // MSIZE
+//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame); // MSIZE
 //     try helpers.expectStackValue(test_frame.frame, 0, 128); // Word-aligned to include offset 100
 //     _ = try test_frame.popStack();
 
 //     // Test 3: MSIZE after MLOAD operations (MLOAD might trigger memory expansion)
 //     try test_frame.pushStack(&[_]u256{200}); // offset
-//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);frame }; // MLOAD
+//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame); // MLOAD
 //     _ = try test_frame.popStack(); // Pop the loaded value
 
-//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);frame }; // MSIZE
+//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame); // MSIZE
 //     try helpers.expectStackValue(test_frame.frame, 0, 256); // Word-aligned to include offset 200+32
 //     _ = try test_frame.popStack();
 
@@ -978,13 +978,13 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //         } else {
 //             try test_frame.pushStack(&[_]u256{op.offset});
 //         }
-//         _ = try helpers.executeOpcode(op.opcode, test_vm.evm, test_frame.frame);frame };
+//         _ = try helpers.executeOpcode(op.opcode, test_vm.evm, test_frame.frame);
 
 //         if (op.opcode == 0x51) { // MLOAD pushes a value
 //             _ = try test_frame.popStack();
 //         }
 
-//         _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);frame }; // MSIZE
+//         _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame); // MSIZE
 //         try helpers.expectStackValue(test_frame.frame, 0, op.expected_size);
 //         _ = try test_frame.popStack();
 //     }
@@ -1010,7 +1010,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 
 //     // MSIZE should always cost exactly 2 gas (GasQuickStep)
 //     const gas_before = test_frame.frame.gas_remaining;
-//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
 //     const gas_after = test_frame.frame.gas_remaining;
 //     _ = try test_frame.popStack();
 
@@ -1020,7 +1020,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     // Should be consistent regardless of memory size
 //     try test_frame.frame.memory.set_u256(1000, 0x123);
 //     const gas_before2 = test_frame.frame.gas_remaining;
-//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
 //     const gas_after2 = test_frame.frame.gas_remaining;
 //     _ = try test_frame.popStack();
 
@@ -1052,7 +1052,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     }
 
 //     // MSIZE should fail with stack overflow
-//     const result = helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);frame };
+//     const result = helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
 //     try testing.expectError(helpers.ExecutionError.Error.StackOverflow, result);
 // }
 
@@ -1084,26 +1084,26 @@ test "MSIZE (0x59): Basic memory size tracking" {
 
 //     // 1. MSTORE at offset 100
 //     try test_frame.pushStack(&[_]u256{ test_value, base_offset });
-//     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
 
 //     // 2. MLOAD from same offset
 //     try test_frame.pushStack(&[_]u256{base_offset});
-//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
 //     const loaded_value = try test_frame.popStack();
 //     try testing.expectEqual(test_value, loaded_value);
 
 //     // 3. MSTORE8 at offset within the stored region
 //     try test_frame.pushStack(&[_]u256{ 0x99, base_offset + 15 });
-//     _ = try helpers.executeOpcode(0x53, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x53, test_vm.evm, test_frame.frame);
 
 //     // 4. MLOAD again to verify partial modification
 //     try test_frame.pushStack(&[_]u256{base_offset});
-//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
 //     const modified_value = try test_frame.popStack();
 //     try testing.expect(modified_value != test_value); // Should be different
 
 //     // 5. MSIZE to verify memory size
-//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
 //     const memory_size = try test_frame.popStack();
 //     try testing.expectEqual(@as(u256, 160), memory_size); // Word-aligned to include offset 132 (100+32)
 // }
@@ -1131,11 +1131,11 @@ test "MSIZE (0x59): Basic memory size tracking" {
 
 //     // MSTORE8 at large offset
 //     try test_frame.pushStack(&[_]u256{ 0x42, large_but_valid_offset });
-//     _ = try helpers.executeOpcode(0x53, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x53, test_vm.evm, test_frame.frame);
 
 //     // Verify with MLOAD
 //     try test_frame.pushStack(&[_]u256{large_but_valid_offset});
-//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
 //     const loaded = try test_frame.popStack();
 //     // The byte 0x42 should be at the highest byte position in the loaded word
 //     const expected = @as(u256, 0x42) << 248;
@@ -1143,20 +1143,20 @@ test "MSIZE (0x59): Basic memory size tracking" {
 
 //     // Test 2: Zero-value operations
 //     try test_frame.pushStack(&[_]u256{ 0, 200 }); // Store zero
-//     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
 
 //     try test_frame.pushStack(&[_]u256{200});
-//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
 //     const zero_loaded = try test_frame.popStack();
 //     try testing.expectEqual(@as(u256, 0), zero_loaded);
 
 //     // Test 3: Maximum value operations
 //     const max_value = std.math.maxInt(u256);
 //     try test_frame.pushStack(&[_]u256{ max_value, 300 });
-//     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
 
 //     try test_frame.pushStack(&[_]u256{300});
-//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x51, test_vm.evm, test_frame.frame);
 //     const max_loaded = try test_frame.popStack();
 //     try testing.expectEqual(max_value, max_loaded);
 // }
@@ -1182,7 +1182,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 
 //     // Should fail with out of gas for memory expansion
 //     try test_frame_low_gas.pushStack(&[_]u256{ 0x123, 10000 });
-//     const result_oog = helpers.executeOpcode(0x52, test_vm.evm, test_frame_low_gas.frame);frame };
+//     const result_oog = helpers.executeOpcode(0x52, test_vm.evm, test_frame_low_gas.frame);
 //     try testing.expectError(helpers.ExecutionError.Error.OutOfGas, result_oog);
 
 //     // Test 2: Invalid large offsets
@@ -1194,17 +1194,17 @@ test "MSIZE (0x59): Basic memory size tracking" {
 
 //     // MLOAD with invalid offset
 //     try test_frame_normal.pushStack(&[_]u256{invalid_offset});
-//     const result_mload = helpers.executeOpcode(0x51, test_vm.evm, test_frame_normal.frame);frame };
+//     const result_mload = helpers.executeOpcode(0x51, test_vm.evm, test_frame_normal.frame);
 //     try testing.expectError(helpers.ExecutionError.Error.OutOfOffset, result_mload);
 
 //     // MSTORE with invalid offset
 //     try test_frame_normal.pushStack(&[_]u256{ 0x123, invalid_offset });
-//     const result_mstore = helpers.executeOpcode(0x52, test_vm.evm, test_frame_normal.frame);frame };
+//     const result_mstore = helpers.executeOpcode(0x52, test_vm.evm, test_frame_normal.frame);
 //     try testing.expectError(helpers.ExecutionError.Error.OutOfOffset, result_mstore);
 
 //     // MSTORE8 with invalid offset
 //     try test_frame_normal.pushStack(&[_]u256{ 0x42, invalid_offset });
-//     const result_mstore8 = helpers.executeOpcode(0x53, test_vm.evm, test_frame_normal.frame);frame };
+//     const result_mstore8 = helpers.executeOpcode(0x53, test_vm.evm, test_frame_normal.frame);
 //     try testing.expectError(helpers.ExecutionError.Error.OutOfOffset, result_mstore8);
 // }
 
@@ -1230,7 +1230,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 
 //     // MSIZE should always cost 2 gas
 //     const gas_before_msize = test_frame.frame.gas_remaining;
-//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x59, test_vm.evm, test_frame.frame);
 //     const gas_after_msize = test_frame.frame.gas_remaining;
 //     _ = try test_frame.popStack();
 //     const msize_cost = gas_before_msize - gas_after_msize;
@@ -1239,7 +1239,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     // Test 2: Memory expansion should cost more than base operations
 //     const gas_before_expansion = test_frame.frame.gas_remaining;
 //     try test_frame.pushStack(&[_]u256{ 0x123, 1000 }); // Trigger memory expansion
-//     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);frame };
+//     _ = try helpers.executeOpcode(0x52, test_vm.evm, test_frame.frame);
 //     const gas_after_expansion = test_frame.frame.gas_remaining;
 //     const expansion_cost = gas_before_expansion - gas_after_expansion;
 

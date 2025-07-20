@@ -68,7 +68,7 @@ test "fuzz_keccak256_known_test_vectors" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const test_vectors = [_]struct { 
         input: []const u8, 
@@ -178,7 +178,7 @@ test "fuzz_keccak256_memory_layout_edge_cases" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const layout_tests = [_]struct {
         data: []const u8,
@@ -284,7 +284,7 @@ test "fuzz_keccak256_length_edge_cases" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const length_tests = [_]struct {
         length: usize,
@@ -401,7 +401,7 @@ test "fuzz_keccak256_overlapping_memory_regions" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Set up test data pattern in memory
     const test_pattern = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -530,7 +530,7 @@ test "fuzz_keccak256_random_stress_test" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     var prng = std.Random.DefaultPrng.init(0);
     const random = prng.random();
@@ -597,7 +597,7 @@ test "fuzz_keccak256_determinism" {
         defer deinit_evm_context(ctx, allocator);
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // Store test data in memory
         for (test_data, 0..) |byte, i| {
@@ -644,7 +644,7 @@ test "fuzz_keccak256_memory_expansion" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const expansion_tests = [_]struct {
         offset: u256,

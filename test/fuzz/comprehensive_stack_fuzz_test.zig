@@ -74,7 +74,7 @@ test "fuzz_push_operations_all_sizes" {
         }
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, @intCast(opcode));
         
         const result = try ctx.frame.stack.pop();
@@ -196,7 +196,7 @@ test "fuzz_push_value_patterns" {
         }
         
         var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, @intCast(opcode));
         
         const result = try ctx.frame.stack.pop();
@@ -212,7 +212,7 @@ test "fuzz_pop_operation_edge_cases" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const test_values = [_]u256{
         0,
@@ -263,7 +263,7 @@ test "fuzz_dup_operations_all_positions" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test all DUP operations from DUP1 to DUP16
     for (1..17) |dup_position| {
@@ -327,7 +327,7 @@ test "fuzz_dup_stack_underflow_cases" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test DUP operations with insufficient stack depth
     for (1..17) |dup_position| {
@@ -367,7 +367,7 @@ test "fuzz_swap_operations_all_positions" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test all SWAP operations from SWAP1 to SWAP16
     for (1..17) |swap_position| {
@@ -432,7 +432,7 @@ test "fuzz_swap_stack_underflow_cases" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test SWAP operations with insufficient stack depth
     for (1..17) |swap_position| {
@@ -470,7 +470,7 @@ test "fuzz_stack_operations_max_depth" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     const max_stack_size = 1024; // EVM stack limit
     
     // Fill stack to near maximum
@@ -491,7 +491,7 @@ test "fuzz_stack_operations_max_depth" {
         }
         
         const push_&interpreter: *evm.Operation.Interpreter = @ptrCast(&push_ctx.vm);
-        const push_&state: *evm.Operation.State = @ptrCast(&push_ctx.frame);frame };
+        const push_&state: *evm.Operation.State = @ptrCast(&push_ctx.frame);
         
         // This should succeed (brings stack to exactly max_stack_size)
         _ = try push_ctx.vm.table.execute(0, push_&interpreter, push_&state, 0x60);
@@ -532,7 +532,7 @@ test "fuzz_stack_operations_complex_patterns" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     var prng = std.Random.DefaultPrng.init(0);
     const random = prng.random();
@@ -603,7 +603,7 @@ test "fuzz_push0_operation" {
     defer deinit_evm_context(ctx, allocator);
     
     var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test PUSH0 multiple times
     for (0..10) |_| {
