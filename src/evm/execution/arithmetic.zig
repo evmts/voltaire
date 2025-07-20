@@ -259,7 +259,7 @@ pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
     } else {
         const a_i256 = @as(i256, @bitCast(a));
         const b_i256 = @as(i256, @bitCast(b));
-        const min_i256 = @as(i256, 1) << 255;
+        const min_i256 = std.math.minInt(i256);
         if (a_i256 == min_i256 and b_i256 == -1) {
             @branchHint(.unlikely);
             // MIN_I256 / -1 = MIN_I256 (overflow wraps)

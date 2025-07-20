@@ -47,7 +47,8 @@ pub fn interpret_with_blocks(self: *Vm, contract: *Contract, input: []const u8, 
     // Execute using block-based approach
     executor.execute() catch |err| {
         contract.gas = frame.gas_remaining;
-        self.return_data = @constCast(frame.return_data.get());
+        // Don't store frame's return data in EVM - it will be freed when frame deinits
+        self.return_data = &[_]u8{};
 
         var output: ?[]const u8 = null;
         const return_data = frame.output;
@@ -93,7 +94,8 @@ pub fn interpret_with_blocks(self: *Vm, contract: *Contract, input: []const u8, 
     };
 
     contract.gas = frame.gas_remaining;
-    self.return_data = @constCast(frame.return_data.get());
+    // Don't store frame's return data in EVM - it will be freed when frame deinits
+    self.return_data = &[_]u8{};
 
     const output_data = frame.output;
     Log.debug("VM.interpret_with_blocks: Normal completion, output_size={}", .{output_data.len});
