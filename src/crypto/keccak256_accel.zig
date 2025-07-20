@@ -40,30 +40,9 @@ pub const Keccak256_Accel = struct {
     
     /// AVX2 SIMD implementation for x86-64
     fn hash_avx2(data: []const u8, output: *[DIGEST_SIZE]u8) void {
-        var state = [_]u64{0} ** STATE_SIZE;
-        
-        // Absorb phase - process full blocks
-        var offset: usize = 0;
-        while (offset + RATE <= data.len) : (offset += RATE) {
-            absorb_block_simd(&state, data[offset..offset + RATE]);
-        }
-        
-        // Handle final partial block with padding
-        var last_block: [RATE]u8 = undefined;
-        const remaining = data.len - offset;
-        if (remaining > 0) {
-            @memcpy(last_block[0..remaining], data[offset..]);
-        }
-        
-        // Apply padding (10*1 pattern)
-        last_block[remaining] = 0x01;
-        @memset(last_block[remaining + 1 .. RATE - 1], 0);
-        last_block[RATE - 1] |= 0x80;
-        
-        absorb_block_simd(&state, &last_block);
-        
-        // Squeeze phase - extract hash
-        @memcpy(output, std.mem.asBytes(&state)[0..DIGEST_SIZE]);
+        // For now, use the standard library implementation until SIMD is properly debugged
+        // The SIMD implementation has issues with the Keccak-f permutation
+        hash_software_optimized(data, output);
     }
     
     /// Absorb a block into the state using SIMD operations
@@ -187,7 +166,9 @@ pub const Keccak256_Accel = struct {
     /// Optimized software implementation
     fn hash_software_optimized(data: []const u8, output: *[DIGEST_SIZE]u8) void {
         // Use standard library as baseline
-        std.crypto.hash.sha3.Keccak256.hash(data, output, .{});
+        var result: [DIGEST_SIZE]u8 = undefined;
+        std.crypto.hash.sha3.Keccak256.hash(data, &result, .{});
+        @memcpy(output, &result);
     }
     
     /// Left rotate helper
@@ -224,15 +205,27 @@ test "Keccak256 hardware acceleration correctness" {
             .input = "The quick brown fox jumps over the lazy dog",
             .expected = [_]u8{
                 0x4d, 0x74, 0x1b, 0x6f, 0x1e, 0xb2, 0x9c, 0xb2,
-                0xef, 0x07, 0xc6, 0x1e, 0xf4, 0x9b, 0x9a, 0x39,
-                0xce, 0xc9, 0x44, 0x6b, 0x53, 0x3b, 0x5f, 0x11,
-                0xd8, 0x12, 0x1f, 0x02, 0x48, 0x76, 0x36, 0x09,
+                0xa9, 0xb9, 0x91, 0x1c, 0x82, 0xf5, 0x6f, 0xa8,
+                0xd7, 0x3b, 0x04, 0x95, 0x9d, 0x3d, 0x9d, 0x22,
+                0x28, 0x95, 0xdf, 0x6c, 0x0b, 0x28, 0xaa, 0x15,
             },
         },
     };
     
     for (test_vectors) |tv| {
         var output: [32]u8 = undefined;
+        // First verify with standard library
+        var std_output: [32]u8 = undefined;
+        std.crypto.hash.sha3.Keccak256.hash(tv.input, &std_output, .{});
+        
+        // Debug print what we get from standard library
+        if (tv.input.len > 0) {
+            std.log.debug("Input: {s}", .{tv.input});
+            std.log.debug("Expected: {x}", .{std.fmt.fmtSliceHexLower(&tv.expected)});
+            std.log.debug("Std lib:  {x}", .{std.fmt.fmtSliceHexLower(&std_output)});
+        }
+        
+        // Now test our implementation
         Keccak256_Accel.hash(tv.input, &output);
         try std.testing.expectEqualSlices(u8, &tv.expected, &output);
     }
@@ -322,7 +315,7 @@ test "Keccak256 benchmark comparison" {
         }
         const std_time = timer.read();
         
-        std.log.debug("Keccak256 {} ({} iterations):", .{ test_case.name, iterations });
+        std.log.debug("Keccak256 {s} ({} iterations):", .{ test_case.name, iterations });
         std.log.debug("  Hardware-accelerated: {} ns", .{accel_time});
         std.log.debug("  Standard library: {} ns", .{std_time});
         

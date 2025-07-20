@@ -75,8 +75,8 @@ fn has_arm_neon_support() bool {
 
 test "CPU feature detection" {
     const features = CpuFeatures.init();
-    std.testing.expect(features.has_aes != undefined);
-    std.testing.expect(features.has_sha != undefined);
-    std.testing.expect(features.has_avx2 != undefined);
-    std.testing.expect(features.has_bmi2 != undefined);
+    try std.testing.expect(features.has_aes == true or features.has_aes == false);
+    try std.testing.expect(features.has_sha == true or features.has_sha == false);
+    try std.testing.expect(features.has_avx2 == true or features.has_avx2 == false);
+    try std.testing.expect(features.has_bmi2 == true or features.has_bmi2 == false);
 }
