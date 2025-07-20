@@ -205,22 +205,26 @@ See our [Contributing Guide](CONTRIBUTING.md) to get started.
 
 For external projects that want to integrate Guillotine as a library dependency.
 
-### Required Dependencies
+> **⚠️ Note**: The requirements below are temporary and will be removed in upcoming releases as we migrate to pure Zig implementations.
+
+### Required Dependencies (Temporary)
 
 #### BN254 Rust Wrapper
-Guillotine uses a Rust-based BN254 elliptic curve implementation for production-grade scalar multiplication and pairing operations:
+Guillotine currently uses a Rust-based BN254 elliptic curve implementation for production-grade scalar multiplication and pairing operations:
 
 - **Location**: `src/bn254_wrapper/`
 - **Dependencies**: arkworks ecosystem (ark-bn254, ark-ec, ark-ff, ark-serialize)
 - **Build**: Static library built from Rust using cargo
+- **Status**: Will be replaced with pure Zig implementation
 
 #### c-kzg-4844
 KZG commitment library for EIP-4844 blob transactions:
 
 - **Dependency**: ethereum/c-kzg-4844
 - **Purpose**: KZG point evaluation precompile (0x0a)
+- **Status**: May be replaced with pure Zig implementation
 
-#### System Libraries
+#### System Libraries (Temporary)
 
 **Linux**:
 ```
@@ -231,6 +235,8 @@ dl, pthread, m, rt
 ```
 Security framework, CoreFoundation framework
 ```
+
+> These system library requirements will be eliminated when Rust dependencies are removed.
 
 ### Example build.zig Integration
 
@@ -311,10 +317,12 @@ exe.root_module.addImport("evm", evm);
 
 4. **Memory Management**: All Guillotine operations require an allocator. Use `std.testing.allocator` for tests or your application's allocator for production.
 
+5. **Future Simplification**: Integration will become much simpler once pure Zig implementations replace the current Rust dependencies, eliminating the need for Rust toolchain and system library requirements.
+
 ### Troubleshooting
 
-- **Signal 4 (Illegal Instruction)**: Ensure all system libraries are properly linked. This typically occurs when BN254 operations fail due to missing dependencies.
-- **Build Failures**: Verify Zig version compatibility (0.14.1+ required) and ensure Rust toolchain is available for BN254 wrapper compilation.
+- **Signal 4 (Illegal Instruction)**: Ensure all system libraries are properly linked. This typically occurs when BN254 operations fail due to missing dependencies. *Note: This issue will be resolved when pure Zig implementations are complete.*
+- **Build Failures**: Verify Zig version compatibility (0.14.1+ required) and ensure Rust toolchain is available for BN254 wrapper compilation. *Note: Rust toolchain requirement will be removed in future releases.*
 - **Import Errors**: Use the module system rather than direct file imports. Import `evm` and `primitives` modules as shown above.
 
 ---
