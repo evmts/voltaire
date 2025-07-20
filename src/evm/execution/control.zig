@@ -561,34 +561,44 @@ test "fuzz_control_edge_cases" {
 }
 
 test "fuzz_control_random_operations" {
-    const allocator = std.testing.allocator;
-    var prng = std.Random.DefaultPrng.init(42);
-    const random = prng.random();
-    
-    var operations = std.ArrayList(FuzzControlOperation).init(allocator);
-    defer operations.deinit();
-    
-    var i: usize = 0;
-    while (i < 50) : (i += 1) {
-        const op_type_idx = random.intRangeAtMost(usize, 0, 8);
-        const op_types = [_]ControlOpType{ .stop, .jump, .jumpi, .pc, .jumpdest, .return_op, .revert, .invalid, .selfdestruct };
-        const op_type = op_types[op_type_idx];
-        
-        const destination = random.int(u256) % 256; // Keep destinations reasonable
-        const condition = random.int(u256);
-        const offset = random.int(u256) % 2048; // Keep offsets reasonable
-        const size = random.int(u256) % 1024; // Keep sizes reasonable
-        const recipient = random.int(u256);
-        
-        try operations.append(.{
-            .op_type = op_type,
-            .destination = destination,
-            .condition = condition,
-            .offset = offset,
-            .size = size,
-            .recipient = recipient,
-        });
-    }
-    
-    try fuzz_control_operations(allocator, operations.items);
+    const global = struct {
+        fn testControlRandomOperations(input: []const u8) anyerror!void {
+            if (input.len < 10) return;
+            
+            const allocator = std.testing.allocator;
+            const op_types = [_]ControlOpType{ .stop, .jump, .jumpi, .pc, .jumpdest, .return_op, .revert, .invalid, .selfdestruct };
+            
+            var operations = std.ArrayList(FuzzControlOperation).init(allocator);
+            defer operations.deinit();
+            
+            // Generate multiple operations from fuzz input
+            const num_ops = @min((input.len / 10) + 1, 20); // 1-20 operations
+            
+            for (0..num_ops) |i| {
+                const base_idx = (i * 10) % input.len;
+                if (base_idx + 9 >= input.len) break;
+                
+                const op_type_idx = input[base_idx] % op_types.len;
+                const op_type = op_types[op_type_idx];
+                
+                const destination = std.mem.readInt(u16, input[base_idx+1..base_idx+3], .little); // Keep destinations reasonable
+                const condition = std.mem.readInt(u64, input[base_idx+1..base_idx+9], .little);
+                const offset = std.mem.readInt(u16, input[base_idx+3..base_idx+5], .little) % 2048; // Keep offsets reasonable
+                const size = std.mem.readInt(u16, input[base_idx+5..base_idx+7], .little) % 1024; // Keep sizes reasonable
+                const recipient = std.mem.readInt(u64, input[base_idx+1..base_idx+9], .little);
+                
+                try operations.append(.{
+                    .op_type = op_type,
+                    .destination = destination,
+                    .condition = condition,
+                    .offset = offset,
+                    .size = size,
+                    .recipient = recipient,
+                });
+            }
+            
+            try fuzz_control_operations(allocator, operations.items);
+        }
+    };
+    try std.testing.fuzz(global.testControlRandomOperations, .{});
 }

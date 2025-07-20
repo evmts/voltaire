@@ -308,7 +308,7 @@ test "memory expansion gas cost performance benchmark" {
         const lookup_duration = end_time - start_time;
         
         std.debug.print("Lookup table performance: {} ns total, {} ns avg per operation\n", 
-                       .{ lookup_duration, lookup_duration / iterations });
+                       .{ lookup_duration, @divTrunc(lookup_duration, iterations) });
     }
     
     // Benchmark pure calculation performance for comparison
@@ -325,7 +325,7 @@ test "memory expansion gas cost performance benchmark" {
         const calc_duration = end_time - start_time;
         
         std.debug.print("Pure calculation performance: {} ns total, {} ns avg per operation\n", 
-                       .{ calc_duration, calc_duration / iterations });
+                       .{ calc_duration, @divTrunc(calc_duration, iterations) });
     }
 }
 

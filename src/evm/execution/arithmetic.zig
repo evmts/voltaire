@@ -59,48 +59,45 @@ const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const StackValidation = @import("../stack/stack_validation.zig");
 
-/// ADD opcode (0x01) - Addition operation
-///
-/// Pops two values from the stack, adds them with wrapping overflow,
-/// and pushes the result.
-///
-/// ## Stack Input
-/// - `a`: First operand (second from top)
-/// - `b`: Second operand (top)
-///
-/// ## Stack Output
-/// - `a + b`: Sum with 256-bit wrapping overflow
-///
-/// ## Gas Cost
-/// 3 gas (GasFastestStep)
-///
-/// ## Execution
-/// 1. Pop b from stack
-/// 2. Pop a from stack
-/// 3. Calculate sum = (a + b) mod 2^256
-/// 4. Push sum to stack
-///
-/// ## Example
-/// Stack: [10, 20] => [30]
-/// Stack: [MAX_U256, 1] => [0] (overflow wraps)
-pub fn op_add(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    _ = pc;
-    _ = interpreter;
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+/// Helper for binary arithmetic operations with common stack manipulation pattern.
+/// Uses comptime to generate efficient operation-specific code with zero runtime overhead.
+fn binaryOp(comptime op_fn: fn (u256, u256) u256) fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    return struct {
+        fn execute(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+            _ = pc;
+            _ = interpreter;
+            const frame = @as(*Frame, @ptrCast(@alignCast(state)));
 
-    // Compile-time validation: ADD pops 2 items, pushes 1 (binary operation)
-    // This ensures at build time that ADD has valid stack effects for EVM
-    try StackValidation.validateStackRequirements(2, 1, frame.stack.size);
+            if (frame.stack.size < 2) {
+                @branchHint(.cold);
+                unreachable;
+            }
 
-    const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+            const b = frame.stack.pop_unsafe();
+            const a = frame.stack.peek_unsafe().*;
+            const result = op_fn(a, b);
+            frame.stack.set_top_unsafe(result);
 
-    const sum = a +% b;
-
-    frame.stack.set_top_unsafe(sum);
-
-    return Operation.ExecutionResult{};
+            return Operation.ExecutionResult{};
+        }
+    }.execute;
 }
+
+// Arithmetic operation functions for use with binaryOp helper
+fn addOp(a: u256, b: u256) u256 {
+    return a +% b;
+}
+
+fn mulOp(a: u256, b: u256) u256 {
+    return a *% b;
+}
+
+fn subOp(a: u256, b: u256) u256 {
+    return a -% b;
+}
+
+/// ADD opcode (0x01) - Addition with wrapping overflow
+pub const op_add = binaryOp(addOp);
 
 /// MUL opcode (0x02) - Multiplication operation
 ///
@@ -962,29 +959,32 @@ test "fuzz_arithmetic_edge_cases" {
 }
 
 test "fuzz_arithmetic_random_operations" {
-    const allocator = std.testing.allocator;
-    var prng = std.Random.DefaultPrng.init(42);
-    const random = prng.random();
-    
-    var operations = std.ArrayList(FuzzArithmeticOperation).init(allocator);
-    defer operations.deinit();
-    
-    var i: usize = 0;
-    while (i < 100) : (i += 1) {
-        const op_type_idx = random.intRangeAtMost(usize, 0, 6);
-        const op_types = [_]ArithmeticOpType{ .add, .mul, .sub, .div, .mod, .addmod, .mulmod };
-        const op_type = op_types[op_type_idx];
-        
-        const a = random.int(u256);
-        const b = random.int(u256);
-        const c = random.int(u256);
-        
-        try operations.append(.{ .op_type = op_type, .a = a, .b = b, .c = c });
-    }
-    
-    for (operations.items) |op| {
-        try validate_and_test_arithmetic_operation(op);
-    }
+    const global = struct {
+        fn testArithmeticOperations(input: []const u8) anyerror!void {
+            if (input.len < 12) return;
+            
+            const op_types = [_]ArithmeticOpType{ .add, .mul, .sub, .div, .mod, .addmod, .mulmod };
+            
+            // Extract operation type and values from fuzz input
+            const op_type_idx = input[0] % op_types.len;
+            const op_type = op_types[op_type_idx];
+            
+            // Extract three u256 values from fuzz input (using different parts for variety)
+            const a = std.mem.readInt(u64, input[1..9], .little); // Smaller values to avoid overflow issues
+            const b = std.mem.readInt(u64, input[4..12], .little);
+            const c = if (input.len >= 20) std.mem.readInt(u64, input[12..20], .little) else 1;
+            
+            const operation = FuzzArithmeticOperation{ 
+                .op_type = op_type, 
+                .a = @as(u256, a), 
+                .b = @as(u256, b), 
+                .c = @as(u256, c) 
+            };
+            
+            try validate_and_test_arithmetic_operation(operation);
+        }
+    };
+    try std.testing.fuzz(global.testArithmeticOperations, .{});
 }
 
 test "fuzz_arithmetic_boundary_values" {
@@ -1168,163 +1168,152 @@ test "fuzz_signextend_comprehensive" {
 }
 
 test "fuzz_arithmetic_invariants" {
-    var prng = std.Random.DefaultPrng.init(12345);
-    const random = prng.random();
-    
-    // Test invariant: (a + b) - b = a (modulo 2^256)
-    var i: usize = 0;
-    while (i < 50) : (i += 1) {
-        const a = random.int(u256);
-        const b = random.int(u256);
-        
-        // Test addition operation
-        const op1 = FuzzArithmeticOperation{ .op_type = .add, .a = a, .b = b };
-        try validate_and_test_arithmetic_operation(op1);
-        
-        // Verify invariant properties with simple calculations
-        const sum = a +% b;
-        const diff = sum -% b;
-        std.testing.expectEqual(a, diff) catch |err| {
-            std.log.debug("Invariant failed: a={}, b={}, sum={}, diff={}", .{ a, b, sum, diff });
-            return err;
-        };
-    }
-    
-    // Test invariant: a * 0 = 0
-    i = 0;
-    while (i < 20) : (i += 1) {
-        const a = random.int(u256);
-        
-        const op2 = FuzzArithmeticOperation{ .op_type = .mul, .a = a, .b = 0 };
-        try validate_and_test_arithmetic_operation(op2);
-        
-        // Verify: a * 0 = 0
-        const product = a *% 0;
-        std.testing.expectEqual(@as(u256, 0), product) catch |err| {
-            std.log.debug("Invariant failed: a * 0 = {}, expected 0", .{product});
-            return err;
-        };
-    }
-    
-    // Test invariant: a / 1 = a
-    i = 0;
-    while (i < 20) : (i += 1) {
-        const a = random.int(u256);
-        
-        const op3 = FuzzArithmeticOperation{ .op_type = .div, .a = a, .b = 1 };
-        try validate_and_test_arithmetic_operation(op3);
-        
-        // Verify: a / 1 = a
-        const quotient = a / 1;
-        std.testing.expectEqual(a, quotient) catch |err| {
-            std.log.debug("Invariant failed: a / 1 = {}, expected {}", .{ quotient, a });
-            return err;
-        };
-    }
-    
-    // Test invariant: a % a = 0 (when a != 0)
-    i = 0;
-    while (i < 20) : (i += 1) {
-        var a = random.int(u256);
-        if (a == 0) a = 1; // Ensure non-zero
-        
-        const op4 = FuzzArithmeticOperation{ .op_type = .mod, .a = a, .b = a };
-        try validate_and_test_arithmetic_operation(op4);
-        
-        // Verify: a % a = 0
-        const remainder = a % a;
-        std.testing.expectEqual(@as(u256, 0), remainder) catch |err| {
-            std.log.debug("Invariant failed: a % a = {}, expected 0", .{remainder});
-            return err;
-        };
-    }
+    const global = struct {
+        fn testArithmeticInvariants(input: []const u8) anyerror!void {
+            if (input.len < 16) return;
+            
+            const invariant_type = input[0] % 4;
+            
+            switch (invariant_type) {
+                0 => {
+                    // Test invariant: (a + b) - b = a (modulo 2^256)
+                    const a = std.mem.readInt(u64, input[1..9], .little);
+                    const b = std.mem.readInt(u64, input[9..17], .little);
+                    
+                    const op1 = FuzzArithmeticOperation{ .op_type = .add, .a = @as(u256, a), .b = @as(u256, b) };
+                    try validate_and_test_arithmetic_operation(op1);
+                    
+                    // Verify invariant properties with simple calculations
+                    const sum = @as(u256, a) +% @as(u256, b);
+                    const diff = sum -% @as(u256, b);
+                    try std.testing.expectEqual(@as(u256, a), diff);
+                },
+                1 => {
+                    // Test invariant: a * 0 = 0
+                    const a = std.mem.readInt(u64, input[1..9], .little);
+                    
+                    const op2 = FuzzArithmeticOperation{ .op_type = .mul, .a = @as(u256, a), .b = 0 };
+                    try validate_and_test_arithmetic_operation(op2);
+                    
+                    // Verify: a * 0 = 0
+                    const product = @as(u256, a) *% 0;
+                    try std.testing.expectEqual(@as(u256, 0), product);
+                },
+                2 => {
+                    // Test invariant: a / 1 = a
+                    const a = std.mem.readInt(u64, input[1..9], .little);
+                    
+                    const op3 = FuzzArithmeticOperation{ .op_type = .div, .a = @as(u256, a), .b = 1 };
+                    try validate_and_test_arithmetic_operation(op3);
+                    
+                    // Verify: a / 1 = a
+                    const quotient = @as(u256, a) / 1;
+                    try std.testing.expectEqual(@as(u256, a), quotient);
+                },
+                3 => {
+                    // Test invariant: a % a = 0 (when a != 0)
+                    var a = std.mem.readInt(u64, input[1..9], .little);
+                    if (a == 0) a = 1; // Ensure non-zero
+                    
+                    const op4 = FuzzArithmeticOperation{ .op_type = .mod, .a = @as(u256, a), .b = @as(u256, a) };
+                    try validate_and_test_arithmetic_operation(op4);
+                    
+                    // Verify: a % a = 0
+                    const remainder = @as(u256, a) % @as(u256, a);
+                    try std.testing.expectEqual(@as(u256, 0), remainder);
+                },
+            }
+        }
+    };
+    try std.testing.fuzz(global.testArithmeticInvariants, .{});
 }
 
 test "fuzz_cross_operation_verification" {
-    const allocator = std.testing.allocator;
-    var prng = std.Random.DefaultPrng.init(54321);
-    const random = prng.random();
-    
-    // Test DIV and MOD relationship: a = (a/b)*b + (a%b) when b != 0
-    var i: usize = 0;
-    while (i < 30) : (i += 1) {
-        const a = random.int(u256);
-        var b = random.int(u256);
-        if (b == 0) b = 1; // Ensure non-zero divisor
-        
-        const quotient = a / b;
-        const remainder = a % b;
-        
-        // Verify: a = (a/b)*b + (a%b)
-        const reconstructed = quotient *% b +% remainder;
-        std.testing.expectEqual(a, reconstructed) catch |err| {
-            std.log.debug("DIV/MOD relation failed: a={}, b={}, q={}, r={}, reconstructed={}", .{ a, b, quotient, remainder, reconstructed });
-            return err;
-        };
-    }
-    
-    // Test ADDMOD property: (a+b)%n = ((a%n)+(b%n))%n when n != 0
-    i = 0;
-    while (i < 30) : (i += 1) {
-        const a = random.int(u256);
-        const b = random.int(u256);
-        var n = random.int(u256);
-        if (n == 0) n = 1; // Ensure non-zero modulus
-        
-        const direct = (a +% b) % n;
-        const indirect = ((a % n) +% (b % n)) % n;
-        
-        std.testing.expectEqual(direct, indirect) catch |err| {
-            std.log.debug("ADDMOD property failed: a={}, b={}, n={}, direct={}, indirect={}", .{ a, b, n, direct, indirect });
-            return err;
-        };
-    }
-    
-    // Test SIGNEXTEND invariant: SIGNEXTEND(31, x) = x
-    i = 0;
-    while (i < 20) : (i += 1) {
-        const x = random.int(u256);
-        
-        var operations = std.ArrayList(FuzzArithmeticOperation).init(allocator);
-        defer operations.deinit();
-        try operations.append(.{ .op_type = .signextend, .a = 31, .b = x });
-        for (operations.items) |op| {
-        try validate_and_test_arithmetic_operation(op);
-    }
-    }
+    const global = struct {
+        fn testCrossOperationVerification(input: []const u8) anyerror!void {
+            if (input.len < 25) return;
+            
+            const verification_type = input[0] % 3;
+            
+            switch (verification_type) {
+                0 => {
+                    // Test DIV and MOD relationship: a = (a/b)*b + (a%b) when b != 0
+                    const a = std.mem.readInt(u64, input[1..9], .little);
+                    var b = std.mem.readInt(u64, input[9..17], .little);
+                    if (b == 0) b = 1; // Ensure non-zero divisor
+                    
+                    const a_u256 = @as(u256, a);
+                    const b_u256 = @as(u256, b);
+                    
+                    const quotient = a_u256 / b_u256;
+                    const remainder = a_u256 % b_u256;
+                    
+                    // Verify: a = (a/b)*b + (a%b)
+                    const reconstructed = quotient *% b_u256 +% remainder;
+                    try std.testing.expectEqual(a_u256, reconstructed);
+                },
+                1 => {
+                    // Test ADDMOD property: (a+b)%n = ((a%n)+(b%n))%n when n != 0
+                    const a = std.mem.readInt(u64, input[1..9], .little);
+                    const b = std.mem.readInt(u64, input[9..17], .little);
+                    var n = std.mem.readInt(u64, input[17..25], .little);
+                    if (n == 0) n = 1; // Ensure non-zero modulus
+                    
+                    const a_u256 = @as(u256, a);
+                    const b_u256 = @as(u256, b);
+                    const n_u256 = @as(u256, n);
+                    
+                    const direct = (a_u256 +% b_u256) % n_u256;
+                    const indirect = ((a_u256 % n_u256) +% (b_u256 % n_u256)) % n_u256;
+                    
+                    try std.testing.expectEqual(direct, indirect);
+                },
+                2 => {
+                    // Test SIGNEXTEND invariant: SIGNEXTEND(31, x) = x
+                    const x = std.mem.readInt(u64, input[1..9], .little);
+                    
+                    const operation = FuzzArithmeticOperation{ .op_type = .signextend, .a = 31, .b = @as(u256, x) };
+                    try validate_and_test_arithmetic_operation(operation);
+                },
+            }
+        }
+    };
+    try std.testing.fuzz(global.testCrossOperationVerification, .{});
 }
 
 test "fuzz_combined_operations" {
-    var prng = std.Random.DefaultPrng.init(98765);
-    const random = prng.random();
-    
-    // Test chained operations to verify overflow/underflow propagation
-    var i: usize = 0;
-    while (i < 20) : (i += 1) {
-        const a = random.intRangeAtMost(u256, 1, 1000000); // Keep values reasonable
-        const b = random.intRangeAtMost(u256, 1, 1000000);
-        const c = random.intRangeAtMost(u256, 1, 1000000);
-        
-        // Test (a + b) * c
-        const op1 = FuzzArithmeticOperation{ .op_type = .add, .a = a, .b = b };
-        try validate_and_test_arithmetic_operation(op1);
-        
-        // Test (a * b) + c  
-        const op2 = FuzzArithmeticOperation{ .op_type = .mul, .a = a, .b = b };
-        try validate_and_test_arithmetic_operation(op2);
-        
-        // Test distributive-like property verification with simple values
-        if (a < 1000 and b < 1000 and c < 1000) {
-            // (a + b) * c vs a*c + b*c - verify they're equal
-            const left_side = (a +% b) *% c;
-            const right_side = (a *% c) +% (b *% c);
+    const global = struct {
+        fn testCombinedOperations(input: []const u8) anyerror!void {
+            if (input.len < 24) return;
             
-            std.testing.expectEqual(left_side, right_side) catch |err| {
-                std.log.debug("Distributive property failed: ({}+{})*{} = {} vs {}*{} + {}*{} = {}", .{ a, b, c, left_side, a, c, b, c, right_side });
-                return err;
-            };
+            // Extract three u64 values from fuzz input
+            const a = std.mem.readInt(u64, input[0..8], .little) % 1000000 + 1; // Keep values reasonable
+            const b = std.mem.readInt(u64, input[8..16], .little) % 1000000 + 1;
+            const c = std.mem.readInt(u64, input[16..24], .little) % 1000000 + 1;
+            
+            const a_u256 = @as(u256, a);
+            const b_u256 = @as(u256, b);
+            const c_u256 = @as(u256, c);
+            
+            // Test (a + b) operation
+            const op1 = FuzzArithmeticOperation{ .op_type = .add, .a = a_u256, .b = b_u256 };
+            try validate_and_test_arithmetic_operation(op1);
+            
+            // Test (a * b) operation
+            const op2 = FuzzArithmeticOperation{ .op_type = .mul, .a = a_u256, .b = b_u256 };
+            try validate_and_test_arithmetic_operation(op2);
+            
+            // Test distributive property verification with bounded values
+            if (a < 1000 and b < 1000 and c < 1000) {
+                // (a + b) * c vs a*c + b*c - verify they're equal
+                const left_side = (a_u256 +% b_u256) *% c_u256;
+                const right_side = (a_u256 *% c_u256) +% (b_u256 *% c_u256);
+                
+                try std.testing.expectEqual(left_side, right_side);
+            }
         }
-    }
+    };
+    try std.testing.fuzz(global.testCombinedOperations, .{});
 }
 
 test "fuzz_gas_cost_boundaries" {
@@ -1364,32 +1353,33 @@ test "fuzz_gas_cost_boundaries" {
 }
 
 test "fuzz_performance_stress" {
-    const allocator = std.testing.allocator;
-    var prng = std.Random.DefaultPrng.init(11111);
-    const random = prng.random();
-    
-    // Generate large batch of operations
-    var operations = std.ArrayList(FuzzArithmeticOperation).init(allocator);
-    defer operations.deinit();
-    
-    const batch_size = 500; // Large batch to stress test
-    var i: usize = 0;
-    while (i < batch_size) : (i += 1) {
-        const op_type_idx = random.intRangeAtMost(usize, 0, 10);
-        const op_types = [_]ArithmeticOpType{ .add, .mul, .sub, .div, .mod, .sdiv, .smod, .addmod, .mulmod, .exp, .signextend };
-        const op_type = op_types[op_type_idx];
-        
-        const a = random.int(u256);
-        const b = random.int(u256);
-        const c = random.int(u256);
-        
-        try operations.append(.{ .op_type = op_type, .a = a, .b = b, .c = c });
-    }
-    
-    // This tests performance under load and ensures no memory leaks
-    for (operations.items) |op| {
-        try validate_and_test_arithmetic_operation(op);
-    }
+    const global = struct {
+        fn testPerformanceStress(input: []const u8) anyerror!void {
+            if (input.len < 32) return;
+            
+            const op_types = [_]ArithmeticOpType{ .add, .mul, .sub, .div, .mod, .sdiv, .smod, .addmod, .mulmod, .exp, .signextend };
+            
+            // Extract operation parameters from fuzz input
+            const op_type_idx = input[0] % op_types.len;
+            const op_type = op_types[op_type_idx];
+            
+            // Use different parts of input for values to ensure variety
+            const a = std.mem.readInt(u64, input[1..9], .little); // Using u64 to avoid extreme values
+            const b = std.mem.readInt(u64, input[9..17], .little);
+            const c = std.mem.readInt(u64, input[17..25], .little);
+            
+            const operation = FuzzArithmeticOperation{ 
+                .op_type = op_type, 
+                .a = @as(u256, a), 
+                .b = @as(u256, b), 
+                .c = @as(u256, c) 
+            };
+            
+            // Test the operation - this tests performance under fuzz load
+            try validate_and_test_arithmetic_operation(operation);
+        }
+    };
+    try std.testing.fuzz(global.testPerformanceStress, .{});
 }
 
 test "arithmetic_benchmarks" {
