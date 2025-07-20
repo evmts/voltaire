@@ -137,9 +137,17 @@ pub fn build(b: *std.Build) void {
     // Custom build option to disable precompiles
     const no_precompiles = b.option(bool, "no_precompiles", "Disable all EVM precompiles for minimal build") orelse false;
     
+    // Detect Ubuntu native build (has Rust library linking issues)
+    const force_bn254 = b.option(bool, "force_bn254", "Force BN254 even on Ubuntu") orelse false;
+    const is_ubuntu_native = target.result.os.tag == .linux and target.result.cpu.arch == .x86_64 and !force_bn254;
+    
+    // Disable BN254 on Ubuntu native builds to avoid Rust library linking issues
+    const no_bn254 = no_precompiles or is_ubuntu_native;
+    
     // Create build options module
     const build_options = b.addOptions();
     build_options.addOption(bool, "no_precompiles", no_precompiles);
+    build_options.addOption(bool, "no_bn254", no_bn254);
 
     const lib_mod = b.createModule(.{
         .root_source_file = b.path("src/root.zig"),
@@ -189,10 +197,10 @@ pub fn build(b: *std.Build) void {
 
     // BN254 Rust library integration for ECMUL and ECPAIRING precompiles
     // Uses arkworks ecosystem for production-grade elliptic curve operations
-    const rust_profile = if (optimize == .Debug) "dev" else "release";
-    const rust_target_dir = if (optimize == .Debug) "debug" else "release";
-
+    // Skip on Ubuntu native builds due to Rust library linking issues
+    
     // Determine the Rust target triple based on the Zig target
+    // Always specify explicit Rust target for consistent library format
     const rust_target = switch (target.result.os.tag) {
         .linux => switch (target.result.cpu.arch) {
             .x86_64 => "x86_64-unknown-linux-gnu",
@@ -207,47 +215,60 @@ pub fn build(b: *std.Build) void {
         else => null,
     };
     
-    const rust_build = if (rust_target) |target_triple|
-        b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
-    else
-        b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
+    const bn254_lib = if (!no_bn254) blk: {
+        const rust_profile = if (optimize == .Debug) "dev" else "release";
+        const rust_target_dir = if (optimize == .Debug) "debug" else "release";
+        
+        const rust_build = if (rust_target) |target_triple|
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
+        else
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
 
-    // Fix for macOS linking issues (only on macOS)
-    if (target.result.os.tag == .macos) {
-        rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+        // Fix for macOS linking issues (only on macOS)
+        if (target.result.os.tag == .macos) {
+            rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+        }
+
+        // Create static library artifact for the Rust BN254 wrapper
+        const lib = b.addStaticLibrary(.{
+            .name = "bn254_wrapper",
+            .target = target,
+            .optimize = optimize,
+        });
+
+        // Link the compiled Rust library
+        const rust_lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, rust_target_dir })
+        else
+            b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
+        
+        // Use static library linking approach for all platforms
+        lib.addObjectFile(b.path(rust_lib_path));
+        lib.linkLibC();
+        
+        // Make the rust build a dependency
+        lib.step.dependOn(&rust_build.step);
+        
+        break :blk lib;
+    } else null;
+
+    // Link additional system libraries that Rust might need (only if BN254 is enabled)
+    if (bn254_lib) |lib| {
+        if (target.result.os.tag == .linux) {
+            lib.linkSystemLibrary("dl");
+            lib.linkSystemLibrary("pthread");
+            lib.linkSystemLibrary("m");
+            lib.linkSystemLibrary("rt");
+        } else if (target.result.os.tag == .macos) {
+            lib.linkFramework("Security");
+            lib.linkFramework("CoreFoundation");
+        }
+
+        // Add include path for C header
+        lib.addIncludePath(b.path("src/bn254_wrapper"));
+
+        // The rust build dependency is already set up above in the conditional block
     }
-
-    // Create static library artifact for the Rust BN254 wrapper
-    const bn254_lib = b.addStaticLibrary(.{
-        .name = "bn254_wrapper",
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // Link the compiled Rust library
-    const rust_lib_path = if (rust_target) |target_triple|
-        b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, rust_target_dir })
-    else
-        b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
-    bn254_lib.addObjectFile(b.path(rust_lib_path));
-    bn254_lib.linkLibC();
-
-    // Link additional system libraries that Rust might need
-    if (target.result.os.tag == .linux) {
-        bn254_lib.linkSystemLibrary("dl");
-        bn254_lib.linkSystemLibrary("pthread");
-        bn254_lib.linkSystemLibrary("m");
-        bn254_lib.linkSystemLibrary("rt");
-    } else if (target.result.os.tag == .macos) {
-        bn254_lib.linkFramework("Security");
-        bn254_lib.linkFramework("CoreFoundation");
-    }
-
-    // Add include path for C header
-    bn254_lib.addIncludePath(b.path("src/bn254_wrapper"));
-
-    // Make the rust build a dependency
-    bn254_lib.step.dependOn(&rust_build.step);
 
     // C-KZG-4844 Zig bindings from evmts/c-kzg-4844
     const c_kzg_dep = b.dependency("c_kzg_4844", .{
@@ -268,9 +289,11 @@ pub fn build(b: *std.Build) void {
     evm_mod.addImport("crypto", crypto_mod);
     evm_mod.addImport("build_options", build_options.createModule());
 
-    // Link BN254 Rust library to EVM module (native targets only)
-    evm_mod.linkLibrary(bn254_lib);
-    evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
+    // Link BN254 Rust library to EVM module (native targets only, if enabled)
+    if (bn254_lib) |lib| {
+        evm_mod.linkLibrary(lib);
+        evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
+    }
 
     // Link c-kzg library to EVM module
     evm_mod.linkLibrary(c_kzg_lib);
@@ -295,51 +318,57 @@ pub fn build(b: *std.Build) void {
     // Create bench module - always use ReleaseFast for benchmarks
     const bench_optimize = if (optimize == .Debug) .ReleaseFast else optimize;
     
-    // Create a separate BN254 library for benchmarks that always uses release mode
-    const bench_rust_profile = "release";
-    const bench_rust_target_dir = "release";
-    
-    const bench_rust_build = if (rust_target) |target_triple|
-        b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
-    else
-        b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
-    
-    // Fix for macOS linking issues (only on macOS)
-    if (target.result.os.tag == .macos) {
-        bench_rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
-    }
-    
-    // Create static library artifact for the Rust BN254 wrapper (bench version)
-    const bench_bn254_lib = b.addStaticLibrary(.{
-        .name = "bn254_wrapper_bench",
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    
-    // Link the compiled Rust library
-    const bench_rust_lib_path = if (rust_target) |target_triple|
-        b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, bench_rust_target_dir })
-    else
-        b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
-    bench_bn254_lib.addObjectFile(b.path(bench_rust_lib_path));
-    bench_bn254_lib.linkLibC();
-    
-    // Link additional system libraries that Rust might need
-    if (target.result.os.tag == .linux) {
-        bench_bn254_lib.linkSystemLibrary("dl");
-        bench_bn254_lib.linkSystemLibrary("pthread");
-        bench_bn254_lib.linkSystemLibrary("m");
-        bench_bn254_lib.linkSystemLibrary("rt");
-    } else if (target.result.os.tag == .macos) {
-        bench_bn254_lib.linkFramework("Security");
-        bench_bn254_lib.linkFramework("CoreFoundation");
-    }
-    
-    // Add include path for C header
-    bench_bn254_lib.addIncludePath(b.path("src/bn254_wrapper"));
-    
-    // Make the rust build a dependency
-    bench_bn254_lib.step.dependOn(&bench_rust_build.step);
+    // Create a separate BN254 library for benchmarks that always uses release mode (if enabled)
+    const bench_bn254_lib = if (!no_bn254) blk: {
+        const bench_rust_profile = "release";
+        const bench_rust_target_dir = "release";
+        
+        const bench_rust_build = if (rust_target) |target_triple|
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
+        else
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
+        
+        // Fix for macOS linking issues (only on macOS)
+        if (target.result.os.tag == .macos) {
+            bench_rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+        }
+        
+        // Create static library artifact for the Rust BN254 wrapper (bench version)
+        const lib = b.addStaticLibrary(.{
+            .name = "bn254_wrapper_bench",
+            .target = target,
+            .optimize = bench_optimize,
+        });
+        
+        // Link the compiled Rust library
+        const bench_rust_lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, bench_rust_target_dir })
+        else
+            b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
+        
+        // Use static library linking approach for all platforms
+        lib.addObjectFile(b.path(bench_rust_lib_path));
+        lib.linkLibC();
+        
+        // Link additional system libraries that Rust might need
+        if (target.result.os.tag == .linux) {
+            lib.linkSystemLibrary("dl");
+            lib.linkSystemLibrary("pthread");
+            lib.linkSystemLibrary("m");
+            lib.linkSystemLibrary("rt");
+        } else if (target.result.os.tag == .macos) {
+            lib.linkFramework("Security");
+            lib.linkFramework("CoreFoundation");
+        }
+        
+        // Add include path for C header
+        lib.addIncludePath(b.path("src/bn254_wrapper"));
+        
+        // Make the rust build a dependency
+        lib.step.dependOn(&bench_rust_build.step);
+        
+        break :blk lib;
+    } else null;
     
     // Create a separate EVM module for benchmarks with release-mode Rust dependencies
     const bench_evm_mod = b.createModule(.{
@@ -351,9 +380,11 @@ pub fn build(b: *std.Build) void {
     bench_evm_mod.addImport("crypto", crypto_mod);
     bench_evm_mod.addImport("build_options", build_options.createModule());
     
-    // Link BN254 Rust library to bench EVM module (native targets only)
-    bench_evm_mod.linkLibrary(bench_bn254_lib);
-    bench_evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
+    // Link BN254 Rust library to bench EVM module (native targets only, if enabled)
+    if (bench_bn254_lib) |lib| {
+        bench_evm_mod.linkLibrary(lib);
+        bench_evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
+    }
     
     // Link c-kzg library to bench EVM module
     bench_evm_mod.linkLibrary(c_kzg_lib);
@@ -389,9 +420,11 @@ pub fn build(b: *std.Build) void {
         .root_module = lib_mod,
     });
 
-    // Link BN254 Rust library to the library artifact
-    lib.linkLibrary(bn254_lib);
-    lib.addIncludePath(b.path("src/bn254_wrapper"));
+    // Link BN254 Rust library to the library artifact (if enabled)
+    if (bn254_lib) |bn254| {
+        lib.linkLibrary(bn254);
+        lib.addIncludePath(b.path("src/bn254_wrapper"));
+    }
 
     // Note: c-kzg is now available as a module import, no need to link to main library
 
@@ -845,23 +878,27 @@ pub fn build(b: *std.Build) void {
     const blake2f_test_step = b.step("test-blake2f", "Run BLAKE2f precompile tests");
     blake2f_test_step.dependOn(&run_blake2f_test.step);
 
-    // Add BN254 Rust wrapper tests
-    const bn254_rust_test = b.addTest(.{
-        .name = "bn254-rust-test",
-        .root_source_file = b.path("test/evm/precompiles/bn254_rust_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    bn254_rust_test.root_module.stack_check = false;
-    bn254_rust_test.root_module.addImport("primitives", primitives_mod);
-    bn254_rust_test.root_module.addImport("evm", evm_mod);
-    // Link BN254 Rust library to tests
-    bn254_rust_test.linkLibrary(bn254_lib);
-    bn254_rust_test.addIncludePath(b.path("src/bn254_wrapper"));
+    // Add BN254 Rust wrapper tests (only if BN254 is enabled)
+    const run_bn254_rust_test = if (bn254_lib) |bn254_library| blk: {
+        const bn254_rust_test = b.addTest(.{
+            .name = "bn254-rust-test",
+            .root_source_file = b.path("test/evm/precompiles/bn254_rust_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        bn254_rust_test.root_module.stack_check = false;
+        bn254_rust_test.root_module.addImport("primitives", primitives_mod);
+        bn254_rust_test.root_module.addImport("evm", evm_mod);
+        // Link BN254 Rust library to tests
+        bn254_rust_test.linkLibrary(bn254_library);
+        bn254_rust_test.addIncludePath(b.path("src/bn254_wrapper"));
 
-    const run_bn254_rust_test = b.addRunArtifact(bn254_rust_test);
-    const bn254_rust_test_step = b.step("test-bn254-rust", "Run BN254 Rust wrapper precompile tests");
-    bn254_rust_test_step.dependOn(&run_bn254_rust_test.step);
+        const run_test = b.addRunArtifact(bn254_rust_test);
+        const test_step_bn254 = b.step("test-bn254-rust", "Run BN254 Rust wrapper precompile tests");
+        test_step_bn254.dependOn(&run_test.step);
+        
+        break :blk run_test;
+    } else null;
 
     // Add E2E Simple tests
     const e2e_simple_test = b.addTest(.{
@@ -1055,7 +1092,9 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_sha256_test.step);
     test_step.dependOn(&run_ripemd160_test.step);
     test_step.dependOn(&run_blake2f_test.step);
-    test_step.dependOn(&run_bn254_rust_test.step);
+    if (run_bn254_rust_test) |bn254_test| {
+        test_step.dependOn(&bn254_test.step);
+    }
     test_step.dependOn(&run_e2e_simple_test.step);
     test_step.dependOn(&run_e2e_error_test.step);
     test_step.dependOn(&run_e2e_data_test.step);

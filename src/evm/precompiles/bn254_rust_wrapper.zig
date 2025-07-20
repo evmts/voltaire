@@ -5,12 +5,14 @@
 /// the arkworks ecosystem for production-grade elliptic curve operations.
 ///
 /// The Rust library is compiled as a static library and linked with Zig.
+/// On Ubuntu native builds, BN254 is disabled due to Rust library linking issues.
 const std = @import("std");
+const build_options = @import("build_options");
 
-/// C API bindings for the Rust BN254 library
-const c = @cImport({
+/// C API bindings for the Rust BN254 library (only if BN254 is enabled)
+const c = if (!build_options.no_bn254) @cImport({
     @cInclude("bn254_wrapper.h");
-});
+}) else struct {};
 
 /// BN254 operation error types
 pub const Bn254Error = error{
@@ -36,6 +38,9 @@ fn result_to_error(result: c_int) Bn254Error!void {
 /// Initialize the BN254 library
 /// This function is thread-safe and can be called multiple times
 pub fn init() Bn254Error!void {
+    if (build_options.no_bn254) {
+        return Bn254Error.InitializationFailed;
+    }
     const result = c.bn254_init();
     try result_to_error(result);
 }
@@ -55,6 +60,9 @@ pub fn init() Bn254Error!void {
 /// @param output Output data buffer (must be >= 64 bytes)
 /// @return Bn254Error on failure
 pub fn ecmul(input: []const u8, output: []u8) Bn254Error!void {
+    if (build_options.no_bn254) {
+        return Bn254Error.ComputationFailed;
+    }
     if (input.len < 96 or output.len < 64) {
         return Bn254Error.InvalidInput;
     }
@@ -78,6 +86,9 @@ pub fn ecmul(input: []const u8, output: []u8) Bn254Error!void {
 /// @param output Output data buffer (must be >= 32 bytes)
 /// @return Bn254Error on failure
 pub fn ecpairing(input: []const u8, output: []u8) Bn254Error!void {
+    if (build_options.no_bn254) {
+        return Bn254Error.ComputationFailed;
+    }
     if (input.len % 192 != 0 or output.len < 32) {
         return Bn254Error.InvalidInput;
     }
@@ -89,22 +100,40 @@ pub fn ecpairing(input: []const u8, output: []u8) Bn254Error!void {
 
 /// Get expected output size for ECMUL
 pub fn ecmul_output_size() usize {
+    if (build_options.no_bn254) {
+        return 64; // Standard ECMUL output size
+    }
     return c.bn254_ecmul_output_size();
 }
 
 /// Get expected output size for ECPAIRING
 pub fn ecpairing_output_size() usize {
+    if (build_options.no_bn254) {
+        return 32; // Standard ECPAIRING output size
+    }
     return c.bn254_ecpairing_output_size();
 }
 
 /// Validate ECMUL input format
 pub fn validate_ecmul_input(input: []const u8) Bn254Error!void {
+    if (build_options.no_bn254) {
+        if (input.len < 96) {
+            return Bn254Error.InvalidInput;
+        }
+        return;
+    }
     const result = c.bn254_ecmul_validate_input(input.ptr, @intCast(input.len));
     try result_to_error(result);
 }
 
 /// Validate ECPAIRING input format
 pub fn validate_ecpairing_input(input: []const u8) Bn254Error!void {
+    if (build_options.no_bn254) {
+        if (input.len % 192 != 0) {
+            return Bn254Error.InvalidInput;
+        }
+        return;
+    }
     const result = c.bn254_ecpairing_validate_input(input.ptr, @intCast(input.len));
     try result_to_error(result);
 }

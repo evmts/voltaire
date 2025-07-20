@@ -16,6 +16,8 @@ jobs:
         include:
           - os: macos-latest
             runs-on: macos-latest
+          - os: ubuntu-latest
+            runs-on: ubuntu-latest
         optimize:
           - ReleaseFast
           - ReleaseSmall
@@ -28,6 +30,10 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+
+      - name: Install Rust (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install Zig
         uses: mlugg/setup-zig@v2
@@ -219,15 +225,15 @@ jobs:
           echo "## CI Build Matrix Summary"
           echo ""
           echo "### Build Configurations Tested:"
-          echo "- Native builds: macOS with ReleaseFast and ReleaseSmall"
+          echo "- Native builds: macOS and Ubuntu with ReleaseFast and ReleaseSmall"
           echo "- Docker builds: Ubuntu, Alpine, Debian with ReleaseFast and ReleaseSmall"
           echo "- WASM builds: ReleaseFast and ReleaseSmall"
           echo ""
           echo "### Total Matrix Combinations:"
-          echo "- Native: 1 OS × 2 optimizations = 2 builds"
+          echo "- Native: 2 OS × 2 optimizations = 4 builds"
           echo "- Docker: 3 containers × 2 optimizations = 6 builds"
           echo "- WASM: 2 optimizations = 2 builds"
-          echo "- **Total: 10 build configurations**"
+          echo "- **Total: 12 build configurations**"
           echo ""
           
           # Check job statuses
