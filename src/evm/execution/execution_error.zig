@@ -205,3 +205,222 @@ pub fn get_description(err: Error) []const u8 {
         Error.SnapshotNotFound => "Snapshot not found in database",
     };
 }
+
+const testing = std.testing;
+
+test "get_description returns correct message for STOP error" {
+    const desc = get_description(Error.STOP);
+    try testing.expectEqualStrings("Normal STOP opcode execution", desc);
+}
+
+test "get_description returns correct message for REVERT error" {
+    const desc = get_description(Error.REVERT);
+    try testing.expectEqualStrings("REVERT opcode - state reverted", desc);
+}
+
+test "get_description returns correct message for INVALID error" {
+    const desc = get_description(Error.INVALID);
+    try testing.expectEqualStrings("INVALID opcode or invalid operation", desc);
+}
+
+test "get_description returns correct message for OutOfGas error" {
+    const desc = get_description(Error.OutOfGas);
+    try testing.expectEqualStrings("Out of gas", desc);
+}
+
+test "get_description returns correct message for StackUnderflow error" {
+    const desc = get_description(Error.StackUnderflow);
+    try testing.expectEqualStrings("Stack underflow", desc);
+}
+
+test "get_description returns correct message for StackOverflow error" {
+    const desc = get_description(Error.StackOverflow);
+    try testing.expectEqualStrings("Stack overflow (beyond 1024 elements)", desc);
+}
+
+test "get_description returns correct message for InvalidJump error" {
+    const desc = get_description(Error.InvalidJump);
+    try testing.expectEqualStrings("Jump to invalid destination", desc);
+}
+
+test "get_description returns correct message for InvalidOpcode error" {
+    const desc = get_description(Error.InvalidOpcode);
+    try testing.expectEqualStrings("Undefined opcode", desc);
+}
+
+test "get_description returns correct message for StaticStateChange error" {
+    const desc = get_description(Error.StaticStateChange);
+    try testing.expectEqualStrings("State modification in static context", desc);
+}
+
+test "get_description returns correct message for OutOfOffset error" {
+    const desc = get_description(Error.OutOfOffset);
+    try testing.expectEqualStrings("Memory access out of bounds", desc);
+}
+
+test "get_description returns correct message for GasUintOverflow error" {
+    const desc = get_description(Error.GasUintOverflow);
+    try testing.expectEqualStrings("Gas calculation overflow", desc);
+}
+
+test "get_description returns correct message for WriteProtection error" {
+    const desc = get_description(Error.WriteProtection);
+    try testing.expectEqualStrings("Write to protected storage", desc);
+}
+
+test "get_description returns correct message for ReturnDataOutOfBounds error" {
+    const desc = get_description(Error.ReturnDataOutOfBounds);
+    try testing.expectEqualStrings("Return data access out of bounds", desc);
+}
+
+test "get_description returns correct message for InvalidReturnDataAccess error" {
+    const desc = get_description(Error.InvalidReturnDataAccess);
+    try testing.expectEqualStrings("Invalid return data access - offset + size exceeds data length", desc);
+}
+
+test "get_description returns correct message for DeployCodeTooBig error" {
+    const desc = get_description(Error.DeployCodeTooBig);
+    try testing.expectEqualStrings("Contract creation code too large", desc);
+}
+
+test "get_description returns correct message for MaxCodeSizeExceeded error" {
+    const desc = get_description(Error.MaxCodeSizeExceeded);
+    try testing.expectEqualStrings("Contract code size exceeds limit", desc);
+}
+
+test "get_description returns correct message for InvalidCodeEntry error" {
+    const desc = get_description(Error.InvalidCodeEntry);
+    try testing.expectEqualStrings("Invalid contract entry code", desc);
+}
+
+test "get_description returns correct message for DepthLimit error" {
+    const desc = get_description(Error.DepthLimit);
+    try testing.expectEqualStrings("Call depth exceeds limit (1024)", desc);
+}
+
+test "get_description returns correct message for OutOfMemory error" {
+    const desc = get_description(Error.OutOfMemory);
+    try testing.expectEqualStrings("Out of memory allocation failed", desc);
+}
+
+test "get_description returns correct message for InvalidOffset error" {
+    const desc = get_description(Error.InvalidOffset);
+    try testing.expectEqualStrings("Invalid memory offset", desc);
+}
+
+test "get_description returns correct message for InvalidSize error" {
+    const desc = get_description(Error.InvalidSize);
+    try testing.expectEqualStrings("Invalid memory size", desc);
+}
+
+test "get_description returns correct message for MemoryLimitExceeded error" {
+    const desc = get_description(Error.MemoryLimitExceeded);
+    try testing.expectEqualStrings("Memory limit exceeded", desc);
+}
+
+test "get_description returns correct message for ChildContextActive error" {
+    const desc = get_description(Error.ChildContextActive);
+    try testing.expectEqualStrings("Child context is active", desc);
+}
+
+test "get_description returns correct message for NoChildContextToRevertOrCommit error" {
+    const desc = get_description(Error.NoChildContextToRevertOrCommit);
+    try testing.expectEqualStrings("No child context to revert or commit", desc);
+}
+
+test "get_description returns correct message for EOFNotSupported error" {
+    const desc = get_description(Error.EOFNotSupported);
+    try testing.expectEqualStrings("EOF (EVM Object Format) opcode not supported", desc);
+}
+
+test "get_description returns correct message for AccountNotFound error" {
+    const desc = get_description(Error.AccountNotFound);
+    try testing.expectEqualStrings("Account not found in database", desc);
+}
+
+test "get_description returns correct message for StorageNotFound error" {
+    const desc = get_description(Error.StorageNotFound);
+    try testing.expectEqualStrings("Storage slot not found in database", desc);
+}
+
+test "get_description returns correct message for CodeNotFound error" {
+    const desc = get_description(Error.CodeNotFound);
+    try testing.expectEqualStrings("Contract code not found in database", desc);
+}
+
+test "get_description returns correct message for InvalidAddress error" {
+    const desc = get_description(Error.InvalidAddress);
+    try testing.expectEqualStrings("Invalid address format", desc);
+}
+
+test "get_description returns correct message for DatabaseCorrupted error" {
+    const desc = get_description(Error.DatabaseCorrupted);
+    try testing.expectEqualStrings("Database corruption detected", desc);
+}
+
+test "get_description returns correct message for NetworkError error" {
+    const desc = get_description(Error.NetworkError);
+    try testing.expectEqualStrings("Network error accessing database", desc);
+}
+
+test "get_description returns correct message for PermissionDenied error" {
+    const desc = get_description(Error.PermissionDenied);
+    try testing.expectEqualStrings("Permission denied accessing database", desc);
+}
+
+test "get_description returns correct message for InvalidSnapshot error" {
+    const desc = get_description(Error.InvalidSnapshot);
+    try testing.expectEqualStrings("Invalid snapshot identifier", desc);
+}
+
+test "get_description returns correct message for NoBatchInProgress error" {
+    const desc = get_description(Error.NoBatchInProgress);
+    try testing.expectEqualStrings("No batch operation in progress", desc);
+}
+
+test "get_description returns correct message for SnapshotNotFound error" {
+    const desc = get_description(Error.SnapshotNotFound);
+    try testing.expectEqualStrings("Snapshot not found in database", desc);
+}
+
+test "get_description consistency - all errors have non-empty descriptions" {
+    const all_errors = [_]Error{
+        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
+        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
+        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
+        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
+        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
+        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
+        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
+        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
+        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
+        Error.SnapshotNotFound,
+    };
+    
+    for (all_errors) |err| {
+        const desc = get_description(err);
+        try testing.expect(desc.len > 0);
+    }
+}
+
+test "get_description formatting - descriptions are properly formatted" {
+    const all_errors = [_]Error{
+        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
+        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
+        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
+        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
+        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
+        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
+        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
+        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
+        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
+        Error.SnapshotNotFound,
+    };
+    
+    for (all_errors) |err| {
+        const desc = get_description(err);
+        try testing.expect(desc.len < 100);
+        try testing.expect(!std.mem.startsWith(u8, desc, " "));
+        try testing.expect(!std.mem.endsWith(u8, desc, " "));
+    }
+}

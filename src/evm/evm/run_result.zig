@@ -108,3 +108,119 @@ pub fn init(
         .output = output,
     };
 }
+
+const std = @import("std");
+const testing = std.testing;
+
+test "init creates RunResult with Success status" {
+    const result = init(1000, 300, Status.Success, null, null);
+    try testing.expectEqual(Status.Success, result.status);
+    try testing.expectEqual(@as(?ExecutionError.Error, null), result.err);
+    try testing.expectEqual(@as(u64, 300), result.gas_left);
+    try testing.expectEqual(@as(u64, 700), result.gas_used);
+    try testing.expectEqual(@as(?[]const u8, null), result.output);
+}
+
+test "init creates RunResult with Revert status and output data" {
+    const revert_reason = "require failed";
+    const result = init(2000, 500, Status.Revert, null, revert_reason);
+    try testing.expectEqual(Status.Revert, result.status);
+    try testing.expectEqual(@as(?ExecutionError.Error, null), result.err);
+    try testing.expectEqual(@as(u64, 500), result.gas_left);
+    try testing.expectEqual(@as(u64, 1500), result.gas_used);
+    try testing.expectEqualStrings(revert_reason, result.output.?);
+}
+
+test "init creates RunResult with Invalid status and error" {
+    const result = init(5000, 1000, Status.Invalid, ExecutionError.Error.StackUnderflow, null);
+    try testing.expectEqual(Status.Invalid, result.status);
+    try testing.expectEqual(ExecutionError.Error.StackUnderflow, result.err.?);
+    try testing.expectEqual(@as(u64, 1000), result.gas_left);
+    try testing.expectEqual(@as(u64, 4000), result.gas_used);
+    try testing.expectEqual(@as(?[]const u8, null), result.output);
+}
+
+test "init creates RunResult with OutOfGas status" {
+    const result = init(10000, 0, Status.OutOfGas, ExecutionError.Error.OutOfGas, null);
+    try testing.expectEqual(Status.OutOfGas, result.status);
+    try testing.expectEqual(ExecutionError.Error.OutOfGas, result.err.?);
+    try testing.expectEqual(@as(u64, 0), result.gas_left);
+    try testing.expectEqual(@as(u64, 10000), result.gas_used);
+    try testing.expectEqual(@as(?[]const u8, null), result.output);
+}
+
+test "init calculates gas_used correctly when all gas consumed" {
+    const result = init(1000, 0, Status.Success, null, null);
+    try testing.expectEqual(@as(u64, 0), result.gas_left);
+    try testing.expectEqual(@as(u64, 1000), result.gas_used);
+}
+
+test "init calculates gas_used correctly when no gas consumed" {
+    const result = init(1000, 1000, Status.Success, null, null);
+    try testing.expectEqual(@as(u64, 1000), result.gas_left);
+    try testing.expectEqual(@as(u64, 0), result.gas_used);
+}
+
+test "init handles empty output data correctly" {
+    const empty_data = "";
+    const result = init(1500, 750, Status.Success, null, empty_data);
+    try testing.expectEqual(Status.Success, result.status);
+    try testing.expectEqual(@as(u64, 750), result.gas_left);
+    try testing.expectEqual(@as(u64, 750), result.gas_used);
+    try testing.expectEqualStrings("", result.output.?);
+}
+
+test "init handles maximum gas values" {
+    const max_gas = std.math.maxInt(u64);
+    const result = init(max_gas, max_gas / 2, Status.Success, null, null);
+    try testing.expectEqual(@as(u64, max_gas / 2), result.gas_left);
+    try testing.expectEqual(@as(u64, max_gas / 2), result.gas_used);
+}
+
+test "init handles zero gas scenario" {
+    const result = init(0, 0, Status.OutOfGas, ExecutionError.Error.OutOfGas, null);
+    try testing.expectEqual(Status.OutOfGas, result.status);
+    try testing.expectEqual(@as(u64, 0), result.gas_left);
+    try testing.expectEqual(@as(u64, 0), result.gas_used);
+}
+
+test "init preserves all provided parameters" {
+    const output_data = "return data";
+    const result = init(3000, 800, Status.Success, null, output_data);
+    
+    try testing.expectEqual(Status.Success, result.status);
+    try testing.expectEqual(@as(?ExecutionError.Error, null), result.err);
+    try testing.expectEqual(@as(u64, 800), result.gas_left);
+    try testing.expectEqual(@as(u64, 2200), result.gas_used);
+    try testing.expectEqualStrings(output_data, result.output.?);
+}
+
+test "init handles all Status variants correctly" {
+    const statuses = [_]Status{ Status.Success, Status.Revert, Status.Invalid, Status.OutOfGas };
+    
+    for (statuses) |status| {
+        const result = init(1000, 500, status, null, null);
+        try testing.expectEqual(status, result.status);
+        try testing.expectEqual(@as(u64, 500), result.gas_left);
+        try testing.expectEqual(@as(u64, 500), result.gas_used);
+    }
+}
+
+test "init handles various ExecutionError types" {
+    const errors = [_]ExecutionError.Error{
+        ExecutionError.Error.STOP,
+        ExecutionError.Error.REVERT,
+        ExecutionError.Error.InvalidOpcode,
+        ExecutionError.Error.StackOverflow,
+        ExecutionError.Error.OutOfGas,
+        ExecutionError.Error.InvalidJump,
+    };
+    
+    for (errors) |error_type| {
+        const result = init(1000, 400, Status.Invalid, error_type, null);
+        try testing.expectEqual(Status.Invalid, result.status);
+        try testing.expectEqual(error_type, result.err.?);
+        try testing.expectEqual(@as(u64, 400), result.gas_left);
+        try testing.expectEqual(@as(u64, 600), result.gas_used);
+    }
+}
