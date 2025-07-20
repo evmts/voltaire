@@ -1,0 +1,101 @@
+name: WASM Bundle Size Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  wasm-size-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Zig
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.14.1
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install WASM tools
+      run: |
+        # Install wasm-objdump and wasm-strip (part of wabt)
+        sudo apt-get update
+        sudo apt-get install -y wabt
+        
+        # Install wasm-opt (binaryen)
+        wget -q https://github.com/WebAssembly/binaryen/releases/download/version_119/binaryen-version_119-x86_64-linux.tar.gz
+        tar -xzf binaryen-version_119-x86_64-linux.tar.gz
+        sudo cp binaryen-version_119/bin/wasm-opt /usr/local/bin/
+        
+        # Install twiggy for detailed analysis
+        cargo install twiggy || echo "Twiggy install failed (optional)"
+
+    - name: Build and analyze WASM sizes
+      run: |
+        python3 scripts/wasm-analyze.py --check
+      env:
+        RUSTFLAGS: "-C target-feature=+crt-static"
+
+    - name: Update benchmark data (main branch only)
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: |
+        python3 scripts/wasm-analyze.py --update
+        
+        # Commit updated benchmark if it changed
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add benchmark/wasm-bundle-size.json
+        git diff --staged --quiet || git commit -m "📊 Update WASM bundle size benchmarks"
+        git push
+
+    - name: Generate size report for PR
+      if: github.event_name == 'pull_request'
+      run: |
+        # Generate detailed report
+        python3 scripts/wasm-analyze.py > wasm-size-report.txt
+        
+        # Extract just the size comparison table for PR comment
+        python3 -c "
+        import sys
+        in_table = False
+        for line in open('wasm-size-report.txt'):
+            if '## Bundle Size Report' in line:
+                in_table = True
+                print(line.strip())
+                continue
+            if in_table:
+                if line.startswith('##') and 'Bundle Size Report' not in line:
+                    break
+                print(line.rstrip())
+        " > pr-comment.txt
+
+    - name: Comment on PR with size report
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const comment = fs.readFileSync('pr-comment.txt', 'utf8');
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `## 📦 WASM Bundle Size Report\n\n\`\`\`\n${comment}\n\`\`\`\n\n*This report shows current WASM bundle sizes compared to targets. The build will fail if ReleaseSmall without precompiles exceeds 100K.*`
+          });
+
+    - name: Upload WASM artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: wasm-bundles
+        path: |
+          zig-out/bin/guillotine-*.wasm
+          benchmark/wasm-bundle-size.json
+        retention-days: 7

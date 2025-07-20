@@ -1,0 +1,23 @@
+{
+  "targets": {
+    "releaseSmall": {
+      "withPrecompiles": 290000,
+      "withoutPrecompiles": 230000
+    },
+    "releaseFast": {
+      "withPrecompiles": 2560000,
+      "withoutPrecompiles": 2048000
+    }
+  },
+  "current": {
+    "releaseSmall": {
+      "withPrecompiles": 286777,
+      "withoutPrecompiles": 218741
+    },
+    "releaseFast": {
+      "withPrecompiles": 2235908,
+      "withoutPrecompiles": 1676804
+    }
+  },
+  "lastUpdated": "2025-07-20T07:39:54.727687Z"
+}
