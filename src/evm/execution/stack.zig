@@ -12,11 +12,11 @@ const Contract = @import("../frame/contract.zig");
 const Address = @import("primitives").Address;
 
 // Helper function to extract frame from state safely
-inline fn getFrame(state: *Operation.State) *Frame {
-    return state.get_frame();
+inline fn getFrame(state: Operation.State) *Frame {
+    return state;
 }
 
-pub fn op_pop(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_pop(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
@@ -27,7 +27,7 @@ pub fn op_pop(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
     return Operation.ExecutionResult{};
 }
 
-pub fn op_push0(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_push0(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
@@ -43,10 +43,10 @@ pub fn op_push0(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
 }
 
 // Optimized PUSH1 implementation with direct byte access
-pub fn op_push1(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_push1(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = interpreter;
     
-    const frame = state.get_frame();
+    const frame = state;
     
     if (frame.stack.size >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -62,12 +62,12 @@ pub fn op_push1(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
 }
 
 // Optimized PUSH2-PUSH8 implementations using u64 arithmetic
-pub fn make_push_small(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn make_push_small(comptime n: u8) fn (usize, Operation.Interpreter, Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     return struct {
-        pub fn push(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+        pub fn push(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
             _ = interpreter;
             
-            const frame = state.get_frame();
+            const frame = state;
             
             if (frame.stack.size >= Stack.CAPACITY) {
                 @branchHint(.cold);
@@ -94,9 +94,9 @@ pub fn make_push_small(comptime n: u8) fn (usize, *Operation.Interpreter, *Opera
 }
 
 // Generate push operations for PUSH1 through PUSH32
-pub fn make_push(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn make_push(comptime n: u8) fn (usize, Operation.Interpreter, Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     return struct {
-        pub fn push(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+        pub fn push(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
             _ = interpreter;
 
             const frame = getFrame(state);
@@ -125,7 +125,7 @@ pub fn make_push(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.S
 }
 
 // Runtime dispatch version for PUSH operations (used in ReleaseSmall mode)
-pub fn push_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn push_n(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = interpreter;
 
     const frame = getFrame(state);
@@ -168,9 +168,9 @@ pub fn push_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
 // PUSH operations are now generated directly in jump_table.zig using make_push()
 
 // Generate dup operations
-pub fn make_dup(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn make_dup(comptime n: u8) fn (usize, Operation.Interpreter, Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     return struct {
-        pub fn dup(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+        pub fn dup(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
             _ = pc;
             _ = interpreter;
 
@@ -197,88 +197,88 @@ pub fn make_dup(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.St
 // Runtime dispatch versions for DUP operations (used in ReleaseSmall mode)
 // Each DUP operation gets its own function to avoid opcode detection issues
 
-pub fn dup_1(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_1(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(1, state);
 }
 
-pub fn dup_2(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_2(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(2, state);
 }
 
-pub fn dup_3(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_3(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(3, state);
 }
 
-pub fn dup_4(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_4(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(4, state);
 }
 
-pub fn dup_5(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_5(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(5, state);
 }
 
-pub fn dup_6(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_6(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(6, state);
 }
 
-pub fn dup_7(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_7(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(7, state);
 }
 
-pub fn dup_8(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_8(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(8, state);
 }
 
-pub fn dup_9(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_9(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(9, state);
 }
 
-pub fn dup_10(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_10(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(10, state);
 }
 
-pub fn dup_11(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_11(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(11, state);
 }
 
-pub fn dup_12(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_12(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(12, state);
 }
 
-pub fn dup_13(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_13(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(13, state);
 }
 
-pub fn dup_14(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_14(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(14, state);
 }
 
-pub fn dup_15(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_15(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(15, state);
 }
 
-pub fn dup_16(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn dup_16(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return dup_impl(16, state);
 }
 
 // Common implementation for all DUP operations
-fn dup_impl(n: u8, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+fn dup_impl(n: u8, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     const frame = getFrame(state);
     
     // Validate stack requirements
@@ -298,9 +298,9 @@ fn dup_impl(n: u8, state: *Operation.State) ExecutionError.Error!Operation.Execu
 // DUP operations are now generated directly in jump_table.zig using make_dup()
 
 // Generate swap operations
-pub fn make_swap(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn make_swap(comptime n: u8) fn (usize, Operation.Interpreter, Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     return struct {
-        pub fn swap(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+        pub fn swap(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
             _ = pc;
             _ = interpreter;
 
@@ -319,88 +319,88 @@ pub fn make_swap(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.S
 // Runtime dispatch versions for SWAP operations (used in ReleaseSmall mode)
 // Each SWAP operation gets its own function to avoid opcode detection issues
 
-pub fn swap_1(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_1(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(1, state);
 }
 
-pub fn swap_2(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_2(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(2, state);
 }
 
-pub fn swap_3(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_3(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(3, state);
 }
 
-pub fn swap_4(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_4(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(4, state);
 }
 
-pub fn swap_5(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_5(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(5, state);
 }
 
-pub fn swap_6(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_6(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(6, state);
 }
 
-pub fn swap_7(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_7(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(7, state);
 }
 
-pub fn swap_8(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_8(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(8, state);
 }
 
-pub fn swap_9(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_9(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(9, state);
 }
 
-pub fn swap_10(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_10(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(10, state);
 }
 
-pub fn swap_11(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_11(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(11, state);
 }
 
-pub fn swap_12(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_12(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(12, state);
 }
 
-pub fn swap_13(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_13(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(13, state);
 }
 
-pub fn swap_14(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_14(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(14, state);
 }
 
-pub fn swap_15(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_15(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(15, state);
 }
 
-pub fn swap_16(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn swap_16(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc; _ = interpreter;
     return swap_impl(16, state);
 }
 
 // Common implementation for all SWAP operations
-fn swap_impl(n: u8, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+fn swap_impl(n: u8, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     const frame = getFrame(state);
     
     // Stack underflow check - SWAP needs n+1 items
@@ -433,8 +433,8 @@ test "optimized PUSH1 handles value correctly" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     const result = try op_push1(0, interpreter_ptr, state_ptr);
     try std.testing.expectEqual(@as(usize, 2), result.bytes_consumed);
@@ -462,8 +462,8 @@ test "optimized PUSH1 handles bytecode boundary" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     const result = try op_push1(0, interpreter_ptr, state_ptr);
     try std.testing.expectEqual(@as(usize, 2), result.bytes_consumed);
@@ -491,8 +491,8 @@ test "optimized PUSH2-PUSH8 handle values correctly" {
     var frame2 = try Frame.init(allocator, &vm, 1000000, contract2, primitives.Address.ZERO, &.{});
     defer frame2.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr2: *Operation.State = @ptrCast(&frame2);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr2: Operation.State = @ptrCast(&frame2);
     
     const push2_fn = make_push_small(2);
     const result2 = try push2_fn(0, interpreter_ptr, state_ptr2);
@@ -509,7 +509,7 @@ test "optimized PUSH2-PUSH8 handle values correctly" {
     var frame8 = try Frame.init(allocator, &vm, 1000000, contract8, primitives.Address.ZERO, &.{});
     defer frame8.deinit();
     
-    const state_ptr8: *Operation.State = @ptrCast(&frame8);
+    const state_ptr8: Operation.State = @ptrCast(&frame8);
     
     const push8_fn = make_push_small(8);
     const result8 = try push8_fn(0, interpreter_ptr, state_ptr8);
@@ -538,8 +538,8 @@ test "optimized PUSH handles partial bytecode correctly" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     const push4_fn = make_push_small(4);
     const result = try push4_fn(0, interpreter_ptr, state_ptr);
@@ -579,8 +579,8 @@ test "POP removes top stack element" {
     
     try std.testing.expectEqual(@as(usize, 3), frame.stack.size);
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     const result = try op_pop(0, interpreter_ptr, state_ptr);
     try std.testing.expectEqual(@as(usize, 0), result.bytes_consumed);
@@ -613,8 +613,8 @@ test "POP discards value correctly" {
     try frame.stack.append(large_value);
     try frame.stack.append(42);
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     _ = try op_pop(0, interpreter_ptr, state_ptr);
     
@@ -646,8 +646,8 @@ test "multiple POP operations in sequence" {
         try frame.stack.append(i);
     }
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     // Pop 5 values
     i = 0;
@@ -684,8 +684,8 @@ test "PUSH0 pushes zero value" {
     
     try std.testing.expectEqual(@as(usize, 0), frame.stack.size);
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     const result = try op_push0(0, interpreter_ptr, state_ptr);
     try std.testing.expectEqual(@as(usize, 0), result.bytes_consumed);
@@ -712,8 +712,8 @@ test "PUSH0 multiple times" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     // Push 5 zeros
     var i: usize = 0;
@@ -748,8 +748,8 @@ test "PUSH0 mixed with other values" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     // Push non-zero value
     try frame.stack.append(42);
@@ -786,8 +786,8 @@ test "PUSH0 performance vs manual zero push" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     const Timer = std.time.Timer;
     var timer = try Timer.start();
@@ -851,8 +851,8 @@ test "PUSH operations handle all sizes correctly" {
         var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
         defer frame.deinit();
         
-        const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-        const state_ptr: *Operation.State = @ptrCast(&frame);
+        const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+        const state_ptr: Operation.State = @ptrCast(&frame);
         
         if (case.n <= 8) {
             const push_fn = make_push_small(case.n);
@@ -891,8 +891,8 @@ test "PUSH32 handles maximum value" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     const push32_fn = make_push(32);
     const result = try push32_fn(0, interpreter_ptr, state_ptr);
@@ -933,8 +933,8 @@ test "PUSH operations with insufficient bytecode" {
         var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
         defer frame.deinit();
         
-        const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-        const state_ptr: *Operation.State = @ptrCast(&frame);
+        const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+        const state_ptr: Operation.State = @ptrCast(&frame);
         
         if (case.push_n <= 8) {
             const push_fn = make_push_small(case.push_n);
@@ -978,8 +978,8 @@ test "PUSH operations comparison small vs general" {
         var frame_small = try Frame.init(allocator, &vm, 1000000, contract_small, primitives.Address.ZERO, &.{});
         defer frame_small.deinit();
         
-        const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-        const state_ptr_small: *Operation.State = @ptrCast(&frame_small);
+        const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+        const state_ptr_small: Operation.State = @ptrCast(&frame_small);
         
         const push_small_fn = make_push_small(test_val.n);
         const result_small = try push_small_fn(0, interpreter_ptr, state_ptr_small);
@@ -992,7 +992,7 @@ test "PUSH operations comparison small vs general" {
         var frame_general = try Frame.init(allocator, &vm, 1000000, contract_general, primitives.Address.ZERO, &.{});
         defer frame_general.deinit();
         
-        const state_ptr_general: *Operation.State = @ptrCast(&frame_general);
+        const state_ptr_general: Operation.State = @ptrCast(&frame_general);
         
         const push_general_fn = make_push(test_val.n);
         const result_general = try push_general_fn(0, interpreter_ptr, state_ptr_general);
@@ -1038,8 +1038,8 @@ test "PUSH extreme values and edge cases" {
         var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
         defer frame.deinit();
         
-        const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-        const state_ptr: *Operation.State = @ptrCast(&frame);
+        const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+        const state_ptr: Operation.State = @ptrCast(&frame);
         
         if (case.n <= 8) {
             const push_fn = make_push_small(case.n);
@@ -1079,8 +1079,8 @@ test "DUP1 duplicates top stack element" {
     try frame.stack.append(42);
     try std.testing.expectEqual(@as(usize, 1), frame.stack.size);
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     const dup1_fn = make_dup(1);
     const result = try dup1_fn(0, interpreter_ptr, state_ptr);
@@ -1110,8 +1110,8 @@ test "DUP operations all variants" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     // Test DUP1 through DUP16
     var n: u8 = 1;
@@ -1163,8 +1163,8 @@ test "DUP16 duplicates 16th element correctly" {
         try frame.stack.append(@as(u256, i * 10));
     }
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     // The 16th element from top (index 15 from top, which is value at index 4 from bottom)
     const expected_value: u256 = 40; // i=4, value=4*10=40
@@ -1194,8 +1194,8 @@ test "DUP operations with edge values" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     const edge_values = [_]u256{
         0,
@@ -1246,8 +1246,8 @@ test "SWAP1 swaps top two elements" {
     try frame.stack.append(100);
     try frame.stack.append(200);
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     const swap1_fn = make_swap(1);
     const result = try swap1_fn(0, interpreter_ptr, state_ptr);
@@ -1275,8 +1275,8 @@ test "SWAP operations all variants" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     // Test SWAP1 through SWAP16
     var n: u8 = 1;
@@ -1327,8 +1327,8 @@ test "SWAP16 swaps correctly" {
     const top_value = try frame.stack.peek_n(0);
     const target_value = try frame.stack.peek_n(16);
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     const swap16_fn = make_swap(16);
     _ = try swap16_fn(0, interpreter_ptr, state_ptr);
@@ -1365,8 +1365,8 @@ test "runtime push_n handles all PUSH opcodes" {
         var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
         defer frame.deinit();
         
-        const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-        const state_ptr: *Operation.State = @ptrCast(&frame);
+        const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+        const state_ptr: Operation.State = @ptrCast(&frame);
         
         const result = try push_n(0, interpreter_ptr, state_ptr);
         try std.testing.expectEqual(@as(usize, 1 + case.n), result.bytes_consumed);
@@ -1387,7 +1387,7 @@ test "specific dup functions handle all DUP operations" {
     var vm = try Vm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const test_cases = [_]struct { n: u8, func: fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult }{
+    const test_cases = [_]struct { n: u8, func: fn (usize, Operation.Interpreter, Operation.State) ExecutionError.Error!Operation.ExecutionResult }{
         .{ .n = 1, .func = dup_1 },
         .{ .n = 2, .func = dup_2 },
         .{ .n = 16, .func = dup_16 },
@@ -1409,8 +1409,8 @@ test "specific dup functions handle all DUP operations" {
         const original_size = frame.stack.size;
         const value_to_dup = try frame.stack.peek_n(case.n - 1);
         
-        const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-        const state_ptr: *Operation.State = @ptrCast(&frame);
+        const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+        const state_ptr: Operation.State = @ptrCast(&frame);
         
         _ = try case.func(0, interpreter_ptr, state_ptr);
         
@@ -1430,7 +1430,7 @@ test "specific swap functions handle all SWAP operations" {
     var vm = try Vm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const test_cases = [_]struct { n: u8, func: fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult }{
+    const test_cases = [_]struct { n: u8, func: fn (usize, Operation.Interpreter, Operation.State) ExecutionError.Error!Operation.ExecutionResult }{
         .{ .n = 1, .func = swap_1 },
         .{ .n = 2, .func = swap_2 },
         .{ .n = 16, .func = swap_16 },
@@ -1452,8 +1452,8 @@ test "specific swap functions handle all SWAP operations" {
         const top_value = try frame.stack.peek_n(0);
         const target_value = try frame.stack.peek_n(case.n);
         
-        const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-        const state_ptr: *Operation.State = @ptrCast(&frame);
+        const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+        const state_ptr: Operation.State = @ptrCast(&frame);
         
         _ = try case.func(0, interpreter_ptr, state_ptr);
         
@@ -1490,8 +1490,8 @@ test "stack operations handle maximum capacity correctly" {
         try frame.stack.append(i);
     }
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     // Should be able to push one more
     _ = try op_push0(0, interpreter_ptr, state_ptr);
@@ -1528,8 +1528,8 @@ test "stack operations maintain consistency under stress" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     // Stress test with rapid push/pop/dup/swap operations
     var ops: usize = 0;
@@ -1801,8 +1801,8 @@ test "stack_operation_benchmarks" {
 //             try malformed_code.appendSlice(data);
 //             
 //             // Test runtime dispatch with potentially malformed bytecode
-//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: Operation.State = @ptrCast(&frame);
 //             
 //             // Push operations should handle malformed input gracefully
 //             const result = vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
@@ -1845,8 +1845,8 @@ test "stack_operation_benchmarks" {
 //                 try frame.stack.push(value);
 //             }
 //             
-//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: Operation.State = @ptrCast(&frame);
 //             
 //             // Test DUP runtime dispatch
 //             const result = vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
@@ -1891,8 +1891,8 @@ test "stack_operation_benchmarks" {
 //                 try frame.stack.push(value);
 //             }
 //             
-//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: Operation.State = @ptrCast(&frame);
 //             
 //             // Test SWAP runtime dispatch
 //             const result = vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
@@ -1936,8 +1936,8 @@ test "stack_operation_benchmarks" {
 //                 try frame.stack.push(value);
 //             }
 //             
-//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: Operation.State = @ptrCast(&frame);
 //             
 //             // Test sequence of operations with varying stack depths
 //             const operations = [_]u8{ push_opcode, dup_opcode, swap_opcode };
@@ -1986,8 +1986,8 @@ test "stack_operation_benchmarks" {
 //             var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
 //             defer frame.deinit();
 //             
-//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: Operation.State = @ptrCast(&frame);
 //             
 //             // Test with malformed bytecode - should handle gracefully
 //             const result = vm.table.execute(0, interpreter_ptr, state_ptr, push_opcode);
@@ -2021,8 +2021,8 @@ test "stack_operation_benchmarks" {
 //             
 //             const boundary_test = input[0] % 4;
 //             
-//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: Operation.State = @ptrCast(&frame);
 //             
 //             switch (boundary_test) {
 //                 0 => {

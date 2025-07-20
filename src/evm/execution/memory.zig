@@ -49,11 +49,11 @@ fn perform_copy_operation(frame: *Frame, mem_offset: usize, size: usize) !void {
     _ = try frame.memory.ensure_context_capacity(new_size);
 }
 
-pub fn op_mload(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_mload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 1) {
         @branchHint(.cold);
@@ -81,11 +81,11 @@ pub fn op_mload(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     return Operation.ExecutionResult{};
 }
 
-pub fn op_mstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_mstore(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 2) {
         @branchHint(.cold);
@@ -114,11 +114,11 @@ pub fn op_mstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     return Operation.ExecutionResult{};
 }
 
-pub fn op_mstore8(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_mstore8(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 2) {
         @branchHint(.cold);
@@ -148,11 +148,11 @@ pub fn op_mstore8(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     return Operation.ExecutionResult{};
 }
 
-pub fn op_msize(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_msize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -170,11 +170,11 @@ pub fn op_msize(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     return Operation.ExecutionResult{};
 }
 
-pub fn op_mcopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_mcopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 3) {
         @branchHint(.cold);
@@ -233,11 +233,11 @@ pub fn op_mcopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     return Operation.ExecutionResult{};
 }
 
-pub fn op_calldataload(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_calldataload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 1) {
         @branchHint(.cold);
@@ -273,11 +273,11 @@ pub fn op_calldataload(pc: usize, interpreter: *Operation.Interpreter, state: *O
     return Operation.ExecutionResult{};
 }
 
-pub fn op_calldatasize(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_calldatasize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -290,11 +290,11 @@ pub fn op_calldatasize(pc: usize, interpreter: *Operation.Interpreter, state: *O
     return Operation.ExecutionResult{};
 }
 
-pub fn op_calldatacopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_calldatacopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 3) {
         @branchHint(.cold);
@@ -325,11 +325,11 @@ pub fn op_calldatacopy(pc: usize, interpreter: *Operation.Interpreter, state: *O
     return Operation.ExecutionResult{};
 }
 
-pub fn op_codesize(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_codesize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -342,11 +342,11 @@ pub fn op_codesize(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     return Operation.ExecutionResult{};
 }
 
-pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_codecopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 3) {
         @branchHint(.cold);
@@ -382,11 +382,11 @@ pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     return Operation.ExecutionResult{};
 }
 
-pub fn op_returndatasize(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_returndatasize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -399,11 +399,11 @@ pub fn op_returndatasize(pc: usize, interpreter: *Operation.Interpreter, state: 
     return Operation.ExecutionResult{};
 }
 
-pub fn op_returndatacopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_returndatacopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 3) {
         @branchHint(.cold);

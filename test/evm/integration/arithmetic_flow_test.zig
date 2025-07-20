@@ -60,16 +60,16 @@ test "Integration: Arithmetic with conditional jumps" {
     defer frame.deinit();
 
     // Execute sequence: PUSH 5, PUSH 10, ADD
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &vm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x60);
+    _ = try vm.table.execute(0, interpreter, state, 0x60);
     frame.pc += 2; // Advance past PUSH1 data
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x60);
+    _ = try vm.table.execute(0, interpreter, state, 0x60);
     frame.pc += 2; // Advance past PUSH1 data
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x01);
+    _ = try vm.table.execute(0, interpreter, state, 0x01);
 
     // Stack should have 15
     const stack_top = try frame.stack.peek(0);
@@ -77,10 +77,10 @@ test "Integration: Arithmetic with conditional jumps" {
 
     // Continue: PUSH 12, GT
     frame.pc += 1;
-    _ = try vm.table.execute(0, &interpreter, &state, 0x60);
+    _ = try vm.table.execute(0, interpreter, state, 0x60);
     frame.pc += 2;
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x11);
+    _ = try vm.table.execute(0, interpreter, state, 0x11);
 
     // 15 > 12 should be 1
     const gt_result = try frame.stack.peek(0);
@@ -88,10 +88,10 @@ test "Integration: Arithmetic with conditional jumps" {
 
     // Continue: PUSH 12, JUMPI
     frame.pc += 1;
-    _ = try vm.table.execute(0, &interpreter, &state, 0x60);
+    _ = try vm.table.execute(0, interpreter, state, 0x60);
     frame.pc += 2;
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x57);
+    _ = try vm.table.execute(0, interpreter, state, 0x57);
 
     // Should have jumped to position 12
     try testing.expectEqual(@as(usize, 12), frame.pc);
@@ -139,16 +139,16 @@ test "Integration: Complex arithmetic expression evaluation" {
     try frame.stack.push(10);
     try frame.stack.push(5);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &vm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x01);
+    _ = try vm.table.execute(0, interpreter, state, 0x01);
 
     try frame.stack.push(3);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x02);
+    _ = try vm.table.execute(0, interpreter, state, 0x02);
 
     try frame.stack.push(7);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x03);
+    _ = try vm.table.execute(0, interpreter, state, 0x03);
 
     const result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 38), result);
@@ -197,16 +197,16 @@ test "Integration: Modular arithmetic chain" {
     try frame.stack.push(15);
     try frame.stack.push(7);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &vm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x08);
+    _ = try vm.table.execute(0, interpreter, state, 0x08);
     const addmod_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 4), addmod_result);
 
     try frame.stack.push(3);
     try frame.stack.push(5);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x09);
+    _ = try vm.table.execute(0, interpreter, state, 0x09);
     const mulmod_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 2), mulmod_result);
 }
@@ -250,15 +250,15 @@ test "Integration: Division by zero handling in expression" {
     try frame.stack.push(10);
     try frame.stack.push(0);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &vm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x04);
+    _ = try vm.table.execute(0, interpreter, state, 0x04);
     const div_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 0), div_result); // Division by zero returns 0
 
     try frame.stack.push(5);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x01);
+    _ = try vm.table.execute(0, interpreter, state, 0x01);
     const add_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 5), add_result);
 }
@@ -304,20 +304,20 @@ test "Integration: Bitwise operations with arithmetic" {
     try frame.stack.push(0xFF);
     try frame.stack.push(0x0F);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &vm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x16);
+    _ = try vm.table.execute(0, interpreter, state, 0x16);
     const and_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 0x0F), and_result);
 
     try frame.stack.push(4);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x1B);
+    _ = try vm.table.execute(0, interpreter, state, 0x1B);
     const shl_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 0xF0), shl_result);
 
     try frame.stack.push(10);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x01);
+    _ = try vm.table.execute(0, interpreter, state, 0x01);
     const final_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 250), final_result);
 }
@@ -367,26 +367,26 @@ test "Integration: Stack manipulation with arithmetic" {
     try frame.stack.push(10);
     try frame.stack.push(20);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &vm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x80);
+    _ = try vm.table.execute(0, interpreter, state, 0x80);
     try testing.expectEqual(@as(usize, 3), frame.stack.size());
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x01);
+    _ = try vm.table.execute(0, interpreter, state, 0x01);
     try testing.expectEqual(@as(usize, 2), frame.stack.size());
     const after_add_top = try frame.stack.peek(0);
     const after_add_next = try frame.stack.peek(1);
     try testing.expectEqual(@as(u256, 40), after_add_top);
     try testing.expectEqual(@as(u256, 10), after_add_next);
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x90);
+    _ = try vm.table.execute(0, interpreter, state, 0x90);
     const after_swap_top = try frame.stack.peek(0);
     const after_swap_next = try frame.stack.peek(1);
     try testing.expectEqual(@as(u256, 10), after_swap_top);
     try testing.expectEqual(@as(u256, 40), after_swap_next);
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x03);
+    _ = try vm.table.execute(0, interpreter, state, 0x03);
     const final_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 30), final_result);
 }
@@ -430,29 +430,29 @@ test "Integration: Comparison chain for range checking" {
     // value >= 10 AND value <= 20
     const value: u256 = 15;
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &vm;
+    const state: Evm.Operation.State = &frame;
 
     // Check value >= 10
     try frame.stack.push(value);
     try frame.stack.push(10);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x10);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x15);
+    _ = try vm.table.execute(0, interpreter, state, 0x10);
+    _ = try vm.table.execute(0, interpreter, state, 0x15);
     const ge_10 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), ge_10); // 15 >= 10 is true
 
     // Check value <= 20
     try frame.stack.push(20);
     try frame.stack.push(value);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x10);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x15);
+    _ = try vm.table.execute(0, interpreter, state, 0x10);
+    _ = try vm.table.execute(0, interpreter, state, 0x15);
     const le_20 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), le_20); // 15 <= 20 is true
 
     // AND the results
     try frame.stack.push(ge_10);
     try frame.stack.push(le_20);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x16);
+    _ = try vm.table.execute(0, interpreter, state, 0x16);
     const final_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 1), final_result); // In range
 }
@@ -496,15 +496,15 @@ test "Integration: EXP with modular arithmetic" {
     try frame.stack.push(2);
     try frame.stack.push(8);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &vm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x0A);
+    _ = try vm.table.execute(0, interpreter, state, 0x0A);
     const exp_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 256), exp_result);
 
     try frame.stack.push(100);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x06);
+    _ = try vm.table.execute(0, interpreter, state, 0x06);
     const mod_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 56), mod_result);
 }
@@ -551,10 +551,10 @@ test "Integration: Signed arithmetic with comparisons" {
     try frame.stack.push(neg_5);
     try frame.stack.push(10);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &vm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x12);
+    _ = try vm.table.execute(0, interpreter, state, 0x12);
     const slt_result = try frame.stack.peek(0);
     try testing.expectEqual(@as(u256, 1), slt_result); // -5 < 10 is true
 
@@ -563,7 +563,7 @@ test "Integration: Signed arithmetic with comparisons" {
     const neg_10 = std.math.maxInt(u256) - 9; // Two's complement of -10
     try frame.stack.push(neg_10);
     try frame.stack.push(3);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x05);
+    _ = try vm.table.execute(0, interpreter, state, 0x05);
 
     const result = try frame.stack.pop();
     const expected_neg_3 = std.math.maxInt(u256) - 2; // Two's complement of -3

@@ -44,15 +44,15 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
         };
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = self };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = self;
+    const state: Operation.State = &frame;
 
     while (pc < contract.code_size) {
         @branchHint(.likely);
         const opcode = contract.get_op(pc);
         frame.pc = pc;
 
-        const result = self.table.execute(pc, &interpreter, &state, opcode) catch |err| {
+        const result = self.table.execute(pc, interpreter, state, opcode) catch |err| {
             @branchHint(.cold);
             contract.gas = frame.gas_remaining;
             self.return_data = @constCast(frame.return_data.get());

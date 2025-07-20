@@ -48,8 +48,8 @@ test "SELFDESTRUCT: Basic functionality" {
     try frame.stack.push(bob_address.to_u256());
 
     // Execute SELFDESTRUCT opcode - should halt execution
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
     const result = evm.jump_table.get(0xFF).execute(&interpreter, &state);
     try testing.expectError(Evm.ExecutionError.Error.STOP, result);
 
@@ -107,8 +107,8 @@ test "SELFDESTRUCT: Forbidden in static call" {
     try frame.stack.push(bob_address.to_u256());
 
     // Execute SELFDESTRUCT opcode - should fail in static context
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
     const result = evm.jump_table.get(0xFF).execute(&interpreter, &state);
     try testing.expectError(Evm.ExecutionError.Error.WriteProtection, result);
 
@@ -162,8 +162,8 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
         const gas_before = frame.gas_remaining;
 
         // Execute SELFDESTRUCT
-        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = Evm.Operation.State{ .frame = &frame };
+        const interpreter: Evm.Operation.Interpreter = &evm;
+        const state: Evm.Operation.State = &frame;
         _ = evm.jump_table.get(0xFF).execute(&interpreter, &state);
 
         // Should consume 0 gas in Frontier (plus any access list costs)
@@ -215,8 +215,8 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
         const gas_before = frame.gas_remaining;
 
         // Execute SELFDESTRUCT
-        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = Evm.Operation.State{ .frame = &frame };
+        const interpreter: Evm.Operation.Interpreter = &evm;
+        const state: Evm.Operation.State = &frame;
         _ = evm.jump_table.get(0xFF).execute(&interpreter, &state);
 
         const gas_consumed = gas_before - frame.gas_remaining;
@@ -275,8 +275,8 @@ test "SELFDESTRUCT: Account creation cost (EIP-161)" {
     const gas_before = frame.gas_remaining;
 
     // Execute SELFDESTRUCT
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
     _ = evm.jump_table.get(0xFF).execute(&interpreter, &state);
 
     const gas_consumed = gas_before - frame.gas_remaining;

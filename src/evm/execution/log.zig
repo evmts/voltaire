@@ -15,13 +15,13 @@ const Log = Vm.Log;
 
 // Import helper functions from error_mapping
 
-pub fn make_log(comptime num_topics: u8) fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn make_log(comptime num_topics: u8) fn (usize, Operation.Interpreter, Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     return struct {
-        pub fn log(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+        pub fn log(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
             _ = pc;
 
-            const frame = state.get_frame();
-            const vm = interpreter.get_vm();
+            const frame = state;
+            const vm = interpreter;
 
             // Check if we're in a static call
             if (frame.is_static) {
@@ -97,35 +97,35 @@ pub fn make_log(comptime num_topics: u8) fn (usize, *Operation.Interpreter, *Ope
 // Runtime dispatch versions for LOG operations (used in ReleaseSmall mode)
 // Each LOG operation gets its own function to avoid opcode detection issues
 
-pub fn log_0(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn log_0(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     return log_impl(0, interpreter, state);
 }
 
-pub fn log_1(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn log_1(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     return log_impl(1, interpreter, state);
 }
 
-pub fn log_2(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn log_2(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     return log_impl(2, interpreter, state);
 }
 
-pub fn log_3(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn log_3(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     return log_impl(3, interpreter, state);
 }
 
-pub fn log_4(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn log_4(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     return log_impl(4, interpreter, state);
 }
 
 // Common implementation for all LOG operations
-fn log_impl(num_topics: u8, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+fn log_impl(num_topics: u8, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const frame = state;
+    const vm = interpreter;
     
     // Check if we're in a static call
     if (frame.is_static) {

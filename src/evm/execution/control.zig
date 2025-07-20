@@ -11,7 +11,7 @@ const AccessList = @import("../access_list/access_list.zig").AccessList;
 const primitives = @import("primitives");
 const from_u256 = primitives.Address.from_u256;
 
-pub fn op_stop(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!ExecutionResult {
+pub fn op_stop(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
     _ = pc;
     _ = interpreter;
     _ = state;
@@ -19,11 +19,11 @@ pub fn op_stop(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
     return ExecutionError.Error.STOP;
 }
 
-pub fn op_jump(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!ExecutionResult {
+pub fn op_jump(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 1) {
         @branchHint(.cold);
@@ -50,11 +50,11 @@ pub fn op_jump(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
     return ExecutionResult{};
 }
 
-pub fn op_jumpi(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!ExecutionResult {
+pub fn op_jumpi(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 2) {
         @branchHint(.cold);
@@ -87,10 +87,10 @@ pub fn op_jumpi(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     return ExecutionResult{};
 }
 
-pub fn op_pc(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!ExecutionResult {
+pub fn op_pc(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -103,7 +103,7 @@ pub fn op_pc(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.S
     return ExecutionResult{};
 }
 
-pub fn op_jumpdest(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!ExecutionResult {
+pub fn op_jumpdest(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
     _ = pc;
     _ = interpreter;
     _ = state;
@@ -112,11 +112,11 @@ pub fn op_jumpdest(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     return ExecutionResult{};
 }
 
-pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!ExecutionResult {
+pub fn op_return(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 2) {
         @branchHint(.cold);
@@ -173,11 +173,11 @@ pub fn op_return(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     return ExecutionError.Error.STOP; // RETURN ends execution normally
 }
 
-pub fn op_revert(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!ExecutionResult {
+pub fn op_revert(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     if (frame.stack.size < 2) {
         @branchHint(.cold);
@@ -222,11 +222,11 @@ pub fn op_revert(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     return ExecutionError.Error.REVERT;
 }
 
-pub fn op_invalid(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!ExecutionResult {
+pub fn op_invalid(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Debug: op_invalid entered
     // INVALID opcode consumes all remaining gas
@@ -236,11 +236,11 @@ pub fn op_invalid(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     return ExecutionError.Error.InvalidOpcode;
 }
 
-pub fn op_selfdestruct(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!ExecutionResult {
+pub fn op_selfdestruct(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // Check if we're in a static call
     if (frame.is_static) {

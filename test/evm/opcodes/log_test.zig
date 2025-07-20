@@ -41,8 +41,8 @@ test "LOG0: emit log with no topics" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Write data to memory
     const log_data = [_]u8{ 0x11, 0x22, 0x33, 0x44 };
@@ -56,7 +56,7 @@ test "LOG0: emit log with no topics" {
     try frame.stack.append(0); // offset
 
     // Execute LOG0
-    _ = try evm.table.execute(0, &interpreter, &state, 0xA0);
+    _ = try evm.table.execute(0, interpreter, state, 0xA0);
 
     // Check that log was emitted
     try testing.expectEqual(@as(usize, 1), evm.state.logs.items.len);
@@ -98,15 +98,15 @@ test "LOG0: emit log with empty data" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push size and offset for empty data
     try frame.stack.append(0); // size
     try frame.stack.append(0); // offset
 
     // Execute LOG0
-    _ = try evm.table.execute(0, &interpreter, &state, 0xA0);
+    _ = try evm.table.execute(0, interpreter, state, 0xA0);
 
     // Check that log was emitted with empty data
     try testing.expectEqual(@as(usize, 1), evm.state.logs.items.len);
@@ -148,8 +148,8 @@ test "LOG1: emit log with one topic" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Write data to memory
     const log_data = [_]u8{ 0xAA, 0xBB };
@@ -164,7 +164,7 @@ test "LOG1: emit log with one topic" {
     try frame.stack.append(0); // offset
 
     // Execute LOG1
-    _ = try evm.table.execute(0, &interpreter, &state, 0xA1);
+    _ = try evm.table.execute(0, interpreter, state, 0xA1);
 
     // Check that log was emitted
     try testing.expectEqual(@as(usize, 1), evm.state.logs.items.len);
@@ -207,8 +207,8 @@ test "LOG2: emit log with two topics" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Write data to memory
     const log_data = [_]u8{ 0x01, 0x02, 0x03 };
@@ -224,7 +224,7 @@ test "LOG2: emit log with two topics" {
     try frame.stack.append(10); // offset
 
     // Execute LOG2
-    _ = try evm.table.execute(0, &interpreter, &state, 0xA2);
+    _ = try evm.table.execute(0, interpreter, state, 0xA2);
 
     // Check that log was emitted
     try testing.expectEqual(@as(usize, 1), evm.state.logs.items.len);
@@ -268,8 +268,8 @@ test "LOG3: emit log with three topics" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push in order: topic1, topic2, topic3, size, offset (bottom to top on stack)
     try frame.stack.append(0x111); // topic1
@@ -279,7 +279,7 @@ test "LOG3: emit log with three topics" {
     try frame.stack.append(0); // offset
 
     // Execute LOG3
-    _ = try evm.table.execute(0, &interpreter, &state, 0xA3);
+    _ = try evm.table.execute(0, interpreter, state, 0xA3);
 
     // Check that log was emitted
     try testing.expectEqual(@as(usize, 1), evm.state.logs.items.len);
@@ -324,8 +324,8 @@ test "LOG4: emit log with four topics" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Write large data to memory
     var log_data: [100]u8 = undefined;
@@ -344,7 +344,7 @@ test "LOG4: emit log with four topics" {
     try frame.stack.append(0); // offset
 
     // Execute LOG4
-    _ = try evm.table.execute(0, &interpreter, &state, 0xA4);
+    _ = try evm.table.execute(0, interpreter, state, 0xA4);
 
     // Check that log was emitted
     try testing.expectEqual(@as(usize, 1), evm.state.logs.items.len);
@@ -393,15 +393,15 @@ test "LOG0: write protection in static call" {
     // Set static call
     frame.is_static = true;
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push length and offset (stack is LIFO)
     try frame.stack.append(0); // length (pushed first, popped second)
     try frame.stack.append(0); // offset (pushed last, popped first)
 
     // Execute LOG0 - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0xA0);
+    const result = evm.table.execute(0, interpreter, state, 0xA0);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
@@ -440,8 +440,8 @@ test "LOG1: write protection in static call" {
     // Set static call
     frame.is_static = true;
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push topic, size and offset
     try frame.stack.append(0x123); // topic
@@ -449,7 +449,7 @@ test "LOG1: write protection in static call" {
     try frame.stack.append(0); // offset
 
     // Execute LOG1 - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0xA1);
+    const result = evm.table.execute(0, interpreter, state, 0xA1);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
@@ -486,8 +486,8 @@ test "LOG0: gas consumption" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push size and offset for 32 bytes
     try frame.stack.append(32); // size
@@ -496,7 +496,7 @@ test "LOG0: gas consumption" {
     const gas_before = frame.gas_remaining;
 
     // Execute LOG0
-    _ = try evm.table.execute(0, &interpreter, &state, 0xA0);
+    _ = try evm.table.execute(0, interpreter, state, 0xA0);
 
     // LOG0 base cost is 375 gas
     // Plus 8 gas per byte: 32 * 8 = 256
@@ -537,8 +537,8 @@ test "LOG4: gas consumption with topics" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push topics, size and offset
     try frame.stack.append(0x1); // topic1
@@ -551,7 +551,7 @@ test "LOG4: gas consumption with topics" {
     const gas_before = frame.gas_remaining;
 
     // Execute LOG4
-    _ = try evm.table.execute(0, &interpreter, &state, 0xA4);
+    _ = try evm.table.execute(0, interpreter, state, 0xA4);
 
     // LOG4 base cost is 375 gas
     // Plus 375 gas per topic: 4 * 375 = 1500
@@ -594,8 +594,8 @@ test "LOG0: memory expansion gas" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push size and offset that requires memory expansion (stack is LIFO)
     try frame.stack.append(32); // size
@@ -604,7 +604,7 @@ test "LOG0: memory expansion gas" {
     const gas_before = frame.gas_remaining;
 
     // Execute LOG0
-    _ = try evm.table.execute(0, &interpreter, &state, 0xA0);
+    _ = try evm.table.execute(0, interpreter, state, 0xA0);
 
     // Should consume gas for LOG0 plus memory expansion
     const gas_used = gas_before - frame.gas_remaining;
@@ -644,14 +644,14 @@ test "LOG0: stack underflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push only one value (need two)
     try frame.stack.append(0);
 
     // Execute LOG0 - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0xA0);
+    const result = evm.table.execute(0, interpreter, state, 0xA0);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -687,8 +687,8 @@ test "LOG4: stack underflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push only 5 values (need 6 for LOG4)
     try frame.stack.append(0x1); // topic1
@@ -699,7 +699,7 @@ test "LOG4: stack underflow" {
     // Missing offset
 
     // Execute LOG4 - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0xA4);
+    const result = evm.table.execute(0, interpreter, state, 0xA4);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -736,14 +736,14 @@ test "LOG0: out of gas" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push length and offset for large data (stack is LIFO)
     try frame.stack.append(1000); // length (pushed first, popped second - would cost 8000 gas for data alone)
     try frame.stack.append(0); // offset (pushed last, popped first)
 
     // Execute LOG0 - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0xA0);
+    const result = evm.table.execute(0, interpreter, state, 0xA0);
     try testing.expectError(ExecutionError.Error.OutOfGas, result);
 }

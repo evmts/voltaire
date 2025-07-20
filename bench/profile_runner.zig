@@ -310,15 +310,15 @@ fn execute_bytecode_iterations(allocator: Allocator, bytecode: []const u8, itera
         defer frame.deinit();
         
         // Execute bytecode
-        var interpreter = Operation.Interpreter{ .vm = &evm };
-        var state = Operation.State{ .frame = &frame };
+        const interpreter: Operation.Interpreter = &evm;
+        const state: Operation.State = &frame;
         
         // Execute until STOP or error
         while (frame.pc < bytecode.len and !frame.stop) {
             const opcode = bytecode[frame.pc];
             const old_pc = frame.pc;
             
-            const result = evm.table.execute(frame.pc, &interpreter, &state, opcode) catch |err| {
+            const result = evm.table.execute(frame.pc, interpreter, state, opcode) catch |err| {
                 // Handle expected errors
                 switch (err) {
                     error.InvalidJump,

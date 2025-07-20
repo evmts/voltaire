@@ -44,12 +44,12 @@ test "TLOAD (0x5C): Load from transient storage" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Load from empty slot (should return 0)
     try frame.stack.append(42); // slot
-    _ = try evm.table.execute(1, &interpreter, &state, 0x5C);
+    _ = try evm.table.execute(1, interpreter, state, 0x5C);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result1);
 
@@ -58,10 +58,10 @@ test "TLOAD (0x5C): Load from transient storage" {
     const value: u256 = 0xdeadbeef;
     try frame.stack.append(value); // value
     try frame.stack.append(slot); // slot (on top)
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5D); // TSTORE
+    _ = try evm.table.execute(0, interpreter, state, 0x5D); // TSTORE
 
     try frame.stack.append(slot);
-    _ = try evm.table.execute(1, &interpreter, &state, 0x5C);
+    _ = try evm.table.execute(1, interpreter, state, 0x5C);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(value, result2);
 
@@ -75,10 +75,10 @@ test "TLOAD (0x5C): Load from transient storage" {
     for (test_slots) |ts| {
         try frame.stack.append(ts.value); // value
         try frame.stack.append(ts.slot); // slot (on top)
-        _ = try evm.table.execute(0, &interpreter, &state, 0x5D); // TSTORE
+        _ = try evm.table.execute(0, interpreter, state, 0x5D); // TSTORE
 
         try frame.stack.append(ts.slot);
-        _ = try evm.table.execute(1, &interpreter, &state, 0x5C);
+        _ = try evm.table.execute(1, interpreter, state, 0x5C);
         const result = try frame.stack.pop();
         try testing.expectEqual(ts.value, result);
     }
@@ -117,19 +117,19 @@ test "TSTORE (0x5D): Store to transient storage" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Store to empty slot
     const slot1: u256 = 10;
     const value1: u256 = 12345;
     try frame.stack.append(value1); // value
     try frame.stack.append(slot1); // slot (on top)
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5D);
+    _ = try evm.table.execute(0, interpreter, state, 0x5D);
 
     // Verify storage was updated via TLOAD
     try frame.stack.append(slot1);
-    _ = try evm.table.execute(1, &interpreter, &state, 0x5C);
+    _ = try evm.table.execute(1, interpreter, state, 0x5C);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(value1, result1);
 
@@ -137,20 +137,20 @@ test "TSTORE (0x5D): Store to transient storage" {
     const value2: u256 = 67890;
     try frame.stack.append(value2); // value
     try frame.stack.append(slot1); // slot (on top)
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5D);
+    _ = try evm.table.execute(0, interpreter, state, 0x5D);
 
     try frame.stack.append(slot1);
-    _ = try evm.table.execute(1, &interpreter, &state, 0x5C);
+    _ = try evm.table.execute(1, interpreter, state, 0x5C);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(value2, result2);
 
     // Test 3: Clear slot (set to 0)
     try frame.stack.append(0); // value
     try frame.stack.append(slot1); // slot (on top)
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5D);
+    _ = try evm.table.execute(0, interpreter, state, 0x5D);
 
     try frame.stack.append(slot1);
-    _ = try evm.table.execute(1, &interpreter, &state, 0x5C);
+    _ = try evm.table.execute(1, interpreter, state, 0x5C);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3);
 
@@ -158,7 +158,7 @@ test "TSTORE (0x5D): Store to transient storage" {
     frame.is_static = true;
     try frame.stack.append(42); // value
     try frame.stack.append(1); // slot (on top)
-    const result = evm.table.execute(frame.pc, &interpreter, &state, 0x5D);
+    const result = evm.table.execute(frame.pc, interpreter, state, 0x5D);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
@@ -194,25 +194,25 @@ test "MCOPY (0x5E): Memory to memory copy" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple copy without overlap
     // Store data at source location
     const test_data: u256 = 0xdeadbeefcafebabe1234567890abcdef;
     try frame.stack.append(test_data); // value
     try frame.stack.append(0); // offset
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x52); // MSTORE at 0
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x52); // MSTORE at 0
 
     // Copy 32 bytes from offset 0 to offset 64
     try frame.stack.append(64); // dest
     try frame.stack.append(0); // src
     try frame.stack.append(32); // size (on top)
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
 
     // Verify data was copied
     try frame.stack.append(64); // offset
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x51); // MLOAD
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x51); // MLOAD
     const result1 = try frame.stack.pop();
     try testing.expectEqual(test_data, result1);
 
@@ -221,27 +221,27 @@ test "MCOPY (0x5E): Memory to memory copy" {
     try frame.stack.append(16); // dest
     try frame.stack.append(0); // src
     try frame.stack.append(32); // size (on top)
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
 
     // Test 3: Copy with backward overlap (dest < src)
     // First store different data at offset 32
     const test_data2: u256 = 0xfeedfacefeedfacefeedfacefeedface;
     try frame.stack.append(test_data2); // value
     try frame.stack.append(32); // offset
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x52); // MSTORE
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x52); // MSTORE
 
     // Copy from offset 32 to offset 16 (backward overlap)
     try frame.stack.append(16); // dest
     try frame.stack.append(32); // src
     try frame.stack.append(32); // size (on top)
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
 
     // Test 4: Zero-size copy (should be no-op)
     const gas_before = frame.gas_remaining;
     try frame.stack.append(100); // dest
     try frame.stack.append(200); // src
     try frame.stack.append(0); // size=0 (on top)
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
     // Should only consume base gas (3)
     try testing.expectEqual(@as(u64, gas_before - 3), frame.gas_remaining);
 
@@ -249,10 +249,10 @@ test "MCOPY (0x5E): Memory to memory copy" {
     try frame.stack.append(1000); // dest
     try frame.stack.append(0); // src
     try frame.stack.append(256); // size (on top)
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
 
     // Verify memory size expanded correctly
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x59); // MSIZE
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x59); // MSIZE
     const msize = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1280), msize); // 1000 + 256 = 1256, rounded to 1280
 }
@@ -293,17 +293,17 @@ test "PUSH0 (0x5F): Push zero onto stack" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Basic PUSH0
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5F);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x5F);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result1);
 
     // Test 2: Multiple PUSH0 operations
     for (0..5) |_| {
-        _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5F);
+        _ = try evm.table.execute(frame.pc, interpreter, state, 0x5F);
     }
     try testing.expectEqual(@as(usize, 5), frame.stack.size);
 
@@ -316,14 +316,14 @@ test "PUSH0 (0x5F): Push zero onto stack" {
     // Test 3: Stack overflow protection
     // Fill stack to near capacity
     for (0..1023) |_| {
-        _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5F);
+        _ = try evm.table.execute(frame.pc, interpreter, state, 0x5F);
     }
 
     // One more should succeed (stack capacity is 1024)
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5F);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x5F);
 
     // Next one should fail
-    const result = evm.table.execute(frame.pc, &interpreter, &state, 0x5F);
+    const result = evm.table.execute(frame.pc, interpreter, state, 0x5F);
     try testing.expectError(ExecutionError.Error.StackOverflow, result);
 }
 
@@ -366,15 +366,15 @@ test "PUSH1 (0x60): Push 1 byte onto stack" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test pushing different byte values
     const expected_values = [_]u256{ 0x42, 0xFF, 0x00, 0x7F };
 
     for (expected_values) |expected| {
         const pc = frame.pc;
-        const result = try evm.table.execute(pc, &interpreter, &state, 0x60);
+        const result = try evm.table.execute(pc, interpreter, state, 0x60);
 
         // Check that 2 bytes were consumed (opcode + data)
         try testing.expectEqual(@as(usize, 2), result.bytes_consumed);
@@ -424,14 +424,14 @@ test "PUSH2 (0x61): Push 2 bytes onto stack" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     const expected_values = [_]u256{ 0x1234, 0xFFFF, 0x0000, 0xABCD };
 
     for (expected_values) |expected| {
         const pc = frame.pc;
-        const result = try evm.table.execute(pc, &interpreter, &state, 0x61);
+        const result = try evm.table.execute(pc, interpreter, state, 0x61);
 
         // Check that 3 bytes were consumed (opcode + 2 data bytes)
         try testing.expectEqual(@as(usize, 3), result.bytes_consumed);
@@ -481,14 +481,14 @@ test "PUSH3 (0x62): Push 3 bytes onto stack" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     const expected_values = [_]u256{ 0x123456, 0xFFFFFF, 0x000000, 0xABCDEF };
 
     for (expected_values) |expected| {
         const pc = frame.pc;
-        const result = try evm.table.execute(pc, &interpreter, &state, 0x62);
+        const result = try evm.table.execute(pc, interpreter, state, 0x62);
 
         // Check that 4 bytes were consumed (opcode + 3 data bytes)
         try testing.expectEqual(@as(usize, 4), result.bytes_consumed);
@@ -536,14 +536,14 @@ test "Transient storage and memory opcodes: Gas consumption" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test TLOAD gas
     frame.stack.clear();
     try frame.stack.append(42); // slot
     var gas_before = frame.gas_remaining;
-    _ = try evm.table.execute(1, &interpreter, &state, 0x5C);
+    _ = try evm.table.execute(1, interpreter, state, 0x5C);
     var gas_used = gas_before - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 100), gas_used); // TLOAD costs 100
     _ = try frame.stack.pop();
@@ -553,7 +553,7 @@ test "Transient storage and memory opcodes: Gas consumption" {
     try frame.stack.append(0xdead); // value (will be popped 1st)
     try frame.stack.append(42); // slot (will be popped 2nd)
     gas_before = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5D);
+    _ = try evm.table.execute(0, interpreter, state, 0x5D);
     gas_used = gas_before - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 100), gas_used); // TSTORE costs 100
 
@@ -563,7 +563,7 @@ test "Transient storage and memory opcodes: Gas consumption" {
     try frame.stack.append(0); // src
     try frame.stack.append(100); // dest
     gas_before = frame.gas_remaining;
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
     gas_used = gas_before - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 27), gas_used); // MCOPY base cost is currently 27 (should be 3)
 
@@ -573,7 +573,7 @@ test "Transient storage and memory opcodes: Gas consumption" {
     try frame.stack.append(0); // src
     try frame.stack.append(100); // dest
     gas_before = frame.gas_remaining;
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
     gas_used = gas_before - frame.gas_remaining;
     // Base cost (3) + copy cost (3 * 1 word) + memory expansion
     try testing.expect(gas_used >= 6);
@@ -581,7 +581,7 @@ test "Transient storage and memory opcodes: Gas consumption" {
     // Test PUSH0 gas
     frame.stack.clear();
     gas_before = frame.gas_remaining;
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x5F);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x5F);
     gas_used = gas_before - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 2), gas_used); // PUSH0 costs 2
 
@@ -589,7 +589,7 @@ test "Transient storage and memory opcodes: Gas consumption" {
     frame.stack.clear();
     frame.pc = 0;
     gas_before = frame.gas_remaining;
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     gas_used = gas_before - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 3), gas_used); // PUSH1 costs 3
 }
@@ -630,14 +630,14 @@ test "MCOPY: Edge cases" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test: MCOPY with huge size should run out of gas or fail with offset error
     try frame.stack.append(0); // dest
     try frame.stack.append(0); // src
     try frame.stack.append(std.math.maxInt(u256)); // huge size (on top)
-    const result = evm.table.execute(0, &interpreter, &state, 0x5E);
+    const result = evm.table.execute(0, interpreter, state, 0x5E);
     try testing.expectError(ExecutionError.Error.OutOfOffset, result);
 }
 
@@ -695,20 +695,20 @@ test "Transient storage: Isolation between addresses" {
         .build();
     defer frame2.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state1 = Evm.Operation.State{ .frame = &frame1 };
-    var state2 = Evm.Operation.State{ .frame = &frame2 };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state1: Evm.Operation.State = &frame1;
+    const state2: Evm.Operation.State = &frame2;
 
     // Store value in contract1's transient storage
     const slot: u256 = 42;
     const value: u256 = 0xdeadbeef;
     try frame1.stack.append(value); // value (will be popped 1st)
     try frame1.stack.append(slot); // slot (will be popped 2nd)
-    _ = try evm.table.execute(0, &interpreter, &state1, 0x5D); // TSTORE
+    _ = try evm.table.execute(0, interpreter, state1, 0x5D); // TSTORE
 
     // Same slot in contract2 should still be 0
     try frame2.stack.append(slot);
-    _ = try evm.table.execute(0, &interpreter, &state2, 0x5C); // TLOAD
+    _ = try evm.table.execute(0, interpreter, state2, 0x5C); // TLOAD
     const result = try frame2.stack.pop();
     try testing.expectEqual(@as(u256, 0), result); // Should be 0, not value
 }
@@ -751,18 +751,18 @@ test "PUSH operations: Boundary conditions" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // First PUSH1 should work normally
-    const result1 = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
+    const result1 = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     try testing.expectEqual(@as(usize, 2), result1.bytes_consumed);
     const value1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x42), value1);
     frame.pc = 2;
 
     // Second PUSH2 should pad with zeros
-    const result2 = try evm.table.execute(frame.pc, &interpreter, &state, 0x61);
+    const result2 = try evm.table.execute(frame.pc, interpreter, state, 0x61);
     try testing.expectEqual(@as(usize, 3), result2.bytes_consumed);
     const value2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x1200), value2); // 0x12 followed by 0x00

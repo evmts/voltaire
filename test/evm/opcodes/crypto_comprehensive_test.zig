@@ -52,14 +52,14 @@ test "KECCAK256 (0x20): Known test vectors" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test vector 1: Empty string
     // keccak256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const empty_hash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
     const top1 = try frame.stack.peek_n(0);
     try testing.expectEqual(empty_hash, top1);
@@ -70,7 +70,7 @@ test "KECCAK256 (0x20): Known test vectors" {
     try frame.memory.set_data(0, &[_]u8{0x01});
     try frame.stack.append(0); // offset
     try frame.stack.append(1); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const single_byte_hash = 0x5fe7f977e71dba2ea1a68e21057beebb9be2ac30c6410aa38d4f3fbe41dcffd2;
     const top2 = try frame.stack.peek_n(0);
     try testing.expectEqual(single_byte_hash, top2);
@@ -81,7 +81,7 @@ test "KECCAK256 (0x20): Known test vectors" {
     try frame.memory.set_data(0, &[_]u8{ 0x61, 0x62, 0x63 });
     try frame.stack.append(0); // offset
     try frame.stack.append(3); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const abc_hash = 0x4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45;
     const top3 = try frame.stack.peek_n(0);
     try testing.expectEqual(abc_hash, top3);
@@ -95,7 +95,7 @@ test "KECCAK256 (0x20): Known test vectors" {
     }
     try frame.stack.append(0); // offset
     try frame.stack.append(32); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const zero32_hash = 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563;
     const top4 = try frame.stack.peek_n(0);
     try testing.expectEqual(zero32_hash, top4);
@@ -136,13 +136,13 @@ test "KECCAK256: Gas cost calculations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     const initial_gas = frame.gas_remaining;
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const gas_used_empty = initial_gas - frame.gas_remaining;
     // Empty data still charges base cost
     try testing.expectEqual(@as(u64, 30), gas_used_empty);
@@ -155,7 +155,7 @@ test "KECCAK256: Gas cost calculations" {
     try frame.memory.set_data(0, &[_]u8{0x01});
     try frame.stack.append(0); // offset
     try frame.stack.append(1); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const gas_used_1byte = initial_gas2 - frame.gas_remaining;
     try testing.expect(gas_used_1byte >= 36); // At least 36, may include memory expansion
     frame.stack.clear();
@@ -169,7 +169,7 @@ test "KECCAK256: Gas cost calculations" {
     }
     try frame.stack.append(0); // offset
     try frame.stack.append(32); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const gas_used_32bytes = initial_gas3 - frame.gas_remaining;
     try testing.expect(gas_used_32bytes >= 36);
     frame.stack.clear();
@@ -183,7 +183,7 @@ test "KECCAK256: Gas cost calculations" {
     }
     try frame.stack.append(0); // offset
     try frame.stack.append(64); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const gas_used_64bytes = initial_gas4 - frame.gas_remaining;
     try testing.expect(gas_used_64bytes >= 42);
     try testing.expect(gas_used_64bytes > gas_used_32bytes); // Should cost more
@@ -198,7 +198,7 @@ test "KECCAK256: Gas cost calculations" {
     }
     try frame.stack.append(0); // offset
     try frame.stack.append(256); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const gas_used_256bytes = initial_gas5 - frame.gas_remaining;
     try testing.expect(gas_used_256bytes >= 78);
     try testing.expect(gas_used_256bytes > gas_used_64bytes);
@@ -237,8 +237,8 @@ test "KECCAK256: Memory operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Hash data at non-zero offset
     const pattern = [_]u8{ 0xDE, 0xAD, 0xBE, 0xEF };
@@ -247,7 +247,7 @@ test "KECCAK256: Memory operations" {
     }
     try frame.stack.append(100); // offset
     try frame.stack.append(4); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const offset_hash = try frame.stack.peek_n(0);
     try testing.expect(offset_hash != 0);
     frame.stack.clear();
@@ -258,7 +258,7 @@ test "KECCAK256: Memory operations" {
     }
     try frame.stack.append(0); // offset
     try frame.stack.append(4); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const zero_offset_hash = try frame.stack.peek_n(0);
     try testing.expectEqual(offset_hash, zero_offset_hash);
     frame.stack.clear();
@@ -268,7 +268,7 @@ test "KECCAK256: Memory operations" {
     const size = 64;
     try frame.stack.append(large_offset); // offset
     try frame.stack.append(size); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     // Should not error, memory should expand to accommodate
     const expansion_hash = try frame.stack.peek_n(0);
     try testing.expect(expansion_hash != 0);
@@ -277,7 +277,7 @@ test "KECCAK256: Memory operations" {
     // Test 4: Zero-size hash at large offset should not fail
     try frame.stack.append(large_offset); // offset
     try frame.stack.append(0); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const empty_at_offset = try frame.stack.peek_n(0);
     const empty_hash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
     try testing.expectEqual(@as(u256, empty_hash), empty_at_offset);
@@ -316,8 +316,8 @@ test "KECCAK256: Variable input sizes" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Set up test data pattern
     for (0..1024) |i| {
@@ -332,7 +332,7 @@ test "KECCAK256: Variable input sizes" {
     for (test_sizes) |size| {
         try frame.stack.append(0); // offset
         try frame.stack.append(size); // size
-        _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+        _ = try evm.table.execute(0, interpreter, state, 0x20);
         const current_hash = try frame.stack.peek_n(0);
 
         // Each different input size should produce a different hash
@@ -377,8 +377,8 @@ test "KECCAK256: Hash consistency" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test: Same input should always produce same hash
     const test_data = [_]u8{ 0x48, 0x65, 0x6c, 0x6c, 0x6f }; // "Hello"
@@ -391,7 +391,7 @@ test "KECCAK256: Hash consistency" {
     for (0..5) |iteration| {
         try frame.stack.append(0); // offset
         try frame.stack.append(test_data.len); // size
-        _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+        _ = try evm.table.execute(0, interpreter, state, 0x20);
         const current_hash = try frame.stack.peek_n(0);
 
         if (iteration == 0) {
@@ -406,7 +406,7 @@ test "KECCAK256: Hash consistency" {
     try frame.memory.set_data(4, &[_]u8{0x6F}); // Change "Hello" to "Helloo"
     try frame.stack.append(0); // offset
     try frame.stack.append(test_data.len); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const different_hash = try frame.stack.peek_n(0);
     try testing.expect(different_hash != first_hash);
 }
@@ -444,14 +444,14 @@ test "KECCAK256: Edge cases and limits" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Maximum reasonable size that doesn't exceed memory limits
     const large_size = 8192; // 256 words
     try frame.stack.append(0); // offset
     try frame.stack.append(large_size); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const large_hash = try frame.stack.peek_n(0);
     try testing.expect(large_hash != 0);
     frame.stack.clear();
@@ -459,7 +459,7 @@ test "KECCAK256: Edge cases and limits" {
     // Test 2: Zero offset with non-zero size
     try frame.stack.append(0); // offset
     try frame.stack.append(32); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const zero_offset_result = try frame.stack.peek_n(0);
     try testing.expect(zero_offset_result != 0);
     frame.stack.clear();
@@ -473,7 +473,7 @@ test "KECCAK256: Edge cases and limits" {
     const gas_before_31 = frame.gas_remaining;
     try frame.stack.append(0); // offset
     try frame.stack.append(31); // size = 31 bytes = 1 word
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const gas_after_31 = frame.gas_remaining;
     const gas_used_31 = gas_before_31 - gas_after_31;
     frame.stack.clear();
@@ -481,7 +481,7 @@ test "KECCAK256: Edge cases and limits" {
     const gas_before_33 = frame.gas_remaining;
     try frame.stack.append(0); // offset
     try frame.stack.append(33); // size = 33 bytes = 2 words
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const gas_after_33 = frame.gas_remaining;
     const gas_used_33 = gas_before_33 - gas_after_33;
 
@@ -523,14 +523,14 @@ test "KECCAK256: Error conditions" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x20));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter, state, 0x20));
 
     // Test 2: Stack underflow - only one argument
     try frame.stack.append(32);
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x20));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter, state, 0x20));
     frame.stack.clear();
 
     // Test 3: Out of gas - insufficient gas for large hash
@@ -538,7 +538,7 @@ test "KECCAK256: Error conditions" {
     const large_size = 1000; // Would require 30 + ceil(1000/32) * 6 = 30 + 32 * 6 = 222 gas
     try frame.stack.append(0); // offset
     try frame.stack.append(large_size); // size
-    try testing.expectError(ExecutionError.Error.OutOfGas, evm.table.execute(0, &interpreter, &state, 0x20));
+    try testing.expectError(ExecutionError.Error.OutOfGas, evm.table.execute(0, interpreter, state, 0x20));
     frame.stack.clear();
 
     // Test 4: Invalid offset - extremely large offset that would overflow
@@ -546,7 +546,7 @@ test "KECCAK256: Error conditions" {
     const huge_offset = std.math.maxInt(u256);
     try frame.stack.append(huge_offset); // offset
     try frame.stack.append(1); // size
-    try testing.expectError(ExecutionError.Error.OutOfOffset, evm.table.execute(0, &interpreter, &state, 0x20));
+    try testing.expectError(ExecutionError.Error.OutOfOffset, evm.table.execute(0, interpreter, state, 0x20));
     frame.stack.clear();
 
     // Test 5: Size overflow - offset + size overflows
@@ -554,7 +554,7 @@ test "KECCAK256: Error conditions" {
     const size_that_overflows = 20;
     try frame.stack.append(large_offset); // offset
     try frame.stack.append(size_that_overflows); // size
-    try testing.expectError(ExecutionError.Error.OutOfOffset, evm.table.execute(0, &interpreter, &state, 0x20));
+    try testing.expectError(ExecutionError.Error.OutOfOffset, evm.table.execute(0, interpreter, state, 0x20));
 }
 
 test "KECCAK256: Stack behavior" {
@@ -590,8 +590,8 @@ test "KECCAK256: Stack behavior" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Set up initial stack state
     try frame.stack.append(0x12345678); // [bottom]
@@ -603,7 +603,7 @@ test "KECCAK256: Stack behavior" {
     try testing.expectEqual(@as(usize, 4), frame.stack.size);
 
     // Execute KECCAK256
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
 
     // Stack after: [0x12345678, 0xABCDEF, hash_result] (consumed 2, produced 1)
     try testing.expectEqual(@as(usize, 3), frame.stack.size);
@@ -653,8 +653,8 @@ test "KECCAK256: Memory access patterns" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Reading across memory boundaries
     // Write data that spans multiple 32-byte words
@@ -665,7 +665,7 @@ test "KECCAK256: Memory access patterns" {
 
     try frame.stack.append(0); // offset
     try frame.stack.append(test_pattern.len); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const pattern_hash = try frame.stack.peek_n(0);
     try testing.expect(pattern_hash != 0);
     frame.stack.clear();
@@ -681,7 +681,7 @@ test "KECCAK256: Memory access patterns" {
 
     try frame.stack.append(100); // offset
     try frame.stack.append(64); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x20);
+    _ = try evm.table.execute(0, interpreter, state, 0x20);
     const gap_hash = try frame.stack.peek_n(0);
     try testing.expect(gap_hash != 0);
     try testing.expect(gap_hash != pattern_hash);

@@ -74,9 +74,9 @@ test "Integration: Conditional jump patterns" {
     try frame_ptr.stack.append(1); // condition=1
     try frame_ptr.stack.append(10); // destination=10
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = frame_ptr };
-    _ = try vm.table.execute(0, &interpreter, &state, 0x57); // JUMPI
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = frame_ptr;
+    _ = try vm.table.execute(0, interpreter, state, 0x57); // JUMPI
 
     try testing.expectEqual(@as(usize, 10), frame_ptr.pc);
 
@@ -86,7 +86,7 @@ test "Integration: Conditional jump patterns" {
     try frame_ptr.stack.append(0); // condition=0
     try frame_ptr.stack.append(20); // destination=20
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x57); // JUMPI
+    _ = try vm.table.execute(0, interpreter, state, 0x57); // JUMPI
     try testing.expectEqual(@as(usize, 0), frame_ptr.pc); // PC unchanged
 
     // Test 3: Complex condition evaluation
@@ -95,13 +95,13 @@ test "Integration: Conditional jump patterns" {
     // Calculate condition: 5 > 3
     try frame_ptr.stack.append(5);
     try frame_ptr.stack.append(3);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x11); // GT Result: 1, Stack: [1]
+    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT Result: 1, Stack: [1]
 
     // Push destination (30) on top of condition
     try frame_ptr.stack.append(30); // Stack: [1, 30] with 30 on top
     // Now stack is [condition=1, destination=30] which is correct for JUMPI
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x57); // JUMPI
+    _ = try vm.table.execute(0, interpreter, state, 0x57); // JUMPI
     try testing.expectEqual(@as(usize, 30), frame_ptr.pc);
 }
 
@@ -158,22 +158,22 @@ test "Integration: Loop implementation with JUMP" {
     // Initialize counter to 5
     try frame_ptr.stack.append(5);
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = frame_ptr };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = frame_ptr;
 
     // Simulate loop iterations
     var iterations: u32 = 0;
     while (iterations < 5) : (iterations += 1) {
         // Decrement counter
         try frame_ptr.stack.append(1);
-        _ = try vm.table.execute(0, &interpreter, &state, 0x03); // SUB
+        _ = try vm.table.execute(0, interpreter, state, 0x03); // SUB
 
         // Duplicate for comparison
-        _ = try vm.table.execute(0, &interpreter, &state, 0x80); // DUP1
+        _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1
 
         // Check if counter > 0
         try frame_ptr.stack.append(0);
-        _ = try vm.table.execute(0, &interpreter, &state, 0x11); // GT
+        _ = try vm.table.execute(0, interpreter, state, 0x11); // GT
 
         // If counter > 0, we would jump back to loop start
         const condition = try frame_ptr.stack.pop();
@@ -227,14 +227,14 @@ test "Integration: Return data handling" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = frame_ptr };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = frame_ptr;
 
     // Store data in memory
     const return_value: u256 = 0x42424242;
     try frame_ptr.stack.append(return_value); // value
     try frame_ptr.stack.append(0); // offset - corrected order for MSTORE
-    _ = try vm.table.execute(0, &interpreter, &state, 0x52); // MSTORE
+    _ = try vm.table.execute(0, interpreter, state, 0x52); // MSTORE
 
     // Return 32 bytes from offset 0
     // Stack order: [offset, size] with size on top
@@ -242,7 +242,7 @@ test "Integration: Return data handling" {
     try frame_ptr.stack.append(32); // size (top)
 
     // RETURN will throw an error (ExecutionError.STOP) which is expected
-    const result = vm.table.execute(0, &interpreter, &state, 0xF3); // RETURN
+    const result = vm.table.execute(0, interpreter, state, 0xF3); // RETURN
     try testing.expectError(ExecutionError.Error.STOP, result);
 
     // The output data is available in frame.output
@@ -291,8 +291,8 @@ test "Integration: Revert with reason" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = frame_ptr };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = frame_ptr;
 
     // Store error message in memory
     const error_msg = "Insufficient balance";
@@ -304,7 +304,7 @@ test "Integration: Revert with reason" {
     try frame_ptr.stack.append(error_msg.len); // size (top)
 
     // REVERT will throw an error (ExecutionError.REVERT) which is expected
-    const result = vm.table.execute(0, &interpreter, &state, 0xFD); // REVERT
+    const result = vm.table.execute(0, interpreter, state, 0xFD); // REVERT
     try testing.expectError(ExecutionError.Error.REVERT, result);
 
     // The revert data is available in frame.output
@@ -354,21 +354,21 @@ test "Integration: PC tracking through operations" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = frame_ptr };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = frame_ptr;
 
     // Set PC to a specific value
     frame_ptr.pc = 42;
 
     // Get current PC - PC opcode uses frame's pc value
-    _ = try vm.table.execute(frame_ptr.pc, &interpreter, &state, 0x58); // PC
+    _ = try vm.table.execute(frame_ptr.pc, interpreter, state, 0x58); // PC
 
     const result1 = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 42), result1);
 
     // Change PC and get again
     frame_ptr.pc = 100;
-    _ = try vm.table.execute(frame_ptr.pc, &interpreter, &state, 0x58); // PC
+    _ = try vm.table.execute(frame_ptr.pc, interpreter, state, 0x58); // PC
 
     const result2 = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 100), result2);
@@ -416,12 +416,12 @@ test "Integration: Invalid opcode handling" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = frame_ptr };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = frame_ptr;
 
     // Execute INVALID opcode
     // Check gas before execution
-    const result = vm.table.execute(0, &interpreter, &state, 0xFE); // INVALID
+    const result = vm.table.execute(0, interpreter, state, 0xFE); // INVALID
     // Check gas after execution
     try testing.expectError(ExecutionError.Error.InvalidOpcode, result);
 
@@ -480,8 +480,8 @@ test "Integration: Nested conditions with jumps" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = frame_ptr };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = frame_ptr;
 
     // Test values: a=10, b=5, c=3, d=8
     const a: u256 = 10;
@@ -492,13 +492,13 @@ test "Integration: Nested conditions with jumps" {
     // First condition: a > b (should be true)
     try frame_ptr.stack.append(a);
     try frame_ptr.stack.append(b);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x11); // GT
+    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT
 
     // If first condition is false, jump to end
-    _ = try vm.table.execute(0, &interpreter, &state, 0x80); // DUP1
-    _ = try vm.table.execute(0, &interpreter, &state, 0x15); // ISZERO
+    _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1
+    _ = try vm.table.execute(0, interpreter, state, 0x15); // ISZERO
     try frame_ptr.stack.append(60); // Jump to end if false
-    _ = try vm.table.execute(0, &interpreter, &state, 0x90); // SWAP1
+    _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1
 
     // This would be a JUMPI in real execution
     const should_skip_first = try frame_ptr.stack.pop();
@@ -508,10 +508,10 @@ test "Integration: Nested conditions with jumps" {
     // Second condition: c < d (should be true)
     try frame_ptr.stack.append(c);
     try frame_ptr.stack.append(d);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x10); // LT
+    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT
 
     // AND the conditions
-    _ = try vm.table.execute(0, &interpreter, &state, 0x02); // MUL (using as AND for 0/1 values)
+    _ = try vm.table.execute(0, interpreter, state, 0x02); // MUL (using as AND for 0/1 values)
 
     const result = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 1), result); // Both conditions true
@@ -568,8 +568,8 @@ test "Integration: Self-destruct with beneficiary" {
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = frame_ptr };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = frame_ptr;
 
     // Get initial beneficiary balance directly from the HashMap
     const initial_balance = vm.state.get_balance(bob_address);
@@ -580,6 +580,6 @@ test "Integration: Self-destruct with beneficiary" {
 
     // Note: Actual selfdestruct implementation would transfer balance and mark for deletion
     // For this test, we're just verifying the opcode executes
-    const result = vm.table.execute(0, &interpreter, &state, 0xFF); // SELFDESTRUCT
+    const result = vm.table.execute(0, interpreter, state, 0xFF); // SELFDESTRUCT
     try testing.expectError(ExecutionError.Error.STOP, result);
 }

@@ -436,11 +436,11 @@ pub fn calculate_call_gas(
 // ============================================================================
 
 // Gas opcode handler
-pub fn gas_op(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn gas_op(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     try frame.stack.append(@as(u256, @intCast(frame.gas_remaining)));
 
@@ -503,11 +503,11 @@ pub fn revert_to_snapshot(vm: *Vm, snapshot_id: usize) !void {
     try vm.revert_to_snapshot(snapshot_id);
 }
 
-pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_create(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // Check static call restrictions
     try validate_create_static_context(frame);
@@ -545,11 +545,11 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 }
 
 /// CREATE2 opcode - Create contract with deterministic address
-pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_create2(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // Check static call restrictions
     try validate_create_static_context(frame);
@@ -586,11 +586,11 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     return Operation.ExecutionResult{};
 }
 
-pub fn op_call(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_call(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     const gas = try frame.stack.pop();
     const to = try frame.stack.pop();
@@ -637,11 +637,11 @@ pub fn op_call(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
     return Operation.ExecutionResult{};
 }
 
-pub fn op_callcode(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_callcode(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     const gas = try frame.stack.pop();
     const to = try frame.stack.pop();
@@ -683,11 +683,11 @@ pub fn op_callcode(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     return Operation.ExecutionResult{};
 }
 
-pub fn op_delegatecall(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_delegatecall(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // DELEGATECALL takes 6 parameters (no value parameter)
     const gas = try frame.stack.pop();
@@ -741,11 +741,11 @@ pub fn op_delegatecall(pc: usize, interpreter: *Operation.Interpreter, state: *O
     return Operation.ExecutionResult{};
 }
 
-pub fn op_staticcall(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_staticcall(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // STATICCALL takes 6 parameters (no value parameter)
     const gas = try frame.stack.pop();
@@ -808,11 +808,11 @@ pub fn op_staticcall(pc: usize, interpreter: *Operation.Interpreter, state: *Ope
 /// Gas: Variable based on hardfork and account creation
 /// Memory: No memory access
 /// Storage: Contract marked for destruction
-pub fn op_selfdestruct(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_selfdestruct(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const vm = interpreter.get_vm();
-    const frame = state.get_frame();
+    const vm = interpreter;
+    const frame = state;
 
     // Static call protection - SELFDESTRUCT forbidden in static context
     if (frame.is_static) {
@@ -873,7 +873,7 @@ pub fn op_selfdestruct(pc: usize, interpreter: *Operation.Interpreter, state: *O
 
 /// EXTCALL opcode (0xF8): External call with EOF validation
 /// Not implemented - EOF feature
-pub fn op_extcall(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_extcall(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
     _ = state;
@@ -884,7 +884,7 @@ pub fn op_extcall(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
 
 /// EXTDELEGATECALL opcode (0xF9): External delegate call with EOF validation
 /// Not implemented - EOF feature
-pub fn op_extdelegatecall(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_extdelegatecall(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
     _ = state;
@@ -895,7 +895,7 @@ pub fn op_extdelegatecall(pc: usize, interpreter: *Operation.Interpreter, state:
 
 /// EXTSTATICCALL opcode (0xFB): External static call with EOF validation
 /// Not implemented - EOF feature
-pub fn op_extstaticcall(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_extstaticcall(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
     _ = state;

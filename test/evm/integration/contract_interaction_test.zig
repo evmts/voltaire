@@ -74,9 +74,9 @@ test "Integration: contract creation and initialization" {
     try frame.stack.append(init_code.len); // size
     try frame.stack.append(1000); // value to send
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
-    _ = try vm.table.execute(0, &interpreter, &state, 0xF0);
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
+    _ = try vm.table.execute(0, interpreter, state, 0xF0);
 
     // Check result
     const created_address = try frame.stack.pop();
@@ -155,9 +155,9 @@ test "Integration: inter-contract calls" {
     try frame.stack.append(100); // ret_offset
     try frame.stack.append(32); // ret_size
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
-    _ = try vm.table.execute(0, &interpreter, &state, 0xF1);
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
+    _ = try vm.table.execute(0, interpreter, state, 0xF1);
 
     // Check success
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
@@ -231,9 +231,9 @@ test "Integration: delegatecall context preservation" {
     try frame.stack.append(50); // ret_offset
     try frame.stack.append(1); // ret_size
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
-    _ = try vm.table.execute(0, &interpreter, &state, 0xF4);
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
+    _ = try vm.table.execute(0, interpreter, state, 0xF4);
 
     // Check success
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
@@ -300,9 +300,9 @@ test "Integration: staticcall restrictions" {
     try frame.stack.append(0); // ret_offset
     try frame.stack.append(0); // ret_size
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
-    _ = try vm.table.execute(0, &interpreter, &state, 0xFA);
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
+    _ = try vm.table.execute(0, interpreter, state, 0xFA);
 
     // Check success
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
@@ -313,14 +313,14 @@ test "Integration: staticcall restrictions" {
     // Try SSTORE - should fail
     try frame.stack.append(0); // slot
     try frame.stack.append(100); // value
-    const sstore_result = vm.table.execute(0, &interpreter, &state, 0x55);
+    const sstore_result = vm.table.execute(0, interpreter, state, 0x55);
     try testing.expectError(ExecutionError.Error.WriteProtection, sstore_result);
 
     // Try LOG0 - should fail
     frame.stack.clear();
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // size
-    const log_result = vm.table.execute(0, &interpreter, &state, 0xA0);
+    const log_result = vm.table.execute(0, interpreter, state, 0xA0);
     try testing.expectError(ExecutionError.Error.WriteProtection, log_result);
 
     // Try CREATE - should fail
@@ -328,7 +328,7 @@ test "Integration: staticcall restrictions" {
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // size
     try frame.stack.append(0); // value
-    const create_result = vm.table.execute(0, &interpreter, &state, 0xF0);
+    const create_result = vm.table.execute(0, interpreter, state, 0xF0);
     try testing.expectError(ExecutionError.Error.WriteProtection, create_result);
 }
 
@@ -394,9 +394,9 @@ test "Integration: CREATE2 deterministic deployment" {
     try frame.stack.append(0); // value
     try frame.stack.append(salt); // salt
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
-    _ = try vm.table.execute(0, &interpreter, &state, 0xF5);
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
+    _ = try vm.table.execute(0, interpreter, state, 0xF5);
 
     // Check result
     const created_address = try frame.stack.pop();
@@ -460,9 +460,9 @@ test "Integration: selfdestruct with balance transfer" {
     // Execute SELFDESTRUCT
     try frame.stack.append(Address.to_u256(beneficiary));
 
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
-    const result = vm.table.execute(0, &interpreter, &state, 0xFF);
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
+    const result = vm.table.execute(0, interpreter, state, 0xFF);
     try testing.expectError(ExecutionError.Error.STOP, result);
 
     // Verify contract is marked for deletion
@@ -521,8 +521,8 @@ test "Integration: call depth limit enforcement" {
     try frame.stack.append(0); // size
     try frame.stack.append(0); // value
 
-    const interpreter1: Operation.Interpreter{ .vm = &vm };
-    const state1: Operation.State{ .frame = &frame };
+    const interpreter1: Operation.Interpreter = &vm;
+    const state1: Operation.State = &frame;
     _ = try vm.table.execute(0, &interpreter1, state1, 0xF0);
 
     // Should push 0 for failure
@@ -537,8 +537,8 @@ test "Integration: call depth limit enforcement" {
     try frame.stack.append(0); // ret_offset
     try frame.stack.append(0); // ret_size
 
-    const interpreter2: Operation.Interpreter{ .vm = &vm };
-    const state2: Operation.State{ .frame = &frame };
+    const interpreter2: Operation.Interpreter = &vm;
+    const state2: Operation.State = &frame;
     _ = try vm.table.execute(0, &interpreter2, state2, 0xF1);
 
     // Should push 0 for failure
@@ -587,8 +587,8 @@ test "Integration: return data buffer management" {
     defer frame.deinit();
 
     // Initial state - no return data
-    const interpreter1: Operation.Interpreter{ .vm = &vm };
-    const state1: Operation.State{ .frame = &frame };
+    const interpreter1: Operation.Interpreter = &vm;
+    const state1: Operation.State = &frame;
     _ = try vm.table.execute(0, &interpreter1, state1, 0x3D);
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 
@@ -608,14 +608,14 @@ test "Integration: return data buffer management" {
     try frame.stack.append(0); // ret_offset
     try frame.stack.append(0); // ret_size (don't copy to memory)
 
-    const interpreter2: Operation.Interpreter{ .vm = &vm };
-    const state2: Operation.State{ .frame = &frame };
+    const interpreter2: Operation.Interpreter = &vm;
+    const state2: Operation.State = &frame;
     _ = try vm.table.execute(0, &interpreter2, state2, 0xF1);
     _ = try frame.stack.pop(); // Discard success flag
 
     // Check return data size
-    const interpreter3: Operation.Interpreter{ .vm = &vm };
-    const state3: Operation.State{ .frame = &frame };
+    const interpreter3: Operation.Interpreter = &vm;
+    const state3: Operation.State = &frame;
     _ = try vm.table.execute(0, &interpreter3, state3, 0x3D);
     try testing.expectEqual(@as(u256, return_data.len), try frame.stack.pop());
 
@@ -624,8 +624,8 @@ test "Integration: return data buffer management" {
     try frame.stack.append(0); // data offset
     try frame.stack.append(return_data.len); // size
 
-    const interpreter4: Operation.Interpreter{ .vm = &vm };
-    const state4: Operation.State{ .frame = &frame };
+    const interpreter4: Operation.Interpreter = &vm;
+    const state4: Operation.State = &frame;
     _ = try vm.table.execute(0, &interpreter4, &state4, 0x3E);
 
     // Verify data was copied
@@ -637,8 +637,8 @@ test "Integration: return data buffer management" {
     try frame.stack.append(0); // data offset
     try frame.stack.append(10); // size (too large)
 
-    const interpreter5: Operation.Interpreter{ .vm = &vm };
-    const state5: Operation.State{ .frame = &frame };
+    const interpreter5: Operation.Interpreter = &vm;
+    const state5: Operation.State = &frame;
     const copy_result = vm.table.execute(0, &interpreter5, &state5, 0x3E);
     try testing.expectError(ExecutionError.Error.ReturnDataOutOfBounds, copy_result);
 }

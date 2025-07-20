@@ -138,11 +138,11 @@ pub fn get_operation(self: *const JumpTable, opcode: u8) *const Operation {
 /// ```zig
 /// const result = try table.execute(pc, &interpreter, &state, bytecode[pc]);
 /// ```
-pub fn execute(self: *const JumpTable, pc: usize, interpreter: *operation_module.Interpreter, state: *operation_module.State, opcode: u8) ExecutionError.Error!operation_module.ExecutionResult {
+pub fn execute(self: *const JumpTable, pc: usize, interpreter: operation_module.Interpreter, state: operation_module.State, opcode: u8) ExecutionError.Error!operation_module.ExecutionResult {
     const operation = self.get_operation(opcode);
 
-    // Get frame safely to access gas_remaining and stack
-    const frame = state.get_frame();
+    // Access frame directly - state is now a direct pointer
+    const frame = state;
 
     Log.debug("JumpTable.execute: Executing opcode 0x{x:0>2} at pc={}, gas={}, stack_size={}", .{ opcode, pc, frame.gas_remaining, frame.stack.size });
 
@@ -310,7 +310,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     // 0x80s: Duplication Operations
     if (comptime builtin.mode == .ReleaseSmall) {
         // Use specific functions for each DUP operation to avoid opcode detection issues
-        const dup_functions = [_]fn (usize, *operation_module.Interpreter, *operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
+        const dup_functions = [_]fn (usize, operation_module.Interpreter, operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
             stack_ops.dup_1, stack_ops.dup_2, stack_ops.dup_3, stack_ops.dup_4,
             stack_ops.dup_5, stack_ops.dup_6, stack_ops.dup_7, stack_ops.dup_8,
             stack_ops.dup_9, stack_ops.dup_10, stack_ops.dup_11, stack_ops.dup_12,
@@ -341,7 +341,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     // 0x90s: Exchange Operations
     if (comptime builtin.mode == .ReleaseSmall) {
         // Use specific functions for each SWAP operation to avoid opcode detection issues
-        const swap_functions = [_]fn (usize, *operation_module.Interpreter, *operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
+        const swap_functions = [_]fn (usize, operation_module.Interpreter, operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
             stack_ops.swap_1, stack_ops.swap_2, stack_ops.swap_3, stack_ops.swap_4,
             stack_ops.swap_5, stack_ops.swap_6, stack_ops.swap_7, stack_ops.swap_8,
             stack_ops.swap_9, stack_ops.swap_10, stack_ops.swap_11, stack_ops.swap_12,
@@ -372,7 +372,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     // 0xa0s: Logging Operations
     if (comptime builtin.mode == .ReleaseSmall) {
         // Use specific functions for each LOG operation to avoid opcode detection issues
-        const log_functions = [_]fn (usize, *operation_module.Interpreter, *operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
+        const log_functions = [_]fn (usize, operation_module.Interpreter, operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
             log.log_0, log.log_1, log.log_2, log.log_3, log.log_4,
         };
         

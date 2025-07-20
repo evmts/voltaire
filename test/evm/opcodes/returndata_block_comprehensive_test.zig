@@ -58,26 +58,26 @@ test "EXTCODESIZE (0x3B): Get external code size" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Get code size of contract with code
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3B);
+    _ = try evm.table.execute(0, interpreter, state, 0x3B);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, test_code.len), result1);
 
     // Test 2: Get code size of EOA (should be 0)
     const alice_addr = [_]u8{0x11} ** 20;
     try frame.stack.append(primitives.Address.to_u256(alice_addr));
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3B);
+    _ = try evm.table.execute(0, interpreter, state, 0x3B);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2);
 
     // Test 3: Get code size of non-existent account (should be 0)
     const zero_addr = [_]u8{0xFF} ** 20;
     try frame.stack.append(primitives.Address.to_u256(zero_addr));
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3B);
+    _ = try evm.table.execute(0, interpreter, state, 0x3B);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3);
 }
@@ -125,8 +125,8 @@ test "EXTCODECOPY (0x3C): Copy external code to memory" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Copy entire external code
     const bob_addr_u256 = primitives.Address.to_u256(bob_addr);
@@ -134,7 +134,7 @@ test "EXTCODECOPY (0x3C): Copy external code to memory" {
     try frame.stack.append(0); // code_offset
     try frame.stack.append(0); // mem_offset
     try frame.stack.append(bob_addr_u256); // address
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3C);
+    _ = try evm.table.execute(0, interpreter, state, 0x3C);
 
     const mem_slice1 = try frame.memory.get_slice(0, external_code.len);
     try testing.expectEqualSlices(u8, &external_code, mem_slice1);
@@ -145,7 +145,7 @@ test "EXTCODECOPY (0x3C): Copy external code to memory" {
     try frame.stack.append(2); // code_offset=2
     try frame.stack.append(10); // mem_offset=10
     try frame.stack.append(bob_addr_u256); // address
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3C);
+    _ = try evm.table.execute(0, interpreter, state, 0x3C);
 
     const mem_slice2 = try frame.memory.get_slice(10, 2);
     try testing.expectEqualSlices(u8, external_code[2..4], mem_slice2);
@@ -158,7 +158,7 @@ test "EXTCODECOPY (0x3C): Copy external code to memory" {
     try frame.stack.append(0); // code_offset
     try frame.stack.append(0); // mem_offset
     try frame.stack.append(alice_addr_u256); // address
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3C);
+    _ = try evm.table.execute(0, interpreter, state, 0x3C);
 
     const mem_slice3 = try frame.memory.get_slice(0, 32);
     const zeros = [_]u8{0} ** 32;
@@ -197,11 +197,11 @@ test "RETURNDATASIZE (0x3D): Get return data size" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: No return data initially
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3D);
+    _ = try evm.table.execute(0, interpreter, state, 0x3D);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result1);
 
@@ -209,7 +209,7 @@ test "RETURNDATASIZE (0x3D): Get return data size" {
     const return_data = [_]u8{ 0x42, 0x43, 0x44, 0x45 };
     try frame.return_data.set(&return_data);
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3D);
+    _ = try evm.table.execute(0, interpreter, state, 0x3D);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, return_data.len), result2);
 
@@ -217,7 +217,7 @@ test "RETURNDATASIZE (0x3D): Get return data size" {
     const large_data = [_]u8{0xFF} ** 1024;
     try frame.return_data.set(&large_data);
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3D);
+    _ = try evm.table.execute(0, interpreter, state, 0x3D);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1024), result3);
 }
@@ -260,14 +260,14 @@ test "RETURNDATACOPY (0x3E): Copy return data to memory" {
     };
     try frame.return_data.set(&return_data);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Copy all return data
     try frame.stack.append(return_data.len); // size
     try frame.stack.append(0); // data_offset
     try frame.stack.append(0); // mem_offset
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3E);
+    _ = try evm.table.execute(0, interpreter, state, 0x3E);
 
     const mem_slice1 = try frame.memory.get_slice(0, return_data.len);
     try testing.expectEqualSlices(u8, &return_data, mem_slice1);
@@ -277,7 +277,7 @@ test "RETURNDATACOPY (0x3E): Copy return data to memory" {
     try frame.stack.append(4); // size=4
     try frame.stack.append(4); // data_offset=4
     try frame.stack.append(32); // mem_offset=32
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3E);
+    _ = try evm.table.execute(0, interpreter, state, 0x3E);
 
     const mem_slice2 = try frame.memory.get_slice(32, 4);
     try testing.expectEqualSlices(u8, return_data[4..8], mem_slice2);
@@ -286,7 +286,7 @@ test "RETURNDATACOPY (0x3E): Copy return data to memory" {
     try frame.stack.append(32); // size > return_data.len
     try frame.stack.append(0); // data_offset
     try frame.stack.append(0); // mem_offset
-    const result = evm.table.execute(0, &interpreter, &state, 0x3E);
+    const result = evm.table.execute(0, interpreter, state, 0x3E);
     try testing.expectError(ExecutionError.Error.ReturnDataOutOfBounds, result);
 }
 
@@ -328,12 +328,12 @@ test "EXTCODEHASH (0x3F): Get external code hash" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Get hash of contract with code
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3F);
+    _ = try evm.table.execute(0, interpreter, state, 0x3F);
 
     // Calculate expected hash
     var expected_hash: [32]u8 = undefined;
@@ -349,7 +349,7 @@ test "EXTCODEHASH (0x3F): Get external code hash" {
     // Test 2: Get hash of EOA (should be 0)
     const alice_addr = [_]u8{0x11} ** 20;
     try frame.stack.append(primitives.Address.to_u256(alice_addr));
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3F);
+    _ = try evm.table.execute(0, interpreter, state, 0x3F);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2);
 }
@@ -403,19 +403,19 @@ test "BLOCKHASH (0x40): Get block hash" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Get recent block hash (should return pseudo-hash)
     try frame.stack.append(999);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x40);
+    _ = try evm.table.execute(0, interpreter, state, 0x40);
     const result1 = try frame.stack.pop();
     // Should be a non-zero pseudo-hash
     try testing.expect(result1 != 0);
 
     // Test 2: Get older block hash (within 256 blocks)
     try frame.stack.append(995);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x40);
+    _ = try evm.table.execute(0, interpreter, state, 0x40);
     const result2 = try frame.stack.pop();
     // Should be a non-zero pseudo-hash, different from result1
     try testing.expect(result2 != 0);
@@ -423,25 +423,25 @@ test "BLOCKHASH (0x40): Get block hash" {
 
     // Test 3: Block too old (> 256 blocks ago)
     try frame.stack.append(700); // 300 blocks ago
-    _ = try evm.table.execute(0, &interpreter, &state, 0x40);
+    _ = try evm.table.execute(0, interpreter, state, 0x40);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3);
 
     // Test 4: Future block
     try frame.stack.append(1001);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x40);
+    _ = try evm.table.execute(0, interpreter, state, 0x40);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result4);
 
     // Test 5: Current block
     try frame.stack.append(1000);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x40);
+    _ = try evm.table.execute(0, interpreter, state, 0x40);
     const result5 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result5);
 
     // Test 6: Genesis block
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x40);
+    _ = try evm.table.execute(0, interpreter, state, 0x40);
     const result6 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result6);
 }
@@ -496,11 +496,11 @@ test "COINBASE (0x41): Get block coinbase" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Execute COINBASE
-    _ = try evm.table.execute(0, &interpreter, &state, 0x41);
+    _ = try evm.table.execute(0, interpreter, state, 0x41);
 
     const expected = primitives.Address.to_u256(coinbase_addr);
     const result = try frame.stack.pop();
@@ -563,11 +563,11 @@ test "TIMESTAMP (0x42): Get block timestamp" {
             .build();
         defer frame.deinit();
 
-        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = Evm.Operation.State{ .frame = &frame };
+        const interpreter: Evm.Operation.Interpreter = &evm;
+        const state: Evm.Operation.State = &frame;
 
         // Execute TIMESTAMP
-        _ = try evm.table.execute(0, &interpreter, &state, 0x42);
+        _ = try evm.table.execute(0, interpreter, state, 0x42);
 
         const result = try frame.stack.pop();
         try testing.expectEqual(@as(u256, timestamp), result);
@@ -631,11 +631,11 @@ test "NUMBER (0x43): Get block number" {
             .build();
         defer frame.deinit();
 
-        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = Evm.Operation.State{ .frame = &frame };
+        const interpreter: Evm.Operation.Interpreter = &evm;
+        const state: Evm.Operation.State = &frame;
 
         // Execute NUMBER
-        _ = try evm.table.execute(0, &interpreter, &state, 0x43);
+        _ = try evm.table.execute(0, interpreter, state, 0x43);
 
         const result = try frame.stack.pop();
         try testing.expectEqual(@as(u256, block_num), result);
@@ -698,11 +698,11 @@ test "PREVRANDAO (0x44): Get previous RANDAO" {
             .build();
         defer frame.deinit();
 
-        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = Evm.Operation.State{ .frame = &frame };
+        const interpreter: Evm.Operation.Interpreter = &evm;
+        const state: Evm.Operation.State = &frame;
 
         // Execute PREVRANDAO
-        _ = try evm.table.execute(0, &interpreter, &state, 0x44);
+        _ = try evm.table.execute(0, interpreter, state, 0x44);
 
         const result = try frame.stack.pop();
         try testing.expectEqual(randao, result);
@@ -751,13 +751,13 @@ test "EXTCODE* opcodes: Gas consumption with EIP-2929" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test EXTCODESIZE - cold access
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
     const gas_before_cold = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3B);
+    _ = try evm.table.execute(0, interpreter, state, 0x3B);
     const gas_cold = gas_before_cold - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 2600), gas_cold); // Cold access
     _ = try frame.stack.pop();
@@ -765,7 +765,7 @@ test "EXTCODE* opcodes: Gas consumption with EIP-2929" {
     // Test EXTCODESIZE - warm access
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
     const gas_before_warm = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x3B);
+    _ = try evm.table.execute(0, interpreter, state, 0x3B);
     const gas_warm = gas_before_warm - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 100), gas_warm); // Warm access
 }
@@ -815,8 +815,8 @@ test "Block opcodes: Gas consumption" {
         .{ .opcode = 0x44, .name = "PREVRANDAO", .expected_gas = 2, .needs_stack = false },
     };
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     for (simple_opcodes) |op| {
         frame.stack.clear();
@@ -827,7 +827,7 @@ test "Block opcodes: Gas consumption" {
         const gas_before = 1000;
         frame.gas_remaining = gas_before;
 
-        _ = try evm.table.execute(0, &interpreter, &state, op.opcode);
+        _ = try evm.table.execute(0, interpreter, state, op.opcode);
 
         const gas_used = gas_before - frame.gas_remaining;
         try testing.expectEqual(op.expected_gas, gas_used);
@@ -878,8 +878,8 @@ test "RETURNDATACOPY: Out of bounds access" {
     const return_data = [_]u8{ 0x42, 0x43, 0x44, 0x45 };
     try frame.return_data.set(&return_data);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test cases that should fail
     const test_cases = [_]struct {
@@ -899,7 +899,7 @@ test "RETURNDATACOPY: Out of bounds access" {
         try frame.stack.append(tc.data_offset);
         try frame.stack.append(tc.mem_offset);
 
-        const result = evm.table.execute(0, &interpreter, &state, 0x3E);
+        const result = evm.table.execute(0, interpreter, state, 0x3E);
         try testing.expectError(ExecutionError.Error.ReturnDataOutOfBounds, result);
     }
 }
@@ -942,8 +942,8 @@ test "Memory copy opcodes: Memory expansion" {
         .build();
     defer frame.deinit(); // Limited gas
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test EXTCODECOPY with huge memory offset - should run out of gas
     const huge_offset = 1_000_000;
@@ -953,7 +953,7 @@ test "Memory copy opcodes: Memory expansion" {
     try frame.stack.append(huge_offset); // mem_offset
     try frame.stack.append(bob_addr_u256); // address
 
-    const result = evm.table.execute(0, &interpreter, &state, 0x3C);
+    const result = evm.table.execute(0, interpreter, state, 0x3C);
     try testing.expectError(ExecutionError.Error.OutOfGas, result);
 }
 
@@ -1005,12 +1005,12 @@ test "BLOCKHASH: Edge cases" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test with maximum u256 block number
     try frame.stack.append(std.math.maxInt(u256));
-    _ = try evm.table.execute(0, &interpreter, &state, 0x40);
+    _ = try evm.table.execute(0, interpreter, state, 0x40);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result); // Should return 0 for invalid block
 }

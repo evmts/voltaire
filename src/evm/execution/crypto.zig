@@ -39,11 +39,11 @@ inline fn hash_with_stack_buffer(data: []const u8) [32]u8 {
     return hash;
 }
 
-pub fn op_sha3(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_sha3(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     const offset = try frame.stack.pop();
     const size = try frame.stack.pop();

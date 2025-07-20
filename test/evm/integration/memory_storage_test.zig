@@ -52,23 +52,23 @@ test "Integration: Memory operations with arithmetic" {
     try frame.stack.append(20);
 
     // Execute ADD opcode
-    var interpreter = Operation.Interpreter{ .vm = &evm };
-    var state = Operation.State{ .frame = &frame };
-    _ = try evm.table.execute(0, &interpreter, &state, 0x01);
+    const interpreter: Operation.Interpreter = &evm;
+    const state: Operation.State = &frame;
+    _ = try evm.table.execute(0, interpreter, state, 0x01);
 
     // Store result in memory
     try frame.stack.append(0); // offset
-    _ = try evm.table.execute(0, &interpreter, &state, 0x52);
+    _ = try evm.table.execute(0, interpreter, state, 0x52);
 
     // Load from memory and verify
     try frame.stack.append(0); // offset
-    _ = try evm.table.execute(0, &interpreter, &state, 0x51);
+    _ = try evm.table.execute(0, interpreter, state, 0x51);
 
     const loaded_value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 30), loaded_value);
 
     // Check memory size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x59);
+    _ = try evm.table.execute(0, interpreter, state, 0x59);
     const memory_size = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 32), memory_size);
 }
@@ -116,9 +116,9 @@ test "Integration: Storage with conditional updates" {
     // Load value, add 50, store back if result > 120
     try frame.stack.append(slot);
 
-    var interpreter = Operation.Interpreter{ .vm = &evm };
-    var state = Operation.State{ .frame = &frame };
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    const interpreter: Operation.Interpreter = &evm;
+    const state: Operation.State = &frame;
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
 
     const loaded_value = try frame.stack.pop();
     try testing.expectEqual(initial_value, loaded_value);
@@ -126,18 +126,18 @@ test "Integration: Storage with conditional updates" {
     // Add 50
     try frame.stack.append(loaded_value);
     try frame.stack.append(50);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x01);
+    _ = try evm.table.execute(0, interpreter, state, 0x01);
 
     const sum = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 150), sum);
 
     // Duplicate for comparison
     try frame.stack.append(sum);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x80);
+    _ = try evm.table.execute(0, interpreter, state, 0x80);
 
     // Compare with 120
     try frame.stack.append(120);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x11);
+    _ = try evm.table.execute(0, interpreter, state, 0x11);
 
     const comparison_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), comparison_result);
@@ -145,7 +145,7 @@ test "Integration: Storage with conditional updates" {
     // Since condition is true, store the value
     // Stack has the value (150), need to store it
     try frame.stack.append(slot);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
 
     // Verify storage was updated
     const updated_value = evm.state.get_storage(zero_address, slot);
@@ -187,8 +187,8 @@ test "Integration: Memory copy operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &evm;
+    const state: Operation.State = &frame;
 
     // Store some data in memory
     const data1: u256 = 0xDEADBEEF;
@@ -196,27 +196,27 @@ test "Integration: Memory copy operations" {
 
     try frame.stack.append(data1);
     try frame.stack.append(0); // offset
-    _ = try evm.table.execute(0, &interpreter, &state, 0x52);
+    _ = try evm.table.execute(0, interpreter, state, 0x52);
 
     try frame.stack.append(data2);
     try frame.stack.append(32); // offset
-    _ = try evm.table.execute(0, &interpreter, &state, 0x52);
+    _ = try evm.table.execute(0, interpreter, state, 0x52);
 
     // Copy 32 bytes from offset 0 to offset 64
     try frame.stack.append(64); // dst
     try frame.stack.append(0); // src
     try frame.stack.append(32); // size
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(0, interpreter, state, 0x5E);
 
     // Verify copy
     try frame.stack.append(64); // offset
-    _ = try evm.table.execute(0, &interpreter, &state, 0x51);
+    _ = try evm.table.execute(0, interpreter, state, 0x51);
 
     const copied_value = try frame.stack.pop();
     try testing.expectEqual(data1, copied_value);
 
     // Check memory size expanded
-    _ = try evm.table.execute(0, &interpreter, &state, 0x59);
+    _ = try evm.table.execute(0, interpreter, state, 0x59);
 
     const memory_size = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 96), memory_size);
@@ -257,27 +257,27 @@ test "Integration: Transient storage with arithmetic" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &evm;
+    const state: Operation.State = &frame;
 
     const slot: u256 = 123;
 
     // Store initial value in transient storage
     try frame.stack.append(1000);
     try frame.stack.append(slot);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5D);
+    _ = try evm.table.execute(0, interpreter, state, 0x5D);
 
     // Load, double it, store back
     try frame.stack.append(slot);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5C);
+    _ = try evm.table.execute(0, interpreter, state, 0x5C);
 
     const loaded_value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1000), loaded_value);
 
     // Double the value
     try frame.stack.append(loaded_value);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x80);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x01);
+    _ = try evm.table.execute(0, interpreter, state, 0x80);
+    _ = try evm.table.execute(0, interpreter, state, 0x01);
 
     const doubled = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 2000), doubled);
@@ -285,11 +285,11 @@ test "Integration: Transient storage with arithmetic" {
     // Store back
     try frame.stack.append(doubled);
     try frame.stack.append(slot);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5D);
+    _ = try evm.table.execute(0, interpreter, state, 0x5D);
 
     // Verify
     try frame.stack.append(slot);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5C);
+    _ = try evm.table.execute(0, interpreter, state, 0x5C);
 
     const final_value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 2000), final_value);
@@ -330,8 +330,8 @@ test "Integration: MSTORE8 with bitwise operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &evm;
+    const state: Operation.State = &frame;
 
     // Store individual bytes to build a word
     var offset: u256 = 0;
@@ -340,13 +340,13 @@ test "Integration: MSTORE8 with bitwise operations" {
     for (bytes) |byte| {
         try frame.stack.append(byte);
         try frame.stack.append(offset);
-        _ = try evm.table.execute(0, &interpreter, &state, 0x53);
+        _ = try evm.table.execute(0, interpreter, state, 0x53);
         offset += 1;
     }
 
     // Load the full word
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x51);
+    _ = try evm.table.execute(0, interpreter, state, 0x51);
 
     // The result should be 0xDEADBEEF0000...
     const result = try frame.stack.pop();
@@ -389,8 +389,8 @@ test "Integration: Storage slot calculation" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &evm;
+    const state: Operation.State = &frame;
 
     // Simulate array access: array[index] where base slot = 5
     const base_slot: u256 = 5;
@@ -400,10 +400,10 @@ test "Integration: Storage slot calculation" {
     // For this test, we'll use a simpler calculation: base_slot * 1000 + index
     try frame.stack.append(base_slot);
     try frame.stack.append(1000);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x02);
+    _ = try evm.table.execute(0, interpreter, state, 0x02);
 
     try frame.stack.append(index);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x01);
+    _ = try evm.table.execute(0, interpreter, state, 0x01);
 
     const calculated_slot = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 5003), calculated_slot);
@@ -412,11 +412,11 @@ test "Integration: Storage slot calculation" {
     const value: u256 = 999;
     try frame.stack.append(value);
     try frame.stack.append(calculated_slot);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
 
     // Load and verify
     try frame.stack.append(calculated_slot);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
 
     const loaded_value = try frame.stack.pop();
     try testing.expectEqual(value, loaded_value);
@@ -458,11 +458,11 @@ test "Integration: Memory expansion tracking" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &evm;
+    const state: Operation.State = &frame;
 
     // Track memory size as we expand
-    _ = try evm.table.execute(0, &interpreter, &state, 0x59);
+    _ = try evm.table.execute(0, interpreter, state, 0x59);
     const initial_size = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), initial_size);
 
@@ -470,9 +470,9 @@ test "Integration: Memory expansion tracking" {
     frame.stack.clear();
     try frame.stack.append(42);
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x52);
+    _ = try evm.table.execute(0, interpreter, state, 0x52);
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x59);
+    _ = try evm.table.execute(0, interpreter, state, 0x59);
     const size_after_first = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 32), size_after_first);
 
@@ -480,9 +480,9 @@ test "Integration: Memory expansion tracking" {
     frame.stack.clear();
     try frame.stack.append(99);
     try frame.stack.append(100);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x52);
+    _ = try evm.table.execute(0, interpreter, state, 0x52);
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x59);
+    _ = try evm.table.execute(0, interpreter, state, 0x59);
     const size_after_second = try frame.stack.pop();
     // Memory expands in 32-byte words. Offset 100 + 32 bytes = 132 bytes needed
     // 132 bytes = 4.125 words, rounds up to 5 words = 160 bytes
@@ -492,9 +492,9 @@ test "Integration: Memory expansion tracking" {
     frame.stack.clear();
     try frame.stack.append(0xFF);
     try frame.stack.append(200);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x53);
+    _ = try evm.table.execute(0, interpreter, state, 0x53);
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x59);
+    _ = try evm.table.execute(0, interpreter, state, 0x59);
     const size_after_third = try frame.stack.pop();
     // MSTORE8 at offset 200 needs byte 200, which requires 201 bytes
     // 201 bytes = 6.28125 words, rounds up to 7 words = 224 bytes
@@ -536,15 +536,15 @@ test "Integration: Cold/warm storage access patterns" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Operation.Interpreter{ .vm = &evm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &evm;
+    const state: Operation.State = &frame;
 
     const slot: u256 = 777;
 
     // First access - cold (should cost 2100 gas)
     const gas_before_cold = frame.gas_remaining;
     try frame.stack.append(slot);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
     const gas_after_cold = frame.gas_remaining;
     const cold_gas_used = gas_before_cold - gas_after_cold;
     try testing.expectEqual(@as(u64, 2100), cold_gas_used);
@@ -553,7 +553,7 @@ test "Integration: Cold/warm storage access patterns" {
     frame.stack.clear();
     const gas_before_warm = frame.gas_remaining;
     try frame.stack.append(slot);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
     const gas_after_warm = frame.gas_remaining;
     const warm_gas_used = gas_before_warm - gas_after_warm;
     try testing.expectEqual(@as(u64, 100), warm_gas_used);

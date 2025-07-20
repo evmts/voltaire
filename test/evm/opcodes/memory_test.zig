@@ -41,8 +41,8 @@ test "MLOAD: load 32 bytes from memory" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Write 32 bytes to memory
     var data: [32]u8 = undefined;
@@ -56,7 +56,7 @@ test "MLOAD: load 32 bytes from memory" {
     try frame.stack.append(0);
 
     // Execute MLOAD
-    _ = try evm.table.execute(0, &interpreter, &state, 0x51);
+    _ = try evm.table.execute(0, interpreter, state, 0x51);
 
     // Should load 32 bytes as u256 (big-endian)
     const result = try frame.stack.pop();
@@ -97,8 +97,8 @@ test "MLOAD: load with offset" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Write pattern to memory
     var data: [64]u8 = undefined;
@@ -112,7 +112,7 @@ test "MLOAD: load with offset" {
     try frame.stack.append(16);
 
     // Execute MLOAD
-    _ = try evm.table.execute(0, &interpreter, &state, 0x51);
+    _ = try evm.table.execute(0, interpreter, state, 0x51);
 
     // Should load 32 bytes starting at offset 16
     const result = try frame.stack.pop();
@@ -152,14 +152,14 @@ test "MLOAD: load from uninitialized memory returns zeros" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push offset to uninitialized area
     try frame.stack.append(1000);
 
     // Execute MLOAD
-    _ = try evm.table.execute(0, &interpreter, &state, 0x51);
+    _ = try evm.table.execute(0, interpreter, state, 0x51);
 
     // Should return all zeros
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
@@ -198,8 +198,8 @@ test "MSTORE: store 32 bytes to memory" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push value and offset (stack is LIFO)
     const value: u256 = 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20;
@@ -207,7 +207,7 @@ test "MSTORE: store 32 bytes to memory" {
     try frame.stack.append(0);
 
     // Execute MSTORE
-    _ = try evm.table.execute(0, &interpreter, &state, 0x52);
+    _ = try evm.table.execute(0, interpreter, state, 0x52);
 
     // Check memory contents
     const mem = try frame.memory.get_slice(0, 32);
@@ -248,8 +248,8 @@ test "MSTORE: store with offset" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push value and offset (stack is LIFO)
     const value: u256 = 0xFFEEDDCCBBAA99887766554433221100;
@@ -257,7 +257,7 @@ test "MSTORE: store with offset" {
     try frame.stack.append(64);
 
     // Execute MSTORE
-    _ = try evm.table.execute(0, &interpreter, &state, 0x52);
+    _ = try evm.table.execute(0, interpreter, state, 0x52);
 
     // Check memory contents at offset
     const mem = try frame.memory.get_slice(64, 32);
@@ -300,15 +300,15 @@ test "MSTORE8: store single byte to memory" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push value and offset (stack is LIFO)
     try frame.stack.append(0x1234);
     try frame.stack.append(10);
 
     // Execute MSTORE8
-    _ = try evm.table.execute(0, &interpreter, &state, 0x53);
+    _ = try evm.table.execute(0, interpreter, state, 0x53);
 
     // Check memory contents
     const mem = try frame.memory.get_slice(10, 1);
@@ -352,15 +352,15 @@ test "MSTORE8: store only lowest byte" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push value with all bytes set (stack is LIFO)
     try frame.stack.append(0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFAB);
     try frame.stack.append(0);
 
     // Execute MSTORE8
-    _ = try evm.table.execute(0, &interpreter, &state, 0x53);
+    _ = try evm.table.execute(0, interpreter, state, 0x53);
 
     // Check that only lowest byte was stored
     const mem = try frame.memory.get_slice(0, 1);
@@ -400,25 +400,25 @@ test "MSIZE: get memory size" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Initially memory size should be 0
-    _ = try evm.table.execute(0, &interpreter, &state, 0x59);
+    _ = try evm.table.execute(0, interpreter, state, 0x59);
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
 
     // Write to memory at offset 31 (should expand to 32 bytes)
     try frame.memory.set_data(31, &[_]u8{0xFF});
 
     // Check size again
-    _ = try evm.table.execute(0, &interpreter, &state, 0x59);
+    _ = try evm.table.execute(0, interpreter, state, 0x59);
     try testing.expectEqual(@as(u256, 32), try frame.stack.pop());
 
     // Write to memory at offset 32 (should expand to 64 bytes - word aligned)
     try frame.memory.set_data(32, &[_]u8{0xFF});
 
     // Check size again
-    _ = try evm.table.execute(0, &interpreter, &state, 0x59);
+    _ = try evm.table.execute(0, interpreter, state, 0x59);
     try testing.expectEqual(@as(u256, 64), try frame.stack.pop());
 }
 
@@ -455,8 +455,8 @@ test "MCOPY: copy memory to memory" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Write source data
     const src_data = [_]u8{ 0xAA, 0xBB, 0xCC, 0xDD, 0xEE };
@@ -470,7 +470,7 @@ test "MCOPY: copy memory to memory" {
     try frame.stack.append(5);
 
     // Execute MCOPY
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(0, interpreter, state, 0x5E);
 
     // Check that data was copied
     const dest_data = try frame.memory.get_slice(50, 5);
@@ -519,8 +519,8 @@ test "MCOPY: overlapping copy forward" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Write source data
     const src_data = [_]u8{ 0x11, 0x22, 0x33, 0x44, 0x55 };
@@ -533,7 +533,7 @@ test "MCOPY: overlapping copy forward" {
     try frame.stack.append(5);
 
     // Execute MCOPY
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(0, interpreter, state, 0x5E);
 
     // Check result - should handle overlap correctly
     const result = try frame.memory.get_slice(12, 5);
@@ -576,8 +576,8 @@ test "MCOPY: overlapping copy backward" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Write source data
     const src_data = [_]u8{ 0xAA, 0xBB, 0xCC, 0xDD, 0xEE };
@@ -590,7 +590,7 @@ test "MCOPY: overlapping copy backward" {
     try frame.stack.append(5);
 
     // Execute MCOPY
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(0, interpreter, state, 0x5E);
 
     // Check result
     const result = try frame.memory.get_slice(8, 5);
@@ -633,8 +633,8 @@ test "MCOPY: zero length copy" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push length 0
     // MCOPY pops: size, src, dest
@@ -643,7 +643,7 @@ test "MCOPY: zero length copy" {
     try frame.stack.append(0);
 
     // Execute MCOPY
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(0, interpreter, state, 0x5E);
 
     // Should succeed without doing anything
     try testing.expectEqual(@as(usize, 0), frame.stack.size);
@@ -682,8 +682,8 @@ test "MLOAD: memory expansion gas" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push offset that requires memory expansion
     try frame.stack.append(256); // offset (requires 288 bytes = 9 words)
@@ -691,7 +691,7 @@ test "MLOAD: memory expansion gas" {
     const gas_before = frame.gas_remaining;
 
     // Execute MLOAD
-    _ = try evm.table.execute(0, &interpreter, &state, 0x51);
+    _ = try evm.table.execute(0, interpreter, state, 0x51);
 
     // Should consume gas for memory expansion
     const gas_used = gas_before - frame.gas_remaining;
@@ -730,8 +730,8 @@ test "MSTORE: memory expansion gas" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push value and offset that requires expansion (stack is LIFO)
     try frame.stack.append(0x123456);
@@ -740,7 +740,7 @@ test "MSTORE: memory expansion gas" {
     const gas_before = frame.gas_remaining;
 
     // Execute MSTORE
-    _ = try evm.table.execute(0, &interpreter, &state, 0x52);
+    _ = try evm.table.execute(0, interpreter, state, 0x52);
 
     // Should consume gas for memory expansion
     const gas_used = gas_before - frame.gas_remaining;
@@ -779,8 +779,8 @@ test "MCOPY: gas consumption" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push parameters for 32 byte copy
     // MCOPY pops: size, src, dest
@@ -791,7 +791,7 @@ test "MCOPY: gas consumption" {
     const gas_before = frame.gas_remaining;
 
     // Execute MCOPY
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5E);
+    _ = try evm.table.execute(0, interpreter, state, 0x5E);
 
     // MCOPY costs 3 gas per word
     // 32 bytes = 1 word = 3 gas
@@ -833,13 +833,13 @@ test "MLOAD: stack underflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Empty stack
 
     // Execute MLOAD - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0x51);
+    const result = evm.table.execute(0, interpreter, state, 0x51);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -875,14 +875,14 @@ test "MSTORE: stack underflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push only one value (need two)
     try frame.stack.append(0);
 
     // Execute MSTORE - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0x52);
+    const result = evm.table.execute(0, interpreter, state, 0x52);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -918,8 +918,8 @@ test "MCOPY: stack underflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push only two values (need three)
     // MCOPY needs: dest, src, size on stack
@@ -927,7 +927,7 @@ test "MCOPY: stack underflow" {
     try frame.stack.append(10);
 
     // Execute MCOPY - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0x5E);
+    const result = evm.table.execute(0, interpreter, state, 0x5E);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -964,14 +964,14 @@ test "MLOAD: offset overflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push offset that would overflow when adding 32
     try frame.stack.append(std.math.maxInt(u256) - 10);
 
     // Execute MLOAD - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0x51);
+    const result = evm.table.execute(0, interpreter, state, 0x51);
     try testing.expectError(ExecutionError.Error.OutOfOffset, result);
 }
 
@@ -1007,8 +1007,8 @@ test "MCOPY: source offset overflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push parameters that would overflow
     // MCOPY pops: size, src, dest
@@ -1017,6 +1017,6 @@ test "MCOPY: source offset overflow" {
     try frame.stack.append(100);
 
     // Execute MCOPY - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0x5E);
+    const result = evm.table.execute(0, interpreter, state, 0x5E);
     try testing.expectError(ExecutionError.Error.OutOfOffset, result);
 }

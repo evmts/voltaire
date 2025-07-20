@@ -8,11 +8,11 @@ const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
 const storage_costs = @import("../gas/storage_costs.zig");
 
-pub fn op_sload(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_sload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     if (frame.stack.size < 1) unreachable;
 
@@ -37,11 +37,11 @@ pub fn op_sload(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
 }
 
 /// SSTORE opcode - Store value in persistent storage
-pub fn op_sstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_sstore(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     if (frame.is_static) {
         @branchHint(.unlikely);
@@ -93,11 +93,11 @@ pub fn op_sstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     return Operation.ExecutionResult{};
 }
 
-pub fn op_tload(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_tload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // Gas is already handled by jump table constant_gas = 100
 
@@ -114,11 +114,11 @@ pub fn op_tload(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     return Operation.ExecutionResult{};
 }
 
-pub fn op_tstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_tstore(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     if (frame.is_static) {
         @branchHint(.unlikely);
