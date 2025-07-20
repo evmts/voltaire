@@ -11,6 +11,10 @@ const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const execution = Evm.execution;
 const gas_constants = Evm.gas_constants;
+const testing = std.testing;
+const MemoryDatabase = Evm.MemoryDatabase;
+const Vm = Evm.Evm;
+const Context = Evm.Context;
 
 test "JumpTable basic operations" {
     const jt = JumpTable.init_from_hardfork(.FRONTIER);
@@ -64,38 +68,44 @@ test "JumpTable gas constants" {
 test "JumpTable execute consumes gas before opcode execution" {
     const jt = JumpTable.init_from_hardfork(.FRONTIER);
 
-    // Create a test frame with some gas
-    const test_allocator = std.testing.allocator;
-    const zero_address = primitives.Address.ZERO_ADDRESS;
-    const test_code = [_]u8{0x01}; // ADD opcode
-    var test_contract = Contract.init(
-        zero_address, // caller
-        zero_address, // addr
-        0, // value
-        1000, // gas
-        &test_code, // code
-        [_]u8{0} ** 32, // code_hash
-        &[_]u8{}, // input
-        false, // is_static
-    );
-    // Create a proper EVM instance
+    // Create real VM infrastructure
+    const test_allocator = testing.allocator;
+    
     var memory_db = MemoryDatabase.init(test_allocator);
     defer memory_db.deinit();
+    
     const db_interface = memory_db.to_database_interface();
-    var test_vm = try Evm.Evm.init(test_allocator, db_interface);
+    var test_vm = try Vm.init(test_allocator, db_interface, null, null);
     defer test_vm.deinit();
     
-    var builder = Frame.builder(test_allocator);
-    var test_frame = try builder
-        .withVm(&test_vm)
-        .withContract(&test_contract)
-        .withGas(100)
-        .build();
+    const context = Context.init_with_values(
+        primitives.Address.ZERO, // tx_origin
+        0, // gas_price
+        1000, // block_number
+        1234567890, // block_timestamp
+        primitives.Address.ZERO, // block_coinbase
+        0, // block_difficulty
+        30_000_000, // block_gas_limit
+        1, // chain_id
+        15_000_000_000, // block_base_fee
+        &[_]u256{}, // blob_hashes
+        1, // blob_base_fee
+    );
+    test_vm.context = context;
+    
+    // Create test contract and frame
+    const test_code = [_]u8{0x01}; // ADD opcode
+    var test_contract = try Contract.init(test_allocator, &test_code, .{ .address = primitives.Address.ZERO });
+    defer test_contract.deinit(test_allocator, null);
+    
+    var test_frame = try Frame.init(test_allocator, &test_contract);
     defer test_frame.deinit();
 
     // Push two values for ADD operation
     try test_frame.stack.append(10);
     try test_frame.stack.append(20);
+
+    // Create interpreter and state pointers using real VM and Frame
     const interpreter_ptr: *OperationModule.Interpreter = @ptrCast(&test_vm);
     const state_ptr: *OperationModule.State = @ptrCast(&test_frame);
 
