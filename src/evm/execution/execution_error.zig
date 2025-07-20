@@ -741,4 +741,3 @@ test "fuzz_execution_error_description_uniqueness" {
     // Verify we collected all descriptions
     try testing.expectEqual(all_errors.len, seen_descriptions.items.len);
 }
-}

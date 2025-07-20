@@ -473,5 +473,3 @@ test "fuzz_run_result_status_error_consistency" {
         }
     }
 }
-    }
-}
