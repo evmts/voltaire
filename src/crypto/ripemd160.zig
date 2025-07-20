@@ -228,54 +228,40 @@ fn transform(s: *[5]u32, chunk: *const [64]u8) void {
 
     if (comptime builtin.mode == .ReleaseSmall) {
         // Dynamic version for size optimization
-        // Left line
+        // Process both left and right lines in parallel
         var i: usize = 0;
         while (i < 80) : (i += 1) {
-            const f_idx = i / 16;
-            const x_idx = LEFT_X_INDICES[i];
-            const rot = LEFT_ROTATIONS[i];
-            const k = ROUND_CONSTANTS[f_idx];
+            // Left line
+            const left_f_idx = i / 16;
+            const left_x_idx = LEFT_X_INDICES[i];
+            const left_rot = LEFT_ROTATIONS[i];
+            const left_k = ROUND_CONSTANTS[left_f_idx];
 
-            round(&al, &bl, &cl, &dl, &el, f(@intCast(f_idx), bl, cl, dl) +% X[x_idx] +% k, rot);
+            round(&al, &bl, &cl, &dl, &el, f(@intCast(left_f_idx), bl, cl, dl) +% X[left_x_idx] +% left_k, left_rot);
 
-            // Rotate variables: (al,bl,cl,dl,el) = (el,al,bl,cl,dl)
-            const temp = al;
+            // Rotate left line variables: (al,bl,cl,dl,el) = (el,al,bl,cl,dl)
+            const temp_l = al;
             al = el;
             el = dl;
             dl = cl;
             cl = bl;
-            bl = temp;
-        }
+            bl = temp_l;
 
-        // Restore left line values and initialize right line
-        al = s[0];
-        bl = s[1];
-        cl = s[2];
-        dl = s[3];
-        el = s[4];
-        ar = al;
-        br = bl;
-        cr = cl;
-        dr = dl;
-        er = el;
+            // Right line
+            const right_f_idx = 4 - (i / 16); // Right line uses reverse order: 4,3,2,1,0
+            const right_x_idx = RIGHT_X_INDICES[i];
+            const right_rot = RIGHT_ROTATIONS[i];
+            const right_k = RIGHT_ROUND_CONSTANTS[i / 16];
 
-        // Right line
-        i = 0;
-        while (i < 80) : (i += 1) {
-            const f_idx = 4 - (i / 16); // Right line uses reverse order: 4,3,2,1,0
-            const x_idx = RIGHT_X_INDICES[i];
-            const rot = RIGHT_ROTATIONS[i];
-            const k = RIGHT_ROUND_CONSTANTS[i / 16];
+            round(&ar, &br, &cr, &dr, &er, f(@intCast(right_f_idx), br, cr, dr) +% X[right_x_idx] +% right_k, right_rot);
 
-            round(&ar, &br, &cr, &dr, &er, f(@intCast(f_idx), br, cr, dr) +% X[x_idx] +% k, rot);
-
-            // Rotate variables
-            const temp = ar;
+            // Rotate right line variables
+            const temp_r = ar;
             ar = er;
             er = dr;
             dr = cr;
             cr = br;
-            br = temp;
+            br = temp_r;
         }
     } else {
         // Original unrolled version for performance

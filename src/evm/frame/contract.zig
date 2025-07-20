@@ -749,10 +749,11 @@ pub fn deinit(self: *Contract, allocator: std.mem.Allocator, pool: ?*StoragePool
 /// // Analysis is now cached for future use
 /// ```
 pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [32]u8) CodeAnalysisError!*const CodeAnalysis {
-    // Use SIMD-optimized version if available
-    if (comptime std.Target.x86.featureSetHas(builtin.cpu.features, .avx2)) {
-        return analyze_code_simd(allocator, code, code_hash);
-    }
+    // Temporarily disable SIMD optimization to fix signal 4 errors on ARM64
+    // TODO: Re-enable when SIMD implementation is fixed for ARM64
+    // if (comptime builtin.target.cpu.arch == .x86_64 and std.Target.x86.featureSetHas(builtin.cpu.features, .avx2)) {
+    //     return analyze_code_simd(allocator, code, code_hash);
+    // }
     
     if (comptime !is_wasm) {
         cache_mutex.lock();
@@ -919,6 +920,10 @@ fn analyze_code_direct(allocator: std.mem.Allocator, code: []const u8) CodeAnaly
 
 /// SIMD-optimized version of analyze_code for x86_64 with AVX2
 fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: [32]u8) CodeAnalysisError!*const CodeAnalysis {
+    if (comptime builtin.target.cpu.arch != .x86_64) {
+        // Fallback to standard implementation on non-x86_64 architectures
+        return analyze_code(allocator, code, code_hash);
+    }
     if (comptime !is_wasm) {
         cache_mutex.lock();
         defer cache_mutex.unlock();
@@ -1055,6 +1060,10 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
 
 /// Direct SIMD analysis without caching (for size-optimized builds)
 fn analyze_code_simd_direct(allocator: std.mem.Allocator, code: []const u8) CodeAnalysisError!*const CodeAnalysis {
+    if (comptime builtin.target.cpu.arch != .x86_64) {
+        // Fallback to standard implementation on non-x86_64 architectures
+        return analyze_code_direct(allocator, code);
+    }
     const analysis = allocator.create(CodeAnalysis) catch |err| {
         Log.debug("Failed to allocate CodeAnalysis: {any}", .{err});
         return err;
@@ -1132,6 +1141,10 @@ fn analyze_code_simd_direct(allocator: std.mem.Allocator, code: []const u8) Code
 
 /// SIMD-optimized opcode search
 fn contains_op_simd(code: []const u8, opcodes: []const u8) bool {
+    if (comptime builtin.target.cpu.arch != .x86_64) {
+        // Fallback to standard implementation on non-x86_64 architectures
+        return contains_op(code, opcodes);
+    }
     const vec_size = 16;
     
     for (opcodes) |target_op| {

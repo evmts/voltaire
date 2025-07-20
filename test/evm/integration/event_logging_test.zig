@@ -86,9 +86,9 @@ test "Integration: ERC20 Transfer event logging" {
     try frame.stack.push(0); // offset
 
     // Execute LOG3 (3 topics)
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA3);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA3);
 
     // Verify log was emitted
     try testing.expectEqual(@as(usize, 1), evm.logs.items.len);
@@ -136,8 +136,8 @@ test "Integration: multiple event emissions" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Emit event 1: Simple notification (LOG0)
     const data1 = [_]u8{ 0x01, 0x02, 0x03, 0x04 };
@@ -148,7 +148,7 @@ test "Integration: multiple event emissions" {
 
     try frame.stack.push(4); // size
     try frame.stack.push(0); // offset
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA0);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA0);
 
     // Emit event 2: Indexed event (LOG1)
     const topic1: u256 = 0x1234567890ABCDEF;
@@ -161,7 +161,7 @@ test "Integration: multiple event emissions" {
     try frame.stack.push(topic1);
     try frame.stack.push(2); // size
     try frame.stack.push(100); // offset
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA1);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA1);
 
     // Emit event 3: Complex event (LOG4)
     const topic2: u256 = 0x2222222222222222;
@@ -174,7 +174,7 @@ test "Integration: multiple event emissions" {
     try frame.stack.push(topic1);
     try frame.stack.push(0); // size (empty data)
     try frame.stack.push(0); // offset
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA4);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA4);
 
     // Verify all logs
     try testing.expectEqual(@as(usize, 3), evm.logs.items.len);
@@ -256,9 +256,9 @@ test "Integration: event with dynamic array data" {
     try frame.stack.push(0); // offset
 
     // Execute LOG2
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA2);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA2);
 
     // Verify
     try testing.expectEqual(@as(usize, 1), evm.logs.items.len);
@@ -303,8 +303,8 @@ test "Integration: log gas consumption patterns" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test 1: LOG0 with small data
     const small_data = [_]u8{ 0x01, 0x02, 0x03, 0x04 };
@@ -317,7 +317,7 @@ test "Integration: log gas consumption patterns" {
     try frame.stack.push(0); // offset
 
     const gas_before_log0 = frame.gas_remaining;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA0);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA0);
 
     const log0_gas = gas_before_log0 - frame.gas_remaining;
     // LOG0 base: 375, data: 8 * 4 = 32, total: 407
@@ -338,7 +338,7 @@ test "Integration: log gas consumption patterns" {
     try frame.stack.push(100); // offset
 
     const gas_before_log4 = frame.gas_remaining;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA4);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA4);
 
     const log4_gas = gas_before_log4 - frame.gas_remaining;
     // LOG4 base: 375, topics: 375 * 4 = 1500, data: 8 * 64 = 512, total: 2387
@@ -379,14 +379,14 @@ test "Integration: logging restrictions in static calls" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Try LOG0
     try frame.stack.push(0); // size
     try frame.stack.push(0); // offset
 
-    var result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xA0);
+    var result = evm.table.execute(0, &interpreter, &state, 0xA0);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 
     // Try LOG1
@@ -395,7 +395,7 @@ test "Integration: logging restrictions in static calls" {
     try frame.stack.push(0); // size
     try frame.stack.push(0); // offset
 
-    result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xA1);
+    result = evm.table.execute(0, &interpreter, &state, 0xA1);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 
     // Verify no logs were emitted
@@ -436,8 +436,8 @@ test "Integration: event topics for bloom filter" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Emit events that would be used for bloom filters
     // Topic patterns that represent different event types
@@ -452,7 +452,7 @@ test "Integration: event topics for bloom filter" {
     try frame.stack.push(token_transfer_sig);
     try frame.stack.push(0); // size
     try frame.stack.push(0); // offset
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA3);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA3);
 
     // Emit Approval event
     try frame.stack.push(to_u256(TEST_ADDRESS_3)); // spender
@@ -460,14 +460,14 @@ test "Integration: event topics for bloom filter" {
     try frame.stack.push(approval_sig);
     try frame.stack.push(0); // size
     try frame.stack.push(0); // offset
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA3);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA3);
 
     // Emit Mint event
     try frame.stack.push(to_u256(TEST_ADDRESS_2)); // to
     try frame.stack.push(mint_sig);
     try frame.stack.push(0); // size
     try frame.stack.push(0); // offset
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA2);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA2);
 
     // Verify all events were logged
     try testing.expectEqual(@as(usize, 3), evm.logs.items.len);
@@ -522,15 +522,15 @@ test "Integration: log memory expansion costs" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Log with data at high memory offset (causes expansion)
     try frame.stack.push(32); // size
     try frame.stack.push(1000); // high offset - requires memory expansion
 
     const gas_before = frame.gas_remaining;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA0);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA0);
 
     const gas_used = gas_before - frame.gas_remaining;
 
@@ -577,8 +577,8 @@ test "Integration: event filtering by topics" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &evm };
+    var state = Operation.State{ .frame = &frame };
 
     // Emit various events with different topic patterns
     const event_type_1: u256 = 0x1111111111111111;
@@ -591,21 +591,21 @@ test "Integration: event filtering by topics" {
     try frame.stack.push(event_type_1);
     try frame.stack.push(0); // size
     try frame.stack.push(0); // offset
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA2);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA2);
 
     // Event 2: Type1 from Sender2
     try frame.stack.push(sender_2);
     try frame.stack.push(event_type_1);
     try frame.stack.push(0); // size
     try frame.stack.push(0); // offset
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA2);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA2);
 
     // Event 3: Type2 from Sender1
     try frame.stack.push(sender_1);
     try frame.stack.push(event_type_2);
     try frame.stack.push(0); // size
     try frame.stack.push(0); // offset
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xA2);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xA2);
 
     // Count events by type
     var type1_count: usize = 0;

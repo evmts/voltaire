@@ -28,26 +28,31 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
     const initial_gas = contract.gas;
     var pc: usize = 0;
     
-    // Use frame pool instead of builder pattern
-    const frame = self.getPooledFrame(contract.gas, contract, .{}, input) catch |err| switch (err) {
-        error.OutOfMemory => return ExecutionError.Error.OutOfMemory,
-        error.DepthLimit => return ExecutionError.Error.DepthLimit,
-        else => return ExecutionError.Error.OutOfMemory, // Fallback for other allocation-related errors
-    };
-    
-    // Configure frame for static context and depth
-    frame.is_static = self.read_only;
-    frame.depth = @as(u32, @intCast(self.depth));
+    var builder = Frame.builder(self.allocator);
+    var frame = builder
+        .withVm(self)
+        .withContract(contract)
+        .withGas(contract.gas)
+        .withCaller(.{})
+        .withInput(input)
+        .isStatic(self.read_only)
+        .withDepth(@as(u32, @intCast(self.depth)))
+        .build() catch |err| switch (err) {
+            error.OutOfMemory => return ExecutionError.Error.OutOfMemory,
+            error.MissingVm => unreachable, // We pass a VM
+            error.MissingContract => unreachable, // We pass a contract
+        };
+    defer frame.deinit();
 
-    const interpreter_ptr = @as(*Operation.Interpreter, @ptrCast(self));
-    const state_ptr = @as(*Operation.State, @ptrCast(frame));
+    var interpreter = Operation.Interpreter{ .vm = self };
+    var state = Operation.State{ .frame = &frame };
 
     while (pc < contract.code_size) {
         @branchHint(.likely);
         const opcode = contract.get_op(pc);
         frame.pc = pc;
 
-        const result = self.table.execute(pc, interpreter_ptr, state_ptr, opcode) catch |err| {
+        const result = self.table.execute(pc, &interpreter, &state, opcode) catch |err| {
             @branchHint(.cold);
             contract.gas = frame.gas_remaining;
             self.return_data = @constCast(frame.return_data.get());

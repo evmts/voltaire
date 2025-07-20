@@ -67,8 +67,8 @@ test "fuzz_keccak256_known_test_vectors" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const test_vectors = [_]struct { 
         input: []const u8, 
@@ -147,7 +147,7 @@ test "fuzz_keccak256_known_test_vectors" {
             // MSTORE8: store byte at offset i
             try ctx.frame.stack.append(@as(u256, i));
             try ctx.frame.stack.append(@as(u256, byte));
-            _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x53); // MSTORE8
+            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x53); // MSTORE8
         }
         
         // Clear stack and prepare for KECCAK256
@@ -159,7 +159,7 @@ test "fuzz_keccak256_known_test_vectors" {
         try ctx.frame.stack.append(@as(u256, 0)); // offset
         try ctx.frame.stack.append(@as(u256, vector.input.len)); // length
         
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x20); // KECCAK256
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x20); // KECCAK256
         
         const result = try ctx.frame.stack.pop();
         
@@ -177,8 +177,8 @@ test "fuzz_keccak256_memory_layout_edge_cases" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const layout_tests = [_]struct {
         data: []const u8,
@@ -253,7 +253,7 @@ test "fuzz_keccak256_memory_layout_edge_cases" {
             // MSTORE8: store byte at offset + i
             try ctx.frame.stack.append(test_case.memory_offset + i);
             try ctx.frame.stack.append(@as(u256, byte));
-            _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x53); // MSTORE8
+            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x53); // MSTORE8
         }
         
         // Clear stack and prepare for KECCAK256
@@ -265,7 +265,7 @@ test "fuzz_keccak256_memory_layout_edge_cases" {
         try ctx.frame.stack.append(test_case.memory_offset); // offset
         try ctx.frame.stack.append(@as(u256, test_case.data.len)); // length
         
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x20); // KECCAK256
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x20); // KECCAK256
         
         const result = try ctx.frame.stack.pop();
         
@@ -283,8 +283,8 @@ test "fuzz_keccak256_length_edge_cases" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const length_tests = [_]struct {
         length: usize,
@@ -370,7 +370,7 @@ test "fuzz_keccak256_length_edge_cases" {
             // MSTORE8: store byte at offset i
             try ctx.frame.stack.append(@as(u256, i));
             try ctx.frame.stack.append(@as(u256, byte));
-            _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x53); // MSTORE8
+            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x53); // MSTORE8
         }
         
         // Clear stack and prepare for KECCAK256
@@ -382,7 +382,7 @@ test "fuzz_keccak256_length_edge_cases" {
         try ctx.frame.stack.append(@as(u256, 0)); // offset
         try ctx.frame.stack.append(@as(u256, test_case.length)); // length
         
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x20); // KECCAK256
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x20); // KECCAK256
         
         const result = try ctx.frame.stack.pop();
         
@@ -400,8 +400,8 @@ test "fuzz_keccak256_overlapping_memory_regions" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Set up test data pattern in memory
     const test_pattern = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -414,7 +414,7 @@ test "fuzz_keccak256_overlapping_memory_regions" {
         // MSTORE8: store byte at offset i
         try ctx.frame.stack.append(@as(u256, i));
         try ctx.frame.stack.append(@as(u256, byte));
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x53); // MSTORE8
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x53); // MSTORE8
     }
     
     const overlap_tests = [_]struct {
@@ -480,7 +480,7 @@ test "fuzz_keccak256_overlapping_memory_regions" {
             
             try ctx.frame.stack.append(test_case.offset1);
             try ctx.frame.stack.append(test_case.length1);
-            _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x20); // KECCAK256
+            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x20); // KECCAK256
             
             const result1 = try ctx.frame.stack.pop();
             
@@ -505,7 +505,7 @@ test "fuzz_keccak256_overlapping_memory_regions" {
             
             try ctx.frame.stack.append(test_case.offset2);
             try ctx.frame.stack.append(test_case.length2);
-            _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x20); // KECCAK256
+            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x20); // KECCAK256
             
             const result2 = try ctx.frame.stack.pop();
             
@@ -529,8 +529,8 @@ test "fuzz_keccak256_random_stress_test" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     var prng = std.Random.DefaultPrng.init(0);
     const random = prng.random();
@@ -558,7 +558,7 @@ test "fuzz_keccak256_random_stress_test" {
             // MSTORE8: store byte at offset + i
             try ctx.frame.stack.append(memory_offset + i);
             try ctx.frame.stack.append(@as(u256, byte));
-            _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x53); // MSTORE8
+            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x53); // MSTORE8
         }
         
         // Clear stack and prepare for KECCAK256
@@ -570,7 +570,7 @@ test "fuzz_keccak256_random_stress_test" {
         try ctx.frame.stack.append(memory_offset); // offset
         try ctx.frame.stack.append(@as(u256, data_length)); // length
         
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x20); // KECCAK256
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x20); // KECCAK256
         
         const result = try ctx.frame.stack.pop();
         
@@ -596,8 +596,8 @@ test "fuzz_keccak256_determinism" {
         var ctx = try create_evm_context(allocator);
         defer deinit_evm_context(ctx, allocator);
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // Store test data in memory
         for (test_data, 0..) |byte, i| {
@@ -608,7 +608,7 @@ test "fuzz_keccak256_determinism" {
             
             try ctx.frame.stack.append(@as(u256, i));
             try ctx.frame.stack.append(@as(u256, byte));
-            _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x53); // MSTORE8
+            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x53); // MSTORE8
         }
         
         // Clear stack and compute hash
@@ -619,7 +619,7 @@ test "fuzz_keccak256_determinism" {
         try ctx.frame.stack.append(@as(u256, 0)); // offset
         try ctx.frame.stack.append(@as(u256, test_data.len)); // length
         
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x20); // KECCAK256
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x20); // KECCAK256
         
         const result = try ctx.frame.stack.pop();
         try results.append(result);
@@ -643,8 +643,8 @@ test "fuzz_keccak256_memory_expansion" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const expansion_tests = [_]struct {
         offset: u256,
@@ -689,7 +689,7 @@ test "fuzz_keccak256_memory_expansion" {
         try ctx.frame.stack.append(test_case.offset);
         try ctx.frame.stack.append(test_case.length);
         
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x20); // KECCAK256
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x20); // KECCAK256
         
         const result = try ctx.frame.stack.pop();
         

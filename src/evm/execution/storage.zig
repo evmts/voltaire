@@ -11,8 +11,8 @@ const storage_costs = @import("../gas/storage_costs.zig");
 pub fn op_sload(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     if (frame.stack.size < 1) unreachable;
 
@@ -40,8 +40,8 @@ pub fn op_sload(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
 pub fn op_sstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     if (frame.is_static) {
         @branchHint(.unlikely);
@@ -96,8 +96,8 @@ pub fn op_sstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 pub fn op_tload(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // Gas is already handled by jump table constant_gas = 100
 
@@ -117,8 +117,8 @@ pub fn op_tload(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
 pub fn op_tstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     if (frame.is_static) {
         @branchHint(.unlikely);

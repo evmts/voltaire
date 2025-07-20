@@ -141,7 +141,7 @@ pub fn get_expansion_cost(self: *Memory, new_size: u64) u64 {
     
     // Use lookup table for small memory sizes
     if (new_words <= SMALL_MEMORY_LOOKUP_SIZE and current_words <= SMALL_MEMORY_LOOKUP_SIZE) {
-        return SMALL_MEMORY_LOOKUP_TABLE[new_words] - SMALL_MEMORY_LOOKUP_TABLE[current_words];
+        return SMALL_MEMORY_LOOKUP_TABLE[@intCast(new_words)] - SMALL_MEMORY_LOOKUP_TABLE[@intCast(current_words)];
     }
     
     // Check if we can use cached calculation for larger sizes

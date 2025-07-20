@@ -38,9 +38,9 @@ test "fuzz_comparison_lt_operations" {
     try frame.stack.append(5);  // a
     try frame.stack.append(10); // b
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x10);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
+    var state = *evm.Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x10);
     
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result); // true
@@ -81,9 +81,9 @@ test "fuzz_comparison_eq_operations" {
     try frame.stack.append(42); // b
     try frame.stack.append(42); // a
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x14);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
+    var state = *evm.Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x14);
     
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result); // true
@@ -123,16 +123,16 @@ test "fuzz_comparison_iszero_operations" {
     // Test ISZERO operation with zero
     try frame.stack.append(0);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x15);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
+    var state = *evm.Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x15);
     
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result); // true
     
     // Test ISZERO operation with non-zero
     try frame.stack.append(42);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x15);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x15);
     
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2); // false

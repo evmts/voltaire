@@ -191,10 +191,10 @@ test "fuzz_blockhash_operation_edge_cases" {
         // Setup stack for BLOCKHASH (block number)
         try ctx.frame.stack.append(test_case.query_block);
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
-        const result = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x40);
+        const result = try ctx.vm.table.execute(0, &interpreter, &state, 0x40);
         _ = result;
         
         const block_hash = try ctx.frame.stack.pop();
@@ -529,10 +529,10 @@ test "fuzz_block_info_operations" {
         ctx.vm.context.block_base_fee = test_case.block_base_fee;
         ctx.vm.context.blob_base_fee = test_case.blob_base_fee;
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
-        const result = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
+        const result = try ctx.vm.table.execute(0, &interpreter, &state, test_case.opcode);
         _ = result;
         
         const returned_value = try ctx.frame.stack.pop();
@@ -710,10 +710,10 @@ test "fuzz_blobhash_operation_edge_cases" {
         // Setup stack for BLOBHASH (index)
         try ctx.frame.stack.append(test_case.query_index);
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
-        const result = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+        const result = try ctx.vm.table.execute(0, &interpreter, &state, 0x49);
         _ = result;
         
         const returned_hash = try ctx.frame.stack.pop();
@@ -773,10 +773,10 @@ test "fuzz_block_operations_random_stress" {
             try ctx.frame.stack.append(query_index);
         }
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
-        const result = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        const result = try ctx.vm.table.execute(0, &interpreter, &state, opcode);
         _ = result;
         
         // All operations should return a valid u256 value
@@ -851,16 +851,16 @@ test "fuzz_block_context_consistency" {
         ctx.vm.context.block_base_fee = 15000000000;
         ctx.vm.context.blob_base_fee = 1000000000;
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // First call
-        const result1 = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
+        const result1 = try ctx.vm.table.execute(0, &interpreter, &state, test_case.opcode);
         _ = result1;
         const value1 = try ctx.frame.stack.pop();
         
         // Second call
-        const result2 = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
+        const result2 = try ctx.vm.table.execute(0, &interpreter, &state, test_case.opcode);
         _ = result2;
         const value2 = try ctx.frame.stack.pop();
         
@@ -918,10 +918,10 @@ test "fuzz_block_operations_gas_consumption" {
         
         const gas_before = ctx.frame.gas_remaining;
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
-        const result = ctx.vm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
+        const result = ctx.vm.table.execute(0, &interpreter, &state, test_case.opcode);
         
         if (result) |_| {
             // Success - verify gas consumption

@@ -49,10 +49,10 @@ test "AND (0x16): Basic bitwise AND" {
     try frame.stack.append(0xFF00);
     try frame.stack.append(0x0FF0);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    const result = try evm.table.execute(0, &interpreter, &state, 0x16);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     const value = try frame.stack.pop();
@@ -95,10 +95,10 @@ test "AND: All zeros" {
     try frame.stack.append(0xFFFF);
     try frame.stack.append(0x0000);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x16);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -141,10 +141,10 @@ test "AND: All ones" {
     try frame.stack.append(max);
     try frame.stack.append(max);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x16);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(max, value);
@@ -186,10 +186,10 @@ test "AND: Masking operations" {
     try frame.stack.append(0x123456);
     try frame.stack.append(0xFF);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x16);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x56), value);
@@ -235,10 +235,10 @@ test "OR (0x17): Basic bitwise OR" {
     try frame.stack.append(0xF000);
     try frame.stack.append(0x00F0);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x17);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x17);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xF0F0), value);
@@ -280,10 +280,10 @@ test "OR: With zero" {
     try frame.stack.append(0x1234);
     try frame.stack.append(0x0000);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x17);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x17);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x1234), value);
@@ -325,10 +325,10 @@ test "OR: Setting bits" {
     try frame.stack.append(0x1000);
     try frame.stack.append(0x0200);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x17);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x17);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x1200), value);
@@ -374,10 +374,10 @@ test "XOR (0x18): Basic bitwise XOR" {
     try frame.stack.append(0xFF00);
     try frame.stack.append(0x0FF0);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x18);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x18);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xF0F0), value);
@@ -419,10 +419,10 @@ test "XOR: Self XOR equals zero" {
     try frame.stack.append(0x123456);
     try frame.stack.append(0x123456);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x18);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x18);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -464,10 +464,10 @@ test "XOR: Toggle bits" {
     try frame.stack.append(0b1010);
     try frame.stack.append(0b1100);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x18);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x18);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0b0110), value);
@@ -512,10 +512,10 @@ test "NOT (0x19): Basic bitwise NOT" {
     // Test: NOT 0 = MAX
     try frame.stack.append(0);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x19);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x19);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(std.math.maxInt(u256), value);
@@ -556,10 +556,10 @@ test "NOT: Invert all bits" {
     // Test: NOT MAX = 0
     try frame.stack.append(std.math.maxInt(u256));
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x19);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x19);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -601,16 +601,16 @@ test "NOT: Double NOT returns original" {
     const original = 0x123456789ABCDEF;
     try frame.stack.append(original);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // First NOT
     frame.pc = 0;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x19);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x19);
 
     // Second NOT
     frame.pc = 1;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x19);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x19);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, original), value);
@@ -656,10 +656,10 @@ test "BYTE (0x1A): Extract first byte" {
     try frame.stack.append(0x1234567890ABCDEF); // value (pushed first, popped second)
     try frame.stack.append(0); // byte index (pushed last, popped first)
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1A);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value); // Most significant byte is 0
@@ -701,10 +701,10 @@ test "BYTE: Extract last byte" {
     try frame.stack.append(0x1234567890ABCDEF); // value (pushed first, popped second)
     try frame.stack.append(31); // byte index (pushed last, popped first)
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1A);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xEF), value);
@@ -746,10 +746,10 @@ test "BYTE: Out of bounds returns zero" {
     try frame.stack.append(0xFFFFFFFFFFFFFFFF); // value (pushed first, popped second)
     try frame.stack.append(32); // byte index (out of bounds) (pushed last, popped first)
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1A);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -795,10 +795,10 @@ test "BYTE: Extract from full u256" {
     try frame.stack.append(test_value); // value (pushed first, popped second)
     try frame.stack.append(24); // byte index (pushed last, popped first)
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1A);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x01), value);
@@ -900,10 +900,10 @@ test "Bitwise opcodes: Gas consumption" {
         try tc.setup(&frame);
 
         const gas_before = frame.gas_remaining;
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
 
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, tc.opcode);
+        _ = try evm.table.execute(0, &interpreter, &state, tc.opcode);
         const gas_used = gas_before - frame.gas_remaining;
 
         try testing.expectEqual(tc.expected_gas, gas_used);
@@ -951,16 +951,16 @@ test "Bitwise opcodes: Stack underflow" {
             .build();
         defer frame.deinit();
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
 
         // Empty stack
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        const result = evm.table.execute(0, &interpreter, &state, opcode);
         try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 
         // Only one item (need two)
         try frame.stack.append(10);
-        const result2 = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        const result2 = evm.table.execute(0, &interpreter, &state, opcode);
         try testing.expectError(ExecutionError.Error.StackUnderflow, result2);
     }
 
@@ -988,11 +988,11 @@ test "Bitwise opcodes: Stack underflow" {
             .build();
         defer frame.deinit();
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
 
         // Empty stack
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        const result = evm.table.execute(0, &interpreter, &state, opcode);
         try testing.expectError(ExecutionError.Error.StackUnderflow, result);
     }
 }
@@ -1040,10 +1040,10 @@ test "Bitwise operations: Large values" {
     try frame.stack.append(max);
     try frame.stack.append(half_max);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x16);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(half_max, value);
@@ -1093,10 +1093,10 @@ test "BYTE: Byte extraction patterns" {
     try frame.stack.append(test_value); // value (pushed first, popped second)
     try frame.stack.append(28); // byte index (pushed last, popped first)
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1A);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 3), value);

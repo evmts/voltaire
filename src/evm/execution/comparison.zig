@@ -13,7 +13,7 @@ pub fn op_lt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.S
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Pop the top operand (b) unsafely
     const b = frame.stack.pop_unsafe();
@@ -36,7 +36,7 @@ pub fn op_gt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.S
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Pop the top operand (b) unsafely
     const b = frame.stack.pop_unsafe();
@@ -59,7 +59,7 @@ pub fn op_slt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Pop the top operand (b) unsafely
     const b = frame.stack.pop_unsafe();
@@ -85,7 +85,7 @@ pub fn op_sgt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Pop the top operand (b) unsafely
     const b = frame.stack.pop_unsafe();
@@ -108,7 +108,7 @@ pub fn op_eq(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.S
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Pop the top operand (b) unsafely
     const b = frame.stack.pop_unsafe();
@@ -127,7 +127,7 @@ pub fn op_iszero(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Peek the operand unsafely
     const value = frame.stack.peek_unsafe().*;

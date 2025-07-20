@@ -50,11 +50,11 @@ test "PUSH14 (0x6D): Push 14 bytes onto stack" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test first PUSH14
-    var result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x6D);
+    var result = try evm.table.execute(frame.pc, &interpreter, &state, 0x6D);
     try testing.expectEqual(@as(usize, 15), result.bytes_consumed);
     const top1 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0x0102030405060708090A0B0C0D0E), top1);
@@ -62,7 +62,7 @@ test "PUSH14 (0x6D): Push 14 bytes onto stack" {
     frame.pc = 15;
 
     // Test second PUSH14 (max value)
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x6D);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x6D);
     try testing.expectEqual(@as(usize, 15), result.bytes_consumed);
     const top2 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF), top2);
@@ -105,10 +105,10 @@ test "PUSH15 (0x6E): Push 15 bytes onto stack" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    const result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x6E);
+    const result = try evm.table.execute(frame.pc, &interpreter, &state, 0x6E);
     try testing.expectEqual(@as(usize, 16), result.bytes_consumed);
     const top = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0x0102030405060708090A0B0C0D0E0F), top);
@@ -152,11 +152,11 @@ test "PUSH16 (0x6F): Push 16 bytes onto stack" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test first PUSH16
-    var result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x6F);
+    var result = try evm.table.execute(frame.pc, &interpreter, &state, 0x6F);
     try testing.expectEqual(@as(usize, 17), result.bytes_consumed);
     const top1 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0x0102030405060708090A0B0C0D0E0F10), top1);
@@ -164,7 +164,7 @@ test "PUSH16 (0x6F): Push 16 bytes onto stack" {
     frame.pc = 17;
 
     // Test second PUSH16 (max value)
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x6F);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x6F);
     try testing.expectEqual(@as(usize, 17), result.bytes_consumed);
     const top2 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF), top2);
@@ -227,11 +227,11 @@ test "PUSH17-PUSH19: Various sizes" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test PUSH17
-    var result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x70);
+    var result = try evm.table.execute(frame.pc, &interpreter, &state, 0x70);
     try testing.expectEqual(@as(usize, 18), result.bytes_consumed);
     const top1 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0x0102030405060708090A0B0C0D0E0F1011), top1);
@@ -239,7 +239,7 @@ test "PUSH17-PUSH19: Various sizes" {
     frame.pc = 18;
 
     // Test PUSH18
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x71);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x71);
     try testing.expectEqual(@as(usize, 19), result.bytes_consumed);
     const top2 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0x0102030405060708090A0B0C0D0E0F101112), top2);
@@ -247,7 +247,7 @@ test "PUSH17-PUSH19: Various sizes" {
     frame.pc = 37;
 
     // Test PUSH19
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x72);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x72);
     try testing.expectEqual(@as(usize, 20), result.bytes_consumed);
     const top3 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0x0102030405060708090A0B0C0D0E0F10111213), top3);
@@ -324,11 +324,11 @@ test "PUSH20-PUSH24: Various sizes" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test PUSH20
-    var result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x73);
+    var result = try evm.table.execute(frame.pc, &interpreter, &state, 0x73);
     try testing.expectEqual(@as(usize, 21), result.bytes_consumed);
     const top1 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0x0102030405060708090A0B0C0D0E0F1011121314), top1);
@@ -336,7 +336,7 @@ test "PUSH20-PUSH24: Various sizes" {
     frame.pc = 21;
 
     // Test PUSH21
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x74);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x74);
     try testing.expectEqual(@as(usize, 22), result.bytes_consumed);
     const top2 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0x0102030405060708090A0B0C0D0E0F101112131415), top2);
@@ -344,7 +344,7 @@ test "PUSH20-PUSH24: Various sizes" {
     frame.pc = 43;
 
     // Test PUSH22
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x75);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x75);
     try testing.expectEqual(@as(usize, 23), result.bytes_consumed);
     const top3 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0x0102030405060708090A0B0C0D0E0F10111213141516), top3);
@@ -352,7 +352,7 @@ test "PUSH20-PUSH24: Various sizes" {
     frame.pc = 66;
 
     // Test PUSH23
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x76);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x76);
     try testing.expectEqual(@as(usize, 24), result.bytes_consumed);
     const top4 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0x0102030405060708090A0B0C0D0E0F1011121314151617), top4);
@@ -360,7 +360,7 @@ test "PUSH20-PUSH24: Various sizes" {
     frame.pc = 90;
 
     // Test PUSH24
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x77);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x77);
     try testing.expectEqual(@as(usize, 25), result.bytes_consumed);
     const top5 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0x0102030405060708090A0B0C0D0E0F101112131415161718), top5);
@@ -423,11 +423,11 @@ test "PUSH25-PUSH31: Various sizes" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test PUSH25
-    var result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x78);
+    var result = try evm.table.execute(frame.pc, &interpreter, &state, 0x78);
     try testing.expectEqual(@as(usize, 26), result.bytes_consumed);
     const expected25: u256 = 0x0102030405060708090A0B0C0D0E0F10111213141516171819;
     const top1 = try frame.stack.peek_n(0);
@@ -436,7 +436,7 @@ test "PUSH25-PUSH31: Various sizes" {
     frame.pc = 26;
 
     // Test PUSH30
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x7D);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x7D);
     try testing.expectEqual(@as(usize, 31), result.bytes_consumed);
     const expected30: u256 = 0x0102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E;
     const top2 = try frame.stack.peek_n(0);
@@ -445,7 +445,7 @@ test "PUSH25-PUSH31: Various sizes" {
     frame.pc = 57;
 
     // Test PUSH31
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x7E);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x7E);
     try testing.expectEqual(@as(usize, 32), result.bytes_consumed);
     const expected31: u256 = 0x0102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F;
     const top3 = try frame.stack.peek_n(0);
@@ -590,11 +590,11 @@ test "PUSH32 (0x7F): Push full 32 bytes onto stack" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test first PUSH32
-    var result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x7F);
+    var result = try evm.table.execute(frame.pc, &interpreter, &state, 0x7F);
     try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
     const expected: u256 = 0x0102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F20;
     const top1 = try frame.stack.peek_n(0);
@@ -603,7 +603,7 @@ test "PUSH32 (0x7F): Push full 32 bytes onto stack" {
     frame.pc = 33;
 
     // Test PUSH32 with max value
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x7F);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x7F);
     try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
     const max_u256: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
     const top2 = try frame.stack.peek_n(0);
@@ -612,7 +612,7 @@ test "PUSH32 (0x7F): Push full 32 bytes onto stack" {
     frame.pc = 66;
 
     // Test PUSH32 with zero
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x7F);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x7F);
     try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
     const top3 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0), top3);
@@ -670,8 +670,8 @@ test "PUSH14-PUSH32: Gas consumption" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     var pc: usize = 0;
     for (0x6D..0x80) |opcode| {
@@ -679,7 +679,7 @@ test "PUSH14-PUSH32: Gas consumption" {
         frame.stack.clear();
 
         const gas_before = frame.gas_remaining;
-        const result = try evm.table.execute(0, interpreter_ptr, state_ptr, @intCast(opcode));
+        const result = try evm.table.execute(frame.pc, &interpreter, &state, @intCast(opcode));
 
         // All PUSH operations cost 3 gas (GasFastestStep)
         const gas_used = gas_before - frame.gas_remaining;
@@ -746,10 +746,10 @@ test "PUSH operations: Truncated data at end of code" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    const result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x7F);
+    const result = try evm.table.execute(frame.pc, &interpreter, &state, 0x7F);
     try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
 
     // Should be 0x0102030405060708090A followed by 22 zeros
@@ -817,10 +817,10 @@ test "PUSH20: Address pushing pattern" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    const result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x73);
+    const result = try evm.table.execute(frame.pc, &interpreter, &state, 0x73);
     try testing.expectEqual(@as(usize, 21), result.bytes_consumed);
 
     const expected_address: u256 = 0xDEADBEEFCAFEBABE123456789ABCDEF011223344;
@@ -899,10 +899,10 @@ test "PUSH32: Hash value pattern" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
-    const result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x7F);
+    const result = try evm.table.execute(frame.pc, &interpreter, &state, 0x7F);
     try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
 
     // This is the actual 256-bit value that would be pushed
@@ -980,8 +980,8 @@ test "Large PUSH operations with stack near limit" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Fill stack to near capacity (1023 items)
     for (0..1023) |i| {
@@ -989,7 +989,7 @@ test "Large PUSH operations with stack near limit" {
     }
 
     // One more PUSH32 should succeed (reaching limit of 1024)
-    const result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x7F);
+    const result = try evm.table.execute(frame.pc, &interpreter, &state, 0x7F);
     try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
     try testing.expectEqual(@as(usize, 1024), frame.stack.size);
 
@@ -1001,7 +1001,7 @@ test "Large PUSH operations with stack near limit" {
 
     // Next PUSH should fail with stack overflow
     frame.pc = 0;
-    const overflow_result = evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x7F);
+    const overflow_result = evm.table.execute(frame.pc, &interpreter, &state, 0x7F);
     try testing.expectError(ExecutionError.Error.StackOverflow, overflow_result);
 }
 
@@ -1051,18 +1051,18 @@ test "PUSH operations sequence verification" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Execute PUSH14
-    var result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x6D);
+    var result = try evm.table.execute(frame.pc, &interpreter, &state, 0x6D);
     try testing.expectEqual(@as(usize, 15), result.bytes_consumed);
     const top1 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 1), top1);
     frame.pc = 15;
 
     // Execute PUSH20
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x73);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x73);
     try testing.expectEqual(@as(usize, 21), result.bytes_consumed);
     const top2_0 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 2), top2_0);
@@ -1071,7 +1071,7 @@ test "PUSH operations sequence verification" {
     frame.pc = 36;
 
     // Execute PUSH32
-    result = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x7F);
+    result = try evm.table.execute(frame.pc, &interpreter, &state, 0x7F);
     try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
     const top3_0 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 3), top3_0);

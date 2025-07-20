@@ -14,7 +14,7 @@ const std = @import("std");
 ///
 /// ## Performance Optimizations
 /// - Direct stack allocation eliminates pointer indirection
-/// - Aligned memory for SIMD-friendly access patterns
+/// - Aligned memory for optimal access patterns
 /// - Unsafe variants used after jump table validation
 /// - Hot path annotations for critical operations
 ///
@@ -62,8 +62,8 @@ pub const Error = error{
 };
 
 /// Stack-allocated storage for optimal performance
-/// 32-byte alignment for SIMD-friendly access
-data: [CAPACITY]u256 align(32) = undefined,
+/// Architecture-appropriate alignment for optimal access
+data: [CAPACITY]u256 align(@alignOf(u256)) = undefined,
 
 /// Current number of elements on the stack.
 /// Invariant: 0 <= size <= CAPACITY

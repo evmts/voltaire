@@ -66,7 +66,7 @@ fn binaryOp(comptime op_fn: fn (u256, u256) u256) fn (usize, *Operation.Interpre
         fn execute(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
             _ = pc;
             _ = interpreter;
-            const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+            const frame = state.get_frame();
 
             if (frame.stack.size < 2) {
                 @branchHint(.cold);
@@ -126,7 +126,7 @@ pub const op_add = binaryOp(addOp);
 pub fn op_mul(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -164,7 +164,7 @@ pub fn op_mul(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
 pub fn op_sub(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -210,7 +210,7 @@ pub fn op_sub(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
 pub fn op_div(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -262,7 +262,7 @@ pub fn op_div(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
 pub fn op_sdiv(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -322,7 +322,7 @@ pub fn op_sdiv(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
 pub fn op_mod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -374,7 +374,7 @@ pub fn op_mod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
 pub fn op_smod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -432,7 +432,7 @@ pub fn op_smod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
 pub fn op_addmod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Debug assertion: Jump table validation ensures we have >= 3 items
     std.debug.assert(frame.stack.size >= 3);
@@ -497,7 +497,7 @@ pub fn op_addmod(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 pub fn op_mulmod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     const n = frame.stack.pop_unsafe();
     const b = frame.stack.pop_unsafe();
@@ -580,8 +580,8 @@ pub fn op_mulmod(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 pub fn op_exp(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
     _ = vm;
 
     const exp = frame.stack.pop_unsafe();
@@ -683,7 +683,7 @@ pub fn op_signextend(pc: usize, interpreter: *Operation.Interpreter, state: *Ope
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     const byte_num = frame.stack.pop_unsafe();
     const x = frame.stack.peek_unsafe().*;

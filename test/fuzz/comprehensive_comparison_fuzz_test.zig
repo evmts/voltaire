@@ -86,9 +86,9 @@ test "fuzz_lt_unsigned_comparison_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x10); // LT
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x10); // LT
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -138,9 +138,9 @@ test "fuzz_gt_unsigned_comparison_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x11); // GT
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x11); // GT
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -206,9 +206,9 @@ test "fuzz_slt_signed_comparison_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x12); // SLT
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x12); // SLT
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -274,9 +274,9 @@ test "fuzz_sgt_signed_greater_than_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x13); // SGT
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x13); // SGT
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -336,9 +336,9 @@ test "fuzz_eq_equality_comparison_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x14); // EQ
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x14); // EQ
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -401,9 +401,9 @@ test "fuzz_iszero_zero_check_edge_cases" {
         
         try ctx.frame.stack.append(case.a);
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x15); // ISZERO
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x15); // ISZERO
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -434,9 +434,9 @@ test "fuzz_comparison_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-            const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
-            _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x10); // LT
+            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x10); // LT
             
             const result = try ctx.frame.stack.pop();
             const expected: u256 = if (a < b) 1 else 0;
@@ -453,9 +453,9 @@ test "fuzz_comparison_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-            const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
-            _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x11); // GT
+            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x11); // GT
             
             const result = try ctx.frame.stack.pop();
             const expected: u256 = if (a > b) 1 else 0;
@@ -472,9 +472,9 @@ test "fuzz_comparison_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-            const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
-            _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x14); // EQ
+            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x14); // EQ
             
             const result = try ctx.frame.stack.pop();
             const expected: u256 = if (a == b) 1 else 0;
@@ -490,9 +490,9 @@ test "fuzz_comparison_random_stress_test" {
             
             try ctx.frame.stack.append(a);
             
-            const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-            const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
-            _ = try ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0x15); // ISZERO
+            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x15); // ISZERO
             
             const result = try ctx.frame.stack.pop();
             const expected: u256 = if (a == 0) 1 else 0;

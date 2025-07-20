@@ -40,11 +40,11 @@ test "Environment: ADDRESS opcode" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Execute ADDRESS opcode
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x30);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x30);
 
     // Should push contract address to stack
     const result = try frame.stack.peek_n(0);
@@ -92,13 +92,13 @@ test "Environment: BALANCE opcode" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Get balance of existing account
     const alice_u256 = primitives.Address.to_u256(alice_addr);
     try frame.stack.append(alice_u256);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x31);
 
     const result1 = try frame.stack.peek_n(0);
     try testing.expectEqual(test_balance, result1);
@@ -108,7 +108,7 @@ test "Environment: BALANCE opcode" {
     const random_addr = [_]u8{0xFF} ** 20;
     const random_u256 = primitives.Address.to_u256(random_addr);
     try frame.stack.append(random_u256);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x31);
 
     const result2 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0), result2);
@@ -164,18 +164,18 @@ test "Environment: ORIGIN and CALLER opcodes" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test ORIGIN
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x32);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x32);
     const origin_result = try frame.stack.peek_n(0);
     const expected_origin = primitives.Address.to_u256(tx_origin);
     try testing.expectEqual(expected_origin, origin_result);
 
     // Test CALLER
     frame.stack.clear();
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x33);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x33);
     const caller_result = try frame.stack.peek_n(0);
     const expected_caller = primitives.Address.to_u256(caller_addr);
     try testing.expectEqual(expected_caller, caller_result);
@@ -214,11 +214,11 @@ test "Environment: CALLVALUE opcode" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Execute CALLVALUE
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x34);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x34);
 
     const result = try frame.stack.peek_n(0);
     try testing.expectEqual(call_value, result);
@@ -275,11 +275,11 @@ test "Environment: GASPRICE opcode" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Execute GASPRICE
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x3A);
 
     const result = try frame.stack.peek_n(0);
     try testing.expectEqual(gas_price, result);
@@ -323,13 +323,13 @@ test "Environment: EXTCODESIZE opcode" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Get code size of account with code
     const bob_u256 = primitives.Address.to_u256(bob_addr);
     try frame.stack.append(bob_u256);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x3B);
 
     const result1 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, test_code.len), result1);
@@ -339,7 +339,7 @@ test "Environment: EXTCODESIZE opcode" {
     const alice_addr = [_]u8{0x11} ** 20;
     const alice_u256 = primitives.Address.to_u256(alice_addr);
     try frame.stack.append(alice_u256);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x3B);
 
     const result2 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0), result2);
@@ -390,8 +390,8 @@ test "Environment: EXTCODECOPY opcode" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Copy entire code
     const bob_u256 = primitives.Address.to_u256(bob_addr);
@@ -400,7 +400,7 @@ test "Environment: EXTCODECOPY opcode" {
     try frame.stack.append(0); // memory offset (will be popped 2nd)
     try frame.stack.append(bob_u256); // address (will be popped 1st)
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3C);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x3C);
 
     // Verify code was copied to memory
     var i: usize = 0;
@@ -416,7 +416,7 @@ test "Environment: EXTCODECOPY opcode" {
     try frame.stack.append(32); // memory offset (will be popped 2nd)
     try frame.stack.append(bob_u256); // address (will be popped 1st)
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3C);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x3C);
 
     // Verify partial copy
     i = 0;
@@ -432,7 +432,7 @@ test "Environment: EXTCODECOPY opcode" {
     try frame.stack.append(64); // memory offset (will be popped 2nd)
     try frame.stack.append(bob_u256); // address (will be popped 1st)
 
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3C);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x3C);
 
     // Verify padding with zeros
     i = test_code.len;
@@ -480,13 +480,13 @@ test "Environment: EXTCODEHASH opcode" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Get hash of account with code
     const bob_u256 = primitives.Address.to_u256(bob_addr);
     try frame.stack.append(bob_u256);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3F);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x3F);
 
     const hash = try frame.stack.peek_n(0);
     try testing.expect(hash != 0); // Should be non-zero hash
@@ -496,7 +496,7 @@ test "Environment: EXTCODEHASH opcode" {
     const alice_addr = [_]u8{0x11} ** 20;
     const alice_u256 = primitives.Address.to_u256(alice_addr);
     try frame.stack.append(alice_u256);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x3F);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x3F);
 
     const result2 = try frame.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 0), result2);
@@ -538,11 +538,11 @@ test "Environment: SELFBALANCE opcode (Istanbul)" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Execute SELFBALANCE
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x47);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x47);
 
     const result = try frame.stack.peek_n(0);
     try testing.expectEqual(contract_balance, result);
@@ -602,11 +602,11 @@ test "Environment: CHAINID opcode (Istanbul)" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Execute CHAINID
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x46);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x46);
 
     const result = try frame.stack.peek_n(0);
     try testing.expectEqual(chain_id, result);
@@ -648,14 +648,14 @@ test "Environment: Cold/Warm address access (EIP-2929)" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // First access should be cold (2600 gas)
     const bob_u256 = primitives.Address.to_u256(bob_addr);
     try frame.stack.append(bob_u256);
     const initial_gas = frame.gas_remaining;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x31);
     const cold_gas_used = initial_gas - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 2600), cold_gas_used);
 
@@ -663,7 +663,7 @@ test "Environment: Cold/Warm address access (EIP-2929)" {
     frame.stack.clear();
     try frame.stack.append(bob_u256);
     const warm_initial_gas = frame.gas_remaining;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x31);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x31);
     const warm_gas_used = warm_initial_gas - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 100), warm_gas_used); // Warm access costs 100 gas
 }
@@ -700,20 +700,20 @@ test "Environment: Stack underflow errors" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test opcodes that require stack items
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter_ptr, state_ptr, 0x31));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x31));
 
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter_ptr, state_ptr, 0x3B));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x3B));
 
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter_ptr, state_ptr, 0x3F));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x3F));
 
     // EXTCODECOPY needs 4 stack items
     try frame.stack.append(1);
     try frame.stack.append(2);
     try frame.stack.append(3);
     // Only 3 items
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter_ptr, state_ptr, 0x3C));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x3C));
 }

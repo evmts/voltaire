@@ -38,9 +38,9 @@ test "fuzz_storage_sload_operations" {
     // Test SLOAD operation (should return 0 for uninitialized storage)
     try frame.stack.append(slot);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x54); // SLOAD opcode
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
+    var state = *evm.Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x54); // SLOAD opcode
     
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result);
@@ -83,13 +83,13 @@ test "fuzz_storage_sstore_sload_roundtrip" {
     try frame.stack.append(value);
     try frame.stack.append(slot);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x55); // SSTORE opcode
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
+    var state = *evm.Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x55); // SSTORE opcode
     
     // Now test SLOAD to retrieve the stored value
     try frame.stack.append(slot);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x54); // SLOAD opcode
+    _ = try vm.table.execute(0, &interpreter, &state, 0x54); // SLOAD opcode
     
     const result = try frame.stack.pop();
     try testing.expectEqual(value, result);
@@ -130,9 +130,9 @@ test "fuzz_storage_tload_operations" {
     // Test TLOAD operation (should return 0 for uninitialized transient storage)
     try frame.stack.append(slot);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x5C); // TLOAD opcode
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
+    var state = *evm.Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x5C); // TLOAD opcode
     
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result);
@@ -175,13 +175,13 @@ test "fuzz_storage_tstore_tload_roundtrip" {
     try frame.stack.append(value);
     try frame.stack.append(slot);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x5D); // TSTORE opcode
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
+    var state = *evm.Operation.State = @ptrCast(&frame);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x5D); // TSTORE opcode
     
     // Now test TLOAD to retrieve the stored value
     try frame.stack.append(slot);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x5C); // TLOAD opcode
+    _ = try vm.table.execute(0, &interpreter, &state, 0x5C); // TLOAD opcode
     
     const result = try frame.stack.pop();
     try testing.expectEqual(value, result);

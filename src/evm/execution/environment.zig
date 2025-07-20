@@ -14,7 +14,7 @@ pub fn op_address(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Push contract address as u256
     const addr = to_u256(frame.contract.address);
@@ -26,8 +26,8 @@ pub fn op_address(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
 pub fn op_balance(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     const address_u256 = try frame.stack.pop();
     const address = from_u256(address_u256);
@@ -46,8 +46,8 @@ pub fn op_balance(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
 pub fn op_origin(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // Push transaction origin address
     const origin = to_u256(vm.context.tx_origin);
@@ -60,7 +60,7 @@ pub fn op_caller(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Push caller address
     const caller = to_u256(frame.contract.caller);
@@ -73,7 +73,7 @@ pub fn op_callvalue(pc: usize, interpreter: *Operation.Interpreter, state: *Oper
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Push call value
     try frame.stack.append(frame.contract.value);
@@ -84,8 +84,8 @@ pub fn op_callvalue(pc: usize, interpreter: *Operation.Interpreter, state: *Oper
 pub fn op_gasprice(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // Push gas price from transaction context
     try frame.stack.append(vm.context.gas_price);
@@ -96,8 +96,8 @@ pub fn op_gasprice(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
 pub fn op_extcodesize(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     const address_u256 = try frame.stack.pop();
     const address = from_u256(address_u256);
@@ -116,8 +116,8 @@ pub fn op_extcodesize(pc: usize, interpreter: *Operation.Interpreter, state: *Op
 pub fn op_extcodecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     const address_u256 = try frame.stack.pop();
     const mem_offset = try frame.stack.pop();
@@ -165,8 +165,8 @@ pub fn op_extcodecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Op
 pub fn op_extcodehash(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     const address_u256 = try frame.stack.pop();
     const address = from_u256(address_u256);
@@ -197,8 +197,8 @@ pub fn op_extcodehash(pc: usize, interpreter: *Operation.Interpreter, state: *Op
 pub fn op_selfbalance(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // Get balance of current executing contract
     const self_address = frame.contract.address;
@@ -211,8 +211,8 @@ pub fn op_selfbalance(pc: usize, interpreter: *Operation.Interpreter, state: *Op
 pub fn op_chainid(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // Push chain ID from VM context
     try frame.stack.append(vm.context.chain_id);
@@ -224,7 +224,7 @@ pub fn op_calldatasize(pc: usize, interpreter: *Operation.Interpreter, state: *O
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Push size of calldata - use frame.input which is set by the VM
     // The frame.input is the actual calldata for this execution context
@@ -237,7 +237,7 @@ pub fn op_codesize(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Push size of current contract's code
     try frame.stack.append(@as(u256, @intCast(frame.contract.code.len)));
@@ -249,7 +249,7 @@ pub fn op_calldataload(pc: usize, interpreter: *Operation.Interpreter, state: *O
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Pop offset from stack
     const offset = try frame.stack.pop();
@@ -285,7 +285,7 @@ pub fn op_calldatacopy(pc: usize, interpreter: *Operation.Interpreter, state: *O
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Pop memory offset, data offset, and size
     const mem_offset = try frame.stack.pop();
@@ -326,7 +326,7 @@ pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Pop memory offset, code offset, and size
     const mem_offset = try frame.stack.pop();
@@ -375,7 +375,7 @@ pub fn op_returndataload(pc: usize, interpreter: *Operation.Interpreter, state: 
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     // Pop offset from stack
     const offset = try frame.stack.pop();

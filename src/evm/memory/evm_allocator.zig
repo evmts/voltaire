@@ -130,10 +130,16 @@ pub const EvmMemoryAllocator = struct {
         
         const alignment = @intFromEnum(ptr_align);
         
+        // Ensure alignment is a power of 2 and >= 1
+        const safe_alignment = if (alignment == 0 or (alignment & (alignment - 1)) != 0) 
+            1 
+        else 
+            alignment;
+        
         // Calculate aligned offset
         const current_addr = @intFromPtr(self.base_ptr) + self.allocated_size;
-        const aligned_addr = if (alignment > 1) 
-            std.mem.alignForward(usize, current_addr, alignment) 
+        const aligned_addr = if (safe_alignment > 1) 
+            std.mem.alignForward(usize, current_addr, safe_alignment) 
         else 
             current_addr;
         const padding = aligned_addr - current_addr;

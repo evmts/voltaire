@@ -62,16 +62,16 @@ test "CREATE (0xF0): Basic contract creation" {
     _ = try frame.memory.set_data(0, &init_code);
 
     // Execute push operations
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
     for (0..3) |i| {
         frame.pc = i * 2;
-        _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+        _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
     }
     frame.pc = 6;
 
     const gas_before = frame.gas_remaining;
-    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    const result = try evm.table.execute(0, &interpreter, &state, 0xF0);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check gas consumption (VM consumes gas regardless of success/failure)
@@ -128,9 +128,9 @@ test "CREATE: Static call protection" {
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // value
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF0);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
@@ -178,9 +178,9 @@ test "CREATE: EIP-3860 initcode size limit" {
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // value
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF0);
     try testing.expectError(ExecutionError.Error.MaxCodeSizeExceeded, result);
 }
 
@@ -228,9 +228,9 @@ test "CREATE: Depth limit" {
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // value
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = try evm.table.execute(0, &interpreter, &state, 0xF0);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Should push 0 to stack (failure)
@@ -287,16 +287,16 @@ test "CREATE2 (0xF5): Deterministic contract creation" {
     _ = try frame.memory.set_data(0, &init_code);
 
     // Execute push operations
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
     for (0..4) |i| {
         frame.pc = i * 2;
-        _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+        _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
     }
     frame.pc = 8;
 
     const gas_before = frame.gas_remaining;
-    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF5);
+    const result = try evm.table.execute(0, &interpreter, &state, 0xF5);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check gas consumption (VM consumes gas regardless of success/failure)
@@ -357,9 +357,9 @@ test "CALL (0xF1): Basic external call" {
     try frame.stack.append(primitives.Address.to_u256([_]u8{0x22} ** 20)); // to
     try frame.stack.append(2000); // gas
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = try evm.table.execute(0, &interpreter, &state, 0xF1);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check status pushed to stack (VM currently returns 0 for failed calls)
@@ -416,9 +416,9 @@ test "CALL: Value transfer in static context" {
     try frame.stack.append(primitives.Address.to_u256([_]u8{0x22} ** 20)); // to
     try frame.stack.append(2000); // gas
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF1);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
@@ -470,10 +470,10 @@ test "CALL: Cold address access (EIP-2929)" {
     try frame.stack.append(primitives.Address.to_u256([_]u8{0xCC} ** 20)); // cold address
     try frame.stack.append(1000); // gas
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
     const gas_before = frame.gas_remaining;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF1);
     const gas_used = gas_before - frame.gas_remaining;
 
     // Should consume some gas for CALL operation
@@ -529,9 +529,9 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
     try frame.stack.append(primitives.Address.to_u256([_]u8{0x22} ** 20)); // to
     try frame.stack.append(2000); // gas
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF2);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = try evm.table.execute(0, &interpreter, &state, 0xF2);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check status (VM currently returns 0 for failed calls)
@@ -590,9 +590,9 @@ test "DELEGATECALL (0xF4): Execute with current context" {
     // Write call data
     _ = try frame.memory.set_data(0, &[_]u8{ 0x11, 0x22, 0x33, 0x44 });
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF4);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = try evm.table.execute(0, &interpreter, &state, 0xF4);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check status
@@ -650,9 +650,9 @@ test "STATICCALL (0xFA): Read-only external call" {
     try frame.stack.append(primitives.Address.to_u256([_]u8{0x22} ** 20)); // to
     try frame.stack.append(2000); // gas
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xFA);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = try evm.table.execute(0, &interpreter, &state, 0xFA);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Check status (basic STATICCALL implementation now returns success)
@@ -712,10 +712,10 @@ test "System opcodes: Gas consumption" {
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // value
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
     const gas_before = frame.gas_remaining;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
     const gas_used = gas_before - frame.gas_remaining;
 
     // Should consume gas for CREATE operation regardless of success/failure
@@ -786,9 +786,9 @@ test "CALL operations: Depth limit" {
             try frame.stack.append(1000); // gas
         }
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-        const result = try evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
+        const result = try evm.table.execute(0, &interpreter, &state, opcode);
         try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
         // Should push 0 (failure)
@@ -838,9 +838,9 @@ test "CREATE/CREATE2: Failed creation scenarios" {
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // value
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
 
     // VM actually succeeds in creating contracts with empty init code
     const created_address = try frame.stack.pop();

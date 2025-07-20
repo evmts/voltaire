@@ -440,7 +440,7 @@ pub fn gas_op(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     try frame.stack.append(@as(u256, @intCast(frame.gas_remaining)));
 
@@ -506,8 +506,8 @@ pub fn revert_to_snapshot(vm: *Vm, snapshot_id: usize) !void {
 pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // Check static call restrictions
     try validate_create_static_context(frame);
@@ -548,8 +548,8 @@ pub fn op_create(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // Check static call restrictions
     try validate_create_static_context(frame);
@@ -589,8 +589,8 @@ pub fn op_create2(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
 pub fn op_call(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     const gas = try frame.stack.pop();
     const to = try frame.stack.pop();
@@ -640,8 +640,8 @@ pub fn op_call(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
 pub fn op_callcode(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     const gas = try frame.stack.pop();
     const to = try frame.stack.pop();
@@ -686,8 +686,8 @@ pub fn op_callcode(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
 pub fn op_delegatecall(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // DELEGATECALL takes 6 parameters (no value parameter)
     const gas = try frame.stack.pop();
@@ -744,8 +744,8 @@ pub fn op_delegatecall(pc: usize, interpreter: *Operation.Interpreter, state: *O
 pub fn op_staticcall(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // STATICCALL takes 6 parameters (no value parameter)
     const gas = try frame.stack.pop();
@@ -811,8 +811,8 @@ pub fn op_staticcall(pc: usize, interpreter: *Operation.Interpreter, state: *Ope
 pub fn op_selfdestruct(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const vm: *Vm = @ptrCast(interpreter);
-    const frame: *Frame = @ptrCast(state);
+    const vm = interpreter.get_vm();
+    const frame = state.get_frame();
 
     // Static call protection - SELFDESTRUCT forbidden in static context
     if (frame.is_static) {

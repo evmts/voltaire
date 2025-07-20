@@ -72,9 +72,9 @@ test "Integration: Contract deployment simulation" {
     try frame.stack.append(1_000_000_000); // value (1 Gwei)
 
     // Execute CREATE (will fail with placeholder implementation)
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
-    _ = vm.table.execute(0, interpreter_ptr, state_ptr, 0xF0) catch |err| {
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
+    _ = vm.table.execute(0, &interpreter, &state, 0xF0) catch |err| {
         // CREATE is not fully implemented, but we can verify it tries to execute
         try testing.expect(err == ExecutionError.Error.OutOfGas or
             err == ExecutionError.Error.StackUnderflow or
@@ -137,9 +137,9 @@ test "Integration: Call with value transfer" {
     try frame.stack.append(50000); // gas
 
     // Execute CALL (placeholder implementation)
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
-    _ = vm.table.execute(0, interpreter_ptr, state_ptr, 0xF1) catch |err| {
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
+    _ = vm.table.execute(0, &interpreter, &state, 0xF1) catch |err| {
         // CALL is not fully implemented
         try testing.expect(err == ExecutionError.Error.OutOfGas or
             err == ExecutionError.Error.StackUnderflow);
@@ -190,36 +190,36 @@ test "Integration: Environment data access" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test ADDRESS
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x30);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x30);
     const address_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, primitives.Address.to_u256(contract_addr)), address_result);
 
     // Test ORIGIN
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x32);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x32);
     const origin_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, primitives.Address.to_u256(alice_addr)), origin_result);
 
     // Test CALLER
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x33);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x33);
     const caller_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, primitives.Address.to_u256(bob_addr)), caller_result);
 
     // Test CALLVALUE
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x34);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x34);
     const callvalue_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1_000_000_000), callvalue_result);
 
     // Test GASPRICE
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x3A);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x3A);
     const gasprice_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 20 * 1_000_000_000), gasprice_result);
 
     // Test CHAINID
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x46);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x46);
     const chainid_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), chainid_result);
 }
@@ -273,31 +273,31 @@ test "Integration: Block information access" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test NUMBER
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x43);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x43);
     const number_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 17000000), number_result);
 
     // Test TIMESTAMP
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x42);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x42);
     const timestamp_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1683000000), timestamp_result);
 
     // Test COINBASE
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x41);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x41);
     const coinbase_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, primitives.Address.to_u256(charlie_addr)), coinbase_result);
 
     // Test GASLIMIT
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x45);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x45);
     const gaslimit_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 30000000), gaslimit_result);
 
     // Test BASEFEE
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x48);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x48);
     const basefee_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 30 * 1_000_000_000), basefee_result);
 }
@@ -364,9 +364,9 @@ test "Integration: Log emission with topics" {
     const initial_log_count = vm.state.logs.items.len;
 
     // Execute LOG3 through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0xA3);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
+    _ = try vm.table.execute(0, &interpreter, &state, 0xA3);
 
     // Verify log was emitted
     try testing.expectEqual(initial_log_count + 1, vm.state.logs.items.len);
@@ -434,12 +434,12 @@ test "Integration: External code operations" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test EXTCODESIZE
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x3B);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x3B);
     const codesize_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, external_code.len), codesize_result);
 
@@ -450,7 +450,7 @@ test "Integration: External code operations" {
     try frame.stack.append(0); // code_offset
     try frame.stack.append(0); // mem_offset
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // address (will be popped first)
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x3C);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x3C);
 
     // Verify code was copied to memory
     const copied_code = try frame.memory.get_slice(0, external_code.len);
@@ -458,7 +458,7 @@ test "Integration: External code operations" {
 
     // Test EXTCODEHASH
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x3F);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x3F);
 
     // Hash should be non-zero for account with code
     const code_hash_result = try frame.stack.pop();
@@ -514,17 +514,17 @@ test "Integration: Calldata operations" {
     frame.input = &calldata;
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test CALLDATASIZE
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x36);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x36);
     const datasize_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, calldata.len), datasize_result);
 
     // Test CALLDATALOAD at offset 0 (function selector)
     try frame.stack.append(0);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x35);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x35);
 
     // Should load 32 bytes starting from offset 0
     const loaded_value = try frame.stack.pop();
@@ -532,7 +532,7 @@ test "Integration: Calldata operations" {
 
     // Test CALLDATALOAD at offset 4 (first argument)
     try frame.stack.append(4);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x35);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x35);
     const arg_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x42), arg_result);
 
@@ -542,7 +542,7 @@ test "Integration: Calldata operations" {
     try frame.stack.append(calldata.len); // size (will be popped last)
     try frame.stack.append(0); // data_offset
     try frame.stack.append(0); // mem_offset (will be popped first)
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x37);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x37);
 
     // Verify calldata was copied to memory
     const copied_data = try frame.memory.get_slice(0, calldata.len);
@@ -606,16 +606,16 @@ test "Integration: Self balance and code operations" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm };
+    var state = Operation.State{ .frame = &frame };
 
     // Test SELFBALANCE
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x47);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x47);
     const balance_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1_000_000_000_000_000_000), balance_result);
 
     // Test CODESIZE
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x38);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x38);
     const codesize_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, contract_code.len), codesize_result);
 
@@ -625,7 +625,7 @@ test "Integration: Self balance and code operations" {
     try frame.stack.append(contract_code.len); // size (will be popped last)
     try frame.stack.append(0); // code_offset
     try frame.stack.append(0); // mem_offset (will be popped first)
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x39);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x39);
 
     // Verify code was copied to memory
     const copied_code = try frame.memory.get_slice(0, contract_code.len);

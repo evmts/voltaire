@@ -68,11 +68,11 @@ test "GASLIMIT (0x45): Get block gas limit" {
             .build();
         defer frame.deinit();
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
 
         // Execute GASLIMIT
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x45);
+        _ = try evm.table.execute(0, &interpreter, &state, 0x45);
 
         const result = try frame.stack.pop();
         try testing.expectEqual(@as(u256, gas_limit), result);
@@ -138,11 +138,11 @@ test "CHAINID (0x46): Get chain ID" {
             .build();
         defer frame.deinit();
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
 
         // Execute CHAINID
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x46);
+        _ = try evm.table.execute(0, &interpreter, &state, 0x46);
 
         const result = try frame.stack.pop();
         try testing.expectEqual(chain_id, result);
@@ -193,11 +193,11 @@ test "SELFBALANCE (0x47): Get contract's own balance" {
             .build();
         defer frame.deinit();
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
 
         // Execute SELFBALANCE
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x47);
+        _ = try evm.table.execute(0, &interpreter, &state, 0x47);
 
         const result = try frame.stack.pop();
         try testing.expectEqual(balance, result);
@@ -261,11 +261,11 @@ test "BASEFEE (0x48): Get block base fee" {
             .build();
         defer frame.deinit();
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
 
         // Execute BASEFEE
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x48);
+        _ = try evm.table.execute(0, &interpreter, &state, 0x48);
 
         const result = try frame.stack.pop();
         try testing.expectEqual(base_fee, result);
@@ -325,36 +325,36 @@ test "BLOBHASH (0x49): Get blob versioned hash" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Get first blob hash
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x49);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(blob_hashes[0], result1);
 
     // Test 2: Get second blob hash
     try frame.stack.append(1);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x49);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(blob_hashes[1], result2);
 
     // Test 3: Get third blob hash
     try frame.stack.append(2);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x49);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(blob_hashes[2], result3);
 
     // Test 4: Index out of bounds (should return 0)
     try frame.stack.append(3);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x49);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result4);
 
     // Test 5: Large index (should return 0)
     try frame.stack.append(1000);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x49);
     const result5 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result5);
 }
@@ -416,11 +416,11 @@ test "BLOBBASEFEE (0x4A): Get blob base fee" {
             .build();
         defer frame.deinit();
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
 
         // Execute BLOBBASEFEE
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x4A);
+        _ = try evm.table.execute(0, &interpreter, &state, 0x4A);
 
         const result = try frame.stack.pop();
         try testing.expectEqual(blob_base_fee, result);
@@ -480,8 +480,8 @@ test "Block info opcodes: Gas consumption" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     const opcodes = [_]struct {
         opcode: u8,
@@ -506,7 +506,7 @@ test "Block info opcodes: Gas consumption" {
         const gas_before = 1000;
         frame.gas_remaining = gas_before;
 
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, op.opcode);
+        _ = try evm.table.execute(0, &interpreter, &state, op.opcode);
 
         const gas_used = gas_before - frame.gas_remaining;
         try testing.expectEqual(op.expected_gas, gas_used);
@@ -549,14 +549,14 @@ test "Invalid opcodes 0x4B-0x4E: Should revert" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     const invalid_opcodes = [_]u8{ 0x4B, 0x4C, 0x4D, 0x4E };
 
     for (invalid_opcodes) |opcode| {
         const gas_before = frame.gas_remaining;
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        const result = evm.table.execute(0, &interpreter, &state, opcode);
 
         // Should fail with InvalidOpcode error
         try testing.expectError(ExecutionError.Error.InvalidOpcode, result);
@@ -605,14 +605,14 @@ test "SELFBALANCE: Balance changes during execution" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Initial balance: 1000 wei - set directly in the state
     try evm.state.set_balance(contract.address, 1000);
 
     // Check initial balance
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x47);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x47);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1000), result1);
 
@@ -620,7 +620,7 @@ test "SELFBALANCE: Balance changes during execution" {
     try evm.state.set_balance(contract.address, 2500);
 
     // Check updated balance
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x47);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x47);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 2500), result2);
 }
@@ -673,12 +673,12 @@ test "BLOBHASH: Empty blob list" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Any index should return 0 when no blobs
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x49);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result);
 }
@@ -731,12 +731,12 @@ test "CHAINID: EIP-1344 behavior" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Execute CHAINID multiple times - should always return same value
     for (0..3) |_| {
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x46);
+        _ = try evm.table.execute(0, &interpreter, &state, 0x46);
         const result = try frame.stack.pop();
         try testing.expectEqual(@as(u256, 1337), result);
     }
@@ -791,8 +791,8 @@ test "Stack operations: All opcodes push exactly one value" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     const opcodes = [_]struct {
         opcode: u8,
@@ -816,7 +816,7 @@ test "Stack operations: All opcodes push exactly one value" {
 
         const initial_stack_len = frame.stack.size;
 
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, op.opcode);
+        _ = try evm.table.execute(0, &interpreter, &state, op.opcode);
 
         // Check that exactly one value was pushed (or net zero for BLOBHASH which pops 1 and pushes 1)
         const expected_len = if (op.needs_input)

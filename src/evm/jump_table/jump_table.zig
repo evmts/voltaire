@@ -141,8 +141,8 @@ pub fn get_operation(self: *const JumpTable, opcode: u8) *const Operation {
 pub fn execute(self: *const JumpTable, pc: usize, interpreter: *operation_module.Interpreter, state: *operation_module.State, opcode: u8) ExecutionError.Error!operation_module.ExecutionResult {
     const operation = self.get_operation(opcode);
 
-    // Cast state to Frame to access gas_remaining and stack
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    // Get frame safely to access gas_remaining and stack
+    const frame = state.get_frame();
 
     Log.debug("JumpTable.execute: Executing opcode 0x{x:0>2} at pc={}, gas={}, stack_size={}", .{ opcode, pc, frame.gas_remaining, frame.stack.size });
 
@@ -262,13 +262,18 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     }
     // 0x60s & 0x70s: Push operations
     if (comptime builtin.mode == .ReleaseSmall) {
-        for (0..32) |i| {
-            jt.table[0x60 + i] = &Operation{
+        // Use static const operations to avoid memory corruption in ReleaseSmall
+        const static_push_op = struct {
+            const op = Operation{
                 .execute = stack_ops.push_n,
                 .constant_gas = execution.GasConstants.GasFastestStep,
                 .min_stack = 0,
                 .max_stack = Stack.CAPACITY - 1,
             };
+        };
+        
+        for (0..32) |i| {
+            jt.table[0x60 + i] = &static_push_op.op;
         }
     } else {
         // Optimized implementations for common small PUSH operations
@@ -304,13 +309,24 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     }
     // 0x80s: Duplication Operations
     if (comptime builtin.mode == .ReleaseSmall) {
-        for (1..17) |n| {
-            jt.table[0x80 + n - 1] = &Operation{
-                .execute = stack_ops.dup_n,
-                .constant_gas = execution.GasConstants.GasFastestStep,
-                .min_stack = @intCast(n),
-                .max_stack = Stack.CAPACITY - 1,
+        // Use specific functions for each DUP operation to avoid opcode detection issues
+        const dup_functions = [_]fn (usize, *operation_module.Interpreter, *operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
+            stack_ops.dup_1, stack_ops.dup_2, stack_ops.dup_3, stack_ops.dup_4,
+            stack_ops.dup_5, stack_ops.dup_6, stack_ops.dup_7, stack_ops.dup_8,
+            stack_ops.dup_9, stack_ops.dup_10, stack_ops.dup_11, stack_ops.dup_12,
+            stack_ops.dup_13, stack_ops.dup_14, stack_ops.dup_15, stack_ops.dup_16,
+        };
+        
+        inline for (1..17) |n| {
+            const dup_op = struct {
+                const op = Operation{
+                    .execute = dup_functions[n - 1],
+                    .constant_gas = execution.GasConstants.GasFastestStep,
+                    .min_stack = @intCast(n),
+                    .max_stack = Stack.CAPACITY - 1,
+                };
             };
+            jt.table[0x80 + n - 1] = &dup_op.op;
         }
     } else {
         inline for (1..17) |n| {
@@ -324,13 +340,24 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     }
     // 0x90s: Exchange Operations
     if (comptime builtin.mode == .ReleaseSmall) {
-        for (1..17) |n| {
-            jt.table[0x90 + n - 1] = &Operation{
-                .execute = stack_ops.swap_n,
-                .constant_gas = execution.GasConstants.GasFastestStep,
-                .min_stack = @intCast(n + 1),
-                .max_stack = Stack.CAPACITY,
+        // Use specific functions for each SWAP operation to avoid opcode detection issues
+        const swap_functions = [_]fn (usize, *operation_module.Interpreter, *operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
+            stack_ops.swap_1, stack_ops.swap_2, stack_ops.swap_3, stack_ops.swap_4,
+            stack_ops.swap_5, stack_ops.swap_6, stack_ops.swap_7, stack_ops.swap_8,
+            stack_ops.swap_9, stack_ops.swap_10, stack_ops.swap_11, stack_ops.swap_12,
+            stack_ops.swap_13, stack_ops.swap_14, stack_ops.swap_15, stack_ops.swap_16,
+        };
+        
+        inline for (1..17) |n| {
+            const swap_op = struct {
+                const op = Operation{
+                    .execute = swap_functions[n - 1],
+                    .constant_gas = execution.GasConstants.GasFastestStep,
+                    .min_stack = @intCast(n + 1),
+                    .max_stack = Stack.CAPACITY,
+                };
             };
+            jt.table[0x90 + n - 1] = &swap_op.op;
         }
     } else {
         inline for (1..17) |n| {
@@ -344,13 +371,21 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     }
     // 0xa0s: Logging Operations
     if (comptime builtin.mode == .ReleaseSmall) {
-        for (0..5) |n| {
-            jt.table[0xa0 + n] = &Operation{
-                .execute = log.log_n,
-                .constant_gas = execution.GasConstants.LogGas + execution.GasConstants.LogTopicGas * n,
-                .min_stack = @intCast(n + 2),
-                .max_stack = Stack.CAPACITY,
+        // Use specific functions for each LOG operation to avoid opcode detection issues
+        const log_functions = [_]fn (usize, *operation_module.Interpreter, *operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
+            log.log_0, log.log_1, log.log_2, log.log_3, log.log_4,
+        };
+        
+        inline for (0..5) |n| {
+            const log_op = struct {
+                const op = Operation{
+                    .execute = log_functions[n],
+                    .constant_gas = execution.GasConstants.LogGas + execution.GasConstants.LogTopicGas * n,
+                    .min_stack = @intCast(n + 2),
+                    .max_stack = Stack.CAPACITY,
+                };
             };
+            jt.table[0xa0 + n] = &log_op.op;
         }
     } else {
         inline for (0..5) |n| {

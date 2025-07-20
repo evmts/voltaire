@@ -64,9 +64,9 @@ test "CREATE: create new contract" {
     try frame.stack.append(0); // value (will be popped 1st)
 
     // Execute CREATE through jump table
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
 
     // Should push 0 for failure - VM doesn't execute init code yet
     const result = try frame.stack.pop();
@@ -115,9 +115,9 @@ test "CREATE: empty init code creates empty contract" {
     try frame.stack.append(0); // value (will be popped 1st)
 
     // Execute CREATE through jump table
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
 
     // Should push non-zero address for successful empty contract creation
     const created_address = try frame.stack.pop();
@@ -167,9 +167,9 @@ test "CREATE: write protection in static call" {
     try frame.stack.append(0); // value (will be popped 1st)
 
     // Execute CREATE - should fail
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF0);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
@@ -218,9 +218,9 @@ test "CREATE: depth limit" {
     try frame.stack.append(0); // value (will be popped 1st)
 
     // Execute CREATE
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
 
     // Should push 0 due to depth limit
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
@@ -280,9 +280,9 @@ test "CREATE2: create with deterministic address" {
     try frame.stack.append(0); // value (will be popped 1st)
 
     // Execute CREATE2
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF5);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF5);
 
     // Should push 0 for failed creation (VM doesn't execute init code yet)
     const result = try frame.stack.pop();
@@ -350,9 +350,9 @@ test "CALL: basic call behavior" {
     try frame.stack.append(50000); // gas
 
     // Execute CALL
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF1);
 
     // Should push 0 for failure (regular calls not implemented yet)
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
@@ -408,9 +408,9 @@ test "CALL: failed call" {
     try frame.stack.append(50000); // gas
 
     // Execute CALL
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF1);
 
     // Should push 0 for failure (regular calls not implemented yet)
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
@@ -468,9 +468,9 @@ test "CALL: cold address access costs more gas" {
     const gas_before = frame.gas_remaining;
 
     // Execute CALL
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF1);
 
     // Should push 0 for failure (regular calls not implemented yet)
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
@@ -526,9 +526,9 @@ test "CALL: value transfer in static call fails" {
     try frame.stack.append(1000); // gas
 
     // Execute CALL - should fail
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF1);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
@@ -585,9 +585,9 @@ test "DELEGATECALL: execute code in current context" {
     try frame.stack.append(50000); // gas
 
     // Execute DELEGATECALL
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF4);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF4);
 
     // Should push 0 for failure (VM doesn't implement delegatecall yet)
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
@@ -646,9 +646,9 @@ test "STATICCALL: read-only call" {
     try frame.stack.append(50000); // gas
 
     // Execute STATICCALL
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xFA);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xFA);
 
     // Should push 0 for failure (regular calls not implemented yet)
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
@@ -705,9 +705,9 @@ test "CALL: depth limit" {
     try frame.stack.append(0); // ret_size
 
     // Execute CALL
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF1);
 
     // Should push 0 due to depth limit
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
@@ -765,9 +765,9 @@ test "CREATE: gas consumption" {
     const gas_before = frame.gas_remaining;
 
     // Execute CREATE
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
 
     // Should consume gas for CREATE operation regardless of success/failure
     const gas_used = gas_before - frame.gas_remaining;
@@ -826,9 +826,9 @@ test "CREATE2: additional gas for hashing" {
     const gas_before = frame.gas_remaining;
 
     // Execute CREATE2
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF5);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF5);
 
     // Should consume gas for CREATE2 operation regardless of success/failure
     const gas_used = gas_before - frame.gas_remaining;
@@ -877,9 +877,9 @@ test "CREATE: stack underflow" {
     try frame.stack.append(0); // size
 
     // Execute CREATE - should fail
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF0);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -928,9 +928,9 @@ test "CALL: stack underflow" {
     try frame.stack.append(0); // ret_size
 
     // Execute CALL - should fail
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF1);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -988,9 +988,9 @@ test "CREATE: memory expansion for init code" {
     const gas_before = frame.gas_remaining;
 
     // Execute CREATE
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
 
     // Should consume gas for memory expansion regardless of success/failure
     const gas_used = gas_before - frame.gas_remaining;
@@ -1040,9 +1040,9 @@ test "CREATE: EIP-3860 initcode size limit" {
     try frame.stack.append(0); // value
 
     // Execute CREATE with oversized code - should fail
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF0);
     try testing.expectError(ExecutionError.Error.MaxCodeSizeExceeded, result);
 }
 
@@ -1099,9 +1099,9 @@ test "CREATE: EIP-3860 initcode word gas" {
     const gas_before = frame.gas_remaining;
 
     // Execute CREATE
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
 
     // Should consume gas for CREATE operation regardless of success/failure
     const gas_used = gas_before - frame.gas_remaining;
@@ -1151,8 +1151,8 @@ test "CREATE2: EIP-3860 initcode size limit" {
     try frame.stack.append(0); // value (will be popped 1st)
 
     // Execute CREATE2 - should fail with MaxCodeSizeExceeded
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF5);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF5);
     try testing.expectError(ExecutionError.Error.MaxCodeSizeExceeded, result);
 }
