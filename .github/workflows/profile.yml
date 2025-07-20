@@ -10,10 +10,13 @@ on:
         type: choice
         options:
         - all
-        - stack_operations
-        - memory_operations
+        - arithmetic_ops
+        - memory_ops
+        - storage_ops
+        - stack_ops
+        - control_flow
         - precompiles
-        - hardfork_checks
+        - contract_calls
 
 jobs:
   profile-linux:
