@@ -45,11 +45,11 @@ test "STOP (0x00): Halt execution" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Execute STOP
-    const result = evm.table.execute(0, &interpreter, &state, 0x00);
+    const result = evm.table.execute(0, interpreter, state, 0x00);
 
     // Should return STOP error
     try testing.expectError(ExecutionError.Error.STOP, result);
@@ -96,10 +96,10 @@ test "ADD (0x01): Basic addition" {
     try frame.stack.append(5);
     try frame.stack.append(10);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    const result = try evm.table.execute(0, &interpreter, &state, 0x01);
+    const result = try evm.table.execute(0, interpreter, state, 0x01);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     const value = try frame.stack.pop();
@@ -143,10 +143,10 @@ test "ADD: Overflow wraps to zero" {
     try frame.stack.append(max_u256);
     try frame.stack.append(1);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x01);
+    _ = try evm.table.execute(0, interpreter, state, 0x01);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -190,10 +190,10 @@ test "ADD: Large numbers" {
     try frame.stack.append(large1);
     try frame.stack.append(large2);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x01);
+    _ = try evm.table.execute(0, interpreter, state, 0x01);
 
     const value = try frame.stack.pop();
     const expected = large1 +% large2; // Wrapping addition
@@ -240,10 +240,10 @@ test "MUL (0x02): Basic multiplication" {
     try frame.stack.append(5);
     try frame.stack.append(10);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x02);
+    _ = try evm.table.execute(0, interpreter, state, 0x02);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 50), value);
@@ -285,10 +285,10 @@ test "MUL: Multiplication by zero" {
     try frame.stack.append(1000);
     try frame.stack.append(0);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x02);
+    _ = try evm.table.execute(0, interpreter, state, 0x02);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -331,10 +331,10 @@ test "MUL: Overflow behavior" {
     try frame.stack.append(half_max);
     try frame.stack.append(half_max);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x02);
+    _ = try evm.table.execute(0, interpreter, state, 0x02);
 
     const value = try frame.stack.pop();
     // Result should be 0 due to overflow (2^256 mod 2^256 = 0)
@@ -381,10 +381,10 @@ test "SUB (0x03): Basic subtraction" {
     try frame.stack.append(10);
     try frame.stack.append(5);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x03);
+    _ = try evm.table.execute(0, interpreter, state, 0x03);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 5), value);
@@ -426,10 +426,10 @@ test "SUB: Underflow wraps to max" {
     try frame.stack.append(0);
     try frame.stack.append(1);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x03);
+    _ = try evm.table.execute(0, interpreter, state, 0x03);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(std.math.maxInt(u256), value);
@@ -475,10 +475,10 @@ test "DIV (0x04): Basic division" {
     try frame.stack.append(20);
     try frame.stack.append(5);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x04);
+    _ = try evm.table.execute(0, interpreter, state, 0x04);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 4), value);
@@ -520,10 +520,10 @@ test "DIV: Division by zero returns zero" {
     try frame.stack.append(100);
     try frame.stack.append(0);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x04);
+    _ = try evm.table.execute(0, interpreter, state, 0x04);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -565,10 +565,10 @@ test "DIV: Integer division truncates" {
     try frame.stack.append(7);
     try frame.stack.append(3);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x04);
+    _ = try evm.table.execute(0, interpreter, state, 0x04);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 2), value);
@@ -614,10 +614,10 @@ test "SDIV (0x05): Signed division positive" {
     try frame.stack.append(20);
     try frame.stack.append(5);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x05);
+    _ = try evm.table.execute(0, interpreter, state, 0x05);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 4), value);
@@ -661,10 +661,10 @@ test "SDIV: Signed division negative" {
     try frame.stack.append(neg_20);
     try frame.stack.append(5);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x05);
+    _ = try evm.table.execute(0, interpreter, state, 0x05);
 
     const value = try frame.stack.pop();
     const expected = std.math.maxInt(u256) - 3; // -4 in two's complement
@@ -707,10 +707,10 @@ test "SDIV: Division by zero returns zero" {
     try frame.stack.append(100);
     try frame.stack.append(0);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x05);
+    _ = try evm.table.execute(0, interpreter, state, 0x05);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -754,10 +754,10 @@ test "SDIV: Edge case MIN / -1" {
     try frame.stack.append(min_i256);
     try frame.stack.append(neg_1);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x05);
+    _ = try evm.table.execute(0, interpreter, state, 0x05);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(min_i256, value);
@@ -803,10 +803,10 @@ test "MOD (0x06): Basic modulo" {
     try frame.stack.append(17);
     try frame.stack.append(5);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x06);
+    _ = try evm.table.execute(0, interpreter, state, 0x06);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 2), value);
@@ -848,10 +848,10 @@ test "MOD: Modulo by zero returns zero" {
     try frame.stack.append(100);
     try frame.stack.append(0);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x06);
+    _ = try evm.table.execute(0, interpreter, state, 0x06);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -897,10 +897,10 @@ test "SMOD (0x07): Signed modulo positive" {
     try frame.stack.append(17);
     try frame.stack.append(5);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x07);
+    _ = try evm.table.execute(0, interpreter, state, 0x07);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 2), value);
@@ -943,10 +943,10 @@ test "SMOD: Signed modulo negative" {
     try frame.stack.append(neg_17);
     try frame.stack.append(5);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x07);
+    _ = try evm.table.execute(0, interpreter, state, 0x07);
 
     const value = try frame.stack.pop();
     const expected = std.math.maxInt(u256) - 1; // -2 in two's complement
@@ -994,10 +994,10 @@ test "ADDMOD (0x08): Basic modular addition" {
     try frame.stack.append(10);
     try frame.stack.append(8);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x08);
+    _ = try evm.table.execute(0, interpreter, state, 0x08);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 4), value);
@@ -1040,10 +1040,10 @@ test "ADDMOD: Modulo zero returns zero" {
     try frame.stack.append(10);
     try frame.stack.append(0);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x08);
+    _ = try evm.table.execute(0, interpreter, state, 0x08);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -1087,10 +1087,10 @@ test "ADDMOD: No intermediate overflow" {
     try frame.stack.append(max); // second addend (pushed second, popped second)
     try frame.stack.append(10); // modulus (pushed last, popped first)
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x08);
+    _ = try evm.table.execute(0, interpreter, state, 0x08);
 
     const value = try frame.stack.pop();
     // (MAX + MAX) % 10 = 4
@@ -1140,10 +1140,10 @@ test "MULMOD (0x09): Basic modular multiplication" {
     try frame.stack.append(10);
     try frame.stack.append(8);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x09);
+    _ = try evm.table.execute(0, interpreter, state, 0x09);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 4), value);
@@ -1187,10 +1187,10 @@ test "MULMOD: No intermediate overflow" {
     try frame.stack.append(large);
     try frame.stack.append(100);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x09);
+    _ = try evm.table.execute(0, interpreter, state, 0x09);
 
     const value = try frame.stack.pop();
     // Should compute correctly without overflow
@@ -1237,10 +1237,10 @@ test "EXP (0x0A): Basic exponentiation" {
     try frame.stack.append(2);
     try frame.stack.append(8);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x0A);
+    _ = try evm.table.execute(0, interpreter, state, 0x0A);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 256), value);
@@ -1282,10 +1282,10 @@ test "EXP: Zero exponent" {
     try frame.stack.append(100);
     try frame.stack.append(0);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x0A);
+    _ = try evm.table.execute(0, interpreter, state, 0x0A);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), value);
@@ -1327,10 +1327,10 @@ test "EXP: Zero base with non-zero exponent" {
     try frame.stack.append(0);
     try frame.stack.append(10);
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x0A);
+    _ = try evm.table.execute(0, interpreter, state, 0x0A);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -1373,10 +1373,10 @@ test "EXP: Gas consumption scales with exponent size" {
     try frame.stack.append(0x10000); // Large exponent
 
     const gas_before = frame.gas_remaining;
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x0A);
+    _ = try evm.table.execute(0, interpreter, state, 0x0A);
     const gas_used = gas_before - frame.gas_remaining;
 
     // EXP uses 10 + 50 * byte_size_of_exponent
@@ -1425,10 +1425,10 @@ test "SIGNEXTEND (0x0B): Extend positive byte" {
     try frame.stack.append(0x7F); // value (pushed first, popped second)
     try frame.stack.append(0); // byte position (pushed last, popped first)
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x0B);
+    _ = try evm.table.execute(0, interpreter, state, 0x0B);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x7F), value);
@@ -1470,10 +1470,10 @@ test "SIGNEXTEND: Extend negative byte" {
     try frame.stack.append(0xFF); // value (pushed first, popped second)
     try frame.stack.append(0); // byte position (pushed last, popped first)
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x0B);
+    _ = try evm.table.execute(0, interpreter, state, 0x0B);
 
     const value = try frame.stack.pop();
     // Should extend with 1s
@@ -1517,10 +1517,10 @@ test "SIGNEXTEND: Extend from higher byte position" {
     try frame.stack.append(0x00FF); // value (pushed first, popped second)
     try frame.stack.append(1); // byte position (pushed last, popped first)
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x0B);
+    _ = try evm.table.execute(0, interpreter, state, 0x0B);
 
     const value = try frame.stack.pop();
     // Since bit 15 is 0, it's positive, no extension
@@ -1564,10 +1564,10 @@ test "SIGNEXTEND: Byte position >= 31 returns value unchanged" {
     try frame.stack.append(test_value); // value (pushed first, popped second)
     try frame.stack.append(31); // byte position (pushed last, popped first)
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x0B);
+    _ = try evm.table.execute(0, interpreter, state, 0x0B);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, test_value), value);
@@ -1651,10 +1651,10 @@ test "Arithmetic opcodes: Gas consumption" {
         try tc.setup(&frame);
 
         const gas_before = frame.gas_remaining;
-        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = Evm.Operation.State{ .frame = &frame };
+        const interpreter: Evm.Operation.Interpreter = &evm;
+        const state: Evm.Operation.State = &frame;
 
-        _ = try evm.table.execute(0, &interpreter, &state, tc.opcode);
+        _ = try evm.table.execute(0, interpreter, state, tc.opcode);
         const gas_used = gas_before - frame.gas_remaining;
 
         try testing.expectEqual(tc.expected_gas, gas_used);
@@ -1702,16 +1702,16 @@ test "Arithmetic opcodes: Stack underflow" {
             .build();
         defer frame.deinit();
 
-        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = Evm.Operation.State{ .frame = &frame };
+        const interpreter: Evm.Operation.Interpreter = &evm;
+        const state: Evm.Operation.State = &frame;
 
         // Empty stack
-        const result = evm.table.execute(0, &interpreter, &state, opcode);
+        const result = evm.table.execute(0, interpreter, state, opcode);
         try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 
         // Only one item
         try frame.stack.append(10);
-        const result2 = evm.table.execute(0, &interpreter, &state, opcode);
+        const result2 = evm.table.execute(0, interpreter, state, opcode);
         try testing.expectError(ExecutionError.Error.StackUnderflow, result2);
     }
 
@@ -1739,13 +1739,13 @@ test "Arithmetic opcodes: Stack underflow" {
             .build();
         defer frame.deinit();
 
-        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = Evm.Operation.State{ .frame = &frame };
+        const interpreter: Evm.Operation.Interpreter = &evm;
+        const state: Evm.Operation.State = &frame;
 
         // Only two items (need three)
         try frame.stack.append(10);
         try frame.stack.append(20);
-        const result = evm.table.execute(0, &interpreter, &state, opcode);
+        const result = evm.table.execute(0, interpreter, state, opcode);
         try testing.expectError(ExecutionError.Error.StackUnderflow, result);
     }
 }

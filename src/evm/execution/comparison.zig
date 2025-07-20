@@ -9,11 +9,11 @@ const Frame = @import("../frame/frame.zig");
 // The op_* functions below use unsafe stack operations,
 // so these helpers are unused anyway.
 
-pub fn op_lt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_lt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Pop the top operand (b) unsafely
     const b = frame.stack.pop_unsafe();
@@ -32,11 +32,11 @@ pub fn op_lt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.S
     return Operation.ExecutionResult{};
 }
 
-pub fn op_gt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_gt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Pop the top operand (b) unsafely
     const b = frame.stack.pop_unsafe();
@@ -55,11 +55,11 @@ pub fn op_gt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.S
     return Operation.ExecutionResult{};
 }
 
-pub fn op_slt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_slt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Pop the top operand (b) unsafely
     const b = frame.stack.pop_unsafe();
@@ -81,11 +81,11 @@ pub fn op_slt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
     return Operation.ExecutionResult{};
 }
 
-pub fn op_sgt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_sgt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Pop the top operand (b) unsafely
     const b = frame.stack.pop_unsafe();
@@ -104,11 +104,11 @@ pub fn op_sgt(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
     return Operation.ExecutionResult{};
 }
 
-pub fn op_eq(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_eq(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Pop the top operand (b) unsafely
     const b = frame.stack.pop_unsafe();
@@ -123,11 +123,11 @@ pub fn op_eq(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.S
     return Operation.ExecutionResult{};
 }
 
-pub fn op_iszero(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_iszero(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Peek the operand unsafely
     const value = frame.stack.peek_unsafe().*;

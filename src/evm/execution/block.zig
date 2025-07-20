@@ -6,11 +6,11 @@ const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
 
-pub fn op_blockhash(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_blockhash(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     const block_number = try frame.stack.pop();
 
@@ -35,44 +35,44 @@ pub fn op_blockhash(pc: usize, interpreter: *Operation.Interpreter, state: *Oper
     return Operation.ExecutionResult{};
 }
 
-pub fn op_coinbase(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_coinbase(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     try frame.stack.append(primitives.Address.to_u256(vm.context.block_coinbase));
 
     return Operation.ExecutionResult{};
 }
 
-pub fn op_timestamp(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_timestamp(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     try frame.stack.append(@as(u256, @intCast(vm.context.block_timestamp)));
 
     return Operation.ExecutionResult{};
 }
 
-pub fn op_number(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_number(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     try frame.stack.append(@as(u256, @intCast(vm.context.block_number)));
 
     return Operation.ExecutionResult{};
 }
 
-pub fn op_difficulty(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_difficulty(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // Get difficulty/prevrandao from block context
     // Post-merge this returns PREVRANDAO
@@ -81,27 +81,27 @@ pub fn op_difficulty(pc: usize, interpreter: *Operation.Interpreter, state: *Ope
     return Operation.ExecutionResult{};
 }
 
-pub fn op_prevrandao(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_prevrandao(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     // Same as difficulty post-merge
     return op_difficulty(pc, interpreter, state);
 }
 
-pub fn op_gaslimit(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_gaslimit(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     try frame.stack.append(@as(u256, @intCast(vm.context.block_gas_limit)));
 
     return Operation.ExecutionResult{};
 }
 
-pub fn op_basefee(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_basefee(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // Get base fee from block context
     // Push base fee (EIP-1559)
@@ -110,11 +110,11 @@ pub fn op_basefee(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     return Operation.ExecutionResult{};
 }
 
-pub fn op_blobhash(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_blobhash(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     const index = try frame.stack.pop();
 
@@ -130,11 +130,11 @@ pub fn op_blobhash(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     return Operation.ExecutionResult{};
 }
 
-pub fn op_blobbasefee(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_blobbasefee(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // Get blob base fee from block context
     // Push blob base fee (EIP-4844)
@@ -860,8 +860,8 @@ test "BLOCKHASH consistency: same block number gives same hash" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
 
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
 
     // Get hash for block 900 twice
     try frame.stack.push(900);
@@ -896,8 +896,8 @@ test "BASEFEE edge case: zero base fee" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_basefee(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -923,8 +923,8 @@ test "BASEFEE edge case: maximum base fee" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_basefee(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -954,8 +954,8 @@ test "BLOBHASH empty blob hashes array" {
     // Test index 0 (should return 0 for empty array)
     try frame.stack.push(0);
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_blobhash(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -981,8 +981,8 @@ test "BLOBBASEFEE edge case: zero blob base fee" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_blobbasefee(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -1008,8 +1008,8 @@ test "BLOBBASEFEE edge case: maximum blob base fee" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_blobbasefee(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -1035,8 +1035,8 @@ test "GASLIMIT edge case: zero gas limit" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_gaslimit(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -1062,8 +1062,8 @@ test "GASLIMIT edge case: maximum gas limit" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_gaslimit(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -1089,8 +1089,8 @@ test "DIFFICULTY zero difficulty" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_difficulty(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -1117,8 +1117,8 @@ test "PREVRANDAO and DIFFICULTY are equivalent" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     
     // Test DIFFICULTY
     _ = try op_difficulty(0, interpreter_ptr, state_ptr);
@@ -1152,8 +1152,8 @@ test "COINBASE edge case: zero address" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_coinbase(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -1180,8 +1180,8 @@ test "COINBASE edge case: maximum address" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_coinbase(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -1207,8 +1207,8 @@ test "TIMESTAMP edge case: zero timestamp" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_timestamp(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -1234,8 +1234,8 @@ test "NUMBER edge case: maximum block number" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_number(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();
@@ -1272,8 +1272,8 @@ test "BLOBHASH edge case: maximum valid index" {
     // Test last valid index (5)
     try frame.stack.push(5);
     
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    const interpreter_ptr: Operation.Interpreter = @ptrCast(&vm);
+    const state_ptr: Operation.State = @ptrCast(&frame);
     _ = try op_blobhash(0, interpreter_ptr, state_ptr);
 
     const result = try frame.stack.pop();

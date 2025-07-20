@@ -49,8 +49,8 @@ test "SLOAD (0x54): Load from storage" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Set storage value
     try evm.state.set_storage(contract_addr, 0x42, 0x123456);
@@ -58,7 +58,7 @@ test "SLOAD (0x54): Load from storage" {
     // Push storage slot
     try frame.stack.append(0x42);
 
-    const result = try evm.table.execute(0, &interpreter, &state, 0x54);
+    const result = try evm.table.execute(0, interpreter, state, 0x54);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     const value = try frame.stack.pop();
@@ -97,13 +97,13 @@ test "SLOAD: Load from uninitialized slot returns zero" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Load from slot that was never written
     try frame.stack.append(0x99);
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
 
     const value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), value);
@@ -141,8 +141,8 @@ test "SLOAD: Multiple loads from same slot" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Set storage value
     try evm.state.set_storage(contract_addr, 0x10, 0xABCDEF);
@@ -150,7 +150,7 @@ test "SLOAD: Multiple loads from same slot" {
     // Load same slot multiple times
     for (0..3) |_| {
         try frame.stack.append(0x10);
-        _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+        _ = try evm.table.execute(0, interpreter, state, 0x54);
         const value = try frame.stack.pop();
         try testing.expectEqual(@as(u256, 0xABCDEF), value);
     }
@@ -188,8 +188,8 @@ test "SLOAD: EIP-2929 cold/warm access" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // EIP-2929 is active in latest hardforks by default
 
@@ -199,7 +199,7 @@ test "SLOAD: EIP-2929 cold/warm access" {
     // First access (cold)
     try frame.stack.append(0x100);
     const gas_before_cold = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
     const gas_used_cold = gas_before_cold - frame.gas_remaining;
 
     // Should consume 2100 gas for cold access
@@ -208,7 +208,7 @@ test "SLOAD: EIP-2929 cold/warm access" {
     // Second access (warm)
     try frame.stack.append(0x100);
     const gas_before_warm = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
     const gas_used_warm = gas_before_warm - frame.gas_remaining;
 
     // Should consume 100 gas for warm access
@@ -252,14 +252,14 @@ test "SSTORE (0x55): Store to storage" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push value first, then slot (SSTORE pops slot from top, then value)
     try frame.stack.append(0x999); // value
     try frame.stack.append(0x42); // slot
 
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
 
     // Verify value was stored
     const stored = evm.state.get_storage(contract_addr, 0x42);
@@ -298,8 +298,8 @@ test "SSTORE: Static call protection" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Set static mode
     frame.is_static = true;
@@ -308,7 +308,7 @@ test "SSTORE: Static call protection" {
     try frame.stack.append(0x20); // value
     try frame.stack.append(0x10); // slot
 
-    const result = evm.table.execute(0, &interpreter, &state, 0x55);
+    const result = evm.table.execute(0, interpreter, state, 0x55);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
@@ -378,8 +378,8 @@ test "SSTORE: EIP-2200 gas cost scenarios" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // EIP-2200 is active in latest hardforks by default
 
@@ -388,7 +388,7 @@ test "SSTORE: EIP-2200 gas cost scenarios" {
     try frame.stack.append(0x60); // slot
 
     const gas_before_fresh = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
     const gas_fresh = gas_before_fresh - frame.gas_remaining;
 
     // Should consume 20000 gas for fresh slot
@@ -399,7 +399,7 @@ test "SSTORE: EIP-2200 gas cost scenarios" {
     try frame.stack.append(0x60); // same slot
 
     const gas_before_update = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
     const gas_update = gas_before_update - frame.gas_remaining;
 
     // Should consume less gas for update
@@ -439,8 +439,8 @@ test "SSTORE: Large storage values" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Store maximum u256 value
     const max_value = std.math.maxInt(u256);
@@ -449,12 +449,12 @@ test "SSTORE: Large storage values" {
     try frame.stack.append(0x80); // slot (on top)
 
     frame.pc = 0;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
 
     // Load it back
     try frame.stack.append(0x80); // same slot
     frame.pc = 1;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
 
     const loaded = try frame.stack.pop();
     try testing.expectEqual(max_value, loaded);
@@ -496,8 +496,8 @@ test "Storage opcodes: Gas consumption patterns" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // SLOAD base gas (pre-EIP-2929)
     // Test with older hardfork behavior where gas is different
@@ -505,7 +505,7 @@ test "Storage opcodes: Gas consumption patterns" {
 
     const gas_before_sload = frame.gas_remaining;
     frame.pc = 0;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
     const gas_sload = gas_before_sload - frame.gas_remaining;
 
     // Pre-Berlin: 800 gas
@@ -517,7 +517,7 @@ test "Storage opcodes: Gas consumption patterns" {
 
     const gas_before_sstore = frame.gas_remaining;
     frame.pc = 1;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
     const gas_sstore = gas_before_sstore - frame.gas_remaining;
 
     // Fresh slot store is expensive
@@ -561,10 +561,10 @@ test "Storage opcodes: Stack underflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
-    const result = evm.table.execute(0, &interpreter, &state, 0x54);
+    const result = evm.table.execute(0, interpreter, state, 0x54);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 
     // Test SSTORE with insufficient stack
@@ -588,15 +588,15 @@ test "Storage opcodes: Stack underflow" {
         .build();
     defer frame2.deinit();
 
-    var state2 = Evm.Operation.State{ .frame = &frame2 };
+    const state2: Evm.Operation.State = &frame2;
 
     // Empty stack
-    const result2 = evm.table.execute(0, &interpreter, &state2, 0x55);
+    const result2 = evm.table.execute(0, interpreter, state2, 0x55);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result2);
 
     // Only one item (need two)
     try frame2.stack.append(0x10);
-    const result3 = evm.table.execute(0, &interpreter, &state2, 0x55);
+    const result3 = evm.table.execute(0, interpreter, state2, 0x55);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result3);
 }
 
@@ -649,33 +649,33 @@ test "Storage: Multiple consecutive operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Execute all operations
     frame.pc = 0;
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     frame.pc = 2;
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     frame.pc = 4;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
 
     frame.pc = 5;
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     frame.pc = 7;
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     frame.pc = 9;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
 
     frame.pc = 10;
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     frame.pc = 12;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
 
     frame.pc = 13;
-    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
+    _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     frame.pc = 15;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
 
     // Check loaded values
     const value1 = try frame.stack.pop();
@@ -723,12 +723,12 @@ test "SSTORE: Overwriting values" {
             .build();
         defer frame.deinit();
 
-        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = Evm.Operation.State{ .frame = &frame };
+        const interpreter: Evm.Operation.Interpreter = &evm;
+        const state: Evm.Operation.State = &frame;
 
         try frame.stack.append(value); // value
         try frame.stack.append(slot); // slot
-        _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+        _ = try evm.table.execute(0, interpreter, state, 0x55);
     }
 
     // Verify final value
@@ -772,15 +772,15 @@ test "SSTORE: EIP-2200 complete gas cost scenarios" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test Case 1: Fresh slot (0 -> non-zero) - SSTORE_SET
     try frame.stack.append(0x111); // value
     try frame.stack.append(0x100); // slot
 
     const gas_before_set = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
     const gas_set = gas_before_set - frame.gas_remaining;
 
     // Fresh slot: Cold SLOAD (2100) + SSTORE_SET (20000) = 22100
@@ -791,7 +791,7 @@ test "SSTORE: EIP-2200 complete gas cost scenarios" {
     try frame.stack.append(0x100); // same slot (warm now)
 
     const gas_before_reset = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
     const gas_reset = gas_before_reset - frame.gas_remaining;
 
     // Warm slot: SSTORE_RESET (2900) only
@@ -802,7 +802,7 @@ test "SSTORE: EIP-2200 complete gas cost scenarios" {
     try frame.stack.append(0x100); // same slot
 
     const gas_before_clear = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
     const gas_clear = gas_before_clear - frame.gas_remaining;
 
     // Warm slot clear: SSTORE_RESET (2900) only
@@ -841,15 +841,15 @@ test "SSTORE: Zero value edge cases" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test Case 1: Store zero to empty slot (no-op)
     try frame.stack.append(0); // zero value
     try frame.stack.append(0x200); // fresh slot
 
     const gas_before_noop = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
     const gas_noop = gas_before_noop - frame.gas_remaining;
 
     // No-op: Cold SLOAD (2100) + no change (0) = 2100
@@ -892,8 +892,8 @@ test "SSTORE: Same value edge cases" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // First set a value
     try evm.state.set_storage(contract_addr, 0x300, 0x999);
@@ -903,7 +903,7 @@ test "SSTORE: Same value edge cases" {
     try frame.stack.append(0x300); // slot
 
     const gas_before_same = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
     const gas_same = gas_before_same - frame.gas_remaining;
 
     // Same value: Cold SLOAD (2100) + no change (0) = 2100
@@ -914,7 +914,7 @@ test "SSTORE: Same value edge cases" {
     try frame.stack.append(0x300); // slot (warm now)
 
     const gas_before_warm_same = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+    _ = try evm.table.execute(0, interpreter, state, 0x55);
     const gas_warm_same = gas_before_warm_same - frame.gas_remaining;
 
     // Warm same value: no gas consumed for no-op
@@ -970,8 +970,8 @@ test "Storage: Boundary value testing" {
             .build();
         defer frame.deinit();
 
-        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = Evm.Operation.State{ .frame = &frame };
+        const interpreter: Evm.Operation.Interpreter = &evm;
+        const state: Evm.Operation.State = &frame;
 
         const slot = @as(u256, i);
 
@@ -979,12 +979,12 @@ test "Storage: Boundary value testing" {
         try frame.stack.append(value);
         try frame.stack.append(slot);
         frame.pc = 0;
-        _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+        _ = try evm.table.execute(0, interpreter, state, 0x55);
 
         // Load it back
         try frame.stack.append(slot);
         frame.pc = 1;
-        _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+        _ = try evm.table.execute(0, interpreter, state, 0x54);
 
         const loaded = try frame.stack.pop();
         try testing.expectEqual(value, loaded);
@@ -1032,8 +1032,8 @@ test "Storage: Large slot number testing" {
             .build();
         defer frame.deinit();
 
-        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-        var state = Evm.Operation.State{ .frame = &frame };
+        const interpreter: Evm.Operation.Interpreter = &evm;
+        const state: Evm.Operation.State = &frame;
 
         const value = @as(u256, 0x1000 + i);
 
@@ -1041,12 +1041,12 @@ test "Storage: Large slot number testing" {
         try frame.stack.append(value);
         try frame.stack.append(slot);
         frame.pc = 0;
-        _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+        _ = try evm.table.execute(0, interpreter, state, 0x55);
 
         // Load it back
         try frame.stack.append(slot);
         frame.pc = 1;
-        _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+        _ = try evm.table.execute(0, interpreter, state, 0x54);
 
         const loaded = try frame.stack.pop();
         try testing.expectEqual(value, loaded);
@@ -1089,15 +1089,15 @@ test "Storage: Contract slot warming pattern" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     const slot: u256 = 0x500;
 
     // First access should be cold (2100 gas)
     try frame.stack.append(slot);
     const gas_before_cold = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
     const gas_used_cold = gas_before_cold - frame.gas_remaining;
     _ = try frame.stack.pop(); // Clear result
 
@@ -1106,7 +1106,7 @@ test "Storage: Contract slot warming pattern" {
     // Second access should be warm (100 gas)
     try frame.stack.append(slot);
     const gas_before_warm = frame.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+    _ = try evm.table.execute(0, interpreter, state, 0x54);
     const gas_used_warm = gas_before_warm - frame.gas_remaining;
 
     try testing.expectEqual(@as(u64, 100), gas_used_warm);
@@ -1144,8 +1144,8 @@ test "Storage: Complex access patterns" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Clear access list
     evm.access_list.clear();
@@ -1157,7 +1157,7 @@ test "Storage: Complex access patterns" {
         try frame.stack.append(slot);
         const gas_before = frame.gas_remaining;
         frame.pc = 0;
-        _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+        _ = try evm.table.execute(0, interpreter, state, 0x54);
         const gas_used = gas_before - frame.gas_remaining;
 
         try testing.expectEqual(expected_costs[i], gas_used);
@@ -1202,14 +1202,14 @@ test "SSTORE: EIP-1706 gas stipend protection" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     try frame.stack.append(0x123); // value
     try frame.stack.append(0x456); // slot
 
     // Should fail with OutOfGas due to EIP-1706 protection
-    const result = evm.table.execute(0, &interpreter, &state, 0x55);
+    const result = evm.table.execute(0, interpreter, state, 0x55);
     try testing.expectError(ExecutionError.Error.OutOfGas, result);
 }
 
@@ -1245,8 +1245,8 @@ test "Storage: Rapid alternating operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     const slot: u256 = 0x777;
 
@@ -1258,12 +1258,12 @@ test "Storage: Rapid alternating operations" {
         try frame.stack.append(value);
         try frame.stack.append(slot);
         frame.pc = 0;
-        _ = try evm.table.execute(0, &interpreter, &state, 0x55);
+        _ = try evm.table.execute(0, interpreter, state, 0x55);
 
         // Load back immediately
         try frame.stack.append(slot);
         frame.pc = 1;
-        _ = try evm.table.execute(0, &interpreter, &state, 0x54);
+        _ = try evm.table.execute(0, interpreter, state, 0x54);
 
         const loaded = try frame.stack.pop();
         try testing.expectEqual(value, loaded);
@@ -1325,8 +1325,8 @@ test "Storage: Multiple contracts isolation" {
         .build();
     defer frame2.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state1 = Evm.Operation.State{ .frame = &frame1 };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state1: Evm.Operation.State = &frame1;
 
     const slot: u256 = 0x888;
     const value1: u256 = 0xAAA;
@@ -1335,7 +1335,7 @@ test "Storage: Multiple contracts isolation" {
     // Store value1 in contract1
     try frame1.stack.append(value1);
     try frame1.stack.append(slot);
-    _ = try evm.table.execute(0, &interpreter, &state1, 0x55);
+    _ = try evm.table.execute(0, interpreter, state1, 0x55);
 
     // Store value2 in contract2 (same slot, different contract)
     try evm.state.set_storage(contract_addr2, slot, value2);

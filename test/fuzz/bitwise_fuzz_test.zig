@@ -38,9 +38,9 @@ test "fuzz_bitwise_and_operations" {
     try frame.stack.append(0xF0F0F0F0F0F0F0F0);
     try frame.stack.append(0x0F0F0F0F0F0F0F0F);
     
-    var interpreter = evm.Operation.Interpreter{ .vm = &vm };
-    var state = evm.Operation.State{ .frame = &frame };
-    _ = try vm.table.execute(0, &interpreter, &state, 0x16);
+    var interpreter = evm.Operation.Interpreter = &vm;
+    var state = evm.Operation.State = &frame;
+    _ = try vm.table.execute(0, interpreter, state, 0x16);
     
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result);
@@ -81,9 +81,9 @@ test "fuzz_bitwise_or_operations" {
     try frame.stack.append(0xF0F0F0F0F0F0F0F0);
     try frame.stack.append(0x0F0F0F0F0F0F0F0F);
     
-    var interpreter = evm.Operation.Interpreter{ .vm = &vm };
-    var state = evm.Operation.State{ .frame = &frame };
-    _ = try vm.table.execute(0, &interpreter, &state, 0x17);
+    var interpreter = evm.Operation.Interpreter = &vm;
+    var state = evm.Operation.State = &frame;
+    _ = try vm.table.execute(0, interpreter, state, 0x17);
     
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xFFFFFFFFFFFFFFFF), result);
@@ -124,9 +124,9 @@ test "fuzz_bitwise_xor_operations" {
     try frame.stack.append(0xAAAAAAAAAAAAAAAA);
     try frame.stack.append(0x5555555555555555);
     
-    var interpreter = evm.Operation.Interpreter{ .vm = &vm };
-    var state = evm.Operation.State{ .frame = &frame };
-    _ = try vm.table.execute(0, &interpreter, &state, 0x18);
+    var interpreter = evm.Operation.Interpreter = &vm;
+    var state = evm.Operation.State = &frame;
+    _ = try vm.table.execute(0, interpreter, state, 0x18);
     
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xFFFFFFFFFFFFFFFF), result);
@@ -166,9 +166,9 @@ test "fuzz_bitwise_not_operations" {
     // Test NOT operation
     try frame.stack.append(0);
     
-    var interpreter = evm.Operation.Interpreter{ .vm = &vm };
-    var state = evm.Operation.State{ .frame = &frame };
-    _ = try vm.table.execute(0, &interpreter, &state, 0x19);
+    var interpreter = evm.Operation.Interpreter = &vm;
+    var state = evm.Operation.State = &frame;
+    _ = try vm.table.execute(0, interpreter, state, 0x19);
     
     const result = try frame.stack.pop();
     try testing.expectEqual(std.math.maxInt(u256), result);

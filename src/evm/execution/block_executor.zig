@@ -166,8 +166,8 @@ pub const BlockExecutor = struct {
 
     /// Executes a block without per-instruction gas checks (optimized path)
     fn executeBlockOptimized(self: *BlockExecutor, block: *const basic_blocks.BasicBlock) !void {
-        const interpreter_ptr: *operation.Interpreter = @ptrCast(self.vm);
-        const state_ptr: *operation.State = @ptrCast(self.frame);
+        const interpreter_ptr: operation.Interpreter = self.vm;
+        const state_ptr: operation.State = self.frame;
 
         while (self.frame.pc < block.end_pc) {
             const op = self.frame.contract.code[self.frame.pc];
@@ -196,8 +196,8 @@ pub const BlockExecutor = struct {
         self.frame.gas_remaining -= op_info.constant_gas;
 
         // Execute
-        const interpreter_ptr: *operation.Interpreter = @ptrCast(self.vm);
-        const state_ptr: *operation.State = @ptrCast(self.frame);
+        const interpreter_ptr: operation.Interpreter = self.vm;
+        const state_ptr: operation.State = self.frame;
         
         const pc_before = self.frame.pc;
         const result = try self.vm.table.execute(self.frame.pc, interpreter_ptr, state_ptr, op);

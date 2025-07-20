@@ -61,12 +61,12 @@ const StackValidation = @import("../stack/stack_validation.zig");
 
 /// Helper for binary arithmetic operations with common stack manipulation pattern.
 /// Uses comptime to generate efficient operation-specific code with zero runtime overhead.
-fn binaryOp(comptime op_fn: fn (u256, u256) u256) fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+fn binaryOp(comptime op_fn: fn (u256, u256) u256) fn (usize, Operation.Interpreter, Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     return struct {
-        fn execute(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+        fn execute(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
             _ = pc;
             _ = interpreter;
-            const frame = state.get_frame();
+            const frame = state;
 
             if (frame.stack.size < 2) {
                 @branchHint(.cold);
@@ -123,10 +123,10 @@ pub const op_add = binaryOp(addOp);
 /// ## Example
 /// Stack: [10, 20] => [200]
 /// Stack: [2^128, 2^128] => [0] (overflow wraps)
-pub fn op_mul(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_mul(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = state.get_frame();
+    const frame = state;
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -161,10 +161,10 @@ pub fn op_mul(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
 /// ## Example
 /// Stack: [30, 10] => [20]
 /// Stack: [10, 20] => [2^256 - 10] (underflow wraps)
-pub fn op_sub(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_sub(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = state.get_frame();
+    const frame = state;
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -207,10 +207,10 @@ pub fn op_sub(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
 /// Unlike most programming languages, EVM division by zero does not
 /// throw an error but returns 0. This is a deliberate design choice
 /// to avoid exceptional halting conditions.
-pub fn op_div(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = state.get_frame();
+    const frame = state;
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -259,10 +259,10 @@ pub fn op_div(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
 /// ## Note
 /// The special case for MIN_I256 / -1 prevents integer overflow,
 /// as the mathematical result (2^255) cannot be represented in i256.
-pub fn op_sdiv(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = state.get_frame();
+    const frame = state;
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -319,10 +319,10 @@ pub fn op_sdiv(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
 /// ## Note
 /// The result is always in range [0, b-1] for b > 0.
 /// Like DIV, modulo by zero returns 0 rather than throwing an error.
-pub fn op_mod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_mod(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = state.get_frame();
+    const frame = state;
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -371,10 +371,10 @@ pub fn op_mod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
 /// In signed modulo, the result has the same sign as the dividend (a).
 /// This follows the Euclidean division convention where:
 /// a = b * q + r, where |r| < |b| and sign(r) = sign(a)
-pub fn op_smod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_smod(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = state.get_frame();
+    const frame = state;
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -429,10 +429,10 @@ pub fn op_smod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation
 /// This operation is atomic - the addition and modulo are
 /// performed as one operation to handle cases where a + b
 /// exceeds 2^256.
-pub fn op_addmod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_addmod(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = state.get_frame();
+    const frame = state;
 
     // Debug assertion: Jump table validation ensures we have >= 3 items
     std.debug.assert(frame.stack.size >= 3);
@@ -494,10 +494,10 @@ pub fn op_addmod(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 /// ## Note
 /// This operation correctly computes (a * b) mod n even when
 /// a * b exceeds 2^256, unlike naive (a *% b) % n approach.
-pub fn op_mulmod(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_mulmod(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
-    const frame = state.get_frame();
+    const frame = state;
 
     const n = frame.stack.pop_unsafe();
     const b = frame.stack.pop_unsafe();
@@ -577,11 +577,11 @@ pub fn op_mulmod(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 /// - 2^10: 10 + 50*1 = 60 gas (exponent fits in 1 byte)
 /// - 2^256: 10 + 50*2 = 110 gas (exponent needs 2 bytes)
 /// - 2^(2^255): 10 + 50*32 = 1610 gas (huge exponent)
-pub fn op_exp(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_exp(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
     _ = vm;
 
     const exp = frame.stack.pop_unsafe();
@@ -679,11 +679,11 @@ pub fn op_exp(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
 /// - Converting int8/int16/etc to int256
 /// - Arithmetic on mixed-width signed integers
 /// - Implementing higher-level language semantics
-pub fn op_signextend(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_signextend(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     const byte_num = frame.stack.pop_unsafe();
     const x = frame.stack.peek_unsafe().*;

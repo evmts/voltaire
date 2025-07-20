@@ -40,13 +40,13 @@ test "Comparison: LT (less than) operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: a < b (true)
     try frame.stack.append(5);
     try frame.stack.append(10);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x10);
+    _ = try evm.table.execute(0, interpreter, state, 0x10);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // 5 < 10 = true
 
@@ -54,7 +54,7 @@ test "Comparison: LT (less than) operations" {
     frame.stack.clear();
     try frame.stack.append(10);
     try frame.stack.append(5);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x10);
+    _ = try evm.table.execute(0, interpreter, state, 0x10);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2); // 10 < 5 = false
 
@@ -62,7 +62,7 @@ test "Comparison: LT (less than) operations" {
     frame.stack.clear();
     try frame.stack.append(42);
     try frame.stack.append(42);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x10);
+    _ = try evm.table.execute(0, interpreter, state, 0x10);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // 42 < 42 = false
 
@@ -70,7 +70,7 @@ test "Comparison: LT (less than) operations" {
     frame.stack.clear();
     try frame.stack.append(0);
     try frame.stack.append(1);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x10);
+    _ = try evm.table.execute(0, interpreter, state, 0x10);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result4); // 0 < 1 = true
 
@@ -79,7 +79,7 @@ test "Comparison: LT (less than) operations" {
     const max_u256 = std.math.maxInt(u256);
     try frame.stack.append(max_u256 - 1);
     try frame.stack.append(max_u256);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x10);
+    _ = try evm.table.execute(0, interpreter, state, 0x10);
     const result5 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result5); // (max-1) < max = true
 
@@ -88,7 +88,7 @@ test "Comparison: LT (less than) operations" {
     frame.gas_remaining = 1000;
     try frame.stack.append(1);
     try frame.stack.append(2);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x10);
+    _ = try evm.table.execute(0, interpreter, state, 0x10);
     const gas_used = 1000 - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 3), gas_used); // GasFastestStep = 3
 }
@@ -125,13 +125,13 @@ test "Comparison: GT (greater than) operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: a > b (true)
     try frame.stack.append(10);
     try frame.stack.append(5);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x11);
+    _ = try evm.table.execute(0, interpreter, state, 0x11);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // 10 > 5 = true
 
@@ -139,7 +139,7 @@ test "Comparison: GT (greater than) operations" {
     frame.stack.clear();
     try frame.stack.append(5);
     try frame.stack.append(10);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x11);
+    _ = try evm.table.execute(0, interpreter, state, 0x11);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2); // 5 > 10 = false
 
@@ -147,7 +147,7 @@ test "Comparison: GT (greater than) operations" {
     frame.stack.clear();
     try frame.stack.append(42);
     try frame.stack.append(42);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x11);
+    _ = try evm.table.execute(0, interpreter, state, 0x11);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // 42 > 42 = false
 
@@ -155,7 +155,7 @@ test "Comparison: GT (greater than) operations" {
     frame.stack.clear();
     try frame.stack.append(1);
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x11);
+    _ = try evm.table.execute(0, interpreter, state, 0x11);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result4); // 1 > 0 = true
 
@@ -164,7 +164,7 @@ test "Comparison: GT (greater than) operations" {
     frame.gas_remaining = 1000;
     try frame.stack.append(1);
     try frame.stack.append(2);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x11);
+    _ = try evm.table.execute(0, interpreter, state, 0x11);
     const gas_used = 1000 - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 3), gas_used); // GasFastestStep = 3
 }
@@ -201,13 +201,13 @@ test "Comparison: SLT (signed less than) operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Both positive, a < b
     try frame.stack.append(5);
     try frame.stack.append(10);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x12);
+    _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // 5 < 10 = true
 
@@ -216,7 +216,7 @@ test "Comparison: SLT (signed less than) operations" {
     const negative_one = std.math.maxInt(u256); // -1 in two's complement
     try frame.stack.append(negative_one);
     try frame.stack.append(10);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x12);
+    _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result2); // -1 < 10 = true
 
@@ -224,7 +224,7 @@ test "Comparison: SLT (signed less than) operations" {
     frame.stack.clear();
     try frame.stack.append(10);
     try frame.stack.append(negative_one);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x12);
+    _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // 10 < -1 = false
 
@@ -233,7 +233,7 @@ test "Comparison: SLT (signed less than) operations" {
     const negative_two = std.math.maxInt(u256) - 1; // -2 in two's complement
     try frame.stack.append(negative_two);
     try frame.stack.append(negative_one);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x12);
+    _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result4); // -2 < -1 = true
 
@@ -243,7 +243,7 @@ test "Comparison: SLT (signed less than) operations" {
     const most_positive = (@as(u256, 1) << 255) - 1; // 0x7FFFF...F
     try frame.stack.append(most_negative);
     try frame.stack.append(most_positive);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x12);
+    _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result5 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result5); // most_negative < most_positive = true
 
@@ -252,7 +252,7 @@ test "Comparison: SLT (signed less than) operations" {
     frame.gas_remaining = 1000;
     try frame.stack.append(1);
     try frame.stack.append(2);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x12);
+    _ = try evm.table.execute(0, interpreter, state, 0x12);
     const gas_used = 1000 - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 3), gas_used); // GasFastestStep = 3
 }
@@ -289,13 +289,13 @@ test "Comparison: SGT (signed greater than) operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Both positive, a > b
     try frame.stack.append(10);
     try frame.stack.append(5);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x13);
+    _ = try evm.table.execute(0, interpreter, state, 0x13);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // 10 > 5 = true
 
@@ -304,7 +304,7 @@ test "Comparison: SGT (signed greater than) operations" {
     const negative_one = std.math.maxInt(u256); // -1 in two's complement
     try frame.stack.append(10);
     try frame.stack.append(negative_one);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x13);
+    _ = try evm.table.execute(0, interpreter, state, 0x13);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result2); // 10 > -1 = true
 
@@ -312,7 +312,7 @@ test "Comparison: SGT (signed greater than) operations" {
     frame.stack.clear();
     try frame.stack.append(negative_one);
     try frame.stack.append(10);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x13);
+    _ = try evm.table.execute(0, interpreter, state, 0x13);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // -1 > 10 = false
 
@@ -321,7 +321,7 @@ test "Comparison: SGT (signed greater than) operations" {
     const negative_two = std.math.maxInt(u256) - 1; // -2 in two's complement
     try frame.stack.append(negative_one);
     try frame.stack.append(negative_two);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x13);
+    _ = try evm.table.execute(0, interpreter, state, 0x13);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result4); // -1 > -2 = true
 
@@ -330,7 +330,7 @@ test "Comparison: SGT (signed greater than) operations" {
     frame.gas_remaining = 1000;
     try frame.stack.append(1);
     try frame.stack.append(2);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x13);
+    _ = try evm.table.execute(0, interpreter, state, 0x13);
     const gas_used = 1000 - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 3), gas_used); // GasFastestStep = 3
 }
@@ -367,13 +367,13 @@ test "Comparison: EQ (equal) operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Equal values
     try frame.stack.append(42);
     try frame.stack.append(42);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x14);
+    _ = try evm.table.execute(0, interpreter, state, 0x14);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // 42 == 42 = true
 
@@ -381,7 +381,7 @@ test "Comparison: EQ (equal) operations" {
     frame.stack.clear();
     try frame.stack.append(42);
     try frame.stack.append(43);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x14);
+    _ = try evm.table.execute(0, interpreter, state, 0x14);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2); // 42 == 43 = false
 
@@ -389,7 +389,7 @@ test "Comparison: EQ (equal) operations" {
     frame.stack.clear();
     try frame.stack.append(0);
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x14);
+    _ = try evm.table.execute(0, interpreter, state, 0x14);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result3); // 0 == 0 = true
 
@@ -398,7 +398,7 @@ test "Comparison: EQ (equal) operations" {
     const max_u256 = std.math.maxInt(u256);
     try frame.stack.append(max_u256);
     try frame.stack.append(max_u256);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x14);
+    _ = try evm.table.execute(0, interpreter, state, 0x14);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result4); // max == max = true
 
@@ -407,7 +407,7 @@ test "Comparison: EQ (equal) operations" {
     frame.gas_remaining = 1000;
     try frame.stack.append(1);
     try frame.stack.append(2);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x14);
+    _ = try evm.table.execute(0, interpreter, state, 0x14);
     const gas_used = 1000 - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 3), gas_used); // GasFastestStep = 3
 }
@@ -444,33 +444,33 @@ test "Comparison: ISZERO operations" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test 1: Zero value
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x15);
+    _ = try evm.table.execute(0, interpreter, state, 0x15);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // 0 == 0 = true
 
     // Test 2: Non-zero value
     frame.stack.clear();
     try frame.stack.append(42);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x15);
+    _ = try evm.table.execute(0, interpreter, state, 0x15);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2); // 42 == 0 = false
 
     // Test 3: Small non-zero value
     frame.stack.clear();
     try frame.stack.append(1);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x15);
+    _ = try evm.table.execute(0, interpreter, state, 0x15);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // 1 == 0 = false
 
     // Test 4: Max value
     frame.stack.clear();
     try frame.stack.append(std.math.maxInt(u256));
-    _ = try evm.table.execute(0, &interpreter, &state, 0x15);
+    _ = try evm.table.execute(0, interpreter, state, 0x15);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result4); // max == 0 = false
 
@@ -478,7 +478,7 @@ test "Comparison: ISZERO operations" {
     frame.stack.clear();
     frame.gas_remaining = 1000;
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x15);
+    _ = try evm.table.execute(0, interpreter, state, 0x15);
     const gas_used = 1000 - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 3), gas_used); // GasFastestStep = 3
 }
@@ -515,19 +515,19 @@ test "Comparison: Stack underflow errors" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test LT with empty stack
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x10));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter, state, 0x10));
 
     // Test LT with only one item
     try frame.stack.append(42);
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x10));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter, state, 0x10));
 
     // Test ISZERO with empty stack
     frame.stack.clear();
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x15));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter, state, 0x15));
 }
 
 test "Comparison: Edge cases" {
@@ -562,8 +562,8 @@ test "Comparison: Edge cases" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Test signed comparison edge cases
     const sign_bit = @as(u256, 1) << 255;
@@ -571,7 +571,7 @@ test "Comparison: Edge cases" {
     // Test: 0x8000...0000 (most negative) vs 0x7FFF...FFFF (most positive)
     try frame.stack.append(sign_bit);
     try frame.stack.append(sign_bit - 1);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x12);
+    _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // most_negative < most_positive
 
@@ -579,7 +579,7 @@ test "Comparison: Edge cases" {
     frame.stack.clear();
     try frame.stack.append(sign_bit - 1);
     try frame.stack.append(sign_bit);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x12);
+    _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2); // most_positive < most_negative = false
 
@@ -587,7 +587,7 @@ test "Comparison: Edge cases" {
     frame.stack.clear();
     try frame.stack.append(sign_bit);
     try frame.stack.append(sign_bit);
-    _ = try evm.table.execute(0, &interpreter, &state, 0x13);
+    _ = try evm.table.execute(0, interpreter, state, 0x13);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // Equal values, so not greater
 }
@@ -624,8 +624,8 @@ test "Comparison: Gas consumption verification" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // All comparison operations cost 3 gas (GasFastestStep)
     const operations = [_]struct {
@@ -651,7 +651,7 @@ test "Comparison: Gas consumption verification" {
             try frame.stack.append(42);
         }
 
-        _ = try evm.table.execute(0, &interpreter, &state, op_info.opcode);
+        _ = try evm.table.execute(0, interpreter, state, op_info.opcode);
         const gas_used = 1000 - frame.gas_remaining;
         try testing.expectEqual(@as(u64, 3), gas_used); // GasFastestStep = 3
     }

@@ -59,12 +59,12 @@ test "Integration: Call with value transfer and balance check" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
 
     // Check balance of BOB before call
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
-    _ = try vm.table.execute(0, &interpreter, &state, 0x31);
+    _ = try vm.table.execute(0, interpreter, state, 0x31);
     const balance_before = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 500), balance_before);
 
@@ -85,7 +85,7 @@ test "Integration: Call with value transfer and balance check" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0xF1);
+    _ = try vm.table.execute(0, interpreter, state, 0xF1);
     const call_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), call_result); // Success
 
@@ -96,7 +96,7 @@ test "Integration: Call with value transfer and balance check" {
 
     // Check balance of BOB after call
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
-    _ = try vm.table.execute(0, &interpreter, &state, 0x31);
+    _ = try vm.table.execute(0, interpreter, state, 0x31);
     const balance_after = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 600), balance_after);
 }
@@ -150,48 +150,48 @@ test "Integration: Environment opcodes in context" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
 
     // Test ADDRESS
-    _ = try vm.table.execute(0, &interpreter, &state, 0x30);
+    _ = try vm.table.execute(0, interpreter, state, 0x30);
     const address_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, primitives.Address.to_u256(contract_addr)), address_result);
 
     // Test ORIGIN
-    _ = try vm.table.execute(0, &interpreter, &state, 0x32);
+    _ = try vm.table.execute(0, interpreter, state, 0x32);
     const origin_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, primitives.Address.to_u256(alice_addr)), origin_result);
 
     // Test CALLER
-    _ = try vm.table.execute(0, &interpreter, &state, 0x33);
+    _ = try vm.table.execute(0, interpreter, state, 0x33);
     const caller_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, primitives.Address.to_u256(bob_addr)), caller_result);
 
     // Test CALLVALUE
-    _ = try vm.table.execute(0, &interpreter, &state, 0x34);
+    _ = try vm.table.execute(0, interpreter, state, 0x34);
     const callvalue_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 500), callvalue_result);
 
     // Test GASPRICE
-    _ = try vm.table.execute(0, &interpreter, &state, 0x3A);
+    _ = try vm.table.execute(0, interpreter, state, 0x3A);
     const gasprice_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 20_000_000_000), gasprice_result);
 
     // Test block-related opcodes
-    _ = try vm.table.execute(0, &interpreter, &state, 0x43);
+    _ = try vm.table.execute(0, interpreter, state, 0x43);
     const number_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 15_000_000), number_result);
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x42);
+    _ = try vm.table.execute(0, interpreter, state, 0x42);
     const timestamp_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1_650_000_000), timestamp_result);
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x41);
+    _ = try vm.table.execute(0, interpreter, state, 0x41);
     const coinbase_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, primitives.Address.to_u256(charlie_addr)), coinbase_result);
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0x46);
+    _ = try vm.table.execute(0, interpreter, state, 0x46);
     const chainid_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), chainid_result);
 }
@@ -257,8 +257,8 @@ test "Integration: CREATE with init code from memory" {
     try frame.memory.set_data(0, &init_code);
 
     // Execute CREATE through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
 
     // Execute CREATE
     // CREATE(value, offset, size)
@@ -267,7 +267,7 @@ test "Integration: CREATE with init code from memory" {
     try frame.stack.append(0); // offset
     try frame.stack.append(1000); // value
 
-    _ = vm.table.execute(0, &interpreter, &state, 0xF0) catch |err| {
+    _ = vm.table.execute(0, interpreter, state, 0xF0) catch |err| {
         // CREATE may not be fully implemented
         try testing.expect(err == ExecutionError.Error.OutOfGas or
             err == ExecutionError.Error.StackUnderflow or
@@ -331,8 +331,8 @@ test "Integration: DELEGATECALL preserves context" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
 
     // Note: In black box testing, we don't mock internal state.
     // The DELEGATECALL opcode will execute and return its actual result.
@@ -347,7 +347,7 @@ test "Integration: DELEGATECALL preserves context" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0xF4);
+    _ = try vm.table.execute(0, interpreter, state, 0xF4);
     const call_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), call_result); // Success
 
@@ -397,8 +397,8 @@ test "Integration: STATICCALL prevents state changes" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
 
     // Note: In black box testing, we don't mock internal state.
     // The STATICCALL opcode will execute and return its actual result.
@@ -413,7 +413,7 @@ test "Integration: STATICCALL prevents state changes" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0xFA);
+    _ = try vm.table.execute(0, interpreter, state, 0xFA);
     const call_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), call_result); // Success
 
@@ -463,8 +463,8 @@ test "Integration: Call depth limit handling" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
 
     // Test at maximum depth
     frame.depth = 1024;
@@ -475,7 +475,7 @@ test "Integration: Call depth limit handling" {
     try frame.stack.append(0); // size
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // value
-    _ = try vm.table.execute(0, &interpreter, &state, 0xF0);
+    _ = try vm.table.execute(0, interpreter, state, 0xF0);
     const create_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), create_result); // Should fail
 
@@ -489,7 +489,7 @@ test "Integration: Call depth limit handling" {
     try frame.stack.append(0); // value
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(1000); // gas
-    _ = try vm.table.execute(0, &interpreter, &state, 0xF1);
+    _ = try vm.table.execute(0, interpreter, state, 0xF1);
     const call_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), call_result); // Should fail
 }
@@ -536,8 +536,8 @@ test "Integration: Return data handling across calls" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
 
     // First call returns some data
     const return_data = [_]u8{ 0xAA, 0xBB, 0xCC, 0xDD };
@@ -553,13 +553,13 @@ test "Integration: Return data handling across calls" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0xF1);
+    _ = try vm.table.execute(0, interpreter, state, 0xF1);
 
     // Set return data buffer to simulate real execution
     try frame.return_data.set(&return_data);
 
     // Check RETURNDATASIZE
-    _ = try vm.table.execute(0, &interpreter, &state, 0x3D);
+    _ = try vm.table.execute(0, interpreter, state, 0x3D);
     const return_size = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 4), return_size);
 
@@ -569,11 +569,11 @@ test "Integration: Return data handling across calls" {
     try frame.stack.append(4); // size
     try frame.stack.append(0); // data offset
     try frame.stack.append(200); // memory offset
-    _ = try vm.table.execute(0, &interpreter, &state, 0x3E);
+    _ = try vm.table.execute(0, interpreter, state, 0x3E);
 
     // Verify data was copied
     try frame.stack.append(200);
-    _ = try vm.table.execute(0, &interpreter, &state, 0x51);
+    _ = try vm.table.execute(0, interpreter, state, 0x51);
 
     // Should have 0xAABBCCDD in the most significant bytes
     const expected = (@as(u256, 0xAABBCCDD) << (28 * 8));
@@ -624,8 +624,8 @@ test "Integration: Gas forwarding in calls" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    var interpreter = Operation.Interpreter{ .vm = &vm };
-    var state = Operation.State{ .frame = &frame };
+    const interpreter: Operation.Interpreter = &vm;
+    const state: Operation.State = &frame;
 
     // Test gas calculation for CALL
     const initial_gas = frame.gas_remaining;
@@ -643,7 +643,7 @@ test "Integration: Gas forwarding in calls" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(requested_gas); // gas
 
-    _ = try vm.table.execute(0, &interpreter, &state, 0xF1);
+    _ = try vm.table.execute(0, interpreter, state, 0xF1);
 
     // Gas should be deducted for:
     // 1. Cold address access (2600)

@@ -41,11 +41,11 @@ test "PUSH0: append zero value" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Execute PUSH0
-    _ = try evm.table.execute(0, &interpreter, &state, 0x5F);
+    _ = try evm.table.execute(0, interpreter, state, 0x5F);
 
     // Should append 0
     try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
@@ -87,14 +87,14 @@ test "PUSH1: append 1 byte value" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Set PC to 0 (at PUSH1 opcode)
     frame.pc = 0;
 
     // Execute PUSH1
-    const result = try evm.table.execute(0, &interpreter, &state, 0x60);
+    const result = try evm.table.execute(0, interpreter, state, 0x60);
 
     // Should consume 2 bytes (opcode + data)
     try testing.expectEqual(@as(usize, 2), result.bytes_consumed);
@@ -139,13 +139,13 @@ test "PUSH2: append 2 byte value" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     frame.pc = 0;
 
     // Execute PUSH2
-    const result = try evm.table.execute(0, &interpreter, &state, 0x61);
+    const result = try evm.table.execute(0, interpreter, state, 0x61);
 
     // Should consume 3 bytes
     try testing.expectEqual(@as(usize, 3), result.bytes_consumed);
@@ -194,13 +194,13 @@ test "PUSH32: append 32 byte value" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     frame.pc = 0;
 
     // Execute PUSH32
-    const result = try evm.table.execute(0, &interpreter, &state, 0x7F);
+    const result = try evm.table.execute(0, interpreter, state, 0x7F);
 
     // Should consume 33 bytes
     try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
@@ -245,15 +245,15 @@ test "POP: remove top stack item" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push some values
     try frame.stack.append(0x123);
     try frame.stack.append(0x456);
 
     // Execute POP
-    _ = try evm.table.execute(0, &interpreter, &state, 0x50);
+    _ = try evm.table.execute(0, interpreter, state, 0x50);
 
     // Should have removed top item (0x456)
     try testing.expectEqual(@as(u256, 0x123), try frame.stack.pop());
@@ -293,14 +293,14 @@ test "DUP1: duplicate top stack item" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push a value
     try frame.stack.append(0xABCD);
 
     // Execute DUP1
-    _ = try evm.table.execute(0, &interpreter, &state, 0x80);
+    _ = try evm.table.execute(0, interpreter, state, 0x80);
 
     // Should have two copies of the value
     try testing.expectEqual(@as(u256, 0xABCD), try frame.stack.pop());
@@ -339,15 +339,15 @@ test "DUP2: duplicate second stack item" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push two values
     try frame.stack.append(0x111); // bottom
     try frame.stack.append(0x222); // top
 
     // Execute DUP2
-    _ = try evm.table.execute(0, &interpreter, &state, 0x81);
+    _ = try evm.table.execute(0, interpreter, state, 0x81);
 
     // Stack should be: 0x111, 0x222, 0x111
     try testing.expectEqual(@as(u256, 0x111), try frame.stack.pop());
@@ -387,8 +387,8 @@ test "DUP16: duplicate 16th stack item" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push 16 values
     var i: u256 = 1;
@@ -397,7 +397,7 @@ test "DUP16: duplicate 16th stack item" {
     }
 
     // Execute DUP16
-    _ = try evm.table.execute(0, &interpreter, &state, 0x8F);
+    _ = try evm.table.execute(0, interpreter, state, 0x8F);
 
     // Should duplicate the bottom item (100)
     try testing.expectEqual(@as(u256, 100), try frame.stack.pop());
@@ -442,15 +442,15 @@ test "SWAP1: swap top two stack items" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push two values
     try frame.stack.append(0x111); // bottom
     try frame.stack.append(0x222); // top
 
     // Execute SWAP1
-    _ = try evm.table.execute(0, &interpreter, &state, 0x90);
+    _ = try evm.table.execute(0, interpreter, state, 0x90);
 
     // Order should be swapped
     try testing.expectEqual(@as(u256, 0x111), try frame.stack.pop());
@@ -489,8 +489,8 @@ test "SWAP2: swap 1st and 3rd stack items" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push three values
     try frame.stack.append(0x111); // bottom
@@ -498,7 +498,7 @@ test "SWAP2: swap 1st and 3rd stack items" {
     try frame.stack.append(0x333); // top
 
     // Execute SWAP2
-    _ = try evm.table.execute(0, &interpreter, &state, 0x91);
+    _ = try evm.table.execute(0, interpreter, state, 0x91);
 
     // Stack should be: 0x222, 0x111, 0x333
     try testing.expectEqual(@as(u256, 0x111), try frame.stack.pop());
@@ -538,8 +538,8 @@ test "SWAP16: swap 1st and 17th stack items" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push 17 values
     var i: u256 = 1;
@@ -548,7 +548,7 @@ test "SWAP16: swap 1st and 17th stack items" {
     }
 
     // Execute SWAP16
-    _ = try evm.table.execute(0, &interpreter, &state, 0x9F);
+    _ = try evm.table.execute(0, interpreter, state, 0x9F);
 
     // Top should now be 1, bottom should be 17
     try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
@@ -599,13 +599,13 @@ test "PUSH1: at end of code" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     frame.pc = 0;
 
     // Execute PUSH1
-    const result = try evm.table.execute(0, &interpreter, &state, 0x60);
+    const result = try evm.table.execute(0, interpreter, state, 0x60);
 
     // Should consume 2 bytes (even though only 1 exists)
     try testing.expectEqual(@as(usize, 2), result.bytes_consumed);
@@ -654,13 +654,13 @@ test "PUSH32: partial data available" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     frame.pc = 0;
 
     // Execute PUSH32
-    const result = try evm.table.execute(0, &interpreter, &state, 0x7F);
+    const result = try evm.table.execute(0, interpreter, state, 0x7F);
 
     // Should consume 33 bytes
     try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
@@ -711,13 +711,13 @@ test "POP: stack underflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Empty stack
 
     // Execute POP - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0x50);
+    const result = evm.table.execute(0, interpreter, state, 0x50);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -753,13 +753,13 @@ test "DUP1: stack underflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Empty stack
 
     // Execute DUP1 - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0x80);
+    const result = evm.table.execute(0, interpreter, state, 0x80);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -795,8 +795,8 @@ test "DUP16: insufficient stack items" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push only 15 values (need 16)
     var i: u256 = 0;
@@ -805,7 +805,7 @@ test "DUP16: insufficient stack items" {
     }
 
     // Execute DUP16 - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0x8F);
+    const result = evm.table.execute(0, interpreter, state, 0x8F);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -841,14 +841,14 @@ test "SWAP1: stack underflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Push only one value (need two)
     try frame.stack.append(0x123);
 
     // Execute SWAP1 - should fail
-    const result = evm.table.execute(0, &interpreter, &state, 0x90);
+    const result = evm.table.execute(0, interpreter, state, 0x90);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -887,8 +887,8 @@ test "PUSH1: stack overflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Fill stack to maximum (1024 items)
     var i: usize = 0;
@@ -899,7 +899,7 @@ test "PUSH1: stack overflow" {
     frame.pc = 0;
 
     // Execute PUSH1 - should fail with stack overflow
-    const result = evm.table.execute(0, &interpreter, &state, 0x60);
+    const result = evm.table.execute(0, interpreter, state, 0x60);
     try testing.expectError(ExecutionError.Error.StackOverflow, result);
 }
 
@@ -935,8 +935,8 @@ test "DUP1: stack overflow" {
         .build();
     defer frame.deinit();
 
-    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    var state = Evm.Operation.State{ .frame = &frame };
+    const interpreter: Evm.Operation.Interpreter = &evm;
+    const state: Evm.Operation.State = &frame;
 
     // Fill stack to maximum (1024 items)
     var i: usize = 0;
@@ -945,6 +945,6 @@ test "DUP1: stack overflow" {
     }
 
     // Execute DUP1 - should fail with stack overflow
-    const result = evm.table.execute(0, &interpreter, &state, 0x80);
+    const result = evm.table.execute(0, interpreter, state, 0x80);
     try testing.expectError(ExecutionError.Error.StackOverflow, result);
 }

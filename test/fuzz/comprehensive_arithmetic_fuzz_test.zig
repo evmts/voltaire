@@ -78,9 +78,9 @@ test "fuzz_add_extensive_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter = &ctx.vm;
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x01); // ADD
+        _ = try ctx.vm.table.execute(0, interpreter, state, 0x01); // ADD
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -123,9 +123,9 @@ test "fuzz_mul_comprehensive_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter = &ctx.vm;
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x02); // MUL
+        _ = try ctx.vm.table.execute(0, interpreter, state, 0x02); // MUL
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -163,9 +163,9 @@ test "fuzz_sub_underflow_and_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter = &ctx.vm;
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x03); // SUB
+        _ = try ctx.vm.table.execute(0, interpreter, state, 0x03); // SUB
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -208,9 +208,9 @@ test "fuzz_div_division_by_zero_and_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter = &ctx.vm;
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x04); // DIV
+        _ = try ctx.vm.table.execute(0, interpreter, state, 0x04); // DIV
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -264,9 +264,9 @@ test "fuzz_sdiv_signed_division_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter = &ctx.vm;
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x05); // SDIV
+        _ = try ctx.vm.table.execute(0, interpreter, state, 0x05); // SDIV
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -312,9 +312,9 @@ test "fuzz_mod_modulo_by_zero_and_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter = &ctx.vm;
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x06); // MOD
+        _ = try ctx.vm.table.execute(0, interpreter, state, 0x06); // MOD
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -357,9 +357,9 @@ test "fuzz_addmod_modular_arithmetic_edge_cases" {
         try ctx.frame.stack.append(case.b);
         try ctx.frame.stack.append(case.n);
         
-        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter = &ctx.vm;
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x08); // ADDMOD
+        _ = try ctx.vm.table.execute(0, interpreter, state, 0x08); // ADDMOD
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -406,9 +406,9 @@ test "fuzz_mulmod_modular_multiplication_edge_cases" {
         try ctx.frame.stack.append(case.b);
         try ctx.frame.stack.append(case.n);
         
-        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter = &ctx.vm;
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x09); // MULMOD
+        _ = try ctx.vm.table.execute(0, interpreter, state, 0x09); // MULMOD
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -461,9 +461,9 @@ test "fuzz_exp_exponentiation_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter = &ctx.vm;
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x0A); // EXP
+        _ = try ctx.vm.table.execute(0, interpreter, state, 0x0A); // EXP
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -513,9 +513,9 @@ test "fuzz_signextend_sign_extension_edge_cases" {
         try ctx.frame.stack.append(case.i);
         try ctx.frame.stack.append(case.x);
         
-        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter = &ctx.vm;
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-        _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x0B); // SIGNEXTEND
+        _ = try ctx.vm.table.execute(0, interpreter, state, 0x0B); // SIGNEXTEND
         
         const result = try ctx.frame.stack.pop();
         try testing.expectEqual(case.expected, result);
@@ -547,9 +547,9 @@ test "fuzz_arithmetic_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var interpreter = evm.Operation.Interpreter = &ctx.vm;
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x01); // ADD
+            _ = try ctx.vm.table.execute(0, interpreter, state, 0x01); // ADD
             
             const result = try ctx.frame.stack.pop();
             const expected = a +% b; // Wrapping addition
@@ -566,9 +566,9 @@ test "fuzz_arithmetic_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var interpreter = evm.Operation.Interpreter = &ctx.vm;
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x02); // MUL
+            _ = try ctx.vm.table.execute(0, interpreter, state, 0x02); // MUL
             
             const result = try ctx.frame.stack.pop();
             const expected = a *% b; // Wrapping multiplication
@@ -586,9 +586,9 @@ test "fuzz_arithmetic_random_stress_test" {
             try ctx.frame.stack.append(b);
             try ctx.frame.stack.append(c);
             
-            var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var interpreter = evm.Operation.Interpreter = &ctx.vm;
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
-            _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x08); // ADDMOD
+            _ = try ctx.vm.table.execute(0, interpreter, state, 0x08); // ADDMOD
             
             const result = try ctx.frame.stack.pop();
             const expected = (a +% b) % c;

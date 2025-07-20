@@ -41,33 +41,13 @@ const Memory = @import("../memory/memory.zig");
 /// ```
 pub const ExecutionResult = @import("../execution/execution_result.zig");
 
-/// Safe interpreter context union.
-/// Contains the actual VM instance that provides state and context.
-/// This replaces the unsafe opaque type with a safe union.
-pub const Interpreter = union(enum) {
-    vm: *@import("../evm.zig"),
-    
-    /// Get the VM instance safely
-    pub fn get_vm(self: *const Interpreter) *@import("../evm.zig") {
-        return switch (self.*) {
-            .vm => |vm| vm,
-        };
-    }
-};
+/// Direct pointer to the VM instance providing state and context.
+/// Simplified from a single-variant union to a direct pointer type.
+pub const Interpreter = *@import("../evm.zig");
 
-/// Safe execution state union.
-/// Contains the frame context with transaction and execution environment.
-/// This replaces the unsafe opaque type with a safe union.
-pub const State = union(enum) {
-    frame: *@import("../frame/frame.zig"),
-    
-    /// Get the Frame instance safely
-    pub fn get_frame(self: *const State) *@import("../frame/frame.zig") {
-        return switch (self.*) {
-            .frame => |frame| frame,
-        };
-    }
-};
+/// Direct pointer to the frame context with transaction and execution environment.
+/// Simplified from a single-variant union to a direct pointer type.
+pub const State = *@import("../frame/frame.zig");
 
 /// Function signature for opcode execution.
 ///
@@ -81,7 +61,7 @@ pub const State = union(enum) {
 /// @param interpreter VM interpreter context
 /// @param state Execution state and environment
 /// @return Execution result indicating success/failure and gas consumption
-pub const ExecutionFunc = *const fn (pc: usize, interpreter: *Interpreter, state: *State) ExecutionError.Error!ExecutionResult;
+pub const ExecutionFunc = *const fn (pc: usize, interpreter: Interpreter, state: State) ExecutionError.Error!ExecutionResult;
 
 /// Function signature for dynamic gas calculation.
 ///
@@ -97,7 +77,7 @@ pub const ExecutionFunc = *const fn (pc: usize, interpreter: *Interpreter, state
 /// @param requested_size Additional memory requested by operation
 /// @return Dynamic gas cost to add to constant gas
 /// @throws OutOfGas if gas calculation overflows
-pub const GasFunc = *const fn (interpreter: *Interpreter, state: *State, stack: *Stack, memory: *Memory, requested_size: u64) error{OutOfGas}!u64;
+pub const GasFunc = *const fn (interpreter: Interpreter, state: State, stack: *Stack, memory: *Memory, requested_size: u64) error{OutOfGas}!u64;
 
 /// Function signature for memory size calculation.
 ///
@@ -182,7 +162,7 @@ pub const NULL_OPERATION = Operation{
 ///
 /// Consumes all remaining gas and returns InvalidOpcode error.
 /// This ensures undefined opcodes cannot be used for computation.
-fn undefined_execute(pc: usize, interpreter: *Interpreter, state: *State) ExecutionError.Error!ExecutionResult {
+fn undefined_execute(pc: usize, interpreter: Interpreter, state: State) ExecutionError.Error!ExecutionResult {
     _ = pc;
     _ = interpreter;
     _ = state;

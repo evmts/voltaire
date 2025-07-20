@@ -10,11 +10,11 @@ const from_u256 = primitives.Address.from_u256;
 const GasConstants = @import("primitives").GasConstants;
 const AccessList = @import("../access_list/access_list.zig").AccessList;
 
-pub fn op_address(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_address(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Push contract address as u256
     const addr = to_u256(frame.contract.address);
@@ -23,11 +23,11 @@ pub fn op_address(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     return Operation.ExecutionResult{};
 }
 
-pub fn op_balance(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_balance(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     const address_u256 = try frame.stack.pop();
     const address = from_u256(address_u256);
@@ -43,11 +43,11 @@ pub fn op_balance(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     return Operation.ExecutionResult{};
 }
 
-pub fn op_origin(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_origin(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // Push transaction origin address
     const origin = to_u256(vm.context.tx_origin);
@@ -56,11 +56,11 @@ pub fn op_origin(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     return Operation.ExecutionResult{};
 }
 
-pub fn op_caller(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_caller(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Push caller address
     const caller = to_u256(frame.contract.caller);
@@ -69,11 +69,11 @@ pub fn op_caller(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     return Operation.ExecutionResult{};
 }
 
-pub fn op_callvalue(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_callvalue(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Push call value
     try frame.stack.append(frame.contract.value);
@@ -81,11 +81,11 @@ pub fn op_callvalue(pc: usize, interpreter: *Operation.Interpreter, state: *Oper
     return Operation.ExecutionResult{};
 }
 
-pub fn op_gasprice(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_gasprice(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // Push gas price from transaction context
     try frame.stack.append(vm.context.gas_price);
@@ -93,11 +93,11 @@ pub fn op_gasprice(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     return Operation.ExecutionResult{};
 }
 
-pub fn op_extcodesize(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_extcodesize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     const address_u256 = try frame.stack.pop();
     const address = from_u256(address_u256);
@@ -113,11 +113,11 @@ pub fn op_extcodesize(pc: usize, interpreter: *Operation.Interpreter, state: *Op
     return Operation.ExecutionResult{};
 }
 
-pub fn op_extcodecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_extcodecopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     const address_u256 = try frame.stack.pop();
     const mem_offset = try frame.stack.pop();
@@ -162,11 +162,11 @@ pub fn op_extcodecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Op
     return Operation.ExecutionResult{};
 }
 
-pub fn op_extcodehash(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_extcodehash(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     const address_u256 = try frame.stack.pop();
     const address = from_u256(address_u256);
@@ -194,11 +194,11 @@ pub fn op_extcodehash(pc: usize, interpreter: *Operation.Interpreter, state: *Op
     return Operation.ExecutionResult{};
 }
 
-pub fn op_selfbalance(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_selfbalance(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // Get balance of current executing contract
     const self_address = frame.contract.address;
@@ -208,11 +208,11 @@ pub fn op_selfbalance(pc: usize, interpreter: *Operation.Interpreter, state: *Op
     return Operation.ExecutionResult{};
 }
 
-pub fn op_chainid(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_chainid(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = state.get_frame();
-    const vm = interpreter.get_vm();
+    const frame = state;
+    const vm = interpreter;
 
     // Push chain ID from VM context
     try frame.stack.append(vm.context.chain_id);
@@ -220,11 +220,11 @@ pub fn op_chainid(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     return Operation.ExecutionResult{};
 }
 
-pub fn op_calldatasize(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_calldatasize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Push size of calldata - use frame.input which is set by the VM
     // The frame.input is the actual calldata for this execution context
@@ -233,11 +233,11 @@ pub fn op_calldatasize(pc: usize, interpreter: *Operation.Interpreter, state: *O
     return Operation.ExecutionResult{};
 }
 
-pub fn op_codesize(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_codesize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Push size of current contract's code
     try frame.stack.append(@as(u256, @intCast(frame.contract.code.len)));
@@ -245,11 +245,11 @@ pub fn op_codesize(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     return Operation.ExecutionResult{};
 }
 
-pub fn op_calldataload(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_calldataload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Pop offset from stack
     const offset = try frame.stack.pop();
@@ -281,11 +281,11 @@ pub fn op_calldataload(pc: usize, interpreter: *Operation.Interpreter, state: *O
     return Operation.ExecutionResult{};
 }
 
-pub fn op_calldatacopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_calldatacopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Pop memory offset, data offset, and size
     const mem_offset = try frame.stack.pop();
@@ -322,11 +322,11 @@ pub fn op_calldatacopy(pc: usize, interpreter: *Operation.Interpreter, state: *O
     return Operation.ExecutionResult{};
 }
 
-pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_codecopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Pop memory offset, code offset, and size
     const mem_offset = try frame.stack.pop();
@@ -371,11 +371,11 @@ pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
 }
 /// RETURNDATALOAD opcode (0xF7): Loads a 32-byte word from return data
 /// This is an EOF opcode that allows reading from the return data buffer
-pub fn op_returndataload(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_returndataload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
 
-    const frame = state.get_frame();
+    const frame = state;
 
     // Pop offset from stack
     const offset = try frame.stack.pop();
