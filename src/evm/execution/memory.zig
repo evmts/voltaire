@@ -7,44 +7,18 @@ const Frame = @import("../frame/frame.zig");
 const Memory = @import("../memory/memory.zig");
 const GasConstants = @import("primitives").GasConstants;
 
-// Helper to check if u256 fits in usize and convert to usize
-fn check_offset_bounds(value: u256) ExecutionError.Error!usize {
-    if (value > std.math.maxInt(usize)) {
-        @branchHint(.unlikely);
-        return ExecutionError.Error.OutOfOffset;
-    }
-    return @as(usize, @intCast(value));
-}
-
-// Helper to calculate memory expansion gas cost and consume it
-fn calculate_memory_gas(frame: *Frame, new_size: usize) !void {
-    const new_size_u64 = @as(u64, @intCast(new_size));
-    const gas_cost = frame.memory.get_expansion_cost(new_size_u64);
-    try frame.consume_gas(gas_cost);
-}
-
-// Helper to calculate word-aligned size
-fn word_aligned_size(size: usize) usize {
-    return std.mem.alignForward(usize, size, 32);
-}
-
-// Helper to convert u256 to big-endian bytes
-fn u256_to_big_endian_bytes(value: u256) [32]u8 {
-    var bytes: [32]u8 = undefined;
-    std.mem.writeInt(u256, &bytes, value, .big);
-    return bytes;
-}
-
 // Common copy operation helper
 fn perform_copy_operation(frame: *Frame, mem_offset: usize, size: usize) !void {
     // Calculate memory expansion gas cost
     const new_size = mem_offset + size;
-    try calculate_memory_gas(frame, new_size);
-    
+    const new_size_u64 = @as(u64, @intCast(new_size));
+    const gas_cost = frame.memory.get_expansion_cost(new_size_u64);
+    try frame.consume_gas(gas_cost);
+
     // Dynamic gas for copy operation
     const word_size = (size + 31) / 32;
     try frame.consume_gas(GasConstants.CopyGas * word_size);
-    
+
     // Ensure memory is available
     _ = try frame.memory.ensure_context_capacity(new_size);
 }
@@ -63,13 +37,21 @@ pub fn op_mload(pc: usize, interpreter: Operation.Interpreter, state: Operation.
     // Get offset from top of stack unsafely - bounds checking is done in jump_table.zig
     const offset = frame.stack.peek_unsafe().*;
 
-    const offset_usize = try check_offset_bounds(offset);
+    // Check offset bounds
+    if (offset > std.math.maxInt(usize)) {
+        @branchHint(.unlikely);
+        return ExecutionError.Error.OutOfOffset;
+    }
+    const offset_usize = @as(usize, @intCast(offset));
     const new_size = offset_usize + 32;
-    
-    try calculate_memory_gas(frame, new_size);
+
+    // Calculate memory expansion gas cost
+    const new_size_u64 = @as(u64, @intCast(new_size));
+    const gas_cost = frame.memory.get_expansion_cost(new_size_u64);
+    try frame.consume_gas(gas_cost);
 
     // Ensure memory is available - expand to word boundary to match gas calculation
-    const aligned_size = word_aligned_size(new_size);
+    const aligned_size = std.mem.alignForward(usize, new_size, 32);
     _ = try frame.memory.ensure_context_capacity(aligned_size);
 
     // Read 32 bytes from memory
@@ -98,17 +80,26 @@ pub fn op_mstore(pc: usize, interpreter: Operation.Interpreter, state: Operation
     const value = popped.a; // First popped (was second from top)
     const offset = popped.b; // Second popped (was top)
 
-    const offset_usize = try check_offset_bounds(offset);
+    // Check offset bounds
+    if (offset > std.math.maxInt(usize)) {
+        @branchHint(.unlikely);
+        return ExecutionError.Error.OutOfOffset;
+    }
+    const offset_usize = @as(usize, @intCast(offset));
     const new_size = offset_usize + 32; // MSTORE writes 32 bytes
-    
-    try calculate_memory_gas(frame, new_size);
+
+    // Calculate memory expansion gas cost
+    const new_size_u64 = @as(u64, @intCast(new_size));
+    const gas_cost = frame.memory.get_expansion_cost(new_size_u64);
+    try frame.consume_gas(gas_cost);
 
     // Ensure memory is available - expand to word boundary to match gas calculation
-    const aligned_size = word_aligned_size(new_size);
+    const aligned_size = std.mem.alignForward(usize, new_size, 32);
     _ = try frame.memory.ensure_context_capacity(aligned_size);
 
     // Write 32 bytes to memory (big-endian)
-    const bytes = u256_to_big_endian_bytes(value);
+    var bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &bytes, value, .big);
     try frame.memory.set_data(offset_usize, &bytes);
 
     return Operation.ExecutionResult{};
@@ -131,13 +122,21 @@ pub fn op_mstore8(pc: usize, interpreter: Operation.Interpreter, state: Operatio
     const value = popped.a; // First popped (was second from top)
     const offset = popped.b; // Second popped (was top)
 
-    const offset_usize = try check_offset_bounds(offset);
+    // Check offset bounds
+    if (offset > std.math.maxInt(usize)) {
+        @branchHint(.unlikely);
+        return ExecutionError.Error.OutOfOffset;
+    }
+    const offset_usize = @as(usize, @intCast(offset));
     const new_size = offset_usize + 1;
-    
-    try calculate_memory_gas(frame, new_size);
+
+    // Calculate memory expansion gas cost
+    const new_size_u64 = @as(u64, @intCast(new_size));
+    const gas_cost = frame.memory.get_expansion_cost(new_size_u64);
+    try frame.consume_gas(gas_cost);
 
     // Ensure memory is available - expand to word boundary to match gas calculation
-    const aligned_size = word_aligned_size(new_size);
+    const aligned_size = std.mem.alignForward(usize, new_size, 32);
     _ = try frame.memory.ensure_context_capacity(aligned_size);
 
     // Write single byte to memory
@@ -162,7 +161,7 @@ pub fn op_msize(pc: usize, interpreter: Operation.Interpreter, state: Operation.
     // MSIZE returns the size in bytes, but memory is always expanded in 32-byte words
     // So we need to round up to the nearest word boundary
     const size = frame.memory.context_size();
-    const aligned_size = word_aligned_size(size);
+    const aligned_size = std.mem.alignForward(usize, size, 32);
 
     // Push result unsafely - bounds checking is done in jump_table.zig
     frame.stack.append_unsafe(@as(u256, @intCast(aligned_size)));
@@ -192,9 +191,14 @@ pub fn op_mcopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.
         return Operation.ExecutionResult{};
     }
 
-    const dest_usize = try check_offset_bounds(dest);
-    const src_usize = try check_offset_bounds(src);
-    const size_usize = try check_offset_bounds(size);
+    // Check bounds
+    if (dest > std.math.maxInt(usize) or src > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
+        @branchHint(.unlikely);
+        return ExecutionError.Error.OutOfOffset;
+    }
+    const dest_usize = @as(usize, @intCast(dest));
+    const src_usize = @as(usize, @intCast(src));
+    const size_usize = @as(usize, @intCast(size));
 
     // Calculate memory expansion gas cost
     const max_addr = @max(dest_usize + size_usize, src_usize + size_usize);
@@ -247,11 +251,14 @@ pub fn op_calldataload(pc: usize, interpreter: Operation.Interpreter, state: Ope
     // Get offset from top of stack unsafely - bounds checking is done in jump_table.zig
     const offset = frame.stack.peek_unsafe().*;
 
-    const offset_usize = check_offset_bounds(offset) catch {
+    // Check offset bounds
+    if (offset > std.math.maxInt(usize)) {
+        @branchHint(.unlikely);
         // Replace top of stack with 0 if offset is out of bounds
         frame.stack.set_top_unsafe(0);
         return Operation.ExecutionResult{};
-    };
+    }
+    const offset_usize = @as(usize, @intCast(offset));
 
     // Read 32 bytes from calldata (pad with zeros)
     var result: u256 = 0;
@@ -312,9 +319,14 @@ pub fn op_calldatacopy(pc: usize, interpreter: Operation.Interpreter, state: Ope
         return Operation.ExecutionResult{};
     }
 
-    const mem_offset_usize = try check_offset_bounds(mem_offset);
-    const data_offset_usize = try check_offset_bounds(data_offset);
-    const size_usize = try check_offset_bounds(size);
+    // Check bounds
+    if (mem_offset > std.math.maxInt(usize) or data_offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
+        @branchHint(.unlikely);
+        return ExecutionError.Error.OutOfOffset;
+    }
+    const mem_offset_usize = @as(usize, @intCast(mem_offset));
+    const data_offset_usize = @as(usize, @intCast(data_offset));
+    const size_usize = @as(usize, @intCast(size));
 
     // Common copy operation handling (gas calculation and memory expansion)
     try perform_copy_operation(frame, mem_offset_usize, size_usize);
@@ -367,9 +379,14 @@ pub fn op_codecopy(pc: usize, interpreter: Operation.Interpreter, state: Operati
         return Operation.ExecutionResult{};
     }
 
-    const mem_offset_usize = try check_offset_bounds(mem_offset);
-    const code_offset_usize = try check_offset_bounds(code_offset);
-    const size_usize = try check_offset_bounds(size);
+    // Check bounds
+    if (mem_offset > std.math.maxInt(usize) or code_offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
+        @branchHint(.unlikely);
+        return ExecutionError.Error.OutOfOffset;
+    }
+    const mem_offset_usize = @as(usize, @intCast(mem_offset));
+    const code_offset_usize = @as(usize, @intCast(code_offset));
+    const size_usize = @as(usize, @intCast(size));
 
     // Common copy operation handling (gas calculation and memory expansion)
     try perform_copy_operation(frame, mem_offset_usize, size_usize);
@@ -421,9 +438,14 @@ pub fn op_returndatacopy(pc: usize, interpreter: Operation.Interpreter, state: O
         return Operation.ExecutionResult{};
     }
 
-    const mem_offset_usize = try check_offset_bounds(mem_offset);
-    const data_offset_usize = try check_offset_bounds(data_offset);
-    const size_usize = try check_offset_bounds(size);
+    // Check bounds
+    if (mem_offset > std.math.maxInt(usize) or data_offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
+        @branchHint(.unlikely);
+        return ExecutionError.Error.OutOfOffset;
+    }
+    const mem_offset_usize = @as(usize, @intCast(mem_offset));
+    const data_offset_usize = @as(usize, @intCast(data_offset));
+    const size_usize = @as(usize, @intCast(size));
 
     // Check bounds
     if (data_offset_usize + size_usize > frame.return_data.size()) {
@@ -482,24 +504,24 @@ fn fuzz_memory_operations(allocator: std.mem.Allocator, operations: []const Fuzz
     for (operations) |op| {
         var memory_db = MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        
+
         const db_interface = memory_db.to_database_interface();
         var vm = try Vm.init(allocator, db_interface, null, null);
         defer vm.deinit();
-        
+
         var contract = try Contract.init(allocator, op.code, .{
             .address = Address.ZERO,
         });
         defer contract.deinit(allocator, null);
-        
+
         var frame = try Frame.init(allocator, &vm, op.gas_limit, contract, Address.ZERO, op.calldata);
         defer frame.deinit();
-        
+
         // Set up return data if needed
         if (op.return_data.len > 0) {
             frame.return_data.set(op.return_data);
         }
-        
+
         // Execute the operation based on type
         const result = switch (op.op_type) {
             .mload => blk: {
@@ -557,7 +579,7 @@ fn fuzz_memory_operations(allocator: std.mem.Allocator, operations: []const Fuzz
                 break :blk op_returndatacopy(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
         };
-        
+
         // Validate the result
         try validate_memory_result(&frame, op, result);
     }
@@ -568,9 +590,9 @@ fn validate_memory_result(frame: *const Frame, op: FuzzMemoryOperation, result: 
         try testing.expectError(expected_err, result);
         return;
     }
-    
+
     try result;
-    
+
     // Validate stack results for operations that push values
     switch (op.op_type) {
         .mload, .calldataload => {
@@ -589,10 +611,10 @@ fn validate_memory_result(frame: *const Frame, op: FuzzMemoryOperation, result: 
 
 test "fuzz_memory_basic_operations" {
     const allocator = std.testing.allocator;
-    
-    const test_calldata = [_]u8{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
-    const test_code = [_]u8{0x60, 0x00, 0x60, 0x00, 0x50, 0x00}; // PUSH1 0 PUSH1 0 POP STOP
-    
+
+    const test_calldata = [_]u8{ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
+    const test_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0x50, 0x00 }; // PUSH1 0 PUSH1 0 POP STOP
+
     const operations = [_]FuzzMemoryOperation{
         // Basic MSTORE and MLOAD
         .{
@@ -630,13 +652,13 @@ test "fuzz_memory_basic_operations" {
             .code = &test_code,
         },
     };
-    
+
     try fuzz_memory_operations(allocator, &operations);
 }
 
 test "fuzz_memory_edge_cases" {
     const allocator = std.testing.allocator;
-    
+
     const operations = [_]FuzzMemoryOperation{
         // Large offset MLOAD (should expand memory)
         .{
@@ -674,20 +696,20 @@ test "fuzz_memory_edge_cases" {
             .offset = 0,
             .data_offset = 100,
             .size = 10,
-            .return_data = &[_]u8{1, 2, 3, 4, 5},
+            .return_data = &[_]u8{ 1, 2, 3, 4, 5 },
             .expected_error = ExecutionError.Error.ReturnDataOutOfBounds,
         },
     };
-    
+
     try fuzz_memory_operations(allocator, &operations);
 }
 
 test "fuzz_memory_copy_operations" {
     const allocator = std.testing.allocator;
-    
+
     const test_data = [_]u8{} ** 64; // 64 bytes of zeros
-    const code_data = [_]u8{0x60, 0x40, 0x60, 0x00, 0x52} ** 10; // Some bytecode pattern
-    
+    const code_data = [_]u8{ 0x60, 0x40, 0x60, 0x00, 0x52 } ** 10; // Some bytecode pattern
+
     const operations = [_]FuzzMemoryOperation{
         // Basic MCOPY
         .{
@@ -740,13 +762,13 @@ test "fuzz_memory_copy_operations" {
             .return_data = &test_data[0..32],
         },
     };
-    
+
     try fuzz_memory_operations(allocator, &operations);
 }
 
 test "fuzz_memory_gas_consumption" {
     const allocator = std.testing.allocator;
-    
+
     const operations = [_]FuzzMemoryOperation{
         // Test insufficient gas for memory expansion
         .{
@@ -765,7 +787,7 @@ test "fuzz_memory_gas_consumption" {
             .expected_error = ExecutionError.Error.OutOfGas,
         },
     };
-    
+
     try fuzz_memory_operations(allocator, &operations);
 }
 
@@ -773,36 +795,32 @@ test "fuzz_memory_random_operations" {
     const allocator = std.testing.allocator;
     var prng = std.Random.DefaultPrng.init(42);
     const random = prng.random();
-    
+
     var operations = std.ArrayList(FuzzMemoryOperation).init(allocator);
     defer operations.deinit();
-    
+
     // Generate random test data
     var random_calldata: [128]u8 = undefined;
     var random_code: [256]u8 = undefined;
     var random_return_data: [64]u8 = undefined;
-    
+
     random.bytes(&random_calldata);
     random.bytes(&random_code);
     random.bytes(&random_return_data);
-    
+
     var i: usize = 0;
     while (i < 30) : (i += 1) {
         const op_type_idx = random.intRangeAtMost(usize, 0, 11);
-        const op_types = [_]MemoryOpType{ 
-            .mload, .mstore, .mstore8, .msize, .mcopy,
-            .calldataload, .calldatasize, .calldatacopy,
-            .codesize, .codecopy, .returndatasize, .returndatacopy
-        };
+        const op_types = [_]MemoryOpType{ .mload, .mstore, .mstore8, .msize, .mcopy, .calldataload, .calldatasize, .calldatacopy, .codesize, .codecopy, .returndatasize, .returndatacopy };
         const op_type = op_types[op_type_idx];
-        
+
         const offset = random.intRangeAtMost(u256, 0, 10000);
         const value = random.int(u256);
         const size = random.intRangeAtMost(u256, 0, 1000);
         const src_offset = random.intRangeAtMost(u256, 0, 1000);
         const data_offset = random.intRangeAtMost(u256, 0, 100);
         const gas_limit = random.intRangeAtMost(u64, 10000, 1000000);
-        
+
         try operations.append(.{
             .op_type = op_type,
             .offset = offset,
@@ -816,6 +834,6 @@ test "fuzz_memory_random_operations" {
             .return_data = &random_return_data,
         });
     }
-    
+
     try fuzz_memory_operations(allocator, operations.items);
 }

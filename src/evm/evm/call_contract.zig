@@ -92,7 +92,6 @@ pub fn call_contract(self: *Vm, caller: primitives.Address.Address, to: primitiv
     if (value > 0) {
         const caller_balance = self.state.get_balance(caller);
         if (caller_balance < value) {
-            @branchHint(.unlikely);
             Log.debug("VM.call_contract: Insufficient balance for value transfer", .{});
             return CallResult{ .success = false, .gas_left = gas, .output = null };
         }
