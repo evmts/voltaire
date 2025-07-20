@@ -5,7 +5,6 @@ const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
-const crypto = @import("crypto");
 
 // Stack buffer sizes for common hash operations
 const SMALL_BUFFER_SIZE = 64;   // Most common (addresses, small data)
@@ -14,7 +13,6 @@ const LARGE_BUFFER_SIZE = 1024; // Reasonable max for stack allocation
 
 /// Optimized hash function using tiered stack buffers for small inputs.
 /// Falls back to memory system for larger inputs.
-/// Uses hardware acceleration when available for improved performance.
 inline fn hash_with_stack_buffer(data: []const u8) [32]u8 {
     var hash: [32]u8 = undefined;
     
@@ -22,20 +20,20 @@ inline fn hash_with_stack_buffer(data: []const u8) [32]u8 {
         @branchHint(.likely); // Most common case - addresses and small data
         var buffer: [SMALL_BUFFER_SIZE]u8 = undefined;
         @memcpy(buffer[0..data.len], data);
-        crypto.Keccak256_Accel.Keccak256_Accel.hash(buffer[0..data.len], &hash);
+        std.crypto.hash.sha3.Keccak256.hash(buffer[0..data.len], &hash, .{});
     } else if (data.len <= MEDIUM_BUFFER_SIZE) {
         @branchHint(.likely); // Common case - event data and medium-sized inputs
         var buffer: [MEDIUM_BUFFER_SIZE]u8 = undefined;
         @memcpy(buffer[0..data.len], data);
-        crypto.Keccak256_Accel.Keccak256_Accel.hash(buffer[0..data.len], &hash);
+        std.crypto.hash.sha3.Keccak256.hash(buffer[0..data.len], &hash, .{});
     } else if (data.len <= LARGE_BUFFER_SIZE) {
         @branchHint(.unlikely); // Less common but still reasonable for stack
         var buffer: [LARGE_BUFFER_SIZE]u8 = undefined;
         @memcpy(buffer[0..data.len], data);
-        crypto.Keccak256_Accel.Keccak256_Accel.hash(buffer[0..data.len], &hash);
+        std.crypto.hash.sha3.Keccak256.hash(buffer[0..data.len], &hash, .{});
     } else {
         @branchHint(.cold); // Very large data - hash directly from memory
-        crypto.Keccak256_Accel.Keccak256_Accel.hash(data, &hash);
+        std.crypto.hash.sha3.Keccak256.hash(data, &hash, .{});
     }
     
     return hash;
