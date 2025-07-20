@@ -53,7 +53,7 @@ pub fn op_mload(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size < 1) {
         @branchHint(.cold);
@@ -85,7 +85,7 @@ pub fn op_mstore(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size < 2) {
         @branchHint(.cold);
@@ -118,7 +118,7 @@ pub fn op_mstore8(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size < 2) {
         @branchHint(.cold);
@@ -152,7 +152,7 @@ pub fn op_msize(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -174,7 +174,7 @@ pub fn op_mcopy(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size < 3) {
         @branchHint(.cold);
@@ -237,7 +237,7 @@ pub fn op_calldataload(pc: usize, interpreter: *Operation.Interpreter, state: *O
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size < 1) {
         @branchHint(.cold);
@@ -277,7 +277,7 @@ pub fn op_calldatasize(pc: usize, interpreter: *Operation.Interpreter, state: *O
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -294,7 +294,7 @@ pub fn op_calldatacopy(pc: usize, interpreter: *Operation.Interpreter, state: *O
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size < 3) {
         @branchHint(.cold);
@@ -329,7 +329,7 @@ pub fn op_codesize(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -346,7 +346,7 @@ pub fn op_codecopy(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size < 3) {
         @branchHint(.cold);
@@ -386,7 +386,7 @@ pub fn op_returndatasize(pc: usize, interpreter: *Operation.Interpreter, state: 
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -403,7 +403,7 @@ pub fn op_returndatacopy(pc: usize, interpreter: *Operation.Interpreter, state: 
     _ = pc;
     _ = interpreter;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
 
     if (frame.stack.size < 3) {
         @branchHint(.cold);
@@ -504,57 +504,57 @@ fn fuzz_memory_operations(allocator: std.mem.Allocator, operations: []const Fuzz
         const result = switch (op.op_type) {
             .mload => blk: {
                 try frame.stack.append(op.offset);
-                break :blk op_mload(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_mload(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
             .mstore => blk: {
                 try frame.stack.append(op.offset);
                 try frame.stack.append(op.value);
-                break :blk op_mstore(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_mstore(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
             .mstore8 => blk: {
                 try frame.stack.append(op.offset);
                 try frame.stack.append(op.value);
-                break :blk op_mstore8(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_mstore8(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
             .msize => blk: {
-                break :blk op_msize(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_msize(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
             .mcopy => blk: {
                 try frame.stack.append(op.offset); // dest
                 try frame.stack.append(op.src_offset); // src
                 try frame.stack.append(op.size); // size
-                break :blk op_mcopy(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_mcopy(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
             .calldataload => blk: {
                 try frame.stack.append(op.offset);
-                break :blk op_calldataload(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_calldataload(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
             .calldatasize => blk: {
-                break :blk op_calldatasize(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_calldatasize(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
             .calldatacopy => blk: {
                 try frame.stack.append(op.offset); // mem_offset
                 try frame.stack.append(op.data_offset); // data_offset
                 try frame.stack.append(op.size); // size
-                break :blk op_calldatacopy(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_calldatacopy(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
             .codesize => blk: {
-                break :blk op_codesize(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_codesize(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
             .codecopy => blk: {
                 try frame.stack.append(op.offset); // mem_offset
                 try frame.stack.append(op.data_offset); // code_offset
                 try frame.stack.append(op.size); // size
-                break :blk op_codecopy(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_codecopy(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
             .returndatasize => blk: {
-                break :blk op_returndatasize(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_returndatasize(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
             .returndatacopy => blk: {
                 try frame.stack.append(op.offset); // mem_offset
                 try frame.stack.append(op.data_offset); // data_offset
                 try frame.stack.append(op.size); // size
-                break :blk op_returndatacopy(0, @ptrCast(&vm), @ptrCast(&frame));
+                break :blk op_returndatacopy(0, &Operation.Interpreter{ .vm = &vm }, &Operation.State{ .frame = &frame });
             },
         };
         

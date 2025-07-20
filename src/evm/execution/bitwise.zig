@@ -7,7 +7,7 @@ const primitives = @import("primitives");
 
 // Generic binary operation helper
 fn binaryOp(state: *Operation.State, comptime op: fn(a: u256, b: u256) u256) Operation.ExecutionResult {
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
     // Debug assertion: Jump table validation ensures we have >= 2 items
     std.debug.assert(frame.stack.size >= 2);
     const b = frame.stack.pop_unsafe();
@@ -18,7 +18,7 @@ fn binaryOp(state: *Operation.State, comptime op: fn(a: u256, b: u256) u256) Ope
 
 // Generic unary operation helper
 fn unaryOp(state: *Operation.State, comptime op: fn(a: u256) u256) Operation.ExecutionResult {
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
     // Debug assertion: Jump table validation ensures we have >= 1 item
     std.debug.assert(frame.stack.size >= 1);
     const a = frame.stack.peek_unsafe().*;
@@ -48,7 +48,7 @@ pub fn op_not(_: usize, _: *Operation.Interpreter, state: *Operation.State) Exec
 }
 
 pub fn op_byte(_: usize, _: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
     // Debug assertion: Jump table validation ensures we have >= 2 items
     std.debug.assert(frame.stack.size >= 2);
     const i = frame.stack.pop_unsafe();
@@ -65,7 +65,7 @@ pub fn op_byte(_: usize, _: *Operation.Interpreter, state: *Operation.State) Exe
 }
 
 pub fn op_shl(_: usize, _: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
     // Debug assertion: Jump table validation ensures we have >= 2 items
     std.debug.assert(frame.stack.size >= 2);
     const shift = frame.stack.pop_unsafe();
@@ -78,7 +78,7 @@ pub fn op_shl(_: usize, _: *Operation.Interpreter, state: *Operation.State) Exec
 }
 
 pub fn op_shr(_: usize, _: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
     // Debug assertion: Jump table validation ensures we have >= 2 items
     std.debug.assert(frame.stack.size >= 2);
     const shift = frame.stack.pop_unsafe();
@@ -91,7 +91,7 @@ pub fn op_shr(_: usize, _: *Operation.Interpreter, state: *Operation.State) Exec
 }
 
 pub fn op_sar(_: usize, _: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
     // Debug assertion: Jump table validation ensures we have >= 2 items
     std.debug.assert(frame.stack.size >= 2);
     const shift = frame.stack.pop_unsafe();

@@ -9,8 +9,8 @@ const primitives = @import("primitives");
 pub fn op_blockhash(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     const block_number = try frame.stack.pop();
 
@@ -38,8 +38,8 @@ pub fn op_blockhash(pc: usize, interpreter: *Operation.Interpreter, state: *Oper
 pub fn op_coinbase(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     try frame.stack.append(primitives.Address.to_u256(vm.context.block_coinbase));
 
@@ -49,8 +49,8 @@ pub fn op_coinbase(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
 pub fn op_timestamp(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     try frame.stack.append(@as(u256, @intCast(vm.context.block_timestamp)));
 
@@ -60,8 +60,8 @@ pub fn op_timestamp(pc: usize, interpreter: *Operation.Interpreter, state: *Oper
 pub fn op_number(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     try frame.stack.append(@as(u256, @intCast(vm.context.block_number)));
 
@@ -71,8 +71,8 @@ pub fn op_number(pc: usize, interpreter: *Operation.Interpreter, state: *Operati
 pub fn op_difficulty(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // Get difficulty/prevrandao from block context
     // Post-merge this returns PREVRANDAO
@@ -89,8 +89,8 @@ pub fn op_prevrandao(pc: usize, interpreter: *Operation.Interpreter, state: *Ope
 pub fn op_gaslimit(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     try frame.stack.append(@as(u256, @intCast(vm.context.block_gas_limit)));
 
@@ -100,8 +100,8 @@ pub fn op_gaslimit(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
 pub fn op_basefee(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // Get base fee from block context
     // Push base fee (EIP-1559)
@@ -113,8 +113,8 @@ pub fn op_basefee(pc: usize, interpreter: *Operation.Interpreter, state: *Operat
 pub fn op_blobhash(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     const index = try frame.stack.pop();
 
@@ -133,8 +133,8 @@ pub fn op_blobhash(pc: usize, interpreter: *Operation.Interpreter, state: *Opera
 pub fn op_blobbasefee(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
-    const vm = @as(*Vm, @ptrCast(@alignCast(interpreter)));
+    const frame = state.get_frame();
+    const vm = interpreter.get_vm();
 
     // Get blob base fee from block context
     // Push blob base fee (EIP-4844)

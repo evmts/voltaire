@@ -141,8 +141,8 @@ pub fn get_operation(self: *const JumpTable, opcode: u8) *const Operation {
 pub fn execute(self: *const JumpTable, pc: usize, interpreter: *operation_module.Interpreter, state: *operation_module.State, opcode: u8) ExecutionError.Error!operation_module.ExecutionResult {
     const operation = self.get_operation(opcode);
 
-    // Cast state to Frame to access gas_remaining and stack
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    // Get frame safely to access gas_remaining and stack
+    const frame = state.get_frame();
 
     Log.debug("JumpTable.execute: Executing opcode 0x{x:0>2} at pc={}, gas={}, stack_size={}", .{ opcode, pc, frame.gas_remaining, frame.stack.size });
 

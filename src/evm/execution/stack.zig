@@ -11,9 +11,9 @@ const MemoryDatabase = @import("../state/memory_database.zig");
 const Contract = @import("../frame/contract.zig");
 const Address = @import("primitives").Address;
 
-// Helper function to extract frame from state
+// Helper function to extract frame from state safely
 inline fn getFrame(state: *Operation.State) *Frame {
-    return @as(*Frame, @ptrCast(@alignCast(state)));
+    return state.get_frame();
 }
 
 pub fn op_pop(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
@@ -46,7 +46,7 @@ pub fn op_push0(pc: usize, interpreter: *Operation.Interpreter, state: *Operatio
 pub fn op_push1(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = interpreter;
     
-    const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+    const frame = state.get_frame();
     
     if (frame.stack.size >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -67,7 +67,7 @@ pub fn make_push_small(comptime n: u8) fn (usize, *Operation.Interpreter, *Opera
         pub fn push(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
             _ = interpreter;
             
-            const frame = @as(*Frame, @ptrCast(@alignCast(state)));
+            const frame = state.get_frame();
             
             if (frame.stack.size >= Stack.CAPACITY) {
                 @branchHint(.cold);
