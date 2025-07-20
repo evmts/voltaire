@@ -21,6 +21,8 @@ pub const CallResult = @import("evm/call_result.zig").CallResult;
 pub const RunResult = @import("evm/run_result.zig").RunResult;
 const Hardfork = @import("hardforks/hardfork.zig").Hardfork;
 const precompiles = @import("precompiles/precompiles.zig");
+const basic_blocks = @import("analysis/basic_blocks.zig");
+const BlockExecutionConfig = @import("execution/block_executor.zig").BlockExecutionConfig;
 
 /// Virtual Machine for executing Ethereum bytecode.
 ///
@@ -67,6 +69,12 @@ frame_pool_initialized: [MAX_CALL_DEPTH]bool = [_]bool{false} ** MAX_CALL_DEPTH,
 state: EvmState,
 /// Warm/cold access tracking for EIP-2929 gas costs
 access_list: AccessList,
+
+// Block execution optimization
+/// Configuration for block-based gas accounting optimization
+block_execution_config: BlockExecutionConfig = .{ .enabled = false },
+/// Cache for analyzed basic blocks
+block_cache: ?*basic_blocks.BlockCache = null,
 
 // Compile-time validation and optimizations
 comptime {
@@ -121,6 +129,8 @@ pub fn init(allocator: std.mem.Allocator, database: @import("state/database_inte
         .frame_pool_initialized = [_]bool{false} ** MAX_CALL_DEPTH,
         .state = state,
         .access_list = access_list,
+        .block_execution_config = .{ .enabled = false },
+        .block_cache = null,
     };
 }
 
@@ -192,6 +202,8 @@ pub fn init_with_state(
         .read_only = read_only orelse false,
         .frame_pool = undefined,
         .frame_pool_initialized = [_]bool{false} ** MAX_CALL_DEPTH,
+        .block_execution_config = .{ .enabled = false },
+        .block_cache = null,
     };
 }
 
@@ -216,6 +228,11 @@ pub fn deinit(self: *Evm) void {
     self.state.deinit();
     self.access_list.deinit();
     Contract.clear_analysis_cache(self.allocator);
+    if (self.block_cache) |cache| {
+        cache.deinit();
+        self.allocator.destroy(cache);
+        self.block_cache = null;
+    }
     self.evm_allocator.deinit();
 }
 
@@ -237,6 +254,32 @@ pub fn reset(self: *Evm) void {
     
     // State and access list would need their own reset methods
     // For now, they maintain their state across resets
+}
+
+/// Enable block-based gas accounting optimization.
+/// Creates a block cache if caching is enabled in the configuration.
+/// @param config Configuration for block execution
+/// @throws OutOfMemory if cache allocation fails
+pub fn enableBlockExecution(self: *Evm, config: BlockExecutionConfig) !void {
+    self.block_execution_config = config;
+    
+    // Create cache if enabled and not already created
+    if (config.cache_blocks and self.block_cache == null) {
+        const cache = try self.allocator.create(basic_blocks.BlockCache);
+        cache.* = basic_blocks.BlockCache.init(self.allocator, config.max_cache_entries);
+        self.block_cache = cache;
+    }
+}
+
+/// Disable block-based gas accounting optimization.
+/// Frees the block cache if it exists.
+pub fn disableBlockExecution(self: *Evm) void {
+    self.block_execution_config.enabled = false;
+    if (self.block_cache) |cache| {
+        cache.deinit();
+        self.allocator.destroy(cache);
+        self.block_cache = null;
+    }
 }
 
 /// Get a pooled frame at the current call depth.
