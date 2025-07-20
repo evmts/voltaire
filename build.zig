@@ -227,6 +227,9 @@ pub fn build(b: *std.Build) void {
     // Link the compiled Rust library
     const rust_lib_path = if (rust_target) |target_triple|
         b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, rust_target_dir })
+    else if (target.result.os.tag == .linux and target.result.cpu.arch == .x86_64)
+        // For Ubuntu native builds, Rust defaults to x86_64-unknown-linux-gnu target
+        b.fmt("target/x86_64-unknown-linux-gnu/{s}/libbn254_wrapper.a", .{rust_target_dir})
     else
         b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
     bn254_lib.addObjectFile(b.path(rust_lib_path));
@@ -319,6 +322,9 @@ pub fn build(b: *std.Build) void {
     // Link the compiled Rust library
     const bench_rust_lib_path = if (rust_target) |target_triple|
         b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, bench_rust_target_dir })
+    else if (target.result.os.tag == .linux and target.result.cpu.arch == .x86_64)
+        // For Ubuntu native builds, Rust defaults to x86_64-unknown-linux-gnu target
+        b.fmt("target/x86_64-unknown-linux-gnu/{s}/libbn254_wrapper.a", .{bench_rust_target_dir})
     else
         b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
     bench_bn254_lib.addObjectFile(b.path(bench_rust_lib_path));
