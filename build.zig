@@ -232,7 +232,16 @@ pub fn build(b: *std.Build) void {
         b.fmt("target/x86_64-unknown-linux-gnu/{s}/libbn254_wrapper.a", .{rust_target_dir})
     else
         b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
-    bn254_lib.addObjectFile(b.path(rust_lib_path));
+    
+    // Handle Rust library format incompatibility on Ubuntu native builds
+    if (target.result.os.tag == .linux and target.result.cpu.arch == .x86_64) {
+        // On Ubuntu, link the Rust library directly instead of using addObjectFile
+        // to avoid "neither ET_REL nor LLVM bitcode" errors
+        bn254_lib.addLibraryPath(b.path("target/x86_64-unknown-linux-gnu/release"));
+        bn254_lib.linkSystemLibrary("bn254_wrapper");
+    } else {
+        bn254_lib.addObjectFile(b.path(rust_lib_path));
+    }
     bn254_lib.linkLibC();
 
     // Link additional system libraries that Rust might need
@@ -327,7 +336,16 @@ pub fn build(b: *std.Build) void {
         b.fmt("target/x86_64-unknown-linux-gnu/{s}/libbn254_wrapper.a", .{bench_rust_target_dir})
     else
         b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
-    bench_bn254_lib.addObjectFile(b.path(bench_rust_lib_path));
+    
+    // Handle Rust library format incompatibility on Ubuntu native builds
+    if (target.result.os.tag == .linux and target.result.cpu.arch == .x86_64) {
+        // On Ubuntu, link the Rust library directly instead of using addObjectFile
+        // to avoid "neither ET_REL nor LLVM bitcode" errors
+        bench_bn254_lib.addLibraryPath(b.path("target/x86_64-unknown-linux-gnu/release"));
+        bench_bn254_lib.linkSystemLibrary("bn254_wrapper");
+    } else {
+        bench_bn254_lib.addObjectFile(b.path(bench_rust_lib_path));
+    }
     bench_bn254_lib.linkLibC();
     
     // Link additional system libraries that Rust might need
