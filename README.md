@@ -2,6 +2,8 @@
 
 A high-performance Ethereum Virtual Machine (EVM) implementation written in Zig.
 
+It's fast
+
 ## Overview
 
 Guillotine is a blazing-fast, memory-efficient EVM implementation designed for correctness, performance, and safety. Built from the ground up in Zig, it features a modular architecture with first-class support for all Ethereum opcodes, precompiled contracts, and multiple deployment targets including native and WebAssembly.
@@ -9,12 +11,12 @@ Guillotine is a blazing-fast, memory-efficient EVM implementation designed for c
 ### Key Features
 
 - **Pure Zig Implementation**: Core EVM engine written entirely in Zig for maximum performance and safety
-- **Comprehensive Opcode Support**: All EVM opcodes implemented with correct gas accounting
-- **Precompiled Contracts**: Full support for Ethereum precompiles with optimized implementations
 - **Multiple Targets**: Native builds for x86/ARM and WebAssembly support
-- **Memory Safe**: Leverages Zig's compile-time memory safety guarantees
 - **Modular Design**: Clean separation of concerns with well-defined module boundaries
 - **Builder Pattern**: Intuitive API for constructing EVM instances and execution contexts
+- **Small wasm binary**: Compiler optimizes for size rather than perf in wasm build for smaller bundle size hit when embedded
+- **Well tested**: Exhaustively tested with unit, e2e, benchmark, and fuzz tests
+- **C FFI**: Exports a C compatible API that can be used in Python, Go, Rust, Swift or any other language that supports C FFI
 
 ## Installation
 
