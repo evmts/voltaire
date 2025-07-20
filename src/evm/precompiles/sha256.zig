@@ -86,11 +86,13 @@ pub fn calculate_gas_checked(input_size: usize) !u64 {
 ///
 /// Wrapper that matches the signature expected by executeHashPrecompile template.
 /// This allows SHA256 to use the generic hash precompile implementation.
+/// Uses hardware acceleration when available for improved performance.
 ///
 /// @param input Input data to hash
 /// @param output Output buffer for hash result
 fn sha256Hash(input: []const u8, output: []u8) void {
-    crypto.HashAlgorithms.SHA256.hash(input, output[0..SHA256_OUTPUT_SIZE]);
+    // Use hardware-accelerated implementation when available
+    crypto.SHA256_Accel.SHA256_Accel.hash(input, output[0..SHA256_OUTPUT_SIZE]);
 }
 
 /// Output formatter for SHA256
