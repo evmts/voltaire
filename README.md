@@ -12,7 +12,7 @@
   </a>
 </p>
 
-<img width="1024" height="1024" alt="Guillotine Logo" src="https://github.com/user-attachments/assets/e21bcc94-e0c5-44ef-bdcf-ac9d4c1cedee" />
+<img width="833" height="444" alt="Guillotine Logo" src="https://github.com/user-attachments/assets/1effa677-d931-4453-8e98-2a70372efd91" />
 
 **A very fast EVM written in Zig**
 
