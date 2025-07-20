@@ -216,10 +216,10 @@ test "fuzz_log0_operation_edge_cases" {
         try ctx.frame.stack.append(test_case.offset);
         try ctx.frame.stack.append(test_case.length);
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
         
-        const result = ctx.vm.table.execute(0, interpreter_ptr, state_ptr, 0xa0);
+        const result = ctx.vm.table.execute(0, &interpreter, &state, 0xa0);
         
         if (test_case.expected_error) |expected_err| {
             try testing.expectError(expected_err, result);
@@ -415,10 +415,10 @@ test "fuzz_log_operations_with_topics" {
             try ctx.frame.stack.append(test_case.topics[test_case.num_topics - 1 - i]);
         }
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
         
-        const result = ctx.vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        const result = ctx.vm.table.execute(0, &interpreter, &state, opcode);
         
         if (test_case.expected_error) |expected_err| {
             try testing.expectError(expected_err, result);
@@ -502,10 +502,10 @@ test "fuzz_log_operations_gas_consumption" {
         
         const gas_before = ctx.frame.gas_remaining;
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
         
-        const result = ctx.vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        const result = ctx.vm.table.execute(0, &interpreter, &state, opcode);
         
         if (result) |_| {
             // Success - verify gas consumption makes sense
@@ -586,10 +586,10 @@ test "fuzz_log_memory_expansion_stress" {
             try ctx.frame.stack.append(@as(u256, 0x1000 + i));
         }
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
         
-        const result = ctx.vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        const result = ctx.vm.table.execute(0, &interpreter, &state, opcode);
         
         if (result) |_| {
             // Success - verify memory expanded
@@ -656,10 +656,10 @@ test "fuzz_log_operations_random_stress" {
             try ctx.frame.stack.append(topics[num_topics - 1 - i]);
         }
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
         
-        const result = ctx.vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        const result = ctx.vm.table.execute(0, &interpreter, &state, opcode);
         
         // Validate expected behavior
         if (is_static) {
@@ -724,10 +724,10 @@ test "fuzz_sequential_log_operations" {
             try ctx.frame.stack.append(@as(u256, (i + 1) * 1000 + topic_idx));
         }
         
-        const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
-        const state_ptr: *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var state = *evm.Operation.State = @ptrCast(&ctx.frame);frame };
         
-        const result = ctx.vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        const result = ctx.vm.table.execute(0, &interpreter, &state, opcode);
         
         if (result) |_| {
             expected_logs += 1;

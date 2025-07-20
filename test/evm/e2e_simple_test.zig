@@ -154,9 +154,9 @@ test "E2E: Arithmetic operations" {
     try frame.stack.append(17);
 
     // Execute ADD operation
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
-    const state_ptr: *Operation.State = @ptrCast(frame);
-    const add_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD opcode
+    var interpreter = Operation.Interpreter{ .vm = evm_instance };
+    var state = Operation.State{ .frame = frame };
+    const add_result = try evm_instance.table.execute(0, &interpreter, &state, 0x01); // ADD opcode
 
     try testing.expect(add_result.output.len == 0); // Continue means empty output
 
@@ -167,7 +167,7 @@ test "E2E: Arithmetic operations" {
     try frame.stack.append(100);
     try frame.stack.append(58);
 
-    const sub_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x03); // SUB
+    const sub_result = try evm_instance.table.execute(0, &interpreter, &state, 0x03); // SUB
     try testing.expect(sub_result.output.len == 0);
 
     const diff = try frame.stack.pop();
@@ -177,7 +177,7 @@ test "E2E: Arithmetic operations" {
     try frame.stack.append(6);
     try frame.stack.append(7);
 
-    const mul_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x02); // MUL
+    const mul_result = try evm_instance.table.execute(0, &interpreter, &state, 0x02); // MUL
     try testing.expect(mul_result.output.len == 0);
 
     const product = try frame.stack.pop();
@@ -238,16 +238,16 @@ test "E2E: Memory operations" {
     try frame.stack.append(0xDEADBEEF);
     try frame.stack.append(0);
 
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
-    const state_ptr: *Operation.State = @ptrCast(frame);
+    var interpreter = Operation.Interpreter{ .vm = evm_instance };
+    var state = Operation.State{ .frame = frame };
 
-    const mstore_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x52); // MSTORE
+    const mstore_result = try evm_instance.table.execute(0, &interpreter, &state, 0x52); // MSTORE
     try testing.expect(mstore_result.output.len == 0);
 
     // Test MLOAD operation
     try frame.stack.append(0);
 
-    const mload_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x51); // MLOAD
+    const mload_result = try evm_instance.table.execute(0, &interpreter, &state, 0x51); // MLOAD
     try testing.expect(mload_result.output.len == 0);
 
     const loaded_value = try frame.stack.pop();
@@ -257,13 +257,13 @@ test "E2E: Memory operations" {
     try frame.stack.append(0xCAFEBABE);
     try frame.stack.append(1024);
 
-    const expand_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x52); // MSTORE at high offset
+    const expand_result = try evm_instance.table.execute(0, &interpreter, &state, 0x52); // MSTORE at high offset
     try testing.expect(expand_result.output.len == 0);
 
     // Verify the value at high offset
     try frame.stack.append(1024);
 
-    _ = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x51); // MLOAD
+    _ = try evm_instance.table.execute(0, &interpreter, &state, 0x51); // MLOAD
     const high_value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xCAFEBABE), high_value);
 }
@@ -322,16 +322,16 @@ test "E2E: Storage operations" {
     try frame.stack.append(0x12345678);
     try frame.stack.append(5);
 
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
-    const state_ptr: *Operation.State = @ptrCast(frame);
+    var interpreter = Operation.Interpreter{ .vm = evm_instance };
+    var state = Operation.State{ .frame = frame };
 
-    const sstore_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x55); // SSTORE
+    const sstore_result = try evm_instance.table.execute(0, &interpreter, &state, 0x55); // SSTORE
     try testing.expect(sstore_result.output.len == 0);
 
     // Test SLOAD operation
     try frame.stack.append(5);
 
-    const sload_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x54); // SLOAD
+    const sload_result = try evm_instance.table.execute(0, &interpreter, &state, 0x54); // SLOAD
     try testing.expect(sload_result.output.len == 0);
 
     const stored_value = try frame.stack.pop();
@@ -393,11 +393,11 @@ test "E2E: Stack operations" {
     try frame.stack.append(200);
     try frame.stack.append(300);
 
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
-    const state_ptr: *Operation.State = @ptrCast(frame);
+    var interpreter = Operation.Interpreter{ .vm = evm_instance };
+    var state = Operation.State{ .frame = frame };
 
     // Test DUP1 (duplicate top element)
-    const dup_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x80); // DUP1
+    const dup_result = try evm_instance.table.execute(0, &interpreter, &state, 0x80); // DUP1
     try testing.expect(dup_result.output.len == 0);
 
     try testing.expectEqual(@as(usize, 4), frame.stack.size);
@@ -412,7 +412,7 @@ test "E2E: Stack operations" {
     try frame.stack.append(400);
     // Stack is now: 100, 200, 400
 
-    const swap_result = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x90); // SWAP1
+    const swap_result = try evm_instance.table.execute(0, &interpreter, &state, 0x90); // SWAP1
     try testing.expect(swap_result.output.len == 0);
 
     // Stack should now be: 100, 400, 200
@@ -477,10 +477,10 @@ test "E2E: Gas consumption patterns" {
     // Execute a simple operation
     try frame.stack.append(42);
 
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(evm_instance);
-    const state_ptr: *Operation.State = @ptrCast(frame);
+    var interpreter = Operation.Interpreter{ .vm = evm_instance };
+    var state = Operation.State{ .frame = frame };
 
-    _ = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x50); // POP
+    _ = try evm_instance.table.execute(0, &interpreter, &state, 0x50); // POP
 
     const gas_after_pop = frame.gas_remaining;
     const pop_cost = initial_gas - gas_after_pop;
@@ -491,7 +491,7 @@ test "E2E: Gas consumption patterns" {
     // Test expensive operation (SSTORE)
     try frame.stack.append(100);
     try frame.stack.append(0);
-    _ = try evm_instance.table.execute(0, interpreter_ptr, state_ptr, 0x55); // SSTORE
+    _ = try evm_instance.table.execute(0, &interpreter, &state, 0x55); // SSTORE
 
     const gas_after_sstore = frame.gas_remaining;
     const sstore_cost = gas_after_pop - gas_after_sstore;

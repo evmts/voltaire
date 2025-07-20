@@ -64,54 +64,54 @@ test "Integration: Complete ERC20 transfer simulation" {
 
     // 1. Load Alice's balance
     try frame.stack.append(0); // Alice's slot
-    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr1: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0x54);
+    const &interpreter1: Operation.Interpreter{ .vm = &vm);
+    const &state1: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter1, &state1, 0x54);
     const alice_initial = try frame.stack.pop();
     try testing.expectEqual(alice_balance, alice_initial);
 
     // 2. Check if Alice has enough balance
     try frame.stack.append(transfer_amount); // b
     try frame.stack.append(alice_initial); // a
-    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr2: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0x10);
+    const &interpreter2: Operation.Interpreter{ .vm = &vm);
+    const &state2: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter2, &state2, 0x10);
     const insufficient = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), insufficient); // Should be false (sufficient balance)
 
     // 3. Calculate new balances
     try frame.stack.append(transfer_amount); // b
     try frame.stack.append(alice_initial); // a
-    const interpreter_ptr3: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr3: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr3, state_ptr3, 0x03);
+    const &interpreter3: Operation.Interpreter{ .vm = &vm);
+    const &state3: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter3, &state3, 0x03);
     const alice_new = try frame.stack.pop();
 
     try frame.stack.append(1); // Bob's slot
-    const interpreter_ptr4: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr4: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr4, state_ptr4, 0x54);
+    const &interpreter4: Operation.Interpreter{ .vm = &vm);
+    const &state4: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter4, &state4, 0x54);
     const bob_initial = try frame.stack.pop();
 
     try frame.stack.append(transfer_amount); // b
     try frame.stack.append(bob_initial); // a
-    const interpreter_ptr5: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr5: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr5, state_ptr5, 0x01);
+    const &interpreter5: Operation.Interpreter{ .vm = &vm);
+    const &state5: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter5, &state5, 0x01);
     const bob_new = try frame.stack.pop();
 
     // 4. Update storage
     try frame.stack.append(0); // slot
     try frame.stack.append(alice_new); // value
-    const interpreter_ptr6: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr6: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr6, state_ptr6, 0x55);
+    const &interpreter6: Operation.Interpreter{ .vm = &vm);
+    const &state6: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter6, &state6, 0x55);
 
     try frame.stack.append(1); // slot
     try frame.stack.append(bob_new); // value
-    const interpreter_ptr7: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr7: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr7, state_ptr7, 0x55);
+    const &interpreter7: Operation.Interpreter{ .vm = &vm);
+    const &state7: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter7, &state7, 0x55);
 
     // 5. Emit Transfer event
     const transfer_sig: u256 = 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef;
@@ -128,9 +128,9 @@ test "Integration: Complete ERC20 transfer simulation" {
     try frame.stack.append(Address.to_u256(alice_address)); // from (indexed)
     try frame.stack.append(Address.to_u256(bob_address)); // to (indexed)
 
-    const interpreter_ptr8: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr8: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr8, state_ptr8, 0xA3);
+    const &interpreter8: Operation.Interpreter{ .vm = &vm);
+    const &state8: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter8, &state8, 0xA3);
 
     // 6. Verify final balances
     const alice_final = try vm.get_storage(contract_address, 0);
@@ -230,9 +230,9 @@ test "Integration: Smart contract deployment flow" {
     try frame.stack.append(constructor_code.len); // size
     try frame.stack.append(0); // value
 
-    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr1: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0xF0);
+    const &interpreter1: Operation.Interpreter{ .vm = &vm);
+    const &state1: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter1, &state1, 0xF0);
 
     const deployed_address = try frame.stack.pop();
     try testing.expectEqual(Address.to_u256(bob_address), deployed_address);
@@ -253,9 +253,9 @@ test "Integration: Smart contract deployment flow" {
     try frame.stack.append(0); // ret_offset
     try frame.stack.append(0); // ret_size
 
-    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr2: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0xF1);
+    const &interpreter2: Operation.Interpreter{ .vm = &vm);
+    const &state2: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter2, &state2, 0xF1);
     const success = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), success); // Success
 }
@@ -358,84 +358,84 @@ test "Integration: Complex control flow with nested conditions" {
 
     // Push 150
     frame.pc = 0;
-    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr1: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr1, state_ptr1, 0x60);
+    const &interpreter1: Operation.Interpreter{ .vm = &vm);
+    const &state1: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter1, &state1, 0x60);
     frame.pc = 2;
 
     // DUP1
-    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr2: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr2, state_ptr2, 0x80);
+    const &interpreter2: Operation.Interpreter{ .vm = &vm);
+    const &state2: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter2, &state2, 0x80);
     frame.pc = 3;
 
     // Push 100
     frame.pc = 3;
-    const interpreter_ptr3: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr3: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr3, state_ptr3, 0x60);
+    const &interpreter3: Operation.Interpreter{ .vm = &vm);
+    const &state3: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter3, &state3, 0x60);
     frame.pc = 5;
 
     // LT
-    const interpreter_ptr4: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr4: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr4, state_ptr4, 0x10);
+    const &interpreter4: Operation.Interpreter{ .vm = &vm);
+    const &state4: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter4, &state4, 0x10);
     frame.pc = 6;
 
     // ISZERO
-    const interpreter_ptr5: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr5: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr5, state_ptr5, 0x15);
+    const &interpreter5: Operation.Interpreter{ .vm = &vm);
+    const &state5: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter5, &state5, 0x15);
     frame.pc = 7;
 
     // Push jump destination
     frame.pc = 7;
-    const interpreter_ptr6: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr6: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr6, state_ptr6, 0x60);
+    const &interpreter6: Operation.Interpreter{ .vm = &vm);
+    const &state6: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter6, &state6, 0x60);
     frame.pc = 9;
 
     // JUMPI (should jump to 14)
-    const interpreter_ptr7: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr7: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr7, state_ptr7, 0x57);
+    const &interpreter7: Operation.Interpreter{ .vm = &vm);
+    const &state7: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter7, &state7, 0x57);
     try testing.expectEqual(@as(usize, 14), frame.pc);
 
     // Continue execution from JUMPDEST at 14
     frame.pc = 15; // Skip JUMPDEST
 
     // DUP1
-    const interpreter_ptr8: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr8: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr8, state_ptr8, 0x80);
+    const &interpreter8: Operation.Interpreter{ .vm = &vm);
+    const &state8: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter8, &state8, 0x80);
     frame.pc = 16;
 
     // Push 200
     frame.pc = 16;
-    const interpreter_ptr9: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr9: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr9, state_ptr9, 0x60);
+    const &interpreter9: Operation.Interpreter{ .vm = &vm);
+    const &state9: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter9, &state9, 0x60);
     frame.pc = 18;
 
     // GT
-    const interpreter_ptr10: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr10: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr10, state_ptr10, 0x11);
+    const &interpreter10: Operation.Interpreter{ .vm = &vm);
+    const &state10: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter10, &state10, 0x11);
     const gt_result = frame.stack.peek_n(0) catch unreachable;
     try testing.expectEqual(@as(u256, 0), gt_result); // 150 > 200 is false
     frame.pc = 19;
 
     // Push jump destination
     frame.pc = 19;
-    const interpreter_ptr11: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr11: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr11, state_ptr11, 0x60);
+    const &interpreter11: Operation.Interpreter{ .vm = &vm);
+    const &state11: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter11, &state11, 0x60);
     frame.pc = 21;
 
     // JUMPI (should not jump)
-    const interpreter_ptr12: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr12: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr12, state_ptr12, 0x57);
+    const &interpreter12: Operation.Interpreter{ .vm = &vm);
+    const &state12: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter12, &state12, 0x57);
     try testing.expectEqual(@as(usize, 21), frame.pc); // No jump
 
     // Continue with multiplication
@@ -443,30 +443,30 @@ test "Integration: Complex control flow with nested conditions" {
 
     // Push 2
     frame.pc = 22;
-    const interpreter_ptr13: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr13: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr13, state_ptr13, 0x60);
+    const &interpreter13: Operation.Interpreter{ .vm = &vm);
+    const &state13: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter13, &state13, 0x60);
     frame.pc = 24;
 
     // MUL
-    const interpreter_ptr14: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr14: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr14, state_ptr14, 0x02);
+    const &interpreter14: Operation.Interpreter{ .vm = &vm);
+    const &state14: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter14, &state14, 0x02);
     const mul_result = frame.stack.peek_n(0) catch unreachable;
     try testing.expectEqual(@as(u256, 300), mul_result); // 150 * 2
 
     // Store result
     frame.pc = 25;
     try frame.stack.append(0); // offset
-    const interpreter_ptr15: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr15: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr15, state_ptr15, 0x52);
+    const &interpreter15: Operation.Interpreter{ .vm = &vm);
+    const &state15: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter15, &state15, 0x52);
 
     // Verify result in memory
     try frame.stack.append(0);
-    const interpreter_ptr16: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr16: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(frame.pc, interpreter_ptr16, state_ptr16, 0x51);
+    const &interpreter16: Operation.Interpreter{ .vm = &vm);
+    const &state16: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(frame.pc, &interpreter16, &state16, 0x51);
     const memory_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 300), memory_result);
 }
@@ -517,17 +517,17 @@ test "Integration: Gas metering across operations" {
     // 1. Arithmetic operations
     try frame.stack.append(20); // b
     try frame.stack.append(10); // a
-    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr1: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0x01);
+    const &interpreter1: Operation.Interpreter{ .vm = &vm);
+    const &state1: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter1, &state1, 0x01);
     total_gas_used += initial_gas - frame.gas_remaining;
 
     // 2. Memory operation
     try frame.stack.append(0); // offset
     const gas_before_mstore = frame.gas_remaining;
-    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr2: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0x52);
+    const &interpreter2: Operation.Interpreter{ .vm = &vm);
+    const &state2: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter2, &state2, 0x52);
     const mstore_gas = gas_before_mstore - frame.gas_remaining;
     total_gas_used += mstore_gas;
     try testing.expect(mstore_gas > 3); // Should include memory expansion
@@ -536,9 +536,9 @@ test "Integration: Gas metering across operations" {
     const slot: u256 = 999;
     try frame.stack.append(slot);
     const gas_before_sload = frame.gas_remaining;
-    const interpreter_ptr3: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr3: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr3, state_ptr3, 0x54);
+    const &interpreter3: Operation.Interpreter{ .vm = &vm);
+    const &state3: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter3, &state3, 0x54);
     const sload_gas = gas_before_sload - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 2100), sload_gas); // Cold access
     total_gas_used += sload_gas;
@@ -548,9 +548,9 @@ test "Integration: Gas metering across operations" {
     try frame.stack.append(0); // offset
     try frame.stack.append(32); // size
     const gas_before_sha3 = frame.gas_remaining;
-    const interpreter_ptr4: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr4: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr4, state_ptr4, 0x20);
+    const &interpreter4: Operation.Interpreter{ .vm = &vm);
+    const &state4: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter4, &state4, 0x20);
     const sha3_gas = gas_before_sha3 - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 30 + 6), sha3_gas); // Base + 1 word
     total_gas_used += sha3_gas;
@@ -560,9 +560,9 @@ test "Integration: Gas metering across operations" {
     const cold_address = Address.to_u256(charlie_address);
     try frame.stack.append(cold_address);
     const gas_before_balance = frame.gas_remaining;
-    const interpreter_ptr5: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr5: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr5, state_ptr5, 0x31);
+    const &interpreter5: Operation.Interpreter{ .vm = &vm);
+    const &state5: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter5, &state5, 0x31);
     const balance_gas = gas_before_balance - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 2600), balance_gas); // Cold address
     total_gas_used += balance_gas;
@@ -611,15 +611,15 @@ test "Integration: Error propagation and recovery" {
     defer frame.deinit();
 
     // Test 1: Stack underflow recovery
-    const div_result = opcodes.arithmetic.op_div(0, &vm, &frame);
+    const div_result = opcodes.arithmetic.op_div(0, &vm, &frame);frame };
     try testing.expectError(ExecutionError.Error.StackUnderflow, div_result);
 
     // Stack should still be usable
     try frame.stack.append(5); // b
     try frame.stack.append(10); // a
-    const interpreter_ptr1: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr1: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr1, state_ptr1, 0x04);
+    const &interpreter1: Operation.Interpreter{ .vm = &vm);
+    const &state1: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter1, &state1, 0x04);
     const div_value = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 2), div_value);
 
@@ -629,7 +629,7 @@ test "Integration: Error propagation and recovery" {
 
     // Try expensive operation
     try frame.stack.append(999); // Cold storage slot
-    const sload_result = opcodes.storage.op_sload(0, &vm, &frame);
+    const sload_result = opcodes.storage.op_sload(0, &vm, &frame);frame };
     try testing.expectError(ExecutionError.Error.OutOfGas, sload_result);
 
     // Test 3: Invalid jump recovery
@@ -637,7 +637,7 @@ test "Integration: Error propagation and recovery" {
     frame.gas_remaining = 10000; // Reset gas
 
     try frame.stack.append(999); // Invalid jump destination
-    const jump_result = opcodes.control.op_jump(0, &vm, &frame);
+    const jump_result = opcodes.control.op_jump(0, &vm, &frame);frame };
     try testing.expectError(ExecutionError.Error.InvalidJump, jump_result);
 
     // Test 4: Write protection in static context
@@ -646,7 +646,7 @@ test "Integration: Error propagation and recovery" {
 
     try frame.stack.append(0); // slot
     try frame.stack.append(42); // value
-    const sstore_result = opcodes.storage.op_sstore(0, &vm, &frame);
+    const sstore_result = opcodes.storage.op_sstore(0, &vm, &frame);frame };
     try testing.expectError(ExecutionError.Error.WriteProtection, sstore_result);
 
     // Reset static flag and verify normal operation works
@@ -654,9 +654,9 @@ test "Integration: Error propagation and recovery" {
     frame.stack.clear();
     try frame.stack.append(0); // slot
     try frame.stack.append(42); // value
-    const interpreter_ptr2: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr2: *Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr2, state_ptr2, 0x55);
+    const &interpreter2: Operation.Interpreter{ .vm = &vm);
+    const &state2: Operation.State{ .frame = &frame);frame };
+    _ = try vm.table.execute(0, &interpreter2, &state2, 0x55);
 
     // Verify storage was updated
     const storage_key = Evm.Evm.StorageKey{ .address = contract_address, .slot = 0 };

@@ -70,9 +70,9 @@ test "CREATE (0xF0): Basic contract creation with valid init code" {
     try frame.stack.append(100); // value
 
     const gas_before = frame.gas_remaining;
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
 
     // Check gas consumption
     const gas_used = gas_before - frame.gas_remaining;
@@ -120,9 +120,9 @@ test "CREATE: Empty init code creates empty contract" {
     try frame.stack.append(0); // offset = 0
     try frame.stack.append(0); // value = 0
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
 
     // Empty init code should still create a contract
     const created_address = try frame.stack.pop();
@@ -170,9 +170,9 @@ test "CREATE: Static call protection" {
     try frame.stack.append(0); // value
 
     // Should fail with WriteProtection
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF0);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
@@ -216,9 +216,9 @@ test "CREATE: Depth limit enforcement" {
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // value
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
 
     // Should push 0 due to depth limit
     const result = try frame.stack.pop();
@@ -266,9 +266,9 @@ test "CREATE: EIP-3860 initcode size limit (Shanghai+)" {
     try frame.stack.append(0); // value
 
     // Should fail with MaxCodeSizeExceeded
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF0);
     try testing.expectError(ExecutionError.Error.MaxCodeSizeExceeded, result);
 }
 
@@ -317,9 +317,9 @@ test "CREATE: EIP-3860 initcode word gas cost" {
     try frame.stack.append(0); // value
 
     const gas_before = frame.gas_remaining;
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
     const gas_used = gas_before - frame.gas_remaining;
 
     // Should include word gas cost (2 gas per 32-byte word)
@@ -371,9 +371,9 @@ test "CREATE: Memory expansion gas cost" {
     try frame.stack.append(0); // value
 
     const gas_before = frame.gas_remaining;
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
     const gas_used = gas_before - frame.gas_remaining;
 
     // Should include significant memory expansion cost
@@ -417,9 +417,9 @@ test "CREATE: Stack underflow" {
     try frame.stack.append(0); // offset
 
     // Should fail with StackUnderflow
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF0);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -469,9 +469,9 @@ test "CREATE2 (0xF5): Deterministic address generation" {
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // value
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF5);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF5);
 
     // Should create contract (implementation may return 0 for unimplemented parts)
     _ = try frame.stack.pop(); // created_address
@@ -521,9 +521,9 @@ test "CREATE2: Same parameters produce same address" {
     try frame1.stack.append(0);
     try frame1.stack.append(0);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr1: *Evm.Operation.State = @ptrCast(&frame1);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr1, 0xF5);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    const &state1: *Evm.Operation.State = @ptrCast(&frame1);
+    _ = try evm.table.execute(0, &interpreter, &state1, 0xF5);
     const address1 = try frame1.stack.pop();
 
     // Second creation with same parameters
@@ -554,8 +554,8 @@ test "CREATE2: Same parameters produce same address" {
     try frame2.stack.append(0);
     try frame2.stack.append(0);
 
-    const state_ptr2: *Evm.Operation.State = @ptrCast(&frame2);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr2, 0xF5);
+    const &state2: *Evm.Operation.State = @ptrCast(&frame2);
+    _ = try evm.table.execute(0, &interpreter, &state2, 0xF5);
     const address2 = try frame2.stack.pop();
 
     // Addresses should be the same (deterministic)
@@ -607,9 +607,9 @@ test "CREATE2: Additional gas for keccak256 hashing" {
     try frame.stack.append(0); // value
 
     const gas_before = frame.gas_remaining;
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF5);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF5);
     const gas_used = gas_before - frame.gas_remaining;
 
     // Should include hash cost (6 gas per word for keccak256)
@@ -666,9 +666,9 @@ test "CALL (0xF1): Basic external call" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF1);
 
     // Check success status (implementation may return 0 for unimplemented)
     _ = try frame.stack.pop(); // success
@@ -721,9 +721,9 @@ test "CALL: Value transfer in static context fails" {
     try frame.stack.append(50000); // gas
 
     // Should fail with WriteProtection
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF1);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
@@ -772,9 +772,9 @@ test "CALL: Cold address access (EIP-2929)" {
     try frame.stack.append(50000); // gas
 
     const gas_before = frame.gas_remaining;
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF1);
     const gas_used = gas_before - frame.gas_remaining;
 
     // Should consume cold access gas (2600)
@@ -826,9 +826,9 @@ test "CALL: Return data handling" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF1);
 
     // Check that operation completed (implementation details may vary)
     _ = try frame.stack.pop(); // success
@@ -881,9 +881,9 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF2);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF2);
 
     // Check success status
     _ = try frame.stack.pop(); // success
@@ -935,9 +935,9 @@ test "DELEGATECALL (0xF4): Execute with current context (no value transfer)" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF4);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF4);
 
     // Check success status
     _ = try frame.stack.pop(); // success
@@ -989,9 +989,9 @@ test "STATICCALL (0xFA): Read-only external call" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr)); // to
     try frame.stack.append(50000); // gas
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xFA);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xFA);
 
     // Check success status
     _ = try frame.stack.pop(); // success
@@ -1043,9 +1043,9 @@ test "RETURN (0xF3): Return data from execution" {
     try frame.stack.append(return_data.len); // size (exact length)
 
     // Execute RETURN - should trigger STOP
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF3);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF3);
     try testing.expectError(ExecutionError.Error.STOP, result);
 
     // Check return data buffer was set
@@ -1088,9 +1088,9 @@ test "RETURN: Empty return data" {
     try frame.stack.append(0); // size = 0
     try frame.stack.append(0); // offset = 0
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF3);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF3);
     try testing.expectError(ExecutionError.Error.STOP, result);
 
     // Check empty return data
@@ -1134,9 +1134,9 @@ test "RETURN: Memory expansion gas cost" {
     try frame.stack.append(0); // offset
 
     const gas_before = frame.gas_remaining;
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF3);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF3);
     try testing.expectError(ExecutionError.Error.STOP, result);
 
     const gas_used = gas_before - frame.gas_remaining;
@@ -1189,9 +1189,9 @@ test "REVERT (0xFD): Revert with error data" {
     try frame.stack.append(revert_data.len); // size (exact length)
 
     // Execute REVERT - should trigger REVERT error
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFD);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xFD);
     try testing.expectError(ExecutionError.Error.REVERT, result);
 
     // Check revert data was set
@@ -1234,9 +1234,9 @@ test "REVERT: Empty revert data" {
     try frame.stack.append(0); // size = 0
     try frame.stack.append(0); // offset = 0
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFD);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xFD);
     try testing.expectError(ExecutionError.Error.REVERT, result);
 
     // Check empty revert data
@@ -1282,9 +1282,9 @@ test "INVALID (0xFE): Consume all gas and fail" {
     const gas_before = frame.gas_remaining;
 
     // Execute INVALID - should consume all gas and fail
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFE);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xFE);
     try testing.expectError(ExecutionError.Error.InvalidOpcode, result);
 
     // Should consume all remaining gas
@@ -1331,9 +1331,9 @@ test "INVALID: No stack manipulation" {
     const stack_size_before = frame.stack.size;
 
     // Execute INVALID
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFE);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xFE);
     try testing.expectError(ExecutionError.Error.InvalidOpcode, result);
 
     // Stack should remain unchanged
@@ -1381,9 +1381,9 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
 
     // Execute SELFDESTRUCT - should trigger STOP
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFF);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xFF);
     try testing.expectError(ExecutionError.Error.STOP, result);
 }
 
@@ -1427,9 +1427,9 @@ test "SELFDESTRUCT: Static call protection" {
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
 
     // Should fail with WriteProtection
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFF);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xFF);
     try testing.expectError(ExecutionError.Error.WriteProtection, result);
 }
 
@@ -1473,9 +1473,9 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
     try frame.stack.append(primitives.Address.to_u256(cold_address));
 
     const gas_before = frame.gas_remaining;
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFF);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xFF);
     try testing.expectError(ExecutionError.Error.STOP, result);
 
     // Should consume cold access gas (2600)
@@ -1543,9 +1543,9 @@ test "System opcodes: Stack underflow validation" {
         }
 
         // Should fail with StackUnderflow
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, test_case.opcode);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        const result = evm.table.execute(0, &interpreter, &state, test_case.opcode);
         testing.expectError(ExecutionError.Error.StackUnderflow, result) catch |err| {
             return err;
         };
@@ -1612,9 +1612,9 @@ test "System opcodes: Depth limit enforcement" {
             try test_frame.stack.append(1000); // gas
         }
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        _ = try evm.table.execute(0, &interpreter, &state, opcode);
 
         // Should push 0 (failure) due to depth limit
         const success = try test_frame.stack.pop();
@@ -1675,9 +1675,9 @@ test "System opcodes: Gas consumption verification" {
         try test_frame.stack.append(0); // value
 
         const gas_before = test_frame.gas_remaining;
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
         const gas_used = gas_before - test_frame.gas_remaining;
 
         // Should consume increasing gas for larger init code
@@ -1731,9 +1731,9 @@ test "System opcodes: CREATE followed by CALL" {
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // value
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF0);
     const created_address = try frame.stack.pop();
 
     // Now CALL the created contract (if creation succeeded)
@@ -1747,7 +1747,7 @@ test "System opcodes: CREATE followed by CALL" {
         try frame.stack.append(created_address); // to (created contract)
         try frame.stack.append(50000); // gas
 
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+        _ = try evm.table.execute(0, &interpreter, &state, 0xF1);
         _ = try frame.stack.pop(); // call_success
         // Note: Implementation may return 0 for unimplemented external calls
     }
@@ -1798,9 +1798,9 @@ test "System opcodes: Nested STATICCALL restrictions" {
     try frame.stack.append(50000); // gas
 
     // STATICCALL should succeed even within static context
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xFA);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xFA);
     _ = try frame.stack.pop(); // success
     // Note: Implementation may return 0
 }
@@ -1846,9 +1846,9 @@ test "System opcodes: REVERT vs RETURN data handling" {
         try test_frame.stack.append(0); // offset (pushed first, will be below)
         try test_frame.stack.append(test_data.len); // size (pushed second, will be on top)
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF3);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        const result = evm.table.execute(0, &interpreter, &state, 0xF3);
         try testing.expectError(ExecutionError.Error.STOP, result);
         try testing.expectEqualSlices(u8, test_data, test_frame.return_data_buffer);
     }
@@ -1882,9 +1882,9 @@ test "System opcodes: REVERT vs RETURN data handling" {
         try test_frame.stack.append(0); // offset (pushed first, will be below)
         try test_frame.stack.append(test_data.len); // size (pushed second, will be on top)
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xFD);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        const result = evm.table.execute(0, &interpreter, &state, 0xFD);
         try testing.expectError(ExecutionError.Error.REVERT, result);
         try testing.expectEqualSlices(u8, test_data, test_frame.return_data_buffer);
     }
@@ -1947,9 +1947,9 @@ test "System opcodes: Large memory offsets" {
         }
 
         // Should fail with appropriate error (OutOfGas due to memory expansion or InvalidOffset)
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        const result = evm.table.execute(0, &interpreter, &state, opcode);
         try testing.expect(result == ExecutionError.Error.OutOfGas or result == ExecutionError.Error.OutOfOffset or result == ExecutionError.Error.InvalidOffset);
     }
 }
@@ -2001,9 +2001,9 @@ test "System opcodes: Zero gas scenarios" {
     try frame.stack.append(50000); // gas
 
     // Should either fail with OutOfGas or succeed with minimal gas
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF1);
     if (result) |_| {
         // If it succeeds, check result
         _ = try frame.stack.pop(); // success
@@ -2061,9 +2061,9 @@ test "System opcodes: Hardfork feature availability" {
         try test_frame.stack.append(1000); // gas
 
         // DELEGATECALL may not be available in Frontier
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&test_vm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        if (test_vm.table.execute(0, interpreter_ptr, state_ptr, 0xF4)) |_| {
+        var interpreter = *Evm.Operation.Interpreter = @ptrCast(&test_vm);
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        if (test_vm.table.execute(0, &interpreter, &state, 0xF4)) |_| {
             // May succeed in some implementations
         } else |_| {
             // May fail in Frontier (expected)
@@ -2108,9 +2108,9 @@ test "System opcodes: Hardfork feature availability" {
         try test_frame.stack.append(0); // value
 
         // CREATE2 may not be available in Byzantium
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&test_vm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        if (test_vm.table.execute(0, interpreter_ptr, state_ptr, 0xF5)) |_| {
+        var interpreter = *Evm.Operation.Interpreter = @ptrCast(&test_vm);
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        if (test_vm.table.execute(0, &interpreter, &state, 0xF5)) |_| {
             // May succeed in some implementations
         } else |_| {
             // May fail in Byzantium (expected)
@@ -2161,9 +2161,9 @@ test "System opcodes: Memory bounds checking" {
     try frame.stack.append(0); // value
 
     // Should fail with appropriate error
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0xF0);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0xF0);
     try testing.expect(result == ExecutionError.Error.OutOfGas or result == ExecutionError.Error.InvalidOffset);
 }
 
@@ -2218,9 +2218,9 @@ test "System opcodes: Gas optimization for warm addresses" {
     try frame.stack.append(50000); // gas
 
     const gas_before = frame.gas_remaining;
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0xF1);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0xF1);
     const gas_used = gas_before - frame.gas_remaining;
 
     // Should use less gas than cold access (no additional 2600 gas)

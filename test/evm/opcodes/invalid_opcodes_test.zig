@@ -58,9 +58,9 @@ test "Invalid Opcodes: 0x21-0x24 should fail" {
         try frame.stack.append(100);
 
         // Execute opcode directly through jump table
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
+        const result = evm.table.execute(0, &interpreter, &state, opcode);
 
         // We expect an error (likely InvalidOpcode or similar)
         try testing.expectError(ExecutionError.Error.InvalidOpcode, result);
@@ -120,9 +120,9 @@ test "Invalid Opcodes: Full 0x21-0x2F range" {
         try frame.stack.append(3);
 
         // Execute opcode directly through jump table
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
+        const result = evm.table.execute(0, &interpreter, &state, opcode);
 
         // All these should be invalid
         try testing.expectError(ExecutionError.Error.InvalidOpcode, result);

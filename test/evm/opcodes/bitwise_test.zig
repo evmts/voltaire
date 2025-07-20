@@ -40,13 +40,13 @@ test "Bitwise: AND basic operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Simple AND
     try frame.stack.append(0xFF00);
     try frame.stack.append(0xF0F0);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x16);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xF000), result1);
 
@@ -54,7 +54,7 @@ test "Bitwise: AND basic operations" {
     frame.stack.clear();
     try frame.stack.append(0);
     try frame.stack.append(0xFFFF);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x16);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2);
 
@@ -63,7 +63,7 @@ test "Bitwise: AND basic operations" {
     const max_u256 = std.math.maxInt(u256);
     try frame.stack.append(max_u256);
     try frame.stack.append(0x12345678);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x16);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x12345678), result3);
 
@@ -72,7 +72,7 @@ test "Bitwise: AND basic operations" {
     frame.gas_remaining = 1000;
     try frame.stack.append(0xFF00);
     try frame.stack.append(0xF0F0);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x16);
     const gas_used = 1000 - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 3), gas_used); // GasFastestStep = 3
 }
@@ -109,13 +109,13 @@ test "Bitwise: OR basic operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Simple OR
     try frame.stack.append(0xFF00);
     try frame.stack.append(0x00FF);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x17);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x17);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xFFFF), result1);
 
@@ -123,7 +123,7 @@ test "Bitwise: OR basic operations" {
     frame.stack.clear();
     try frame.stack.append(0);
     try frame.stack.append(0xABCD);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x17);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x17);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xABCD), result2);
 
@@ -132,7 +132,7 @@ test "Bitwise: OR basic operations" {
     const max_u256 = std.math.maxInt(u256);
     try frame.stack.append(max_u256);
     try frame.stack.append(0x12345678);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x17);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x17);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, max_u256), result3);
 }
@@ -169,13 +169,13 @@ test "Bitwise: XOR basic operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Simple XOR
     try frame.stack.append(0xFF00);
     try frame.stack.append(0xF0F0);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x18);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x18);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x0FF0), result1);
 
@@ -183,7 +183,7 @@ test "Bitwise: XOR basic operations" {
     frame.stack.clear();
     try frame.stack.append(0xABCD);
     try frame.stack.append(0xABCD);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x18);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x18);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2);
 
@@ -191,7 +191,7 @@ test "Bitwise: XOR basic operations" {
     frame.stack.clear();
     try frame.stack.append(0);
     try frame.stack.append(0x1234);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x18);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x18);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x1234), result3);
 }
@@ -228,26 +228,26 @@ test "Bitwise: NOT basic operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: NOT of zero
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x19);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x19);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, std.math.maxInt(u256)), result1);
 
     // Test 2: NOT of all ones
     frame.stack.clear();
     try frame.stack.append(std.math.maxInt(u256));
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x19);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x19);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2);
 
     // Test 3: NOT of pattern
     frame.stack.clear();
     try frame.stack.append(0xFFFF0000FFFF0000);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x19);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x19);
     const expected = std.math.maxInt(u256) ^ 0xFFFF0000FFFF0000;
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, expected), result3);
@@ -285,14 +285,14 @@ test "Bitwise: BYTE extraction operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Extract first byte (most significant)
     const test_value = 0xABCDEF1234567890;
     try frame.stack.append(test_value);
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1A);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result1); // Byte 0 is 0x00 in a 256-bit number
 
@@ -300,7 +300,7 @@ test "Bitwise: BYTE extraction operations" {
     frame.stack.clear();
     try frame.stack.append(test_value);
     try frame.stack.append(31);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1A);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x90), result2);
 
@@ -308,7 +308,7 @@ test "Bitwise: BYTE extraction operations" {
     frame.stack.clear();
     try frame.stack.append(test_value);
     try frame.stack.append(32);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1A);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // Should return 0
 
@@ -316,7 +316,7 @@ test "Bitwise: BYTE extraction operations" {
     frame.stack.clear();
     try frame.stack.append(test_value);
     try frame.stack.append(24);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1A);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xAB), result4); // Byte 24 is where 0xAB is located
 }
@@ -353,13 +353,13 @@ test "Bitwise: SHL (shift left) operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Simple left shift
     try frame.stack.append(0xFF);
     try frame.stack.append(8);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1B);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1B);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xFF00), result1);
 
@@ -367,7 +367,7 @@ test "Bitwise: SHL (shift left) operations" {
     frame.stack.clear();
     try frame.stack.append(0x1234);
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1B);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1B);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x1234), result2);
 
@@ -375,7 +375,7 @@ test "Bitwise: SHL (shift left) operations" {
     frame.stack.clear();
     try frame.stack.append(0xFFFF);
     try frame.stack.append(256);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1B);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1B);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3);
 
@@ -383,7 +383,7 @@ test "Bitwise: SHL (shift left) operations" {
     frame.stack.clear();
     try frame.stack.append(1);
     try frame.stack.append(255);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1B);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1B);
     const expected = @as(u256, 1) << 255;
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, expected), result4);
@@ -421,13 +421,13 @@ test "Bitwise: SHR (logical shift right) operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Simple right shift
     try frame.stack.append(0xFF00);
     try frame.stack.append(8);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1C);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1C);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xFF), result1);
 
@@ -435,7 +435,7 @@ test "Bitwise: SHR (logical shift right) operations" {
     frame.stack.clear();
     try frame.stack.append(0x1234);
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1C);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1C);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x1234), result2);
 
@@ -443,7 +443,7 @@ test "Bitwise: SHR (logical shift right) operations" {
     frame.stack.clear();
     try frame.stack.append(0xFFFF);
     try frame.stack.append(256);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1C);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1C);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3);
 }
@@ -480,13 +480,13 @@ test "Bitwise: SAR (arithmetic shift right) operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: SAR with positive number (same as logical shift)
     try frame.stack.append(0xFF00);
     try frame.stack.append(8);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1D);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1D);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xFF), result1);
 
@@ -495,7 +495,7 @@ test "Bitwise: SAR (arithmetic shift right) operations" {
     const negative = @as(u256, 1) << 255 | 0xFF00; // Set sign bit
     try frame.stack.append(negative);
     try frame.stack.append(8);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1D);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1D);
     // Should fill with 1s from left
     const expected = ((@as(u256, 0xFF) << 248) | (negative >> 8));
     const result2 = try frame.stack.pop();
@@ -505,7 +505,7 @@ test "Bitwise: SAR (arithmetic shift right) operations" {
     frame.stack.clear();
     try frame.stack.append(negative);
     try frame.stack.append(256);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1D);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1D);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, std.math.maxInt(u256)), result3);
 
@@ -513,7 +513,7 @@ test "Bitwise: SAR (arithmetic shift right) operations" {
     frame.stack.clear();
     try frame.stack.append(0x7FFF);
     try frame.stack.append(256);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x1D);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x1D);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result4);
 }
@@ -550,20 +550,20 @@ test "Bitwise: Stack underflow errors" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test AND with empty stack
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter_ptr, state_ptr, 0x16));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x16));
 
     // Test NOT with empty stack
     frame.stack.clear();
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter_ptr, state_ptr, 0x19));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x19));
 
     // Test BYTE with only one item
     frame.stack.clear();
     try frame.stack.append(42);
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter_ptr, state_ptr, 0x1A));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x1A));
 }
 
 test "Bitwise: Gas consumption" {
@@ -598,8 +598,8 @@ test "Bitwise: Gas consumption" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // All bitwise operations cost 3 gas (GasFastestStep)
     const operations = [_]struct {
@@ -627,7 +627,7 @@ test "Bitwise: Gas consumption" {
             try frame.stack.append(0x42);
         }
 
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, op_info.opcode);
+        _ = try evm.table.execute(0, &interpreter, &state, op_info.opcode);
         const gas_used = 1000 - frame.gas_remaining;
         try testing.expectEqual(@as(u64, 3), gas_used); // GasFastestStep = 3
     }

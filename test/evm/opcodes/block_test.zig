@@ -58,12 +58,12 @@ test "Block: BLOCKHASH operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Get blockhash for recent block (should return a hash)
     try frame.stack.append(999); // Block number (1 block ago)
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x40);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x40);
     const hash_value = try frame.stack.pop();
     // Should return a non-zero hash for recent blocks
     try testing.expect(hash_value != 0);
@@ -71,14 +71,14 @@ test "Block: BLOCKHASH operations" {
     // Test 2: Block number too old (> 256 blocks ago)
     frame.stack.clear();
     try frame.stack.append(700); // More than 256 blocks ago
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x40);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x40);
     const old_hash = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), old_hash);
 
     // Test 3: Future block number
     frame.stack.clear();
     try frame.stack.append(1001); // Future block
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x40);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x40);
     const future_hash = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), future_hash);
 
@@ -136,11 +136,11 @@ test "Block: COINBASE operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test: Push coinbase address to stack
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x41);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x41);
     const result = try frame.stack.pop();
     const coinbase_as_u256 = primitives.Address.to_u256(evm.access_list.context.block_coinbase);
     try testing.expectEqual(coinbase_as_u256, result);
@@ -199,11 +199,11 @@ test "Block: TIMESTAMP operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test: Push timestamp to stack
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x42);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x42);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1234567890), result);
 
@@ -261,11 +261,11 @@ test "Block: NUMBER operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test: Push block number to stack
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x43);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x43);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 987654321), result);
 
@@ -323,11 +323,11 @@ test "Block: DIFFICULTY/PREVRANDAO operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test: Push difficulty to stack
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x44);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x44);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x123456789ABCDEF0), result);
 
@@ -385,11 +385,11 @@ test "Block: GASLIMIT operations" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test: Push gas limit to stack
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x45);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x45);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 30_000_000), result);
 
@@ -447,11 +447,11 @@ test "Block: BASEFEE operations (London)" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test: Push base fee to stack
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x48);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x48);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1_000_000_000), result);
 
@@ -514,33 +514,33 @@ test "Block: BLOBHASH operations (Cancun)" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Get first blob hash
     try frame.stack.append(0);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x49);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x1111111111111111111111111111111111111111111111111111111111111111), result1);
 
     // Test 2: Get second blob hash
     frame.stack.clear();
     try frame.stack.append(1);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x49);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x2222222222222222222222222222222222222222222222222222222222222222), result2);
 
     // Test 3: Out of bounds index
     frame.stack.clear();
     try frame.stack.append(3);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x49);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // Returns 0 for out of bounds
 
     // Test 4: Very large index
     frame.stack.clear();
     try frame.stack.append(std.math.maxInt(u256));
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x49);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x49);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result4); // Returns 0 for out of bounds
 
@@ -598,11 +598,11 @@ test "Block: BLOBBASEFEE operations (Cancun)" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test: Push blob base fee to stack
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x4A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x4A);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 100_000_000), result);
 
@@ -642,15 +642,15 @@ test "Block: Stack underflow errors" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test BLOCKHASH with empty stack
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter_ptr, state_ptr, 0x40));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x40));
 
     // Test BLOBHASH with empty stack (Cancun)
     frame.stack.clear();
-    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, interpreter_ptr, state_ptr, 0x49));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, evm.table.execute(0, &interpreter, &state, 0x49));
 }
 
 test "Block: Edge cases" {
@@ -703,16 +703,16 @@ test "Block: Edge cases" {
     );
     evm.set_context(context);
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test all opcodes still work with max values
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x43);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x43);
     const number_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, std.math.maxInt(u64)), number_result);
 
     frame.stack.clear();
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x42);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x42);
     const timestamp_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, std.math.maxInt(u64)), timestamp_result);
 }

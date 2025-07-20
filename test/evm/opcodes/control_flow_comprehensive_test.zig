@@ -67,9 +67,9 @@ test "JUMP (0x56): Basic unconditional jump" {
     try frame.stack.append(5);
 
     // Execute JUMP
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x56);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0x56);
 
     // Program counter should now be at position 5
     try testing.expectEqual(@as(usize, 5), frame.pc);
@@ -170,9 +170,9 @@ test "JUMP: Jump to various valid destinations" {
         defer test_frame.deinit();
 
         try test_frame.stack.append(dest);
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x56);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        _ = try evm.table.execute(0, &interpreter, &state, 0x56);
         try testing.expectEqual(@as(usize, @intCast(dest)), test_frame.pc);
     }
 }
@@ -225,9 +225,9 @@ test "JUMP: Invalid jump destinations" {
         defer test_frame.deinit();
 
         try test_frame.stack.append(dest);
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x56);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        const result = evm.table.execute(0, &interpreter, &state, 0x56);
         try testing.expectError(ExecutionError.Error.InvalidJump, result);
     }
 }
@@ -270,9 +270,9 @@ test "JUMP: Stack underflow" {
     defer frame.deinit();
 
     // Don't push anything to stack - should cause stack underflow
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x56);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0x56);
     try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -330,17 +330,17 @@ test "JUMPI (0x57): Conditional jump with true condition" {
     // Execute the PUSH1 instructions in the bytecode
     // PUSH1 1 (condition)
     frame.pc = 0;
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60); // PUSH1 1
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60); // PUSH1 1
 
     // PUSH1 8 (destination)
     frame.pc = 2;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60); // PUSH1 8
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60); // PUSH1 8
 
     // Execute JUMPI
     frame.pc = 4;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x57);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x57);
 
     // Should have jumped to position 8
     try testing.expectEqual(@as(usize, 8), frame.pc);
@@ -400,9 +400,9 @@ test "JUMPI: Conditional jump with false condition" {
     try frame.stack.append(9); // destination = 9
 
     // Execute JUMPI
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x57);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0x57);
 
     // Should not have jumped - PC should remain at 4
     try testing.expectEqual(@as(usize, 4), frame.pc);
@@ -452,9 +452,9 @@ test "JUMPI: Various condition values" {
         test_frame.pc = 10; // Set to non-zero position
         try test_frame.stack.append(condition); // condition
         try test_frame.stack.append(0); // dest=0
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x57);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        _ = try evm.table.execute(0, &interpreter, &state, 0x57);
         try testing.expectEqual(@as(usize, 0), test_frame.pc); // Should jump
     }
 
@@ -471,9 +471,9 @@ test "JUMPI: Various condition values" {
         test_frame.pc = 10;
         try test_frame.stack.append(0); // condition=0
         try test_frame.stack.append(0); // dest=0
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x57);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        _ = try evm.table.execute(0, &interpreter, &state, 0x57);
         try testing.expectEqual(@as(usize, 10), test_frame.pc); // Should not jump
     }
 }
@@ -515,9 +515,9 @@ test "JUMPI: Invalid destination with true condition" {
     // Try to jump to invalid destination with true condition
     try frame.stack.append(1); // condition=1 (true)
     try frame.stack.append(5); // dest=5 (invalid)
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x57);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0x57);
     try testing.expectError(ExecutionError.Error.InvalidJump, result);
 }
 
@@ -557,9 +557,9 @@ test "JUMPI: Stack underflow" {
 
     // Test with empty stack
     {
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x57);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
+        const result = evm.table.execute(0, &interpreter, &state, 0x57);
         try testing.expectError(ExecutionError.Error.StackUnderflow, result);
     }
 
@@ -567,9 +567,9 @@ test "JUMPI: Stack underflow" {
     {
         frame.stack.clear();
         try frame.stack.append(5);
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x57);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = Evm.Operation.State{ .frame = &frame };
+        const result = evm.table.execute(0, &interpreter, &state, 0x57);
         try testing.expectError(ExecutionError.Error.StackUnderflow, result);
     }
 }
@@ -618,30 +618,30 @@ test "PC (0x58): Get program counter at various positions" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test PC at position 0
     frame.pc = 0;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x58);
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x58);
     const val0 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), val0);
 
     // Test PC at position 1
     frame.pc = 1;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x58);
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x58);
     const val1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), val1);
 
     // Test PC at position 4
     frame.pc = 4;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x58);
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x58);
     const val4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 4), val4);
 
     // Test PC at large position
     frame.pc = 1000;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x58);
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x58);
     const val1000 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1000), val1000);
 }
@@ -686,9 +686,9 @@ test "PC: Stack overflow protection" {
 
     // This should succeed
     frame.pc = 42;
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x58);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x58);
     const val = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), val);
 
@@ -696,7 +696,7 @@ test "PC: Stack overflow protection" {
     try frame.stack.append(0);
 
     // This should fail with stack overflow
-    const result = evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x58);
+    const result = evm.table.execute(frame.pc, &interpreter, &state, 0x58);
     try testing.expectError(ExecutionError.Error.StackOverflow, result);
 }
 
@@ -740,9 +740,9 @@ test "GAS (0x5A): Get remaining gas" {
             .build();
         defer test_frame.deinit();
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5A);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        _ = try evm.table.execute(0, &interpreter, &state, 0x5A);
 
         // GAS opcode should return remaining gas minus its own cost (2)
         const expected_gas = initial_gas - 2;
@@ -788,18 +788,18 @@ test "GAS: After consuming gas with operations" {
     // Execute some operations to consume gas
     try frame.stack.append(5);
     try frame.stack.append(10);
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD (costs 3)
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0x01); // ADD (costs 3)
     _ = try frame.stack.pop();
 
     try frame.stack.append(2);
     try frame.stack.append(3);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x02); // MUL (costs 5)
+    _ = try evm.table.execute(0, &interpreter, &state, 0x02); // MUL (costs 5)
     _ = try frame.stack.pop();
 
     // Now execute GAS opcode
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5A);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x5A);
 
     // Calculate expected remaining gas: initial - ADD - MUL - GAS
     const expected_gas = initial_gas - 3 - 5 - 2;
@@ -841,9 +841,9 @@ test "GAS: Low gas scenarios" {
             .build();
         defer test_frame.deinit();
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5A);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        _ = try evm.table.execute(0, &interpreter, &state, 0x5A);
         const val = try test_frame.stack.pop();
         try testing.expectEqual(@as(u256, 0), val); // All gas consumed
     }
@@ -858,9 +858,9 @@ test "GAS: Low gas scenarios" {
             .build();
         defer test_frame.deinit();
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x5A);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        const result = evm.table.execute(0, &interpreter, &state, 0x5A);
         try testing.expectError(ExecutionError.Error.OutOfGas, result);
     }
 }
@@ -904,9 +904,9 @@ test "GAS: Stack overflow protection" {
     }
 
     // This should fail with stack overflow
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.table.execute(0, interpreter_ptr, state_ptr, 0x5A);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.table.execute(0, &interpreter, &state, 0x5A);
     try testing.expectError(ExecutionError.Error.StackOverflow, result);
 }
 
@@ -957,9 +957,9 @@ test "JUMPDEST (0x5B): Basic operation" {
     const stack_size_before = frame.stack.size;
     const gas_before = frame.gas_remaining;
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5B);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0x5B);
 
     // Stack should be unchanged
     try testing.expectEqual(stack_size_before, frame.stack.size);
@@ -1032,9 +1032,9 @@ test "JUMPDEST: Jump destination validation" {
 
     frame.pc = 5; // Position before JUMP
     try frame.stack.append(9); // Jump to JUMPDEST at position 9
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x56); // JUMP
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0x56); // JUMP
     try testing.expectEqual(@as(usize, 9), frame.pc);
 }
 
@@ -1091,9 +1091,9 @@ test "JUMPDEST: Code analysis edge cases" {
     defer frame.deinit();
 
     try frame.stack.append(3);
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x56); // JUMP
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = try evm.table.execute(0, &interpreter, &state, 0x56); // JUMP
     try testing.expectEqual(@as(usize, 3), frame.pc);
 }
 
@@ -1207,12 +1207,12 @@ test "Control Flow: Gas consumption verification" {
         const gas_before = test_frame.gas_remaining;
 
         if (op.setup) |setup_fn| {
-            try setup_fn(&test_frame);
+            try setup_fn(&test_frame);frame };
         }
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, op.opcode);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        _ = try evm.table.execute(0, &interpreter, &state, op.opcode);
 
         const gas_used = gas_before - test_frame.gas_remaining;
         try testing.expectEqual(op.expected_gas, gas_used);
@@ -1287,41 +1287,41 @@ test "Control Flow: Complex jump sequences" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Execute the complex flow manually
     // 1. Start at JUMPDEST 0
     frame.pc = 0;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5B); // JUMPDEST
+    _ = try evm.table.execute(0, &interpreter, &state, 0x5B); // JUMPDEST
 
     // 2. PUSH1 8
     frame.pc = 1;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60); // PUSH1 8
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60); // PUSH1 8
 
     // 3. JUMP to 8
     frame.pc = 3;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x56); // JUMP
+    _ = try evm.table.execute(0, &interpreter, &state, 0x56); // JUMP
     try testing.expectEqual(@as(usize, 8), frame.pc);
 
     // 4. Execute JUMPDEST at 8
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5B); // JUMPDEST
+    _ = try evm.table.execute(0, &interpreter, &state, 0x5B); // JUMPDEST
 
     // 5. PUSH1 0x42
     frame.pc = 9;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60); // PUSH1 0x42
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60); // PUSH1 0x42
 
     // 6. PUSH1 1
     frame.pc = 11;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60); // PUSH1 1
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60); // PUSH1 1
 
     // 7. PUSH1 17
     frame.pc = 13;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60); // PUSH1 17
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60); // PUSH1 17
 
     // 8. JUMPI (should jump because condition is 1)
     frame.pc = 15;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x57); // JUMPI
+    _ = try evm.table.execute(0, &interpreter, &state, 0x57); // JUMPI
     try testing.expectEqual(@as(usize, 17), frame.pc);
 
     // Verify stack state
@@ -1405,27 +1405,27 @@ test "Control Flow: Stack operations validation" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test the individual operations
     // Execute PC at position 0 → should push 0
     frame.pc = 0;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x58);
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x58);
     const val0 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), val0);
     try frame.stack.append(val0); // Put it back
 
     // Execute PC at position 1 → should push 1
     frame.pc = 1;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x58);
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x58);
     const val1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), val1);
     try frame.stack.append(val1); // Put it back
 
     // Execute PUSH1 6 → should push 6
     frame.pc = 2;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
     const val6 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 6), val6);
     try frame.stack.append(val6); // Put it back
@@ -1488,28 +1488,28 @@ test "Control Flow: Program counter tracking" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Execute PC at position 0
     frame.pc = 0;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x58);
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x58);
 
     // Execute PC at position 1
     frame.pc = 1;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x58);
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x58);
 
     // Execute PUSH1 6
     frame.pc = 2;
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x60);
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x60);
 
     // Execute JUMP
     frame.pc = 4;
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x56);
+    _ = try evm.table.execute(0, &interpreter, &state, 0x56);
     try testing.expectEqual(@as(usize, 6), frame.pc);
 
     // Execute PC at position 6
-    _ = try evm.table.execute(frame.pc, interpreter_ptr, state_ptr, 0x58);
+    _ = try evm.table.execute(frame.pc, &interpreter, &state, 0x58);
 
     // Verify stack contains correct PC values
     // Expected stack from bottom to top: PC(0), PC(1), PC(6)
@@ -1577,12 +1577,12 @@ test "Control Flow: Out of gas scenarios" {
         defer test_frame.deinit();
 
         if (case.setup) |setup_fn| {
-            try setup_fn(&test_frame);
+            try setup_fn(&test_frame);frame };
         }
 
-        const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&test_frame);
-        const result = evm.table.execute(0, interpreter_ptr, state_ptr, case.opcode);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+        var state = *Evm.Operation.State = @ptrCast(&test_frame);frame };
+        const result = evm.table.execute(0, &interpreter, &state, case.opcode);
         try testing.expectError(ExecutionError.Error.OutOfGas, result);
     }
 }
@@ -1623,8 +1623,8 @@ test "Control Flow: Stack operations edge cases" {
         .build();
     defer frame.deinit();
 
-    const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
+    var state = Evm.Operation.State{ .frame = &frame };
 
     // Test PC and GAS push exactly one value
     const stack_ops = [_]u8{ 0x58, 0x5A }; // PC, GAS
@@ -1633,7 +1633,7 @@ test "Control Flow: Stack operations edge cases" {
         frame.stack.clear();
         const initial_size = frame.stack.size;
 
-        _ = try evm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+        _ = try evm.table.execute(0, &interpreter, &state, opcode);
 
         // Should push exactly one value
         try testing.expectEqual(initial_size + 1, frame.stack.size);
@@ -1643,19 +1643,19 @@ test "Control Flow: Stack operations edge cases" {
     // Test JUMP and JUMPI consume correct number of stack items
     frame.stack.clear();
     try frame.stack.append(0); // Only one value for JUMP
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x56); // JUMP
+    _ = try evm.table.execute(0, &interpreter, &state, 0x56); // JUMP
     try testing.expectEqual(@as(usize, 0), frame.stack.size);
 
     frame.stack.clear();
     try frame.stack.append(0); // condition=0
     try frame.stack.append(0); // dest=0
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x57); // JUMPI
+    _ = try evm.table.execute(0, &interpreter, &state, 0x57); // JUMPI
     try testing.expectEqual(@as(usize, 0), frame.stack.size);
 
     // Test JUMPDEST doesn't affect stack
     frame.stack.clear();
     try frame.stack.append(42);
-    _ = try evm.table.execute(0, interpreter_ptr, state_ptr, 0x5B); // JUMPDEST
+    _ = try evm.table.execute(0, &interpreter, &state, 0x5B); // JUMPDEST
     try testing.expectEqual(@as(usize, 1), frame.stack.size);
     const val = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), val);

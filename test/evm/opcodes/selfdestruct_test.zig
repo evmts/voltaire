@@ -48,9 +48,9 @@ test "SELFDESTRUCT: Basic functionality" {
     try frame.stack.push(bob_address.to_u256());
 
     // Execute SELFDESTRUCT opcode - should halt execution
-    const interpreter_ptr: *Evm.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.jump_table.get(0xFF).execute(interpreter_ptr, state_ptr);
+    var interpreter = *Evm.Interpreter = @ptrCast(&evm);
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.jump_table.get(0xFF).execute(&interpreter, &state);
     try testing.expectError(Evm.ExecutionError.Error.STOP, result);
 
     // Stack should be empty after consuming recipient address
@@ -107,9 +107,9 @@ test "SELFDESTRUCT: Forbidden in static call" {
     try frame.stack.push(bob_address.to_u256());
 
     // Execute SELFDESTRUCT opcode - should fail in static context
-    const interpreter_ptr: *Evm.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    const result = evm.jump_table.get(0xFF).execute(interpreter_ptr, state_ptr);
+    var interpreter = *Evm.Interpreter = @ptrCast(&evm);
+    var state = Evm.Operation.State{ .frame = &frame };
+    const result = evm.jump_table.get(0xFF).execute(&interpreter, &state);
     try testing.expectError(Evm.ExecutionError.Error.WriteProtection, result);
 
     // Contract should NOT be marked for destruction
@@ -162,9 +162,9 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
         const gas_before = frame.gas_remaining;
 
         // Execute SELFDESTRUCT
-        const interpreter_ptr: *Evm.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-        _ = evm.jump_table.get(0xFF).execute(interpreter_ptr, state_ptr);
+        var interpreter = *Evm.Interpreter = @ptrCast(&evm);
+        var state = Evm.Operation.State{ .frame = &frame };
+        _ = evm.jump_table.get(0xFF).execute(&interpreter, &state);
 
         // Should consume 0 gas in Frontier (plus any access list costs)
         const gas_consumed = gas_before - frame.gas_remaining;
@@ -215,9 +215,9 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
         const gas_before = frame.gas_remaining;
 
         // Execute SELFDESTRUCT
-        const interpreter_ptr: *Evm.Interpreter = @ptrCast(&evm);
-        const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-        _ = evm.jump_table.get(0xFF).execute(interpreter_ptr, state_ptr);
+        var interpreter = *Evm.Interpreter = @ptrCast(&evm);
+        var state = Evm.Operation.State{ .frame = &frame };
+        _ = evm.jump_table.get(0xFF).execute(&interpreter, &state);
 
         const gas_consumed = gas_before - frame.gas_remaining;
         // Should consume 5000 base + access costs
@@ -275,9 +275,9 @@ test "SELFDESTRUCT: Account creation cost (EIP-161)" {
     const gas_before = frame.gas_remaining;
 
     // Execute SELFDESTRUCT
-    const interpreter_ptr: *Evm.Interpreter = @ptrCast(&evm);
-    const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-    _ = evm.jump_table.get(0xFF).execute(interpreter_ptr, state_ptr);
+    var interpreter = *Evm.Interpreter = @ptrCast(&evm);
+    var state = Evm.Operation.State{ .frame = &frame };
+    _ = evm.jump_table.get(0xFF).execute(&interpreter, &state);
 
     const gas_consumed = gas_before - frame.gas_remaining;
     // Should consume 5000 base + 25000 account creation + access costs

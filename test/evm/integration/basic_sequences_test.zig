@@ -54,23 +54,23 @@ test "Integration: arithmetic calculation sequence" {
     try frame.stack.append(3);
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm);
+    var state = Operation.State{ .frame = &frame);frame };
 
     // ADD: 5 + 3 = 8
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x01);
     const add_result = frame.stack.peek_n(0) catch unreachable;
     try testing.expectEqual(@as(u256, 8), add_result);
 
     // Push 2 and multiply
     try frame.stack.append(2);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x02);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x02);
     const mul_result = frame.stack.peek_n(0) catch unreachable;
     try testing.expectEqual(@as(u256, 16), mul_result);
 
     // Push 1 and subtract
     try frame.stack.append(1);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x03);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x03);
 
     // Final result
     const final_result = try frame.stack.pop();
@@ -122,25 +122,25 @@ test "Integration: stack manipulation with DUP and SWAP" {
     // Stack: [10, 20, 30] (top is 30)
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm);
+    var state = Operation.State{ .frame = &frame);frame };
 
     // DUP2 - duplicate second item
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x81);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x81);
 
     // Stack: [10, 20, 30, 20]
     try testing.expectEqual(@as(u256, 20), frame.stack.peek_n(0) catch unreachable);
     try testing.expectEqual(@as(u256, 30), frame.stack.peek_n(1) catch unreachable);
 
     // SWAP1 - swap top two
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x90);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x90);
 
     // Stack: [10, 20, 20, 30]
     try testing.expectEqual(@as(u256, 30), frame.stack.peek_n(0) catch unreachable);
     try testing.expectEqual(@as(u256, 20), frame.stack.peek_n(1) catch unreachable);
 
     // ADD top two
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x01);
 
     // Stack: [10, 20, 50]
     try testing.expectEqual(@as(u256, 50), frame.stack.peek_n(0) catch unreachable);
@@ -188,27 +188,27 @@ test "Integration: memory to storage workflow" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm);
+    var state = Operation.State{ .frame = &frame);frame };
 
     // Store value in memory
     const test_value: u256 = 0x123456789ABCDEF;
     try frame.stack.append(32); // offset
     try frame.stack.append(test_value);
 
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x52);
 
     // Load from memory
     try frame.stack.append(32); // offset
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x51);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x51);
 
     // Store in storage slot 5 - SSTORE expects [value, key] with key on top
     try frame.stack.append(5); // slot (key)
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x55);
 
     // Load from storage
     try frame.stack.append(5); // slot
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x54);
 
     // Verify value
     const result = try frame.stack.pop();
@@ -267,22 +267,22 @@ test "Integration: conditional branching" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm);
+    var state = Operation.State{ .frame = &frame);frame };
 
     // Test 1: Jump taken (condition true)
     try frame.stack.append(100);
     try frame.stack.append(200);
 
     // Check if 100 < 200 (true)
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x10);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x10);
 
     // JUMPI to 10 if true
     const condition1 = try frame.stack.pop();
     try frame.stack.append(10); // destination
     try frame.stack.append(condition1); // condition on top
 
-    const result1 = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x57);
+    const result1 = try vm.table.execute(0, &interpreter, &state, 0x57);
     try testing.expectEqual(@as(?usize, 10), result1.jump_dest);
 
     // Test 2: Jump not taken (condition false)
@@ -291,14 +291,14 @@ test "Integration: conditional branching" {
     try frame.stack.append(100);
 
     // Check if 200 < 100 (false)
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x10);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x10);
 
     // JUMPI to 20 if true (won't jump)
     const condition2 = try frame.stack.pop();
     try frame.stack.append(20); // destination
     try frame.stack.append(condition2); // condition on top
 
-    const result2 = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x57);
+    const result2 = try vm.table.execute(0, &interpreter, &state, 0x57);
     try testing.expectEqual(@as(?usize, null), result2.jump_dest);
 }
 
@@ -339,8 +339,8 @@ test "Integration: hash and compare workflow" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm);
+    var state = Operation.State{ .frame = &frame);frame };
 
     // Write data to memory
     const data1 = [_]u8{ 0x01, 0x02, 0x03, 0x04 };
@@ -353,7 +353,7 @@ test "Integration: hash and compare workflow" {
     // Hash first data
     try frame.stack.append(0); // offset
     try frame.stack.append(4); // length
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x20);
 
     const hash1 = frame.stack.peek_n(0) catch unreachable;
 
@@ -363,10 +363,10 @@ test "Integration: hash and compare workflow" {
     // Hash second data
     try frame.stack.append(100); // offset
     try frame.stack.append(4); // length
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x20);
 
     // Compare hashes (should be equal)
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x14);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x14);
     const eq_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), eq_result);
 
@@ -377,10 +377,10 @@ test "Integration: hash and compare workflow" {
     try frame.stack.append(hash1); // Push first hash back
     try frame.stack.append(200); // offset
     try frame.stack.append(4); // length
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x20);
 
     // Compare hashes (should be different)
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x14);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x14);
     const neq_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), neq_result);
 }
@@ -439,35 +439,35 @@ test "Integration: call data processing" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm);
+    var state = Operation.State{ .frame = &frame);frame };
 
     // Get call data size
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x36);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x36);
     const size_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, call_data.len), size_result);
 
     // Load function selector (first 4 bytes)
     try frame.stack.append(0); // offset
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x35);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x35);
 
     // Extract selector by shifting right
     try frame.stack.append(224); // 256 - 32 = 224 bits
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x1C);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x1C);
 
     const selector = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xa9059cbb), selector);
 
     // Load first parameter (address)
     try frame.stack.append(4); // offset past selector
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x35);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x35);
 
     const param1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0x123456789abcdef01234567800000000000000000000000000000000), param1);
 
     // Load second parameter (amount)
     try frame.stack.append(36); // offset to second parameter
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x35);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x35);
 
     const param2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1000), param2);
@@ -510,15 +510,15 @@ test "Integration: gas tracking through operations" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm);
+    var state = Operation.State{ .frame = &frame);frame };
 
     // Memory operation (expansion cost)
     try frame.stack.append(1000); // Large offset causes expansion
     try frame.stack.append(0x123456);
 
     const gas_before_mstore = frame.gas_remaining;
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x52);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x52);
 
     const mstore_gas = gas_before_mstore - frame.gas_remaining;
     try testing.expect(mstore_gas > 0); // Should consume gas for memory expansion
@@ -528,7 +528,7 @@ test "Integration: gas tracking through operations" {
     try frame.stack.append(32); // length
 
     const gas_before_sha3 = frame.gas_remaining;
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x20);
 
     const sha3_gas = gas_before_sha3 - frame.gas_remaining;
     try testing.expect(sha3_gas >= 30 + 6); // Base cost + 1 word
@@ -539,7 +539,7 @@ test "Integration: gas tracking through operations" {
     try frame.stack.append(100); // slot (key)
 
     const gas_before_sstore = frame.gas_remaining;
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x55);
 
     const sstore_gas = gas_before_sstore - frame.gas_remaining;
     try testing.expectEqual(@as(u64, 2100), sstore_gas); // Cold storage access
@@ -586,22 +586,22 @@ test "Integration: error handling in sequences" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm);
+    var state = Operation.State{ .frame = &frame);frame };
 
     // Try sequence that will run out of gas
     try frame.stack.append(1000000); // Large value
     try frame.stack.append(1000000); // Large value
 
     // This should succeed
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x01);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x01);
 
     // Try expensive operation - SHA3 with large data
     try frame.stack.append(0); // offset
     try frame.stack.append(10000); // Large length
 
     // Should fail with out of gas
-    const result = vm.table.execute(0, interpreter_ptr, state_ptr, 0x20);
+    const result = vm.table.execute(0, &interpreter, &state, 0x20);
     try testing.expectError(ExecutionError.Error.OutOfGas, result);
 
     // Stack should still be valid
@@ -645,8 +645,8 @@ test "Integration: transient storage usage" {
     defer frame.deinit();
 
     // Execute opcodes through jump table
-    const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *Operation.State = @ptrCast(&frame);
+    var interpreter = Operation.Interpreter{ .vm = &vm);
+    var state = Operation.State{ .frame = &frame);frame };
 
     // Store in both regular and transient storage
     const test_value: u256 = 0xDEADBEEF;
@@ -655,23 +655,23 @@ test "Integration: transient storage usage" {
     // Store in regular storage - SSTORE expects [value, key] with key on top
     try frame.stack.append(test_value);
     try frame.stack.append(slot);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x55);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x55);
 
     // Store different value in transient storage - TSTORE expects [value, key] with key on top
     const transient_value: u256 = 0xCAFEBABE;
     try frame.stack.append(transient_value);
     try frame.stack.append(slot);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x5D);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x5D);
 
     // Load from regular storage
     try frame.stack.append(slot);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x54);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x54);
     const regular_result = try frame.stack.pop();
     try testing.expectEqual(test_value, regular_result);
 
     // Load from transient storage
     try frame.stack.append(slot);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x5C);
+    _ = try vm.table.execute(0, &interpreter, &state, 0x5C);
     const transient_result = try frame.stack.pop();
     try testing.expectEqual(transient_value, transient_result);
 

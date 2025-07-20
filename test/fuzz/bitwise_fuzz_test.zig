@@ -38,9 +38,9 @@ test "fuzz_bitwise_and_operations" {
     try frame.stack.append(0xF0F0F0F0F0F0F0F0);
     try frame.stack.append(0x0F0F0F0F0F0F0F0F);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x16);
+    var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
+    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    _ = try vm.table.execute(0, &interpreter, &state, 0x16);
     
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result);
@@ -81,9 +81,9 @@ test "fuzz_bitwise_or_operations" {
     try frame.stack.append(0xF0F0F0F0F0F0F0F0);
     try frame.stack.append(0x0F0F0F0F0F0F0F0F);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x17);
+    var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
+    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    _ = try vm.table.execute(0, &interpreter, &state, 0x17);
     
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xFFFFFFFFFFFFFFFF), result);
@@ -124,9 +124,9 @@ test "fuzz_bitwise_xor_operations" {
     try frame.stack.append(0xAAAAAAAAAAAAAAAA);
     try frame.stack.append(0x5555555555555555);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x18);
+    var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
+    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    _ = try vm.table.execute(0, &interpreter, &state, 0x18);
     
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0xFFFFFFFFFFFFFFFF), result);
@@ -166,9 +166,9 @@ test "fuzz_bitwise_not_operations" {
     // Test NOT operation
     try frame.stack.append(0);
     
-    const interpreter_ptr: *evm.Operation.Interpreter = @ptrCast(&vm);
-    const state_ptr: *evm.Operation.State = @ptrCast(&frame);
-    _ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x19);
+    var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
+    var state = *evm.Operation.State = @ptrCast(&frame);frame };
+    _ = try vm.table.execute(0, &interpreter, &state, 0x19);
     
     const result = try frame.stack.pop();
     try testing.expectEqual(std.math.maxInt(u256), result);
