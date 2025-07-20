@@ -112,12 +112,12 @@ test "JumpTable execute consumes gas before opcode execution" {
     try test_frame.stack.append(10);
     try test_frame.stack.append(20);
 
-    // Create interpreter and state pointers using real VM and Frame
-    const interpreter_ptr: *OperationModule.Interpreter = @ptrCast(&test_vm);
-    const state_ptr: *OperationModule.State = @ptrCast(&test_frame);
+    // Create interpreter and state using safe union types
+    var interpreter = OperationModule.Interpreter{ .vm = &test_vm };
+    var state = OperationModule.State{ .frame = &test_frame };
 
     // Execute ADD opcode (0x01) which has GasFastestStep (3) gas cost
-    _ = try jt.execute(0, interpreter_ptr, state_ptr, 0x01);
+    _ = try jt.execute(0, &interpreter, &state, 0x01);
 
     // Check that gas was consumed
     try std.testing.expectEqual(@as(u64, 97), test_frame.gas_remaining);

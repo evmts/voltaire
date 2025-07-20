@@ -41,13 +41,33 @@ const Memory = @import("../memory/memory.zig");
 /// ```
 pub const ExecutionResult = @import("../execution/execution_result.zig");
 
-/// Forward declaration for the interpreter context.
-/// The actual interpreter implementation provides VM state and context.
-pub const Interpreter = opaque {};
+/// Safe interpreter context union.
+/// Contains the actual VM instance that provides state and context.
+/// This replaces the unsafe opaque type with a safe union.
+pub const Interpreter = union(enum) {
+    vm: *@import("../evm.zig"),
+    
+    /// Get the VM instance safely
+    pub fn get_vm(self: *const Interpreter) *@import("../evm.zig") {
+        return switch (self.*) {
+            .vm => |vm| vm,
+        };
+    }
+};
 
-/// Forward declaration for execution state.
-/// Contains transaction context, account state, and execution environment.
-pub const State = opaque {};
+/// Safe execution state union.
+/// Contains the frame context with transaction and execution environment.
+/// This replaces the unsafe opaque type with a safe union.
+pub const State = union(enum) {
+    frame: *@import("../frame/frame.zig"),
+    
+    /// Get the Frame instance safely
+    pub fn get_frame(self: *const State) *@import("../frame/frame.zig") {
+        return switch (self.*) {
+            .frame => |frame| frame,
+        };
+    }
+};
 
 /// Function signature for opcode execution.
 ///
