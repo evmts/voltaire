@@ -35,7 +35,6 @@ const EvmMemoryAllocator = @import("memory/evm_allocator.zig").EvmMemoryAllocato
 
 /// Maximum call depth supported by EVM (per EIP-150)
 pub const MAX_CALL_DEPTH = 1024;
-
 // Hot fields (frequently accessed during execution)
 /// EVM memory allocator wrapper for efficient allocations
 evm_allocator: EvmMemoryAllocator,
@@ -57,12 +56,6 @@ context: Context,
 // Data fields (moderate access frequency)
 /// Return data from the most recent operation
 return_data: []u8 = &[_]u8{},
-
-// Frame pool for eliminating allocation overhead
-/// Pre-allocated frame pool to eliminate allocation overhead during calls
-frame_pool: [MAX_CALL_DEPTH]Frame = undefined,
-/// Tracks which frames in the pool are initialized
-frame_pool_initialized: [MAX_CALL_DEPTH]bool = [_]bool{false} ** MAX_CALL_DEPTH,
 
 // Large state structures (placed last to minimize offset impact)
 /// World state including accounts, storage, and code
@@ -135,9 +128,6 @@ pub fn init(allocator: std.mem.Allocator, database: @import("state/database_inte
     const chain_rules = ChainRules.DEFAULT;
     std.log.debug("Evm.init: ChainRules.DEFAULT accessed successfully", .{});
     
-    std.log.debug("Evm.init: Creating frame_pool_initialized array", .{});
-    const frame_pool_init = [_]bool{false} ** MAX_CALL_DEPTH;
-    std.log.debug("Evm.init: frame_pool_initialized array created", .{});
     
     std.log.debug("Evm.init: About to create Evm struct instance", .{});
     const evm_instance = Evm{
@@ -149,8 +139,6 @@ pub fn init(allocator: std.mem.Allocator, database: @import("state/database_inte
         .chain_rules = chain_rules,
         .context = context,
         .return_data = &[_]u8{},
-        .frame_pool = undefined, // Will be initialized lazily as needed
-        .frame_pool_initialized = frame_pool_init,
         .state = state,
         .access_list = access_list,
         .block_execution_config = .{ .enabled = false },
@@ -229,8 +217,6 @@ pub fn init_with_state(
         .context = context,
         .depth = depth orelse 0,
         .read_only = read_only orelse false,
-        .frame_pool = undefined,
-        .frame_pool_initialized = [_]bool{false} ** MAX_CALL_DEPTH,
         .block_execution_config = .{ .enabled = false },
         .block_cache = null,
     };
@@ -253,7 +239,6 @@ pub fn init_with_hardfork(allocator: std.mem.Allocator, database: @import("state
 /// Free all VM resources.
 /// Must be called when finished with the VM to prevent memory leaks.
 pub fn deinit(self: *Evm) void {
-    self.deinitFramePool();
     self.state.deinit();
     self.access_list.deinit();
     Contract.clear_analysis_cache(self.allocator);
@@ -277,9 +262,6 @@ pub fn reset(self: *Evm) void {
     self.read_only = false;
     self.return_data = &[_]u8{};
     
-    // Reset frame pool
-    self.deinitFramePool();
-    self.frame_pool_initialized = [_]bool{false} ** MAX_CALL_DEPTH;
     
     // State and access list would need their own reset methods
     // For now, they maintain their state across resets
@@ -308,51 +290,6 @@ pub fn disableBlockExecution(self: *Evm) void {
         cache.deinit();
         self.allocator.destroy(cache);
         self.block_cache = null;
-    }
-}
-
-/// Get a pooled frame at the current call depth.
-/// Initializes the frame lazily if not already initialized.
-/// Returns error if depth exceeds maximum call depth.
-pub fn getPooledFrame(self: *Evm, gas: u64, contract: *Contract, caller: primitives.Address, call_data: []const u8) !*Frame {
-    if (self.depth >= MAX_CALL_DEPTH) {
-        return ExecutionError.Error.DepthLimit;
-    }
-
-    const depth_index = self.depth;
-    
-    if (!self.frame_pool_initialized[depth_index]) {
-        self.frame_pool[depth_index] = try Frame.init_full(
-            self.allocator,
-            self,
-            gas,
-            contract,
-            caller,
-            call_data
-        );
-        self.frame_pool_initialized[depth_index] = true;
-    } else {
-        try self.resetPooledFrame(depth_index, gas, contract, caller, call_data);
-    }
-    
-    return &self.frame_pool[depth_index];
-}
-
-/// Reset a pooled frame to initial state for reuse.
-/// This avoids deallocation/reallocation overhead.
-fn resetPooledFrame(self: *Evm, depth_index: usize, gas: u64, contract: *Contract, caller: primitives.Address, call_data: []const u8) !void {
-    var frame = &self.frame_pool[depth_index];
-    
-    try frame.reset(gas, contract, caller, call_data);
-}
-
-/// Cleanup all initialized frames in the pool.
-fn deinitFramePool(self: *Evm) void {
-    for (0..MAX_CALL_DEPTH) |i| {
-        if (self.frame_pool_initialized[i]) {
-            self.frame_pool[i].deinit();
-            self.frame_pool_initialized[i] = false;
-        }
     }
 }
 
@@ -835,46 +772,6 @@ test "Evm invariant: all fields properly initialized after init" {
     try testing.expectEqual(@as(u256, 0), evm.context.block.number);
     try testing.expectEqual(@as(u64, 0), evm.context.block.timestamp);
     try testing.expectEqual(@as(u256, 0), evm.context.block.gas_limit);
-}
-
-test "Evm frame pool initialization and reuse" {
-    const allocator = testing.allocator;
-    
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-    
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface);
-    defer evm.deinit();
-    
-    const contract = try Contract.init(
-        allocator,
-        &[_]u8{0x01},
-        .{ .address = [_]u8{0x42} ** 20 },
-    );
-    defer contract.deinit(allocator, null);
-    
-    evm.depth = 0;
-    
-    const caller = [_]u8{0x99} ** 20;
-    const call_data = &[_]u8{0x01, 0x02, 0x03};
-    
-    const frame1 = try evm.getPooledFrame(1000000, &contract, caller, call_data);
-    try testing.expectEqual(@as(u64, 1000000), frame1.gas_remaining);
-    try testing.expectEqual(@as(usize, 0), frame1.pc);
-    try testing.expectEqual(call_data.ptr, frame1.input.ptr);
-    
-    frame1.gas_remaining = 500000;
-    frame1.pc = 10;
-    try frame1.stack.push(42);
-    
-    const frame2 = try evm.getPooledFrame(2000000, &contract, caller, &[_]u8{0x04, 0x05});
-    try testing.expectEqual(@as(u64, 2000000), frame2.gas_remaining);
-    try testing.expectEqual(@as(usize, 0), frame2.pc);
-    try testing.expectEqual(@as(usize, 0), frame2.stack.size());
-    try testing.expectEqual(@as(usize, 2), frame2.input.len);
-    
-    try testing.expect(frame1 == frame2);
 }
 
 test "Evm memory leak detection" {
