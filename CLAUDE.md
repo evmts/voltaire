@@ -431,6 +431,40 @@ git add ...
 git commit -m "..."
 ```
 
+### Commit Message Convention
+
+**MANDATORY**: All commit messages MUST use emoji conventional commits format.
+
+#### Format
+```
+<emoji> <type>: <description>
+
+[optional body]
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+#### Required Emojis by Type
+- 🎉 `feat`: new features
+- 🐛 `fix`: bug fixes  
+- 🔧 `ci`: CI/CD changes
+- 📚 `docs`: documentation
+- 🎨 `style`: formatting, no code change
+- ♻️ `refactor`: code restructuring
+- ⚡ `perf`: performance improvements
+- ✅ `test`: adding/updating tests
+- 🔨 `build`: build system changes
+- 📦 `deps`: dependency updates
+
+#### Examples
+```bash
+git commit -m "🎉 feat: add EIP-4844 blob transaction support"
+git commit -m "🐛 fix: resolve memory leak in contract cleanup"
+git commit -m "🔧 ci: add Ubuntu native build to CI workflow"
+```
+
 ### Standard Commands
 **IMPORTANT**: Always use `zig build test`, never use `zig test` directly.
 
