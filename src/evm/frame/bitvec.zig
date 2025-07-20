@@ -133,23 +133,10 @@ pub fn BitVec(comptime T: type) type {
             errdefer bitmap.deinit(allocator);
 
             // Mark all positions as valid code initially
-            if (T == u64 and code.len > 64) {
-                // Use vectorized operation for larger bit vectors with u64 storage
-                const bitvec64: *BitVec64 = @ptrCast(&bitmap);
-                setRangeVectorized(bitvec64, 0, code.len) catch |err| switch (err) {
-                    error.PositionOutOfBounds => {
-                        // This should never happen since we're using valid range [0, code.len)
-                        // Fall back to individual setting
-                        for (0..code.len) |i| {
-                            bitmap.setUnchecked(i);
-                        }
-                    },
-                };
-            } else {
-                // Fallback to individual bit setting for smaller vectors or other storage types
-                for (0..code.len) |i| {
-                    bitmap.setUnchecked(i);
-                }
+            // Temporarily disable vectorized optimization to fix ARM64 issues
+            // TODO: Re-enable with proper architecture detection
+            for (0..code.len) |i| {
+                bitmap.setUnchecked(i);
             }
 
             var i: usize = 0;
@@ -204,29 +191,39 @@ pub fn setRangeVectorized(self: *BitVec64, start: usize, end: usize) BitVec64.Bi
         self.bits[startWord] |= mask;
     }
     
-    // Process middle words using @Vector
+    // Process middle words - use vectorization only on x86_64
     const fullWordStart = if (startBit == 0) startWord else startWord + 1;
     const fullWordEnd = if (endBit == 0) endWord + 1 else endWord;
     
     if (fullWordStart < fullWordEnd) {
-        const vectorSize = 8;
-        const numFullWords = fullWordEnd - fullWordStart;
-        const numVectors = numFullWords / vectorSize;
-        
-        // Process 8 words at a time
-        var i: usize = 0;
-        while (i < numVectors) : (i += 1) {
-            const idx = fullWordStart + i * vectorSize;
-            const vec: @Vector(vectorSize, u64) = @splat(~@as(u64, 0));
-            const ptr: *[vectorSize]u64 = @ptrCast(self.bits[idx..idx + vectorSize]);
-            const currentVec: @Vector(vectorSize, u64) = ptr.*;
-            ptr.* = currentVec | vec;
-        }
-        
-        // Process remaining words
-        var j = fullWordStart + numVectors * vectorSize;
-        while (j < fullWordEnd) : (j += 1) {
-            self.bits[j] = ~@as(u64, 0);
+        const builtin = @import("builtin");
+        if (comptime builtin.target.cpu.arch == .x86_64) {
+            // Use @Vector optimization on x86_64
+            const vectorSize = 8;
+            const numFullWords = fullWordEnd - fullWordStart;
+            const numVectors = numFullWords / vectorSize;
+            
+            // Process 8 words at a time
+            var i: usize = 0;
+            while (i < numVectors) : (i += 1) {
+                const idx = fullWordStart + i * vectorSize;
+                const vec: @Vector(vectorSize, u64) = @splat(~@as(u64, 0));
+                const ptr: *[vectorSize]u64 = @ptrCast(self.bits[idx..idx + vectorSize]);
+                const currentVec: @Vector(vectorSize, u64) = ptr.*;
+                ptr.* = currentVec | vec;
+            }
+            
+            // Process remaining words
+            var j = fullWordStart + numVectors * vectorSize;
+            while (j < fullWordEnd) : (j += 1) {
+                self.bits[j] = ~@as(u64, 0);
+            }
+        } else {
+            // Fallback to standard loop on other architectures
+            var j = fullWordStart;
+            while (j < fullWordEnd) : (j += 1) {
+                self.bits[j] = ~@as(u64, 0);
+            }
         }
     }
     
