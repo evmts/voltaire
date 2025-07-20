@@ -277,6 +277,37 @@ pub fn deinit(self: *Frame) void {
     self.return_data.deinit();
 }
 
+/// Reset frame to initial state for reuse in frame pool.
+///
+/// Resets all execution state while reusing memory structures where possible.
+/// This allows frame reuse to eliminate allocation overhead during calls.
+///
+/// @param self The frame to reset
+/// @param gas New gas limit
+/// @param contract New contract to execute
+/// @param caller New caller address
+/// @param input New input data
+pub fn reset(self: *Frame, gas: u64, contract: *Contract, caller: primitives.Address, input: []const u8) !void {
+    _ = caller; // Caller parameter for future use
+    
+    self.gas_remaining = gas;
+    self.pc = 0;
+    self.contract = contract;
+    self.stop = false;
+    self.is_static = false;
+    self.depth = 0;
+    self.cost = 0;
+    self.err = null;
+    self.input = input;
+    self.output = &[_]u8{};
+    self.op = &.{};
+    
+    self.memory.deinit();
+    self.memory = try Memory.init_default(self.allocator);
+    self.stack.clear();
+    self.return_data.clear();
+}
+
 /// Builder pattern for Frame initialization.
 ///
 /// Provides a fluent interface for creating Frame instances with optional parameters.
