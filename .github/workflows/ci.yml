@@ -177,6 +177,11 @@ jobs:
             wasm-zig-${{ matrix.optimize }}-
             wasm-zig-
 
+      - name: Fetch dependencies
+        run: |
+          echo "Fetching dependencies..."
+          zig build --fetch
+
       - name: Build WASM target (${{ matrix.optimize }})
         run: |
           echo "Building WASM with -Doptimize=${{ matrix.optimize }}"
