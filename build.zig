@@ -231,15 +231,8 @@ pub fn build(b: *std.Build) void {
     else
         b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
     
-    // For Linux, use a different approach to avoid linker format issues
-    if (target.result.os.tag == .linux) {
-        // Extract the directory and library name for Linux builds
-        const lib_dir = std.fs.path.dirname(rust_lib_path).?;
-        bn254_lib.addLibraryPath(b.path(lib_dir));
-        bn254_lib.linkSystemLibrary("bn254_wrapper");
-    } else {
-        bn254_lib.addObjectFile(b.path(rust_lib_path));
-    }
+    // Use static library linking approach for all platforms
+    bn254_lib.addObjectFile(b.path(rust_lib_path));
     bn254_lib.linkLibC();
 
     // Link additional system libraries that Rust might need
@@ -332,15 +325,8 @@ pub fn build(b: *std.Build) void {
     else
         b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
     
-    // For Linux, use a different approach to avoid linker format issues
-    if (target.result.os.tag == .linux) {
-        // Extract the directory and library name for Linux builds
-        const bench_lib_dir = std.fs.path.dirname(bench_rust_lib_path).?;
-        bench_bn254_lib.addLibraryPath(b.path(bench_lib_dir));
-        bench_bn254_lib.linkSystemLibrary("bn254_wrapper");
-    } else {
-        bench_bn254_lib.addObjectFile(b.path(bench_rust_lib_path));
-    }
+    // Use static library linking approach for all platforms
+    bench_bn254_lib.addObjectFile(b.path(bench_rust_lib_path));
     bench_bn254_lib.linkLibC();
     
     // Link additional system libraries that Rust might need
