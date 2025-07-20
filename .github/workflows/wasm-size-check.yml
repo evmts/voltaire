@@ -58,23 +58,8 @@ jobs:
     - name: Generate size report for PR
       if: github.event_name == 'pull_request'
       run: |
-        # Generate detailed report
-        python3 scripts/wasm-analyze.py > wasm-size-report.txt
-        
-        # Extract just the size comparison table for PR comment
-        python3 -c "
-        import sys
-        in_table = False
-        for line in open('wasm-size-report.txt'):
-            if '## Bundle Size Report' in line:
-                in_table = True
-                print(line.strip())
-                continue
-            if in_table:
-                if line.startswith('##') and 'Bundle Size Report' not in line:
-                    break
-                print(line.rstrip())
-        " > pr-comment.txt
+        # Generate markdown table for PR comment
+        python3 scripts/wasm-analyze.py --markdown-table > pr-comment.txt
 
     - name: Comment on PR with size report
       if: github.event_name == 'pull_request'
@@ -88,7 +73,7 @@ jobs:
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: `## 📦 WASM Bundle Size Report\n\n\`\`\`\n${comment}\n\`\`\`\n\n*This report shows current WASM bundle sizes compared to targets. The build will fail if ReleaseSmall without precompiles exceeds 100K.*`
+            body: `## 📦 WASM Bundle Size Report\n${comment}\n*This report shows current WASM bundle sizes compared to targets. The build will fail if ReleaseSmall without precompiles exceeds 100K.*`
           });
 
     - name: Upload WASM artifacts
