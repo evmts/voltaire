@@ -42,10 +42,10 @@ We’re wrapping up the **Alpha release**. We will be testing vs all ethereum ha
 💥 Official benchmarks and bundle size reports will be included with the **Alpha drop**.
 You can expect:
 
-* ⏱️ **Massive performance boosts**
+* ⏱️ **Best in class Performance**
 * 🪶 **Significant bundle size reduction**
 
-Compared to any other EVM implementation before
+Compared to other EVM implementations
 
 ---
 
