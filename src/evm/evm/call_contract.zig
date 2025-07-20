@@ -23,7 +23,7 @@ pub const CallContractError = std.mem.Allocator.Error || ExecutionError.Error ||
 /// @param gas Gas limit available for the call
 /// @param is_static Whether this is a static call (no state changes allowed)
 /// @return CallResult indicating success/failure and return data
-pub fn call_contract(self: *Vm, caller: primitives.Address.Address, to: primitives.Address.Address, value: u256, input: []const u8, gas: u64, is_static: bool) CallContractError!CallResult {
+pub inline fn call_contract(self: *Vm, caller: primitives.Address.Address, to: primitives.Address.Address, value: u256, input: []const u8, gas: u64, is_static: bool) CallContractError!CallResult {
     @branchHint(.likely);
 
     Log.debug("VM.call_contract: Call from {any} to {any}, gas={}, static={}", .{ caller, to, gas, is_static });
@@ -92,7 +92,6 @@ pub fn call_contract(self: *Vm, caller: primitives.Address.Address, to: primitiv
     if (value > 0) {
         const caller_balance = self.state.get_balance(caller);
         if (caller_balance < value) {
-            @branchHint(.unlikely);
             Log.debug("VM.call_contract: Insufficient balance for value transfer", .{});
             return CallResult{ .success = false, .gas_left = gas, .output = null };
         }

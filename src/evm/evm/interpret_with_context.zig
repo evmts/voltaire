@@ -7,8 +7,6 @@ const RunResult = @import("run_result.zig").RunResult;
 const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
-const BlockExecutor = @import("../execution/block_executor.zig").BlockExecutor;
-const BlockExecutionConfig = @import("../execution/block_executor.zig").BlockExecutionConfig;
 
 /// Core bytecode execution with configurable static context.
 /// Runs the main VM loop, executing opcodes sequentially while tracking
@@ -55,7 +53,8 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
         const result = self.table.execute(pc, interpreter, state, opcode) catch |err| {
             @branchHint(.cold);
             contract.gas = frame.gas_remaining;
-            self.return_data = @constCast(frame.return_data.get());
+            // Don't store frame's return data in EVM - it will be freed when frame deinits
+            self.return_data = &[_]u8{};
 
             var output: ?[]const u8 = null;
             // Use frame.output for RETURN/REVERT data
@@ -116,7 +115,8 @@ pub fn interpret_with_context(self: *Vm, contract: *Contract, input: []const u8,
     }
 
     contract.gas = frame.gas_remaining;
-    self.return_data = @constCast(frame.return_data.get());
+    // Don't store frame's return data in EVM - it will be freed when frame deinits
+    self.return_data = &[_]u8{};
 
     // Use frame.output for normal completion (no RETURN/REVERT was called)
     const output_data = frame.output;

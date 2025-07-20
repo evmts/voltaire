@@ -93,7 +93,7 @@ pub fn init() JumpTable {
 /// ```zig
 /// const op = table.get_operation(0x01); // Get ADD operation
 /// ```
-pub fn get_operation(self: *const JumpTable, opcode: u8) *const Operation {
+pub inline fn get_operation(self: *const JumpTable, opcode: u8) *const Operation {
     return self.table[opcode] orelse &operation_module.NULL_OPERATION;
 }
 
@@ -106,15 +106,15 @@ pub fn get_operation(self: *const JumpTable, opcode: u8) *const Operation {
 /// 4. Executes the operation
 ///
 /// ## SIZE OPTIMIZATION SAFETY GUARANTEE
-/// 
+///
 /// The `validate_stack_requirements()` call at line 139 provides comprehensive
 /// stack validation for ALL operations using the min_stack/max_stack metadata
 /// from operation_config.zig. This validation ensures:
-/// 
+///
 /// - Operations requiring 2 stack items (ADD, SUB, etc.) have >= 2 items
-/// - Operations requiring 3 stack items (ADDMOD, etc.) have >= 3 items  
+/// - Operations requiring 3 stack items (ADDMOD, etc.) have >= 3 items
 /// - Operations that push have sufficient capacity (stack.size <= max_stack)
-/// 
+///
 /// BECAUSE of this validation, individual operations can safely use:
 /// - `stack.pop_unsafe()` without size checks
 /// - `stack.append_unsafe()` without capacity checks
@@ -138,7 +138,7 @@ pub fn get_operation(self: *const JumpTable, opcode: u8) *const Operation {
 /// ```zig
 /// const result = try table.execute(pc, &interpreter, &state, bytecode[pc]);
 /// ```
-pub fn execute(self: *const JumpTable, pc: usize, interpreter: operation_module.Interpreter, state: operation_module.State, opcode: u8) ExecutionError.Error!operation_module.ExecutionResult {
+pub inline fn execute(self: *const JumpTable, pc: usize, interpreter: operation_module.Interpreter, state: operation_module.State, opcode: u8) ExecutionError.Error!operation_module.ExecutionResult {
     const operation = self.get_operation(opcode);
 
     // Access frame directly - state is now a direct pointer
@@ -271,7 +271,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
                 .max_stack = Stack.CAPACITY - 1,
             };
         };
-        
+
         for (0..32) |i| {
             jt.table[0x60 + i] = &static_push_op.op;
         }
@@ -284,7 +284,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             .min_stack = 0,
             .max_stack = Stack.CAPACITY - 1,
         };
-        
+
         // PUSH2-PUSH8 - optimized with u64 arithmetic
         inline for (1..8) |i| {
             const n = i + 1;
@@ -295,7 +295,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
                 .max_stack = Stack.CAPACITY - 1,
             };
         }
-        
+
         // PUSH9-PUSH32 - use generic implementation
         inline for (8..32) |i| {
             const n = i + 1;
@@ -311,12 +311,12 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     if (comptime builtin.mode == .ReleaseSmall) {
         // Use specific functions for each DUP operation to avoid opcode detection issues
         const dup_functions = [_]fn (usize, operation_module.Interpreter, operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
-            stack_ops.dup_1, stack_ops.dup_2, stack_ops.dup_3, stack_ops.dup_4,
-            stack_ops.dup_5, stack_ops.dup_6, stack_ops.dup_7, stack_ops.dup_8,
-            stack_ops.dup_9, stack_ops.dup_10, stack_ops.dup_11, stack_ops.dup_12,
+            stack_ops.dup_1,  stack_ops.dup_2,  stack_ops.dup_3,  stack_ops.dup_4,
+            stack_ops.dup_5,  stack_ops.dup_6,  stack_ops.dup_7,  stack_ops.dup_8,
+            stack_ops.dup_9,  stack_ops.dup_10, stack_ops.dup_11, stack_ops.dup_12,
             stack_ops.dup_13, stack_ops.dup_14, stack_ops.dup_15, stack_ops.dup_16,
         };
-        
+
         inline for (1..17) |n| {
             const dup_op = struct {
                 const op = Operation{
@@ -342,12 +342,12 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     if (comptime builtin.mode == .ReleaseSmall) {
         // Use specific functions for each SWAP operation to avoid opcode detection issues
         const swap_functions = [_]fn (usize, operation_module.Interpreter, operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
-            stack_ops.swap_1, stack_ops.swap_2, stack_ops.swap_3, stack_ops.swap_4,
-            stack_ops.swap_5, stack_ops.swap_6, stack_ops.swap_7, stack_ops.swap_8,
-            stack_ops.swap_9, stack_ops.swap_10, stack_ops.swap_11, stack_ops.swap_12,
+            stack_ops.swap_1,  stack_ops.swap_2,  stack_ops.swap_3,  stack_ops.swap_4,
+            stack_ops.swap_5,  stack_ops.swap_6,  stack_ops.swap_7,  stack_ops.swap_8,
+            stack_ops.swap_9,  stack_ops.swap_10, stack_ops.swap_11, stack_ops.swap_12,
             stack_ops.swap_13, stack_ops.swap_14, stack_ops.swap_15, stack_ops.swap_16,
         };
-        
+
         inline for (1..17) |n| {
             const swap_op = struct {
                 const op = Operation{
@@ -375,7 +375,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         const log_functions = [_]fn (usize, operation_module.Interpreter, operation_module.State) ExecutionError.Error!operation_module.ExecutionResult{
             log.log_0, log.log_1, log.log_2, log.log_3, log.log_4,
         };
-        
+
         inline for (0..5) |n| {
             const log_op = struct {
                 const op = Operation{
@@ -405,21 +405,21 @@ test "jump_table_benchmarks" {
     const Timer = std.time.Timer;
     var timer = try Timer.start();
     const allocator = std.testing.allocator;
-    
+
     // Setup test environment
     var memory_db = @import("../state/memory_database.zig").MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
     var vm = try @import("../evm.zig").Vm.init(allocator, db_interface, null, null);
     defer vm.deinit();
-    
+
     const iterations = 100000;
-    
+
     // Benchmark 1: Opcode dispatch performance comparison
     const cancun_table = JumpTable.init_from_hardfork(.CANCUN);
     const shanghai_table = JumpTable.init_from_hardfork(.SHANGHAI);
     const berlin_table = JumpTable.init_from_hardfork(.BERLIN);
-    
+
     timer.reset();
     var i: usize = 0;
     while (i < iterations) : (i += 1) {
@@ -428,7 +428,7 @@ test "jump_table_benchmarks" {
         _ = cancun_table.get_operation(opcode);
     }
     const cancun_dispatch_ns = timer.read();
-    
+
     timer.reset();
     i = 0;
     while (i < iterations) : (i += 1) {
@@ -436,7 +436,7 @@ test "jump_table_benchmarks" {
         _ = shanghai_table.get_operation(opcode);
     }
     const shanghai_dispatch_ns = timer.read();
-    
+
     timer.reset();
     i = 0;
     while (i < iterations) : (i += 1) {
@@ -444,10 +444,10 @@ test "jump_table_benchmarks" {
         _ = berlin_table.get_operation(opcode);
     }
     const berlin_dispatch_ns = timer.read();
-    
+
     // Benchmark 2: Hot path opcode execution (common operations)
     const hot_opcodes = [_]u8{ 0x60, 0x80, 0x01, 0x50, 0x90 }; // PUSH1, DUP1, ADD, POP, SWAP1
-    
+
     timer.reset();
     for (hot_opcodes) |opcode| {
         i = 0;
@@ -460,11 +460,11 @@ test "jump_table_benchmarks" {
         }
     }
     const hot_path_ns = timer.read();
-    
+
     // Benchmark 3: Cold path opcode handling (undefined/invalid opcodes)
     timer.reset();
     const invalid_opcodes = [_]u8{ 0x0c, 0x0d, 0x0e, 0x0f, 0x1e, 0x1f }; // Invalid opcodes
-    
+
     for (invalid_opcodes) |opcode| {
         i = 0;
         while (i < 1000) : (i += 1) { // Fewer iterations for cold path
@@ -474,15 +474,15 @@ test "jump_table_benchmarks" {
         }
     }
     const cold_path_ns = timer.read();
-    
+
     // Benchmark 4: Hardfork-specific opcode availability
     timer.reset();
     const hardfork_specific_opcodes = [_]struct { opcode: u8, hardfork: Hardfork }{
         .{ .opcode = 0x5f, .hardfork = .SHANGHAI }, // PUSH0 - only available from Shanghai
-        .{ .opcode = 0x46, .hardfork = .BERLIN },   // CHAINID - available from Istanbul
-        .{ .opcode = 0x48, .hardfork = .LONDON },   // BASEFEE - available from London
+        .{ .opcode = 0x46, .hardfork = .BERLIN }, // CHAINID - available from Istanbul
+        .{ .opcode = 0x48, .hardfork = .LONDON }, // BASEFEE - available from London
     };
-    
+
     for (hardfork_specific_opcodes) |test_case| {
         const table = JumpTable.init_from_hardfork(test_case.hardfork);
         i = 0;
@@ -492,11 +492,11 @@ test "jump_table_benchmarks" {
         }
     }
     const hardfork_specific_ns = timer.read();
-    
+
     // Benchmark 5: Branch prediction impact (predictable vs unpredictable patterns)
     var rng = std.Random.DefaultPrng.init(12345);
     const random = rng.random();
-    
+
     // Predictable pattern - sequential opcodes
     timer.reset();
     i = 0;
@@ -505,7 +505,7 @@ test "jump_table_benchmarks" {
         _ = cancun_table.get_operation(opcode);
     }
     const predictable_ns = timer.read();
-    
+
     // Unpredictable pattern - random opcodes
     timer.reset();
     i = 0;
@@ -514,7 +514,7 @@ test "jump_table_benchmarks" {
         _ = cancun_table.get_operation(opcode);
     }
     const unpredictable_ns = timer.read();
-    
+
     // Benchmark 6: Cache locality test with table scanning
     timer.reset();
     i = 0;
@@ -525,7 +525,7 @@ test "jump_table_benchmarks" {
         }
     }
     const table_scan_ns = timer.read();
-    
+
     // Print benchmark results
     std.log.debug("Jump Table Benchmarks:", .{});
     std.log.debug("  Cancun dispatch ({} ops): {} ns", .{ iterations, cancun_dispatch_ns });
@@ -537,31 +537,31 @@ test "jump_table_benchmarks" {
     std.log.debug("  Predictable pattern ({} ops): {} ns", .{ iterations, predictable_ns });
     std.log.debug("  Unpredictable pattern ({} ops): {} ns", .{ iterations, unpredictable_ns });
     std.log.debug("  Full table scan (1000x): {} ns", .{table_scan_ns});
-    
+
     // Performance analysis
     const avg_dispatch_ns = cancun_dispatch_ns / iterations;
     const avg_predictable_ns = predictable_ns / iterations;
     const avg_unpredictable_ns = unpredictable_ns / iterations;
-    
+
     std.log.debug("  Average dispatch time: {} ns/op", .{avg_dispatch_ns});
     std.log.debug("  Average predictable: {} ns/op", .{avg_predictable_ns});
     std.log.debug("  Average unpredictable: {} ns/op", .{avg_unpredictable_ns});
-    
+
     // Branch prediction analysis
     if (avg_predictable_ns < avg_unpredictable_ns) {
         std.log.debug("✓ Branch prediction benefit observed");
     }
-    
+
     // Hardfork dispatch performance comparison
     const cancun_avg = cancun_dispatch_ns / iterations;
     const shanghai_avg = shanghai_dispatch_ns / iterations;
     const berlin_avg = berlin_dispatch_ns / iterations;
-    
+
     std.log.debug("  Hardfork dispatch comparison:");
     std.log.debug("    Berlin avg: {} ns/op", .{berlin_avg});
     std.log.debug("    Shanghai avg: {} ns/op", .{shanghai_avg});
     std.log.debug("    Cancun avg: {} ns/op", .{cancun_avg});
-    
+
     // Expect very fast dispatch (should be just array indexing)
     if (avg_dispatch_ns < 10) {
         std.log.debug("✓ Jump table showing expected O(1) performance");

@@ -1182,6 +1182,7 @@ test "VM: SDIV overflow case MIN_I256 / -1" {
         0x00,
         0x00,
         0x00,
+        0x00, // 32nd byte for MIN_I256
         0x7f, // PUSH32 (-1)
         0xFF,
         0xFF,

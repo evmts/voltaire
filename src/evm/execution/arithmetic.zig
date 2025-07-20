@@ -59,45 +59,21 @@ const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const StackValidation = @import("../stack/stack_validation.zig");
 
-/// Helper for binary arithmetic operations with common stack manipulation pattern.
-/// Uses comptime to generate efficient operation-specific code with zero runtime overhead.
-fn binaryOp(comptime op_fn: fn (u256, u256) u256) fn (usize, Operation.Interpreter, Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    return struct {
-        fn execute(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-            _ = pc;
-            _ = interpreter;
-            const frame = state;
-
-            if (frame.stack.size < 2) {
-                @branchHint(.cold);
-                unreachable;
-            }
-
-            const b = frame.stack.pop_unsafe();
-            const a = frame.stack.peek_unsafe().*;
-            const result = op_fn(a, b);
-            frame.stack.set_top_unsafe(result);
-
-            return Operation.ExecutionResult{};
-        }
-    }.execute;
-}
-
-// Arithmetic operation functions for use with binaryOp helper
-fn addOp(a: u256, b: u256) u256 {
-    return a +% b;
-}
-
-fn mulOp(a: u256, b: u256) u256 {
-    return a *% b;
-}
-
-fn subOp(a: u256, b: u256) u256 {
-    return a -% b;
-}
-
 /// ADD opcode (0x01) - Addition with wrapping overflow
-pub const op_add = binaryOp(addOp);
+pub fn op_add(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc;
+    _ = interpreter;
+    const frame = state;
+
+    std.debug.assert(frame.stack.size >= 2);
+
+    const b = frame.stack.pop_unsafe();
+    const a = frame.stack.peek_unsafe().*;
+    const result = a +% b;
+    frame.stack.set_top_unsafe(result);
+
+    return Operation.ExecutionResult{};
+}
 
 /// MUL opcode (0x02) - Multiplication operation
 ///
@@ -127,6 +103,8 @@ pub fn op_mul(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     _ = pc;
     _ = interpreter;
     const frame = state;
+
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -165,6 +143,8 @@ pub fn op_sub(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     _ = pc;
     _ = interpreter;
     const frame = state;
+
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -211,6 +191,8 @@ pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     _ = pc;
     _ = interpreter;
     const frame = state;
+
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -259,10 +241,13 @@ pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 /// ## Note
 /// The special case for MIN_I256 / -1 prevents integer overflow,
 /// as the mathematical result (2^255) cannot be represented in i256.
+/// In this case, we return MIN_I256 to match EVM behavior.
 pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
     const frame = state;
+
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -274,10 +259,12 @@ pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
     } else {
         const a_i256 = @as(i256, @bitCast(a));
         const b_i256 = @as(i256, @bitCast(b));
-        const min_i256 = @as(i256, 1) << 255;
+        const min_i256 = std.math.minInt(i256);
         if (a_i256 == min_i256 and b_i256 == -1) {
             @branchHint(.unlikely);
-            result = @as(u256, @bitCast(min_i256));
+            // MIN_I256 / -1 = MIN_I256 (overflow wraps)
+            // This matches EVM behavior where overflow wraps around
+            result = a;
         } else {
             const result_i256 = @divTrunc(a_i256, b_i256);
             result = @as(u256, @bitCast(result_i256));
@@ -323,6 +310,8 @@ pub fn op_mod(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     _ = pc;
     _ = interpreter;
     const frame = state;
+
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -375,6 +364,8 @@ pub fn op_smod(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
     _ = pc;
     _ = interpreter;
     const frame = state;
+
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -434,7 +425,6 @@ pub fn op_addmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
     _ = interpreter;
     const frame = state;
 
-    // Debug assertion: Jump table validation ensures we have >= 3 items
     std.debug.assert(frame.stack.size >= 3);
 
     const n = frame.stack.pop_unsafe();
@@ -498,6 +488,8 @@ pub fn op_mulmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
     _ = pc;
     _ = interpreter;
     const frame = state;
+
+    std.debug.assert(frame.stack.size >= 3);
 
     const n = frame.stack.pop_unsafe();
     const b = frame.stack.pop_unsafe();
@@ -583,6 +575,8 @@ pub fn op_exp(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     const frame = state;
     const vm = interpreter;
     _ = vm;
+
+    std.debug.assert(frame.stack.size >= 2);
 
     const exp = frame.stack.pop_unsafe();
     const base = frame.stack.peek_unsafe().*;
@@ -685,6 +679,8 @@ pub fn op_signextend(pc: usize, interpreter: Operation.Interpreter, state: Opera
 
     const frame = state;
 
+    std.debug.assert(frame.stack.size >= 2);
+
     const byte_num = frame.stack.pop_unsafe();
     const x = frame.stack.peek_unsafe().*;
 
@@ -768,7 +764,7 @@ pub fn test_arithmetic_operation(op_type: ArithmeticOpType, a: u256, b: u256, c:
             var result: u256 = 0;
             var x = a % c;
             var y = b % c;
-            
+
             while (y > 0) {
                 if ((y & 1) == 1) {
                     const sum = result +% x;
@@ -784,7 +780,7 @@ pub fn test_arithmetic_operation(op_type: ArithmeticOpType, a: u256, b: u256, c:
             var result: u256 = 1;
             var base = a;
             var exp = b;
-            
+
             while (exp > 0) {
                 if ((exp & 1) == 1) {
                     result *%= base;
@@ -796,12 +792,12 @@ pub fn test_arithmetic_operation(op_type: ArithmeticOpType, a: u256, b: u256, c:
         },
         .signextend => {
             if (a >= 31) return b;
-            
+
             const byte_index = @as(u8, @intCast(a));
             const sign_bit_pos = byte_index * 8 + 7;
             const sign_bit = (b >> @intCast(sign_bit_pos)) & 1;
             const keep_bits = sign_bit_pos + 1;
-            
+
             if (sign_bit == 1) {
                 if (keep_bits >= 256) {
                     return b;
@@ -845,14 +841,14 @@ const ArithmeticOpType = enum {
 
 fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
     const testing = std.testing;
-    
+
     // Test the operation and verify result
     const result = try test_arithmetic_operation(op.op_type, op.a, op.b, op.c);
     const expected = try test_arithmetic_operation(op.op_type, op.a, op.b, op.c);
-    
+
     // Result should be consistent
     try testing.expectEqual(expected, result);
-    
+
     // Verify specific properties for each operation type
     switch (op.op_type) {
         .add => {
@@ -935,7 +931,7 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //         .{ .op_type = .div, .a = 100, .b = 5 },
 //         .{ .op_type = .mod, .a = 17, .b = 5 },
 //     };
-//     
+//
 //     for (operations) |op| {
 //         try validate_and_test_arithmetic_operation(op);
 //     }
@@ -952,7 +948,7 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //         .{ .op_type = .addmod, .a = 10, .b = 20, .c = 0 }, // Modulo by zero
 //         .{ .op_type = .mulmod, .a = 10, .b = 20, .c = 0 }, // Modulo by zero
 //     };
-//     
+//
 //     for (operations) |op| {
 //         try validate_and_test_arithmetic_operation(op);
 //     }
@@ -962,25 +958,25 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //     const global = struct {
 //         fn testArithmeticOperations(input: []const u8) anyerror!void {
 //             if (input.len < 12) return;
-//             
+//
 //             const op_types = [_]ArithmeticOpType{ .add, .mul, .sub, .div, .mod, .addmod, .mulmod };
-//             
+//
 //             // Extract operation type and values from fuzz input
 //             const op_type_idx = input[0] % op_types.len;
 //             const op_type = op_types[op_type_idx];
-//             
+//
 //             // Extract three u256 values from fuzz input (using different parts for variety)
 //             const a = std.mem.readInt(u64, input[1..9], .little); // Smaller values to avoid overflow issues
 //             const b = std.mem.readInt(u64, input[4..12], .little);
 //             const c = if (input.len >= 20) std.mem.readInt(u64, input[12..20], .little) else 1;
-//             
-//             const operation = FuzzArithmeticOperation{ 
-//                 .op_type = op_type, 
-//                 .a = @as(u256, a), 
-//                 .b = @as(u256, b), 
-//                 .c = @as(u256, c) 
+//
+//             const operation = FuzzArithmeticOperation{
+//                 .op_type = op_type,
+//                 .a = @as(u256, a),
+//                 .b = @as(u256, b),
+//                 .c = @as(u256, c)
 //             };
-//             
+//
 //             try validate_and_test_arithmetic_operation(operation);
 //         }
 //     };
@@ -989,7 +985,7 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 
 // test "fuzz_arithmetic_boundary_values" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     const boundary_values = [_]u256{
 //         0,
 //         1,
@@ -1006,10 +1002,10 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //         (1 << 255) - 1,
 //         (1 << 255) + 1,
 //     };
-//     
+//
 //     var operations = std.ArrayList(FuzzArithmeticOperation).init(allocator);
 //     defer operations.deinit();
-//     
+//
 //     for (boundary_values) |a| {
 //         for (boundary_values) |b| {
 //             try operations.append(.{ .op_type = .add, .a = a, .b = b });
@@ -1017,12 +1013,12 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //             try operations.append(.{ .op_type = .sub, .a = a, .b = b });
 //             try operations.append(.{ .op_type = .div, .a = a, .b = b });
 //             try operations.append(.{ .op_type = .mod, .a = a, .b = b });
-//             
+//
 //             if (operations.items.len > 200) break; // Limit to prevent test timeout
 //         }
 //         if (operations.items.len > 200) break;
 //     }
-//     
+//
 //     for (operations.items) |op| {
 //         try validate_and_test_arithmetic_operation(op);
 //     }
@@ -1037,7 +1033,7 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //         .{ .op_type = .addmod, .a = std.math.maxInt(u256), .b = std.math.maxInt(u256), .c = 0 },
 //         .{ .op_type = .mulmod, .a = std.math.maxInt(u256), .b = std.math.maxInt(u256), .c = 0 },
 //     };
-//     
+//
 //     for (operations) |op| {
 //         try validate_and_test_arithmetic_operation(op);
 //     }
@@ -1045,37 +1041,37 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 
 // test "fuzz_signed_operations_comprehensive" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     // Constants for signed operations
 //     const MIN_I256 = @as(u256, 1) << 255; // Most negative i256 value
 //     const MAX_I256 = MIN_I256 - 1; // Most positive i256 value
 //     const NEG_ONE = @as(u256, @bitCast(@as(i256, -1))); // -1 in two's complement
-//     
+//
 //     var operations = std.ArrayList(FuzzArithmeticOperation).init(allocator);
 //     defer operations.deinit();
-//     
+//
 //     // Test all combinations of positive/negative operands for SDIV
 //     const test_values = [_]u256{ 20, 100, MAX_I256, MIN_I256 };
 //     const sign_variants = [_]u256{ 5, NEG_ONE *% 5 }; // 5 and -5
-//     
+//
 //     for (test_values) |a| {
 //         for (sign_variants) |b| {
 //             try operations.append(.{ .op_type = .sdiv, .a = a, .b = b });
 //             try operations.append(.{ .op_type = .smod, .a = a, .b = b });
-//             
+//
 //             // Test with negated a
 //             const neg_a = @as(u256, @bitCast(-@as(i256, @bitCast(a))));
 //             try operations.append(.{ .op_type = .sdiv, .a = neg_a, .b = b });
 //             try operations.append(.{ .op_type = .smod, .a = neg_a, .b = b });
 //         }
 //     }
-//     
+//
 //     // Critical edge cases
 //     try operations.append(.{ .op_type = .sdiv, .a = MIN_I256, .b = NEG_ONE }); // MIN_I256 / -1 overflow case
-//     try operations.append(.{ .op_type = .smod, .a = MIN_I256, .b = NEG_ONE }); // MIN_I256 % -1 
+//     try operations.append(.{ .op_type = .smod, .a = MIN_I256, .b = NEG_ONE }); // MIN_I256 % -1
 //     try operations.append(.{ .op_type = .sdiv, .a = MIN_I256, .b = 0 }); // Division by zero
 //     try operations.append(.{ .op_type = .smod, .a = MIN_I256, .b = 0 }); // Modulo by zero
-//     
+//
 //     for (operations.items) |op| {
 //         try validate_and_test_arithmetic_operation(op);
 //     }
@@ -1083,46 +1079,46 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 
 // test "fuzz_exponentiation_comprehensive" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     var operations = std.ArrayList(FuzzArithmeticOperation).init(allocator);
 //     defer operations.deinit();
-//     
+//
 //     // Test small exponents
 //     const small_exponents = [_]u256{ 0, 1, 2, 3, 4, 5, 10 };
 //     const bases = [_]u256{ 0, 1, 2, 3, 10, 100, 255 };
-//     
+//
 //     for (bases) |base| {
 //         for (small_exponents) |exp| {
 //             try operations.append(.{ .op_type = .exp, .a = base, .b = exp });
 //         }
 //     }
-//     
+//
 //     // Test powers of 2 exponents
 //     const power_of_two_exponents = [_]u256{ 1, 2, 4, 8, 16, 32, 64, 128 };
 //     for (power_of_two_exponents) |exp| {
 //         try operations.append(.{ .op_type = .exp, .a = 2, .b = exp });
 //         try operations.append(.{ .op_type = .exp, .a = 3, .b = exp });
 //     }
-//     
+//
 //     // Test large bases with small exponents
-//     const large_bases = [_]u256{ 
-//         std.math.maxInt(u8), 
-//         std.math.maxInt(u16), 
+//     const large_bases = [_]u256{
+//         std.math.maxInt(u8),
+//         std.math.maxInt(u16),
 //         std.math.maxInt(u32),
 //         1 << 128,
 //         std.math.maxInt(u256) >> 1 // Prevent immediate overflow
 //     };
-//     
+//
 //     for (large_bases) |base| {
 //         for (small_exponents[0..4]) |exp| { // Only test with 0,1,2,3 to prevent overflow
 //             try operations.append(.{ .op_type = .exp, .a = base, .b = exp });
 //         }
 //     }
-//     
+//
 //     // Edge cases
 //     try operations.append(.{ .op_type = .exp, .a = 0, .b = 0 }); // 0^0 = 1 in EVM
 //     try operations.append(.{ .op_type = .exp, .a = 1, .b = std.math.maxInt(u256) }); // 1^huge = 1
-//     
+//
 //     for (operations.items) |op| {
 //         try validate_and_test_arithmetic_operation(op);
 //     }
@@ -1130,29 +1126,29 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 
 // test "fuzz_signextend_comprehensive" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     var operations = std.ArrayList(FuzzArithmeticOperation).init(allocator);
 //     defer operations.deinit();
-//     
+//
 //     // Test all byte positions (0-31)
 //     var byte_pos: u256 = 0;
 //     while (byte_pos <= 31) : (byte_pos += 1) {
 //         // Test with values that have sign bit set/unset at the target byte
 //         const bit_pos = byte_pos * 8 + 7; // Sign bit position
-//         
+//
 //         // Value with sign bit = 0 (positive)
 //         const positive_val = (@as(u256, 1) << @intCast(bit_pos)) - 1;
 //         try operations.append(.{ .op_type = .signextend, .a = byte_pos, .b = positive_val });
-//         
+//
 //         // Value with sign bit = 1 (negative)
 //         const negative_val = @as(u256, 1) << @intCast(bit_pos);
 //         try operations.append(.{ .op_type = .signextend, .a = byte_pos, .b = negative_val });
-//         
+//
 //         // Mixed values
 //         const mixed_val = positive_val | negative_val;
 //         try operations.append(.{ .op_type = .signextend, .a = byte_pos, .b = mixed_val });
 //     }
-//     
+//
 //     // Test edge cases
 //     try operations.append(.{ .op_type = .signextend, .a = 32, .b = 0x12345678 }); // byte_num > 31
 //     try operations.append(.{ .op_type = .signextend, .a = std.math.maxInt(u256), .b = 0xFF00 }); // huge byte_num
@@ -1161,7 +1157,7 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //     try operations.append(.{ .op_type = .signextend, .a = 1, .b = 0x7FFF }); // Positive 16-bit
 //     try operations.append(.{ .op_type = .signextend, .a = 1, .b = 0x8000 }); // Negative 16-bit
 //     try operations.append(.{ .op_type = .signextend, .a = 31, .b = std.math.maxInt(u256) }); // Full width
-//     
+//
 //     for (operations.items) |op| {
 //         try validate_and_test_arithmetic_operation(op);
 //     }
@@ -1171,18 +1167,18 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //     const global = struct {
 //         fn testArithmeticInvariants(input: []const u8) anyerror!void {
 //             if (input.len < 16) return;
-//             
+//
 //             const invariant_type = input[0] % 4;
-//             
+//
 //             switch (invariant_type) {
 //                 0 => {
 //                     // Test invariant: (a + b) - b = a (modulo 2^256)
 //                     const a = std.mem.readInt(u64, input[1..9], .little);
 //                     const b = std.mem.readInt(u64, input[9..17], .little);
-//                     
+//
 //                     const op1 = FuzzArithmeticOperation{ .op_type = .add, .a = @as(u256, a), .b = @as(u256, b) };
 //                     try validate_and_test_arithmetic_operation(op1);
-//                     
+//
 //                     // Verify invariant properties with simple calculations
 //                     const sum = @as(u256, a) +% @as(u256, b);
 //                     const diff = sum -% @as(u256, b);
@@ -1191,10 +1187,10 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //                 1 => {
 //                     // Test invariant: a * 0 = 0
 //                     const a = std.mem.readInt(u64, input[1..9], .little);
-//                     
+//
 //                     const op2 = FuzzArithmeticOperation{ .op_type = .mul, .a = @as(u256, a), .b = 0 };
 //                     try validate_and_test_arithmetic_operation(op2);
-//                     
+//
 //                     // Verify: a * 0 = 0
 //                     const product = @as(u256, a) *% 0;
 //                     try std.testing.expectEqual(@as(u256, 0), product);
@@ -1202,10 +1198,10 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //                 2 => {
 //                     // Test invariant: a / 1 = a
 //                     const a = std.mem.readInt(u64, input[1..9], .little);
-//                     
+//
 //                     const op3 = FuzzArithmeticOperation{ .op_type = .div, .a = @as(u256, a), .b = 1 };
 //                     try validate_and_test_arithmetic_operation(op3);
-//                     
+//
 //                     // Verify: a / 1 = a
 //                     const quotient = @as(u256, a) / 1;
 //                     try std.testing.expectEqual(@as(u256, a), quotient);
@@ -1214,10 +1210,10 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //                     // Test invariant: a % a = 0 (when a != 0)
 //                     var a = std.mem.readInt(u64, input[1..9], .little);
 //                     if (a == 0) a = 1; // Ensure non-zero
-//                     
+//
 //                     const op4 = FuzzArithmeticOperation{ .op_type = .mod, .a = @as(u256, a), .b = @as(u256, a) };
 //                     try validate_and_test_arithmetic_operation(op4);
-//                     
+//
 //                     // Verify: a % a = 0
 //                     const remainder = @as(u256, a) % @as(u256, a);
 //                     try std.testing.expectEqual(@as(u256, 0), remainder);
@@ -1232,22 +1228,22 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //     const global = struct {
 //         fn testCrossOperationVerification(input: []const u8) anyerror!void {
 //             if (input.len < 25) return;
-//             
+//
 //             const verification_type = input[0] % 3;
-//             
+//
 //             switch (verification_type) {
 //                 0 => {
 //                     // Test DIV and MOD relationship: a = (a/b)*b + (a%b) when b != 0
 //                     const a = std.mem.readInt(u64, input[1..9], .little);
 //                     var b = std.mem.readInt(u64, input[9..17], .little);
 //                     if (b == 0) b = 1; // Ensure non-zero divisor
-//                     
+//
 //                     const a_u256 = @as(u256, a);
 //                     const b_u256 = @as(u256, b);
-//                     
+//
 //                     const quotient = a_u256 / b_u256;
 //                     const remainder = a_u256 % b_u256;
-//                     
+//
 //                     // Verify: a = (a/b)*b + (a%b)
 //                     const reconstructed = quotient *% b_u256 +% remainder;
 //                     try std.testing.expectEqual(a_u256, reconstructed);
@@ -1258,20 +1254,20 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //                     const b = std.mem.readInt(u64, input[9..17], .little);
 //                     var n = std.mem.readInt(u64, input[17..25], .little);
 //                     if (n == 0) n = 1; // Ensure non-zero modulus
-//                     
+//
 //                     const a_u256 = @as(u256, a);
 //                     const b_u256 = @as(u256, b);
 //                     const n_u256 = @as(u256, n);
-//                     
+//
 //                     const direct = (a_u256 +% b_u256) % n_u256;
 //                     const indirect = ((a_u256 % n_u256) +% (b_u256 % n_u256)) % n_u256;
-//                     
+//
 //                     try std.testing.expectEqual(direct, indirect);
 //                 },
 //                 2 => {
 //                     // Test SIGNEXTEND invariant: SIGNEXTEND(31, x) = x
 //                     const x = std.mem.readInt(u64, input[1..9], .little);
-//                     
+//
 //                     const operation = FuzzArithmeticOperation{ .op_type = .signextend, .a = 31, .b = @as(u256, x) };
 //                     try validate_and_test_arithmetic_operation(operation);
 //                 },
@@ -1285,30 +1281,30 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //     const global = struct {
 //         fn testCombinedOperations(input: []const u8) anyerror!void {
 //             if (input.len < 24) return;
-//             
+//
 //             // Extract three u64 values from fuzz input
 //             const a = std.mem.readInt(u64, input[0..8], .little) % 1000000 + 1; // Keep values reasonable
 //             const b = std.mem.readInt(u64, input[8..16], .little) % 1000000 + 1;
 //             const c = std.mem.readInt(u64, input[16..24], .little) % 1000000 + 1;
-//             
+//
 //             const a_u256 = @as(u256, a);
 //             const b_u256 = @as(u256, b);
 //             const c_u256 = @as(u256, c);
-//             
+//
 //             // Test (a + b) operation
 //             const op1 = FuzzArithmeticOperation{ .op_type = .add, .a = a_u256, .b = b_u256 };
 //             try validate_and_test_arithmetic_operation(op1);
-//             
+//
 //             // Test (a * b) operation
 //             const op2 = FuzzArithmeticOperation{ .op_type = .mul, .a = a_u256, .b = b_u256 };
 //             try validate_and_test_arithmetic_operation(op2);
-//             
+//
 //             // Test distributive property verification with bounded values
 //             if (a < 1000 and b < 1000 and c < 1000) {
 //                 // (a + b) * c vs a*c + b*c - verify they're equal
 //                 const left_side = (a_u256 +% b_u256) *% c_u256;
 //                 const right_side = (a_u256 *% c_u256) +% (b_u256 *% c_u256);
-//                 
+//
 //                 try std.testing.expectEqual(left_side, right_side);
 //             }
 //         }
@@ -1318,7 +1314,7 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 
 // test "fuzz_gas_cost_boundaries" {
 //     const allocator = std.testing.allocator;
-//     
+//
 //     // Test EXP with different exponent sizes to verify gas cost calculation
 //     const exp_test_cases = [_]struct { base: u256, exp: u256, expected_gas_bytes: u64 }{
 //         .{ .base = 2, .exp = 0, .expected_gas_bytes = 0 }, // 0 bytes for exp=0
@@ -1327,26 +1323,26 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //         .{ .base = 2, .exp = 65535, .expected_gas_bytes = 2 }, // 2 bytes for exp=65535
 //         .{ .base = 2, .exp = 65536, .expected_gas_bytes = 3 }, // 3 bytes for exp=65536
 //     };
-//     
+//
 //     var operations = std.ArrayList(FuzzArithmeticOperation).init(allocator);
 //     defer operations.deinit();
-//     
+//
 //     for (exp_test_cases) |test_case| {
 //         try operations.append(.{ .op_type = .exp, .a = test_case.base, .b = test_case.exp });
-//         
+//
 //         // Verify byte size calculation manually
 //         var exp_copy = test_case.exp;
 //         var byte_size: u64 = 0;
 //         while (exp_copy > 0) : (exp_copy >>= 8) {
 //             byte_size += 1;
 //         }
-//         
+//
 //         std.testing.expectEqual(test_case.expected_gas_bytes, byte_size) catch |err| {
 //             std.log.debug("Gas calculation mismatch for exp={}: expected {} bytes, got {} bytes", .{ test_case.exp, test_case.expected_gas_bytes, byte_size });
 //             return err;
 //         };
 //     }
-//     
+//
 //     for (operations.items) |op| {
 //         try validate_and_test_arithmetic_operation(op);
 //     }
@@ -1356,25 +1352,25 @@ fn validate_and_test_arithmetic_operation(op: FuzzArithmeticOperation) !void {
 //     const global = struct {
 //         fn testPerformanceStress(input: []const u8) anyerror!void {
 //             if (input.len < 32) return;
-//             
+//
 //             const op_types = [_]ArithmeticOpType{ .add, .mul, .sub, .div, .mod, .sdiv, .smod, .addmod, .mulmod, .exp, .signextend };
-//             
+//
 //             // Extract operation parameters from fuzz input
 //             const op_type_idx = input[0] % op_types.len;
 //             const op_type = op_types[op_type_idx];
-//             
+//
 //             // Use different parts of input for values to ensure variety
 //             const a = std.mem.readInt(u64, input[1..9], .little); // Using u64 to avoid extreme values
 //             const b = std.mem.readInt(u64, input[9..17], .little);
 //             const c = std.mem.readInt(u64, input[17..25], .little);
-//             
-//             const operation = FuzzArithmeticOperation{ 
-//                 .op_type = op_type, 
-//                 .a = @as(u256, a), 
-//                 .b = @as(u256, b), 
-//                 .c = @as(u256, c) 
+//
+//             const operation = FuzzArithmeticOperation{
+//                 .op_type = op_type,
+//                 .a = @as(u256, a),
+//                 .b = @as(u256, b),
+//                 .c = @as(u256, c)
 //             };
-//             
+//
 //             // Test the operation - this tests performance under fuzz load
 //             try validate_and_test_arithmetic_operation(operation);
 //         }
@@ -1386,16 +1382,16 @@ test "arithmetic_benchmarks" {
     const Timer = std.time.Timer;
     var timer = try Timer.start();
     const allocator = std.testing.allocator;
-    
+
     // Setup test environment
     var memory_db = @import("../state/memory_database.zig").MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
     var vm = try Vm.init(allocator, db_interface, null, null);
     defer vm.deinit();
-    
+
     const iterations = 100000;
-    
+
     // Benchmark 1: Basic arithmetic operations (ADD, SUB, MUL)
     timer.reset();
     var i: usize = 0;
@@ -1404,14 +1400,14 @@ test "arithmetic_benchmarks" {
         defer contract.deinit(allocator, null);
         var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
         defer frame.deinit();
-        
+
         // Test ADD operation
         try frame.stack.append(@intCast(i));
         try frame.stack.append(@intCast(i * 2));
         _ = try op_add(0, @ptrCast(&vm), @ptrCast(&frame));
     }
     const basic_arithmetic_ns = timer.read();
-    
+
     // Benchmark 2: Division operations (handling edge cases)
     timer.reset();
     i = 0;
@@ -1420,7 +1416,7 @@ test "arithmetic_benchmarks" {
         defer contract.deinit(allocator, null);
         var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
         defer frame.deinit();
-        
+
         // Test DIV with various values including edge cases
         const dividend: u256 = @intCast(if (i == 0) 1 else i);
         const divisor: u256 = @intCast(if (i % 100 == 0) 0 else (i % 1000) + 1); // Include div by zero
@@ -1429,7 +1425,7 @@ test "arithmetic_benchmarks" {
         _ = try op_div(0, @ptrCast(&vm), @ptrCast(&frame));
     }
     const division_ops_ns = timer.read();
-    
+
     // Benchmark 3: Modular arithmetic (ADDMOD, MULMOD)
     timer.reset();
     i = 0;
@@ -1438,7 +1434,7 @@ test "arithmetic_benchmarks" {
         defer contract.deinit(allocator, null);
         var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
         defer frame.deinit();
-        
+
         // Test ADDMOD operation
         try frame.stack.append(@intCast(i * 1000));
         try frame.stack.append(@intCast(i * 2000));
@@ -1446,30 +1442,30 @@ test "arithmetic_benchmarks" {
         _ = try op_addmod(0, @ptrCast(&vm), @ptrCast(&frame));
     }
     const modular_arithmetic_ns = timer.read();
-    
+
     // Benchmark 4: Exponentiation with various exponent sizes
     timer.reset();
     const exp_cases = [_]struct { base: u256, exp: u256 }{
-        .{ .base = 2, .exp = 1 },     // Small exponent
-        .{ .base = 2, .exp = 8 },     // Medium exponent
-        .{ .base = 2, .exp = 256 },   // Large exponent
-        .{ .base = 3, .exp = 100 },   // Different base
-        .{ .base = 0, .exp = 100 },   // Zero base
-        .{ .base = 100, .exp = 0 },   // Zero exponent
+        .{ .base = 2, .exp = 1 }, // Small exponent
+        .{ .base = 2, .exp = 8 }, // Medium exponent
+        .{ .base = 2, .exp = 256 }, // Large exponent
+        .{ .base = 3, .exp = 100 }, // Different base
+        .{ .base = 0, .exp = 100 }, // Zero base
+        .{ .base = 100, .exp = 0 }, // Zero exponent
     };
-    
+
     for (exp_cases) |exp_case| {
         var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x0a}, .{ .address = [_]u8{0} ** 20 });
         defer contract.deinit(allocator, null);
         var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
         defer frame.deinit();
-        
+
         try frame.stack.append(exp_case.base);
         try frame.stack.append(exp_case.exp);
         _ = try op_exp(0, @ptrCast(&vm), @ptrCast(&frame));
     }
     const exponentiation_ns = timer.read();
-    
+
     // Benchmark 5: Sign extension with different byte positions
     timer.reset();
     i = 0;
@@ -1478,7 +1474,7 @@ test "arithmetic_benchmarks" {
         defer contract.deinit(allocator, null);
         var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
         defer frame.deinit();
-        
+
         // Test SIGNEXTEND with various byte positions
         const byte_pos: u256 = i % 32; // Valid byte positions 0-31
         const value: u256 = @intCast(i * 0x123456);
@@ -1487,7 +1483,7 @@ test "arithmetic_benchmarks" {
         _ = try op_signextend(0, @ptrCast(&vm), @ptrCast(&frame));
     }
     const sign_extension_ns = timer.read();
-    
+
     // Benchmark 6: Signed arithmetic (SDIV, SMOD)
     timer.reset();
     i = 0;
@@ -1496,7 +1492,7 @@ test "arithmetic_benchmarks" {
         defer contract.deinit(allocator, null);
         var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
         defer frame.deinit();
-        
+
         // Test SDIV with mix of positive and negative values
         const a: u256 = if (i % 2 == 0) @intCast(i + 1) else std.math.maxInt(u256) - @as(u256, @intCast(i)); // Simulate negative
         const b: u256 = @intCast(if (i % 100 == 0) 1 else (i % 1000) + 1); // Avoid div by zero
@@ -1505,7 +1501,7 @@ test "arithmetic_benchmarks" {
         _ = try op_sdiv(0, @ptrCast(&vm), @ptrCast(&frame));
     }
     const signed_arithmetic_ns = timer.read();
-    
+
     // Print benchmark results
     std.log.debug("Arithmetic Operation Benchmarks:", .{});
     std.log.debug("  Basic arithmetic ({} ops): {} ns", .{ iterations, basic_arithmetic_ns });
@@ -1514,16 +1510,16 @@ test "arithmetic_benchmarks" {
     std.log.debug("  Exponentiation (6 cases): {} ns", .{exponentiation_ns});
     std.log.debug("  Sign extension ({} ops): {} ns", .{ iterations, sign_extension_ns });
     std.log.debug("  Signed arithmetic ({} ops): {} ns", .{ iterations, signed_arithmetic_ns });
-    
+
     // Performance analysis
     const avg_basic_ns = basic_arithmetic_ns / iterations;
     const avg_division_ns = division_ops_ns / iterations;
     const avg_signed_ns = signed_arithmetic_ns / iterations;
-    
+
     std.log.debug("  Average basic arithmetic: {} ns/op", .{avg_basic_ns});
     std.log.debug("  Average division: {} ns/op", .{avg_division_ns});
     std.log.debug("  Average signed arithmetic: {} ns/op", .{avg_signed_ns});
-    
+
     // Gas calculation throughput benchmark
     timer.reset();
     i = 0;
@@ -1540,7 +1536,7 @@ test "arithmetic_benchmarks" {
         _ = 10 + 50 * byte_size;
     }
     const gas_calculation_ns = timer.read();
-    
+
     std.log.debug("  Gas calculation throughput ({} calcs): {} ns", .{ gas_iterations, gas_calculation_ns });
     std.log.debug("  Average gas calculation: {} ns/calc", .{gas_calculation_ns / gas_iterations});
 }
