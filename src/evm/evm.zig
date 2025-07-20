@@ -23,6 +23,7 @@ const Hardfork = @import("hardforks/hardfork.zig").Hardfork;
 const precompiles = @import("precompiles/precompiles.zig");
 const basic_blocks = @import("analysis/basic_blocks.zig");
 const BlockExecutionConfig = @import("execution/block_executor.zig").BlockExecutionConfig;
+const interpret_with_blocks = @import("evm/interpret_with_blocks.zig").interpret_with_blocks;
 
 /// Virtual Machine for executing Ethereum bytecode.
 ///
@@ -59,9 +60,6 @@ state: EvmState,
 /// Warm/cold access tracking for EIP-2929 gas costs
 access_list: AccessList,
 
-// Block execution optimization
-/// Configuration for block-based gas accounting optimization
-block_execution_config: BlockExecutionConfig = .{ .enabled = false },
 /// Cache for analyzed basic blocks
 block_cache: ?*basic_blocks.BlockCache = null,
 
@@ -107,7 +105,6 @@ pub fn init(allocator: std.mem.Allocator, database: @import("state/database_inte
         .return_data = &[_]u8{},
         .state = state,
         .access_list = access_list,
-        .block_execution_config = .{ .enabled = false },
         .block_cache = null,
     };
 }
@@ -208,36 +205,30 @@ pub fn reset(self: *Evm) void {
     self.return_data = &[_]u8{};
 }
 
-/// Enable block-based gas accounting optimization.
-/// Creates a block cache if caching is enabled in the configuration.
-/// @param config Configuration for block execution
-/// @throws OutOfMemory if cache allocation fails
-pub fn enableBlockExecution(self: *Evm, config: BlockExecutionConfig) !void {
-    self.block_execution_config = config;
-
-    // Create cache if enabled and not already created
-    if (config.cache_blocks and self.block_cache == null) {
-        const cache = try self.allocator.create(basic_blocks.BlockCache);
-        cache.* = basic_blocks.BlockCache.init(self.allocator, config.max_cache_entries);
-        self.block_cache = cache;
-    }
-}
-
-/// Disable block-based gas accounting optimization.
-/// Frees the block cache if it exists.
-pub fn disableBlockExecution(self: *Evm) void {
-    self.block_execution_config.enabled = false;
-    if (self.block_cache) |cache| {
-        cache.deinit();
-        self.allocator.destroy(cache);
-        self.block_cache = null;
-    }
-}
-
 pub usingnamespace @import("evm/set_context.zig");
-pub usingnamespace @import("evm/interpret.zig");
 pub usingnamespace @import("evm/interpret_with_context.zig");
 pub usingnamespace @import("evm/create_contract_internal.zig");
+
+/// Execute contract bytecode and return the result.
+///
+/// This is the main execution entry point. The contract must be properly initialized
+/// with bytecode, gas limit, and input data. The VM executes opcodes sequentially
+/// until completion, error, or gas exhaustion.
+///
+/// Time complexity: O(n) where n is the number of opcodes executed.
+/// Memory: May allocate for return data if contract returns output.
+///
+/// Example:
+/// ```zig
+/// var contract = Contract.init_at_address(caller, addr, 0, 100000, code, input, false);
+/// defer contract.deinit(vm.allocator, null);
+/// try vm.state.set_code(addr, code);
+/// const result = try vm.interpret(&contract, input);
+/// defer if (result.output) |output| vm.allocator.free(output);
+/// ```
+pub fn interpret(self: *Evm, contract: *Contract, input: []const u8) ExecutionError.Error!RunResult {
+    return try interpret_with_blocks(self, contract, input, false);
+}
 pub usingnamespace @import("evm/create_contract.zig");
 pub usingnamespace @import("evm/call_contract.zig");
 pub usingnamespace @import("evm/execute_precompile_call.zig");

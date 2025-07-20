@@ -60,7 +60,7 @@ pub const CallInput = struct {
     /// Small bool field placed with other small fields
     is_static: bool,
 
-    /// Optional fields last to minimize padding impact
+    /// Optional fields last to minimize padding
     /// Original caller for DELEGATECALL context preservation (optional)
     original_caller: ?primitives.Address.Address = null,
 
@@ -586,7 +586,7 @@ pub fn op_create2(pc: usize, interpreter: Operation.Interpreter, state: Operatio
     return Operation.ExecutionResult{};
 }
 
-pub inline fn op_call(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub fn op_call(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
     const frame = state;

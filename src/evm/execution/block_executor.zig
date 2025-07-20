@@ -21,14 +21,13 @@ pub const BlockExecutionConfig = struct {
 pub const BlockExecutor = struct {
     vm: *Vm,
     frame: *Frame,
-    config: BlockExecutionConfig,
+    config: BlockExecutionConfig = BlockExecutionConfig{},
     block_cache: ?*basic_blocks.BlockCache,
 
-    pub fn init(vm: *Vm, frame: *Frame, config: BlockExecutionConfig, block_cache: ?*basic_blocks.BlockCache) BlockExecutor {
+    pub fn init(vm: *Vm, frame: *Frame, block_cache: ?*basic_blocks.BlockCache) BlockExecutor {
         return .{
             .vm = vm,
             .frame = frame,
-            .config = config,
             .block_cache = block_cache,
         };
     }
