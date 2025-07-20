@@ -241,6 +241,7 @@ pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 /// ## Note
 /// The special case for MIN_I256 / -1 prevents integer overflow,
 /// as the mathematical result (2^255) cannot be represented in i256.
+/// In this case, we return MIN_I256 to match EVM behavior.
 pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
     _ = interpreter;
@@ -261,7 +262,9 @@ pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
         const min_i256 = @as(i256, 1) << 255;
         if (a_i256 == min_i256 and b_i256 == -1) {
             @branchHint(.unlikely);
-            result = @as(u256, @bitCast(min_i256));
+            // MIN_I256 / -1 = MIN_I256 (overflow wraps)
+            // This matches EVM behavior where overflow wraps around
+            result = a;
         } else {
             const result_i256 = @divTrunc(a_i256, b_i256);
             result = @as(u256, @bitCast(result_i256));
