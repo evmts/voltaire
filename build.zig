@@ -570,6 +570,55 @@ pub fn build(b: *std.Build) void {
     
     const bench_step = b.step("bench", "Run benchmarks");
     bench_step.dependOn(&run_bench_cmd.step);
+    
+    // Flamegraph profiling support
+    const flamegraph_step = b.step("flamegraph", "Run benchmarks with flamegraph profiling");
+    
+    // Build bench executable with debug symbols for profiling
+    const profile_bench_exe = b.addExecutable(.{
+        .name = "guillotine-bench-profile",
+        .root_source_file = b.path("bench/main.zig"),
+        .target = target,
+        .optimize = .ReleaseFast,  // Always use optimized build for profiling
+    });
+    profile_bench_exe.root_module.addImport("bench", bench_mod);
+    profile_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+    profile_bench_exe.root_module.addImport("evm", bench_evm_mod);
+    profile_bench_exe.root_module.addImport("primitives", primitives_mod);
+    
+    // CRITICAL: Include debug symbols for profiling
+    profile_bench_exe.root_module.strip = false;  // Keep symbols
+    profile_bench_exe.root_module.omit_frame_pointer = false;  // Keep frame pointers
+    
+    // Platform-specific profiling commands
+    if (target.result.os.tag == .linux) {
+        const perf_cmd = b.addSystemCommand(&[_][]const u8{
+            "perf", "record", "-F", "997", "-g", "--call-graph", "dwarf",
+            "-o", "perf.data",
+        });
+        perf_cmd.addArtifactArg(profile_bench_exe);
+        perf_cmd.addArg("--profile");
+        
+        const flamegraph_cmd = b.addSystemCommand(&[_][]const u8{
+            "flamegraph", "--perfdata", "perf.data", "-o", "guillotine-bench.svg",
+        });
+        flamegraph_cmd.step.dependOn(&perf_cmd.step);
+        flamegraph_step.dependOn(&flamegraph_cmd.step);
+    } else if (target.result.os.tag == .macos) {
+        // Use cargo-flamegraph which handles xctrace internally
+        const flamegraph_cmd = b.addSystemCommand(&[_][]const u8{
+            "flamegraph", "-o", "guillotine-bench.svg", "--",
+        });
+        flamegraph_cmd.addArtifactArg(profile_bench_exe);
+        flamegraph_cmd.addArg("--profile");
+        flamegraph_step.dependOn(&flamegraph_cmd.step);
+    } else {
+        // For other platforms, inform the user
+        const warn_cmd = b.addSystemCommand(&[_][]const u8{
+            "echo", "Flamegraph profiling is only supported on Linux and macOS",
+        });
+        flamegraph_step.dependOn(&warn_cmd.step);
+    }
 
     // Devtool executable
     // Add webui dependency

@@ -1,0 +1,120 @@
+name: Performance Profiling
+
+on:
+  workflow_dispatch:
+    inputs:
+      benchmark:
+        description: 'Benchmark to profile'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - arithmetic_ops
+        - memory_ops
+        - storage_ops
+        - stack_ops
+        - control_flow
+        - precompiles
+        - contract_calls
+
+jobs:
+  profile-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Zig
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.14.0
+    
+    - name: Install Rust (for flamegraph tool)
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Install profiling tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y linux-tools-common linux-tools-generic linux-tools-$(uname -r) || true
+        # Fallback if specific kernel tools aren't available
+        sudo apt-get install -y linux-tools-generic || true
+        cargo install flamegraph
+    
+    - name: Allow performance monitoring
+      run: |
+        # Allow unprivileged users to use perf
+        echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+    
+    - name: Run profiling
+      run: |
+        chmod +x ./scripts/profile.sh
+        ./scripts/profile.sh ${{ inputs.benchmark }}
+    
+    - name: Upload flamegraph
+      uses: actions/upload-artifact@v4
+      with:
+        name: flamegraph-${{ inputs.benchmark }}-linux
+        path: flamegraph-*.svg
+        retention-days: 30
+
+  profile-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Zig
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.14.0
+    
+    - name: Install Rust (for flamegraph tool)
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Install flamegraph
+      run: cargo install flamegraph
+    
+    - name: Run profiling
+      run: |
+        chmod +x ./scripts/profile.sh
+        ./scripts/profile.sh ${{ inputs.benchmark }}
+    
+    - name: Upload flamegraph
+      uses: actions/upload-artifact@v4
+      with:
+        name: flamegraph-${{ inputs.benchmark }}-macos
+        path: flamegraph-*.svg
+        retention-days: 30
+
+  # Optional: Compare with baseline
+  profile-comparison:
+    if: github.event_name == 'pull_request'
+    needs: [profile-linux]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download current flamegraph
+      uses: actions/download-artifact@v4
+      with:
+        name: flamegraph-${{ inputs.benchmark }}-linux
+        path: current
+    
+    - name: Comment on PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const benchmark = '${{ inputs.benchmark }}';
+          const body = `## Flamegraph Profile Results
+          
+          Benchmark: **${benchmark}**
+          
+          The flamegraph for this PR has been generated and is available as an artifact.
+          
+          [Download Flamegraph](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          
+          To compare with the base branch, run the same workflow on the base branch and compare the SVGs.`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });
