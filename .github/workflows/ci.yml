@@ -158,6 +158,11 @@ jobs:
         with:
           version: 0.14.1
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
       - name: Create Zig cache directory
         run: mkdir -p ~/.cache/zig
 
