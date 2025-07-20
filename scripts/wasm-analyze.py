@@ -171,13 +171,14 @@ def check_size_targets(current_sizes, targets):
             
             if current is not None and target is not None:
                 current_kb = kb_size(current)
-                if current_kb > target:
+                target_kb = kb_size(target)
+                if current_kb > target_kb:
                     failures.append({
                         'mode': optimize_mode,
                         'variant': variant,
                         'current': current_kb,
-                        'target': target,
-                        'excess': current_kb - target
+                        'target': target_kb,
+                        'excess': current_kb - target_kb
                     })
     
     return len(failures) == 0, failures
@@ -297,8 +298,9 @@ def main():
                 current_str = f"{current_kb}K"
                 
                 if target is not None:
-                    target_str = f"{target}K"
-                    if current_kb > target:
+                    target_kb = kb_size(target)
+                    target_str = f"{target_kb}K"
+                    if current_kb > target_kb:
                         status = "❌ FAIL"
                         all_passed = False
                     else:
