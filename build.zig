@@ -193,6 +193,7 @@ pub fn build(b: *std.Build) void {
     const rust_target_dir = if (optimize == .Debug) "debug" else "release";
 
     // Determine the Rust target triple based on the Zig target
+    // Always specify explicit Rust target for consistent library format
     const rust_target = switch (target.result.os.tag) {
         .linux => switch (target.result.cpu.arch) {
             .x86_64 => "x86_64-unknown-linux-gnu",
@@ -227,17 +228,14 @@ pub fn build(b: *std.Build) void {
     // Link the compiled Rust library
     const rust_lib_path = if (rust_target) |target_triple|
         b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, rust_target_dir })
-    else if (target.result.os.tag == .linux and target.result.cpu.arch == .x86_64)
-        // For Ubuntu native builds, Rust defaults to x86_64-unknown-linux-gnu target
-        b.fmt("target/x86_64-unknown-linux-gnu/{s}/libbn254_wrapper.a", .{rust_target_dir})
     else
         b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
     
-    // Handle Rust library format incompatibility on Ubuntu native builds
-    if (target.result.os.tag == .linux and target.result.cpu.arch == .x86_64) {
-        // On Ubuntu, link the Rust library directly instead of using addObjectFile
-        // to avoid "neither ET_REL nor LLVM bitcode" errors
-        bn254_lib.addLibraryPath(b.path("target/x86_64-unknown-linux-gnu/release"));
+    // For Linux, use a different approach to avoid linker format issues
+    if (target.result.os.tag == .linux) {
+        // Extract the directory and library name for Linux builds
+        const lib_dir = std.fs.path.dirname(rust_lib_path).?;
+        bn254_lib.addLibraryPath(b.path(lib_dir));
         bn254_lib.linkSystemLibrary("bn254_wrapper");
     } else {
         bn254_lib.addObjectFile(b.path(rust_lib_path));
@@ -331,17 +329,14 @@ pub fn build(b: *std.Build) void {
     // Link the compiled Rust library
     const bench_rust_lib_path = if (rust_target) |target_triple|
         b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, bench_rust_target_dir })
-    else if (target.result.os.tag == .linux and target.result.cpu.arch == .x86_64)
-        // For Ubuntu native builds, Rust defaults to x86_64-unknown-linux-gnu target
-        b.fmt("target/x86_64-unknown-linux-gnu/{s}/libbn254_wrapper.a", .{bench_rust_target_dir})
     else
         b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
     
-    // Handle Rust library format incompatibility on Ubuntu native builds
-    if (target.result.os.tag == .linux and target.result.cpu.arch == .x86_64) {
-        // On Ubuntu, link the Rust library directly instead of using addObjectFile
-        // to avoid "neither ET_REL nor LLVM bitcode" errors
-        bench_bn254_lib.addLibraryPath(b.path("target/x86_64-unknown-linux-gnu/release"));
+    // For Linux, use a different approach to avoid linker format issues
+    if (target.result.os.tag == .linux) {
+        // Extract the directory and library name for Linux builds
+        const bench_lib_dir = std.fs.path.dirname(bench_rust_lib_path).?;
+        bench_bn254_lib.addLibraryPath(b.path(bench_lib_dir));
         bench_bn254_lib.linkSystemLibrary("bn254_wrapper");
     } else {
         bench_bn254_lib.addObjectFile(b.path(bench_rust_lib_path));
