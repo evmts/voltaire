@@ -110,11 +110,6 @@ pub fn init(allocator: std.mem.Allocator, database: @import("state/database_inte
         .block_execution_config = .{ .enabled = false },
         .block_cache = null,
     };
-    std.log.debug("Evm.init: Evm struct created successfully", .{});
-    
-    std.log.debug("Evm.init: About to return Evm instance", .{});
-    std.log.debug("Evm.init: EVM initialization complete", .{});
-    return evm_instance;
 }
 
 /// Create an EVM with specific initial state.
