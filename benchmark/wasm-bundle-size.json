@@ -25,27 +25,13 @@
   },
   "current": {
     "releaseSmall": {
-      "main": {
-        "withPrecompiles": 287744,
-        "withoutPrecompiles": 218741
-      },
-      "primitives": 862,
-      "evm": {
-        "withPrecompiles": 286720,
-        "withoutPrecompiles": 218741
-      }
+      "withPrecompiles": 286960,
+      "withoutPrecompiles": 218948
     },
     "releaseFast": {
-      "main": {
-        "withPrecompiles": 2202009,
-        "withoutPrecompiles": 1676180
-      },
-      "primitives": 11264,
-      "evm": {
-        "withPrecompiles": 2202009,
-        "withoutPrecompiles": 1676180
-      }
+      "withPrecompiles": 2227571,
+      "withoutPrecompiles": 1668592
     }
   },
-  "lastUpdated": "2025-07-20T17:18:09.738136Z"
+  "lastUpdated": "2025-07-20T17:29:27.937197Z"
 }
