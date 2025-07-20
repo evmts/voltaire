@@ -94,13 +94,39 @@ pub fn make_log(comptime num_topics: u8) fn (usize, *Operation.Interpreter, *Ope
     }.log;
 }
 
-// Runtime dispatch version for LOG operations (used in ReleaseSmall mode)
-pub fn log_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+// Runtime dispatch versions for LOG operations (used in ReleaseSmall mode)
+// Each LOG operation gets its own function to avoid opcode detection issues
+
+pub fn log_0(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc;
+    return log_impl(0, interpreter, state);
+}
+
+pub fn log_1(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc;
+    return log_impl(1, interpreter, state);
+}
+
+pub fn log_2(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc;
+    return log_impl(2, interpreter, state);
+}
+
+pub fn log_3(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc;
+    return log_impl(3, interpreter, state);
+}
+
+pub fn log_4(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc;
+    return log_impl(4, interpreter, state);
+}
+
+// Common implementation for all LOG operations
+fn log_impl(num_topics: u8, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     const frame = state.get_frame();
     const vm = interpreter.get_vm();
-    const opcode = frame.contract.code[pc];
-    const num_topics = opcode - 0xa0; // LOG0 is 0xa0
-
+    
     // Check if we're in a static call
     if (frame.is_static) {
         @branchHint(.unlikely);
@@ -575,7 +601,7 @@ test "Multiple LOG operations in sequence" {
     try testing.expectEqual(topic, vm.state.logs.items[1].topics[0]);
 }
 
-test "log_n runtime dispatch function" {
+test "log_2 runtime dispatch function" {
     const allocator = testing.allocator;
     
     var memory_db = MemoryDatabase.init(allocator);
@@ -602,7 +628,7 @@ test "log_n runtime dispatch function" {
     try frame.stack.append(topic1); // topic0
     try frame.stack.append(topic2); // topic1
     
-    const result = try log_n(0, @ptrCast(&vm), @ptrCast(&frame));
+    const result = try log_2(0, @ptrCast(&vm), @ptrCast(&frame));
     
     try testing.expect(result.exit_code == null);
     try testing.expectEqual(@as(usize, 1), vm.state.logs.items.len);

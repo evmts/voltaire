@@ -679,7 +679,7 @@ test "PUSH14-PUSH32: Gas consumption" {
         frame.stack.clear();
 
         const gas_before = frame.gas_remaining;
-        const result = try evm.table.execute(0, &interpreter, &state, @intCast(opcode));
+        const result = try evm.table.execute(frame.pc, &interpreter, &state, @intCast(opcode));
 
         // All PUSH operations cost 3 gas (GasFastestStep)
         const gas_used = gas_before - frame.gas_remaining;

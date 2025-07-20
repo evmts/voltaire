@@ -129,12 +129,26 @@ pub fn push_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.
     _ = interpreter;
 
     const frame = getFrame(state);
+    
+    // Bounds check for opcode access
+    if (pc >= frame.contract.code.len) {
+        return ExecutionError.Error.InvalidOpcode;
+    }
+    
     const opcode = frame.contract.code[pc];
+    
+    // Validate this is actually a PUSH1-PUSH32 opcode (0x60-0x7F)
+    if (opcode < 0x60 or opcode > 0x7F) {
+        return ExecutionError.Error.InvalidOpcode;
+    }
+    
     const n = opcode - 0x5f; // PUSH1 is 0x60, so n = opcode - 0x5f
 
+    // Stack overflow check
     if (frame.stack.size >= Stack.CAPACITY) {
-        unreachable;
+        return ExecutionError.Error.StackOverflow;
     }
+    
     var value: u256 = 0;
     const code = frame.contract.code;
 
@@ -180,24 +194,106 @@ pub fn make_dup(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.St
     }.dup;
 }
 
-// Runtime dispatch version for DUP operations (used in ReleaseSmall mode)
-pub fn dup_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    _ = interpreter;
+// Runtime dispatch versions for DUP operations (used in ReleaseSmall mode)
+// Each DUP operation gets its own function to avoid opcode detection issues
 
+pub fn dup_1(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(1, state);
+}
+
+pub fn dup_2(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(2, state);
+}
+
+pub fn dup_3(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(3, state);
+}
+
+pub fn dup_4(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(4, state);
+}
+
+pub fn dup_5(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(5, state);
+}
+
+pub fn dup_6(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(6, state);
+}
+
+pub fn dup_7(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(7, state);
+}
+
+pub fn dup_8(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(8, state);
+}
+
+pub fn dup_9(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(9, state);
+}
+
+pub fn dup_10(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(10, state);
+}
+
+pub fn dup_11(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(11, state);
+}
+
+pub fn dup_12(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(12, state);
+}
+
+pub fn dup_13(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(13, state);
+}
+
+pub fn dup_14(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(14, state);
+}
+
+pub fn dup_15(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(15, state);
+}
+
+pub fn dup_16(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return dup_impl(16, state);
+}
+
+// Common implementation for all DUP operations
+fn dup_impl(n: u8, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     const frame = getFrame(state);
-    const opcode = frame.contract.code[pc];
-    const n = opcode - 0x7f; // DUP1 is 0x80, so n = opcode - 0x7f
-
+    
+    // Validate stack requirements
+    try StackValidation.validateStackRequirements(0, 1, frame.stack.size);
+    
+    // Additional runtime check for DUP depth (n must be available on stack)
     if (frame.stack.size < n) {
-        unreachable;
+        @branchHint(.cold);
+        return ExecutionError.Error.StackUnderflow;
     }
-    if (frame.stack.size >= Stack.CAPACITY) {
-        unreachable;
-    }
-    frame.stack.dup_unsafe(@intCast(n));
 
+    frame.stack.dup_unsafe(n);
     return Operation.ExecutionResult{};
 }
+
 
 // DUP operations are now generated directly in jump_table.zig using make_dup()
 
@@ -220,19 +316,99 @@ pub fn make_swap(comptime n: u8) fn (usize, *Operation.Interpreter, *Operation.S
     }.swap;
 }
 
-// Runtime dispatch version for SWAP operations (used in ReleaseSmall mode)
-pub fn swap_n(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    _ = interpreter;
+// Runtime dispatch versions for SWAP operations (used in ReleaseSmall mode)
+// Each SWAP operation gets its own function to avoid opcode detection issues
 
+pub fn swap_1(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(1, state);
+}
+
+pub fn swap_2(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(2, state);
+}
+
+pub fn swap_3(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(3, state);
+}
+
+pub fn swap_4(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(4, state);
+}
+
+pub fn swap_5(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(5, state);
+}
+
+pub fn swap_6(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(6, state);
+}
+
+pub fn swap_7(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(7, state);
+}
+
+pub fn swap_8(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(8, state);
+}
+
+pub fn swap_9(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(9, state);
+}
+
+pub fn swap_10(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(10, state);
+}
+
+pub fn swap_11(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(11, state);
+}
+
+pub fn swap_12(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(12, state);
+}
+
+pub fn swap_13(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(13, state);
+}
+
+pub fn swap_14(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(14, state);
+}
+
+pub fn swap_15(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(15, state);
+}
+
+pub fn swap_16(pc: usize, interpreter: *Operation.Interpreter, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    _ = pc; _ = interpreter;
+    return swap_impl(16, state);
+}
+
+// Common implementation for all SWAP operations
+fn swap_impl(n: u8, state: *Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     const frame = getFrame(state);
-    const opcode = frame.contract.code[pc];
-    const n = opcode - 0x8f; // SWAP1 is 0x90, so n = opcode - 0x8f
-
+    
+    // Stack underflow check - SWAP needs n+1 items
     if (frame.stack.size < n + 1) {
-        unreachable;
+        return ExecutionError.Error.StackUnderflow;
     }
-    frame.stack.swap_unsafe(@intCast(n));
-
+    
+    frame.stack.swap_unsafe(n);
     return Operation.ExecutionResult{};
 }
 
@@ -1200,7 +1376,7 @@ test "runtime push_n handles all PUSH opcodes" {
     }
 }
 
-test "runtime dup_n handles all DUP opcodes" {
+test "specific dup functions handle all DUP operations" {
     const allocator = std.testing.allocator;
     const primitives = @import("primitives");
     
@@ -1211,15 +1387,14 @@ test "runtime dup_n handles all DUP opcodes" {
     var vm = try Vm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const test_cases = [_]struct { opcode: u8, n: u8 }{
-        .{ .opcode = 0x80, .n = 1 }, // DUP1
-        .{ .opcode = 0x81, .n = 2 }, // DUP2
-        .{ .opcode = 0x8f, .n = 16 }, // DUP16
+    const test_cases = [_]struct { n: u8, func: fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult }{
+        .{ .n = 1, .func = dup_1 },
+        .{ .n = 2, .func = dup_2 },
+        .{ .n = 16, .func = dup_16 },
     };
     
     for (test_cases) |case| {
-        var code = [_]u8{case.opcode};
-        var contract = try Contract.init(allocator, &code, .{ .address = primitives.Address.ZERO });
+        var contract = try Contract.init(allocator, &[_]u8{}, .{ .address = primitives.Address.ZERO });
         defer contract.deinit(allocator, null);
         
         var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
@@ -1237,14 +1412,14 @@ test "runtime dup_n handles all DUP opcodes" {
         const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
         const state_ptr: *Operation.State = @ptrCast(&frame);
         
-        _ = try dup_n(0, interpreter_ptr, state_ptr);
+        _ = try case.func(0, interpreter_ptr, state_ptr);
         
         try std.testing.expectEqual(original_size + 1, frame.stack.size);
         try std.testing.expectEqual(value_to_dup, try frame.stack.pop());
     }
 }
 
-test "runtime swap_n handles all SWAP opcodes" {
+test "specific swap functions handle all SWAP operations" {
     const allocator = std.testing.allocator;
     const primitives = @import("primitives");
     
@@ -1255,15 +1430,14 @@ test "runtime swap_n handles all SWAP opcodes" {
     var vm = try Vm.init(allocator, db_interface, null, null);
     defer vm.deinit();
     
-    const test_cases = [_]struct { opcode: u8, n: u8 }{
-        .{ .opcode = 0x90, .n = 1 }, // SWAP1
-        .{ .opcode = 0x91, .n = 2 }, // SWAP2
-        .{ .opcode = 0x9f, .n = 16 }, // SWAP16
+    const test_cases = [_]struct { n: u8, func: fn (usize, *Operation.Interpreter, *Operation.State) ExecutionError.Error!Operation.ExecutionResult }{
+        .{ .n = 1, .func = swap_1 },
+        .{ .n = 2, .func = swap_2 },
+        .{ .n = 16, .func = swap_16 },
     };
     
     for (test_cases) |case| {
-        var code = [_]u8{case.opcode};
-        var contract = try Contract.init(allocator, &code, .{ .address = primitives.Address.ZERO });
+        var contract = try Contract.init(allocator, &[_]u8{}, .{ .address = primitives.Address.ZERO });
         defer contract.deinit(allocator, null);
         
         var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
@@ -1281,7 +1455,7 @@ test "runtime swap_n handles all SWAP opcodes" {
         const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
         const state_ptr: *Operation.State = @ptrCast(&frame);
         
-        _ = try swap_n(0, interpreter_ptr, state_ptr);
+        _ = try case.func(0, interpreter_ptr, state_ptr);
         
         try std.testing.expectEqual(target_value, try frame.stack.peek_n(0));
         try std.testing.expectEqual(top_value, try frame.stack.peek_n(case.n));
