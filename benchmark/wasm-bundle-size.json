@@ -1,0 +1,23 @@
+{
+  "targets": {
+    "releaseSmall": {
+      "withPrecompiles": 150,
+      "withoutPrecompiles": 100
+    },
+    "releaseFast": {
+      "withPrecompiles": 2500,
+      "withoutPrecompiles": 2000
+    }
+  },
+  "current": {
+    "releaseSmall": {
+      "withPrecompiles": null,
+      "withoutPrecompiles": null
+    },
+    "releaseFast": {
+      "withPrecompiles": null,
+      "withoutPrecompiles": null
+    }
+  },
+  "lastUpdated": null
+}

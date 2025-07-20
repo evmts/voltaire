@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
 """
-WASM Size Analysis Tool for Tevm EVM Implementation
+WASM Size Analysis Tool for Guillotine EVM Implementation
 
 This script analyzes the size of WASM builds, breaking down sections,
-functions, and providing optimization insights.
+functions, and providing optimization insights. It also tracks bundle sizes
+against targets for CI/CD integration.
 
 Usage:
     python3 scripts/wasm-analyze.py           # Build WASM first, then analyze (default)
     python3 scripts/wasm-analyze.py --no-build # Analyze existing WASM files without building
     python3 scripts/wasm-analyze.py -n        # Same as --no-build
+    python3 scripts/wasm-analyze.py -u        # Update benchmark file with current sizes
+    python3 scripts/wasm-analyze.py --update  # Same as -u
+    python3 scripts/wasm-analyze.py --check   # Check sizes against targets (exit 1 if over)
 """
 
 import subprocess
 import os
 import sys
 import re
+import json
+import argparse
+from datetime import datetime
 from pathlib import Path
 
 def get_file_size(filepath):
@@ -96,66 +103,158 @@ def format_bytes(bytes_val):
     else:
         return f"{bytes_val:,} bytes ({kb:.2f} KB)"
 
+def load_benchmark_data(benchmark_path):
+    """Load benchmark data from JSON file."""
+    try:
+        with open(benchmark_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        # Create default benchmark structure if file doesn't exist
+        default_data = {
+            "targets": {
+                "releaseSmall": {
+                    "withPrecompiles": 150,
+                    "withoutPrecompiles": 100
+                },
+                "releaseFast": {
+                    "withPrecompiles": 2500,
+                    "withoutPrecompiles": 2000
+                }
+            },
+            "current": {
+                "releaseSmall": {
+                    "withPrecompiles": None,
+                    "withoutPrecompiles": None
+                },
+                "releaseFast": {
+                    "withPrecompiles": None,
+                    "withoutPrecompiles": None
+                }
+            },
+            "lastUpdated": None
+        }
+        return default_data
+
+def save_benchmark_data(benchmark_path, data):
+    """Save benchmark data to JSON file."""
+    data["lastUpdated"] = datetime.now().isoformat() + "Z"
+    with open(benchmark_path, 'w') as f:
+        json.dump(data, f, indent=2)
+
+def build_wasm_variant(variant_name, optimize_mode, no_precompiles=False):
+    """Build a specific WASM variant."""
+    print(f"Building {variant_name}...")
+    
+    cmd = ['zig', 'build', 'wasm', f'-Doptimize={optimize_mode}']
+    if no_precompiles:
+        cmd.append('-Dno_precompiles=true')
+    
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"Error building {variant_name}: {result.stderr}")
+        return False
+    
+    return True
+
+def kb_size(bytes_val):
+    """Convert bytes to KB (rounded)."""
+    return round(bytes_val / 1024)
+
+def check_size_targets(current_sizes, targets):
+    """Check if current sizes exceed targets. Returns (passed, failures)."""
+    failures = []
+    
+    for optimize_mode in ['releaseSmall', 'releaseFast']:
+        for variant in ['withPrecompiles', 'withoutPrecompiles']:
+            current = current_sizes.get(optimize_mode, {}).get(variant)
+            target = targets.get(optimize_mode, {}).get(variant)
+            
+            if current is not None and target is not None:
+                current_kb = kb_size(current)
+                if current_kb > target:
+                    failures.append({
+                        'mode': optimize_mode,
+                        'variant': variant,
+                        'current': current_kb,
+                        'target': target,
+                        'excess': current_kb - target
+                    })
+    
+    return len(failures) == 0, failures
+
 def main():
-    # Check for help flag
-    if len(sys.argv) > 1 and sys.argv[1] in ['--help', '-h']:
-        print(__doc__)
-        sys.exit(0)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--no-build', '-n', action='store_true', 
+                        help='Analyze existing WASM files without building')
+    parser.add_argument('--update', '-u', action='store_true',
+                        help='Update benchmark file with current sizes')
+    parser.add_argument('--check', action='store_true',
+                        help='Check sizes against targets (exit 1 if over)')
+    
+    args = parser.parse_args()
     
     # Paths
     project_root = Path(__file__).parent.parent
-    wasm_dir = project_root / "zig-out" / "dist"
+    benchmark_path = project_root / "benchmark" / "wasm-bundle-size.json"
     
-    # Check if we should skip building (default is to build)
-    skip_build = len(sys.argv) > 1 and sys.argv[1] in ['--no-build', '-n']
+    # Load benchmark data
+    benchmark_data = load_benchmark_data(benchmark_path)
     
-    # Build WASM unless --no-build is specified
-    if not skip_build:
-        print("=== Building WASM ===\n")
-        print("Building release WASM...")
-        os.chdir(project_root)
-        result = subprocess.run(['zig', 'build', 'wasm'], capture_output=True, text=True)
-        if result.returncode != 0:
-            print(f"Error building WASM: {result.stderr}")
-            sys.exit(1)
-        # Debug build step may not exist, so we'll skip if it fails
-        if subprocess.run(['zig', 'build', '--help'], capture_output=True, text=True).stdout.find('wasm-debug') != -1:
-            print("Building debug WASM...")
-            result = subprocess.run(['zig', 'build', 'wasm-debug'], capture_output=True, text=True)
-            if result.returncode != 0:
-                print(f"Note: Debug build not available")
+    # Change to project root
+    os.chdir(project_root)
+    
+    # Build variants if not skipping build
+    if not args.no_build:
+        print("=== Building WASM Variants ===\n")
+        
+        variants = [
+            ('ReleaseSmall with precompiles', 'ReleaseSmall', False),
+            ('ReleaseSmall without precompiles', 'ReleaseSmall', True),
+            ('ReleaseFast with precompiles', 'ReleaseFast', False),
+            ('ReleaseFast without precompiles', 'ReleaseFast', True),
+        ]
+        
+        for variant_name, optimize_mode, no_precompiles in variants:
+            if not build_wasm_variant(variant_name, optimize_mode, no_precompiles):
+                sys.exit(1)
+            
+            # Rename the output to include variant info
+            source_path = project_root / "zig-out" / "bin" / "guillotine.wasm"
+            suffix = "no-precompiles" if no_precompiles else "with-precompiles"
+            target_path = project_root / "zig-out" / "bin" / f"guillotine-{optimize_mode.lower()}-{suffix}.wasm"
+            
+            if source_path.exists():
+                run_command(f"mv {source_path} {target_path}")
+        
         print("Build complete!\n")
     else:
         print("=== Analyzing existing WASM files (skipping build) ===\n")
-
     
     # Find WASM files
-    wasm_files = {
-        'stripped': project_root / "zig-out" / "bin" / "guillotine.wasm",
-        'debug': project_root / "zig-out" / "bin" / "guillotine-debug.wasm"
-    }
+    wasm_files = {}
+    for optimize in ['releasesmall', 'releasefast']:
+        for variant in ['with-precompiles', 'no-precompiles']:
+            key = f"{optimize}_{variant.replace('-', '_')}"
+            path = project_root / "zig-out" / "bin" / f"guillotine-{optimize}-{variant}.wasm"
+            if path.exists():
+                wasm_files[key] = path
     
-    print("=== WASM Size Analysis Tool ===\n")
-    
-    # First, create a stripped version if it doesn't exist
-    if wasm_files['stripped'].exists():
-        stripped_path = project_root / "zig-out" / "bin" / "guillotine-stripped.wasm"
-        run_command(f"cp {wasm_files['stripped']} {stripped_path}")
-        run_command(f"wasm-strip {stripped_path}")
-        wasm_files['stripped'] = stripped_path
+    print("=== WASM Bundle Size Analysis ===\n")
     
     # Analyze each WASM file
     results = {}
-    for build_type, wasm_path in wasm_files.items():
+    current_sizes = {}
+    
+    for build_key, wasm_path in wasm_files.items():
         if not wasm_path.exists():
-            print(f"Warning: {build_type} build not found at {wasm_path}")
+            print(f"Warning: {build_key} build not found at {wasm_path}")
             continue
         
         size = get_file_size(wasm_path)
         sections, total, code_data, debug = analyze_wasm_sections(wasm_path)
         functions, modules = analyze_functions(wasm_path)
         
-        results[build_type] = {
+        results[build_key] = {
             'path': wasm_path,
             'size': size,
             'sections': sections,
@@ -165,179 +264,157 @@ def main():
             'functions': functions,
             'modules': modules
         }
-    
-    # Print analysis
-    if len(results) > 1:
-        print("## File Size Comparison\n")
         
-        if 'debug' in results and 'stripped' in results:
-            debug_size = results['debug']['size']
-            stripped_size = results['stripped']['size']
-            
-            print(f"Debug build:    {format_bytes(debug_size)}")
-            print(f"Stripped build: {format_bytes(stripped_size)}")
-            
-            if debug_size > stripped_size:
-                overhead = debug_size - stripped_size
-                print(f"Debug overhead: {format_bytes(overhead)} ({overhead/debug_size*100:.1f}% of debug build)")
+        # Map to benchmark structure
+        if 'releasesmall' in build_key:
+            mode = 'releaseSmall'
         else:
-            # Just show what we have
-            for build_type, data in results.items():
-                print(f"{build_type.title()} build: {format_bytes(data['size'])}")
+            mode = 'releaseFast'
+        
+        if 'no_precompiles' in build_key:
+            variant = 'withoutPrecompiles'
+        else:
+            variant = 'withPrecompiles'
+        
+        if mode not in current_sizes:
+            current_sizes[mode] = {}
+        current_sizes[mode][variant] = size
+    
+    # Display size comparison table
+    print("## Bundle Size Report\n")
+    print(f"{'Build Mode':<15} {'Variant':<20} {'Current':<15} {'Target':<15} {'Status':<10}")
+    print("-" * 80)
+    
+    all_passed = True
+    
+    for mode in ['releaseSmall', 'releaseFast']:
+        for variant in ['withPrecompiles', 'withoutPrecompiles']:
+            current = current_sizes.get(mode, {}).get(variant)
+            target = benchmark_data['targets'].get(mode, {}).get(variant)
+            
+            if current is not None:
+                current_kb = kb_size(current)
+                current_str = f"{current_kb}K"
+                
+                if target is not None:
+                    target_str = f"{target}K"
+                    if current_kb > target:
+                        status = "❌ FAIL"
+                        all_passed = False
+                    else:
+                        status = "✅ PASS"
+                else:
+                    target_str = "No target"
+                    status = "⚠️  N/A"
+                
+                variant_display = "without precompiles" if variant == "withoutPrecompiles" else "with precompiles"
+                print(f"{mode:<15} {variant_display:<20} {current_str:<15} {target_str:<15} {status:<10}")
+            else:
+                variant_display = "without precompiles" if variant == "withoutPrecompiles" else "with precompiles"
+                print(f"{mode:<15} {variant_display:<20} {'Not built':<15} {'N/A':<15} {'⚠️  N/A':<10}")
+    
+    print()
+    
+    # Check against targets
+    passed, failures = check_size_targets(current_sizes, benchmark_data['targets'])
+    
+    if failures:
+        print("## ❌ Size Target Violations\n")
+        for failure in failures:
+            variant_display = "without precompiles" if failure['variant'] == "withoutPrecompiles" else "with precompiles"
+            print(f"- {failure['mode']} {variant_display}: {failure['current']}K > {failure['target']}K "
+                  f"(+{failure['excess']}K over target)")
         print()
     
-    # Analyze the main build (prefer stripped)
-    main_build = 'stripped' if 'stripped' in results else 'debug'
-    if main_build in results:
-        data = results[main_build]
+    # Update benchmark file if requested
+    if args.update:
+        benchmark_data['current'] = current_sizes
+        save_benchmark_data(benchmark_path, benchmark_data)
+        print(f"📝 Updated benchmark file: {benchmark_path}\n")
+    
+    # Exit with error if checking and failures exist
+    if args.check and not passed:
+        print("❌ Size check FAILED - bundle sizes exceed targets")
+        sys.exit(1)
+    elif args.check:
+        print("✅ Size check PASSED - all bundle sizes within targets")
+    
+    # If we have results, show detailed analysis for the main build
+    if results:
+        # Find the smallest ReleaseSmall build for detailed analysis
+        main_build_key = None
+        for key in results.keys():
+            if 'releasesmall' in key and 'no_precompiles' in key:
+                main_build_key = key
+                break
         
-        print(f"## Detailed Analysis of {main_build.title()} Build\n")
+        if not main_build_key:
+            # Fallback to any ReleaseSmall build
+            for key in results.keys():
+                if 'releasesmall' in key:
+                    main_build_key = key
+                    break
         
-        # Section breakdown
-        print("### Section Breakdown\n")
-        sections = data['sections']
+        if main_build_key:
+            print("## Detailed Analysis (ReleaseSmall without precompiles)\n")
+            
+            data = results[main_build_key]
+            
+            # Section breakdown
+            print("### Section Breakdown\n")
+            sections = data['sections']
+            
+            # Sort sections by size
+            sorted_sections = sorted(sections.items(), key=lambda x: x[1], reverse=True)
+            
+            for section, size in sorted_sections[:10]:  # Top 10 sections
+                percentage = (size / data['size']) * 100 if data['size'] > 0 else 0
+                print(f"{section:<20} {format_bytes(size):<30} ({percentage:5.1f}%)")
+            
+            print(f"\n{'Total:':<20} {format_bytes(data['total_sections'])}")
+            
+            # Code vs Debug breakdown
+            if data['code_data_size'] > 0:
+                print(f"\nCode + Data:  {format_bytes(data['code_data_size'])} ({data['code_data_size']/data['size']*100:.1f}%)")
+            if data['debug_size'] > 0:
+                print(f"Debug info:   {format_bytes(data['debug_size'])} ({data['debug_size']/data['size']*100:.1f}%)")
+            
+            # Function analysis
+            print(f"\n### Function Analysis\n")
+            print(f"Total functions: {len(data['functions'])}")
+            
+            # Top modules by function count
+            print("\nTop modules by function count:")
+            sorted_modules = sorted(data['modules'].items(), key=lambda x: x[1], reverse=True)
+            
+            for module, count in sorted_modules[:15]:
+                percentage = (count / len(data['functions'])) * 100
+                print(f"  {module:<30} {count:>4} functions ({percentage:5.1f}%)")
+    
+    print("\n## Optimization Recommendations\n")
+    
+    # Critical size check for 100K target
+    releasesmall_no_precompiles = current_sizes.get('releaseSmall', {}).get('withoutPrecompiles')
+    if releasesmall_no_precompiles:
+        current_kb = kb_size(releasesmall_no_precompiles)
+        target_kb = 100
         
-        # Sort sections by size
-        sorted_sections = sorted(sections.items(), key=lambda x: x[1], reverse=True)
-        
-        for section, size in sorted_sections[:10]:  # Top 10 sections
-            percentage = (size / data['size']) * 100 if data['size'] > 0 else 0
-            print(f"{section:<20} {format_bytes(size):<30} ({percentage:5.1f}%)")
-        
-        print(f"\n{'Total:':<20} {format_bytes(data['total_sections'])}")
-        
-        # Code vs Debug breakdown
-        if data['code_data_size'] > 0:
-            print(f"\nCode + Data:  {format_bytes(data['code_data_size'])} ({data['code_data_size']/data['size']*100:.1f}%)")
-        if data['debug_size'] > 0:
-            print(f"Debug info:   {format_bytes(data['debug_size'])} ({data['debug_size']/data['size']*100:.1f}%)")
-        
-        # Function analysis
-        print(f"\n### Function Analysis\n")
-        print(f"Total functions: {len(data['functions'])}")
-        
-        # Top modules by function count
-        print("\nTop modules by function count:")
-        sorted_modules = sorted(data['modules'].items(), key=lambda x: x[1], reverse=True)
-        
-        for module, count in sorted_modules[:15]:
-            percentage = (count / len(data['functions'])) * 100
-            print(f"  {module:<30} {count:>4} functions ({percentage:5.1f}%)")
-        
-        # Optimization insights
-        print("\n## Optimization Insights\n")
-        
-        if data['code_data_size'] > 100 * 1024:  # > 100KB
-            print("- Code size is over 100KB. Consider:")
-            print("  - Enabling link-time optimization (LTO)")
-            print("  - Using ReleaseSmall optimization mode")
-            print("  - Removing unused features or modules")
-        
-        if len(data['functions']) > 500:
-            print(f"- High function count ({len(data['functions'])}). Consider:")
-            print("  - Checking for duplicate generic instantiations")
-            print("  - Combining similar small functions")
-            print("  - Using function deduplication")
-        
-        # Module-specific insights
-        if 'execution' in data['modules'] and data['modules']['execution'] > 200:
-            print(f"- Execution module has {data['modules']['execution']} functions. Consider:")
-            print("  - Using a more compact opcode dispatch mechanism")
-            print("  - Combining similar opcode implementations")
-        
-        if 'hash_map' in data['modules'] and data['modules']['hash_map'] > 20:
-            print(f"- HashMap module has {data['modules']['hash_map']} functions. Consider:")
-            print("  - Using a single generic implementation")
-            print("  - Switching to a more compact data structure for WASM")
-
-    # Additional tools suggestion
-    print("\n## Further Optimization Tools\n")
+        if current_kb > target_kb:
+            excess_kb = current_kb - target_kb
+            print(f"🚨 CRITICAL: ReleaseSmall without precompiles is {current_kb}K (target: {target_kb}K)")
+            print(f"   Need to reduce size by {excess_kb}K ({excess_kb/current_kb*100:.1f}%)")
+            print("\n   Recommended actions:")
+            print("   1. Remove unused opcode implementations")
+            print("   2. Use more compact data structures")
+            print("   3. Apply dead code elimination")
+            print("   4. Consider wasm-opt -Oz optimization")
+        else:
+            print(f"✅ ReleaseSmall without precompiles: {current_kb}K (within {target_kb}K target)")
+    
+    print("\n## Additional Tools\n")
     print("1. wasm-opt -Oz input.wasm -o output.wasm  # Binaryen size optimization")
     print("2. twiggy top input.wasm                   # Show largest code sections")
     print("3. wasm-decompile input.wasm               # Analyze generated code")
-    
-    # Check if wasm-opt is available
-    if run_command("which wasm-opt"):
-        print("\n[wasm-opt is available - running size optimization test...]")
-        if main_build in results:
-            test_path = "/tmp/test-opt.wasm"
-            run_command(f"wasm-opt -Oz {results[main_build]['path']} -o {test_path} 2>/dev/null")
-            opt_size = get_file_size(test_path)
-            if opt_size and opt_size < results[main_build]['size']:
-                saved = results[main_build]['size'] - opt_size
-                print(f"wasm-opt could save {format_bytes(saved)} ({saved/results[main_build]['size']*100:.1f}%)")
-    
-    # Check if twiggy is available for detailed analysis
-    if run_command("which twiggy"):
-        print("\n## Zig Code Size Attribution (via twiggy)\n")
-        
-        # Analyze debug build if available to get function names
-        if 'debug' in results:
-            print("### Largest Zig Functions by Size:\n")
-            twiggy_output = run_command(f"twiggy top -n 50 {results['debug']['path']}")
-            
-            # Parse and display only Zig code functions (skip debug sections and data)
-            count = 0
-            for line in twiggy_output.split('\n'):
-                if '┊' in line and count < 30:  # Show top 30 functions (note: using Unicode ┊)
-                    parts = line.split('┊')
-                    if len(parts) >= 3:
-                        size_str = parts[0].strip()
-                        percentage = parts[1].strip()
-                        name = parts[2].strip()
-                        
-                        # Filter for actual Zig functions
-                        if (name and 
-                            not name.startswith('custom section') and 
-                            not name.startswith('data[') and
-                            not name.startswith('"') and
-                            not name.startswith('...') and
-                            not name.startswith('Shallow') and  # Skip header
-                            '.' in name):  # Zig functions have module.function format
-                            
-                            # Try to parse size
-                            size_bytes = 0
-                            if size_str.replace(',', '').isdigit():
-                                size_bytes = int(size_str.replace(',', ''))
-                            
-                            print(f"{name:<70} {size_bytes:>7,} bytes ({percentage:>6})")
-                            count += 1
-            
-            # Group by module
-            print("\n### Size by Module:\n")
-            twiggy_output = run_command(f"twiggy top -n 200 {results['debug']['path']}")
-            
-            module_sizes = {}
-            for line in twiggy_output.split('\n'):
-                if '┊' in line:
-                    parts = line.split('┊')
-                    if len(parts) >= 3:
-                        size_str = parts[0].strip()
-                        name = parts[2].strip()
-                        
-                        if (name and '.' in name and 
-                            not name.startswith('custom section') and 
-                            not name.startswith('data[')):
-                            
-                            module = name.split('.')[0]
-                            if size_str.replace(',', '').isdigit():
-                                size = int(size_str.replace(',', ''))
-                                module_sizes[module] = module_sizes.get(module, 0) + size
-            
-            # Sort and display modules
-            sorted_modules = sorted(module_sizes.items(), key=lambda x: x[1], reverse=True)
-            total_code = sum(size for _, size in sorted_modules)
-            
-            for module, size in sorted_modules[:15]:  # Top 15 modules
-                percentage = (size / total_code * 100) if total_code > 0 else 0
-                print(f"{module:<30} {size:>10,} bytes ({percentage:>5.1f}%)")
-            
-            if total_code > 0:
-                print(f"\n{'Total Zig code:':<30} {total_code:>10,} bytes")
-        
-        else:
-            print("Note: Debug build not available. Build with debug symbols to see function names.")
-            print("Run: python3 scripts/wasm-analyze.py --build")
 
 if __name__ == "__main__":
     main()
