@@ -191,6 +191,8 @@ def main():
                         help='Update benchmark file with current sizes')
     parser.add_argument('--check', action='store_true',
                         help='Check sizes against targets (exit 1 if over)')
+    parser.add_argument('--markdown-table', action='store_true',
+                        help='Output only the bundle size table in markdown format')
     
     args = parser.parse_args()
     
@@ -282,40 +284,76 @@ def main():
         current_sizes[mode][variant] = size
     
     # Display size comparison table
-    print("## Bundle Size Report\n")
-    print(f"{'Build Mode':<15} {'Variant':<20} {'Current':<15} {'Target':<15} {'Status':<10}")
-    print("-" * 80)
-    
     all_passed = True
     
-    for mode in ['releaseSmall', 'releaseFast']:
-        for variant in ['withPrecompiles', 'withoutPrecompiles']:
-            current = current_sizes.get(mode, {}).get(variant)
-            target = benchmark_data['targets'].get(mode, {}).get(variant)
-            
-            if current is not None:
-                current_kb = kb_size(current)
-                current_str = f"{current_kb}K"
+    if args.markdown_table:
+        # Output only markdown table for PR comments
+        print("| Build Mode | Variant | Current | Target | Status |")
+        print("|------------|---------|---------|--------|--------|")
+        
+        for mode in ['releaseSmall', 'releaseFast']:
+            for variant in ['withPrecompiles', 'withoutPrecompiles']:
+                current = current_sizes.get(mode, {}).get(variant)
+                target = benchmark_data['targets'].get(mode, {}).get(variant)
                 
-                if target is not None:
-                    target_kb = kb_size(target)
-                    target_str = f"{target_kb}K"
-                    if current_kb > target_kb:
-                        status = "❌ FAIL"
-                        all_passed = False
+                if current is not None:
+                    current_kb = kb_size(current)
+                    current_str = f"{current_kb}K"
+                    
+                    if target is not None:
+                        target_kb = kb_size(target)
+                        target_str = f"{target_kb}K"
+                        if current_kb > target_kb:
+                            status = "❌ FAIL"
+                            all_passed = False
+                        else:
+                            status = "✅ PASS"
                     else:
-                        status = "✅ PASS"
+                        target_str = "No target"
+                        status = "⚠️ N/A"
+                    
+                    variant_display = "without precompiles" if variant == "withoutPrecompiles" else "with precompiles"
+                    print(f"| {mode} | {variant_display} | {current_str} | {target_str} | {status} |")
                 else:
-                    target_str = "No target"
-                    status = "⚠️  N/A"
+                    variant_display = "without precompiles" if variant == "withoutPrecompiles" else "with precompiles"
+                    print(f"| {mode} | {variant_display} | Not built | N/A | ⚠️ N/A |")
+        
+        # Exit early if only markdown table is requested
+        if args.markdown_table:
+            return
+    else:
+        print("## Bundle Size Report\n")
+        print(f"{'Build Mode':<15} {'Variant':<20} {'Current':<15} {'Target':<15} {'Status':<10}")
+        print("-" * 80)
+        
+        for mode in ['releaseSmall', 'releaseFast']:
+            for variant in ['withPrecompiles', 'withoutPrecompiles']:
+                current = current_sizes.get(mode, {}).get(variant)
+                target = benchmark_data['targets'].get(mode, {}).get(variant)
                 
-                variant_display = "without precompiles" if variant == "withoutPrecompiles" else "with precompiles"
-                print(f"{mode:<15} {variant_display:<20} {current_str:<15} {target_str:<15} {status:<10}")
-            else:
-                variant_display = "without precompiles" if variant == "withoutPrecompiles" else "with precompiles"
-                print(f"{mode:<15} {variant_display:<20} {'Not built':<15} {'N/A':<15} {'⚠️  N/A':<10}")
-    
-    print()
+                if current is not None:
+                    current_kb = kb_size(current)
+                    current_str = f"{current_kb}K"
+                    
+                    if target is not None:
+                        target_kb = kb_size(target)
+                        target_str = f"{target_kb}K"
+                        if current_kb > target_kb:
+                            status = "❌ FAIL"
+                            all_passed = False
+                        else:
+                            status = "✅ PASS"
+                    else:
+                        target_str = "No target"
+                        status = "⚠️  N/A"
+                    
+                    variant_display = "without precompiles" if variant == "withoutPrecompiles" else "with precompiles"
+                    print(f"{mode:<15} {variant_display:<20} {current_str:<15} {target_str:<15} {status:<10}")
+                else:
+                    variant_display = "without precompiles" if variant == "withoutPrecompiles" else "with precompiles"
+                    print(f"{mode:<15} {variant_display:<20} {'Not built':<15} {'N/A':<15} {'⚠️  N/A':<10}")
+        
+        print()
     
     # Check against targets
     passed, failures = check_size_targets(current_sizes, benchmark_data['targets'])

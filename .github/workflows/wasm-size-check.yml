@@ -58,63 +58,8 @@ jobs:
     - name: Generate size report for PR
       if: github.event_name == 'pull_request'
       run: |
-        # Generate detailed report
-        python3 scripts/wasm-analyze.py > wasm-size-report.txt
-        
-        # Extract and convert the size comparison table to markdown format
-        python3 -c "
-        import re
-        
-        # Read the report
-        with open('wasm-size-report.txt', 'r') as f:
-            content = f.read()
-        
-        # Find the table section
-        lines = content.split('\n')
-        in_table = False
-        table_lines = []
-        
-        for i, line in enumerate(lines):
-            if '## Bundle Size Report' in line:
-                in_table = True
-                continue
-            if in_table and line.startswith('Build Mode'):
-                # Header line
-                table_lines.append('| Build Mode | Variant | Current | Target | Status |')
-                table_lines.append('|------------|---------|---------|--------|--------|')
-                continue
-            if in_table and line.startswith('-' * 20):
-                # Skip the separator line
-                continue
-            if in_table and line.strip() == '':
-                # End of table
-                break
-            if in_table and line.strip():
-                # Data row - parse fixed width format
-                parts = line.split()
-                if len(parts) >= 5:
-                    mode = parts[0]
-                    # Handle multi-word variants
-                    if parts[1] == 'with':
-                        variant = 'with precompiles'
-                        rest_start = 3
-                    elif parts[1] == 'without':
-                        variant = 'without precompiles'
-                        rest_start = 3
-                    else:
-                        variant = parts[1]
-                        rest_start = 2
-                    
-                    current = parts[rest_start]
-                    target = ' '.join(parts[rest_start+1:-2]) if len(parts) > rest_start+3 else parts[rest_start+1]
-                    status = ' '.join(parts[-2:])
-                    
-                    table_lines.append(f'| {mode} | {variant} | {current} | {target} | {status} |')
-        
-        # Write markdown table
-        with open('pr-comment.txt', 'w') as f:
-            f.write('\\n'.join(table_lines))
-        " > pr-comment.txt
+        # Generate markdown table for PR comment
+        python3 scripts/wasm-analyze.py --markdown-table > pr-comment.txt
 
     - name: Comment on PR with size report
       if: github.event_name == 'pull_request'
