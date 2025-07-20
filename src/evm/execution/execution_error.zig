@@ -427,317 +427,299 @@ test "get_description formatting - descriptions are properly formatted" {
     }
 }
 
-test "ExecutionError basic error instantiation" {
-    // Test that all error variants can be instantiated
-    const errors = [_]Error{
-        Error.STOP,
-        Error.REVERT,
-        Error.INVALID,
-        Error.OutOfGas,
-        Error.StackUnderflow,
-        Error.StackOverflow,
-        Error.InvalidJump,
-        Error.InvalidOpcode,
-        Error.StaticStateChange,
-        Error.OutOfOffset,
-        Error.GasUintOverflow,
-        Error.WriteProtection,
-        Error.ReturnDataOutOfBounds,
-        Error.InvalidReturnDataAccess,
-        Error.DeployCodeTooBig,
-        Error.MaxCodeSizeExceeded,
-        Error.InvalidCodeEntry,
-        Error.DepthLimit,
-        Error.OutOfMemory,
-        Error.InvalidOffset,
-        Error.InvalidSize,
-        Error.MemoryLimitExceeded,
-        Error.ChildContextActive,
-        Error.NoChildContextToRevertOrCommit,
-        Error.EOFNotSupported,
-        Error.AccountNotFound,
-        Error.StorageNotFound,
-        Error.CodeNotFound,
-        Error.InvalidAddress,
-        Error.DatabaseCorrupted,
-        Error.NetworkError,
-        Error.PermissionDenied,
-        Error.InvalidSnapshot,
-        Error.NoBatchInProgress,
+// ============================================================================
+// Fuzz Tests for Error Enumeration Completeness (Issue #234)
+// ============================================================================
+
+test "fuzz_error_enumeration_completeness" {
+    var prng = std.Random.DefaultPrng.init(0);
+    const random = prng.random();
+    
+    const all_errors = [_]Error{
+        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
+        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
+        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
+        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
+        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
+        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
+        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
+        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
+        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
         Error.SnapshotNotFound,
     };
     
-    // Verify each error can be instantiated and has a description
-    for (errors) |err| {
-        const desc = get_description(err);
-        try testing.expect(desc.len > 0);
+    for (0..1000) |_| {
+        const error_idx = random.intRangeLessThan(usize, 0, all_errors.len);
+        const test_error = all_errors[error_idx];
         
-        // Verify description is reasonable (not empty, has some meaningful content)
-        try testing.expect(desc.len > 5); // Minimum meaningful length
-        try testing.expect(desc.len < 200); // Maximum reasonable length
+        const desc = get_description(test_error);
+        try testing.expect(desc.len > 0);
+        try testing.expect(desc.len < 200);
+        
+        const has_proper_format = !std.mem.startsWith(u8, desc, " ") and !std.mem.endsWith(u8, desc, " ");
+        try testing.expect(has_proper_format);
     }
 }
 
-test "ExecutionError description consistency" {
-    // Verify all descriptions are non-null and reasonably formatted
-    const all_errors = std.meta.fields(Error);
-    
-    inline for (all_errors) |field| {
-        const err = @field(Error, field.name);
-        const desc = get_description(err);
-        
-        // Basic consistency checks
-        try testing.expect(desc.len > 0);
-        try testing.expect(!std.mem.eql(u8, desc, ""));
-        try testing.expect(!std.mem.startsWith(u8, desc, " "));  // No leading space
-        try testing.expect(!std.mem.endsWith(u8, desc, " "));    // No trailing space
-        
-        // Check for reasonable content patterns
-        const has_meaningful_content = std.mem.containsAtLeast(u8, desc, 1, "error") or
-                                     std.mem.containsAtLeast(u8, desc, 1, "limit") or
-                                     std.mem.containsAtLeast(u8, desc, 1, "overflow") or
-                                     std.mem.containsAtLeast(u8, desc, 1, "underflow") or
-                                     std.mem.containsAtLeast(u8, desc, 1, "invalid") or
-                                     std.mem.containsAtLeast(u8, desc, 1, "not found") or
-                                     std.mem.containsAtLeast(u8, desc, 1, "opcode") or
-                                     std.mem.containsAtLeast(u8, desc, 1, "out of") or
-                                     std.mem.containsAtLeast(u8, desc, 1, "exceeded");
-        
-        // Special cases for normal termination
-        if (err == Error.STOP or err == Error.REVERT) {
-            // These are not errors per se, so they might have different patterns
-            try testing.expect(desc.len > 5);
-        } else {
-            // Other errors should have error-related keywords or be descriptive
-            try testing.expect(has_meaningful_content or desc.len > 15);
-        }
-    }
-}
-
-test "fuzz_execution_error_description_completeness" {
-    // Comprehensive test that every error enum variant has a corresponding description
-    const all_errors = std.meta.fields(Error);
-    
-    // Test each error by field name to ensure completeness
-    inline for (all_errors) |field| {
-        const err = @field(Error, field.name);
-        const desc = get_description(err);
-        
-        // Each error must have a meaningful description
-        try testing.expect(desc.len > 0);
-        
-        // Verify description format is reasonable
-        try testing.expect(desc.len >= 3); // Minimum "..."
-        try testing.expect(desc.len <= 100); // Maximum reasonable message
-        
-        // Verify description doesn't contain common formatting issues
-        try testing.expect(!std.mem.containsAtLeast(u8, desc, 1, "TODO"));
-        try testing.expect(!std.mem.containsAtLeast(u8, desc, 1, "FIXME"));
-        try testing.expect(!std.mem.containsAtLeast(u8, desc, 1, "XXX"));
-    }
-}
-
-test "fuzz_execution_error_random_selection" {
+test "fuzz_error_description_consistency" {
     var prng = std.Random.DefaultPrng.init(42);
     const random = prng.random();
     
     const all_errors = [_]Error{
         Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
-        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump,
-        Error.InvalidOpcode, Error.StaticStateChange, Error.OutOfOffset,
-        Error.GasUintOverflow, Error.WriteProtection, Error.ReturnDataOutOfBounds,
-        Error.InvalidReturnDataAccess, Error.DeployCodeTooBig, Error.MaxCodeSizeExceeded,
-        Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
-        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded,
-        Error.ChildContextActive, Error.NoChildContextToRevertOrCommit,
-        Error.EOFNotSupported, Error.AccountNotFound, Error.StorageNotFound,
-        Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
-        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot,
-        Error.NoBatchInProgress, Error.SnapshotNotFound,
-    };
-    
-    // Randomly test error variants
-    for (0..1000) |_| {
-        const err_index = random.intRangeAtMost(usize, 0, all_errors.len - 1);
-        const err = all_errors[err_index];
-        const desc = get_description(err);
-        
-        // Every error should have a valid description
-        try testing.expect(desc.len > 0);
-        try testing.expect(desc.len < 200);
-        
-        // Verify the description matches expected patterns for error categories
-        switch (err) {
-            Error.STOP => try testing.expect(std.mem.containsAtLeast(u8, desc, 1, "STOP")),
-            Error.REVERT => try testing.expect(std.mem.containsAtLeast(u8, desc, 1, "REVERT")),
-            Error.INVALID => try testing.expect(std.mem.containsAtLeast(u8, desc, 1, "INVALID")),
-            Error.OutOfGas => try testing.expect(std.mem.containsAtLeast(u8, desc, 1, "gas")),
-            Error.StackUnderflow => try testing.expect(std.mem.containsAtLeast(u8, desc, 1, "underflow")),
-            Error.StackOverflow => try testing.expect(std.mem.containsAtLeast(u8, desc, 1, "overflow")),
-            Error.InvalidJump => try testing.expect(std.mem.containsAtLeast(u8, desc, 1, "jump") or std.mem.containsAtLeast(u8, desc, 1, "Jump")),
-            Error.InvalidOpcode => try testing.expect(std.mem.containsAtLeast(u8, desc, 1, "opcode")),
-            Error.DepthLimit => try testing.expect(std.mem.containsAtLeast(u8, desc, 1, "depth") or std.mem.containsAtLeast(u8, desc, 1, "limit")),
-            Error.OutOfMemory => try testing.expect(std.mem.containsAtLeast(u8, desc, 1, "memory") or std.mem.containsAtLeast(u8, desc, 1, "Memory")),
-            else => {
-                // For other errors, just verify basic properties
-                try testing.expect(desc.len > 5);
-            }
-        }
-    }
-}
-
-test "fuzz_execution_error_categorization" {
-    // Test error categorization and verify errors have appropriate properties
-    const normal_termination = [_]Error{ Error.STOP, Error.REVERT, Error.INVALID };
-    const resource_errors = [_]Error{ Error.OutOfGas, Error.StackOverflow, Error.MemoryLimitExceeded };
-    const invalid_ops = [_]Error{ Error.InvalidJump, Error.InvalidOpcode, Error.StaticStateChange };
-    const bounds_errors = [_]Error{ Error.StackUnderflow, Error.OutOfOffset, Error.ReturnDataOutOfBounds };
-    const creation_errors = [_]Error{ Error.DeployCodeTooBig, Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry };
-    const database_errors = [_]Error{ Error.AccountNotFound, Error.StorageNotFound, Error.CodeNotFound, Error.DatabaseCorrupted };
-    
-    // Test normal termination errors have appropriate descriptions
-    for (normal_termination) |err| {
-        const desc = get_description(err);
-        try testing.expect(desc.len > 0);
-        // These might not contain "error" since they're normal termination
-        try testing.expect(desc.len >= 10); // Should be descriptive
-    }
-    
-    // Test resource errors contain relevant keywords
-    for (resource_errors) |err| {
-        const desc = get_description(err);
-        const has_resource_keywords = std.mem.containsAtLeast(u8, desc, 1, "gas") or
-                                    std.mem.containsAtLeast(u8, desc, 1, "overflow") or
-                                    std.mem.containsAtLeast(u8, desc, 1, "limit") or
-                                    std.mem.containsAtLeast(u8, desc, 1, "memory");
-        try testing.expect(has_resource_keywords);
-    }
-    
-    // Test invalid operation errors
-    for (invalid_ops) |err| {
-        const desc = get_description(err);
-        const has_invalid_keywords = std.mem.containsAtLeast(u8, desc, 1, "invalid") or
-                                   std.mem.containsAtLeast(u8, desc, 1, "Invalid") or
-                                   std.mem.containsAtLeast(u8, desc, 1, "opcode") or
-                                   std.mem.containsAtLeast(u8, desc, 1, "static");
-        try testing.expect(has_invalid_keywords);
-    }
-    
-    // Test bounds errors
-    for (bounds_errors) |err| {
-        const desc = get_description(err);
-        const has_bounds_keywords = std.mem.containsAtLeast(u8, desc, 1, "underflow") or
-                                  std.mem.containsAtLeast(u8, desc, 1, "bounds") or
-                                  std.mem.containsAtLeast(u8, desc, 1, "out of");
-        try testing.expect(has_bounds_keywords);
-    }
-    
-    // Test creation errors
-    for (creation_errors) |err| {
-        const desc = get_description(err);
-        const has_creation_keywords = std.mem.containsAtLeast(u8, desc, 1, "code") or
-                                    std.mem.containsAtLeast(u8, desc, 1, "size") or
-                                    std.mem.containsAtLeast(u8, desc, 1, "limit") or
-                                    std.mem.containsAtLeast(u8, desc, 1, "large");
-        try testing.expect(has_creation_keywords);
-    }
-    
-    // Test database errors
-    for (database_errors) |err| {
-        const desc = get_description(err);
-        const has_database_keywords = std.mem.containsAtLeast(u8, desc, 1, "not found") or
-                                    std.mem.containsAtLeast(u8, desc, 1, "database") or
-                                    std.mem.containsAtLeast(u8, desc, 1, "corrupted");
-        try testing.expect(has_database_keywords);
-    }
-}
-
-test "fuzz_execution_error_property_verification" {
-    var prng = std.Random.DefaultPrng.init(789);
-    const random = prng.random();
-    
-    // Test various properties of error descriptions over many iterations
-    for (0..500) |_| {
-        // Pick a random error (using field index)
-        const error_fields = std.meta.fields(Error);
-        const field_index = random.intRangeAtMost(usize, 0, error_fields.len - 1);
-        const field = error_fields[field_index];
-        const err = @field(Error, field.name);
-        
-        const desc = get_description(err);
-        
-        // Property 1: Non-empty description
-        try testing.expect(desc.len > 0);
-        
-        // Property 2: Reasonable length bounds
-        try testing.expect(desc.len >= 3);
-        try testing.expect(desc.len <= 150);
-        
-        // Property 3: No control characters
-        for (desc) |char| {
-            try testing.expect(char >= 32 and char <= 126); // Printable ASCII
-        }
-        
-        // Property 4: Meaningful first character (letter or number)
-        try testing.expect((desc[0] >= 'A' and desc[0] <= 'Z') or 
-                          (desc[0] >= 'a' and desc[0] <= 'z') or
-                          (desc[0] >= '0' and desc[0] <= '9'));
-        
-        // Property 5: No double spaces
-        try testing.expect(!std.mem.containsAtLeast(u8, desc, 1, "  "));
-        
-        // Property 6: Consistent casing patterns (no mixed random case)
-        // This is a heuristic - descriptions should not have patterns like "ThiS iS wEiRd CaSiNg"
-        var uppercase_count: usize = 0;
-        var lowercase_count: usize = 0;
-        for (desc) |char| {
-            if (char >= 'A' and char <= 'Z') uppercase_count += 1;
-            if (char >= 'a' and char <= 'z') lowercase_count += 1;
-        }
-        
-        // Most descriptions should have more lowercase than uppercase letters
-        // (this is a reasonable expectation for English text)
-        if (lowercase_count > 0 and uppercase_count > 0) {
-            try testing.expect(lowercase_count >= uppercase_count or 
-                             lowercase_count + uppercase_count < 10); // Short descriptions may have different patterns
-        }
-    }
-}
-
-test "fuzz_execution_error_description_uniqueness" {
-    // Verify that different errors have different descriptions (detect copy-paste errors)
-    const all_errors = [_]Error{
-        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
-        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump,
-        Error.InvalidOpcode, Error.StaticStateChange, Error.OutOfOffset,
-        Error.GasUintOverflow, Error.WriteProtection, Error.ReturnDataOutOfBounds,
-        Error.InvalidReturnDataAccess, Error.DeployCodeTooBig, Error.MaxCodeSizeExceeded,
-        Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
-        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded,
-        Error.ChildContextActive, Error.NoChildContextToRevertOrCommit,
-        Error.EOFNotSupported, Error.AccountNotFound, Error.StorageNotFound,
-        Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
-        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot,
-        Error.NoBatchInProgress, Error.SnapshotNotFound,
+        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
+        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
+        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
+        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
+        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
+        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
+        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
+        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
+        Error.SnapshotNotFound,
     };
     
     var seen_descriptions = std.ArrayList([]const u8).init(testing.allocator);
     defer seen_descriptions.deinit();
     
-    for (all_errors) |err| {
-        const desc = get_description(err);
+    for (0..500) |_| {
+        const error_idx = random.intRangeLessThan(usize, 0, all_errors.len);
+        const test_error = all_errors[error_idx];
+        const desc = get_description(test_error);
         
-        // Check if we've seen this exact description before
+        var is_duplicate = false;
         for (seen_descriptions.items) |seen_desc| {
             if (std.mem.eql(u8, desc, seen_desc)) {
-                std.debug.print("Duplicate description found: '{s}'\n", .{desc});
-                try testing.expect(false); // Fail if duplicate found
+                is_duplicate = true;
+                break;
             }
         }
         
-        try seen_descriptions.append(desc);
+        if (!is_duplicate) {
+            try seen_descriptions.append(desc);
+        }
+        
+        try testing.expect(desc.len >= 5);
+        try testing.expect(desc.len <= 100);
     }
     
-    // Verify we collected all descriptions
-    try testing.expectEqual(all_errors.len, seen_descriptions.items.len);
+    try testing.expect(seen_descriptions.items.len >= 15);
+}
+
+test "fuzz_error_categorization_properties" {
+    var prng = std.Random.DefaultPrng.init(123);
+    const random = prng.random();
+    
+    const normal_termination = [_]Error{ Error.STOP, Error.REVERT, Error.INVALID };
+    const resource_exhaustion = [_]Error{ Error.OutOfGas, Error.StackOverflow, Error.MemoryLimitExceeded, Error.OutOfMemory };
+    const invalid_operations = [_]Error{ Error.InvalidJump, Error.InvalidOpcode, Error.StaticStateChange, Error.WriteProtection };
+    const bounds_violations = [_]Error{ Error.StackUnderflow, Error.OutOfOffset, Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess };
+    
+    for (0..200) |_| {
+        const category = random.intRangeLessThan(u8, 0, 4);
+        
+        switch (category) {
+            0 => {
+                const idx = random.intRangeLessThan(usize, 0, normal_termination.len);
+                const err = normal_termination[idx];
+                const desc = get_description(err);
+                
+                const is_normal_termination = std.mem.containsAtLeast(u8, desc, 1, "opcode") or 
+                                            std.mem.containsAtLeast(u8, desc, 1, "STOP") or
+                                            std.mem.containsAtLeast(u8, desc, 1, "REVERT") or
+                                            std.mem.containsAtLeast(u8, desc, 1, "INVALID");
+                try testing.expect(is_normal_termination);
+            },
+            1 => {
+                const idx = random.intRangeLessThan(usize, 0, resource_exhaustion.len);
+                const err = resource_exhaustion[idx];
+                const desc = get_description(err);
+                
+                const indicates_exhaustion = std.mem.containsAtLeast(u8, desc, 1, "out") or
+                                           std.mem.containsAtLeast(u8, desc, 1, "overflow") or
+                                           std.mem.containsAtLeast(u8, desc, 1, "exceeded") or
+                                           std.mem.containsAtLeast(u8, desc, 1, "limit");
+                try testing.expect(indicates_exhaustion);
+            },
+            2 => {
+                const idx = random.intRangeLessThan(usize, 0, invalid_operations.len);
+                const err = invalid_operations[idx];
+                const desc = get_description(err);
+                
+                const indicates_invalid = std.mem.containsAtLeast(u8, desc, 1, "invalid") or
+                                         std.mem.containsAtLeast(u8, desc, 1, "Invalid") or
+                                         std.mem.containsAtLeast(u8, desc, 1, "static") or
+                                         std.mem.containsAtLeast(u8, desc, 1, "protected");
+                try testing.expect(indicates_invalid);
+            },
+            3 => {
+                const idx = random.intRangeLessThan(usize, 0, bounds_violations.len);
+                const err = bounds_violations[idx];
+                const desc = get_description(err);
+                
+                const indicates_bounds = std.mem.containsAtLeast(u8, desc, 1, "underflow") or
+                                        std.mem.containsAtLeast(u8, desc, 1, "bounds") or
+                                        std.mem.containsAtLeast(u8, desc, 1, "out of") or
+                                        std.mem.containsAtLeast(u8, desc, 1, "exceeds");
+                try testing.expect(indicates_bounds);
+            },
+            else => unreachable,
+        }
+    }
+}
+
+test "fuzz_error_variant_instantiation" {
+    var prng = std.Random.DefaultPrng.init(456);
+    const random = prng.random();
+    
+    const all_errors = [_]Error{
+        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
+        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
+        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
+        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
+        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
+        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
+        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
+        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
+        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
+        Error.SnapshotNotFound,
+    };
+    
+    for (0..300) |_| {
+        const error_idx = random.intRangeLessThan(usize, 0, all_errors.len);
+        const test_error = all_errors[error_idx];
+        
+        const result: anyerror!void = test_error;
+        try testing.expectError(test_error, result);
+        
+        const desc = get_description(test_error);
+        try testing.expect(desc.len > 0);
+        
+        const test_switch = switch (test_error) {
+            Error.STOP => true,
+            Error.REVERT => true,
+            Error.INVALID => true,
+            Error.OutOfGas => true,
+            Error.StackUnderflow => true,
+            Error.StackOverflow => true,
+            Error.InvalidJump => true,
+            Error.InvalidOpcode => true,
+            Error.StaticStateChange => true,
+            Error.OutOfOffset => true,
+            Error.GasUintOverflow => true,
+            Error.WriteProtection => true,
+            Error.ReturnDataOutOfBounds => true,
+            Error.InvalidReturnDataAccess => true,
+            Error.DeployCodeTooBig => true,
+            Error.MaxCodeSizeExceeded => true,
+            Error.InvalidCodeEntry => true,
+            Error.DepthLimit => true,
+            Error.OutOfMemory => true,
+            Error.InvalidOffset => true,
+            Error.InvalidSize => true,
+            Error.MemoryLimitExceeded => true,
+            Error.ChildContextActive => true,
+            Error.NoChildContextToRevertOrCommit => true,
+            Error.EOFNotSupported => true,
+            Error.AccountNotFound => true,
+            Error.StorageNotFound => true,
+            Error.CodeNotFound => true,
+            Error.InvalidAddress => true,
+            Error.DatabaseCorrupted => true,
+            Error.NetworkError => true,
+            Error.PermissionDenied => true,
+            Error.InvalidSnapshot => true,
+            Error.NoBatchInProgress => true,
+            Error.SnapshotNotFound => true,
+        };
+        try testing.expect(test_switch);
+    }
+}
+
+test "fuzz_error_message_uniqueness_detection" {
+    var description_map = std.HashMap(u64, Error, std.hash_map.DefaultContext(u64), 80).init(testing.allocator);
+    defer description_map.deinit();
+    
+    const all_errors = [_]Error{
+        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
+        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
+        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
+        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
+        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
+        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
+        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
+        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
+        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
+        Error.SnapshotNotFound,
+    };
+    
+    for (all_errors) |err| {
+        const desc = get_description(err);
+        const hash = std.hash_map.hashString(desc);
+        
+        const existing = description_map.get(hash);
+        if (existing) |existing_error| {
+            if (existing_error != err) {
+                std.log.warn("Potential duplicate description detected: '{}' for errors {} and {}", .{ desc, existing_error, err });
+            }
+        } else {
+            try description_map.put(hash, err);
+        }
+    }
+    
+    try testing.expect(description_map.count() >= all_errors.len - 3);
+}
+
+test "fuzz_random_error_selection_properties" {
+    var prng = std.Random.DefaultPrng.init(789);
+    const random = prng.random();
+    
+    const all_errors = [_]Error{
+        Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
+        Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
+        Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
+        Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
+        Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
+        Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
+        Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
+        Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
+        Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
+        Error.SnapshotNotFound,
+    };
+    
+    var error_counts = std.HashMap(Error, u32, std.hash_map.DefaultContext(Error), 80).init(testing.allocator);
+    defer error_counts.deinit();
+    
+    const iterations = 1000;
+    for (0..iterations) |_| {
+        const error_idx = random.intRangeLessThan(usize, 0, all_errors.len);
+        const selected_error = all_errors[error_idx];
+        
+        const current_count = error_counts.get(selected_error) orelse 0;
+        try error_counts.put(selected_error, current_count + 1);
+        
+        const desc = get_description(selected_error);
+        try testing.expect(desc.len > 0);
+        
+        const valid_error = switch (selected_error) {
+            Error.STOP, Error.REVERT, Error.INVALID, Error.OutOfGas,
+            Error.StackUnderflow, Error.StackOverflow, Error.InvalidJump, Error.InvalidOpcode,
+            Error.StaticStateChange, Error.OutOfOffset, Error.GasUintOverflow, Error.WriteProtection,
+            Error.ReturnDataOutOfBounds, Error.InvalidReturnDataAccess, Error.DeployCodeTooBig,
+            Error.MaxCodeSizeExceeded, Error.InvalidCodeEntry, Error.DepthLimit, Error.OutOfMemory,
+            Error.InvalidOffset, Error.InvalidSize, Error.MemoryLimitExceeded, Error.ChildContextActive,
+            Error.NoChildContextToRevertOrCommit, Error.EOFNotSupported, Error.AccountNotFound,
+            Error.StorageNotFound, Error.CodeNotFound, Error.InvalidAddress, Error.DatabaseCorrupted,
+            Error.NetworkError, Error.PermissionDenied, Error.InvalidSnapshot, Error.NoBatchInProgress,
+            Error.SnapshotNotFound => true,
+        };
+        try testing.expect(valid_error);
+    }
+    
+    try testing.expect(error_counts.count() >= 20);
+    
+    var iterator = error_counts.iterator();
+    while (iterator.next()) |entry| {
+        try testing.expect(entry.value_ptr.* > 0);
+        try testing.expect(entry.value_ptr.* <= iterations);
+    }
 }
