@@ -1,34 +1,99 @@
-# Guillotine
+# ⚔️ Guillotine (Pre-Alpha)
 
-A high-performance Ethereum Virtual Machine (EVM) implementation written in Zig.
+<p align="center">
+  <a href="https://github.com/evmts/Guillotine/actions/workflows/ci.yml">
+    <img src="https://github.com/evmts/Guillotine/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+  </a>
+  <a href="https://t.me/+ANThR9bHDLAwMjUx">
+    <img alt="Telegram" src="https://img.shields.io/badge/chat-telegram-blue.svg">
+  </a>
+  <a href="https://deepwiki.com/evmts/Guillotine">
+    <img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki">
+  </a>
+</p>
 
-It's fast
+<img width="1024" height="1024" alt="Guillotine Logo" src="https://github.com/user-attachments/assets/e21bcc94-e0c5-44ef-bdcf-ac9d4c1cedee" />
 
-## Overview
+**A very fast EVM written in Zig**
 
-Guillotine is a blazing-fast, memory-efficient EVM implementation designed for correctness, performance, and safety. Built from the ground up in Zig, it features a modular architecture with first-class support for all Ethereum opcodes, precompiled contracts, and multiple deployment targets including native and WebAssembly.
+---
 
-### Key Features
+## 🧭 Overview
 
-- **Pure Zig Implementation**: Core EVM engine written entirely in Zig for maximum performance and safety
-- **Multiple Targets**: Native builds for x86/ARM and WebAssembly support
-- **Modular Design**: Clean separation of concerns with well-defined module boundaries
-- **Builder Pattern**: Intuitive API for constructing EVM instances and execution contexts
-- **Small wasm binary**: Compiler optimizes for size rather than perf in wasm build for smaller bundle size hit when embedded
-- **Well tested**: Exhaustively tested with unit, e2e, benchmark, and fuzz tests
-- **C FFI**: Exports a C compatible API that can be used in Python, Go, Rust, Swift or any other language that supports C FFI
+**Guillotine** is a new EVM implementation built in [Zig](https://ziglang.org) by [@FUCORY](https://x.com/FUCORY), the creator of [Tevm](https://tevm.sh). It’s designed for:
 
-## Installation
+* 🕸️ **Browser-readiness**
+* ⚡ **Extreme speed**
+* 📦 **Minimal bundle size**
+* 💄 **elegance and modularity**
 
-### Using Zig Package Manager
+Despite its early status, it's already very fast and vrey tiny.
 
-Add Guillotine to your project using `zig fetch`:
+---
+
+## 🚧 Development Status
+
+We’re wrapping up the **Alpha release**. We will be testing vs all ethereum hardforks and doing extensive benchmarking. Expect benchmarks and bundle size reports **within a week**. Stay tuned!
+
+---
+
+## 📊 Benchmarks & Bundle Size
+
+💥 Official benchmarks and bundle size reports will be included with the **Alpha drop**.
+You can expect:
+
+* ⏱️ **Massive performance boosts**
+* 🪶 **Significant bundle size reduction**
+
+Compared to any other EVM implementation before
+
+---
+
+## 🧩 Subpackages
+
+Guillotine is a modular Ethereum stack in Zig:
+
+* [`primitives`](./src/primitives/) — Low-level Ethereum utilities (like Alloy or Ethers.js in Zig)
+* [`compilers`](./src/compilers/) — Zig bindings for the Foundry compiler (Rust)
+* [`crypto`](./src/crypto/) — 🧪 Zig-based crypto lib (unaudited)
+* [`devtool (WIP)`](./src/devtool/) — Native app (Zig + Solid.js) — a future local-first Tenderly
+* [`provider (WIP)`](./src/provider/) — HTTP-based Ethereum provider
+
+---
+
+## 🔁 Relationship to Tevm
+
+Once stable, **Guillotine’s WASM build** will replace the current JavaScript EVM in [Tevm](https://node.tevm.sh).
+Upgrades include:
+
+* 🚀 **Up to 1000x performance boost**
+* 📉 **300KB (75%) bundle size reduction**
+* 🔧 **Foundry-compatible compiler support**
+* 🧱 **Cross-language bindings** (primitives, compiler, provider)
+
+It also unlocks **Solidity and Vyper** compatibility for the `tevm` compiler.
+
+---
+
+## ✨ Key Features
+
+* 🏎️ **Fast & Small** — Zig = uncompromising performance and minimal footprint
+* 🧩 **C FFI Compatible** — Use it from Python, Rust, Go, Swift, etc.
+* 🖥️ **Multi-target builds** — Native + WASM (x86 / ARM)
+* 🏗️ **Builder pattern** — Intuitive API for managing VM execution
+* 🧪 **Reliable** — Unit, integration, fuzz, E2E, and benchmark test suite
+
+---
+
+## 📦 Installation
+
+### 🔧 Zig Package Manager
 
 ```bash
 zig fetch --save git+https://github.com/evmts/Guillotine#main
 ```
 
-Then add it to your `build.zig.zon`:
+Add to `build.zig.zon`:
 
 ```zig
 .dependencies = .{
@@ -39,15 +104,18 @@ Then add it to your `build.zig.zon`:
 },
 ```
 
-### Prerequisites
+---
 
-- **Zig 0.14.1 or later** - Required for fuzzing support and latest language features
-- **Rust toolchain** (optional) - Only needed for native BN254 precompile optimizations
-- **Cargo** (optional) - For building Rust dependencies
+### ✅ Prerequisites
 
-## Quick Start
+* 🛠️ **Zig v0.14.1 or later**
+* 🦀 **Rust toolchain** — for BN254 native precompiles (will be replaced with Zig [#1](https://github.com/evmts/Guillotine/issues/1))
 
-### Basic EVM Usage
+---
+
+## ⚡ Quick Start
+
+### Example: Basic EVM Execution
 
 ```zig
 const std = @import("std");
@@ -56,259 +124,94 @@ const primitives = @import("guillotine").primitives;
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
-    
-    // Create in-memory state database
+
     var memory_db = Evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
-    // Initialize EVM instance
+
     const db_interface = memory_db.to_database_interface();
     var vm = try Evm.Evm.init(allocator, db_interface);
     defer vm.deinit();
-    
-    // Deploy a simple contract that returns 42
+
     const bytecode = [_]u8{
-        0x60, 0x2A, // PUSH1 42
-        0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
-        0x60, 0x20, // PUSH1 32
-        0x60, 0x00, // PUSH1 0
-        0xF3,       // RETURN
+        0x60, 0x2A, 0x60, 0x00, 0x52,
+        0x60, 0x20, 0x60, 0x00, 0xF3,
     };
-    
-    // Create contract instance
+
     const contract_address = primitives.Address.from_u256(0x1234);
     var contract = Evm.Contract.init_at_address(
-        contract_address, // caller
-        contract_address, // address
-        0,               // value
-        100_000,         // gas limit
-        &bytecode,       // code
-        &[_]u8{},       // input data
-        false,          // not static call
+        contract_address,
+        contract_address,
+        0,
+        100_000,
+        &bytecode,
+        &[_]u8{},
+        false,
     );
     defer contract.deinit(allocator, null);
-    
-    // Set contract code in state
+
     try vm.state.set_code(contract_address, &bytecode);
-    
-    // Execute contract
+
     const result = try vm.interpret(&contract, &[_]u8{});
     defer if (result.output) |output| allocator.free(output);
-    
+
     std.debug.print("Execution status: {}\n", .{result.status});
     if (result.output) |output| {
-        std.debug.print("Return value: {}\n", .{std.mem.readInt(u256, output[0..32], .big)});
+        std.debug.print("Return value: {}\n", .{
+            std.mem.readInt(u256, output[0..32], .big)
+        });
     }
 }
 ```
 
-### Using the Frame Builder Pattern
+---
 
-Guillotine provides a convenient builder pattern for constructing execution frames:
+## 🧱 Design Principles
 
-```zig
-// Create a frame using the builder pattern
-var builder = Evm.Frame.builder(allocator);
-var frame = try builder
-    .withVm(&vm)
-    .withContract(&contract)
-    .withGas(1_000_000)
-    .withCaller(caller_address)
-    .withInput(&input_data)
-    .build();
-defer frame.deinit();
-
-// Execute operations within the frame
-try frame.stack.push(10);
-try frame.stack.push(20);
-
-const interpreter_ptr: *Evm.Operation.Interpreter = @ptrCast(&vm);
-const state_ptr: *Evm.Operation.State = @ptrCast(&frame);
-_ = try vm.table.execute(0, interpreter_ptr, state_ptr, 0x01); // ADD
-
-const result = try frame.stack.pop();
-std.debug.print("10 + 20 = {}\n", .{result});
-```
-
-## Building and Testing
-
-### Build Commands
-
-```bash
-# Build native library
-zig build
-
-# Build with specific optimization
-zig build -Doptimize=ReleaseFast
-
-# Build WebAssembly target
-zig build wasm
-
-# Run the executable
-zig build run
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-zig build test
-
-# Run tests with debug logging
-zig build test -- --debug
-
-# Run fuzzing tests (requires Zig 0.14.1+)
-zig build test --fuzz
-```
-
-### Benchmarking
-
-```bash
-# Run benchmarks
-zig build bench
-
-# Run specific benchmark suite
-zig build bench -- stack
-```
-
-## Architecture
-
-### Module Structure
-
-Guillotine is organized into distinct modules for clarity and maintainability:
-
-- **`primitives`** - Core Ethereum types (Address, Hash, U256, etc.)
-- **`crypto`** - Cryptographic primitives (Keccak256, secp256k1, etc.)
-- **`evm`** - Main EVM implementation
-  - **`frame`** - Execution context and call frames
-  - **`stack`** - 256-bit word stack implementation
-  - **`memory`** - Byte-addressable memory
-  - **`state`** - Blockchain state management
-  - **`opcodes`** - Opcode definitions and metadata
-  - **`execution`** - Opcode implementations by category
-  - **`precompiles`** - Built-in contract implementations
-- **`trie`** - Merkle Patricia Trie implementation
-- **`provider`** - JSON-RPC provider interface
-- **`compilers`** - Solidity compilation support
-
-### Design Principles
-
-1. **Zero-Allocation Philosophy**: Minimize allocations for performance
-2. **Explicit Error Handling**: All errors are explicit and recoverable
-3. **No Hidden State**: All state changes are explicit and traceable
-4. **Modular Boundaries**: Clear interfaces between components
-5. **Test Everything**: Comprehensive test coverage with no abstractions
-
-## Precompiled Contracts
-
-Guillotine implements all Ethereum precompiled contracts:
-
-| Address | Name | Native | WASM | Implementation |
-|---------|------|--------|------|----------------|
-| `0x01` | ECRECOVER | ✅ | ✅ | Pure Zig |
-| `0x02` | SHA256 | ✅ | ✅ | Pure Zig |
-| `0x03` | RIPEMD160 | ✅ | ✅ | Pure Zig |
-| `0x04` | IDENTITY | ✅ | ✅ | Pure Zig |
-| `0x05` | MODEXP | ✅ | ✅ | Pure Zig |
-| `0x06` | ECADD | ✅ | ✅ | Pure Zig (BN254) |
-| `0x07` | ECMUL | ✅ | ⚠️ | Rust/Placeholder |
-| `0x08` | ECPAIRING | ✅ | ⚠️ | Rust/Limited |
-| `0x09` | BLAKE2F | ✅ | ✅ | Pure Zig |
-| `0x0a` | KZG_POINT_EVALUATION | ✅ | ✅ | C-KZG-4844 |
-
-### Implementation Notes
-
-- **Native builds** use optimized Rust implementations for BN254 operations (ECMUL, ECPAIRING)
-- **WASM builds** use pure Zig implementations with limited zkSNARK support
-- All precompiles correctly implement gas costs for different hard forks
-
-## Advanced Usage
-
-### Custom State Database
-
-Implement the `DatabaseInterface` to provide custom state storage:
-
-```zig
-const MyDatabase = struct {
-    // Your storage implementation
-    
-    pub fn to_database_interface(self: *MyDatabase) Evm.DatabaseInterface {
-        return .{
-            .ptr = self,
-            .get_balance = getBalance,
-            .get_code = getCode,
-            .get_storage = getStorage,
-            // ... other methods
-        };
-    }
-    
-    fn getBalance(ptr: *anyopaque, address: primitives.Address) !u256 {
-        const self: *MyDatabase = @ptrCast(@alignCast(ptr));
-        // Your implementation
-    }
-};
-```
-
-### Hard Fork Configuration
-
-Configure EVM behavior for different Ethereum hard forks:
-
-```zig
-var vm = try Evm.Evm.init(allocator, db_interface);
-vm.hardfork = .Shanghai; // or .London, .Berlin, etc.
-```
-
-### Gas Metering
-
-Access detailed gas consumption information:
-
-```zig
-const initial_gas = frame.gas_remaining;
-// Execute operations...
-const gas_used = initial_gas - frame.gas_remaining;
-std.debug.print("Gas consumed: {}\n", .{gas_used});
-```
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on:
-
-- Code style and standards
-- Testing requirements
-- Submission process
-- Development workflow
-
-## Performance
-
-Guillotine is designed for high performance:
-
-- **Minimal allocations**: Stack-based execution where possible
-- **Efficient opcodes**: Direct jump table dispatch
-- **Optimized precompiles**: Native implementations for critical paths
-- **Memory pooling**: Reusable memory buffers for frames
-
-Benchmark results on modern hardware show Guillotine performing competitively with leading EVM implementations.
-
-## Security
-
-Guillotine prioritizes security:
-
-- Memory-safe language (Zig) prevents common vulnerabilities
-- Comprehensive test suite including fuzzing
-- Strict gas accounting prevents DoS attacks
-- No unsafe operations in core EVM logic
-
-## License
-
-Guillotine is open source software licensed under the MIT License.
-
-## Acknowledgments
-
-- The Ethereum Foundation for EVM specifications
-- The Zig community for an excellent systems programming language
-- Contributors to the revm project for reference implementations
+1. 🧼 **Zero Allocation Philosophy** – Allocates once, avoids reallocations
+2. 🔍 **Explicit Error Handling** – All errors are typed and recoverable
+3. 🧩 **Modular Boundaries** – Clear interfaces between components
+4. 🧪 **Test Everything** – Coverage across all levels
+5. 🛠️ **Optimized for Size & Speed** – `comptime` wherever it counts
 
 ---
 
-*Guillotine - Fast, safe, and correct Ethereum execution*
+## 🧬 Precompiled Contracts
+
+| Address | Name                   | Native | WASM | Implementation        |
+| ------: | ---------------------- | :----: | :--: | --------------------- |
+|  `0x01` | ECRECOVER              |    ✅   |   ✅  | Pure Zig              |
+|  `0x02` | SHA256                 |    ✅   |   ✅  | Pure Zig              |
+|  `0x03` | RIPEMD160              |    ✅   |   ✅  | Pure Zig              |
+|  `0x04` | IDENTITY               |    ✅   |   ✅  | Pure Zig              |
+|  `0x05` | MODEXP                 |    ✅   |   ✅  | Pure Zig              |
+|  `0x06` | ECADD (BN254)          |    ✅   |   ✅  | Pure Zig              |
+|  `0x07` | ECMUL (BN254)          |    ✅   |  ⚠️  | Rust (to be replaced) |
+|  `0x08` | ECPAIRING (BN254)      |    ✅   |  ⚠️  | Rust (partial)        |
+|  `0x09` | BLAKE2F                |    ✅   |   ✅  | Pure Zig              |
+|  `0x0a` | KZG\_POINT\_EVALUATION |    ✅   |   ✅  | C-KZG-4844            |
+
+🧪 Crypto implementations live in [`src/crypto`](./src/crypto).
+⚠️ Some are unaudited — **not production-ready**.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions of all kinds!
+
+See our [Contributing Guide](CONTRIBUTING.md) to get started.
+
+---
+
+## 📜 License
+
+MIT License. Free for all use. 🌍
+
+---
+
+## 🙏 Acknowledgments
+
+* 🏛️ **Ethereum Foundation** — for R\&D support
+* ⚙️ **Zig Community** — for an incredible systems programming language
+* 🧠 [@SamBacha](https://github.com/sambacha) — for the name **Guillotine**
+* 💬 [Tevm Telegram](https://t.me/+ANThR9bHDLAwMjUx) — for community feedback and direction
