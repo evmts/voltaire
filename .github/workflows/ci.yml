@@ -38,9 +38,19 @@ jobs:
       - name: Run CI Pipeline
         run: |
           zig build
-          # Run tests but ignore SIGILL exit code (signal 4 = exit code 132)
-          # This is a workaround for a Zig 0.14.1 bug where tests pass but runner crashes
-          zig build test || (exit_code=$?; if [ $exit_code -eq 132 ]; then echo "Tests passed but runner crashed with SIGILL (known issue)"; exit 0; else exit $exit_code; fi)
+          # Run tests with workaround for Zig 0.14.1 SIGILL bug
+          # If all tests pass but runner crashes, treat as success
+          if zig build test 2>&1 | tee test_output.log; then
+            echo "Tests passed successfully"
+          else
+            if grep -q "714/714 tests passed" test_output.log; then
+              echo "All tests passed but runner crashed with SIGILL (known Zig 0.14.1 issue)"
+            else
+              echo "Tests failed"
+              exit 1
+            fi
+          fi
+          rm -f test_output.log
           zig build bench
         shell: bash
 
@@ -94,7 +104,7 @@ jobs:
             --memory=4g \
             --cpu-quota=200000 \
             guillotine-${{ matrix.container }}:latest \
-            bash -c "cd /workspace && rm -rf .zig-cache && rm -rf ~/.cache/zig && rm -rf target && echo 'Node version:' && node --version && echo 'Zig version:' && zig version && echo 'Starting build...' && zig build --verbose && echo 'Build completed. Starting tests...' && (zig build test --verbose || (exit_code=\$?; if [ \$exit_code -eq 132 ]; then echo 'Tests passed but runner crashed with SIGILL (known issue)'; exit 0; else exit \$exit_code; fi)) && echo 'All tests completed successfully.'"
+            bash -c "cd /workspace && rm -rf .zig-cache && rm -rf ~/.cache/zig && rm -rf target && echo 'Node version:' && node --version && echo 'Zig version:' && zig version && echo 'Starting build...' && zig build --verbose && echo 'Build completed. Starting tests...' && (if zig build test --verbose 2>&1 | tee test_output.log; then echo 'Tests passed successfully'; else if grep -q '714/714 tests passed' test_output.log; then echo 'All tests passed but runner crashed with SIGILL (known Zig 0.14.1 issue)'; else echo 'Tests failed'; exit 1; fi; fi) && rm -f test_output.log && echo 'All tests completed successfully.'"
 
       - name: Report Results
         if: always()
