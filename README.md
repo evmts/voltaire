@@ -211,7 +211,7 @@ MIT License. Free for all use. 🌍
 
 ## 🙏 Acknowledgments
 
-* 🏛️ **Ethereum Foundation** — for R\&D support
+* 🏛️ **Ethereum Foundation and OP RPGF** — for funding support
 * ⚙️ **Zig Community** — for an incredible systems programming language
 * 🧠 [@SamBacha](https://github.com/sambacha) — for the name **Guillotine**
 * 💬 [Tevm Telegram](https://t.me/+ANThR9bHDLAwMjUx) — for community feedback and direction
