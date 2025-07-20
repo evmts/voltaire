@@ -424,3 +424,342 @@ pub inline fn wordCount(bytes: usize) usize {
     }
     return (bytes + 31) / 32;
 }
+
+// ============================================================================
+// Reusable Gas Calculation Functions
+// ============================================================================
+
+/// Calculate gas cost for CALL operations with various conditions
+///
+/// Provides a centralized, testable function for calculating CALL gas costs
+/// based on EIP-150 and EIP-2929 specifications.
+///
+/// ## Parameters
+/// - `value_transfer`: Whether the call transfers ETH value
+/// - `new_account`: Whether the target account is being created
+/// - `cold_access`: Whether this is a cold (first-time) account access
+///
+/// ## Returns
+/// - Total gas cost for the CALL operation
+///
+/// ## Usage
+/// ```zig
+/// const call_cost = call_gas_cost(true, false, true); // Value transfer to existing cold account
+/// const simple_call = call_gas_cost(false, false, false); // Simple warm call
+/// ```
+pub inline fn call_gas_cost(value_transfer: bool, new_account: bool, cold_access: bool) u64 {
+    var gas = CALL_BASE_COST;
+    
+    if (cold_access) {
+        gas += CALL_COLD_ACCOUNT_COST;
+    }
+    
+    if (value_transfer) {
+        gas += CALL_VALUE_TRANSFER_COST;
+    }
+    
+    if (new_account) {
+        gas += CALL_NEW_ACCOUNT_COST;
+    }
+    
+    return gas;
+}
+
+/// Calculate gas cost for SSTORE operations based on storage state changes
+///
+/// Implements the complex SSTORE gas calculation logic from EIP-2200 and EIP-3529.
+/// This centralizes the storage gas logic that varies significantly across hardforks.
+///
+/// ## Parameters
+/// - `current`: Current storage slot value
+/// - `original`: Original storage slot value (start of transaction)
+/// - `new`: New storage slot value being set
+/// - `is_cold`: Whether this is a cold storage access (EIP-2929)
+///
+/// ## Returns
+/// - Gas cost for the SSTORE operation
+///
+/// ## Usage
+/// ```zig
+/// const cost = sstore_gas_cost(0, 0, 42, true); // Set zero to non-zero (cold)
+/// const update_cost = sstore_gas_cost(10, 10, 20, false); // Modify existing value (warm)
+/// ```
+pub inline fn sstore_gas_cost(current: u256, original: u256, new: u256, is_cold: bool) u64 {
+    var gas: u64 = 0;
+    
+    // Add cold access cost if applicable (EIP-2929)
+    if (is_cold) {
+        gas += ColdSloadCost;
+    }
+    
+    // Determine storage operation type and cost
+    if (original == current and current == new) {
+        // No change - minimum cost
+        gas += SloadGas; // Same as warm SLOAD
+    } else if (original == current and current != new) {
+        // First modification in this transaction
+        if (original == 0) {
+            // Setting zero to non-zero (most expensive)
+            gas += SstoreSetGas;
+        } else {
+            // Modifying existing non-zero value
+            gas += SstoreResetGas;
+        }
+    } else {
+        // Subsequent modification (already modified in this transaction)
+        gas += SloadGas; // Same as warm SLOAD
+    }
+    
+    return gas;
+}
+
+/// Calculate gas cost for CREATE operations based on init code size
+///
+/// Implements EIP-3860 init code size limits and per-word charging.
+///
+/// ## Parameters
+/// - `init_code_size`: Size of the initialization code in bytes
+/// - `init_code_word_cost`: Gas cost per 32-byte word of init code (hardfork-dependent)
+///
+/// ## Returns
+/// - Gas cost for the CREATE operation
+///
+/// ## Usage
+/// ```zig
+/// const create_cost = create_gas_cost(1024, InitcodeWordGas); // CREATE with 1KB init code
+/// const large_create = create_gas_cost(32768, InitcodeWordGas); // Large contract deployment
+/// ```
+pub inline fn create_gas_cost(init_code_size: usize, init_code_word_cost: u64) u64 {
+    const word_count = wordCount(init_code_size);
+    return CreateGas + (word_count * init_code_word_cost);
+}
+
+/// Calculate gas cost for LOG operations with topics and data
+///
+/// Implements the gas calculation for LOG0-LOG4 operations based on
+/// the number of topics and size of logged data.
+///
+/// ## Parameters
+/// - `topic_count`: Number of topics (0-4 for LOG0-LOG4)
+/// - `data_size`: Size of the data being logged in bytes
+///
+/// ## Returns
+/// - Gas cost for the LOG operation
+///
+/// ## Usage
+/// ```zig
+/// const log0_cost = log_gas_cost(0, 256); // LOG0 with 256 bytes of data
+/// const log3_cost = log_gas_cost(3, 128); // LOG3 with 3 topics and 128 bytes of data
+/// ```
+pub inline fn log_gas_cost(topic_count: u8, data_size: usize) u64 {
+    var gas = LogGas; // Base cost
+    gas += @as(u64, topic_count) * LogTopicGas; // Cost per topic
+    gas += @as(u64, data_size) * LogDataGas; // Cost per byte of data
+    return gas;
+}
+
+/// Calculate gas cost for copy operations (CODECOPY, RETURNDATACOPY, etc.)
+///
+/// Many EVM operations copy data and charge per 32-byte word copied.
+/// This function provides a unified calculation for all copy operations.
+///
+/// ## Parameters
+/// - `size`: Number of bytes being copied
+///
+/// ## Returns
+/// - Gas cost for copying the specified amount of data
+///
+/// ## Usage
+/// ```zig
+/// const copy_cost = copy_gas_cost(1024); // Copy 1KB of data
+/// const small_copy = copy_gas_cost(64); // Copy 64 bytes (2 words)
+/// ```
+pub inline fn copy_gas_cost(size: usize) u64 {
+    const word_count = wordCount(size);
+    return word_count * CopyGas;
+}
+
+/// Calculate gas cost for hash operations (KECCAK256)
+///
+/// Hash operations have a base cost plus a per-word cost for the data being hashed.
+///
+/// ## Parameters
+/// - `data_size`: Size of data being hashed in bytes
+///
+/// ## Returns
+/// - Gas cost for the hash operation
+///
+/// ## Usage
+/// ```zig
+/// const hash_cost = keccak256_gas_cost(128); // Hash 128 bytes of data
+/// const large_hash = keccak256_gas_cost(4096); // Hash 4KB of data
+/// ```
+pub inline fn keccak256_gas_cost(data_size: usize) u64 {
+    const word_count = wordCount(data_size);
+    return Keccak256Gas + (word_count * Keccak256WordGas);
+}
+
+// ============================================================================
+// Tests for Gas Calculation Functions
+// ============================================================================
+
+const testing = std.testing;
+
+test "call_gas_cost function" {
+    // Test basic call (warm, no value transfer, existing account)
+    const basic_call = call_gas_cost(false, false, false);
+    try testing.expectEqual(CALL_BASE_COST, basic_call);
+    
+    // Test cold call with no value transfer
+    const cold_call = call_gas_cost(false, false, true);
+    try testing.expectEqual(CALL_BASE_COST + CALL_COLD_ACCOUNT_COST, cold_call);
+    
+    // Test warm call with value transfer
+    const value_call = call_gas_cost(true, false, false);
+    try testing.expectEqual(CALL_BASE_COST + CALL_VALUE_TRANSFER_COST, value_call);
+    
+    // Test new account creation
+    const new_account_call = call_gas_cost(false, true, false);
+    try testing.expectEqual(CALL_BASE_COST + CALL_NEW_ACCOUNT_COST, new_account_call);
+    
+    // Test maximum cost (cold call with value transfer to new account)
+    const max_cost_call = call_gas_cost(true, true, true);
+    const expected_max = CALL_BASE_COST + CALL_COLD_ACCOUNT_COST + CALL_VALUE_TRANSFER_COST + CALL_NEW_ACCOUNT_COST;
+    try testing.expectEqual(expected_max, max_cost_call);
+}
+
+test "sstore_gas_cost function" {
+    // Test no change (current == original == new)
+    const no_change = sstore_gas_cost(42, 42, 42, false);
+    try testing.expectEqual(SloadGas, no_change);
+    
+    // Test setting zero to non-zero (most expensive case)
+    const zero_to_nonzero = sstore_gas_cost(0, 0, 42, false);
+    try testing.expectEqual(SstoreSetGas, zero_to_nonzero);
+    
+    // Test cold access with zero to non-zero
+    const cold_zero_to_nonzero = sstore_gas_cost(0, 0, 42, true);
+    try testing.expectEqual(ColdSloadCost + SstoreSetGas, cold_zero_to_nonzero);
+    
+    // Test modifying existing non-zero value
+    const modify_nonzero = sstore_gas_cost(10, 10, 20, false);
+    try testing.expectEqual(SstoreResetGas, modify_nonzero);
+    
+    // Test subsequent modification (current != original)
+    const subsequent_mod = sstore_gas_cost(20, 10, 30, false);
+    try testing.expectEqual(SloadGas, subsequent_mod);
+}
+
+test "create_gas_cost function" {
+    // Test empty init code
+    const empty_create = create_gas_cost(0, InitcodeWordGas);
+    try testing.expectEqual(CreateGas, empty_create);
+    
+    // Test 32 bytes (1 word) of init code
+    const one_word_create = create_gas_cost(32, InitcodeWordGas);
+    try testing.expectEqual(CreateGas + InitcodeWordGas, one_word_create);
+    
+    // Test 64 bytes (2 words) of init code
+    const two_word_create = create_gas_cost(64, InitcodeWordGas);
+    try testing.expectEqual(CreateGas + 2 * InitcodeWordGas, two_word_create);
+    
+    // Test 33 bytes (2 words due to rounding up) of init code
+    const partial_word_create = create_gas_cost(33, InitcodeWordGas);
+    try testing.expectEqual(CreateGas + 2 * InitcodeWordGas, partial_word_create);
+}
+
+test "log_gas_cost function" {
+    // Test LOG0 (no topics)
+    const log0_cost = log_gas_cost(0, 0);
+    try testing.expectEqual(LogGas, log0_cost);
+    
+    // Test LOG1 with no data
+    const log1_no_data = log_gas_cost(1, 0);
+    try testing.expectEqual(LogGas + LogTopicGas, log1_no_data);
+    
+    // Test LOG0 with data
+    const log0_with_data = log_gas_cost(0, 100);
+    try testing.expectEqual(LogGas + 100 * LogDataGas, log0_with_data);
+    
+    // Test LOG4 with data (maximum topics)
+    const log4_with_data = log_gas_cost(4, 256);
+    const expected = LogGas + 4 * LogTopicGas + 256 * LogDataGas;
+    try testing.expectEqual(expected, log4_with_data);
+}
+
+test "copy_gas_cost function" {
+    // Test zero size copy
+    const zero_copy = copy_gas_cost(0);
+    try testing.expectEqual(0, zero_copy);
+    
+    // Test 32 bytes (1 word)
+    const one_word_copy = copy_gas_cost(32);
+    try testing.expectEqual(CopyGas, one_word_copy);
+    
+    // Test 64 bytes (2 words)
+    const two_word_copy = copy_gas_cost(64);
+    try testing.expectEqual(2 * CopyGas, two_word_copy);
+    
+    // Test 33 bytes (2 words due to rounding up)
+    const partial_word_copy = copy_gas_cost(33);
+    try testing.expectEqual(2 * CopyGas, partial_word_copy);
+}
+
+test "keccak256_gas_cost function" {
+    // Test zero size hash
+    const zero_hash = keccak256_gas_cost(0);
+    try testing.expectEqual(Keccak256Gas, zero_hash);
+    
+    // Test 32 bytes (1 word)
+    const one_word_hash = keccak256_gas_cost(32);
+    try testing.expectEqual(Keccak256Gas + Keccak256WordGas, one_word_hash);
+    
+    // Test 64 bytes (2 words)
+    const two_word_hash = keccak256_gas_cost(64);
+    try testing.expectEqual(Keccak256Gas + 2 * Keccak256WordGas, two_word_hash);
+    
+    // Test 33 bytes (2 words due to rounding up)
+    const partial_word_hash = keccak256_gas_cost(33);
+    try testing.expectEqual(Keccak256Gas + 2 * Keccak256WordGas, partial_word_hash);
+}
+
+test "memory_gas_cost edge cases" {
+    // Test same sizes (no expansion)
+    try testing.expectEqual(@as(u64, 0), memory_gas_cost(1000, 1000));
+    try testing.expectEqual(@as(u64, 0), memory_gas_cost(2048, 1000)); // new_size < current_size
+    
+    // Test zero expansion
+    try testing.expectEqual(@as(u64, 0), memory_gas_cost(0, 0));
+    
+    // Test small expansions (verifiable manually)
+    const expand_to_32 = memory_gas_cost(0, 32);
+    const expected_32 = 3 * 1 + (1 * 1) / 512; // 1 word: 3 + 0 = 3
+    try testing.expectEqual(expected_32, expand_to_32);
+    
+    const expand_to_64 = memory_gas_cost(0, 64);
+    const expected_64 = 3 * 2 + (2 * 2) / 512; // 2 words: 6 + 0 = 6
+    try testing.expectEqual(expected_64, expand_to_64);
+}
+
+test "wordCount edge cases" {
+    // Test zero size
+    try testing.expectEqual(@as(usize, 0), wordCount(0));
+    
+    // Test exact word boundaries
+    try testing.expectEqual(@as(usize, 1), wordCount(32));
+    try testing.expectEqual(@as(usize, 2), wordCount(64));
+    
+    // Test partial words (should round up)
+    try testing.expectEqual(@as(usize, 1), wordCount(1));
+    try testing.expectEqual(@as(usize, 1), wordCount(31));
+    try testing.expectEqual(@as(usize, 2), wordCount(33));
+    
+    // Test overflow protection
+    const max_safe_bytes = std.math.maxInt(usize) - 31;
+    const max_words = wordCount(max_safe_bytes);
+    try testing.expect(max_words > 0); // Should not overflow
+    
+    const overflow_bytes = std.math.maxInt(usize);
+    const overflow_words = wordCount(overflow_bytes);
+    try testing.expectEqual(std.math.maxInt(usize) / 32, overflow_words);
+}
