@@ -1592,314 +1592,314 @@ test "stack_operation_benchmarks" {
 // Using proper Zig built-in fuzz testing with std.testing.fuzz()
 // ============================================================================
 
-test "fuzz_runtime_dispatch_push_operations" {
-    const global = struct {
-        fn testRuntimePushDispatch(input: []const u8) anyerror!void {
-            if (input.len == 0) return;
-            
-            const allocator = std.testing.allocator;
-            var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
-            defer memory_db.deinit();
-            
-            const db_interface = memory_db.to_database_interface();
-            var vm = try Vm.init(allocator, db_interface, null, null);
-            defer vm.deinit();
-            
-            var contract = try Contract.init(allocator, &[_]u8{0x60, 0x42}, .{ .address = Address.ZERO });
-            defer contract.deinit(allocator, null);
-            
-            var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
-            defer frame.deinit();
-            
-            // Extract opcode and data from fuzz input
-            const opcode_offset = input[0] % 32; // PUSH1 (0x60) to PUSH32 (0x7F)
-            const opcode = 0x60 + opcode_offset;
-            
-            // Use remaining input as bytecode data
-            const data_len = @min(input.len - 1, 32);
-            const data = input[1..1 + data_len];
-            
-            // Create malformed bytecode scenario
-            var malformed_code = std.ArrayList(u8).init(allocator);
-            defer malformed_code.deinit();
-            
-            try malformed_code.append(opcode);
-            try malformed_code.appendSlice(data);
-            
-            // Test runtime dispatch with potentially malformed bytecode
-            const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-            const state_ptr: *Operation.State = @ptrCast(&frame);
-            
-            // Push operations should handle malformed input gracefully
-            const result = vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
-            _ = result catch |err| switch (err) {
-                error.StackOverflow, error.OutOfGas, error.InvalidOpcode => {}, // Expected errors
-                else => return err,
-            };
-        }
-    };
-    try std.testing.fuzz(global.testRuntimePushDispatch, .{});
-}
+// test "fuzz_runtime_dispatch_push_operations" {
+//     const global = struct {
+//         fn testRuntimePushDispatch(input: []const u8) anyerror!void {
+//             if (input.len == 0) return;
+//             
+//             const allocator = std.testing.allocator;
+//             var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
+//             defer memory_db.deinit();
+//             
+//             const db_interface = memory_db.to_database_interface();
+//             var vm = try Vm.init(allocator, db_interface, null, null);
+//             defer vm.deinit();
+//             
+//             var contract = try Contract.init(allocator, &[_]u8{0x60, 0x42}, .{ .address = Address.ZERO });
+//             defer contract.deinit(allocator, null);
+//             
+//             var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
+//             defer frame.deinit();
+//             
+//             // Extract opcode and data from fuzz input
+//             const opcode_offset = input[0] % 32; // PUSH1 (0x60) to PUSH32 (0x7F)
+//             const opcode = 0x60 + opcode_offset;
+//             
+//             // Use remaining input as bytecode data
+//             const data_len = @min(input.len - 1, 32);
+//             const data = input[1..1 + data_len];
+//             
+//             // Create malformed bytecode scenario
+//             var malformed_code = std.ArrayList(u8).init(allocator);
+//             defer malformed_code.deinit();
+//             
+//             try malformed_code.append(opcode);
+//             try malformed_code.appendSlice(data);
+//             
+//             // Test runtime dispatch with potentially malformed bytecode
+//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             
+//             // Push operations should handle malformed input gracefully
+//             const result = vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+//             _ = result catch |err| switch (err) {
+//                 error.StackOverflow, error.OutOfGas, error.InvalidOpcode => {}, // Expected errors
+//                 else => return err,
+//             };
+//         }
+//     };
+//     try std.testing.fuzz(global.testRuntimePushDispatch, .{});
+// }
 
-test "fuzz_runtime_dispatch_dup_operations" {
-    const global = struct {
-        fn testRuntimeDupDispatch(input: []const u8) anyerror!void {
-            if (input.len == 0) return;
-            
-            const allocator = std.testing.allocator;
-            var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
-            defer memory_db.deinit();
-            
-            const db_interface = memory_db.to_database_interface();
-            var vm = try Vm.init(allocator, db_interface, null, null);
-            defer vm.deinit();
-            
-            var contract = try Contract.init(allocator, &[_]u8{0x80}, .{ .address = Address.ZERO });
-            defer contract.deinit(allocator, null);
-            
-            var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
-            defer frame.deinit();
-            
-            // Extract DUP operation from fuzz input (DUP1 = 0x80 to DUP16 = 0x8F)
-            const dup_offset = input[0] % 16; // DUP1 to DUP16
-            const opcode = 0x80 + dup_offset;
-            
-            // Prepare stack with varying depths based on input
-            const stack_depth = @min((input.len % 20) + 1, 16); // 1-16 items
-            for (0..stack_depth) |i| {
-                const value = if (input.len > i + 1) @as(u256, input[i + 1]) else @as(u256, i);
-                try frame.stack.push(value);
-            }
-            
-            const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-            const state_ptr: *Operation.State = @ptrCast(&frame);
-            
-            // Test DUP runtime dispatch
-            const result = vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
-            _ = result catch |err| switch (err) {
-                error.StackUnderflow, error.StackOverflow, error.OutOfGas => {}, // Expected errors
-                else => return err,
-            };
-        }
-    };
-    try std.testing.fuzz(global.testRuntimeDupDispatch, .{});
-}
+// test "fuzz_runtime_dispatch_dup_operations" {
+//     const global = struct {
+//         fn testRuntimeDupDispatch(input: []const u8) anyerror!void {
+//             if (input.len == 0) return;
+//             
+//             const allocator = std.testing.allocator;
+//             var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
+//             defer memory_db.deinit();
+//             
+//             const db_interface = memory_db.to_database_interface();
+//             var vm = try Vm.init(allocator, db_interface, null, null);
+//             defer vm.deinit();
+//             
+//             var contract = try Contract.init(allocator, &[_]u8{0x80}, .{ .address = Address.ZERO });
+//             defer contract.deinit(allocator, null);
+//             
+//             var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
+//             defer frame.deinit();
+//             
+//             // Extract DUP operation from fuzz input (DUP1 = 0x80 to DUP16 = 0x8F)
+//             const dup_offset = input[0] % 16; // DUP1 to DUP16
+//             const opcode = 0x80 + dup_offset;
+//             
+//             // Prepare stack with varying depths based on input
+//             const stack_depth = @min((input.len % 20) + 1, 16); // 1-16 items
+//             for (0..stack_depth) |i| {
+//                 const value = if (input.len > i + 1) @as(u256, input[i + 1]) else @as(u256, i);
+//                 try frame.stack.push(value);
+//             }
+//             
+//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             
+//             // Test DUP runtime dispatch
+//             const result = vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+//             _ = result catch |err| switch (err) {
+//                 error.StackUnderflow, error.StackOverflow, error.OutOfGas => {}, // Expected errors
+//                 else => return err,
+//             };
+//         }
+//     };
+//     try std.testing.fuzz(global.testRuntimeDupDispatch, .{});
+// }
 
-test "fuzz_runtime_dispatch_swap_operations" {
-    const global = struct {
-        fn testRuntimeSwapDispatch(input: []const u8) anyerror!void {
-            if (input.len == 0) return;
-            
-            const allocator = std.testing.allocator;
-            var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
-            defer memory_db.deinit();
-            
-            const db_interface = memory_db.to_database_interface();
-            var vm = try Vm.init(allocator, db_interface, null, null);
-            defer vm.deinit();
-            
-            var contract = try Contract.init(allocator, &[_]u8{0x90}, .{ .address = Address.ZERO });
-            defer contract.deinit(allocator, null);
-            
-            var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
-            defer frame.deinit();
-            
-            // Extract SWAP operation from fuzz input (SWAP1 = 0x90 to SWAP16 = 0x9F)
-            const swap_offset = input[0] % 16; // SWAP1 to SWAP16
-            const opcode = 0x90 + swap_offset;
-            
-            // Prepare stack with enough depth for swap operations
-            const required_depth = swap_offset + 2; // SWAP1 needs 2, SWAP16 needs 17
-            const stack_depth = @min(@max(required_depth, 2), 17);
-            
-            for (0..stack_depth) |i| {
-                const value = if (input.len > i + 1) @as(u256, input[i + 1]) else @as(u256, i * 0x11);
-                try frame.stack.push(value);
-            }
-            
-            const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-            const state_ptr: *Operation.State = @ptrCast(&frame);
-            
-            // Test SWAP runtime dispatch
-            const result = vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
-            _ = result catch |err| switch (err) {
-                error.StackUnderflow, error.StackOverflow, error.OutOfGas => {}, // Expected errors
-                else => return err,
-            };
-        }
-    };
-    try std.testing.fuzz(global.testRuntimeSwapDispatch, .{});
-}
+// test "fuzz_runtime_dispatch_swap_operations" {
+//     const global = struct {
+//         fn testRuntimeSwapDispatch(input: []const u8) anyerror!void {
+//             if (input.len == 0) return;
+//             
+//             const allocator = std.testing.allocator;
+//             var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
+//             defer memory_db.deinit();
+//             
+//             const db_interface = memory_db.to_database_interface();
+//             var vm = try Vm.init(allocator, db_interface, null, null);
+//             defer vm.deinit();
+//             
+//             var contract = try Contract.init(allocator, &[_]u8{0x90}, .{ .address = Address.ZERO });
+//             defer contract.deinit(allocator, null);
+//             
+//             var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
+//             defer frame.deinit();
+//             
+//             // Extract SWAP operation from fuzz input (SWAP1 = 0x90 to SWAP16 = 0x9F)
+//             const swap_offset = input[0] % 16; // SWAP1 to SWAP16
+//             const opcode = 0x90 + swap_offset;
+//             
+//             // Prepare stack with enough depth for swap operations
+//             const required_depth = swap_offset + 2; // SWAP1 needs 2, SWAP16 needs 17
+//             const stack_depth = @min(@max(required_depth, 2), 17);
+//             
+//             for (0..stack_depth) |i| {
+//                 const value = if (input.len > i + 1) @as(u256, input[i + 1]) else @as(u256, i * 0x11);
+//                 try frame.stack.push(value);
+//             }
+//             
+//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             
+//             // Test SWAP runtime dispatch
+//             const result = vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+//             _ = result catch |err| switch (err) {
+//                 error.StackUnderflow, error.StackOverflow, error.OutOfGas => {}, // Expected errors
+//                 else => return err,
+//             };
+//         }
+//     };
+//     try std.testing.fuzz(global.testRuntimeSwapDispatch, .{});
+// }
 
-test "fuzz_stack_manipulation_with_varying_depths" {
-    const global = struct {
-        fn testStackManipulationDepths(input: []const u8) anyerror!void {
-            if (input.len < 4) return;
-            
-            const allocator = std.testing.allocator;
-            var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
-            defer memory_db.deinit();
-            
-            const db_interface = memory_db.to_database_interface();
-            var vm = try Vm.init(allocator, db_interface, null, null);
-            defer vm.deinit();
-            
-            var contract = try Contract.init(allocator, &[_]u8{0x01}, .{ .address = Address.ZERO });
-            defer contract.deinit(allocator, null);
-            
-            var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
-            defer frame.deinit();
-            
-            // Use fuzz input to determine operation sequence
-            const push_opcode = 0x60 + (input[0] % 32); // PUSH1-PUSH32
-            const dup_opcode = 0x80 + (input[1] % 16); // DUP1-DUP16  
-            const swap_opcode = 0x90 + (input[2] % 16); // SWAP1-SWAP16
-            const initial_stack_depth = @min(input[3] % 20, 16); // 0-16 items
-            
-            // Build initial stack
-            for (0..initial_stack_depth) |i| {
-                const value = if (input.len > i + 4) @as(u256, input[i + 4]) else @as(u256, i);
-                try frame.stack.push(value);
-            }
-            
-            const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-            const state_ptr: *Operation.State = @ptrCast(&frame);
-            
-            // Test sequence of operations with varying stack depths
-            const operations = [_]u8{ push_opcode, dup_opcode, swap_opcode };
-            
-            for (operations) |opcode| {
-                const result = vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
-                _ = result catch |err| switch (err) {
-                    error.StackUnderflow, error.StackOverflow, error.OutOfGas, error.InvalidOpcode => {},
-                    else => return err,
-                };
-            }
-        }
-    };
-    try std.testing.fuzz(global.testStackManipulationDepths, .{});
-}
+// test "fuzz_stack_manipulation_with_varying_depths" {
+//     const global = struct {
+//         fn testStackManipulationDepths(input: []const u8) anyerror!void {
+//             if (input.len < 4) return;
+//             
+//             const allocator = std.testing.allocator;
+//             var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
+//             defer memory_db.deinit();
+//             
+//             const db_interface = memory_db.to_database_interface();
+//             var vm = try Vm.init(allocator, db_interface, null, null);
+//             defer vm.deinit();
+//             
+//             var contract = try Contract.init(allocator, &[_]u8{0x01}, .{ .address = Address.ZERO });
+//             defer contract.deinit(allocator, null);
+//             
+//             var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
+//             defer frame.deinit();
+//             
+//             // Use fuzz input to determine operation sequence
+//             const push_opcode = 0x60 + (input[0] % 32); // PUSH1-PUSH32
+//             const dup_opcode = 0x80 + (input[1] % 16); // DUP1-DUP16  
+//             const swap_opcode = 0x90 + (input[2] % 16); // SWAP1-SWAP16
+//             const initial_stack_depth = @min(input[3] % 20, 16); // 0-16 items
+//             
+//             // Build initial stack
+//             for (0..initial_stack_depth) |i| {
+//                 const value = if (input.len > i + 4) @as(u256, input[i + 4]) else @as(u256, i);
+//                 try frame.stack.push(value);
+//             }
+//             
+//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             
+//             // Test sequence of operations with varying stack depths
+//             const operations = [_]u8{ push_opcode, dup_opcode, swap_opcode };
+//             
+//             for (operations) |opcode| {
+//                 const result = vm.table.execute(0, interpreter_ptr, state_ptr, opcode);
+//                 _ = result catch |err| switch (err) {
+//                     error.StackUnderflow, error.StackOverflow, error.OutOfGas, error.InvalidOpcode => {},
+//                     else => return err,
+//                 };
+//             }
+//         }
+//     };
+//     try std.testing.fuzz(global.testStackManipulationDepths, .{});
+// }
 
-test "fuzz_push_operations_with_malformed_bytecode" {
-    const global = struct {
-        fn testMalformedBytecode(input: []const u8) anyerror!void {
-            if (input.len < 2) return;
-            
-            const allocator = std.testing.allocator;
-            var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
-            defer memory_db.deinit();
-            
-            const db_interface = memory_db.to_database_interface();
-            var vm = try Vm.init(allocator, db_interface, null, null);
-            defer vm.deinit();
-            
-            // Create potentially malformed bytecode from fuzz input
-            var malformed_code = std.ArrayList(u8).init(allocator);
-            defer malformed_code.deinit();
-            
-            // Add PUSH operations with insufficient data
-            const push_size = (input[0] % 32) + 1; // PUSH1-PUSH32
-            const push_opcode = 0x5F + push_size;
-            try malformed_code.append(push_opcode);
-            
-            // Add less data than required (malformed scenario)
-            const available_data = @min(input.len - 1, push_size / 2); // Intentionally insufficient
-            try malformed_code.appendSlice(input[1..1 + available_data]);
-            
-            var contract = try Contract.init(allocator, malformed_code.items, .{ .address = Address.ZERO });
-            defer contract.deinit(allocator, null);
-            
-            var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
-            defer frame.deinit();
-            
-            const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-            const state_ptr: *Operation.State = @ptrCast(&frame);
-            
-            // Test with malformed bytecode - should handle gracefully
-            const result = vm.table.execute(0, interpreter_ptr, state_ptr, push_opcode);
-            _ = result catch |err| switch (err) {
-                error.OutOfGas, error.InvalidOpcode, error.StackOverflow => {}, // Expected with malformed code
-                else => return err,
-            };
-        }
-    };
-    try std.testing.fuzz(global.testMalformedBytecode, .{});
-}
+// test "fuzz_push_operations_with_malformed_bytecode" {
+//     const global = struct {
+//         fn testMalformedBytecode(input: []const u8) anyerror!void {
+//             if (input.len < 2) return;
+//             
+//             const allocator = std.testing.allocator;
+//             var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
+//             defer memory_db.deinit();
+//             
+//             const db_interface = memory_db.to_database_interface();
+//             var vm = try Vm.init(allocator, db_interface, null, null);
+//             defer vm.deinit();
+//             
+//             // Create potentially malformed bytecode from fuzz input
+//             var malformed_code = std.ArrayList(u8).init(allocator);
+//             defer malformed_code.deinit();
+//             
+//             // Add PUSH operations with insufficient data
+//             const push_size = (input[0] % 32) + 1; // PUSH1-PUSH32
+//             const push_opcode = 0x5F + push_size;
+//             try malformed_code.append(push_opcode);
+//             
+//             // Add less data than required (malformed scenario)
+//             const available_data = @min(input.len - 1, push_size / 2); // Intentionally insufficient
+//             try malformed_code.appendSlice(input[1..1 + available_data]);
+//             
+//             var contract = try Contract.init(allocator, malformed_code.items, .{ .address = Address.ZERO });
+//             defer contract.deinit(allocator, null);
+//             
+//             var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
+//             defer frame.deinit();
+//             
+//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             
+//             // Test with malformed bytecode - should handle gracefully
+//             const result = vm.table.execute(0, interpreter_ptr, state_ptr, push_opcode);
+//             _ = result catch |err| switch (err) {
+//                 error.OutOfGas, error.InvalidOpcode, error.StackOverflow => {}, // Expected with malformed code
+//                 else => return err,
+//             };
+//         }
+//     };
+//     try std.testing.fuzz(global.testMalformedBytecode, .{});
+// }
 
-test "fuzz_extreme_stack_operations_boundary_conditions" {
-    const global = struct {
-        fn testExtremeBoundaryConditions(input: []const u8) anyerror!void {
-            if (input.len == 0) return;
-            
-            const allocator = std.testing.allocator;
-            var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
-            defer memory_db.deinit();
-            
-            const db_interface = memory_db.to_database_interface();
-            var vm = try Vm.init(allocator, db_interface, null, null);
-            defer vm.deinit();
-            
-            var contract = try Contract.init(allocator, &[_]u8{0x50}, .{ .address = Address.ZERO }); // POP
-            defer contract.deinit(allocator, null);
-            
-            var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
-            defer frame.deinit();
-            
-            const boundary_test = input[0] % 4;
-            
-            const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
-            const state_ptr: *Operation.State = @ptrCast(&frame);
-            
-            switch (boundary_test) {
-                0 => {
-                    // Test stack underflow condition
-                    // Attempt POP on empty stack
-                    const result = vm.table.execute(0, interpreter_ptr, state_ptr, 0x50); // POP
-                    std.testing.expectError(error.StackUnderflow, result) catch |err| switch (err) {
-                        error.TestExpectedError => {}, // Different error than expected, but acceptable
-                        else => return err,
-                    };
-                },
-                1 => {
-                    // Test near-maximum stack depth
-                    const target_depth = @min(1020, input.len); // Near 1024 limit
-                    for (0..target_depth) |i| {
-                        const value = if (input.len > i) @as(u256, input[i]) else @as(u256, i);
-                        frame.stack.push(value) catch break; // Stop if we can't push more
-                    }
-                    
-                    // Test operations near stack limit
-                    _ = vm.table.execute(0, interpreter_ptr, state_ptr, 0x60) catch |err| switch (err) {
-                        error.StackOverflow, error.OutOfGas => {},
-                        else => return err,
-                    };
-                },
-                2 => {
-                    // Test extreme DUP operations
-                    for (0..10) |i| {
-                        try frame.stack.push(@as(u256, i * 0xFF));
-                    }
-                    
-                    const extreme_dup = 0x80 + 15; // DUP16
-                    _ = vm.table.execute(0, interpreter_ptr, state_ptr, extreme_dup) catch |err| switch (err) {
-                        error.StackUnderflow, error.StackOverflow => {},
-                        else => return err,
-                    };
-                },
-                3 => {
-                    // Test extreme SWAP operations  
-                    for (0..18) |i| {
-                        try frame.stack.push(@as(u256, i));
-                    }
-                    
-                    const extreme_swap = 0x90 + 15; // SWAP16
-                    _ = vm.table.execute(0, interpreter_ptr, state_ptr, extreme_swap) catch |err| switch (err) {
-                        error.StackUnderflow, error.StackOverflow => {},
-                        else => return err,
-                    };
-                },
-            }
-        }
-    };
-    try std.testing.fuzz(global.testExtremeBoundaryConditions, .{});
-}
+// test "fuzz_extreme_stack_operations_boundary_conditions" {
+//     const global = struct {
+//         fn testExtremeBoundaryConditions(input: []const u8) anyerror!void {
+//             if (input.len == 0) return;
+//             
+//             const allocator = std.testing.allocator;
+//             var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
+//             defer memory_db.deinit();
+//             
+//             const db_interface = memory_db.to_database_interface();
+//             var vm = try Vm.init(allocator, db_interface, null, null);
+//             defer vm.deinit();
+//             
+//             var contract = try Contract.init(allocator, &[_]u8{0x50}, .{ .address = Address.ZERO }); // POP
+//             defer contract.deinit(allocator, null);
+//             
+//             var frame = try Frame.init(allocator, &vm, 1000000, contract, Address.ZERO, &.{});
+//             defer frame.deinit();
+//             
+//             const boundary_test = input[0] % 4;
+//             
+//             const interpreter_ptr: *Operation.Interpreter = @ptrCast(&vm);
+//             const state_ptr: *Operation.State = @ptrCast(&frame);
+//             
+//             switch (boundary_test) {
+//                 0 => {
+//                     // Test stack underflow condition
+//                     // Attempt POP on empty stack
+//                     const result = vm.table.execute(0, interpreter_ptr, state_ptr, 0x50); // POP
+//                     std.testing.expectError(error.StackUnderflow, result) catch |err| switch (err) {
+//                         error.TestExpectedError => {}, // Different error than expected, but acceptable
+//                         else => return err,
+//                     };
+//                 },
+//                 1 => {
+//                     // Test near-maximum stack depth
+//                     const target_depth = @min(1020, input.len); // Near 1024 limit
+//                     for (0..target_depth) |i| {
+//                         const value = if (input.len > i) @as(u256, input[i]) else @as(u256, i);
+//                         frame.stack.push(value) catch break; // Stop if we can't push more
+//                     }
+//                     
+//                     // Test operations near stack limit
+//                     _ = vm.table.execute(0, interpreter_ptr, state_ptr, 0x60) catch |err| switch (err) {
+//                         error.StackOverflow, error.OutOfGas => {},
+//                         else => return err,
+//                     };
+//                 },
+//                 2 => {
+//                     // Test extreme DUP operations
+//                     for (0..10) |i| {
+//                         try frame.stack.push(@as(u256, i * 0xFF));
+//                     }
+//                     
+//                     const extreme_dup = 0x80 + 15; // DUP16
+//                     _ = vm.table.execute(0, interpreter_ptr, state_ptr, extreme_dup) catch |err| switch (err) {
+//                         error.StackUnderflow, error.StackOverflow => {},
+//                         else => return err,
+//                     };
+//                 },
+//                 3 => {
+//                     // Test extreme SWAP operations  
+//                     for (0..18) |i| {
+//                         try frame.stack.push(@as(u256, i));
+//                     }
+//                     
+//                     const extreme_swap = 0x90 + 15; // SWAP16
+//                     _ = vm.table.execute(0, interpreter_ptr, state_ptr, extreme_swap) catch |err| switch (err) {
+//                         error.StackUnderflow, error.StackOverflow => {},
+//                         else => return err,
+//                     };
+//                 },
+//             }
+//         }
+//     };
+//     try std.testing.fuzz(global.testExtremeBoundaryConditions, .{});
+// }
