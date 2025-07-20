@@ -1,8 +1,8 @@
 {
   "targets": {
     "releaseSmall": {
-      "withPrecompiles": 153600,
-      "withoutPrecompiles": 102400
+      "withPrecompiles": 290000,
+      "withoutPrecompiles": 230000,
     },
     "releaseFast": {
       "withPrecompiles": 2560000,
