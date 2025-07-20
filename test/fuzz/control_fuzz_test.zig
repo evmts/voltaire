@@ -35,7 +35,7 @@ test "fuzz_control_pc_operations" {
     defer frame.deinit();
     
     // Test PC operation
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(42, &interpreter, &state, 0x58); // PC opcode
     
@@ -77,7 +77,7 @@ test "fuzz_control_gas_operations" {
     const initial_gas = frame.gas_remaining;
     
     // Test GAS operation
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x5A); // GAS opcode
     
@@ -119,7 +119,7 @@ test "fuzz_control_jumpdest_operations" {
     // Test JUMPDEST operation (should be a no-op)
     const initial_stack_size = frame.stack.size;
     
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x5B); // JUMPDEST opcode
     

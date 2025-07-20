@@ -38,7 +38,7 @@ test "fuzz_storage_sload_operations" {
     // Test SLOAD operation (should return 0 for uninitialized storage)
     try frame.stack.append(slot);
     
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x54); // SLOAD opcode
     
@@ -83,7 +83,7 @@ test "fuzz_storage_sstore_sload_roundtrip" {
     try frame.stack.append(value);
     try frame.stack.append(slot);
     
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x55); // SSTORE opcode
     
@@ -130,7 +130,7 @@ test "fuzz_storage_tload_operations" {
     // Test TLOAD operation (should return 0 for uninitialized transient storage)
     try frame.stack.append(slot);
     
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x5C); // TLOAD opcode
     
@@ -175,7 +175,7 @@ test "fuzz_storage_tstore_tload_roundtrip" {
     try frame.stack.append(value);
     try frame.stack.append(slot);
     
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = *evm.Operation.State = @ptrCast(&frame);
     _ = try vm.table.execute(0, &interpreter, &state, 0x5D); // TSTORE opcode
     

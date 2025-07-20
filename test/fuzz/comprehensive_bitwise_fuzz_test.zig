@@ -82,7 +82,7 @@ test "fuzz_and_bitwise_and_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x16); // AND
         
@@ -126,7 +126,7 @@ test "fuzz_or_bitwise_or_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x17); // OR
         
@@ -174,7 +174,7 @@ test "fuzz_xor_bitwise_xor_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x18); // XOR
         
@@ -215,7 +215,7 @@ test "fuzz_not_bitwise_not_edge_cases" {
         
         try ctx.frame.stack.append(case.a);
         
-        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x19); // NOT
         
@@ -266,7 +266,7 @@ test "fuzz_byte_byte_extraction_edge_cases" {
         try ctx.frame.stack.append(case.i);
         try ctx.frame.stack.append(case.val);
         
-        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x1A); // BYTE
         
@@ -317,7 +317,7 @@ test "fuzz_shl_shift_left_edge_cases" {
         try ctx.frame.stack.append(case.shift);
         try ctx.frame.stack.append(case.value);
         
-        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x1B); // SHL
         
@@ -371,7 +371,7 @@ test "fuzz_shr_shift_right_edge_cases" {
         try ctx.frame.stack.append(case.shift);
         try ctx.frame.stack.append(case.value);
         
-        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x1C); // SHR
         
@@ -432,7 +432,7 @@ test "fuzz_sar_arithmetic_shift_right_edge_cases" {
         try ctx.frame.stack.append(case.shift);
         try ctx.frame.stack.append(case.value);
         
-        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x1D); // SAR
         
@@ -466,7 +466,7 @@ test "fuzz_bitwise_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x16); // AND
             
@@ -485,7 +485,7 @@ test "fuzz_bitwise_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x17); // OR
             
@@ -504,7 +504,7 @@ test "fuzz_bitwise_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x18); // XOR
             
@@ -523,7 +523,7 @@ test "fuzz_bitwise_random_stress_test" {
             try ctx.frame.stack.append(shift);
             try ctx.frame.stack.append(a);
             
-            var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x1B); // SHL
             

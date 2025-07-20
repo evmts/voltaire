@@ -48,7 +48,7 @@ test "SELFDESTRUCT: Basic functionality" {
     try frame.stack.push(bob_address.to_u256());
 
     // Execute SELFDESTRUCT opcode - should halt execution
-    var interpreter = *Evm.Interpreter = @ptrCast(&evm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
     var state = Evm.Operation.State{ .frame = &frame };
     const result = evm.jump_table.get(0xFF).execute(&interpreter, &state);
     try testing.expectError(Evm.ExecutionError.Error.STOP, result);
@@ -107,7 +107,7 @@ test "SELFDESTRUCT: Forbidden in static call" {
     try frame.stack.push(bob_address.to_u256());
 
     // Execute SELFDESTRUCT opcode - should fail in static context
-    var interpreter = *Evm.Interpreter = @ptrCast(&evm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
     var state = Evm.Operation.State{ .frame = &frame };
     const result = evm.jump_table.get(0xFF).execute(&interpreter, &state);
     try testing.expectError(Evm.ExecutionError.Error.WriteProtection, result);
@@ -162,7 +162,7 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
         const gas_before = frame.gas_remaining;
 
         // Execute SELFDESTRUCT
-        var interpreter = *Evm.Interpreter = @ptrCast(&evm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
         var state = Evm.Operation.State{ .frame = &frame };
         _ = evm.jump_table.get(0xFF).execute(&interpreter, &state);
 
@@ -215,7 +215,7 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
         const gas_before = frame.gas_remaining;
 
         // Execute SELFDESTRUCT
-        var interpreter = *Evm.Interpreter = @ptrCast(&evm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
         var state = Evm.Operation.State{ .frame = &frame };
         _ = evm.jump_table.get(0xFF).execute(&interpreter, &state);
 
@@ -275,7 +275,7 @@ test "SELFDESTRUCT: Account creation cost (EIP-161)" {
     const gas_before = frame.gas_remaining;
 
     // Execute SELFDESTRUCT
-    var interpreter = *Evm.Interpreter = @ptrCast(&evm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
     var state = Evm.Operation.State{ .frame = &frame };
     _ = evm.jump_table.get(0xFF).execute(&interpreter, &state);
 

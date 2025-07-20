@@ -522,8 +522,8 @@ test "CREATE2: Same parameters produce same address" {
     try frame1.stack.append(0);
 
     var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    const state1: *Evm.Operation.State = @ptrCast(&frame1);
-    _ = try evm.table.execute(0, &interpreter, state1, 0xF5);
+    var state1 = Evm.Operation.State{ .frame = &frame1 };
+    _ = try evm.table.execute(0, &interpreter, &state1, 0xF5);
     const address1 = try frame1.stack.pop();
 
     // Second creation with same parameters
@@ -554,8 +554,8 @@ test "CREATE2: Same parameters produce same address" {
     try frame2.stack.append(0);
     try frame2.stack.append(0);
 
-    const state2: *Evm.Operation.State = @ptrCast(&frame2);
-    _ = try evm.table.execute(0, &interpreter, state2, 0xF5);
+    var state2 = Evm.Operation.State{ .frame = &frame2 };
+    _ = try evm.table.execute(0, &interpreter, &state2, 0xF5);
     const address2 = try frame2.stack.pop();
 
     // Addresses should be the same (deterministic)
@@ -2061,7 +2061,7 @@ test "System opcodes: Hardfork feature availability" {
         try test_frame.stack.append(1000); // gas
 
         // DELEGATECALL may not be available in Frontier
-        var interpreter = *Evm.Operation.Interpreter = @ptrCast(&test_vm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &test_vm };
         var state = Evm.Operation.State{ .frame = &test_frame };
         if (test_vm.table.execute(0, &interpreter, &state, 0xF4)) |_| {
             // May succeed in some implementations
@@ -2108,7 +2108,7 @@ test "System opcodes: Hardfork feature availability" {
         try test_frame.stack.append(0); // value
 
         // CREATE2 may not be available in Byzantium
-        var interpreter = *Evm.Operation.Interpreter = @ptrCast(&test_vm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &test_vm };
         var state = Evm.Operation.State{ .frame = &test_frame };
         if (test_vm.table.execute(0, &interpreter, &state, 0xF5)) |_| {
             // May succeed in some implementations

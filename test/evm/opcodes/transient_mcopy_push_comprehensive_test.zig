@@ -696,19 +696,19 @@ test "Transient storage: Isolation between addresses" {
     defer frame2.deinit();
 
     var interpreter = Evm.Operation.Interpreter{ .vm = &evm };
-    const state1: *Evm.Operation.State = @ptrCast(&frame1);
-    const state2: *Evm.Operation.State = @ptrCast(&frame2);
+    var state1 = Evm.Operation.State{ .frame = &frame1 };
+    var state2 = Evm.Operation.State{ .frame = &frame2 };
 
     // Store value in contract1's transient storage
     const slot: u256 = 42;
     const value: u256 = 0xdeadbeef;
     try frame1.stack.append(value); // value (will be popped 1st)
     try frame1.stack.append(slot); // slot (will be popped 2nd)
-    _ = try evm.table.execute(0, &interpreter, state1, 0x5D); // TSTORE
+    _ = try evm.table.execute(0, &interpreter, &state1, 0x5D); // TSTORE
 
     // Same slot in contract2 should still be 0
     try frame2.stack.append(slot);
-    _ = try evm.table.execute(0, &interpreter, state2, 0x5C); // TLOAD
+    _ = try evm.table.execute(0, &interpreter, &state2, 0x5C); // TLOAD
     const result = try frame2.stack.pop();
     try testing.expectEqual(@as(u256, 0), result); // Should be 0, not value
 }

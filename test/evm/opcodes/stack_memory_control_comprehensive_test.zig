@@ -667,12 +667,12 @@ test "Stack, Memory, and Control opcodes: Gas consumption" {
         .withGas(1000)
         .build();
     defer frame2.deinit();
-    const state2: *Evm.Operation.State = @ptrCast(&frame2);
+    var state2 = Evm.Operation.State{ .frame = &frame2 };
 
     try frame2.stack.append(42); // value
     try frame2.stack.append(0); // offset (on top)
     gas_before = frame2.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, state2, 0x52);
+    _ = try evm.table.execute(0, &interpreter, &state2, 0x52);
     gas_used = gas_before - frame2.gas_remaining;
     try testing.expectEqual(@as(u64, 6), gas_used); // Base (3) + memory expansion (3)
 
@@ -684,12 +684,12 @@ test "Stack, Memory, and Control opcodes: Gas consumption" {
         .withGas(1000)
         .build();
     defer frame3.deinit();
-    const state3: *Evm.Operation.State = @ptrCast(&frame3);
+    var state3 = Evm.Operation.State{ .frame = &frame3 };
 
     try frame3.stack.append(42); // value (will be popped 2nd)
     try frame3.stack.append(0); // offset (will be popped 1st)
     gas_before = frame3.gas_remaining;
-    _ = try evm.table.execute(0, &interpreter, state3, 0x53);
+    _ = try evm.table.execute(0, &interpreter, &state3, 0x53);
     gas_used = gas_before - frame3.gas_remaining;
     try testing.expectEqual(@as(u64, 6), gas_used); // Base (3) + memory expansion (3)
 

@@ -200,8 +200,7 @@ pub fn deinit(self: *Evm) void {
 /// This is efficient for executing multiple contracts in sequence.
 /// Clears all state but keeps the allocated memory for reuse.
 pub fn reset(self: *Evm) void {
-    // Reset allocator without deallocating
-    self.evm_allocator.reset();
+    // Reset allocator without deallocating (no custom allocator to reset)
     
     // Reset execution state
     self.depth = 0;

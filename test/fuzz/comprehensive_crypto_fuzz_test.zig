@@ -67,7 +67,7 @@ test "fuzz_keccak256_known_test_vectors" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const test_vectors = [_]struct { 
@@ -177,7 +177,7 @@ test "fuzz_keccak256_memory_layout_edge_cases" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const layout_tests = [_]struct {
@@ -283,7 +283,7 @@ test "fuzz_keccak256_length_edge_cases" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const length_tests = [_]struct {
@@ -400,7 +400,7 @@ test "fuzz_keccak256_overlapping_memory_regions" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Set up test data pattern in memory
@@ -529,7 +529,7 @@ test "fuzz_keccak256_random_stress_test" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     var prng = std.Random.DefaultPrng.init(0);
@@ -596,7 +596,7 @@ test "fuzz_keccak256_determinism" {
         var ctx = try create_evm_context(allocator);
         defer deinit_evm_context(ctx, allocator);
         
-        var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // Store test data in memory
@@ -643,7 +643,7 @@ test "fuzz_keccak256_memory_expansion" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const expansion_tests = [_]struct {

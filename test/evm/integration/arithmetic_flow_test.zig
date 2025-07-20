@@ -60,7 +60,7 @@ test "Integration: Arithmetic with conditional jumps" {
     defer frame.deinit();
 
     // Execute sequence: PUSH 5, PUSH 10, ADD
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     _ = try vm.table.execute(0, &interpreter, &state, 0x60);
@@ -139,7 +139,7 @@ test "Integration: Complex arithmetic expression evaluation" {
     try frame.stack.push(10);
     try frame.stack.push(5);
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     _ = try vm.table.execute(0, &interpreter, &state, 0x01);
@@ -197,7 +197,7 @@ test "Integration: Modular arithmetic chain" {
     try frame.stack.push(15);
     try frame.stack.push(7);
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     _ = try vm.table.execute(0, &interpreter, &state, 0x08);
@@ -250,7 +250,7 @@ test "Integration: Division by zero handling in expression" {
     try frame.stack.push(10);
     try frame.stack.push(0);
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     _ = try vm.table.execute(0, &interpreter, &state, 0x04);
@@ -304,7 +304,7 @@ test "Integration: Bitwise operations with arithmetic" {
     try frame.stack.push(0xFF);
     try frame.stack.push(0x0F);
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     _ = try vm.table.execute(0, &interpreter, &state, 0x16);
@@ -367,7 +367,7 @@ test "Integration: Stack manipulation with arithmetic" {
     try frame.stack.push(10);
     try frame.stack.push(20);
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     _ = try vm.table.execute(0, &interpreter, &state, 0x80);
@@ -430,7 +430,7 @@ test "Integration: Comparison chain for range checking" {
     // value >= 10 AND value <= 20
     const value: u256 = 15;
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Check value >= 10
@@ -496,7 +496,7 @@ test "Integration: EXP with modular arithmetic" {
     try frame.stack.push(2);
     try frame.stack.push(8);
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     _ = try vm.table.execute(0, &interpreter, &state, 0x0A);
@@ -551,7 +551,7 @@ test "Integration: Signed arithmetic with comparisons" {
     try frame.stack.push(neg_5);
     try frame.stack.push(10);
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     _ = try vm.table.execute(0, &interpreter, &state, 0x12);

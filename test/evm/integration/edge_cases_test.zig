@@ -50,7 +50,7 @@ test "Integration: stack limit boundary conditions" {
     try frame.stack.push(1023);
     try testing.expectEqual(@as(usize, 1024), frame.stack.size());
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // DUP1 should fail (would exceed 1024)
@@ -111,7 +111,7 @@ test "Integration: memory expansion limits" {
 
     const gas_before = frame.gas_remaining;
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     try vm.table.execute(0, &interpreter, &state, 0x52);
@@ -167,7 +167,7 @@ test "Integration: arithmetic overflow and underflow" {
 
     const max_u256 = std.math.maxInt(u256);
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Test addition overflow (wraps around)
@@ -242,7 +242,7 @@ test "Integration: signed arithmetic boundaries" {
     // Minimum negative signed value (-2^255)
     const min_signed: u256 = @as(u256, 1) << 255;
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Test SLT with boundary values
@@ -300,7 +300,7 @@ test "Integration: bitwise operation boundaries" {
         .build();
     defer frame.deinit();
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Test shift operations with large shift amounts
@@ -382,7 +382,7 @@ test "Integration: call gas calculation edge cases" {
         .output = null,
     };
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Request more gas than available
@@ -444,7 +444,7 @@ test "Integration: return data boundary conditions" {
     const return_data = [_]u8{ 0x11, 0x22, 0x33, 0x44 };
     try frame.return_data.set(&return_data);
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 1: Copy within bounds
@@ -519,7 +519,7 @@ test "Integration: exponentiation edge cases" {
         .build();
     defer frame.deinit();
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Test 0^0 = 1
@@ -597,7 +597,7 @@ test "Integration: jump destination validation" {
         .build();
     defer frame.deinit();
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Mark position 3 as valid jump destination
@@ -653,7 +653,7 @@ test "Integration: storage slot temperature transitions" {
         .build();
     defer frame.deinit();
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // First access to slot 100 - cold
@@ -729,7 +729,7 @@ test "Integration: MCOPY overlap handling" {
         try frame.memory.write_byte(i, @intCast(i + 1)); // 1,2,3,4,5,6,7,8,9,10
     }
 
-    var interpreter = *Evm.Operation.Interpreter = @ptrCast(&vm);
+    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
     var state = Evm.Operation.State{ .frame = &frame };
 
     // Test forward overlap (source < dest, overlapping)
