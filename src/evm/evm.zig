@@ -100,38 +100,67 @@ comptime {
 /// evm.read_only = true;
 /// ```
 pub fn init(allocator: std.mem.Allocator, database: @import("state/database_interface.zig").DatabaseInterface) !Evm {
-    Log.debug("Evm.init: Initializing EVM with allocator and database", .{});
+    std.log.debug("Evm.init: STARTING EVM INITIALIZATION", .{});
 
     // Create EVM memory allocator wrapper
+    std.log.debug("Evm.init: About to call EvmMemoryAllocator.init", .{});
     var evm_allocator = try EvmMemoryAllocator.init(allocator);
     errdefer evm_allocator.deinit();
+    std.log.debug("Evm.init: EvmMemoryAllocator.init completed", .{});
     
     const evm_alloc = evm_allocator.allocator();
+    std.log.debug("Evm.init: Got EVM allocator", .{});
 
+    std.log.debug("Evm.init: About to call EvmState.init", .{});
     var state = try EvmState.init(evm_alloc, database);
     errdefer state.deinit();
+    std.log.debug("Evm.init: EvmState.init completed", .{});
 
+    std.log.debug("Evm.init: About to call Context.init", .{});
     const context = Context.init();
+    std.log.debug("Evm.init: Context.init completed", .{});
+    
+    std.log.debug("Evm.init: About to call AccessList.init", .{});
     var access_list = AccessList.init(evm_alloc, context);
     errdefer access_list.deinit();
+    std.log.debug("Evm.init: AccessList.init completed", .{});
 
-    Log.debug("Evm.init: EVM initialization complete", .{});
-    return Evm{
+    std.log.debug("Evm.init: About to construct Evm struct", .{});
+    
+    std.log.debug("Evm.init: Testing JumpTable.DEFAULT access", .{});
+    const jump_table = JumpTable.DEFAULT;
+    std.log.debug("Evm.init: JumpTable.DEFAULT accessed successfully", .{});
+    
+    std.log.debug("Evm.init: Testing ChainRules.DEFAULT access", .{});
+    const chain_rules = ChainRules.DEFAULT;
+    std.log.debug("Evm.init: ChainRules.DEFAULT accessed successfully", .{});
+    
+    std.log.debug("Evm.init: Creating frame_pool_initialized array", .{});
+    const frame_pool_init = [_]bool{false} ** MAX_CALL_DEPTH;
+    std.log.debug("Evm.init: frame_pool_initialized array created", .{});
+    
+    std.log.debug("Evm.init: About to create Evm struct instance", .{});
+    const evm_instance = Evm{
         .evm_allocator = evm_allocator,
         .allocator = evm_alloc,
-        .table = JumpTable.DEFAULT,
+        .table = jump_table,
         .depth = 0,
         .read_only = false,
-        .chain_rules = ChainRules.DEFAULT,
+        .chain_rules = chain_rules,
         .context = context,
         .return_data = &[_]u8{},
         .frame_pool = undefined, // Will be initialized lazily as needed
-        .frame_pool_initialized = [_]bool{false} ** MAX_CALL_DEPTH,
+        .frame_pool_initialized = frame_pool_init,
         .state = state,
         .access_list = access_list,
         .block_execution_config = .{ .enabled = false },
         .block_cache = null,
     };
+    std.log.debug("Evm.init: Evm struct created successfully", .{});
+    
+    std.log.debug("Evm.init: About to return Evm instance", .{});
+    std.log.debug("Evm.init: EVM initialization complete", .{});
+    return evm_instance;
 }
 
 /// Create an EVM with specific initial state.
