@@ -1,0 +1,87 @@
+=== BASELINE Benchmark Results (Before EvmMemoryAllocator) ===
+Date: 2025-07-20
+
+=== Hardfork Benchmarks ===
+Hardfork Flag Checks:
+  Mean: 0.000ms
+  Min:  0.000ms
+  Max:  0.001ms
+  Iterations: 10000
+  Total: 0.418ms
+
+Chain Rules Initialization:
+  Mean: 0.000ms
+  Min:  0.000ms
+  Max:  0.001ms
+  Iterations: 10000
+  Total: 0.618ms
+
+Feature Availability Lookup:
+  Mean: 0.000ms
+  Min:  0.000ms
+  Max:  0.002ms
+  Iterations: 10000
+  Total: 0.466ms
+
+Opcode Availability by Hardfork:
+  Mean: 0.000ms
+  Min:  0.000ms
+  Max:  0.001ms
+  Iterations: 10000
+  Total: 0.462ms
+
+Gas Cost Variations by Hardfork:
+  Mean: 0.000ms
+  Min:  0.000ms
+  Max:  0.001ms
+  Iterations: 10000
+  Total: 0.473ms
+
+Hardfork Rule Application:
+  Mean: 0.000ms
+  Min:  0.000ms
+  Max:  0.001ms
+  Iterations: 10000
+  Total: 0.420ms
+
+Validation Rule Differences:
+  Mean: 0.000ms
+  Min:  0.000ms
+  Max:  0.001ms
+  Iterations: 10000
+  Total: 0.515ms
+
+Compile-time vs Runtime Checks:
+  Mean: 0.000ms
+  Min:  0.000ms
+  Max:  0.001ms
+  Iterations: 10000
+  Total: 0.396ms
+
+Hardfork Detection from Rules:
+  Mean: 0.000ms
+  Min:  0.000ms
+  Max:  0.001ms
+  Iterations: 10000
+  Total: 1.180ms
+
+=== Stack Performance Benchmark Results ===
+Push/Pop Cycles:
+  Time: 0 ns/op
+  Throughput: inf million ops/sec
+
+DUP1 Operations:
+  Time: 0 ns/op
+  Throughput: inf million ops/sec
+
+SWAP1 Operations:
+  Time: 2 ns/op
+  Throughput: 500.00 million ops/sec
+
+POP2 Operations:
+  Time: 3 ns/op
+  Throughput: 333.33 million ops/sec
+
+Clear Operations:
+  Time: 244 ns/op
+  Throughput: 4.10 million ops/sec
