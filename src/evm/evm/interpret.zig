@@ -2,6 +2,7 @@ const ExecutionError = @import("../execution/execution_error.zig");
 const Contract = @import("../frame/contract.zig");
 const RunResult = @import("run_result.zig").RunResult;
 const Vm = @import("../evm.zig");
+const interpret_with_blocks = @import("interpret_with_blocks.zig").interpret_with_blocks;
 
 /// Execute contract bytecode and return the result.
 ///
@@ -23,5 +24,9 @@ const Vm = @import("../evm.zig");
 ///
 /// See also: interpret_static() for read-only execution
 pub fn interpret(self: *Vm, contract: *Contract, input: []const u8) ExecutionError.Error!RunResult {
+    // Use block-based execution when enabled, otherwise fall back to normal execution
+    if (self.block_execution_config.enabled) {
+        return try interpret_with_blocks(self, contract, input, false);
+    }
     return try self.interpret_with_context(contract, input, false);
 }
