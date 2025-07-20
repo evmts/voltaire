@@ -43,8 +43,8 @@ test "fuzz_crypto_keccak256_empty" {
     try frame.stack.append(0); // size
     try frame.stack.append(0); // offset
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = *evm.Operation.State = @ptrCast(&frame);
+    var interpreter = evm.Operation.Interpreter{ .vm = &vm };
+    var state = evm.Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0x20);
     
     const result = try frame.stack.pop();
@@ -92,8 +92,8 @@ test "fuzz_crypto_keccak256_basic" {
     try frame.stack.append(test_data.len); // size
     try frame.stack.append(0); // offset
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = *evm.Operation.State = @ptrCast(&frame);
+    var interpreter = evm.Operation.Interpreter{ .vm = &vm };
+    var state = evm.Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0x20);
     
     const result = try frame.stack.pop();
@@ -144,8 +144,8 @@ test "fuzz_crypto_keccak256_edge_cases" {
     try frame.stack.append(1); // size
     try frame.stack.append(0); // offset
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = *evm.Operation.State = @ptrCast(&frame);
+    var interpreter = evm.Operation.Interpreter{ .vm = &vm };
+    var state = evm.Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0x20);
     
     const result = try frame.stack.pop();

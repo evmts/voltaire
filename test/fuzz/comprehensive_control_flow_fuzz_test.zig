@@ -77,7 +77,7 @@ test "fuzz_pc_program_counter_edge_cases" {
         var ctx = try create_evm_context_with_code(allocator, test_case.code);
         defer deinit_evm_context(ctx, allocator);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         var expected_index: usize = 0;
@@ -231,7 +231,7 @@ test "fuzz_jump_valid_and_invalid_destinations" {
         var ctx = try create_evm_context_with_code(allocator, test_case.code);
         defer deinit_evm_context(ctx, allocator);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // Clear stack and push jump destination
@@ -312,7 +312,7 @@ test "fuzz_jumpi_conditional_jump_edge_cases" {
         var ctx = try create_evm_context_with_code(allocator, test_case.code);
         defer deinit_evm_context(ctx, allocator);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // Clear stack and push jump destination and condition
@@ -490,7 +490,7 @@ test "fuzz_control_flow_random_stress_test" {
                 
                 ctx.frame.pc = pc_pos;
                 
-                var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+                var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
                 var state = *evm.Operation.State = @ptrCast(&ctx.frame);
                 
                 // Execute PC operation
@@ -579,7 +579,7 @@ test "fuzz_control_flow_push_interaction_edge_cases" {
             
             try ctx.frame.stack.append(@as(u256, invalid_pos));
             
-            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             
             // JUMP to invalid position should fail

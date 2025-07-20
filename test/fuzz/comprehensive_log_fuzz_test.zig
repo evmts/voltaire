@@ -216,8 +216,8 @@ test "fuzz_log0_operation_edge_cases" {
         try ctx.frame.stack.append(test_case.offset);
         try ctx.frame.stack.append(test_case.length);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = evm.Operation.State{ .frame = &ctx.frame };
         
         const result = ctx.vm.table.execute(0, &interpreter, &state, 0xa0);
         
@@ -415,8 +415,8 @@ test "fuzz_log_operations_with_topics" {
             try ctx.frame.stack.append(test_case.topics[test_case.num_topics - 1 - i]);
         }
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = evm.Operation.State{ .frame = &ctx.frame };
         
         const result = ctx.vm.table.execute(0, &interpreter, &state, opcode);
         
@@ -502,8 +502,8 @@ test "fuzz_log_operations_gas_consumption" {
         
         const gas_before = ctx.frame.gas_remaining;
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = evm.Operation.State{ .frame = &ctx.frame };
         
         const result = ctx.vm.table.execute(0, &interpreter, &state, opcode);
         
@@ -586,8 +586,8 @@ test "fuzz_log_memory_expansion_stress" {
             try ctx.frame.stack.append(@as(u256, 0x1000 + i));
         }
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = evm.Operation.State{ .frame = &ctx.frame };
         
         const result = ctx.vm.table.execute(0, &interpreter, &state, opcode);
         
@@ -656,8 +656,8 @@ test "fuzz_log_operations_random_stress" {
             try ctx.frame.stack.append(topics[num_topics - 1 - i]);
         }
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = evm.Operation.State{ .frame = &ctx.frame };
         
         const result = ctx.vm.table.execute(0, &interpreter, &state, opcode);
         
@@ -724,8 +724,8 @@ test "fuzz_sequential_log_operations" {
             try ctx.frame.stack.append(@as(u256, (i + 1) * 1000 + topic_idx));
         }
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = evm.Operation.State{ .frame = &ctx.frame };
         
         const result = ctx.vm.table.execute(0, &interpreter, &state, opcode);
         

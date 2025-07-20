@@ -38,8 +38,8 @@ test "fuzz_comparison_lt_operations" {
     try frame.stack.append(5);  // a
     try frame.stack.append(10); // b
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = *evm.Operation.State = @ptrCast(&frame);
+    var interpreter = evm.Operation.Interpreter{ .vm = &vm };
+    var state = evm.Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0x10);
     
     const result = try frame.stack.pop();
@@ -81,8 +81,8 @@ test "fuzz_comparison_eq_operations" {
     try frame.stack.append(42); // b
     try frame.stack.append(42); // a
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = *evm.Operation.State = @ptrCast(&frame);
+    var interpreter = evm.Operation.Interpreter{ .vm = &vm };
+    var state = evm.Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0x14);
     
     const result = try frame.stack.pop();
@@ -123,8 +123,8 @@ test "fuzz_comparison_iszero_operations" {
     // Test ISZERO operation with zero
     try frame.stack.append(0);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &vm };
-    var state = *evm.Operation.State = @ptrCast(&frame);
+    var interpreter = evm.Operation.Interpreter{ .vm = &vm };
+    var state = evm.Operation.State{ .frame = &frame };
     _ = try vm.table.execute(0, &interpreter, &state, 0x15);
     
     const result = try frame.stack.pop();

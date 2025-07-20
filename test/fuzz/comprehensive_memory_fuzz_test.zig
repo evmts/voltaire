@@ -88,7 +88,7 @@ test "fuzz_mstore_memory_storage_edge_cases" {
         try ctx.frame.stack.append(case.offset);
         try ctx.frame.stack.append(case.value);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x52); // MSTORE
         
@@ -135,7 +135,7 @@ test "fuzz_mload_memory_loading_edge_cases" {
         
         try ctx.frame.stack.append(case.offset);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x51); // MLOAD
         
@@ -192,7 +192,7 @@ test "fuzz_mstore8_byte_storage_edge_cases" {
         try ctx.frame.stack.append(case.offset);
         try ctx.frame.stack.append(case.value);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x53); // MSTORE8
         
@@ -214,7 +214,7 @@ test "fuzz_msize_memory_size_tracking" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Initially, memory size should be 0
@@ -274,7 +274,7 @@ test "fuzz_mcopy_memory_copying_edge_cases" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // First, store some data in memory to copy
@@ -371,7 +371,7 @@ test "fuzz_memory_operations_stress_test" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     var prng = std.Random.DefaultPrng.init(0);
@@ -439,7 +439,7 @@ test "fuzz_memory_persistence_and_consistency" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const test_patterns = [_]struct { offset: u256, value: u256 }{

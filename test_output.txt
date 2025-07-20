@@ -1,0 +1,97 @@
+info: Downloading blst library...
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/williamcory/Guillotine/worktrees/add_comprehensive-tests_for_stack/src/compilers/Cargo.toml
+workspace: /Users/williamcory/Guillotine/worktrees/add_comprehensive-tests_for_stack/Cargo.toml
+       Fresh unicode-ident v1.0.18
+       Fresh autocfg v1.5.0
+       Fresh version_check v0.9.5
+       Fresh rand_core v0.6.4
+       Fresh either v1.15.0
+       Fresh arrayvec v0.7.6
+       Fresh cfg-if v1.0.1
+       Fresh allocator-api2 v0.2.21
+       Fresh once_cell v1.21.3
+       Fresh proc-macro2 v1.0.95
+       Fresh itertools v0.13.0
+       Fresh hashbrown v0.15.4
+       Fresh quote v1.0.40
+       Fresh zerocopy v0.8.26
+       Fresh typenum v1.18.0
+       Fresh paste v1.0.15
+       Fresh syn v2.0.104
+       Fresh ppv-lite86 v0.2.21
+       Fresh generic-array v0.14.7
+       Fresh num-traits v0.2.19
+       Fresh ahash v0.8.12
+       Fresh rand_chacha v0.3.1
+       Fresh enum-ordinalize-derive v4.3.1
+       Fresh crypto-common v0.1.6
+       Fresh num-integer v0.1.46
+       Fresh ark-serialize-derive v0.5.0
+       Fresh zeroize_derive v1.4.2
+       Fresh ark-ff-asm v0.5.0
+       Fresh rand v0.8.5
+       Fresh enum-ordinalize v4.3.0
+       Fresh digest v0.10.7
+       Fresh num-bigint v0.4.6
+       Fresh zeroize v1.8.1
+       Fresh ark-std v0.5.0
+       Fresh ark-ff-macros v0.5.0
+       Fresh educe v0.6.0
+       Fresh ark-serialize v0.5.0
+       Fresh ark-ff v0.5.0
+       Fresh ark-poly v0.5.0
+       Fresh ark-ec v0.5.0
+       Fresh ark-bn254 v0.5.0
+       Fresh bn254_wrapper v0.1.0 (/Users/williamcory/Guillotine/worktrees/add_comprehensive-tests_for_stack/src/bn254_wrapper)
+    Finished `release` profile [optimized] target(s) in 0.03s
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/williamcory/Guillotine/worktrees/add_comprehensive-tests_for_stack/src/compilers/Cargo.toml
+workspace: /Users/williamcory/Guillotine/worktrees/add_comprehensive-tests_for_stack/Cargo.toml
+       Fresh unicode-ident v1.0.18
+       Fresh autocfg v1.5.0
+       Fresh version_check v0.9.5
+       Fresh rand_core v0.6.4
+       Fresh arrayvec v0.7.6
+       Fresh either v1.15.0
+       Fresh allocator-api2 v0.2.21
+       Fresh cfg-if v1.0.1
+       Fresh once_cell v1.21.3
+       Fresh proc-macro2 v1.0.95
+       Fresh itertools v0.13.0
+       Fresh hashbrown v0.15.4
+       Fresh quote v1.0.40
+       Fresh zerocopy v0.8.26
+       Fresh typenum v1.18.0
+       Fresh paste v1.0.15
+       Fresh syn v2.0.104
+       Fresh ppv-lite86 v0.2.21
+       Fresh generic-array v0.14.7
+       Fresh num-traits v0.2.19
+       Fresh ahash v0.8.12
+       Fresh rand_chacha v0.3.1
+       Fresh crypto-common v0.1.6
+       Fresh enum-ordinalize-derive v4.3.1
+       Fresh num-integer v0.1.46
+       Fresh zeroize_derive v1.4.2
+       Fresh ark-serialize-derive v0.5.0
+       Fresh ark-ff-asm v0.5.0
+       Fresh rand v0.8.5
+       Fresh digest v0.10.7
+       Fresh enum-ordinalize v4.3.0
+       Fresh num-bigint v0.4.6
+       Fresh zeroize v1.8.1
+       Fresh ark-std v0.5.0
+       Fresh ark-ff-macros v0.5.0
+       Fresh educe v0.6.0
+       Fresh ark-serialize v0.5.0
+       Fresh ark-ff v0.5.0
+       Fresh ark-poly v0.5.0
+       Fresh ark-ec v0.5.0
+       Fresh ark-bn254 v0.5.0
+       Fresh bn254_wrapper v0.1.0 (/Users/williamcory/Guillotine/worktrees/add_comprehensive-tests_for_stack/src/bn254_wrapper)
+    Finished `release` profile [optimized] target(s) in 0.03s
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100  583k  100  583k    0     0  1160k      0 --:--:-- --:--:-- --:--:-- 1160k

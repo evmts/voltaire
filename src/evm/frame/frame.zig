@@ -1487,7 +1487,7 @@ test "fuzz_frame_memory_operations" {
                 frame.memory.write(offset, test_data.items) catch continue;
                 
                 // Read back and verify
-                var read_buffer = allocator.alloc(u8, test_data.items.len) catch continue;
+                const read_buffer = allocator.alloc(u8, test_data.items.len) catch continue;
                 defer allocator.free(read_buffer);
                 
                 frame.memory.read(offset, read_buffer) catch continue;

@@ -191,7 +191,7 @@ test "fuzz_blockhash_operation_edge_cases" {
         // Setup stack for BLOCKHASH (block number)
         try ctx.frame.stack.append(test_case.query_block);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = try ctx.vm.table.execute(0, &interpreter, &state, 0x40);
@@ -529,7 +529,7 @@ test "fuzz_block_info_operations" {
         ctx.vm.context.block_base_fee = test_case.block_base_fee;
         ctx.vm.context.blob_base_fee = test_case.blob_base_fee;
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = try ctx.vm.table.execute(0, &interpreter, &state, test_case.opcode);
@@ -710,7 +710,7 @@ test "fuzz_blobhash_operation_edge_cases" {
         // Setup stack for BLOBHASH (index)
         try ctx.frame.stack.append(test_case.query_index);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = try ctx.vm.table.execute(0, &interpreter, &state, 0x49);
@@ -773,7 +773,7 @@ test "fuzz_block_operations_random_stress" {
             try ctx.frame.stack.append(query_index);
         }
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = try ctx.vm.table.execute(0, &interpreter, &state, opcode);
@@ -851,7 +851,7 @@ test "fuzz_block_context_consistency" {
         ctx.vm.context.block_base_fee = 15000000000;
         ctx.vm.context.blob_base_fee = 1000000000;
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // First call
@@ -918,7 +918,7 @@ test "fuzz_block_operations_gas_consumption" {
         
         const gas_before = ctx.frame.gas_remaining;
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = ctx.vm.table.execute(0, &interpreter, &state, test_case.opcode);

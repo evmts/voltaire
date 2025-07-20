@@ -86,7 +86,7 @@ test "fuzz_lt_unsigned_comparison_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x10); // LT
         
@@ -138,7 +138,7 @@ test "fuzz_gt_unsigned_comparison_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x11); // GT
         
@@ -206,7 +206,7 @@ test "fuzz_slt_signed_comparison_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x12); // SLT
         
@@ -274,7 +274,7 @@ test "fuzz_sgt_signed_greater_than_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x13); // SGT
         
@@ -336,7 +336,7 @@ test "fuzz_eq_equality_comparison_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x14); // EQ
         
@@ -401,7 +401,7 @@ test "fuzz_iszero_zero_check_edge_cases" {
         
         try ctx.frame.stack.append(case.a);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x15); // ISZERO
         
@@ -434,7 +434,7 @@ test "fuzz_comparison_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x10); // LT
             
@@ -453,7 +453,7 @@ test "fuzz_comparison_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x11); // GT
             
@@ -472,7 +472,7 @@ test "fuzz_comparison_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x14); // EQ
             
@@ -490,7 +490,7 @@ test "fuzz_comparison_random_stress_test" {
             
             try ctx.frame.stack.append(a);
             
-            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x15); // ISZERO
             
