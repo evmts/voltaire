@@ -43,6 +43,22 @@ profile_benchmark() {
     echo "Flamegraph saved to: flamegraph-$output_name.svg"
 }
 
+# Print available profiles if no argument
+if [ -z "$1" ]; then
+    echo "Available profiles:"
+    echo "  - all"
+    echo "  - arithmetic_ops"
+    echo "  - memory_ops"
+    echo "  - storage_ops"
+    echo "  - stack_ops"
+    echo "  - control_flow"
+    echo "  - precompiles"
+    echo "  - contract_calls"
+    echo ""
+    echo "Usage: $0 <profile_name>"
+    echo "Default: all"
+fi
+
 # Main
 install_deps
 profile_benchmark "${1:-all}"
