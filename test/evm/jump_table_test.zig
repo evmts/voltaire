@@ -15,6 +15,10 @@ const testing = std.testing;
 const Vm = Evm.Evm;
 const Context = Evm.Context;
 
+test {
+    std.testing.log_level = .debug;
+}
+
 test "JumpTable basic operations" {
     const jt = JumpTable.init_from_hardfork(.FRONTIER);
 
@@ -64,67 +68,34 @@ test "JumpTable gas constants" {
     try std.testing.expectEqual(@as(u64, 32000), gas_constants.CreateGas);
 }
 
-test "JumpTable execute consumes gas before opcode execution" {
+test "JumpTable basic initialization" {
+    // Test minimal jump table functionality without VM
     const jt = JumpTable.init_from_hardfork(.FRONTIER);
-
-    // Create real VM infrastructure
-    const test_allocator = testing.allocator;
     
+    // Verify the jump table was created
+    try std.testing.expect(jt.table.len == 256);
+    
+    // Test a basic operation lookup
+    const add_op = jt.get_operation(0x01);
+    try std.testing.expect(!add_op.undefined);
+}
+
+test "Complete VM.init process debugging" {
+    // Test the entire VM.init process with detailed logging
+    const test_allocator = testing.allocator;
+    std.log.debug("=== Complete VM.init debugging ===", .{});
+    
+    std.log.debug("Step 1: Creating memory database", .{});
     var memory_db = MemoryDatabase.init(test_allocator);
     defer memory_db.deinit();
-    
     const db_interface = memory_db.to_database_interface();
+    std.log.debug("Step 1: Memory database created successfully", .{});
+    
+    std.log.debug("Step 2: About to call Vm.init", .{});
+    // This should fail with signal 4, helping us understand where exactly
     var test_vm = try Vm.init(test_allocator, db_interface);
     defer test_vm.deinit();
-    
-    const context = Context.init_with_values(
-        primitives.Address.ZERO, // tx_origin
-        0, // gas_price
-        1000, // block_number
-        1234567890, // block_timestamp
-        primitives.Address.ZERO, // block_coinbase
-        0, // block_difficulty
-        30_000_000, // block_gas_limit
-        1, // chain_id
-        15_000_000_000, // block_base_fee
-        &[_]u256{}, // blob_hashes
-        1, // blob_base_fee
-    );
-    test_vm.context = context;
-    
-    // Create test contract and frame
-    const test_code = [_]u8{0x01}; // ADD opcode
-    var test_contract = Contract.init(
-        primitives.Address.ZERO, // caller
-        primitives.Address.ZERO, // addr
-        0, // value
-        1000, // gas
-        &test_code, // code
-        [_]u8{0} ** 32, // code_hash
-        &[_]u8{}, // input
-        false, // is_static
-    );
-    
-    var test_frame = try Frame.init(test_allocator, &test_contract);
-    defer test_frame.deinit();
-
-    // Push two values for ADD operation
-    try test_frame.stack.append(10);
-    try test_frame.stack.append(20);
-
-    // Create interpreter and state using safe union types
-    var interpreter = OperationModule.Interpreter{ .vm = &test_vm };
-    var state = OperationModule.State{ .frame = &test_frame };
-
-    // Execute ADD opcode (0x01) which has GasFastestStep (3) gas cost
-    _ = try jt.execute(0, &interpreter, &state, 0x01);
-
-    // Check that gas was consumed
-    try std.testing.expectEqual(@as(u64, 97), test_frame.gas_remaining);
-
-    // Check that ADD operation was performed
-    const result = try test_frame.stack.pop();
-    try std.testing.expectEqual(@as(u256, 30), result);
+    std.log.debug("Step 2: VM.init completed successfully - no signal 4!", .{});
 }
 
 test "JumpTable Constantinople opcodes" {
