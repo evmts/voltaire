@@ -78,7 +78,7 @@ test "fuzz_add_extensive_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x01); // ADD
         
@@ -123,7 +123,7 @@ test "fuzz_mul_comprehensive_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x02); // MUL
         
@@ -163,7 +163,7 @@ test "fuzz_sub_underflow_and_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x03); // SUB
         
@@ -208,7 +208,7 @@ test "fuzz_div_division_by_zero_and_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x04); // DIV
         
@@ -264,7 +264,7 @@ test "fuzz_sdiv_signed_division_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x05); // SDIV
         
@@ -312,7 +312,7 @@ test "fuzz_mod_modulo_by_zero_and_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x06); // MOD
         
@@ -357,7 +357,7 @@ test "fuzz_addmod_modular_arithmetic_edge_cases" {
         try ctx.frame.stack.append(case.b);
         try ctx.frame.stack.append(case.n);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x08); // ADDMOD
         
@@ -406,7 +406,7 @@ test "fuzz_mulmod_modular_multiplication_edge_cases" {
         try ctx.frame.stack.append(case.b);
         try ctx.frame.stack.append(case.n);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x09); // MULMOD
         
@@ -461,7 +461,7 @@ test "fuzz_exp_exponentiation_edge_cases" {
         try ctx.frame.stack.append(case.a);
         try ctx.frame.stack.append(case.b);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x0A); // EXP
         
@@ -513,7 +513,7 @@ test "fuzz_signextend_sign_extension_edge_cases" {
         try ctx.frame.stack.append(case.i);
         try ctx.frame.stack.append(case.x);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x0B); // SIGNEXTEND
         
@@ -547,7 +547,7 @@ test "fuzz_arithmetic_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x01); // ADD
             
@@ -566,7 +566,7 @@ test "fuzz_arithmetic_random_stress_test" {
             try ctx.frame.stack.append(a);
             try ctx.frame.stack.append(b);
             
-            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x02); // MUL
             
@@ -586,7 +586,7 @@ test "fuzz_arithmetic_random_stress_test" {
             try ctx.frame.stack.append(b);
             try ctx.frame.stack.append(c);
             
-            var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+            var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
             var state = *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x08); // ADDMOD
             

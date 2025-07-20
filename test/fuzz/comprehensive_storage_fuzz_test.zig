@@ -96,7 +96,7 @@ test "fuzz_sstore_storage_write_edge_cases" {
         try ctx.frame.stack.append(case.key);
         try ctx.frame.stack.append(case.value);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         _ = try ctx.vm.table.execute(0, &interpreter, &state, 0x55); // SSTORE
         
@@ -115,7 +115,7 @@ test "fuzz_sload_storage_read_edge_cases" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test reading from uninitialized storage (should return 0)
@@ -152,7 +152,7 @@ test "fuzz_storage_persistence_and_overwriting" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const initial_values = [_]struct { key: u256, value: u256 }{
@@ -276,7 +276,7 @@ test "fuzz_tstore_transient_storage_edge_cases" {
         try ctx.frame.stack.append(case.key);
         try ctx.frame.stack.append(case.value);
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
         var state = *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // Try TSTORE - might fail if not supported in this EVM version
@@ -302,7 +302,7 @@ test "fuzz_tload_transient_storage_read_edge_cases" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test reading from uninitialized transient storage (should return 0)
@@ -346,7 +346,7 @@ test "fuzz_storage_separation_persistent_vs_transient" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const test_key: u256 = 42;
@@ -422,7 +422,7 @@ test "fuzz_storage_operations_stress_test" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     var prng = std.Random.DefaultPrng.init(0);
@@ -489,7 +489,7 @@ test "fuzz_storage_zero_transitions" {
     var ctx = try create_evm_context(allocator);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const test_key: u256 = 123456;

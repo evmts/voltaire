@@ -940,3 +940,260 @@ test "Evm builder pattern memory management" {
         evm.deinit();
     }
 }
+
+// ============================================================================
+// Fuzz Tests for VM State Management (Issue #234)
+// Using proper Zig built-in fuzz testing with std.testing.fuzz()
+// ============================================================================
+
+test "fuzz_evm_initialization_states" {
+    const global = struct {
+        fn testEvmInitializationStates(input: []const u8) anyerror!void {
+            if (input.len < 4) return;
+            
+            const allocator = testing.allocator;
+            var memory_db = MemoryDatabase.init(allocator);
+            defer memory_db.deinit();
+            const db_interface = memory_db.to_database_interface();
+            
+            // Extract parameters from fuzz input
+            const depth = std.mem.readInt(u16, input[0..2], .little) % (MAX_CALL_DEPTH + 10); // Allow testing beyond max
+            const read_only = (input[2] % 2) == 1;
+            const hardfork_idx = input[3] % 3; // Test 3 different hardforks
+            
+            const hardforks = [_]Hardfork{ .FRONTIER, .BERLIN, .LONDON };
+            const hardfork = hardforks[hardfork_idx];
+            
+            // Test initialization with various state combinations
+            var evm = try Evm.init_with_hardfork(allocator, db_interface, hardfork);
+            defer evm.deinit();
+            
+            // Verify initial state
+            try testing.expectEqual(@as(u16, 0), evm.depth);
+            try testing.expectEqual(false, evm.read_only);
+            try testing.expect(evm.return_data.len == 0);
+            
+            // Test state modifications within valid ranges
+            if (depth < MAX_CALL_DEPTH) {
+                evm.depth = depth;
+                try testing.expectEqual(depth, evm.depth);
+            }
+            
+            evm.read_only = read_only;
+            try testing.expectEqual(read_only, evm.read_only);
+            
+            // Verify frame pool initialization
+            for (evm.frame_pool_initialized) |initialized| {
+                try testing.expectEqual(false, initialized);
+            }
+        }
+    };
+    try std.testing.fuzz(global.testEvmInitializationStates, .{}, .{});
+}
+
+test "fuzz_evm_depth_management" {
+    const global = struct {
+        fn testEvmDepthManagement(input: []const u8) anyerror!void {
+            if (input.len < 8) return;
+            
+            const allocator = testing.allocator;
+            var memory_db = MemoryDatabase.init(allocator);
+            defer memory_db.deinit();
+            const db_interface = memory_db.to_database_interface();
+            
+            var evm = try Evm.init(allocator, db_interface);
+            defer evm.deinit();
+            
+            // Test various depth values from fuzz input
+            const depths = [_]u16{
+                std.mem.readInt(u16, input[0..2], .little) % MAX_CALL_DEPTH,
+                std.mem.readInt(u16, input[2..4], .little) % MAX_CALL_DEPTH,
+                std.mem.readInt(u16, input[4..6], .little) % MAX_CALL_DEPTH,
+                std.mem.readInt(u16, input[6..8], .little) % MAX_CALL_DEPTH,
+            };
+            
+            for (depths) |depth| {
+                evm.depth = depth;
+                try testing.expectEqual(depth, evm.depth);
+                try testing.expect(evm.depth < MAX_CALL_DEPTH);
+                
+                // Test depth overflow protection
+                const max_depth_reached = depth >= (MAX_CALL_DEPTH - 1);
+                if (max_depth_reached) {
+                    // At max depth, should not exceed limit
+                    try testing.expect(evm.depth <= MAX_CALL_DEPTH);
+                }
+            }
+        }
+    };
+    try std.testing.fuzz(global.testEvmDepthManagement, .{}, .{});
+}
+
+test "fuzz_evm_state_consistency" {
+    const global = struct {
+        fn testEvmStateConsistency(input: []const u8) anyerror!void {
+            if (input.len < 16) return;
+            
+            const allocator = testing.allocator;
+            var memory_db = MemoryDatabase.init(allocator);
+            defer memory_db.deinit();
+            const db_interface = memory_db.to_database_interface();
+            
+            // Create EVM with various initial states
+            const initial_depth = std.mem.readInt(u16, input[0..2], .little) % MAX_CALL_DEPTH;
+            const initial_read_only = (input[2] % 2) == 1;
+            
+            var evm = try Evm.init_with_state(
+                allocator,
+                db_interface,
+                null,
+                null,
+                null,
+                initial_depth,
+                initial_read_only
+            );
+            defer evm.deinit();
+            
+            // Verify initial state was set correctly
+            try testing.expectEqual(initial_depth, evm.depth);
+            try testing.expectEqual(initial_read_only, evm.read_only);
+            
+            // Test state transitions using fuzz input
+            const operations = @min((input.len - 16) / 4, 8);
+            for (0..operations) |i| {
+                const op_data = input[16 + i * 4..16 + (i + 1) * 4];
+                const op_type = op_data[0] % 3;
+                
+                switch (op_type) {
+                    0 => {
+                        // Modify depth
+                        const new_depth = std.mem.readInt(u16, op_data[1..3], .little) % MAX_CALL_DEPTH;
+                        evm.depth = new_depth;
+                        try testing.expectEqual(new_depth, evm.depth);
+                    },
+                    1 => {
+                        // Toggle read-only
+                        const new_read_only = (op_data[1] % 2) == 1;
+                        evm.read_only = new_read_only;
+                        try testing.expectEqual(new_read_only, evm.read_only);
+                    },
+                    2 => {
+                        // Verify state consistency
+                        try testing.expect(evm.depth < MAX_CALL_DEPTH);
+                        try testing.expect(evm.allocator.ptr != @as(*anyopaque, @ptrFromInt(0)));
+                        try testing.expect(evm.return_data.len == 0); // Default empty return data
+                    },
+                    else => unreachable,
+                }
+            }
+        }
+    };
+    try std.testing.fuzz(global.testEvmStateConsistency, .{}, .{});
+}
+
+test "fuzz_evm_frame_pool_management" {
+    const global = struct {
+        fn testEvmFramePoolManagement(input: []const u8) anyerror!void {
+            if (input.len < 8) return;
+            
+            const allocator = testing.allocator;
+            var memory_db = MemoryDatabase.init(allocator);
+            defer memory_db.deinit();
+            const db_interface = memory_db.to_database_interface();
+            
+            var evm = try Evm.init(allocator, db_interface);
+            defer evm.deinit();
+            
+            // Test frame pool initialization tracking with fuzz input
+            const pool_indices = [_]usize{
+                input[0] % MAX_CALL_DEPTH,
+                input[1] % MAX_CALL_DEPTH,
+                input[2] % MAX_CALL_DEPTH,
+                input[3] % MAX_CALL_DEPTH,
+            };
+            
+            // Verify initial state - all frames should be uninitialized
+            for (evm.frame_pool_initialized) |initialized| {
+                try testing.expectEqual(false, initialized);
+            }
+            
+            // Test frame pool consistency
+            for (pool_indices) |idx| {
+                // Frame pool should maintain initialization state
+                try testing.expectEqual(false, evm.frame_pool_initialized[idx]);
+                
+                // Verify frame pool bounds
+                try testing.expect(idx < MAX_CALL_DEPTH);
+            }
+            
+            // Test depth-frame correlation invariants
+            if (input.len >= 16) {
+                const test_depth = std.mem.readInt(u16, input[8..10], .little) % MAX_CALL_DEPTH;
+                evm.depth = test_depth;
+                
+                // Depth should never exceed available frames
+                try testing.expect(evm.depth < MAX_CALL_DEPTH);
+                try testing.expect(evm.depth <= evm.frame_pool.len);
+            }
+        }
+    };
+    try std.testing.fuzz(global.testEvmFramePoolManagement, .{}, .{});
+}
+
+test "fuzz_evm_hardfork_configurations" {
+    const global = struct {
+        fn testEvmHardforkConfigurations(input: []const u8) anyerror!void {
+            if (input.len < 4) return;
+            
+            const allocator = testing.allocator;
+            var memory_db = MemoryDatabase.init(allocator);
+            defer memory_db.deinit();
+            const db_interface = memory_db.to_database_interface();
+            
+            // Test different hardfork configurations
+            const hardforks = [_]Hardfork{ .FRONTIER, .BERLIN, .LONDON };
+            const hardfork_idx = input[0] % hardforks.len;
+            const hardfork = hardforks[hardfork_idx];
+            
+            var evm = try Evm.init_with_hardfork(allocator, db_interface, hardfork);
+            defer evm.deinit();
+            
+            // Verify EVM was configured for the specified hardfork
+            try testing.expect(evm.chain_rules.hardfork() == hardfork);
+            
+            // Test state modifications with hardfork context
+            if (input.len >= 8) {
+                const depth = std.mem.readInt(u16, input[1..3], .little) % MAX_CALL_DEPTH;
+                const read_only = (input[3] % 2) == 1;
+                
+                evm.depth = depth;
+                evm.read_only = read_only;
+                
+                // Verify state changes are consistent regardless of hardfork
+                try testing.expectEqual(depth, evm.depth);
+                try testing.expectEqual(read_only, evm.read_only);
+                
+                // Verify hardfork rules remain consistent
+                try testing.expect(evm.chain_rules.hardfork() == hardfork);
+            }
+            
+            // Test multiple EVM instances with different hardforks
+            if (input.len >= 8) {
+                const second_hardfork_idx = input[4] % hardforks.len;
+                const second_hardfork = hardforks[second_hardfork_idx];
+                
+                var evm2 = try Evm.init_with_hardfork(allocator, db_interface, second_hardfork);
+                defer evm2.deinit();
+                
+                try testing.expect(evm2.chain_rules.hardfork() == second_hardfork);
+                
+                // EVMs should be independent
+                try testing.expect(evm.depth == 0);
+                try testing.expect(evm2.depth == 0);
+                try testing.expect(evm.read_only == false);
+                try testing.expect(evm2.read_only == false);
+            }
+        }
+    };
+    try std.testing.fuzz(global.testEvmHardforkConfigurations, .{}, .{});
+}

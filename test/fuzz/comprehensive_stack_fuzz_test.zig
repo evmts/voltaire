@@ -73,8 +73,8 @@ test "fuzz_push_operations_all_sizes" {
             _ = try ctx.frame.stack.pop();
         }
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = evm.Operation.State{ .frame = &ctx.frame };
         _ = try ctx.vm.table.execute(0, &interpreter, &state, @intCast(opcode));
         
         const result = try ctx.frame.stack.pop();
@@ -195,8 +195,8 @@ test "fuzz_push_value_patterns" {
             _ = try ctx.frame.stack.pop();
         }
         
-        var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
+        var state = evm.Operation.State{ .frame = &ctx.frame };
         _ = try ctx.vm.table.execute(0, &interpreter, &state, @intCast(opcode));
         
         const result = try ctx.frame.stack.pop();
@@ -211,7 +211,7 @@ test "fuzz_pop_operation_edge_cases" {
     var ctx = try create_evm_context_with_code(allocator, &simple_code);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     const test_values = [_]u256{
@@ -262,7 +262,7 @@ test "fuzz_dup_operations_all_positions" {
     var ctx = try create_evm_context_with_code(allocator, &simple_code);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test all DUP operations from DUP1 to DUP16
@@ -326,7 +326,7 @@ test "fuzz_dup_stack_underflow_cases" {
     var ctx = try create_evm_context_with_code(allocator, &simple_code);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test DUP operations with insufficient stack depth
@@ -366,7 +366,7 @@ test "fuzz_swap_operations_all_positions" {
     var ctx = try create_evm_context_with_code(allocator, &simple_code);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test all SWAP operations from SWAP1 to SWAP16
@@ -431,7 +431,7 @@ test "fuzz_swap_stack_underflow_cases" {
     var ctx = try create_evm_context_with_code(allocator, &simple_code);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test SWAP operations with insufficient stack depth
@@ -469,7 +469,7 @@ test "fuzz_stack_operations_max_depth" {
     var ctx = try create_evm_context_with_code(allocator, &simple_code);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     const max_stack_size = 1024; // EVM stack limit
     
@@ -490,16 +490,16 @@ test "fuzz_stack_operations_max_depth" {
             try push_ctx.frame.stack.append(@as(u256, i));
         }
         
-        const push_&interpreter: *evm.Operation.Interpreter = @ptrCast(&push_ctx.vm);
-        const push_&state: *evm.Operation.State = @ptrCast(&push_ctx.frame);
+        var push_interpreter = evm.Operation.Interpreter{ .vm = &push_ctx.vm };
+        var push_state = evm.Operation.State{ .frame = &push_ctx.frame };
         
         // This should succeed (brings stack to exactly max_stack_size)
-        _ = try push_ctx.vm.table.execute(0, push_&interpreter, push_&state, 0x60);
+        _ = try push_ctx.vm.table.execute(0, &push_interpreter, &push_state, 0x60);
         try testing.expectEqual(max_stack_size, push_ctx.frame.stack.items.len);
         
         // Trying to push one more should fail
         push_ctx.frame.pc = 0; // Reset PC for next instruction
-        try testing.expectError(error.StackOverflow, push_ctx.vm.table.execute(0, push_&interpreter, push_&state, 0x60));
+        try testing.expectError(error.StackOverflow, push_ctx.vm.table.execute(0, &push_interpreter, &push_state, 0x60));
     }
     
     // Test DUP operations on nearly full stack
@@ -531,7 +531,7 @@ test "fuzz_stack_operations_complex_patterns" {
     var ctx = try create_evm_context_with_code(allocator, &simple_code);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     var prng = std.Random.DefaultPrng.init(0);
@@ -602,7 +602,7 @@ test "fuzz_push0_operation" {
     var ctx = try create_evm_context_with_code(allocator, &push0_code);
     defer deinit_evm_context(ctx, allocator);
     
-    var interpreter = Evm.Operation.Interpreter{ .vm = &ctx.vm };
+    var interpreter = evm.Operation.Interpreter{ .vm = &ctx.vm };
     var state = *evm.Operation.State = @ptrCast(&ctx.frame);
     
     // Test PUSH0 multiple times
