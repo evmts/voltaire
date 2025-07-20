@@ -30,19 +30,24 @@ pub fn interpret_with_blocks(self: *Vm, contract: *Contract, input: []const u8, 
 
     const initial_gas = contract.gas;
     
-    // Use frame pool instead of builder pattern
-    const frame = self.getPooledFrame(contract.gas, contract, .{}, input) catch |err| switch (err) {
-        error.OutOfMemory => return ExecutionError.Error.OutOfMemory,
-        error.DepthLimit => return ExecutionError.Error.DepthLimit,
-        else => return ExecutionError.Error.OutOfMemory,
-    };
-    
-    // Configure frame for static context and depth
-    frame.is_static = self.read_only;
-    frame.depth = @as(u32, @intCast(self.depth));
+    var builder = Frame.builder(self.allocator);
+    var frame = builder
+        .withVm(self)
+        .withContract(contract)
+        .withGas(contract.gas)
+        .withCaller(.{})
+        .withInput(input)
+        .isStatic(self.read_only)
+        .withDepth(@as(u32, @intCast(self.depth)))
+        .build() catch |err| switch (err) {
+            error.OutOfMemory => return ExecutionError.Error.OutOfMemory,
+            error.MissingVm => unreachable, // We pass a VM
+            error.MissingContract => unreachable, // We pass a contract
+        };
+    defer frame.deinit();
 
     // Create block executor
-    var executor = BlockExecutor.init(self, frame, self.block_execution_config, self.block_cache);
+    var executor = BlockExecutor.init(self, &frame, self.block_execution_config, self.block_cache);
     
     // Execute using block-based approach
     executor.execute() catch |err| {
