@@ -39,7 +39,7 @@ jobs:
         shell: bash
 
       - name: Cache Zig dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/zig
@@ -167,7 +167,7 @@ jobs:
         run: mkdir -p ~/.cache/zig
 
       - name: Cache Zig dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/zig
@@ -192,7 +192,7 @@ jobs:
           ls -lh zig-out/bin/guillotine.wasm || true
 
       - name: Upload WASM artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: guillotine-wasm-${{ matrix.optimize }}
           path: zig-out/bin/guillotine.wasm
