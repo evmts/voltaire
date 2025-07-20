@@ -31,14 +31,10 @@ const BlockExecutionConfig = @import("execution/block_executor.zig").BlockExecut
 /// including contract creation, calls, and state modifications.
 const Evm = @This();
 
-const EvmMemoryAllocator = @import("memory/evm_allocator.zig").EvmMemoryAllocator;
-
 /// Maximum call depth supported by EVM (per EIP-150)
 pub const MAX_CALL_DEPTH = 1024;
 // Hot fields (frequently accessed during execution)
-/// EVM memory allocator wrapper for efficient allocations
-evm_allocator: EvmMemoryAllocator,
-/// Memory allocator for VM operations (interface from evm_allocator)
+/// Memory allocator for VM operations
 allocator: std.mem.Allocator,
 /// Opcode dispatch table for the configured hardfork
 table: JumpTable,
@@ -93,50 +89,20 @@ comptime {
 /// evm.read_only = true;
 /// ```
 pub fn init(allocator: std.mem.Allocator, database: @import("state/database_interface.zig").DatabaseInterface) !Evm {
-    std.log.debug("Evm.init: STARTING EVM INITIALIZATION", .{});
-
-    // Create EVM memory allocator wrapper
-    std.log.debug("Evm.init: About to call EvmMemoryAllocator.init", .{});
-    var evm_allocator = try EvmMemoryAllocator.init(allocator);
-    errdefer evm_allocator.deinit();
-    std.log.debug("Evm.init: EvmMemoryAllocator.init completed", .{});
-    
-    const evm_alloc = evm_allocator.allocator();
-    std.log.debug("Evm.init: Got EVM allocator", .{});
-
-    std.log.debug("Evm.init: About to call EvmState.init", .{});
-    var state = try EvmState.init(evm_alloc, database);
+    var state = try EvmState.init(allocator, database);
     errdefer state.deinit();
     std.log.debug("Evm.init: EvmState.init completed", .{});
 
-    std.log.debug("Evm.init: About to call Context.init", .{});
     const context = Context.init();
-    std.log.debug("Evm.init: Context.init completed", .{});
-    
-    std.log.debug("Evm.init: About to call AccessList.init", .{});
-    var access_list = AccessList.init(evm_alloc, context);
+    var access_list = AccessList.init(allocator, context);
     errdefer access_list.deinit();
-    std.log.debug("Evm.init: AccessList.init completed", .{});
 
-    std.log.debug("Evm.init: About to construct Evm struct", .{});
-    
-    std.log.debug("Evm.init: Testing JumpTable.DEFAULT access", .{});
-    const jump_table = JumpTable.DEFAULT;
-    std.log.debug("Evm.init: JumpTable.DEFAULT accessed successfully", .{});
-    
-    std.log.debug("Evm.init: Testing ChainRules.DEFAULT access", .{});
-    const chain_rules = ChainRules.DEFAULT;
-    std.log.debug("Evm.init: ChainRules.DEFAULT accessed successfully", .{});
-    
-    
-    std.log.debug("Evm.init: About to create Evm struct instance", .{});
-    const evm_instance = Evm{
-        .evm_allocator = evm_allocator,
-        .allocator = evm_alloc,
-        .table = jump_table,
+    return Evm{
+        .allocator = allocator,
+        .table = JumpTable.DEFAULT,
         .depth = 0,
         .read_only = false,
-        .chain_rules = chain_rules,
+        .chain_rules = ChainRules.DEFAULT,
         .context = context,
         .return_data = &[_]u8{},
         .state = state,
@@ -192,23 +158,16 @@ pub fn init_with_state(
 ) !Evm {
     Log.debug("Evm.init_with_state: Initializing EVM with custom state", .{});
 
-    // Create EVM memory allocator wrapper
-    var evm_allocator = try EvmMemoryAllocator.init(allocator);
-    errdefer evm_allocator.deinit();
-    
-    const evm_alloc = evm_allocator.allocator();
-
-    var state = try EvmState.init(evm_alloc, database);
+    var state = try EvmState.init(allocator, database);
     errdefer state.deinit();
 
     const context = Context.init();
-    var access_list = AccessList.init(evm_alloc, context);
+    var access_list = AccessList.init(allocator, context);
     errdefer access_list.deinit();
 
     Log.debug("Evm.init_with_state: EVM initialization complete", .{});
     return Evm{
-        .evm_allocator = evm_allocator,
-        .allocator = evm_alloc,
+        .allocator = allocator,
         .return_data = return_data orelse &[_]u8{},
         .table = table orelse JumpTable.DEFAULT,
         .chain_rules = chain_rules orelse ChainRules.DEFAULT,
@@ -217,8 +176,6 @@ pub fn init_with_state(
         .context = context,
         .depth = depth orelse 0,
         .read_only = read_only orelse false,
-        .block_execution_config = .{ .enabled = false },
-        .block_cache = null,
     };
 }
 
@@ -242,12 +199,6 @@ pub fn deinit(self: *Evm) void {
     self.state.deinit();
     self.access_list.deinit();
     Contract.clear_analysis_cache(self.allocator);
-    if (self.block_cache) |cache| {
-        cache.deinit();
-        self.allocator.destroy(cache);
-        self.block_cache = null;
-    }
-    self.evm_allocator.deinit();
 }
 
 /// Reset the EVM for reuse without deallocating memory.
@@ -261,10 +212,6 @@ pub fn reset(self: *Evm) void {
     self.depth = 0;
     self.read_only = false;
     self.return_data = &[_]u8{};
-    
-    
-    // State and access list would need their own reset methods
-    // For now, they maintain their state across resets
 }
 
 /// Enable block-based gas accounting optimization.
