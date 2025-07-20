@@ -23,7 +23,7 @@ pub const BlockExecutor = struct {
     frame: *Frame,
     config: BlockExecutionConfig,
     block_cache: ?*basic_blocks.BlockCache,
-    
+
     pub fn init(vm: *Vm, frame: *Frame, config: BlockExecutionConfig, block_cache: ?*basic_blocks.BlockCache) BlockExecutor {
         return .{
             .vm = vm,
@@ -34,7 +34,7 @@ pub const BlockExecutor = struct {
     }
 
     /// Executes code using block-based gas accounting when beneficial
-    pub fn execute(self: *BlockExecutor) !void {
+    pub inline fn execute(self: *BlockExecutor) !void {
         // Check if block-based execution is enabled and worthwhile
         if (!self.config.enabled or self.frame.contract.code.len < self.config.min_block_size * 3) {
             // Fall back to normal execution for small contracts
@@ -83,17 +83,17 @@ pub const BlockExecutor = struct {
     fn analyzeCode(self: *BlockExecutor) ![]basic_blocks.BasicBlock {
         // Ensure contract has been analyzed for jump destinations
         self.frame.contract.analyze_jumpdests(self.vm.allocator);
-        
+
         // Create a bitset from the jumpdest positions
         var valid_jumpdests = try std.DynamicBitSet.initEmpty(self.vm.allocator, self.frame.contract.code.len);
         defer valid_jumpdests.deinit();
-        
+
         if (self.frame.contract.analysis) |analysis| {
             for (analysis.jumpdest_positions) |pos| {
                 valid_jumpdests.set(pos);
             }
         }
-        
+
         var analyzer = basic_blocks.BlockAnalyzer.init(
             self.vm.allocator,
             self.frame.contract.code,
@@ -103,20 +103,21 @@ pub const BlockExecutor = struct {
     }
 
     /// Executes using block-based gas accounting
-    fn executeWithBlocks(self: *BlockExecutor, blocks: []basic_blocks.BasicBlock) !void {
+    inline fn executeWithBlocks(self: *BlockExecutor, blocks: []basic_blocks.BasicBlock) !void {
         var current_block_idx: ?usize = null;
 
         while (self.frame.pc < self.frame.contract.code.len) {
             // Find the block containing current PC
-            if (current_block_idx == null or 
-                self.frame.pc < blocks[current_block_idx.?].start_pc or 
-                self.frame.pc >= blocks[current_block_idx.?].end_pc) {
+            if (current_block_idx == null or
+                self.frame.pc < blocks[current_block_idx.?].start_pc or
+                self.frame.pc >= blocks[current_block_idx.?].end_pc)
+            {
                 current_block_idx = self.findBlockIndex(blocks, self.frame.pc);
             }
 
             if (current_block_idx) |block_idx| {
                 const block = &blocks[block_idx];
-                
+
                 // For blocks with dynamic gas, fall back to per-instruction checking
                 if (block.has_dynamic_gas) {
                     try self.executeBlockNormal(block);
@@ -126,11 +127,11 @@ pub const BlockExecutor = struct {
                         return error.OutOfGas;
                     }
                     self.frame.gas_remaining -= block.total_gas;
-                    
+
                     // Execute all instructions in the block without gas checks
                     try self.executeBlockOptimized(block);
                 }
-                
+
                 // Handle block terminator
                 switch (block.terminator) {
                     .halt, .code_end => break,
@@ -158,24 +159,24 @@ pub const BlockExecutor = struct {
     }
 
     /// Executes a block with per-instruction gas checking (for dynamic gas blocks)
-    fn executeBlockNormal(self: *BlockExecutor, block: *const basic_blocks.BasicBlock) !void {
+    inline fn executeBlockNormal(self: *BlockExecutor, block: *const basic_blocks.BasicBlock) !void {
         while (self.frame.pc < block.end_pc) {
             try self.executeSingleInstruction();
         }
     }
 
     /// Executes a block without per-instruction gas checks (optimized path)
-    fn executeBlockOptimized(self: *BlockExecutor, block: *const basic_blocks.BasicBlock) !void {
+    inline fn executeBlockOptimized(self: *BlockExecutor, block: *const basic_blocks.BasicBlock) !void {
         const interpreter_ptr: operation.Interpreter = self.vm;
         const state_ptr: operation.State = self.frame;
 
         while (self.frame.pc < block.end_pc) {
             const op = self.frame.contract.code[self.frame.pc];
             const pc_before = self.frame.pc;
-            
+
             // Execute without gas check (already checked for whole block)
             const result = try self.vm.table.execute(self.frame.pc, interpreter_ptr, state_ptr, op);
-            
+
             if (self.frame.pc == pc_before) {
                 // PC wasn't modified by instruction, advance normally
                 self.frame.pc += result.bytes_consumed;
@@ -185,10 +186,10 @@ pub const BlockExecutor = struct {
     }
 
     /// Executes a single instruction with gas checking
-    fn executeSingleInstruction(self: *BlockExecutor) !void {
+    inline fn executeSingleInstruction(self: *BlockExecutor) !void {
         const op = self.frame.contract.code[self.frame.pc];
         const op_info = self.vm.table.get_operation(op);
-        
+
         // Check gas
         if (self.frame.gas_remaining < op_info.constant_gas) {
             return error.OutOfGas;
@@ -198,10 +199,10 @@ pub const BlockExecutor = struct {
         // Execute
         const interpreter_ptr: operation.Interpreter = self.vm;
         const state_ptr: operation.State = self.frame;
-        
+
         const pc_before = self.frame.pc;
         const result = try self.vm.table.execute(self.frame.pc, interpreter_ptr, state_ptr, op);
-        
+
         if (self.frame.pc == pc_before) {
             // PC wasn't modified by instruction, advance normally
             self.frame.pc += result.bytes_consumed;
@@ -220,11 +221,11 @@ pub const BlockExecutor = struct {
 test "BlockExecutor handles simple execution" {
     std.testing.log_level = .debug;
     const allocator = std.testing.allocator;
-    
+
     const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
     const Contract = @import("../frame/contract.zig");
     const primitives = @import("primitives");
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -242,7 +243,7 @@ test "BlockExecutor handles simple execution" {
 
     const config = BlockExecutionConfig{};
     var executor = BlockExecutor.init(&vm, &frame, config, null);
-    
+
     try executor.execute();
 
     // Check that execution completed and stack has result
@@ -253,11 +254,11 @@ test "BlockExecutor handles simple execution" {
 test "BlockExecutor optimizes linear code" {
     std.testing.log_level = .debug;
     const allocator = std.testing.allocator;
-    
+
     const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
     const Contract = @import("../frame/contract.zig");
     const primitives = @import("primitives");
-    
+
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
@@ -266,17 +267,17 @@ test "BlockExecutor optimizes linear code" {
     defer vm.deinit();
 
     // Longer linear code sequence
-    const code = &[_]u8{ 
+    const code = &[_]u8{
         0x60, 0x01, // PUSH1 1
         0x60, 0x02, // PUSH1 2
-        0x01,       // ADD
+        0x01, // ADD
         0x60, 0x03, // PUSH1 3
-        0x01,       // ADD
+        0x01, // ADD
         0x60, 0x04, // PUSH1 4
-        0x01,       // ADD
-        0x00,       // STOP
+        0x01, // ADD
+        0x00, // STOP
     };
-    
+
     var contract = try Contract.init(allocator, code, .{ .address = primitives.Address.ZERO });
     defer contract.deinit(allocator, null);
 
@@ -292,14 +293,14 @@ test "BlockExecutor optimizes linear code" {
         .cache_blocks = true,
     };
     var executor = BlockExecutor.init(&vm, &frame, config, &cache);
-    
+
     const initial_gas = frame.gas;
     try executor.execute();
-    
+
     // Verify execution completed correctly
     const result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 10), result); // 1+2+3+4
-    
+
     // Verify gas was consumed
     try std.testing.expect(frame.gas < initial_gas);
 }

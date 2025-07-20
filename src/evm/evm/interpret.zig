@@ -21,8 +21,6 @@ const interpret_with_blocks = @import("interpret_with_blocks.zig").interpret_wit
 /// const result = try vm.interpret(&contract, input);
 /// defer if (result.output) |output| vm.allocator.free(output);
 /// ```
-///
-/// See also: interpret_static() for read-only execution
 pub fn interpret(self: *Vm, contract: *Contract, input: []const u8) ExecutionError.Error!RunResult {
     // Use block-based execution when enabled, otherwise fall back to normal execution
     if (self.block_execution_config.enabled) {

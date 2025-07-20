@@ -137,7 +137,7 @@ pub const CallInput = struct {
 ///
 /// Contains the execution result, gas usage, output data, and success status.
 ///
-/// ## Field Ordering Optimization  
+/// ## Field Ordering Optimization
 /// Fields ordered for optimal memory layout:
 /// - Gas fields grouped together for better cache locality
 /// - Pointer field next
@@ -147,7 +147,7 @@ pub const CallResult = struct {
     /// Frequently accessed field placed first
     gas_used: u64,
 
-    /// Gas remaining after execution  
+    /// Gas remaining after execution
     /// Grouped with gas_used for cache locality
     gas_left: u64,
 
@@ -193,13 +193,13 @@ fn validate_call_depth(frame: *Frame) bool {
 /// Returns the arguments slice or empty slice if size is 0
 fn get_call_args(frame: *Frame, args_offset: u256, args_size: u256) ExecutionError.Error![]const u8 {
     if (args_size == 0) return &[_]u8{};
-    
+
     try check_offset_bounds(args_offset);
     try check_offset_bounds(args_size);
-    
+
     const args_offset_usize = @as(usize, @intCast(args_offset));
     const args_size_usize = @as(usize, @intCast(args_size));
-    
+
     _ = try frame.memory.ensure_context_capacity(args_offset_usize + args_size_usize);
     return try frame.memory.get_slice(args_offset_usize, args_size_usize);
 }
@@ -207,13 +207,13 @@ fn get_call_args(frame: *Frame, args_offset: u256, args_size: u256) ExecutionErr
 /// Ensure return memory is available for writing results
 fn ensure_return_memory(frame: *Frame, ret_offset: u256, ret_size: u256) ExecutionError.Error!void {
     if (ret_size == 0) return;
-    
+
     try check_offset_bounds(ret_offset);
     try check_offset_bounds(ret_size);
-    
+
     const ret_offset_usize = @as(usize, @intCast(ret_offset));
     const ret_size_usize = @as(usize, @intCast(ret_size));
-    
+
     _ = try frame.memory.ensure_context_capacity(ret_offset_usize + ret_size_usize);
 }
 
@@ -221,7 +221,7 @@ fn ensure_return_memory(frame: *Frame, ret_offset: u256, ret_size: u256) Executi
 /// Returns the target address
 fn handle_address_access(vm: *Vm, frame: *Frame, to: u256) ExecutionError.Error!primitives.Address.Address {
     const to_address = from_u256(to);
-    
+
     // EIP-2929: Check if address is cold and consume appropriate gas
     const access_cost = try vm.access_list.access_address(to_address);
     const is_cold = access_cost == AccessList.COLD_ACCOUNT_ACCESS_COST;
@@ -230,7 +230,7 @@ fn handle_address_access(vm: *Vm, frame: *Frame, to: u256) ExecutionError.Error!
         // Cold address access costs more (2600 gas)
         try frame.consume_gas(GasConstants.ColdAccountAccessCost);
     }
-    
+
     return to_address;
 }
 
@@ -238,11 +238,11 @@ fn handle_address_access(vm: *Vm, frame: *Frame, to: u256) ExecutionError.Error!
 fn calculate_call_gas_amount(frame: *Frame, gas: u256, value: u256) u64 {
     var gas_for_call = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
     gas_for_call = @min(gas_for_call, frame.gas_remaining - (frame.gas_remaining / GasConstants.CALL_GAS_RETENTION_DIVISOR));
-    
+
     if (value != 0) {
         gas_for_call += GasConstants.GAS_STIPEND_VALUE_TRANSFER;
     }
-    
+
     return gas_for_call;
 }
 
@@ -250,27 +250,27 @@ fn calculate_call_gas_amount(frame: *Frame, gas: u256, value: u256) u64 {
 fn handle_call_result(frame: *Frame, result: anytype, ret_offset: u256, ret_size: u256, gas_for_call: u64) ExecutionError.Error!void {
     // Update gas remaining
     frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;
-    
+
     // Write return data to memory if requested
     if (ret_size > 0 and result.output != null) {
         const ret_offset_usize = @as(usize, @intCast(ret_offset));
         const ret_size_usize = @as(usize, @intCast(ret_size));
         const output = result.output.?;
-        
+
         const copy_size = @min(ret_size_usize, output.len);
         const memory_slice = frame.memory.slice();
         std.mem.copyForwards(u8, memory_slice[ret_offset_usize .. ret_offset_usize + copy_size], output[0..copy_size]);
-        
+
         // Zero out remaining bytes if output was smaller than requested
         if (copy_size < ret_size_usize) {
             @branchHint(.unlikely);
             @memset(memory_slice[ret_offset_usize + copy_size .. ret_offset_usize + ret_size_usize], 0);
         }
     }
-    
+
     // Set return data
     try frame.return_data.set(result.output orelse &[_]u8{});
-    
+
     // Push success status (bounds checking already done by jump table)
     frame.stack.append_unsafe(if (result.success) 1 else 0);
 }
@@ -292,23 +292,23 @@ fn get_initcode_from_memory(frame: *Frame, vm: *Vm, offset: u256, size: u256) Ex
     // Check initcode size bounds
     try check_offset_bounds(size);
     const size_usize = @as(usize, @intCast(size));
-    
+
     // EIP-3860: Check initcode size limit (Shanghai and later)
     if (vm.chain_rules.is_eip3860 and size_usize > GasConstants.MaxInitcodeSize) {
         @branchHint(.unlikely);
         return ExecutionError.Error.MaxCodeSizeExceeded;
     }
-    
+
     if (size == 0) return &[_]u8{};
-    
+
     try check_offset_bounds(offset);
     const offset_usize = @as(usize, @intCast(offset));
-    
+
     // Calculate memory expansion gas cost
     const new_size = offset_usize + size_usize;
     const memory_gas = frame.memory.get_expansion_cost(@as(u64, @intCast(new_size)));
     try frame.consume_gas(memory_gas);
-    
+
     // Ensure memory is available and get the slice
     _ = try frame.memory.ensure_context_capacity(offset_usize + size_usize);
     return try frame.memory.get_slice(offset_usize, size_usize);
@@ -317,13 +317,13 @@ fn get_initcode_from_memory(frame: *Frame, vm: *Vm, offset: u256, size: u256) Ex
 /// Calculate and consume gas for CREATE operations
 fn consume_create_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
     const init_code_cost = @as(u64, @intCast(init_code.len)) * GasConstants.CreateDataGas;
-    
+
     // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
     const initcode_word_cost = if (vm.chain_rules.is_eip3860)
         @as(u64, @intCast(GasConstants.wordCount(init_code.len))) * GasConstants.InitcodeWordGas
     else
         0;
-    
+
     try frame.consume_gas(init_code_cost + initcode_word_cost);
 }
 
@@ -331,13 +331,13 @@ fn consume_create_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionEr
 fn consume_create2_gas(frame: *Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
     const init_code_cost = @as(u64, @intCast(init_code.len)) * GasConstants.CreateDataGas;
     const hash_cost = @as(u64, @intCast(GasConstants.wordCount(init_code.len))) * GasConstants.Keccak256WordGas;
-    
+
     // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
     const initcode_word_cost = if (vm.chain_rules.is_eip3860)
         @as(u64, @intCast(GasConstants.wordCount(init_code.len))) * GasConstants.InitcodeWordGas
     else
         0;
-    
+
     try frame.consume_gas(init_code_cost + hash_cost + initcode_word_cost);
 }
 
@@ -346,21 +346,21 @@ fn handle_create_result(frame: *Frame, vm: *Vm, result: anytype, gas_for_call: u
     _ = gas_for_call;
     // Update gas remaining
     frame.gas_remaining = frame.gas_remaining / GasConstants.CALL_GAS_RETENTION_DIVISOR + result.gas_left;
-    
+
     if (!result.success) {
         @branchHint(.unlikely);
         try frame.stack.append(0);
         try frame.return_data.set(result.output orelse &[_]u8{});
         return;
     }
-    
+
     // EIP-2929: Mark the newly created address as warm
     _ = try vm.access_list.access_address(result.address);
     try frame.stack.append(to_u256(result.address));
-    
+
     // Clear old return data before setting new data to reduce memory pressure
     frame.return_data.clear();
-    
+
     // Set return data
     try frame.return_data.set(result.output orelse &[_]u8{});
 }
@@ -586,7 +586,7 @@ pub fn op_create2(pc: usize, interpreter: Operation.Interpreter, state: Operatio
     return Operation.ExecutionResult{};
 }
 
-pub fn op_call(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+pub inline fn op_call(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     _ = pc;
 
     const frame = state;
@@ -948,46 +948,46 @@ fn fuzz_system_operations(allocator: std.mem.Allocator, operations: []const Fuzz
     for (operations) |op| {
         var memory_db = MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        
+
         const db_interface = memory_db.to_database_interface();
         var vm = try Vm.init(allocator, db_interface, null, null);
         defer vm.deinit();
-        
+
         // Set up target contract if needed for call operations
         if (op.target_exists) {
             const target_address = from_u256(op.to);
             if (op.target_has_code) {
                 // Simple contract that returns data
-                const simple_code = [_]u8{0x60, 0x42, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3}; // PUSH1 0x42 PUSH1 0 MSTORE PUSH1 32 PUSH1 0 RETURN
+                const simple_code = [_]u8{ 0x60, 0x42, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3 }; // PUSH1 0x42 PUSH1 0 MSTORE PUSH1 32 PUSH1 0 RETURN
                 try vm.state.set_code(target_address, &simple_code);
             }
             // Set some balance to the target
             try vm.state.set_balance(target_address, 1000000);
         }
-        
+
         var contract = try Contract.init(allocator, &[_]u8{0x00}, .{
             .address = primitives.Address.from_u256(0x1234),
             .caller = primitives.Address.from_u256(0x5678),
             .value = 1000,
         });
         defer contract.deinit(allocator, null);
-        
+
         // Give the contract some balance for transfers
         try vm.state.set_balance(contract.address, 10000000);
-        
+
         var frame = try Frame.init(allocator, &vm, op.gas_limit, contract, primitives.Address.from_u256(0x5678), op.calldata);
         defer frame.deinit();
-        
+
         frame.depth = op.depth;
         frame.is_static = op.is_static;
-        
+
         // Pre-populate memory if needed for init code or call data
         if (op.init_code.len > 0 and op.init_size > 0) {
             const init_offset_usize = @as(usize, @intCast(op.init_offset));
             _ = try frame.memory.ensure_context_capacity(init_offset_usize + op.init_code.len);
             try frame.memory.set_data(init_offset_usize, op.init_code);
         }
-        
+
         // Execute the operation based on type
         const result = switch (op.op_type) {
             .gas => blk: {
@@ -1049,7 +1049,7 @@ fn fuzz_system_operations(allocator: std.mem.Allocator, operations: []const Fuzz
                 break :blk op_selfdestruct(0, @ptrCast(&vm), @ptrCast(&frame));
             },
         };
-        
+
         // Validate the result
         try validate_system_result(&frame, op, result);
     }
@@ -1060,15 +1060,15 @@ fn validate_system_result(frame: *const Frame, op: FuzzSystemOperation, result: 
         try testing.expectError(expected_err, result);
         return;
     }
-    
+
     // Special handling for SELFDESTRUCT which returns STOP
     if (op.op_type == .selfdestruct and !op.is_static) {
         try testing.expectError(ExecutionError.Error.STOP, result);
         return;
     }
-    
+
     try result;
-    
+
     // Validate stack results for operations
     switch (op.op_type) {
         .gas => {
@@ -1104,9 +1104,9 @@ fn validate_system_result(frame: *const Frame, op: FuzzSystemOperation, result: 
 
 test "fuzz_system_basic_operations" {
     const allocator = std.testing.allocator;
-    
-    const simple_init_code = [_]u8{0x60, 0x00, 0x60, 0x00, 0xf3}; // PUSH1 0 PUSH1 0 RETURN
-    
+
+    const simple_init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xf3 }; // PUSH1 0 PUSH1 0 RETURN
+
     const operations = [_]FuzzSystemOperation{
         // GAS opcode
         .{
@@ -1168,13 +1168,13 @@ test "fuzz_system_basic_operations" {
             .target_has_code = true,
         },
     };
-    
+
     try fuzz_system_operations(allocator, &operations);
 }
 
 test "fuzz_system_static_context" {
     const allocator = std.testing.allocator;
-    
+
     const operations = [_]FuzzSystemOperation{
         // CREATE in static context (should fail)
         .{
@@ -1212,13 +1212,13 @@ test "fuzz_system_static_context" {
             .expected_error = ExecutionError.Error.WriteProtection,
         },
     };
-    
+
     try fuzz_system_operations(allocator, &operations);
 }
 
 test "fuzz_system_depth_limit" {
     const allocator = std.testing.allocator;
-    
+
     const operations = [_]FuzzSystemOperation{
         // CREATE at max depth
         .{
@@ -1247,15 +1247,15 @@ test "fuzz_system_depth_limit" {
             .expect_success = false,
         },
     };
-    
+
     try fuzz_system_operations(allocator, &operations);
 }
 
 test "fuzz_system_gas_calculations" {
     const allocator = std.testing.allocator;
-    
+
     const large_init_code = [_]u8{0x00} ** 1000; // Large init code for gas testing
-    
+
     const operations = [_]FuzzSystemOperation{
         // CREATE with insufficient gas
         .{
@@ -1278,13 +1278,13 @@ test "fuzz_system_gas_calculations" {
             .expect_success = false,
         },
     };
-    
+
     try fuzz_system_operations(allocator, &operations);
 }
 
 test "fuzz_system_edge_cases" {
     const allocator = std.testing.allocator;
-    
+
     const operations = [_]FuzzSystemOperation{
         // CREATE with zero size init code
         .{
@@ -1319,7 +1319,7 @@ test "fuzz_system_edge_cases" {
             .value = 0,
         },
     };
-    
+
     try fuzz_system_operations(allocator, &operations);
 }
 
@@ -1327,23 +1327,20 @@ test "fuzz_system_random_operations" {
     const allocator = std.testing.allocator;
     var prng = std.Random.DefaultPrng.init(42);
     const random = prng.random();
-    
+
     var operations = ArrayList(FuzzSystemOperation).init(allocator);
     defer operations.deinit();
-    
+
     // Generate random init code
     var random_init_code: [64]u8 = undefined;
     random.bytes(&random_init_code);
-    
+
     var i: usize = 0;
     while (i < 20) : (i += 1) {
         const op_type_idx = random.intRangeAtMost(usize, 0, 7);
-        const op_types = [_]SystemOpType{
-            .gas, .create, .create2, .call,
-            .callcode, .delegatecall, .staticcall, .selfdestruct
-        };
+        const op_types = [_]SystemOpType{ .gas, .create, .create2, .call, .callcode, .delegatecall, .staticcall, .selfdestruct };
         const op_type = op_types[op_type_idx];
-        
+
         const gas = random.intRangeAtMost(u256, 1000, 100000);
         const to = random.int(u256);
         const value = random.intRangeAtMost(u256, 0, 1000);
@@ -1351,7 +1348,7 @@ test "fuzz_system_random_operations" {
         const depth = random.intRangeAtMost(u32, 0, 1025);
         const is_static = random.boolean();
         const gas_limit = random.intRangeAtMost(u64, 10000, 1000000);
-        
+
         try operations.append(.{
             .op_type = op_type,
             .gas = gas,
@@ -1370,7 +1367,7 @@ test "fuzz_system_random_operations" {
             .init_code = &random_init_code,
         });
     }
-    
+
     try fuzz_system_operations(allocator, operations.items);
 }
 
@@ -1389,7 +1386,7 @@ test "calculate_call_gas" {
         // Base cost (100) + no memory + min(50000, (99900 * 63)/64)
         try testing.expect(gas > 100);
     }
-    
+
     // Test CALL with value transfer
     {
         const gas = calculate_call_gas(
@@ -1404,7 +1401,7 @@ test "calculate_call_gas" {
         // Base cost (9000 for value) + forwarded gas
         try testing.expect(gas >= 9000);
     }
-    
+
     // Test CALL with cold access
     {
         const gas = calculate_call_gas(
@@ -1419,7 +1416,7 @@ test "calculate_call_gas" {
         // Base cost + cold access (2600) + forwarded gas
         try testing.expect(gas >= 2700);
     }
-    
+
     // Test CALL to new account with value
     {
         const gas = calculate_call_gas(
@@ -1434,7 +1431,7 @@ test "calculate_call_gas" {
         // Base cost (9000) + cold (2600) + new account (25000) + forwarded
         try testing.expect(gas >= 36600);
     }
-    
+
     // Test insufficient gas scenario
     {
         const gas = calculate_call_gas(
