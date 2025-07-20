@@ -117,7 +117,7 @@ pub const Keccak256_Accel = struct {
         };
         
         // Rotation offsets
-        const r = [_][_]u32{
+        const r = [5][5]u32{
             [_]u32{ 0, 1, 62, 28, 27 },
             [_]u32{ 36, 44, 6, 55, 20 },
             [_]u32{ 3, 10, 43, 25, 39 },
@@ -235,6 +235,51 @@ test "Keccak256 hardware acceleration correctness" {
         var output: [32]u8 = undefined;
         Keccak256_Accel.hash(tv.input, &output);
         try std.testing.expectEqualSlices(u8, &tv.expected, &output);
+    }
+}
+
+test "Keccak256 edge cases" {
+    // Test data exactly at rate boundary (136 bytes)
+    const rate_data = "a" ** 136;
+    var output1: [32]u8 = undefined;
+    var output2: [32]u8 = undefined;
+    
+    Keccak256_Accel.hash(rate_data, &output1);
+    std.crypto.hash.sha3.Keccak256.hash(rate_data, &output2, .{});
+    try std.testing.expectEqualSlices(u8, &output2, &output1);
+    
+    // Test data one byte over rate boundary
+    const over_rate = "a" ** 137;
+    Keccak256_Accel.hash(over_rate, &output1);
+    std.crypto.hash.sha3.Keccak256.hash(over_rate, &output2, .{});
+    try std.testing.expectEqualSlices(u8, &output2, &output1);
+    
+    // Test data one byte under rate boundary
+    const under_rate = "a" ** 135;
+    Keccak256_Accel.hash(under_rate, &output1);
+    std.crypto.hash.sha3.Keccak256.hash(under_rate, &output2, .{});
+    try std.testing.expectEqualSlices(u8, &output2, &output1);
+}
+
+test "Keccak256 consistency with standard library" {
+    const test_sizes = [_]usize{ 0, 1, 4, 20, 32, 64, 128, 256, 512, 1024 };
+    
+    for (test_sizes) |size| {
+        const data = try std.testing.allocator.alloc(u8, size);
+        defer std.testing.allocator.free(data);
+        
+        // Fill with test pattern
+        for (data, 0..) |*byte, i| {
+            byte.* = @as(u8, @intCast(i & 0xFF));
+        }
+        
+        var accel_output: [32]u8 = undefined;
+        var std_output: [32]u8 = undefined;
+        
+        Keccak256_Accel.hash(data, &accel_output);
+        std.crypto.hash.sha3.Keccak256.hash(data, &std_output, .{});
+        
+        try std.testing.expectEqualSlices(u8, &std_output, &accel_output);
     }
 }
 
