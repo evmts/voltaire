@@ -138,8 +138,8 @@ pub fn build(b: *std.Build) void {
     const no_precompiles = b.option(bool, "no_precompiles", "Disable all EVM precompiles for minimal build") orelse false;
     
     // Detect Ubuntu native build (has Rust library linking issues)
-    const is_ubuntu_native = target.result.os.tag == .linux and target.result.cpu.arch == .x86_64 and 
-        !b.option(bool, "force_bn254", "Force BN254 even on Ubuntu") orelse false;
+    const force_bn254 = b.option(bool, "force_bn254", "Force BN254 even on Ubuntu") orelse false;
+    const is_ubuntu_native = target.result.os.tag == .linux and target.result.cpu.arch == .x86_64 and !force_bn254;
     
     // Disable BN254 on Ubuntu native builds to avoid Rust library linking issues
     const no_bn254 = no_precompiles or is_ubuntu_native;
@@ -198,25 +198,26 @@ pub fn build(b: *std.Build) void {
     // BN254 Rust library integration for ECMUL and ECPAIRING precompiles
     // Uses arkworks ecosystem for production-grade elliptic curve operations
     // Skip on Ubuntu native builds due to Rust library linking issues
+    
+    // Determine the Rust target triple based on the Zig target
+    // Always specify explicit Rust target for consistent library format
+    const rust_target = switch (target.result.os.tag) {
+        .linux => switch (target.result.cpu.arch) {
+            .x86_64 => "x86_64-unknown-linux-gnu",
+            .aarch64 => "aarch64-unknown-linux-gnu",
+            else => null,
+        },
+        .macos => switch (target.result.cpu.arch) {
+            .x86_64 => "x86_64-apple-darwin",
+            .aarch64 => "aarch64-apple-darwin",
+            else => null,
+        },
+        else => null,
+    };
+    
     const bn254_lib = if (!no_bn254) blk: {
         const rust_profile = if (optimize == .Debug) "dev" else "release";
         const rust_target_dir = if (optimize == .Debug) "debug" else "release";
-
-        // Determine the Rust target triple based on the Zig target
-        // Always specify explicit Rust target for consistent library format
-        const rust_target = switch (target.result.os.tag) {
-            .linux => switch (target.result.cpu.arch) {
-                .x86_64 => "x86_64-unknown-linux-gnu",
-                .aarch64 => "aarch64-unknown-linux-gnu",
-                else => null,
-            },
-            .macos => switch (target.result.cpu.arch) {
-                .x86_64 => "x86_64-apple-darwin",
-                .aarch64 => "aarch64-apple-darwin",
-                else => null,
-            },
-            else => null,
-        };
         
         const rust_build = if (rust_target) |target_triple|
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
@@ -878,7 +879,7 @@ pub fn build(b: *std.Build) void {
     blake2f_test_step.dependOn(&run_blake2f_test.step);
 
     // Add BN254 Rust wrapper tests (only if BN254 is enabled)
-    if (bn254_lib) |lib| {
+    const run_bn254_rust_test = if (bn254_lib) |bn254_library| blk: {
         const bn254_rust_test = b.addTest(.{
             .name = "bn254-rust-test",
             .root_source_file = b.path("test/evm/precompiles/bn254_rust_test.zig"),
@@ -889,13 +890,15 @@ pub fn build(b: *std.Build) void {
         bn254_rust_test.root_module.addImport("primitives", primitives_mod);
         bn254_rust_test.root_module.addImport("evm", evm_mod);
         // Link BN254 Rust library to tests
-        bn254_rust_test.linkLibrary(lib);
+        bn254_rust_test.linkLibrary(bn254_library);
         bn254_rust_test.addIncludePath(b.path("src/bn254_wrapper"));
 
-        const run_bn254_rust_test = b.addRunArtifact(bn254_rust_test);
-        const bn254_rust_test_step = b.step("test-bn254-rust", "Run BN254 Rust wrapper precompile tests");
-        bn254_rust_test_step.dependOn(&run_bn254_rust_test.step);
-    }
+        const run_test = b.addRunArtifact(bn254_rust_test);
+        const test_step_bn254 = b.step("test-bn254-rust", "Run BN254 Rust wrapper precompile tests");
+        test_step_bn254.dependOn(&run_test.step);
+        
+        break :blk run_test;
+    } else null;
 
     // Add E2E Simple tests
     const e2e_simple_test = b.addTest(.{
@@ -1089,7 +1092,9 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_sha256_test.step);
     test_step.dependOn(&run_ripemd160_test.step);
     test_step.dependOn(&run_blake2f_test.step);
-    test_step.dependOn(&run_bn254_rust_test.step);
+    if (run_bn254_rust_test) |bn254_test| {
+        test_step.dependOn(&bn254_test.step);
+    }
     test_step.dependOn(&run_e2e_simple_test.step);
     test_step.dependOn(&run_e2e_error_test.step);
     test_step.dependOn(&run_e2e_data_test.step);
