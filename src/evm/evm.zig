@@ -60,6 +60,11 @@ state: EvmState,
 /// Warm/cold access tracking for EIP-2929 gas costs
 access_list: AccessList,
 
+// Block execution optimization
+/// Configuration for block-based gas accounting optimization
+/// Block execution is always enabled for performance optimization.
+/// The VM creates a block cache by default to support this.
+block_execution_config: BlockExecutionConfig = .{},
 /// Cache for analyzed basic blocks
 block_cache: ?*basic_blocks.BlockCache = null,
 
@@ -95,6 +100,11 @@ pub fn init(allocator: std.mem.Allocator, database: @import("state/database_inte
     var access_list = AccessList.init(allocator, context);
     errdefer access_list.deinit();
 
+    // Create block cache since block execution is enabled by default
+    const cache = try allocator.create(basic_blocks.BlockCache);
+    errdefer allocator.destroy(cache);
+    cache.* = basic_blocks.BlockCache.init(allocator, 1000);
+
     return Evm{
         .allocator = allocator,
         .table = JumpTable.DEFAULT,
@@ -105,7 +115,8 @@ pub fn init(allocator: std.mem.Allocator, database: @import("state/database_inte
         .return_data = &[_]u8{},
         .state = state,
         .access_list = access_list,
-        .block_cache = null,
+        .block_execution_config = .{},
+        .block_cache = cache,
     };
 }
 
@@ -191,6 +202,13 @@ pub fn deinit(self: *Evm) void {
     self.state.deinit();
     self.access_list.deinit();
     Contract.clear_analysis_cache(self.allocator);
+    
+    // Clean up block cache if it exists
+    if (self.block_cache) |cache| {
+        cache.deinit();
+        self.allocator.destroy(cache);
+        self.block_cache = null;
+    }
 }
 
 /// Reset the EVM for reuse without deallocating memory.
@@ -203,6 +221,23 @@ pub fn reset(self: *Evm) void {
     self.depth = 0;
     self.read_only = false;
     self.return_data = &[_]u8{};
+}
+
+/// Update block execution configuration.
+/// This can be used to adjust cache size or other optimization parameters.
+/// Note: Block execution is always enabled for performance.
+pub fn updateBlockExecutionConfig(self: *Evm, config: BlockExecutionConfig) !void {
+    self.block_execution_config = config;
+    
+    // Recreate cache if size changed
+    if (self.block_cache) |cache| {
+        cache.deinit();
+        self.allocator.destroy(cache);
+    }
+    
+    const new_cache = try self.allocator.create(basic_blocks.BlockCache);
+    new_cache.* = basic_blocks.BlockCache.init(self.allocator, config.max_cache_entries);
+    self.block_cache = new_cache;
 }
 
 pub usingnamespace @import("evm/set_context.zig");

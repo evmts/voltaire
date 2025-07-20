@@ -6,9 +6,8 @@ const opcodes = @import("../opcodes/opcode.zig");
 const operation = @import("../opcodes/operation.zig");
 
 /// Configuration for block-based execution
+/// Block execution is always enabled for performance optimization.
 pub const BlockExecutionConfig = struct {
-    /// Whether to use block-based gas accounting
-    enabled: bool = true,
     /// Minimum block size to use optimization (in instructions)
     min_block_size: usize = 3,
     /// Whether to cache analyzed blocks
@@ -29,13 +28,14 @@ pub const BlockExecutor = struct {
             .vm = vm,
             .frame = frame,
             .block_cache = block_cache,
+            .config = vm.block_execution_config,
         };
     }
 
     /// Executes code using block-based gas accounting when beneficial
     pub inline fn execute(self: *BlockExecutor) !void {
-        // Check if block-based execution is enabled and worthwhile
-        if (!self.config.enabled or self.frame.contract.code.len < self.config.min_block_size * 3) {
+        // Check if contract is large enough to benefit from block optimization
+        if (self.frame.contract.code.len < self.config.min_block_size * 3) {
             // Fall back to normal execution for small contracts
             return self.executeNormal();
         }
@@ -61,7 +61,10 @@ pub const BlockExecutor = struct {
                 // Analyze and cache
                 const blocks = try self.analyzeCode();
                 try cache.put(code_hash, blocks);
-                return blocks;
+                // Cache now owns a copy, free the original
+                self.vm.allocator.free(blocks);
+                // Return the cached copy
+                return cache.get(code_hash).?;
             }
         }
 
@@ -240,8 +243,7 @@ test "BlockExecutor handles simple execution" {
     var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
     defer frame.deinit();
 
-    const config = BlockExecutionConfig{};
-    var executor = BlockExecutor.init(&vm, &frame, config, null);
+    var executor = BlockExecutor.init(&vm, &frame, null);
 
     try executor.execute();
 
@@ -287,11 +289,7 @@ test "BlockExecutor optimizes linear code" {
     var cache = basic_blocks.BlockCache.init(allocator, 10);
     defer cache.deinit();
 
-    const config = BlockExecutionConfig{
-        .enabled = true,
-        .cache_blocks = true,
-    };
-    var executor = BlockExecutor.init(&vm, &frame, config, &cache);
+    var executor = BlockExecutor.init(&vm, &frame, &cache);
 
     const initial_gas = frame.gas;
     try executor.execute();
