@@ -482,6 +482,7 @@ pub fn build(b: *std.Build) void {
     wasm_evm_mod.addImport("build_options", build_options.createModule());
     // Note: WASM build uses pure Zig implementations for BN254 operations
 
+    // Main WASM build (includes both primitives and EVM)
     const wasm_lib_mod = b.createModule(.{
         .root_source_file = b.path("src/root_c.zig"),
         .target = wasm_target,
@@ -501,14 +502,69 @@ pub fn build(b: *std.Build) void {
 
     const wasm_install = b.addInstallArtifact(wasm_lib, .{ .dest_sub_path = "guillotine.wasm" });
 
-    // Add step to report WASM bundle size
-    const wasm_size_step = b.addSystemCommand(&[_][]const u8{ "sh", "-c", "echo '\\n=== WASM Bundle Size Report ===' && " ++
-        "ls -lh zig-out/bin/guillotine.wasm | awk '{print \"WASM Bundle Size: \" $5}' && " ++
-        "echo '=== End Report ===\\n'" });
-    wasm_size_step.step.dependOn(&wasm_install.step);
+    // Primitives-only WASM build
+    const wasm_primitives_lib_mod = b.createModule(.{
+        .root_source_file = b.path("src/primitives_c.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+        .single_threaded = true,
+    });
+    wasm_primitives_lib_mod.addImport("primitives", wasm_primitives_mod);
 
-    const wasm_step = b.step("wasm", "Build WASM library and show bundle size");
+    const wasm_primitives_lib = b.addExecutable(.{
+        .name = "guillotine-primitives",
+        .root_module = wasm_primitives_lib_mod,
+    });
+
+    wasm_primitives_lib.entry = .disabled;
+    wasm_primitives_lib.rdynamic = true;
+
+    const wasm_primitives_install = b.addInstallArtifact(wasm_primitives_lib, .{ .dest_sub_path = "guillotine-primitives.wasm" });
+
+    // EVM-only WASM build
+    const wasm_evm_lib_mod = b.createModule(.{
+        .root_source_file = b.path("src/evm_c.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+        .single_threaded = true,
+    });
+    wasm_evm_lib_mod.addImport("primitives", wasm_primitives_mod);
+    wasm_evm_lib_mod.addImport("evm", wasm_evm_mod);
+
+    const wasm_evm_lib = b.addExecutable(.{
+        .name = "guillotine-evm",
+        .root_module = wasm_evm_lib_mod,
+    });
+
+    wasm_evm_lib.entry = .disabled;
+    wasm_evm_lib.rdynamic = true;
+
+    const wasm_evm_install = b.addInstallArtifact(wasm_evm_lib, .{ .dest_sub_path = "guillotine-evm.wasm" });
+
+    // Add step to report WASM bundle sizes for all three builds
+    const wasm_size_step = b.addSystemCommand(&[_][]const u8{ "sh", "-c", 
+        "echo '\\n=== WASM Bundle Size Report ===' && " ++
+        "echo 'Main WASM build:' && " ++
+        "ls -lh zig-out/bin/guillotine.wasm | awk '{print \"  Size: \" $5}' && " ++
+        "echo '\\nPrimitives WASM build:' && " ++
+        "ls -lh zig-out/bin/guillotine-primitives.wasm | awk '{print \"  Size: \" $5}' && " ++
+        "echo '\\nEVM WASM build:' && " ++
+        "ls -lh zig-out/bin/guillotine-evm.wasm | awk '{print \"  Size: \" $5}' && " ++
+        "echo '=== End Report ===\\n'" 
+    });
+    wasm_size_step.step.dependOn(&wasm_install.step);
+    wasm_size_step.step.dependOn(&wasm_primitives_install.step);
+    wasm_size_step.step.dependOn(&wasm_evm_install.step);
+
+    const wasm_step = b.step("wasm", "Build all WASM libraries and show bundle sizes");
     wasm_step.dependOn(&wasm_size_step.step);
+
+    // Individual WASM build steps
+    const wasm_primitives_step = b.step("wasm-primitives", "Build primitives-only WASM library");
+    wasm_primitives_step.dependOn(&wasm_primitives_install.step);
+
+    const wasm_evm_step = b.step("wasm-evm", "Build EVM-only WASM library");
+    wasm_evm_step.dependOn(&wasm_evm_install.step);
 
     // Debug WASM build for analysis
     const wasm_debug_mod = b.createModule(.{

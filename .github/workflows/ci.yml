@@ -188,20 +188,32 @@ jobs:
           echo "Fetching dependencies..."
           zig build --fetch
 
-      - name: Build WASM target (${{ matrix.optimize }})
+      - name: Build WASM targets (${{ matrix.optimize }})
         run: |
-          echo "Building WASM with -Doptimize=${{ matrix.optimize }}"
+          echo "Building all WASM targets with -Doptimize=${{ matrix.optimize }}"
           zig build wasm -Doptimize=${{ matrix.optimize }}
           
-          # Report WASM bundle size
-          echo "WASM bundle size for ${{ matrix.optimize }}:"
-          ls -lh zig-out/bin/guillotine.wasm || true
+          # Report WASM bundle sizes
+          echo ""
+          echo "=== WASM Bundle Sizes for ${{ matrix.optimize }} ==="
+          echo "Main WASM (full):"
+          ls -lh zig-out/bin/guillotine.wasm | awk '{print "  Size: " $5}'
+          echo ""
+          echo "Primitives WASM:"
+          ls -lh zig-out/bin/guillotine-primitives.wasm | awk '{print "  Size: " $5}'
+          echo ""
+          echo "EVM WASM:"
+          ls -lh zig-out/bin/guillotine-evm.wasm | awk '{print "  Size: " $5}'
+          echo "=================================="
 
-      - name: Upload WASM artifact
+      - name: Upload WASM artifacts
         uses: actions/upload-artifact@v4
         with:
           name: guillotine-wasm-${{ matrix.optimize }}
-          path: zig-out/bin/guillotine.wasm
+          path: |
+            zig-out/bin/guillotine.wasm
+            zig-out/bin/guillotine-primitives.wasm
+            zig-out/bin/guillotine-evm.wasm
           retention-days: 7
 
       - name: Report Results
@@ -209,8 +221,16 @@ jobs:
         run: |
           echo "WASM build completed"
           echo "Optimization: ${{ matrix.optimize }}"
+          echo ""
+          echo "Bundle sizes:"
           if [ -f zig-out/bin/guillotine.wasm ]; then
-            echo "WASM size: $(ls -lh zig-out/bin/guillotine.wasm | awk '{print $5}')"
+            echo "  Main WASM: $(ls -lh zig-out/bin/guillotine.wasm | awk '{print $5}')"
+          fi
+          if [ -f zig-out/bin/guillotine-primitives.wasm ]; then
+            echo "  Primitives WASM: $(ls -lh zig-out/bin/guillotine-primitives.wasm | awk '{print $5}')"
+          fi
+          if [ -f zig-out/bin/guillotine-evm.wasm ]; then
+            echo "  EVM WASM: $(ls -lh zig-out/bin/guillotine-evm.wasm | awk '{print $5}')"
           fi
 
   ci-summary:
