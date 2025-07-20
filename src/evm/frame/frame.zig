@@ -189,7 +189,7 @@ pub fn init_full(
         .output = &[_]u8{},
         .op = &.{},
         .memory = try Memory.init_default(allocator),
-        .stack = try Stack.init(allocator),
+        .stack = Stack{},
         .return_data = ReturnData.init(allocator),
     };
 }
