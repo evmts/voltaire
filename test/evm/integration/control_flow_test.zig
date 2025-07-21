@@ -237,9 +237,9 @@ test "Integration: Return data handling" {
     _ = try vm.table.execute(0, interpreter, state, 0x52); // MSTORE
 
     // Return 32 bytes from offset 0
-    // Stack order: [offset, size] with size on top
-    try frame_ptr.stack.append(0); // offset (second from top)
-    try frame_ptr.stack.append(32); // size (top)
+    // Stack order: [size, offset] with offset on top
+    try frame_ptr.stack.append(32); // size (second from top)
+    try frame_ptr.stack.append(0); // offset (top)
 
     // RETURN will throw an error (ExecutionError.STOP) which is expected
     const result = vm.table.execute(0, interpreter, state, 0xF3); // RETURN
@@ -299,9 +299,9 @@ test "Integration: Revert with reason" {
     try frame_ptr.memory.set_data(0, error_msg);
 
     // Revert with error message
-    // Stack order: [offset, size] with size on top
-    try frame_ptr.stack.append(0); // offset (second from top)
-    try frame_ptr.stack.append(error_msg.len); // size (top)
+    // Stack order: [size, offset] with offset on top
+    try frame_ptr.stack.append(error_msg.len); // size (second from top)
+    try frame_ptr.stack.append(0); // offset (top)
 
     // REVERT will throw an error (ExecutionError.REVERT) which is expected
     const result = vm.table.execute(0, interpreter, state, 0xFD); // REVERT

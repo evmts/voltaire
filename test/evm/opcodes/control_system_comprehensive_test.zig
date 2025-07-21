@@ -23,8 +23,8 @@ test "RETURN (0xF3): Return data from execution" {
     defer evm.deinit();
 
     const code = [_]u8{
-        0x60, 0x00, // PUSH1 0x00 (offset = 0)
         0x60, 0x20, // PUSH1 0x20 (size = 32 bytes)
+        0x60, 0x00, // PUSH1 0x00 (offset = 0)
         0xF3, // RETURN
     };
 
@@ -143,8 +143,8 @@ test "REVERT (0xFD): Revert with data" {
     defer evm.deinit();
 
     const code = [_]u8{
-        0x60, 0x00, // PUSH1 0x00 (offset = 0)
         0x60, 0x10, // PUSH1 0x10 (size = 16 bytes)
+        0x60, 0x00, // PUSH1 0x00 (offset = 0)
         0xFD, // REVERT
     };
 
@@ -521,8 +521,8 @@ test "Control opcodes: Gas consumption" {
     defer frame.deinit();
 
     // Return large data requiring memory expansion
-    try frame.stack.append(0); // offset
     try frame.stack.append(0x1000); // size (4096 bytes)
+    try frame.stack.append(0); // offset
 
     const gas_before = frame.gas_remaining;
     const interpreter: Evm.Operation.Interpreter = &evm;

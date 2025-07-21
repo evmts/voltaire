@@ -57,8 +57,8 @@ test "E2E: Basic EVM operations" {
         0x60, 0x2A, // PUSH1 42
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
-        0x60, 0x00, // PUSH1 0 (offset)
         0x60, 0x20, // PUSH1 32 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
         0xF3, // RETURN
     };
 

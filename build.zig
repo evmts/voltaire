@@ -1143,6 +1143,20 @@ pub fn build(b: *std.Build) void {
     const solidity_constructor_test_step = b.step("test-solidity-constructor", "Run Solidity Constructor test");
     solidity_constructor_test_step.dependOn(&run_solidity_constructor_test.step);
 
+    // Add RETURN opcode bug test
+    const return_opcode_bug_test = b.addTest(.{
+        .name = "return-opcode-bug-test",
+        .root_source_file = b.path("test/evm/return_opcode_bug_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    return_opcode_bug_test.root_module.addImport("primitives", primitives_mod);
+    return_opcode_bug_test.root_module.addImport("evm", evm_mod);
+    const run_return_opcode_bug_test = b.addRunArtifact(return_opcode_bug_test);
+    const return_opcode_bug_test_step = b.step("test-return-opcode-bug", "Run RETURN opcode bug test");
+    return_opcode_bug_test_step.dependOn(&run_return_opcode_bug_test.step);
+
     const contract_call_test = b.addTest(.{
         .name = "contract-call-test",
         .root_source_file = b.path("test/evm/contract_call_test.zig"),
@@ -1206,6 +1220,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_e2e_inheritance_test.step);
     test_step.dependOn(&run_constructor_bug_test.step);
     test_step.dependOn(&run_solidity_constructor_test.step);
+    test_step.dependOn(&run_return_opcode_bug_test.step);
     test_step.dependOn(&run_contract_call_test.step);
     // Hardfork tests removed completely
     test_step.dependOn(&run_delegatecall_test.step);

@@ -46,9 +46,9 @@ test "DELEGATECALL basic functionality" {
     vm.set_context(context);
 
     // Deploy callee contract that returns caller address
-    // Contract code: CALLER PUSH1 0x00 MSTORE PUSH1 0x00 PUSH1 0x20 RETURN
-    // Bytecode: 0x33 0x60 0x00 0x52 0x60 0x00 0x60 0x20 0xf3
-    const callee_code = [_]u8{ 0x33, 0x60, 0x00, 0x52, 0x60, 0x00, 0x60, 0x20, 0xf3 };
+    // Contract code: CALLER PUSH1 0x00 MSTORE PUSH1 0x20 PUSH1 0x00 RETURN
+    // Bytecode: 0x33 0x60 0x00 0x52 0x60 0x20 0x60 0x00 0xf3
+    const callee_code = [_]u8{ 0x33, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3 };
     const callee_addr = primitives.Address.from_u256(0x2222);
     try vm.state.set_code(callee_addr, &callee_code);
 
@@ -79,8 +79,8 @@ test "DELEGATECALL basic functionality" {
     try caller_code.appendSlice(&[_]u8{
         0x5a, // GAS
         0xf4, // DELEGATECALL
-        0x60, 0x00, // PUSH1 0x00 (offset)
         0x60, 0x20, // PUSH1 0x20 (size)
+        0x60, 0x00, // PUSH1 0x00 (offset)
         0xf3, // RETURN
     });
 
@@ -142,8 +142,8 @@ test "DELEGATECALL preserves sender and value" {
     const callee_code = [_]u8{
         0x33, 0x60, 0x00, 0x52, // CALLER, PUSH1 0x00, MSTORE
         0x34, 0x60, 0x20, 0x52, // CALLVALUE, PUSH1 0x20, MSTORE
-        0x60, 0x00, 0x60, 0x40,
-        0xf3, // PUSH1 0x00, PUSH1 0x40, RETURN
+        0x60, 0x40, 0x60, 0x00,
+        0xf3, // PUSH1 0x40, PUSH1 0x00, RETURN
     };
     const callee_addr = primitives.Address.from_u256(0x5555);
     try vm.state.set_code(callee_addr, &callee_code);
@@ -163,8 +163,8 @@ test "DELEGATECALL preserves sender and value" {
     try caller_code.appendSlice(&[_]u8{
         0x5a, // GAS
         0xf4, // DELEGATECALL
-        0x60, 0x00, // PUSH1 0x00 (offset)
         0x60, 0x40, // PUSH1 0x40 (size)
+        0x60, 0x00, // PUSH1 0x00 (offset)
         0xf3, // RETURN
     });
 
@@ -229,8 +229,8 @@ test "DELEGATECALL with storage access" {
         0x60, 0x42, 0x60, 0x01, 0x55, // PUSH1 0x42, PUSH1 0x01, SSTORE
         0x60, 0x01, 0x54, // PUSH1 0x01, SLOAD
         0x60, 0x00, 0x52, // PUSH1 0x00, MSTORE
-        0x60, 0x00, 0x60,
-        0x20, 0xf3, // PUSH1 0x00, PUSH1 0x20, RETURN
+        0x60, 0x20, 0x60,
+        0x00, 0xf3, // PUSH1 0x20, PUSH1 0x00, RETURN
     };
     const callee_addr = primitives.Address.from_u256(0x8888);
     try vm.state.set_code(callee_addr, &callee_code);
@@ -250,8 +250,8 @@ test "DELEGATECALL with storage access" {
     try caller_code.appendSlice(&[_]u8{
         0x5a, // GAS
         0xf4, // DELEGATECALL
-        0x60, 0x00, // PUSH1 0x00 (offset)
         0x60, 0x20, // PUSH1 0x20 (size)
+        0x60, 0x00, // PUSH1 0x00 (offset)
         0xf3, // RETURN
     });
 
