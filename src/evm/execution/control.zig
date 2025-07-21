@@ -112,10 +112,10 @@ pub fn op_return(pc: usize, interpreter: Operation.Interpreter, state: Operation
     std.debug.assert(frame.stack.size >= 2);
 
     // Use batch pop for performance - pop 2 values at once
-    // Stack order (top to bottom): [offset, size] with size on top
+    // Stack order (top to bottom): [offset, size] with offset on top
     const values = frame.stack.pop2_unsafe();
-    const offset = values.a; // Second from top
-    const size = values.b; // Top
+    const offset = values.b; // Top
+    const size = values.a; // Second from top
 
     Log.debug("RETURN opcode: offset={}, size={}", .{ offset, size });
 
@@ -170,10 +170,10 @@ pub fn op_revert(pc: usize, interpreter: Operation.Interpreter, state: Operation
     std.debug.assert(frame.stack.size >= 2);
 
     // Use batch pop for performance - pop 2 values at once
-    // Stack order (top to bottom): [offset, size] with size on top
+    // Stack order (top to bottom): [offset, size] with offset on top
     const values = frame.stack.pop2_unsafe();
-    const offset = values.a; // Second from top
-    const size = values.b; // Top
+    const offset = values.b; // Top
+    const size = values.a; // Second from top
 
     if (size == 0) {
         @branchHint(.unlikely);

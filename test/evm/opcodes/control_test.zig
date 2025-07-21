@@ -332,8 +332,8 @@ test "Control: RETURN with data" {
     // Test 1: Return with data
     const test_data = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
     try frame.memory.set_data(10, &test_data);
-    try frame.stack.append(10);
-    try frame.stack.append(4);
+    try frame.stack.append(4);  // size (first)
+    try frame.stack.append(10); // offset (second, on top)
 
     const result = evm.table.execute(0, interpreter, state, 0xF3);
     try testing.expectError(ExecutionError.Error.STOP, result); // RETURN uses STOP error
@@ -402,8 +402,8 @@ test "Control: REVERT with data" {
     // Test 1: Revert with data
     const test_data = [_]u8{ 0x08, 0xc3, 0x79, 0xa0 }; // Common revert signature
     try frame.memory.set_data(0, &test_data);
-    try frame.stack.append(0);
-    try frame.stack.append(4);
+    try frame.stack.append(4); // size (first)
+    try frame.stack.append(0); // offset (second, on top)
 
     const result = evm.table.execute(0, interpreter, state, 0xFD);
     try testing.expectError(ExecutionError.Error.REVERT, result);

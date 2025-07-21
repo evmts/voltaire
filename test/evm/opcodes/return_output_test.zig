@@ -23,8 +23,8 @@ test "RETURN sets output correctly" {
         0x63, 0xde, 0xad, 0xbe, 0xef, // PUSH4 0xDEADBEEF
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
-        0x60, 0x1c, // PUSH1 28 (offset - to get last 4 bytes of the 32-byte word)
         0x60, 0x04, // PUSH1 4 (size)
+        0x60, 0x1c, // PUSH1 28 (offset - to get last 4 bytes of the 32-byte word)
         0xf3, // RETURN
     };
 
@@ -71,8 +71,8 @@ test "constructor returns runtime code" {
         0x64, 0x48, 0x45, 0x4c, 0x4c, 0x4f, // PUSH5 "HELLO" (6 bytes) - 0x64 is PUSH5
         0x60, 0x00, // PUSH1 0 (2 bytes)
         0x52, // MSTORE (1 byte)
-        0x60, 0x1b, // PUSH1 27 (offset to get last 5 bytes) (2 bytes)
         0x60, 0x05, // PUSH1 5 (size) (2 bytes)
+        0x60, 0x1b, // PUSH1 27 (offset to get last 5 bytes) (2 bytes)
         0xf3, // RETURN (1 byte)
     };
     const deployer: Address.Address = [_]u8{0x12} ** 20;

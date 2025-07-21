@@ -39,8 +39,8 @@ test "constructor should return runtime code" {
         0x60, 0x0c, // PUSH1 12 (offset of runtime code in this bytecode) - Stack: [10, 12]
         0x60, 0x00, // PUSH1 0 (destination in memory) - Stack: [10, 12, 0]
         0x39, // CODECOPY (copy code to memory) - pops 3, Stack: []
-        0x60, 0x00, // PUSH1 0 (offset in memory) - Stack: [0]
-        0x60, 0x0a, // PUSH1 10 (size to return) - Stack: [0, 10]
+        0x60, 0x0a, // PUSH1 10 (size to return) - Stack: [10]
+        0x60, 0x00, // PUSH1 0 (offset in memory) - Stack: [10, 0]
         0xf3, // RETURN - pops 2, returns memory[0..10]
 
         // Runtime code (10 bytes) - just returns 42
@@ -93,8 +93,8 @@ test "manual constructor execution to debug" {
         0x60, 0x0c, // PUSH1 12 (offset of runtime code)
         0x60, 0x00, // PUSH1 0 (destination in memory)
         0x39, // CODECOPY (copy code to memory)
-        0x60, 0x00, // PUSH1 0 (offset in memory)
         0x60, 0x0a, // PUSH1 10 (size to return)
+        0x60, 0x00, // PUSH1 0 (offset in memory)
         0xf3, // RETURN
         // Runtime code (starts at byte 12)
         0x60,
