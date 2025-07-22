@@ -484,7 +484,7 @@ pub fn build(b: *std.Build) void {
 
     // Main WASM build (includes both primitives and EVM)
     const wasm_lib_mod = b.createModule(.{
-        .root_source_file = b.path("src/root_c.zig"),
+        .root_source_file = b.path("src/root.zig"),
         .target = wasm_target,
         .optimize = wasm_optimize,
         .single_threaded = true,
@@ -568,7 +568,7 @@ pub fn build(b: *std.Build) void {
 
     // Debug WASM build for analysis
     const wasm_debug_mod = b.createModule(.{
-        .root_source_file = b.path("src/root_c.zig"),
+        .root_source_file = b.path("src/root.zig"),
         .target = wasm_target,
         .optimize = .Debug, // Debug mode for symbols
         .single_threaded = true,

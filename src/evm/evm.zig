@@ -83,7 +83,7 @@ comptime {
 pub fn init(allocator: std.mem.Allocator, database: @import("state/database_interface.zig").DatabaseInterface) !Evm {
     var state = try EvmState.init(allocator, database);
     errdefer state.deinit();
-    std.log.debug("Evm.init: EvmState.init completed", .{});
+    Log.debug("Evm.init: EvmState.init completed", .{});
 
     const context = Context.init();
     var access_list = AccessList.init(allocator, context);
