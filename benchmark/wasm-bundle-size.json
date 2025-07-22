@@ -25,13 +25,13 @@
   },
   "current": {
     "releaseSmall": {
-      "withPrecompiles": 181510,
-      "withoutPrecompiles": 113106
+      "withPrecompiles": 180768,
+      "withoutPrecompiles": 112340
     },
     "releaseFast": {
-      "withPrecompiles": 2068606,
-      "withoutPrecompiles": 1509394
+      "withPrecompiles": 2061518,
+      "withoutPrecompiles": 1501458
     }
   },
-  "lastUpdated": "2025-07-22T01:51:57.629818Z"
+  "lastUpdated": "2025-07-22T20:02:50.261017Z"
 }
