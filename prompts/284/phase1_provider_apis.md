@@ -1,37 +1,75 @@
-# Phase 1: Enhanced Provider APIs for Block Verification Test
+# Phase 1 Overview: Enhanced Provider APIs for Block Verification Test
 
-## Context
-You are implementing Phase 1 of a comprehensive block verification test for block 23000000. This phase focuses on extending both the primitives package (for data structures) and provider package (for RPC methods) to support comprehensive block and transaction verification.
+## Meta-Prompt Overview
+This document serves as the master overview for Phase 1, which has been broken down into **5 atomic, independently implementable prompts**. Each atomic prompt can be completed with full testing in 30-60 minutes.
 
-## CRITICAL ARCHITECTURE NOTE
-⚠️ **The current provider package is completely broken and non-functional.** See `src/provider/README.md` for details. This phase requires a complete rewrite of the provider system using a minimal, working approach.
+## Phase 1 Architecture Strategy
+Phase 1 establishes the foundation for block verification by implementing:
+1. **Core data structures** in the primitives package (single-purpose, reusable types)
+2. **Minimal HTTP provider** to replace the completely broken existing provider
+3. **JSON parsing utilities** for Ethereum data formats
+4. **Comprehensive testing** for each component
 
-## Current State Analysis
+## CRITICAL CONTEXT
+⚠️ **The current provider package is completely broken and non-functional.** See `src/provider/README.md` for details. This phase requires a complete rewrite using a minimal, working approach.
 
-### Primitives Package (`src/primitives/`)
-**Existing Core Types**:
-- `transaction.zig` - All Ethereum transaction types (Legacy, EIP-1559, EIP-4844, etc.)
-- `event_log.zig` - Event/log structures for contract events
-- `address.zig` - 20-byte Ethereum addresses with checksumming
-- `hex.zig` - Hexadecimal encoding utilities
-- `rlp.zig` - RLP encoding/decoding
+## Atomic Prompt Breakdown
 
-**Missing Types Needed**:
-- Transaction receipts with proper data structures
-- Enhanced block structures with full transaction objects
-- Debug trace structures for execution analysis
+### **Phase 1A: Transaction Receipt Primitive** 
+📁 `phase1a_transaction_receipt_primitive.md`
+- **Scope**: Implement `src/primitives/receipt.zig` with TransactionReceipt struct
+- **Dependencies**: Existing primitives (Address, EventLog, Hash)
+- **Deliverable**: Single primitive type with comprehensive tests
+- **Estimated Time**: 45-60 minutes
 
-### Provider Package (`src/provider/`)
-**Current Status**: ❌ **COMPLETELY BROKEN**
-- All transport implementations fail to compile
-- JSON serialization architecture is fundamentally flawed
-- Hardfork tests are disabled due to provider failures
+### **Phase 1B: Block with Transactions Primitive**
+📁 `phase1b_block_primitive.md`  
+- **Scope**: Implement `src/primitives/block.zig` with BlockWithTransactions struct
+- **Dependencies**: Phase 1A (TransactionReceipt), existing Transaction types
+- **Deliverable**: Enhanced block structure with full transaction objects
+- **Estimated Time**: 60-75 minutes
 
-**Required Functionality**:
-1. `getTransactionByHash()` - fetch individual transaction data
-2. `getTransactionReceipt()` - fetch transaction receipts
-3. `getBlockByNumberWithTransactions()` - fetch blocks with full transaction objects
-4. `debugTraceTransaction()` - get execution traces for comparison
+### **Phase 1C: Execution Trace Primitives**
+📁 `phase1c_trace_primitive.md`
+- **Scope**: Implement `src/primitives/trace.zig` with debug trace structures  
+- **Dependencies**: Basic primitives (Hash, etc.)
+- **Deliverable**: ExecutionTrace and StructLog types for debug tracing
+- **Estimated Time**: 45-60 minutes
+
+### **Phase 1D: JSON Parsing Utilities**
+📁 `phase1d_json_parsing_utils.md`
+- **Scope**: Implement `src/primitives/json_utils.zig` with hex parsing functions
+- **Dependencies**: None (pure utility functions)
+- **Deliverable**: Robust hex parsing with comprehensive error handling
+- **Estimated Time**: 30-45 minutes
+
+### **Phase 1E: Simple HTTP Provider**
+📁 `phase1e_simple_http_provider.md`
+- **Scope**: Implement `src/provider/simple_http_provider.zig` with working JSON-RPC client
+- **Dependencies**: All Phase 1A-1D primitives and utilities
+- **Deliverable**: Minimal, functional HTTP provider replacing broken system
+- **Estimated Time**: 75-90 minutes
+
+## Implementation Order
+**CRITICAL**: These prompts must be implemented in order due to dependencies:
+1. **1A → 1B** (BlockWithTransactions needs TransactionReceipt)
+2. **1D** can be done in parallel with 1A-1C
+3. **1E** requires all previous phases (1A-1D) to be complete
+
+## Success Criteria for Phase 1
+- [ ] All 5 atomic prompts completed successfully
+- [ ] `zig build && zig build test` passes after each prompt
+- [ ] New primitives exported from `src/primitives/root.zig`
+- [ ] Working HTTP provider replaces broken provider system
+- [ ] Comprehensive test coverage for all new components
+- [ ] Memory management follows CLAUDE.md standards (defer patterns, no leaks)
+
+## Integration with Future Phases
+Phase 1 provides the foundation for:
+- **Phase 2**: EVM tracing will use ExecutionTrace primitives
+- **Phase 3**: State loading will use TransactionReceipt and BlockWithTransactions  
+- **Phase 4**: Main test will use SimpleHttpProvider for block verification
+- **Phase 5**: Integration optimization will build on working provider infrastructure
 
 ## Implementation Requirements
 
