@@ -46,7 +46,7 @@
         },
         .zbench = .{
             .url = "https://github.com/hendriknielaender/zBench/archive/refs/heads/master.tar.gz",
-            .hash = "1220cee254c73272258d81cf679bffb0d4ecc3be6f0263b5a724fe969a9566802020",
+            .hash = "zbench-0.10.0-YTdc704iAQAR1jGZd7Qm6UYMSDtqBbQbc6ZDSdG47-o7",
         },
     },
 
