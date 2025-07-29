@@ -47,9 +47,9 @@ pub const assets = [_]Self{
         "image/svg+xml",
     ),
     Self.init(
-        "/tauri.svg",
-        @embedFile("dist/tauri.svg"),
-        "image/svg+xml",
+        "/assets/index-HYLXGoT_.js",
+        @embedFile("dist/assets/index-HYLXGoT_.js"),
+        "application/javascript",
     ),
     Self.init(
         "/assets/index-CycQSrb9.css",
@@ -57,9 +57,9 @@ pub const assets = [_]Self{
         "text/css",
     ),
     Self.init(
-        "/assets/index-HYLXGoT_.js",
-        @embedFile("dist/assets/index-HYLXGoT_.js"),
-        "application/javascript",
+        "/tauri.svg",
+        @embedFile("dist/tauri.svg"),
+        "image/svg+xml",
     ),
 };
 

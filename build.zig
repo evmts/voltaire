@@ -25,7 +25,6 @@ const GenerateAssetsStep = struct {
         _ = options;
         const self: *GenerateAssetsStep = @fieldParentPtr("step", step);
         const b = step.owner;
-        _ = b;
 
         var file = try std.fs.cwd().createFile(self.out_path, .{});
         defer file.close();
@@ -69,21 +68,38 @@ const GenerateAssetsStep = struct {
 
         try writer.writeAll("pub const assets = [_]Self{\n");
 
-        // Manually list the known assets instead of walking the directory
-        // This avoids potential issues with directory walking
-        const assets = [_]struct { path: []const u8, embed_path: []const u8, mime_type: []const u8 }{
-            .{ .path = "/index.html", .embed_path = "dist/index.html", .mime_type = "text/html" },
-            .{ .path = "/vite.svg", .embed_path = "dist/vite.svg", .mime_type = "image/svg+xml" },
-            .{ .path = "/tauri.svg", .embed_path = "dist/tauri.svg", .mime_type = "image/svg+xml" },
-            .{ .path = "/assets/index-CycQSrb9.css", .embed_path = "dist/assets/index-CycQSrb9.css", .mime_type = "text/css" },
-            .{ .path = "/assets/index-HYLXGoT_.js", .embed_path = "dist/assets/index-HYLXGoT_.js", .mime_type = "application/javascript" },
-        };
-        
-        for (assets) |asset| {
+        // Helper function to get MIME type from file extension
+        const getMimeType = struct {
+            fn get(path: []const u8) []const u8 {
+                if (std.mem.endsWith(u8, path, ".html")) return "text/html";
+                if (std.mem.endsWith(u8, path, ".css")) return "text/css";
+                if (std.mem.endsWith(u8, path, ".js")) return "application/javascript";
+                if (std.mem.endsWith(u8, path, ".svg")) return "image/svg+xml";
+                if (std.mem.endsWith(u8, path, ".png")) return "image/png";
+                if (std.mem.endsWith(u8, path, ".jpg") or std.mem.endsWith(u8, path, ".jpeg")) return "image/jpeg";
+                if (std.mem.endsWith(u8, path, ".ico")) return "image/x-icon";
+                return "application/octet-stream";
+            }
+        }.get;
+
+        // Recursively walk the dist directory and generate assets
+        var dist_dir = try std.fs.cwd().openDir(self.dist_path, .{ .iterate = true });
+        defer dist_dir.close();
+
+        var walker = try dist_dir.walk(b.allocator);
+        defer walker.deinit();
+
+        while (try walker.next()) |entry| {
+            if (entry.kind != .file) continue;
+            
+            const web_path = try std.fmt.allocPrint(b.allocator, "/{s}", .{entry.path});
+            const embed_path = try std.fmt.allocPrint(b.allocator, "dist/{s}", .{entry.path});
+            const mime_type = getMimeType(entry.path);
+            
             try writer.print("    Self.init(\n", .{});
-            try writer.print("        \"{s}\",\n", .{asset.path});
-            try writer.print("        @embedFile(\"{s}\"),\n", .{asset.embed_path});
-            try writer.print("        \"{s}\",\n", .{asset.mime_type});
+            try writer.print("        \"{s}\",\n", .{web_path});
+            try writer.print("        @embedFile(\"{s}\"),\n", .{embed_path});
+            try writer.print("        \"{s}\",\n", .{mime_type});
             try writer.print("    ),\n", .{});
         }
 

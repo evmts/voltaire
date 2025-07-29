@@ -38,88 +38,18 @@ pub fn handler(filename: []const u8) ?[]const u8 {
     // If requesting root, serve index.html
     const path = if (std.mem.eql(u8, filename, "/")) "/index.html" else filename;
     
-    // Debug: print what file is being requested
-    std.debug.print("🔍 File requested: '{s}' -> mapped to: '{s}'\n", .{ filename, path });
-    
     const asset = assets.get_asset(path);
-    
-    // Debug: print asset info with more detail
-    if (std.mem.eql(u8, asset.path, "/notfound.html")) {
-        std.debug.print("❌ Asset NOT FOUND: '{s}' - returning 404\n", .{path});
-    } else {
-        std.debug.print("✅ Asset found: path='{s}', content_len={d}, mime_type='{s}'\n", .{ asset.path, asset.content.len, asset.mime_type });
-    }
-    
-    // Return just the content, not the full HTTP response
-    // WebUI will handle the HTTP headers
-    return asset.content;
+    return asset.response;
 }
 
 pub fn run(self: *App) !void {
-    // Don't set file handler for simple test
-    // self.window.set_file_handler(handler);
+    self.window.set_file_handler(handler);
     
     // Bind the hello world function so JavaScript can call it
     _ = try self.window.bind("hello_world", helloWorldHandler);
     
-    // Create a simple test HTML that doesn't need external assets
-    const simple_html = 
-        \\<!DOCTYPE html>
-        \\<html>
-        \\<head>
-        \\    <title>WebUI Test</title>
-        \\    <script src="/webui.js"></script>
-        \\    <style>
-        \\        body {
-        \\            font-family: Arial, sans-serif;
-        \\            max-width: 600px;
-        \\            margin: 50px auto;
-        \\            padding: 20px;
-        \\            background: #f0f0f0;
-        \\        }
-        \\        button {
-        \\            padding: 10px 20px;
-        \\            font-size: 16px;
-        \\            cursor: pointer;
-        \\        }
-        \\        #result {
-        \\            margin-top: 20px;
-        \\            padding: 10px;
-        \\            background: white;
-        \\            border: 1px solid #ccc;
-        \\            min-height: 50px;
-        \\        }
-        \\    </style>
-        \\</head>
-        \\<body>
-        \\    <h1>WebUI Communication Test</h1>
-        \\    <button onclick="testHello()">Test Hello World</button>
-        \\    <div id="result">Click the button to test Zig backend communication</div>
-        \\    
-        \\    <script>
-        \\        async function testHello() {
-        \\            const resultDiv = document.getElementById('result');
-        \\            try {
-        \\                resultDiv.innerHTML = 'Calling Zig backend...';
-        \\                const response = await hello_world('TestUser');
-        \\                resultDiv.innerHTML = '<strong>✅ SUCCESS:</strong> ' + response;
-        \\                console.log('Success:', response);
-        \\            } catch (error) {
-        \\                resultDiv.innerHTML = '<strong>❌ ERROR:</strong> ' + error;
-        \\                console.error('Error:', error);
-        \\            }
-        \\        }
-        \\        
-        \\        // Test on page load
-        \\        window.onload = () => {
-        \\            console.log('Page loaded, WebUI should be available');
-        \\            console.log('hello_world function exists:', typeof hello_world !== 'undefined');
-        \\        };
-        \\    </script>
-        \\</body>
-        \\</html>
-    ;
-    
-    try self.window.show(simple_html);
+    // Try using the embedded file directly with @embedFile
+    const html_content = @embedFile("dist/index.html");
+    try self.window.show(html_content);
     webui.wait();
 }
