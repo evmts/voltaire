@@ -130,7 +130,12 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
     contract.* = try Evm.Contract.init(
         self.allocator,
         self.bytecode,
-        .{ .address = Address.zero() }
+        .{ .address = Address.zero() },
+        null, // hash
+        null, // jump_dest_analysis  
+        null, // code_analysis
+        false, // is_eof
+        null  // eof_header
     );
     self.current_contract = contract;
     
@@ -153,7 +158,7 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
 /// Get current EVM state as JSON string
 pub fn serializeEvmState(self: *DevtoolEvm) ![]u8 {
     if (!self.is_initialized or self.current_frame == null) {
-        var empty_state = try debug_state.createEmptyEvmStateJson(self.allocator);
+        const empty_state = try debug_state.createEmptyEvmStateJson(self.allocator);
         defer debug_state.freeEvmStateJson(self.allocator, empty_state);
         return try std.json.stringifyAlloc(self.allocator, empty_state, .{});
     }
@@ -412,4 +417,66 @@ test "DevtoolEvm step execution modifies stack correctly" {
     try testing.expectEqual(@as(u256, 100), value2);
     const value3 = try frame.stack.peek(1); // Bottom of stack
     try testing.expectEqual(@as(u256, 42), value3);
+}
+
+test "DevtoolEvm complete execution flow PUSH1 5 PUSH1 10 ADD" {
+    const allocator = testing.allocator;
+    
+    var devtool_evm = try DevtoolEvm.init(allocator);
+    defer devtool_evm.deinit();
+    
+    // Load bytecode: PUSH1 5, PUSH1 10, ADD (0x6005600a01)
+    const test_bytecode = "0x6005600a01";
+    try devtool_evm.loadBytecodeHex(test_bytecode);
+    
+    // Get initial state
+    const initial_state = try devtool_evm.serializeEvmState();
+    defer allocator.free(initial_state);
+    try testing.expect(initial_state.len > 0);
+    
+    // Step through execution
+    var step_count: u32 = 0;
+    var final_step: DebugStepResult = undefined;
+    
+    while (step_count < 10) { // Safety limit
+        step_count += 1;
+        
+        const step_result = devtool_evm.stepExecute() catch |err| {
+            try testing.expect(false); // Should not error in this test
+            return err;
+        };
+        
+        // Verify step information is valid
+        try testing.expect(step_result.opcode_name.len > 0);
+        try testing.expect(step_result.gas_after <= step_result.gas_before);
+        
+        final_step = step_result;
+        
+        if (step_result.completed) {
+            break;
+        }
+        
+        if (step_result.error_occurred) {
+            try testing.expect(false); // Should not error in this test
+            break;
+        }
+    }
+    
+    // Verify execution completed
+    try testing.expect(final_step.completed);
+    try testing.expect(!final_step.error_occurred);
+    
+    // Get final state
+    const final_state = try devtool_evm.serializeEvmState();
+    defer allocator.free(final_state);
+    try testing.expect(final_state.len > 0);
+    
+    // Verify stack has result (should be 15 = 5 + 10)
+    if (devtool_evm.current_frame) |frame| {
+        try testing.expect(frame.stack.size() > 0);
+        const stack_top = try frame.stack.peek(0);
+        try testing.expectEqual(@as(u256, 15), stack_top);
+    } else {
+        try testing.expect(false); // Frame should exist
+    }
 }

@@ -1100,6 +1100,20 @@ pub fn build(b: *std.Build) void {
     const compiler_test_step = b.step("test-compiler", "Run Compiler tests");
     compiler_test_step.dependOn(&run_compiler_test.step);
 
+    // Add Devtool tests
+    const devtool_test = b.addTest(.{
+        .name = "devtool-test",
+        .root_source_file = b.path("src/devtool/evm.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    devtool_test.root_module.addImport("evm", evm_mod);
+    devtool_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_devtool_test = b.addRunArtifact(devtool_test);
+    const devtool_test_step = b.step("test-devtool", "Run Devtool tests");
+    devtool_test_step.dependOn(&run_devtool_test.step);
+
     // Add SnailShellBenchmark test
     const snail_shell_benchmark_test = b.addTest(.{
         .name = "snail-shell-benchmark-test",
@@ -1224,6 +1238,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_contract_call_test.step);
     // Hardfork tests removed completely
     test_step.dependOn(&run_delegatecall_test.step);
+    test_step.dependOn(&run_devtool_test.step);
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
