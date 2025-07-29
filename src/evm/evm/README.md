@@ -24,11 +24,11 @@ The execution model follows a call stack approach where:
 
 ### Core Execution Engine
 
-#### `interpret_with_context.zig`
+#### `interpret.zig`
 Main interpreter loop that executes EVM bytecode.
 
 **Key Functions**:
-- `interpretWithContext()`: Core interpreter that fetches and executes opcodes
+- `interpret()`: Core interpreter that fetches and executes opcodes
 - Manages program counter advancement
 - Handles gas consumption per operation
 - Dispatches to opcode implementations via jump table
