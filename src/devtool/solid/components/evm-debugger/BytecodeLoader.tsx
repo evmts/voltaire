@@ -1,4 +1,5 @@
-import { Component, Setter } from 'solid-js'
+import type { Component, Setter } from 'solid-js'
+import type { EvmState } from './types'
 import { loadBytecode, resetEvm } from './utils'
 
 interface BytecodeLoaderProps {
@@ -6,7 +7,7 @@ interface BytecodeLoaderProps {
 	setBytecode: Setter<string>
 	setError: Setter<string>
 	setIsRunning: Setter<boolean>
-	setState: Setter<any>
+	setState: Setter<EvmState>
 }
 
 const BytecodeLoader: Component<BytecodeLoaderProps> = (props) => {
@@ -23,29 +24,29 @@ const BytecodeLoader: Component<BytecodeLoaderProps> = (props) => {
 	}
 
 	return (
-		<div class="mb-6 bg-white dark:bg-[#252525] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-			<div class="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-[#1E1E1E] flex items-center justify-between">
+		<div class="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-[#252525]">
+			<div class="flex items-center justify-between border-gray-200 border-b bg-gray-50 p-4 dark:border-gray-800 dark:bg-[#1E1E1E]">
 				<div>
-					<h2 class="text-base font-medium text-gray-900 dark:text-white">Bytecode</h2>
-					<p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+					<h2 class="font-medium text-base text-gray-900 dark:text-white">Bytecode</h2>
+					<p class="mt-0.5 text-gray-500 text-sm dark:text-gray-400">
 						Enter EVM bytecode to debug or select a sample contract
 					</p>
 				</div>
 				<button
 					type="button"
 					onClick={handleLoadBytecode}
-					class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 active:from-indigo-700 active:to-purple-800 text-white rounded-lg shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:focus:ring-indigo-400/50 flex items-center transform hover:translate-y-[-1px] active:translate-y-[1px]"
+					class="flex transform items-center rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2 text-white shadow-sm transition-all duration-200 hover:translate-y-[-1px] hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 active:translate-y-[1px] active:from-indigo-700 active:to-purple-800 dark:focus:ring-indigo-400/50"
 					aria-label="Load bytecode"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4 mr-2"
+						class="mr-2 h-4 w-4"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
-						strokeWidth="2"
-						strokeLinecap="round"
-						strokeLinejoin="round"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
 						aria-label="Load icon"
 					>
 						<title>Load icon</title>
@@ -59,7 +60,7 @@ const BytecodeLoader: Component<BytecodeLoaderProps> = (props) => {
 					id="bytecode"
 					value={props.bytecode}
 					onInput={(e) => props.setBytecode(e.target.value)}
-					class="w-full h-24 font-mono text-sm bg-white dark:bg-[#2D2D2D] border border-gray-200 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500/50 dark:focus:ring-indigo-400/50 focus:border-indigo-500 dark:focus:border-indigo-400 transition-colors text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 shadow-inner"
+					class="h-24 w-full rounded-lg border border-gray-200 bg-white p-3 font-mono text-gray-900 text-sm placeholder-gray-400 shadow-inner transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/50 dark:border-gray-700 dark:bg-[#2D2D2D] dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-indigo-400 dark:focus:ring-indigo-400/50"
 					placeholder="0x608060405234801561001057600080fd5b50..."
 					aria-label="EVM bytecode input"
 				/>
