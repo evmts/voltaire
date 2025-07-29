@@ -1,5 +1,5 @@
-import { Component, For, Setter, Show, createSignal } from 'solid-js'
-import { EvmState } from './types'
+import { type Component, createSignal, For, type Setter, Show } from 'solid-js'
+import type { EvmState } from './types'
 import { copyToClipboard } from './utils'
 
 interface LogsAndReturnProps {
@@ -24,19 +24,19 @@ const LogsAndReturn: Component<LogsAndReturnProps> = (props) => {
 	}
 
 	return (
-		<div class="bg-white dark:bg-[#252525] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-			<div class="p-3 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-				<h2 class="text-sm font-medium text-gray-900 dark:text-white">Logs & Return Data</h2>
-				<div class="text-xs text-gray-500 dark:text-gray-400">Event logs and function return data</div>
+		<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-[#252525]">
+			<div class="flex items-center justify-between border-gray-200 border-b p-3 dark:border-gray-800">
+				<h2 class="font-medium text-gray-900 text-sm dark:text-white">Logs & Return Data</h2>
+				<div class="text-gray-500 text-xs dark:text-gray-400">Event logs and function return data</div>
 			</div>
-			<div class="border-b border-gray-200 dark:border-gray-800">
+			<div class="border-gray-200 border-b dark:border-gray-800">
 				<div class="flex">
 					<button
 						type="button"
 						onClick={() => setActiveTab('logs')}
-						class={`px-4 py-2 text-sm font-medium transition-colors ${
+						class={`px-4 py-2 font-medium text-sm transition-colors ${
 							activeTab() === 'logs'
-								? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+								? 'border-indigo-500 border-b-2 text-indigo-600 dark:text-indigo-400'
 								: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
 						}`}
 						aria-label="Show logs"
@@ -46,9 +46,9 @@ const LogsAndReturn: Component<LogsAndReturnProps> = (props) => {
 					<button
 						type="button"
 						onClick={() => setActiveTab('returnData')}
-						class={`px-4 py-2 text-sm font-medium transition-colors ${
+						class={`px-4 py-2 font-medium text-sm transition-colors ${
 							activeTab() === 'returnData'
-								? 'border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+								? 'border-indigo-500 border-b-2 text-indigo-600 dark:text-indigo-400'
 								: 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
 						}`}
 						aria-label="Show return data"
@@ -57,21 +57,21 @@ const LogsAndReturn: Component<LogsAndReturnProps> = (props) => {
 					</button>
 				</div>
 			</div>
-			<div class="p-0 max-h-[250px] overflow-y-auto">
+			<div class="max-h-[250px] overflow-y-auto p-0">
 				<Show when={activeTab() === 'logs'}>
 					<Show
 						when={props.state.logs.length > 0}
 						fallback={
-							<div class="p-8 text-sm text-gray-500 dark:text-gray-400 italic flex items-center justify-center">
+							<div class="flex items-center justify-center p-8 text-gray-500 text-sm italic dark:text-gray-400">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="h-5 w-5 mr-2 text-gray-400 dark:text-gray-500"
+									class="mr-2 h-5 w-5 text-gray-400 dark:text-gray-500"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
 								>
 									<title>Logs</title>
 									<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -83,13 +83,13 @@ const LogsAndReturn: Component<LogsAndReturnProps> = (props) => {
 						<div class="divide-y divide-gray-100 dark:divide-gray-800">
 							<For each={props.state.logs}>
 								{(log, index) => (
-									<div class="px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#2D2D2D] transition-colors group">
-										<div class="flex justify-between items-center">
-											<span class="text-xs font-medium text-gray-500 dark:text-gray-400">Log {index()}:</span>
+									<div class="group px-4 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-[#2D2D2D]">
+										<div class="flex items-center justify-between">
+											<span class="font-medium text-gray-500 text-xs dark:text-gray-400">Log {index()}:</span>
 											<button
 												type="button"
 												onClick={() => handleCopyLog(log, index())}
-												class="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+												class="rounded-md p-1 text-gray-400 opacity-0 transition-opacity hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:hover:bg-gray-700 dark:hover:text-gray-300"
 												aria-label="Copy to clipboard"
 											>
 												<svg
@@ -98,9 +98,9 @@ const LogsAndReturn: Component<LogsAndReturnProps> = (props) => {
 													viewBox="0 0 24 24"
 													fill="none"
 													stroke="currentColor"
-													strokeWidth="2"
-													strokeLinecap="round"
-													strokeLinejoin="round"
+													stroke-width="2"
+													stroke-linecap="round"
+													stroke-linejoin="round"
 												>
 													<title>Copy</title>
 													<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
@@ -108,7 +108,7 @@ const LogsAndReturn: Component<LogsAndReturnProps> = (props) => {
 												</svg>
 											</button>
 										</div>
-										<div class="mt-1 font-mono text-sm text-gray-900 dark:text-white break-all">{log}</div>
+										<div class="mt-1 break-all font-mono text-gray-900 text-sm dark:text-white">{log}</div>
 									</div>
 								)}
 							</For>
@@ -119,16 +119,16 @@ const LogsAndReturn: Component<LogsAndReturnProps> = (props) => {
 					<Show
 						when={props.state.returnData !== '0x' && props.state.returnData.length > 2}
 						fallback={
-							<div class="p-8 text-sm text-gray-500 dark:text-gray-400 italic flex items-center justify-center">
+							<div class="flex items-center justify-center p-8 text-gray-500 text-sm italic dark:text-gray-400">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="h-5 w-5 mr-2 text-gray-400 dark:text-gray-500"
+									class="mr-2 h-5 w-5 text-gray-400 dark:text-gray-500"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
 								>
 									<title>Return data</title>
 									<path d="M9 10a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4z" />
@@ -139,13 +139,13 @@ const LogsAndReturn: Component<LogsAndReturnProps> = (props) => {
 							</div>
 						}
 					>
-						<div class="px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-[#2D2D2D] transition-colors group">
-							<div class="flex justify-between items-center">
-								<span class="text-xs font-medium text-gray-500 dark:text-gray-400">Return Data:</span>
+						<div class="group px-4 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-[#2D2D2D]">
+							<div class="flex items-center justify-between">
+								<span class="font-medium text-gray-500 text-xs dark:text-gray-400">Return Data:</span>
 								<button
 									type="button"
 									onClick={handleCopyReturnData}
-									class="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+									class="rounded-md p-1 text-gray-400 opacity-0 transition-opacity hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:hover:bg-gray-700 dark:hover:text-gray-300"
 									aria-label="Copy to clipboard"
 								>
 									<svg
@@ -154,9 +154,9 @@ const LogsAndReturn: Component<LogsAndReturnProps> = (props) => {
 										viewBox="0 0 24 24"
 										fill="none"
 										stroke="currentColor"
-										strokeWidth="2"
-										strokeLinecap="round"
-										strokeLinejoin="round"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
 									>
 										<title>Copy</title>
 										<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
@@ -164,7 +164,7 @@ const LogsAndReturn: Component<LogsAndReturnProps> = (props) => {
 									</svg>
 								</button>
 							</div>
-							<div class="mt-1 font-mono text-sm text-gray-900 dark:text-white break-all">{props.state.returnData}</div>
+							<div class="mt-1 break-all font-mono text-gray-900 text-sm dark:text-white">{props.state.returnData}</div>
 						</div>
 					</Show>
 				</Show>

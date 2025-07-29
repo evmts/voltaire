@@ -1,4 +1,4 @@
-import { Component, Setter, Show } from 'solid-js'
+import { type Component, type Setter, Show } from 'solid-js'
 import { sampleContracts } from './types'
 
 interface HeaderProps {
@@ -13,21 +13,21 @@ interface HeaderProps {
 
 const Header: Component<HeaderProps> = (props) => {
 	return (
-		<header class="bg-white dark:bg-[#1E1E1E] border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20 backdrop-blur-md bg-white/80 dark:bg-[#1E1E1E]/80">
-			<div class="max-w-7xl mx-auto">
-				<div class="flex justify-between h-16 items-center px-4 sm:px-6">
+		<header class="sticky top-0 z-20 border-gray-200 border-b bg-white/80 backdrop-blur-md dark:border-gray-800 dark:bg-[#1E1E1E]/80">
+			<div class="mx-auto max-w-7xl">
+				<div class="flex h-16 items-center justify-between px-4 sm:px-6">
 					<div class="flex items-center space-x-4">
 						<div class="flex items-center">
-							<div class="w-8 h-8 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md">
+							<div class="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									class="h-5 w-5"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
 									aria-label="EVM Debugger icon"
 								>
 									<title>EVM Debugger icon</title>
@@ -35,17 +35,17 @@ const Header: Component<HeaderProps> = (props) => {
 									<path d="M8 7h.01M12 7h.01M16 7h.01" />
 								</svg>
 							</div>
-							<h1 class="ml-2.5 text-lg font-medium text-gray-900 dark:text-white">EVM Debugger</h1>
+							<h1 class="ml-2.5 font-medium text-gray-900 text-lg dark:text-white">EVM Debugger</h1>
 						</div>
 
-						<div class="hidden md:flex space-x-1 ml-6">
+						<div class="ml-6 hidden space-x-1 md:flex">
 							<button
 								type="button"
 								onClick={() => props.setActivePanel('all')}
-								class={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+								class={`rounded-md px-3 py-1.5 text-sm transition-colors ${
 									props.activePanel === 'all'
-										? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium'
-										: 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
+										? 'bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white'
+										: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60'
 								}`}
 							>
 								All Panels
@@ -53,10 +53,10 @@ const Header: Component<HeaderProps> = (props) => {
 							<button
 								type="button"
 								onClick={() => props.setActivePanel('stack')}
-								class={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+								class={`rounded-md px-3 py-1.5 text-sm transition-colors ${
 									props.activePanel === 'stack'
-										? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium'
-										: 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
+										? 'bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white'
+										: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60'
 								}`}
 							>
 								Stack
@@ -64,10 +64,10 @@ const Header: Component<HeaderProps> = (props) => {
 							<button
 								type="button"
 								onClick={() => props.setActivePanel('memory')}
-								class={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+								class={`rounded-md px-3 py-1.5 text-sm transition-colors ${
 									props.activePanel === 'memory'
-										? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium'
-										: 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
+										? 'bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white'
+										: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60'
 								}`}
 							>
 								Memory
@@ -75,10 +75,10 @@ const Header: Component<HeaderProps> = (props) => {
 							<button
 								type="button"
 								onClick={() => props.setActivePanel('storage')}
-								class={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+								class={`rounded-md px-3 py-1.5 text-sm transition-colors ${
 									props.activePanel === 'storage'
-										? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium'
-										: 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
+										? 'bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white'
+										: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60'
 								}`}
 							>
 								Storage
@@ -86,10 +86,10 @@ const Header: Component<HeaderProps> = (props) => {
 							<button
 								type="button"
 								onClick={() => props.setActivePanel('logs')}
-								class={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+								class={`rounded-md px-3 py-1.5 text-sm transition-colors ${
 									props.activePanel === 'logs'
-										? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium'
-										: 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/60'
+										? 'bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white'
+										: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60'
 								}`}
 							>
 								Logs
@@ -101,18 +101,18 @@ const Header: Component<HeaderProps> = (props) => {
 							<button
 								type="button"
 								onClick={() => props.setShowSample(!props.showSample)}
-								class="px-3 py-1.5 text-sm rounded-md border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:focus:ring-indigo-400/50 transition-colors text-gray-700 dark:text-gray-200 flex items-center"
+								class="flex items-center rounded-md border border-gray-200 px-3 py-1.5 text-gray-700 text-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:border-gray-800 dark:text-gray-200 dark:focus:ring-indigo-400/50 dark:hover:bg-gray-800/60"
 								aria-label="Load sample contract"
 							>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="h-4 w-4 mr-1.5 text-gray-500 dark:text-gray-400"
+									class="mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-400"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
 									aria-label="File icon"
 								>
 									<title>File icon</title>
@@ -122,13 +122,13 @@ const Header: Component<HeaderProps> = (props) => {
 								Samples
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class={`h-4 w-4 ml-1.5 transition-transform duration-200 ${props.showSample ? 'rotate-180' : ''}`}
+									class={`ml-1.5 h-4 w-4 transition-transform duration-200 ${props.showSample ? 'rotate-180' : ''}`}
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
 									aria-label="Chevron"
 								>
 									<title>Chevron</title>
@@ -136,23 +136,22 @@ const Header: Component<HeaderProps> = (props) => {
 								</svg>
 							</button>
 							<Show when={props.showSample}>
-								<div class="absolute right-0 mt-2 w-72 bg-white dark:bg-[#252525] rounded-md shadow-lg border border-gray-200 dark:border-gray-800 z-30 overflow-hidden">
+								<div class="absolute right-0 z-30 mt-2 w-72 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-800 dark:bg-[#252525]">
 									<div class="p-1">
-										<div class="text-xs font-medium text-gray-500 dark:text-gray-400 px-3 py-2 uppercase tracking-wider">
+										<div class="px-3 py-2 font-medium text-gray-500 text-xs uppercase tracking-wider dark:text-gray-400">
 											Sample Contracts
 										</div>
-										{sampleContracts.map((contract, index) => (
+										{sampleContracts.map((contract) => (
 											<button
-												key={index}
 												type="button"
 												onClick={() => {
 													props.setBytecode(contract.bytecode)
 													props.setShowSample(false)
 												}}
-												class="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-md transition-colors flex flex-col"
+												class="flex w-full flex-col rounded-md px-3 py-2 text-left text-gray-700 text-sm transition-colors hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800/60"
 											>
 												<span class="font-medium">{contract.name}</span>
-												<span class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{contract.description}</span>
+												<span class="mt-0.5 text-gray-500 text-xs dark:text-gray-400">{contract.description}</span>
 											</button>
 										))}
 									</div>
@@ -162,7 +161,7 @@ const Header: Component<HeaderProps> = (props) => {
 						<button
 							type="button"
 							onClick={() => props.setIsDarkMode(!props.isDarkMode)}
-							class="p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:focus:ring-indigo-400/50 transition-colors"
+							class="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 dark:text-gray-400 dark:focus:ring-indigo-400/50 dark:hover:bg-gray-800/60 dark:hover:text-white"
 							aria-label="Toggle dark mode"
 						>
 							<Show
@@ -174,9 +173,9 @@ const Header: Component<HeaderProps> = (props) => {
 										viewBox="0 0 24 24"
 										fill="none"
 										stroke="currentColor"
-										strokeWidth="2"
-										strokeLinecap="round"
-										strokeLinejoin="round"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
 									>
 										<title>Moon icon</title>
 										<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
@@ -189,9 +188,9 @@ const Header: Component<HeaderProps> = (props) => {
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-									strokeLinejoin="round"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
 								>
 									<title>Sun icon</title>
 									<circle cx="12" cy="12" r="4" />

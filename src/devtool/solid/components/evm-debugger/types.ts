@@ -49,7 +49,7 @@ export const formatMemory = (memory: string): string[] => {
 	const hex = memory.slice(2)
 
 	// Group by 32 bytes (64 chars) for readability
-	const chunks = []
+	const chunks: string[] = []
 	for (let i = 0; i < hex.length; i += 64) {
 		chunks.push(hex.slice(i, i + 64))
 	}

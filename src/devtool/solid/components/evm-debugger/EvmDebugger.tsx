@@ -1,7 +1,4 @@
-import { Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
-import { EvmState } from './types'
-import { getEvmState } from './utils'
-
+import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import BytecodeLoader from './BytecodeLoader'
 import Controls from './Controls'
 import CopyToast from './CopyToast'
@@ -12,6 +9,8 @@ import Memory from './Memory'
 import Stack from './Stack'
 import StateSummary from './StateSummary'
 import Storage from './Storage'
+import type { EvmState } from './types'
+import { getEvmState } from './utils'
 
 const EvmDebugger = () => {
 	const [bytecode, setBytecode] = createSignal('0x')
@@ -117,7 +116,7 @@ const EvmDebugger = () => {
 
 	return (
 		<div class={`min-h-screen transition-colors duration-300 ${isDarkMode() ? 'dark' : ''}`}>
-			<div class="bg-white dark:bg-[#1E1E1E] min-h-screen text-gray-900 dark:text-gray-100">
+			<div class="min-h-screen bg-white text-gray-900 dark:bg-[#1E1E1E] dark:text-gray-100">
 				<Header
 					showSample={showSample()}
 					setShowSample={setShowSample}
@@ -127,7 +126,7 @@ const EvmDebugger = () => {
 					activePanel={activePanel()}
 					setActivePanel={setActivePanel}
 				/>
-				<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+				<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6">
 					<ErrorAlert error={error()} setError={setError} />
 					<BytecodeLoader
 						bytecode={bytecode()}
@@ -145,7 +144,7 @@ const EvmDebugger = () => {
 						setIsUpdating={setIsUpdating}
 					/>
 					<StateSummary state={state()} isUpdating={isUpdating()} />
-					<div class="grid gap-6 grid-cols-1 lg:grid-cols-2">
+					<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 						<Show when={activePanel() === 'all' || activePanel() === 'stack'}>
 							<Stack state={state()} copied={copied()} setCopied={setCopied} />
 						</Show>
