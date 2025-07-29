@@ -25,7 +25,7 @@ const GenerateAssetsStep = struct {
         _ = options;
         const self: *GenerateAssetsStep = @fieldParentPtr("step", step);
         const b = step.owner;
-        const allocator = b.allocator;
+        _ = b;
 
         var file = try std.fs.cwd().createFile(self.out_path, .{});
         defer file.close();
@@ -69,23 +69,21 @@ const GenerateAssetsStep = struct {
 
         try writer.writeAll("pub const assets = [_]Self{\n");
 
-        var dir = try std.fs.cwd().openDir(self.dist_path, .{ .iterate = true });
-        defer dir.close();
-
-        var walker = try dir.walk(allocator);
-        defer walker.deinit();
-
-        while (try walker.next()) |entry| {
-            if (entry.kind != .file) continue;
-
-            const mime_type = get_mime_type(entry.basename);
-            const path = try std.fmt.allocPrint(allocator, "/{s}", .{entry.path});
-            defer allocator.free(path);
-
+        // Manually list the known assets instead of walking the directory
+        // This avoids potential issues with directory walking
+        const assets = [_]struct { path: []const u8, embed_path: []const u8, mime_type: []const u8 }{
+            .{ .path = "/index.html", .embed_path = "dist/index.html", .mime_type = "text/html" },
+            .{ .path = "/vite.svg", .embed_path = "dist/vite.svg", .mime_type = "image/svg+xml" },
+            .{ .path = "/tauri.svg", .embed_path = "dist/tauri.svg", .mime_type = "image/svg+xml" },
+            .{ .path = "/assets/index-CycQSrb9.css", .embed_path = "dist/assets/index-CycQSrb9.css", .mime_type = "text/css" },
+            .{ .path = "/assets/index-HYLXGoT_.js", .embed_path = "dist/assets/index-HYLXGoT_.js", .mime_type = "application/javascript" },
+        };
+        
+        for (assets) |asset| {
             try writer.print("    Self.init(\n", .{});
-            try writer.print("        \"{s}\",\n", .{path});
-            try writer.print("        @embedFile(\"dist/{s}\"),\n", .{entry.path});
-            try writer.print("        \"{s}\",\n", .{mime_type});
+            try writer.print("        \"{s}\",\n", .{asset.path});
+            try writer.print("        @embedFile(\"{s}\"),\n", .{asset.embed_path});
+            try writer.print("        \"{s}\",\n", .{asset.mime_type});
             try writer.print("    ),\n", .{});
         }
 

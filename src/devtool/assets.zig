@@ -47,19 +47,19 @@ pub const assets = [_]Self{
         "image/svg+xml",
     ),
     Self.init(
+        "/tauri.svg",
+        @embedFile("dist/tauri.svg"),
+        "image/svg+xml",
+    ),
+    Self.init(
         "/assets/index-CycQSrb9.css",
         @embedFile("dist/assets/index-CycQSrb9.css"),
         "text/css",
     ),
     Self.init(
-        "/assets/index-GgQBUxXy.js",
-        @embedFile("dist/assets/index-GgQBUxXy.js"),
+        "/assets/index-HYLXGoT_.js",
+        @embedFile("dist/assets/index-HYLXGoT_.js"),
         "application/javascript",
-    ),
-    Self.init(
-        "/tauri.svg",
-        @embedFile("dist/tauri.svg"),
-        "image/svg+xml",
     ),
 };
 
