@@ -21,7 +21,9 @@ test "CREATE (0xF0): Basic contract creation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{
@@ -91,7 +93,9 @@ test "CREATE: Static call protection" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{0xF0}; // CREATE
@@ -141,7 +145,9 @@ test "CREATE: EIP-3860 initcode size limit" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{0xF0}; // CREATE
@@ -191,7 +197,9 @@ test "CREATE: Depth limit" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{0xF0}; // CREATE
@@ -249,7 +257,9 @@ test "CREATE2 (0xF5): Deterministic contract creation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{
@@ -319,7 +329,9 @@ test "CALL (0xF1): Basic external call" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{0xF1}; // CALL
@@ -375,7 +387,9 @@ test "CALL: Value transfer in static context" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{0xF1}; // CALL
@@ -429,7 +443,9 @@ test "CALL: Cold address access (EIP-2929)" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{0xF1}; // CALL
@@ -491,7 +507,9 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{0xF2}; // CALLCODE
@@ -550,7 +568,9 @@ test "DELEGATECALL (0xF4): Execute with current context" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{0xF4}; // DELEGATECALL
@@ -613,7 +633,9 @@ test "STATICCALL (0xFA): Read-only external call" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{0xFA}; // STATICCALL
@@ -671,7 +693,9 @@ test "System opcodes: Gas consumption" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{0xF0}; // CREATE
@@ -733,7 +757,9 @@ test "CALL operations: Depth limit" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const opcodes = [_]u8{ 0xF1, 0xF2, 0xF4, 0xFA }; // CALL, CALLCODE, DELEGATECALL, STATICCALL
@@ -804,7 +830,9 @@ test "CREATE/CREATE2: Failed creation scenarios" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const code = [_]u8{0xF0}; // CREATE

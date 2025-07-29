@@ -15,7 +15,9 @@ test "RETURN sets output correctly" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Bytecode that stores 0xDEADBEEF and returns it
@@ -40,7 +42,7 @@ test "RETURN sets output correctly" {
     );
     defer contract.deinit(allocator, null);
 
-    const result = try vm.interpret(&contract, &[_]u8{});
+    const result = try vm.interpret(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -62,7 +64,9 @@ test "constructor returns runtime code" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Simple constructor that returns "HELLO"

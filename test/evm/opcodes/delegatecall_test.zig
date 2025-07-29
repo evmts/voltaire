@@ -26,7 +26,8 @@ test "DELEGATECALL basic functionality" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Vm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Setup context
@@ -102,7 +103,7 @@ test "DELEGATECALL basic functionality" {
     );
     defer contract.deinit(allocator, null);
 
-    const result = try vm.interpret(&contract, &.{});
+    const result = try vm.interpret(&contract, &.{}, false);
     defer if (result.output) |out| allocator.free(out);
 
     // Verify execution succeeded
@@ -127,7 +128,8 @@ test "DELEGATECALL preserves sender and value" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Vm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Setup context
@@ -186,7 +188,7 @@ test "DELEGATECALL preserves sender and value" {
     );
     defer contract.deinit(allocator, null);
 
-    const result = try vm.interpret(&contract, &.{});
+    const result = try vm.interpret(&contract, &.{}, false);
     defer if (result.output) |out| allocator.free(out);
 
     try testing.expectEqual(.Success, result.status);
@@ -212,7 +214,8 @@ test "DELEGATECALL with storage access" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Vm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Setup context
@@ -271,7 +274,7 @@ test "DELEGATECALL with storage access" {
     );
     defer contract.deinit(allocator, null);
 
-    const result = try vm.interpret(&contract, &.{});
+    const result = try vm.interpret(&contract, &.{}, false);
     defer if (result.output) |out| allocator.free(out);
 
     try testing.expectEqual(.Success, result.status);

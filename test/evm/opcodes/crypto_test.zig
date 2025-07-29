@@ -15,7 +15,9 @@ test "Crypto: KECCAK256 (SHA3) basic operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const caller = [_]u8{0x11} ** 20;
@@ -105,7 +107,9 @@ test "Crypto: KECCAK256 memory expansion and gas" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const caller = [_]u8{0x11} ** 20;
@@ -166,7 +170,9 @@ test "Crypto: KECCAK256 edge cases" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const caller = [_]u8{0x11} ** 20;
@@ -220,7 +226,9 @@ test "Crypto: Stack underflow errors" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     const caller = [_]u8{0x11} ** 20;
