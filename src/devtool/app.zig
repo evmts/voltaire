@@ -35,7 +35,10 @@ pub fn deinit() void {
 }
 
 pub fn handler(filename: []const u8) ?[]const u8 {
-    const asset = assets.get_asset(filename);
+    // If requesting root, serve index.html
+    const path = if (std.mem.eql(u8, filename, "/")) "/index.html" else filename;
+    
+    const asset = assets.get_asset(path);
     return asset.response;
 }
 
@@ -45,6 +48,8 @@ pub fn run(self: *App) !void {
     // Bind the hello world function so JavaScript can call it
     _ = try self.window.bind("hello_world", helloWorldHandler);
     
-    try self.window.show("index.html");
+    // Try using the embedded file directly with @embedFile
+    const html_content = @embedFile("dist/index.html");
+    try self.window.show(html_content);
     webui.wait();
 }
