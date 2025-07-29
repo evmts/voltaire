@@ -63,94 +63,55 @@ comptime {
     std.debug.assert(@sizeOf(Evm) > 0); // Struct must have size
 }
 
-/// Create a new EVM with minimal configuration.
+/// Create a new EVM with specified configuration.
 ///
-/// Initializes an EVM with default settings, ready for configuration via builder pattern.
-/// Uses default jump table and chain rules (latest hardfork).
+/// This is the single initialization method for EVM instances. All parameters except
+/// allocator and database are optional and will use sensible defaults if not provided.
+/// For a more convenient API, use EvmBuilder.
 ///
 /// @param allocator Memory allocator for VM operations
 /// @param database Database interface for state management
-/// @return New EVM instance
-/// @throws OutOfMemory if memory initialization fails
-///
-/// Example:
-/// ```zig
-/// var evm = try Evm.init(allocator, database);
-/// defer evm.deinit();
-/// evm.depth = 5;
-/// evm.read_only = true;
-/// ```
-pub fn init(allocator: std.mem.Allocator, database: @import("state/database_interface.zig").DatabaseInterface) !Evm {
-    var state = try EvmState.init(allocator, database);
-    errdefer state.deinit();
-    Log.debug("Evm.init: EvmState.init completed", .{});
-
-    const context = Context.init();
-    var access_list = AccessList.init(allocator, context);
-    errdefer access_list.deinit();
-
-    return Evm{
-        .allocator = allocator,
-        .table = JumpTable.DEFAULT,
-        .depth = 0,
-        .read_only = false,
-        .chain_rules = ChainRules.DEFAULT,
-        .context = context,
-        .return_data = &[_]u8{},
-        .state = state,
-        .access_list = access_list,
-    };
-}
-
-/// Create an EVM with specific initial state.
-///
-/// Used for creating EVMs with pre-existing state, such as when
-/// resuming execution or creating child EVMs with inherited state.
-/// All parameters are optional and default to sensible values.
-///
-/// @param allocator Memory allocator
-/// @param database Database interface for state management
-/// @param return_data Return data buffer (optional)
-/// @param table Opcode dispatch table (optional)
-/// @param chain_rules Protocol rules (optional)
-/// @param depth Current call depth (optional)
-/// @param read_only Static call flag (optional)
+/// @param return_data Return data buffer (optional, defaults to empty slice)
+/// @param table Opcode dispatch table (optional, defaults to JumpTable.DEFAULT)
+/// @param chain_rules Protocol rules (optional, defaults to ChainRules.DEFAULT)
+/// @param context Execution context (optional, defaults to Context.init())
+/// @param depth Current call depth (optional, defaults to 0)
+/// @param read_only Static call flag (optional, defaults to false)
 /// @return Configured EVM instance
 /// @throws OutOfMemory if memory initialization fails
 ///
-/// Example:
+/// Example using builder pattern:
 /// ```zig
-/// // Create child EVM inheriting depth and read-only mode
-/// const child_evm = try Evm.init_with_state(
-///     allocator,
-///     database,
-///     null,
-///     null,
-///     null,
-///     null,
-///     parent.depth + 1,
-///     parent.read_only
-/// );
+/// var builder = EvmBuilder.init(allocator, database);
+/// var evm = try builder.with_depth(5).with_read_only(true).build();
+/// defer evm.deinit();
 /// ```
-pub fn init_with_state(
+///
+/// Example using direct initialization:
+/// ```zig
+/// var evm = try Evm.init(allocator, database, null, null, null, null, 0, false);
+/// defer evm.deinit();
+/// ```
+pub fn init(
     allocator: std.mem.Allocator,
     database: @import("state/database_interface.zig").DatabaseInterface,
     return_data: ?[]u8,
     table: ?JumpTable,
     chain_rules: ?ChainRules,
-    depth: ?u16,
-    read_only: ?bool,
+    context: ?Context,
+    depth: u16,
+    read_only: bool,
 ) !Evm {
-    Log.debug("Evm.init_with_state: Initializing EVM with custom state", .{});
+    Log.debug("Evm.init: Initializing EVM with configuration", .{});
 
     var state = try EvmState.init(allocator, database);
     errdefer state.deinit();
 
-    const context = Context.init();
-    var access_list = AccessList.init(allocator, context);
+    const ctx = context orelse Context.init();
+    var access_list = AccessList.init(allocator, ctx);
     errdefer access_list.deinit();
 
-    Log.debug("Evm.init_with_state: EVM initialization complete", .{});
+    Log.debug("Evm.init: EVM initialization complete", .{});
     return Evm{
         .allocator = allocator,
         .return_data = return_data orelse &[_]u8{},
@@ -158,24 +119,10 @@ pub fn init_with_state(
         .chain_rules = chain_rules orelse ChainRules.DEFAULT,
         .state = state,
         .access_list = access_list,
-        .context = context,
-        .depth = depth orelse 0,
-        .read_only = read_only orelse false,
+        .context = ctx,
+        .depth = depth,
+        .read_only = read_only,
     };
-}
-
-/// Initialize EVM with a specific hardfork.
-/// Convenience function that creates the jump table at runtime.
-/// For production use, consider pre-generating the jump table at compile time.
-/// @param allocator Memory allocator for VM operations
-/// @param database Database interface for state management
-/// @param hardfork Ethereum hardfork to configure for
-/// @return Initialized EVM instance
-/// @throws std.mem.Allocator.Error if allocation fails
-pub fn init_with_hardfork(allocator: std.mem.Allocator, database: @import("state/database_interface.zig").DatabaseInterface, hardfork: Hardfork) !Evm {
-    const table = JumpTable.init_from_hardfork(hardfork);
-    const rules = ChainRules.for_hardfork(hardfork);
-    return try init_with_state(allocator, database, null, table, rules, null, null);
 }
 
 /// Free all VM resources.
@@ -200,29 +147,9 @@ pub fn reset(self: *Evm) void {
 
 
 pub usingnamespace @import("evm/set_context.zig");
-pub usingnamespace @import("evm/interpret_with_context.zig");
+pub usingnamespace @import("evm/interpret.zig");
 pub usingnamespace @import("evm/create_contract_internal.zig");
 
-/// Execute contract bytecode and return the result.
-///
-/// This is the main execution entry point. The contract must be properly initialized
-/// with bytecode, gas limit, and input data. The VM executes opcodes sequentially
-/// until completion, error, or gas exhaustion.
-///
-/// Time complexity: O(n) where n is the number of opcodes executed.
-/// Memory: May allocate for return data if contract returns output.
-///
-/// Example:
-/// ```zig
-/// var contract = Contract.init_at_address(caller, addr, 0, 100000, code, input, false);
-/// defer contract.deinit(vm.allocator, null);
-/// try vm.state.set_code(addr, code);
-/// const result = try vm.interpret(&contract, input);
-/// defer if (result.output) |output| vm.allocator.free(output);
-/// ```
-pub fn interpret(self: *Evm, contract: *Contract, input: []const u8) ExecutionError.Error!RunResult {
-    return try self.interpret_with_context(contract, input, false);
-}
 pub usingnamespace @import("evm/create_contract.zig");
 pub usingnamespace @import("evm/call_contract.zig");
 pub usingnamespace @import("evm/execute_precompile_call.zig");

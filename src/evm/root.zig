@@ -108,6 +108,9 @@ pub const StoragePool = @import("frame/storage_pool.zig");
 /// Main virtual machine implementation
 pub const Evm = @import("evm.zig");
 
+/// Builder pattern for constructing EVM instances
+pub const EvmBuilder = @import("evm_builder.zig").EvmBuilder;
+
 /// EVM state management (accounts, storage, logs)
 pub const EvmState = @import("state/state.zig");
 

@@ -66,7 +66,8 @@ export fn evm_init() c_int {
         return @intFromEnum(EvmError.EVM_ERROR_MEMORY);
     };
 
-    vm.* = Evm.init(allocator, db_interface) catch |err| {
+    var builder = evm_root.EvmBuilder.init(allocator, db_interface);
+    vm.* = try builder.build() catch |err| {
         log(.err, .evm_c, "Failed to initialize VM: {}", .{err});
         allocator.destroy(vm);
         return @intFromEnum(EvmError.EVM_ERROR_MEMORY);

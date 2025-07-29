@@ -139,7 +139,8 @@ export fn guillotine_init() c_int {
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_MEMORY);
     };
 
-    vm.* = evm_root.Evm.init(allocator, db_interface) catch |err| {
+    var builder = evm_root.EvmBuilder.init(allocator, db_interface);
+    vm.* = builder.build() catch |err| {
         log(.err, .guillotine_c, "Failed to initialize VM: {}", .{err});
         allocator.destroy(vm);
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_MEMORY);
@@ -211,7 +212,7 @@ export fn guillotine_execute(
     };
 
     // Execute bytecode
-    const run_result = vm.interpret(&contract, &[_]u8{}) catch |err| {
+    const run_result = vm.interpret(&contract, &[_]u8{}, false) catch |err| {
         log(.err, .guillotine_c, "Execution failed: {}", .{err});
         result_ptr.success = 0;
         result_ptr.error_code = @intFromEnum(GuillotineError.GUILLOTINE_ERROR_EXECUTION_FAILED);
