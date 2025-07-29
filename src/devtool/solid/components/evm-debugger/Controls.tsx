@@ -1,6 +1,6 @@
 import { type Component, type Setter, Show } from 'solid-js'
-import type { EvmState } from './types'
-import { resetEvm, stepEvm, toggleRunPause } from './utils'
+import type { EvmState } from '~/components/evm-debugger/types'
+import { resetEvm, stepEvm, toggleRunPause } from '~/components/evm-debugger/utils'
 
 interface ControlsProps {
 	isRunning: boolean

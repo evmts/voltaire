@@ -26,6 +26,7 @@
 		"tailwindcss-animate": "^1.0.7",
 		"typescript": "~5.8.3",
 		"vite": "^6.3.5",
-		"vite-plugin-solid": "^2.11.6"
+		"vite-plugin-solid": "^2.11.6",
+		"vite-tsconfig-paths": "^5.1.4"
 	}
 }

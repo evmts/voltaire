@@ -1,6 +1,6 @@
 import type { Component, Setter } from 'solid-js'
-import type { EvmState } from './types'
-import { loadBytecode, resetEvm } from './utils'
+import type { EvmState } from '~/components/evm-debugger/types'
+import { loadBytecode, resetEvm } from '~/components/evm-debugger/utils'
 
 interface BytecodeLoaderProps {
 	bytecode: string

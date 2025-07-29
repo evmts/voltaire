@@ -1,5 +1,5 @@
 import type { Component } from 'solid-js'
-import type { EvmState } from './types'
+import type { EvmState } from '~/components/evm-debugger/types'
 
 interface StateSummaryProps {
 	state: EvmState

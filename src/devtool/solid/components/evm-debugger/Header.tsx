@@ -1,5 +1,5 @@
 import { type Component, type Setter, Show } from 'solid-js'
-import { sampleContracts } from './types'
+import { sampleContracts } from '~/components/evm-debugger/types'
 
 interface HeaderProps {
 	showSample: boolean
