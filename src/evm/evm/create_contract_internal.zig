@@ -53,7 +53,7 @@ pub fn create_contract_internal(self: *Vm, creator: primitives.Address.Address, 
 
     // Execute the init code - this should return the deployment bytecode
     Log.debug("create_contract_internal: Executing init code, size: {}", .{init_code.len});
-    const init_result = self.interpret_with_context(&init_contract, &[_]u8{}, false) catch |err| {
+    const init_result = self.interpret(&init_contract, &[_]u8{}, false) catch |err| {
         Log.debug("Init code execution failed with error: {}", .{err});
         if (err == ExecutionError.Error.REVERT) {
             // On revert, consume partial gas

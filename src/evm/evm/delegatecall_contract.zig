@@ -87,7 +87,7 @@ pub fn delegatecall_contract(self: *Vm, current: primitives.Address.Address, cod
 
     // Execute the contract in the current context
     Log.debug("VM.delegatecall_contract: About to execute contract with gas={}", .{execution_gas});
-    const result = self.interpret_with_context(&contract, input, is_static) catch |err| {
+    const result = self.interpret(&contract, input, is_static) catch |err| {
         Log.debug("VM.delegatecall_contract: Execution failed with error: {}", .{err});
 
         // For REVERT, we return partial gas

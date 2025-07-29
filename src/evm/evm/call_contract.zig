@@ -125,7 +125,7 @@ pub inline fn call_contract(self: *Vm, caller: primitives.Address.Address, to: p
 
     // Execute the contract
     Log.debug("VM.call_contract: About to execute contract with gas={}", .{execution_gas});
-    const result = self.interpret_with_context(&contract, input, is_static) catch |err| {
+    const result = self.interpret(&contract, input, is_static) catch |err| {
         Log.debug("VM.call_contract: Execution failed with error: {}", .{err});
 
         // On error, revert value transfer

@@ -138,11 +138,9 @@ pub inline fn get_operation(self: *const JumpTable, opcode: u8) *const Operation
 /// ```zig
 /// const result = try table.execute(pc, &interpreter, &state, bytecode[pc]);
 /// ```
-pub inline fn execute(self: *const JumpTable, pc: usize, interpreter: operation_module.Interpreter, state: operation_module.State, opcode: u8) ExecutionError.Error!operation_module.ExecutionResult {
+pub inline fn execute(self: *const JumpTable, pc: usize, interpreter: operation_module.Interpreter, frame: operation_module.State, opcode: u8) ExecutionError.Error!operation_module.ExecutionResult {
+    @branchHint(.likely);
     const operation = self.get_operation(opcode);
-
-    // Access frame directly - state is now a direct pointer
-    const frame = state;
 
     Log.debug("JumpTable.execute: Executing opcode 0x{x:0>2} at pc={}, gas={}, stack_size={}", .{ opcode, pc, frame.gas_remaining, frame.stack.size });
 
@@ -175,7 +173,7 @@ pub inline fn execute(self: *const JumpTable, pc: usize, interpreter: operation_
         try frame.consume_gas(operation.constant_gas);
     }
 
-    const res = try operation.execute(pc, interpreter, state);
+    const res = try operation.execute(pc, interpreter, frame);
     Log.debug("JumpTable.execute: Opcode 0x{x:0>2} completed, gas_remaining={}", .{ opcode, frame.gas_remaining });
     return res;
 }
