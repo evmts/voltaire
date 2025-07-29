@@ -47,13 +47,13 @@ pub const assets = [_]Self{
         "image/svg+xml",
     ),
     Self.init(
-        "/assets/index-_UQWOD7Y.css",
-        @embedFile("dist/assets/index-_UQWOD7Y.css"),
+        "/assets/index-CWNHkWQ8.css",
+        @embedFile("dist/assets/index-CWNHkWQ8.css"),
         "text/css",
     ),
     Self.init(
-        "/assets/index-B7X5OICm.js",
-        @embedFile("dist/assets/index-B7X5OICm.js"),
+        "/assets/index-C2V5Uuk5.js",
+        @embedFile("dist/assets/index-C2V5Uuk5.js"),
         "application/javascript",
     ),
     Self.init(
