@@ -14,8 +14,9 @@ test "TenThousandHashes benchmark test" {
     
     const db_interface = memory_db.to_database_interface();
     
-    // Initialize EVM
-    var vm = try evm.Evm.init(allocator, db_interface);
+    // Initialize EVM using builder pattern
+    var builder = evm.Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
     defer vm.deinit();
     
     // Pre-compiled bytecode for TenThousandHashes contract

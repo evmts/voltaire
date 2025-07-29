@@ -43,7 +43,8 @@ test "SnailShellBenchmark EVM execution" {
     std.debug.print("Step 2: ✓ Database interface obtained\n", .{});
     
     std.debug.print("Step 3: Initializing EVM...\n", .{});
-    var vm = try evm.Evm.init(allocator, db_interface);
+    var builder = evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
     defer vm.deinit();
     std.debug.print("Step 3: ✓ EVM initialized\n", .{});
     
