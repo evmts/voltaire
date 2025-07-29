@@ -19,7 +19,9 @@ test "Integration: Memory operations with arithmetic" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Create contract
@@ -81,7 +83,9 @@ test "Integration: Storage with conditional updates" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Create contract
@@ -160,7 +164,9 @@ test "Integration: Memory copy operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Create contract
@@ -230,7 +236,9 @@ test "Integration: Transient storage with arithmetic" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Create contract
@@ -303,7 +311,9 @@ test "Integration: MSTORE8 with bitwise operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Create contract
@@ -362,7 +372,9 @@ test "Integration: Storage slot calculation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Create contract
@@ -431,7 +443,9 @@ test "Integration: Memory expansion tracking" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Create contract
@@ -509,7 +523,9 @@ test "Integration: Cold/warm storage access patterns" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Create contract

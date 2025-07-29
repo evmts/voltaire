@@ -27,7 +27,9 @@ test "Integration: Contract deployment simulation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Set up deployer account
@@ -91,7 +93,9 @@ test "Integration: Call with value transfer" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Set up accounts
@@ -155,7 +159,9 @@ test "Integration: Environment data access" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Set up VM environment
@@ -233,7 +239,9 @@ test "Integration: Block information access" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Set up block information
@@ -311,7 +319,9 @@ test "Integration: Log emission with topics" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -389,7 +399,9 @@ test "Integration: External code operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -474,7 +486,9 @@ test "Integration: Calldata operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -558,7 +572,9 @@ test "Integration: Self balance and code operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);

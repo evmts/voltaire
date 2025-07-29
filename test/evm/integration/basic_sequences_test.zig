@@ -20,7 +20,9 @@ test "Integration: arithmetic calculation sequence" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create a test contract
@@ -87,7 +89,9 @@ test "Integration: stack manipulation with DUP and SWAP" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create a test contract
@@ -160,7 +164,9 @@ test "Integration: memory to storage workflow" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create a test contract
@@ -224,7 +230,9 @@ test "Integration: conditional branching" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create a test contract with code
@@ -311,7 +319,9 @@ test "Integration: hash and compare workflow" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create a test contract
@@ -394,7 +404,9 @@ test "Integration: call data processing" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create a test contract
@@ -482,7 +494,9 @@ test "Integration: gas tracking through operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create a test contract
@@ -558,7 +572,9 @@ test "Integration: error handling in sequences" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create a test contract
@@ -617,7 +633,9 @@ test "Integration: transient storage usage" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create a test contract

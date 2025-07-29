@@ -22,7 +22,9 @@ test "Integration: Call with value transfer and balance check" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -109,7 +111,9 @@ test "Integration: Environment opcodes in context" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -204,7 +208,9 @@ test "Integration: CREATE with init code from memory" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -289,7 +295,9 @@ test "Integration: DELEGATECALL preserves context" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -363,7 +371,9 @@ test "Integration: STATICCALL prevents state changes" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -429,7 +439,9 @@ test "Integration: Call depth limit handling" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -502,7 +514,9 @@ test "Integration: Return data handling across calls" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);
@@ -590,7 +604,9 @@ test "Integration: Gas forwarding in calls" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     const alice_addr = primitives.Address.from_u256(0x1111111111111111111111111111111111111111);

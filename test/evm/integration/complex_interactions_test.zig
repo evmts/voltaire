@@ -23,7 +23,9 @@ test "Integration: Token balance check pattern" {
     const db_interface = memory_db.to_database_interface();
 
     // Create VM
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create addresses
@@ -113,7 +115,9 @@ test "Integration: Packed struct storage" {
     const db_interface = memory_db.to_database_interface();
 
     // Create VM
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create addresses
@@ -198,7 +202,9 @@ test "Integration: Dynamic array length update" {
     const db_interface = memory_db.to_database_interface();
 
     // Create VM
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create addresses
@@ -265,7 +271,9 @@ test "Integration: Reentrancy guard pattern" {
     const db_interface = memory_db.to_database_interface();
 
     // Create VM
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create addresses
@@ -342,7 +350,9 @@ test "Integration: Bitfield manipulation" {
     const db_interface = memory_db.to_database_interface();
 
     // Create VM
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create addresses
@@ -435,7 +445,9 @@ test "Integration: Safe math operations" {
     const db_interface = memory_db.to_database_interface();
 
     // Create VM
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create addresses
@@ -518,7 +530,9 @@ test "Integration: Signature verification simulation" {
     const db_interface = memory_db.to_database_interface();
 
     // Create VM
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create addresses
@@ -591,7 +605,9 @@ test "Integration: Multi-sig wallet threshold check" {
     const db_interface = memory_db.to_database_interface();
 
     // Create VM
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create addresses

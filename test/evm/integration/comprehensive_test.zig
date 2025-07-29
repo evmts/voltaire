@@ -19,7 +19,9 @@ test "Integration: Complete ERC20 transfer simulation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Set up accounts
@@ -53,7 +55,7 @@ test "Integration: Complete ERC20 transfer simulation" {
     // Create frame
     var frame_builder = Frame.builder(allocator);
     var frame = try frame_builder
-        .withVm(&evm)
+        .withVm(&vm)
         .withContract(&contract)
         .withGas(100000)
         .build();
@@ -148,7 +150,9 @@ test "Integration: Smart contract deployment flow" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create addresses
@@ -174,7 +178,7 @@ test "Integration: Smart contract deployment flow" {
     // Create frame
     var frame_builder = Frame.builder(allocator);
     var frame = try frame_builder
-        .withVm(&evm)
+        .withVm(&vm)
         .withContract(&deployer_contract)
         .withGas(200000)
         .build();
@@ -268,7 +272,9 @@ test "Integration: Complex control flow with nested conditions" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Contract that implements:
@@ -347,7 +353,7 @@ test "Integration: Complex control flow with nested conditions" {
     // Create frame
     var frame_builder = Frame.builder(allocator);
     var frame = try frame_builder
-        .withVm(&evm)
+        .withVm(&vm)
         .withContract(&contract)
         .withGas(10000)
         .build();
@@ -479,7 +485,9 @@ test "Integration: Gas metering across operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create addresses
@@ -505,7 +513,7 @@ test "Integration: Gas metering across operations" {
     // Create frame
     var frame_builder = Frame.builder(allocator);
     var frame = try frame_builder
-        .withVm(&evm)
+        .withVm(&vm)
         .withContract(&contract)
         .withGas(100000)
         .build();
@@ -579,7 +587,9 @@ test "Integration: Error propagation and recovery" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm = try builder.build();
     defer vm.deinit();
 
     // Create addresses
@@ -604,7 +614,7 @@ test "Integration: Error propagation and recovery" {
     // Create frame
     var frame_builder = Frame.builder(allocator);
     var frame = try frame_builder
-        .withVm(&evm)
+        .withVm(&vm)
         .withContract(&contract)
         .withGas(10000)
         .build();
