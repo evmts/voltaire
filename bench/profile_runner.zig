@@ -275,7 +275,8 @@ fn execute_bytecode_iterations(allocator: Allocator, bytecode: []const u8, itera
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var evm = try builder.build();
     defer evm.deinit();
     
     // Set up contract with bytecode

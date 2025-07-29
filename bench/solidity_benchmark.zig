@@ -42,7 +42,8 @@ fn solidity_snail_shell_benchmark_impl(allocator: Allocator) !void {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try builder.build();
     defer evm_instance.deinit();
 
     // Set up deployer account with ETH
@@ -167,7 +168,8 @@ fn solidity_snail_shell_performance_impl(allocator: Allocator, iterations: u32) 
         defer memory_db.deinit();
 
         const db_interface = memory_db.to_database_interface();
-        evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+        var builder = Evm.EvmBuilder.init(allocator, db_interface);
+        evm_instance.* = try builder.build();
         defer evm_instance.deinit();
 
         const deployer = primitives.Address.from_u256(0x1111);
@@ -283,7 +285,8 @@ fn solidity_ten_thousand_hashes_impl(allocator: Allocator) !void {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try builder.build();
     defer evm_instance.deinit();
 
     // Set up accounts
@@ -380,7 +383,8 @@ fn solidity_ten_thousand_hashes_performance_impl(allocator: Allocator, iteration
         defer memory_db.deinit();
 
         const db_interface = memory_db.to_database_interface();
-        evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+        var builder = Evm.EvmBuilder.init(allocator, db_interface);
+        evm_instance.* = try builder.build();
         defer evm_instance.deinit();
 
         const deployer = primitives.Address.from_u256(0x1111);

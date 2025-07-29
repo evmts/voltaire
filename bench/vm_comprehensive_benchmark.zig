@@ -294,7 +294,7 @@ fn benchmarkInterpretWithContext(allocator: Allocator) !void {
     );
     defer contract.deinit(allocator, null);
     
-    const result = try vm.interpret_with_context(&contract, &[_]u8{}, context);
+    const result = try vm.interpret(&contract, &[_]u8{}, context);
     defer if (result.output) |output| allocator.free(output);
     
     std.mem.doNotOptimizeAway(result.gas_used);
