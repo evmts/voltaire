@@ -46,7 +46,8 @@ test "E2E: Basic EVM operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var evm_builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try evm_builder.build();
     defer evm_instance.deinit();
 
     // Set up deployer account with ETH
@@ -78,7 +79,7 @@ test "E2E: Basic EVM operations" {
     try evm_instance.state.set_code(CONTRACT_ADDRESS, &simple_bytecode);
 
     // Execute the contract
-    const result = try evm_instance.interpret(&contract, &[_]u8{});
+    const result = try evm_instance.interpret(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     // Verify execution success
@@ -120,7 +121,8 @@ test "E2E: Arithmetic operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var evm_builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try evm_builder.build();
     defer evm_instance.deinit();
 
     // Create a contract at the specified address
@@ -206,7 +208,8 @@ test "E2E: Memory operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var evm_builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try evm_builder.build();
     defer evm_instance.deinit();
 
     // Create a contract at the specified address
@@ -290,7 +293,8 @@ test "E2E: Storage operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var evm_builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try evm_builder.build();
     defer evm_instance.deinit();
 
     // Create a contract at the specified address
@@ -360,7 +364,8 @@ test "E2E: Stack operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var evm_builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try evm_builder.build();
     defer evm_instance.deinit();
 
     // Create a contract at the specified address
@@ -444,7 +449,8 @@ test "E2E: Gas consumption patterns" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var evm_builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try evm_builder.build();
     defer evm_instance.deinit();
 
     // Create a contract at the specified address

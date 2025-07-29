@@ -27,7 +27,9 @@ test "E2E: Dynamic arrays - push, pop, and indexing" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Simplified array simulation - just test storage operations
@@ -77,7 +79,7 @@ test "E2E: Dynamic arrays - push, pop, and indexing" {
     try evm.state.set_code(CONTRACT_ADDRESS, &array_test_bytecode);
 
     // Execute the contract
-    const array_result = try evm.interpret(&contract, &[_]u8{});
+    const array_result = try evm.interpret(&contract, &[_]u8{}, false);
     defer if (array_result.output) |output| allocator.free(output);
 
     try testing.expect(array_result.status == .Success);
@@ -108,7 +110,9 @@ test "E2E: Mappings - various key types and nested access" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Simplified mapping test - just use hash-based storage
@@ -147,7 +151,7 @@ test "E2E: Mappings - various key types and nested access" {
     try evm.state.set_code(CONTRACT_ADDRESS, &mapping_test_bytecode);
 
     // Execute the contract
-    const mapping_result = try evm.interpret(&contract, &[_]u8{});
+    const mapping_result = try evm.interpret(&contract, &[_]u8{}, false);
     defer if (mapping_result.output) |output| allocator.free(output);
 
     try testing.expect(mapping_result.status == .Success);
@@ -178,7 +182,9 @@ test "E2E: Struct simulation - packed and unpacked storage" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Simulate struct { uint128 a; uint128 b; } packed into one storage slot
@@ -234,7 +240,7 @@ test "E2E: Struct simulation - packed and unpacked storage" {
     try evm.state.set_code(CONTRACT_ADDRESS, &struct_test_bytecode);
 
     // Execute the contract
-    const struct_result = try evm.interpret(&contract, &[_]u8{});
+    const struct_result = try evm.interpret(&contract, &[_]u8{}, false);
     defer if (struct_result.output) |output| allocator.free(output);
 
     try testing.expect(struct_result.status == .Success);
@@ -265,7 +271,9 @@ test "E2E: String/Bytes operations - encoding and manipulation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test bytes manipulation and hashing
@@ -304,7 +312,7 @@ test "E2E: String/Bytes operations - encoding and manipulation" {
     try evm.state.set_code(CONTRACT_ADDRESS, &bytes_test_bytecode);
 
     // Execute the contract
-    const bytes_result = try evm.interpret(&contract, &[_]u8{});
+    const bytes_result = try evm.interpret(&contract, &[_]u8{}, false);
     defer if (bytes_result.output) |output| allocator.free(output);
 
     try testing.expect(bytes_result.status == .Success);
@@ -335,7 +343,9 @@ test "E2E: Nested structures - arrays of mappings simulation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Simplified nested structure simulation - avoid complex memory operations
@@ -384,7 +394,7 @@ test "E2E: Nested structures - arrays of mappings simulation" {
     try evm.state.set_code(CONTRACT_ADDRESS, &nested_test_bytecode);
 
     // Execute the contract
-    const nested_result = try evm.interpret(&contract, &[_]u8{});
+    const nested_result = try evm.interpret(&contract, &[_]u8{}, false);
     defer if (nested_result.output) |output| allocator.free(output);
 
     try testing.expect(nested_result.status == .Success);
@@ -415,7 +425,9 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Compare gas costs of memory vs storage operations
@@ -459,7 +471,7 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
     try evm.state.set_code(CONTRACT_ADDRESS, &memory_ops_bytecode);
 
     // Execute the memory operations contract
-    const memory_result = try evm.interpret(&memory_contract, &[_]u8{});
+    const memory_result = try evm.interpret(&memory_contract, &[_]u8{}, false);
     defer if (memory_result.output) |output| allocator.free(output);
 
     try testing.expect(memory_result.status == .Success);
@@ -503,7 +515,7 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
     try evm.state.set_code(CONTRACT_ADDRESS, &storage_ops_bytecode);
 
     // Execute the storage operations contract
-    const storage_result = try evm.interpret(&storage_contract, &[_]u8{});
+    const storage_result = try evm.interpret(&storage_contract, &[_]u8{}, false);
     defer if (storage_result.output) |output| allocator.free(output);
 
     try testing.expect(storage_result.status == .Success);

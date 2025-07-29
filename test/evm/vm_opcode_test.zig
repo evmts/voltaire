@@ -30,7 +30,8 @@ fn create_test_evm(allocator: std.mem.Allocator) !struct { evm: *Evm.Evm, memory
     const memory_db = try allocator.create(MemoryDatabase);
     memory_db.* = MemoryDatabase.init(allocator);
     const db_interface = memory_db.to_database_interface();
-    evm.* = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm.* = try builder.build();
 
     // Set up basic context
     const tx_origin = [_]u8{0x12} ** 20;
@@ -84,7 +85,7 @@ fn run_bytecode(
     try evm_instance.state.set_code(address, bytecode);
 
     // Execute the contract
-    return try evm_instance.interpret(&contract, input orelse &[_]u8{});
+    return try evm_instance.interpret(&contract, input orelse &[_]u8{}, false);
 }
 
 // ===== Control Flow Opcodes =====

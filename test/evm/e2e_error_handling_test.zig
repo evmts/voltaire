@@ -27,7 +27,9 @@ test "E2E: Revert conditions - require and revert opcodes" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test REVERT opcode directly
@@ -53,7 +55,7 @@ test "E2E: Revert conditions - require and revert opcodes" {
     try evm.state.set_code(CONTRACT_ADDRESS, &revert_bytecode);
 
     // Execute the contract
-    const revert_result = try evm.interpret(&revert_contract, &[_]u8{});
+    const revert_result = try evm.interpret(&revert_contract, &[_]u8{}, false);
     defer if (revert_result.output) |output| allocator.free(output);
 
     try testing.expect(revert_result.status == .Revert);
@@ -93,7 +95,7 @@ test "E2E: Revert conditions - require and revert opcodes" {
     try evm.state.set_code(CONTRACT_ADDRESS, &conditional_bytecode);
 
     // Execute the contract
-    const conditional_result = try evm.interpret(&conditional_contract, &[_]u8{});
+    const conditional_result = try evm.interpret(&conditional_contract, &[_]u8{}, false);
     defer if (conditional_result.output) |output| allocator.free(output);
 
     try testing.expect(conditional_result.status == .Success);
@@ -122,7 +124,9 @@ test "E2E: Arithmetic overflow - EVM wraparound behavior" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test MAX_UINT256 + 1 = 0 (wraparound)
@@ -186,7 +190,7 @@ test "E2E: Arithmetic overflow - EVM wraparound behavior" {
     try evm.state.set_code(CONTRACT_ADDRESS, &overflow_test_bytecode);
 
     // Execute the contract
-    const overflow_result = try evm.interpret(&overflow_contract, &[_]u8{});
+    const overflow_result = try evm.interpret(&overflow_contract, &[_]u8{}, false);
     defer if (overflow_result.output) |output| allocator.free(output);
 
     try testing.expect(overflow_result.status == .Success);
@@ -228,7 +232,7 @@ test "E2E: Arithmetic overflow - EVM wraparound behavior" {
     try evm.state.set_code(CONTRACT_ADDRESS, &underflow_test_bytecode);
 
     // Execute the contract
-    const underflow_result = try evm.interpret(&underflow_contract, &[_]u8{});
+    const underflow_result = try evm.interpret(&underflow_contract, &[_]u8{}, false);
     defer if (underflow_result.output) |output| allocator.free(output);
 
     try testing.expect(underflow_result.status == .Success);
@@ -257,7 +261,9 @@ test "E2E: Gas limits - controlled consumption and out-of-gas" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Simple gas consumption test - just do some operations
@@ -298,7 +304,7 @@ test "E2E: Gas limits - controlled consumption and out-of-gas" {
     try evm.state.set_code(CONTRACT_ADDRESS, &gas_test_bytecode);
 
     // Execute the contract
-    const sufficient_result = try evm.interpret(&sufficient_contract, &[_]u8{});
+    const sufficient_result = try evm.interpret(&sufficient_contract, &[_]u8{}, false);
     defer if (sufficient_result.output) |output| allocator.free(output);
 
     try testing.expect(sufficient_result.status == .Success);
@@ -327,7 +333,7 @@ test "E2E: Gas limits - controlled consumption and out-of-gas" {
     defer insufficient_contract.deinit(allocator, null);
 
     // Execute the contract with insufficient gas
-    const insufficient_result = try evm.interpret(&insufficient_contract, &[_]u8{});
+    const insufficient_result = try evm.interpret(&insufficient_contract, &[_]u8{}, false);
     defer if (insufficient_result.output) |output| allocator.free(output);
 
     // Check status
@@ -350,7 +356,9 @@ test "E2E: Stack underflow - empty stack operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test stack underflow - POP from empty stack
@@ -374,7 +382,7 @@ test "E2E: Stack underflow - empty stack operations" {
     try evm.state.set_code(CONTRACT_ADDRESS, &underflow_bytecode);
 
     // Execute the contract
-    const underflow_result = try evm.interpret(&underflow_contract, &[_]u8{});
+    const underflow_result = try evm.interpret(&underflow_contract, &[_]u8{}, false);
     defer if (underflow_result.output) |output| allocator.free(output);
 
     try testing.expect(underflow_result.status == .Invalid);
@@ -401,7 +409,7 @@ test "E2E: Stack underflow - empty stack operations" {
     try evm.state.set_code(CONTRACT_ADDRESS, &insufficient_stack_bytecode);
 
     // Execute the contract
-    const insufficient_result = try evm.interpret(&insufficient_contract, &[_]u8{});
+    const insufficient_result = try evm.interpret(&insufficient_contract, &[_]u8{}, false);
     defer if (insufficient_result.output) |output| allocator.free(output);
 
     try testing.expect(insufficient_result.status == .Invalid);
@@ -423,7 +431,9 @@ test "E2E: Division by zero - EVM behavior" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test division by zero (EVM returns 0)
@@ -454,7 +464,7 @@ test "E2E: Division by zero - EVM behavior" {
     try evm.state.set_code(CONTRACT_ADDRESS, &div_zero_bytecode);
 
     // Execute the contract
-    const div_zero_result = try evm.interpret(&div_zero_contract, &[_]u8{});
+    const div_zero_result = try evm.interpret(&div_zero_contract, &[_]u8{}, false);
     defer if (div_zero_result.output) |output| allocator.free(output);
 
     try testing.expect(div_zero_result.status == .Success);
@@ -494,7 +504,7 @@ test "E2E: Division by zero - EVM behavior" {
     try evm.state.set_code(CONTRACT_ADDRESS, &mod_zero_bytecode);
 
     // Execute the contract
-    const mod_zero_result = try evm.interpret(&mod_zero_contract, &[_]u8{});
+    const mod_zero_result = try evm.interpret(&mod_zero_contract, &[_]u8{}, false);
     defer if (mod_zero_result.output) |output| allocator.free(output);
 
     try testing.expect(mod_zero_result.status == .Success);
@@ -523,7 +533,9 @@ test "E2E: Memory expansion - large offset testing" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test memory expansion with reasonable large offset
@@ -561,7 +573,7 @@ test "E2E: Memory expansion - large offset testing" {
     try evm.state.set_code(CONTRACT_ADDRESS, &memory_expansion_bytecode);
 
     // Execute the contract
-    const expansion_result = try evm.interpret(&expansion_contract, &[_]u8{});
+    const expansion_result = try evm.interpret(&expansion_contract, &[_]u8{}, false);
     defer if (expansion_result.output) |output| allocator.free(output);
 
     try testing.expect(expansion_result.status == .Success);
@@ -594,7 +606,9 @@ test "E2E: Invalid jumps - bad jump destinations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test jump to invalid destination (not JUMPDEST)
@@ -621,7 +635,7 @@ test "E2E: Invalid jumps - bad jump destinations" {
     try evm.state.set_code(CONTRACT_ADDRESS, &invalid_jump_bytecode);
 
     // Execute the contract
-    const invalid_jump_result = try evm.interpret(&invalid_jump_contract, &[_]u8{});
+    const invalid_jump_result = try evm.interpret(&invalid_jump_contract, &[_]u8{}, false);
     defer if (invalid_jump_result.output) |output| allocator.free(output);
 
     try testing.expect(invalid_jump_result.status == .Invalid);
@@ -656,7 +670,7 @@ test "E2E: Invalid jumps - bad jump destinations" {
     try evm.state.set_code(CONTRACT_ADDRESS, &valid_jump_bytecode);
 
     // Execute the contract
-    const valid_jump_result = try evm.interpret(&valid_jump_contract, &[_]u8{});
+    const valid_jump_result = try evm.interpret(&valid_jump_contract, &[_]u8{}, false);
     defer if (valid_jump_result.output) |output| allocator.free(output);
 
     try testing.expect(valid_jump_result.status == .Success);

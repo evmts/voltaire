@@ -42,7 +42,8 @@ test "E2E: Basic inheritance - virtual function overrides" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try builder.build();
     defer evm_instance.deinit();
 
     // Simulate virtual function override behavior
@@ -89,7 +90,7 @@ test "E2E: Basic inheritance - virtual function overrides" {
     try evm_instance.state.set_code(CONTRACT_ADDRESS, &virtual_override_bytecode);
 
     // Execute the contract
-    const result = try evm_instance.interpret(&contract, &[_]u8{});
+    const result = try evm_instance.interpret(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -121,7 +122,8 @@ test "E2E: Interface compliance - polymorphic behavior" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try builder.build();
     defer evm_instance.deinit();
 
     // Simulate interface compliance - different implementations of same interface
@@ -178,7 +180,7 @@ test "E2E: Interface compliance - polymorphic behavior" {
     try evm_instance.state.set_code(CONTRACT_ADDRESS, &interface_test_bytecode);
 
     // Execute the contract
-    const result = try evm_instance.interpret(&contract, &[_]u8{});
+    const result = try evm_instance.interpret(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -217,7 +219,8 @@ test "E2E: Multiple inheritance - diamond pattern resolution" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try builder.build();
     defer evm_instance.deinit();
 
     // Simulate diamond inheritance: Diamond inherits from LeftBase and RightBase
@@ -259,7 +262,7 @@ test "E2E: Multiple inheritance - diamond pattern resolution" {
     try evm_instance.state.set_code(CONTRACT_ADDRESS, &diamond_test_bytecode);
 
     // Execute the contract
-    const result = try evm_instance.interpret(&contract, &[_]u8{});
+    const result = try evm_instance.interpret(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -291,7 +294,8 @@ test "E2E: Function visibility - access control patterns" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface);
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    evm_instance.* = try builder.build();
     defer evm_instance.deinit();
 
     // Test internal function access through public wrapper
@@ -350,7 +354,7 @@ test "E2E: Function visibility - access control patterns" {
     try evm_instance.state.set_code(CONTRACT_ADDRESS, &visibility_test_bytecode);
 
     // Execute the contract
-    const result = try evm_instance.interpret(&contract, &[_]u8{});
+    const result = try evm_instance.interpret(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
