@@ -1,6 +1,6 @@
 import { type Component, For, type Setter, Show } from 'solid-js'
-import type { EvmState } from './types'
-import { copyToClipboard } from './utils'
+import type { EvmState } from '~/components/evm-debugger/types'
+import { copyToClipboard } from '~/components/evm-debugger/utils'
 
 interface StackProps {
 	state: EvmState

@@ -1,4 +1,4 @@
-import type { EvmState } from './types'
+import type { EvmState } from '~/components/evm-debugger/types'
 
 export async function loadBytecode(bytecodeHex: string): Promise<void> {
 	try {
