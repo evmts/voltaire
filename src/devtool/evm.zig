@@ -16,8 +16,8 @@ evm: Evm.Evm,
 bytecode: []u8,
 
 // Debug-specific fields
-current_frame: ?Evm.Frame,
-current_contract: ?Evm.Contract,
+current_frame: ?*Evm.Frame,
+current_contract: ?*Evm.Contract,
 is_paused: bool,
 is_initialized: bool,
 
@@ -57,11 +57,13 @@ pub fn init(allocator: std.mem.Allocator) !DevtoolEvm {
 
 pub fn deinit(self: *DevtoolEvm) void {
     // Clean up current execution state
-    if (self.current_contract != null) {
-        self.current_contract.?.deinit(self.allocator, null);
+    if (self.current_contract) |contract| {
+        contract.deinit(self.allocator, null);
+        self.allocator.destroy(contract);
     }
-    if (self.current_frame != null) {
-        self.current_frame.?.deinit();
+    if (self.current_frame) |frame| {
+        frame.deinit();
+        self.allocator.destroy(frame);
     }
     
     if (self.bytecode.len > 0) {
@@ -107,12 +109,14 @@ pub fn loadBytecodeHex(self: *DevtoolEvm, hex_string: []const u8) !void {
 /// Initialize execution with current bytecode
 pub fn resetExecution(self: *DevtoolEvm) !void {
     // Clean up existing execution state
-    if (self.current_contract != null) {
-        self.current_contract.?.deinit(self.allocator, null);
+    if (self.current_contract) |contract| {
+        contract.deinit(self.allocator, null);
+        self.allocator.destroy(contract);
         self.current_contract = null;
     }
-    if (self.current_frame != null) {
-        self.current_frame.?.deinit();
+    if (self.current_frame) |frame| {
+        frame.deinit();
+        self.allocator.destroy(frame);
         self.current_frame = null;
     }
     
@@ -121,10 +125,13 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
         return;
     }
     
-    // Create contract from bytecode using builder pattern
-    self.current_contract = Evm.Contract.init_at_address(
+    // Create contract from bytecode
+    const contract = try self.allocator.create(Evm.Contract);
+    errdefer self.allocator.destroy(contract);
+    
+    contract.* = Evm.Contract.init_at_address(
         primitives.Address.ZERO, // caller
-        primitives.Address.ZERO, // address
+        primitives.Address.ZERO, // address  
         0, // value
         1000000, // gas
         self.bytecode,
@@ -132,16 +139,16 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
         false // is_static
     );
     
-    // Create execution frame using builder pattern
-    var contract = self.current_contract.?;
-    self.current_frame = try Evm.Frame.init_full(
-        self.allocator,
-        &self.evm,
-        1000000, // 1M gas
-        &contract,
-        .{}, // caller
-        &[_]u8{} // no input data
-    );
+    self.current_contract = contract;
+    
+    // Create execution frame
+    const frame = try self.allocator.create(Evm.Frame);
+    errdefer self.allocator.destroy(frame);
+    
+    frame.* = try Evm.Frame.init(self.allocator, contract);
+    frame.gas_remaining = 1000000; // Set gas after init
+    
+    self.current_frame = frame;
     
     self.is_initialized = true;
     self.is_paused = false;
@@ -155,7 +162,7 @@ pub fn serializeEvmState(self: *DevtoolEvm) ![]u8 {
         return try std.json.stringifyAlloc(self.allocator, empty_state, .{});
     }
     
-    const frame = &self.current_frame.?;
+    const frame = self.current_frame.?;
     const opcode = if (frame.pc < self.bytecode.len) self.bytecode[frame.pc] else 0;
     
     const state = debug_state.EvmStateJson{
@@ -182,7 +189,7 @@ pub fn stepExecute(self: *DevtoolEvm) !DebugStepResult {
         return error.NotInitialized;
     }
     
-    var frame = &self.current_frame.?;
+    const frame = self.current_frame.?;
     
     // Check if execution is complete
     if (frame.pc >= self.bytecode.len or frame.stop or frame.err != null) {
@@ -391,7 +398,7 @@ test "DevtoolEvm step execution modifies stack correctly" {
     // Load bytecode: PUSH1 42, PUSH1 100
     try devtool_evm.loadBytecodeHex("0x602a6064");
     
-    const frame = &devtool_evm.current_frame.?;
+    const frame = devtool_evm.current_frame.?;
     
     // Initially stack should be empty
     try testing.expectEqual(@as(usize, 0), frame.stack.size);
