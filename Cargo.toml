@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["src/compilers", "src/bn254_wrapper", "src/revm_wrapper", "benches/evm-bench-rust"]
+members = ["src/compilers", "src/bn254_wrapper", "src/revm_wrapper", "src/guillotine-rs"]
 
 [workspace.package]
 version = "0.1.0"

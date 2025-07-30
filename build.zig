@@ -380,9 +380,9 @@ pub fn build(b: *std.Build) void {
         const rust_target_dir = if (optimize == .Debug) "debug" else "release";
         
         const rust_build = if (rust_target) |target_triple|
-            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "benches/evm-bench-rust/Cargo.toml", "--verbose" })
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/guillotine-rs/Cargo.toml", "--verbose" })
         else
-            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "benches/evm-bench-rust/Cargo.toml", "--verbose" });
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/guillotine-rs/Cargo.toml", "--verbose" });
 
         // Fix for macOS linking issues (only on macOS)
         if (target.result.os.tag == .macos) {
@@ -755,7 +755,7 @@ pub fn build(b: *std.Build) void {
     // Link the EVM benchmark Rust library if available
     if (evm_bench_lib) |evm_bench| {
         bench_exe.linkLibrary(evm_bench);
-        bench_exe.addIncludePath(b.path("benches/evm-bench-rust"));
+        bench_exe.addIncludePath(b.path("src/guillotine-rs"));
     }
     
     b.installArtifact(bench_exe);
@@ -782,7 +782,7 @@ pub fn build(b: *std.Build) void {
     // Link the EVM benchmark Rust library if available
     if (evm_bench_lib) |evm_bench| {
         revm_bench_exe.linkLibrary(evm_bench);
-        revm_bench_exe.addIncludePath(b.path("benches/evm-bench-rust"));
+        revm_bench_exe.addIncludePath(b.path("src/guillotine-rs"));
     }
     
     b.installArtifact(revm_bench_exe);
