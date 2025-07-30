@@ -1,15 +1,15 @@
-import MoonIcon from "lucide-solid/icons/moon";
-import SettingsIcon from "lucide-solid/icons/settings";
-import SunIcon from "lucide-solid/icons/sun";
-import { type Accessor, type Component, type Setter, Show } from "solid-js";
-import { Button } from "~/components/ui/button";
-import { ToggleButton } from "~/components/ui/toggle";
+import MoonIcon from 'lucide-solid/icons/moon'
+import SettingsIcon from 'lucide-solid/icons/settings'
+import SunIcon from 'lucide-solid/icons/sun'
+import { type Accessor, type Component, type Setter, Show } from 'solid-js'
+import { Button } from '~/components/ui/button'
+import { ToggleButton } from '~/components/ui/toggle'
 
 interface HeaderProps {
-	isDarkMode: Accessor<boolean>;
-	setIsDarkMode: Setter<boolean>;
-	activePanel: string;
-	setActivePanel: Setter<string>;
+	isDarkMode: Accessor<boolean>
+	setIsDarkMode: Setter<boolean>
+	activePanel: string
+	setActivePanel: Setter<string>
 }
 
 const Header: Component<HeaderProps> = (props) => {
@@ -40,56 +40,56 @@ const Header: Component<HeaderProps> = (props) => {
 
 					<div class="hidden gap-1 md:flex">
 						<ToggleButton
-							pressed={props.activePanel === "all"}
-							onChange={() => props.setActivePanel("all")}
+							pressed={props.activePanel === 'all'}
+							onChange={() => props.setActivePanel('all')}
 							size="sm"
 							class="whitespace-nowrap hover:bg-amber-100 data-[pressed]:bg-amber-100 dark:data-[pressed]:bg-amber-950 dark:hover:bg-amber-950"
 						>
 							All panels
 						</ToggleButton>
 						<ToggleButton
-							pressed={props.activePanel === "stack"}
-							onChange={() => props.setActivePanel("stack")}
+							pressed={props.activePanel === 'stack'}
+							onChange={() => props.setActivePanel('stack')}
 							size="sm"
 							class="whitespace-nowrap hover:bg-amber-100 data-[pressed]:bg-amber-100 dark:data-[pressed]:bg-amber-950 dark:hover:bg-amber-950"
 						>
 							Stack
 						</ToggleButton>
 						<ToggleButton
-							pressed={props.activePanel === "memory"}
-							onChange={() => props.setActivePanel("memory")}
+							pressed={props.activePanel === 'memory'}
+							onChange={() => props.setActivePanel('memory')}
 							size="sm"
 							class="whitespace-nowrap hover:bg-amber-100 data-[pressed]:bg-amber-100 dark:data-[pressed]:bg-amber-950 dark:hover:bg-amber-950"
 						>
 							Memory
 						</ToggleButton>
 						<ToggleButton
-							pressed={props.activePanel === "storage"}
-							onChange={() => props.setActivePanel("storage")}
+							pressed={props.activePanel === 'storage'}
+							onChange={() => props.setActivePanel('storage')}
 							size="sm"
 							class="whitespace-nowrap hover:bg-amber-100 data-[pressed]:bg-amber-100 dark:data-[pressed]:bg-amber-950 dark:hover:bg-amber-950"
 						>
 							Storage
 						</ToggleButton>
 						<ToggleButton
-							pressed={props.activePanel === "logs"}
-							onChange={() => props.setActivePanel("logs")}
+							pressed={props.activePanel === 'logs'}
+							onChange={() => props.setActivePanel('logs')}
 							size="sm"
 							class="whitespace-nowrap hover:bg-amber-100 data-[pressed]:bg-amber-100 dark:data-[pressed]:bg-amber-950 dark:hover:bg-amber-950"
 						>
 							Logs
 						</ToggleButton>
 						<ToggleButton
-							pressed={props.activePanel === "bytecode"}
-							onChange={() => props.setActivePanel("bytecode")}
+							pressed={props.activePanel === 'bytecode'}
+							onChange={() => props.setActivePanel('bytecode')}
 							size="sm"
 							class="whitespace-nowrap hover:bg-amber-100 data-[pressed]:bg-amber-100 dark:data-[pressed]:bg-amber-950 dark:hover:bg-amber-950"
 						>
 							Bytecode
 						</ToggleButton>
 						<ToggleButton
-							pressed={props.activePanel === "gas"}
-							onChange={() => props.setActivePanel("gas")}
+							pressed={props.activePanel === 'gas'}
+							onChange={() => props.setActivePanel('gas')}
 							size="sm"
 							class="whitespace-nowrap hover:bg-amber-100 data-[pressed]:bg-amber-100 dark:data-[pressed]:bg-amber-950 dark:hover:bg-amber-950"
 						>
@@ -104,10 +104,7 @@ const Header: Component<HeaderProps> = (props) => {
 						onClick={() => props.setIsDarkMode(!props.isDarkMode())}
 						aria-label="Toggle dark mode"
 					>
-						<Show
-							when={props.isDarkMode}
-							fallback={<MoonIcon class="h-4 w-4" />}
-						>
+						<Show when={props.isDarkMode} fallback={<MoonIcon class="h-4 w-4" />}>
 							<SunIcon class="h-4 w-4" />
 						</Show>
 					</Button>
@@ -117,7 +114,7 @@ const Header: Component<HeaderProps> = (props) => {
 				</div>
 			</div>
 		</header>
-	);
-};
+	)
+}
 
-export default Header;
+export default Header

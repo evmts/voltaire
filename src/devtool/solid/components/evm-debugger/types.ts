@@ -5,7 +5,7 @@ export interface EvmState {
 	depth: number // call depth
 	stack: string[] // hex values, top last
 	memory: string // full 0x… hex dump
-	storage: Array<{key: string, value: string}> // storage as key-value pairs
+	storage: Array<{ key: string; value: string }> // storage as key-value pairs
 	logs: string[] // JSON-encoded events
 	returnData: string // hex buffer
 }
@@ -55,7 +55,8 @@ export const sampleContracts: SampleContract[] = [
 	{
 		name: 'Comprehensive Test',
 		description: 'Full EVM showcase: arithmetic, memory, storage, events, returns, comparisons, jumps',
-		bytecode: '0x6005600a01806000526003600202600155600154600302600455604260005260206000a06008600a166009600b176001600055600054600c602014610093576020600052602060006001a15b602060005260206000f3',
+		bytecode:
+			'0x6005600a01806000526003600202600155600154600302600455604260005260206000a06008600a166009600b176001600055600054600c602014610093576020600052602060006001a15b602060005260206000f3',
 	},
 	{
 		name: 'Jump and Control Flow',
@@ -65,7 +66,8 @@ export const sampleContracts: SampleContract[] = [
 	{
 		name: 'Memory Expansion',
 		description: 'Test memory expansion costs: Write to increasing offsets',
-		bytecode: '0x6001600052600160205260016040526001606052600160805260ff60a05260ff60c05260ff60e05260ff6101005260ff610120525960005960205960405960605960805960a05960c05960e05961010059610120595050505050505050',
+		bytecode:
+			'0x6001600052600160205260016040526001606052600160805260ff60a05260ff60c05260ff60e05260ff6101005260ff610120525960005960205960405960605960805960a05960c05960e05961010059610120595050505050505050',
 	},
 	{
 		name: 'Bitwise Operations',
@@ -95,12 +97,14 @@ export const sampleContracts: SampleContract[] = [
 	{
 		name: 'Event Emission',
 		description: 'LOG1 with topic: Emit event with data and one topic',
-		bytecode: '0x7f48656c6c6f20576f726c642100000000000000000000000000000000000000006000527faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa6020600052600c6014a1',
+		bytecode:
+			'0x7f48656c6c6f20576f726c642100000000000000000000000000000000000000006000527faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa6020600052600c6014a1',
 	},
 	{
 		name: 'Advanced Storage Pattern',
 		description: 'Mapping simulation: Store at computed slots like mapping[key] = value',
-		bytecode: '0x6001600052600160005260406000209055600260015260026001526040600120905560016000526000600052604060002054600260015260006001526040600120545050',
+		bytecode:
+			'0x6001600052600160005260406000209055600260015260026001526040600120905560016000526000600052604060002054600260015260006001526040600120545050',
 	},
 	{
 		name: 'Error Handling',
@@ -128,4 +132,3 @@ export const formatMemory = (memory: string): string[] => {
 
 	return chunks
 }
-
