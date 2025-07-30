@@ -374,6 +374,54 @@ pub fn build(b: *std.Build) void {
         }
     }
 
+    // EVM Benchmark Rust crate integration
+    const evm_bench_lib = if (rust_target != null) blk: {
+        const rust_profile = if (optimize == .Debug) "dev" else "release";
+        const rust_target_dir = if (optimize == .Debug) "debug" else "release";
+        
+        const rust_build = if (rust_target) |target_triple|
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "benches/evm-bench-rust/Cargo.toml", "--verbose" })
+        else
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "benches/evm-bench-rust/Cargo.toml", "--verbose" });
+
+        // Fix for macOS linking issues (only on macOS)
+        if (target.result.os.tag == .macos) {
+            rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+        }
+
+        // Create static library artifact for the Rust EVM benchmark crate
+        const lib = b.addStaticLibrary(.{
+            .name = "evm_bench_rust",
+            .target = target,
+            .optimize = optimize,
+        });
+
+        // Determine library path based on target (using workspace target directory)
+        const lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/libguillotine_ffi.rlib", .{ target_triple, rust_target_dir })
+        else
+            b.fmt("target/{s}/libguillotine_ffi.rlib", .{ rust_target_dir });
+
+        lib.addObjectFile(b.path(lib_path));
+        
+        // Make the rust build a dependency
+        lib.step.dependOn(&rust_build.step);
+        
+        // Link additional libraries needed by the benchmark crate
+        if (target.result.os.tag == .linux) {
+            lib.linkSystemLibrary("m");
+            lib.linkSystemLibrary("pthread");
+            lib.linkSystemLibrary("dl");
+        } else if (target.result.os.tag == .macos) {
+            lib.linkSystemLibrary("c++");
+            lib.linkFramework("Security");  
+            lib.linkFramework("SystemConfiguration");
+            lib.linkFramework("CoreFoundation");
+        }
+        
+        break :blk lib;
+    } else null;
+
     // Add Rust Foundry wrapper integration
     // TODO: Fix Rust integration - needs proper zabi dependency
     // const rust_build = @import("src/compilers/rust_build.zig");
@@ -704,6 +752,12 @@ pub fn build(b: *std.Build) void {
         bench_exe.root_module.addImport("revm", revm_mod);
     }
     
+    // Link the EVM benchmark Rust library if available
+    if (evm_bench_lib) |evm_bench| {
+        bench_exe.linkLibrary(evm_bench);
+        bench_exe.addIncludePath(b.path("benches/evm-bench-rust"));
+    }
+    
     b.installArtifact(bench_exe);
     
     const run_bench_cmd = b.addRunArtifact(bench_exe);
@@ -724,6 +778,13 @@ pub fn build(b: *std.Build) void {
     if (revm_lib != null) {
         revm_bench_exe.root_module.addImport("revm", revm_mod);
     }
+    
+    // Link the EVM benchmark Rust library if available
+    if (evm_bench_lib) |evm_bench| {
+        revm_bench_exe.linkLibrary(evm_bench);
+        revm_bench_exe.addIncludePath(b.path("benches/evm-bench-rust"));
+    }
+    
     b.installArtifact(revm_bench_exe);
     
     const run_revm_bench_cmd = b.addRunArtifact(revm_bench_exe);
