@@ -47,14 +47,14 @@ pub const assets = [_]Self{
         "image/svg+xml",
     ),
     Self.init(
-        "/assets/index-CycQSrb9.css",
-        @embedFile("dist/assets/index-CycQSrb9.css"),
-        "text/css",
+        "/assets/index-CYrXat5N.js",
+        @embedFile("dist/assets/index-CYrXat5N.js"),
+        "application/javascript",
     ),
     Self.init(
-        "/assets/index-B-tAcAVf.js",
-        @embedFile("dist/assets/index-B-tAcAVf.js"),
-        "application/javascript",
+        "/assets/index-B_GuiVNS.css",
+        @embedFile("dist/assets/index-B_GuiVNS.css"),
+        "text/css",
     ),
     Self.init(
         "/tauri.svg",

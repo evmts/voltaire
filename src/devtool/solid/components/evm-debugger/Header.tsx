@@ -94,6 +94,28 @@ const Header: Component<HeaderProps> = (props) => {
 							>
 								Logs
 							</button>
+							<button
+								type="button"
+								onClick={() => props.setActivePanel('bytecode')}
+								class={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+									props.activePanel === 'bytecode'
+										? 'bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white'
+										: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60'
+								}`}
+							>
+								Bytecode
+							</button>
+							<button
+								type="button"
+								onClick={() => props.setActivePanel('gas')}
+								class={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+									props.activePanel === 'gas'
+										? 'bg-gray-100 font-medium text-gray-900 dark:bg-gray-800 dark:text-white'
+										: 'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800/60'
+								}`}
+							>
+								Gas
+							</button>
 						</div>
 					</div>
 					<div class="flex items-center space-x-3">

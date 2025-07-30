@@ -5,6 +5,7 @@ const MemoryDatabase = Evm.MemoryDatabase;
 const DatabaseInterface = Evm.DatabaseInterface;
 // Use primitives.Address module directly
 const Bytes32 = primitives.Bytes32;
+const StorageKey = primitives.StorageKey;
 const testing = std.testing;
 const debug_state = @import("debug_state.zig");
 
@@ -20,6 +21,9 @@ current_frame: ?*Evm.Frame,
 current_contract: ?*Evm.Contract,
 is_paused: bool,
 is_initialized: bool,
+
+// Storage tracking for debugging
+storage_changes: std.AutoHashMap(StorageKey, u256),
 
 /// Result of a single step execution
 pub const DebugStepResult = struct {
@@ -43,6 +47,9 @@ pub fn init(allocator: std.mem.Allocator) !DevtoolEvm {
     var evm = try builder.build();
     errdefer evm.deinit();
     
+    var storage_changes = std.AutoHashMap(StorageKey, u256).init(allocator);
+    errdefer storage_changes.deinit();
+    
     return DevtoolEvm{
         .allocator = allocator,
         .database = database,
@@ -52,6 +59,7 @@ pub fn init(allocator: std.mem.Allocator) !DevtoolEvm {
         .current_contract = null,
         .is_paused = false,
         .is_initialized = false,
+        .storage_changes = storage_changes,
     };
 }
 
@@ -69,6 +77,7 @@ pub fn deinit(self: *DevtoolEvm) void {
     if (self.bytecode.len > 0) {
         self.allocator.free(self.bytecode);
     }
+    self.storage_changes.deinit();
     self.evm.deinit();
     self.database.deinit();
 }
@@ -86,11 +95,32 @@ pub fn setBytecode(self: *DevtoolEvm, bytecode: []const u8) !void {
 
 /// Load bytecode from hex string and initialize execution
 pub fn loadBytecodeHex(self: *DevtoolEvm, hex_string: []const u8) !void {
+    // Validate input
+    if (hex_string.len == 0) {
+        return error.EmptyBytecode;
+    }
+    
     // Remove 0x prefix if present
     const hex_data = if (std.mem.startsWith(u8, hex_string, "0x"))
         hex_string[2..]
     else
         hex_string;
+    
+    // Validate hex string
+    if (hex_data.len == 0) {
+        return error.EmptyBytecode;
+    }
+    
+    if (hex_data.len % 2 != 0) {
+        return error.InvalidHexLength;
+    }
+    
+    // Validate all characters are hex
+    for (hex_data) |char| {
+        if (!std.ascii.isHex(char)) {
+            return error.InvalidHexCharacter;
+        }
+    }
     
     // Convert hex string to bytes
     const bytecode_len = hex_data.len / 2;
@@ -119,6 +149,9 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
         self.allocator.destroy(frame);
         self.current_frame = null;
     }
+    
+    // Clear storage tracking
+    self.storage_changes.clearRetainingCapacity();
     
     if (self.bytecode.len == 0) {
         self.is_initialized = false;
@@ -165,6 +198,20 @@ pub fn serializeEvmState(self: *DevtoolEvm) ![]u8 {
     const frame = self.current_frame.?;
     const opcode = if (frame.pc < self.bytecode.len) self.bytecode[frame.pc] else 0;
     
+    // Serialize storage changes
+    var storage_entries = std.ArrayList(debug_state.StorageEntry).init(self.allocator);
+    defer storage_entries.deinit();
+    
+    var storage_iter = self.storage_changes.iterator();
+    while (storage_iter.next()) |entry| {
+        const key_hex = try debug_state.formatU256Hex(self.allocator, entry.key_ptr.slot);
+        const value_hex = try debug_state.formatU256Hex(self.allocator, entry.value_ptr.*);
+        try storage_entries.append(.{
+            .key = key_hex,
+            .value = value_hex,
+        });
+    }
+    
     const state = debug_state.EvmStateJson{
         .pc = frame.pc,
         .opcode = try self.allocator.dupe(u8, debug_state.opcodeToString(opcode)),
@@ -172,7 +219,7 @@ pub fn serializeEvmState(self: *DevtoolEvm) ![]u8 {
         .depth = frame.depth,
         .stack = try debug_state.serializeStack(self.allocator, &frame.stack),
         .memory = try debug_state.serializeMemory(self.allocator, &frame.memory),
-        .storage = try self.allocator.alloc(debug_state.StorageEntry, 0), // TODO: Implement storage serialization
+        .storage = try storage_entries.toOwnedSlice(),
         .logs = try self.allocator.alloc([]const u8, 0), // TODO: Implement logs serialization
         .returnData = try debug_state.formatBytesHex(self.allocator, frame.output),
     };
@@ -210,6 +257,22 @@ pub fn stepExecute(self: *DevtoolEvm) !DebugStepResult {
     const pc_before = frame.pc;
     const gas_before = frame.gas_remaining;
     const opcode = self.bytecode[pc_before];
+    
+    // Check if this is SSTORE to track storage changes
+    if (opcode == 0x55 and frame.stack.size >= 2) {
+        // Get the key and value from stack (without popping)
+        const key = try frame.stack.peek_n(0);
+        const value = try frame.stack.peek_n(1);
+        
+        // Create storage key for tracking
+        const storage_key = StorageKey{
+            .address = self.current_contract.?.address,
+            .slot = key,
+        };
+        
+        // Track the storage change
+        try self.storage_changes.put(storage_key, value);
+    }
     
     // Execute single instruction using existing EVM table
     const interpreter_ptr: *Evm.Evm = &self.evm;

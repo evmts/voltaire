@@ -9,6 +9,8 @@ interface ControlsProps {
 	setState: Setter<EvmState>
 	isUpdating: boolean
 	setIsUpdating: Setter<boolean>
+	executionSpeed: number
+	setExecutionSpeed: Setter<number>
 }
 
 const Controls: Component<ControlsProps> = (props) => {
@@ -142,6 +144,26 @@ const Controls: Component<ControlsProps> = (props) => {
 						</Show>
 						{props.isRunning ? 'Pause' : 'Run'}
 					</button>
+
+					<Show when={props.isRunning}>
+						<div class="ml-4 flex items-center space-x-2">
+							<label class="text-gray-600 text-sm dark:text-gray-300">
+								Speed:
+							</label>
+							<input
+								type="range"
+								min="10"
+								max="1000"
+								step="10"
+								value={props.executionSpeed}
+								onInput={(e) => props.setExecutionSpeed(parseInt(e.currentTarget.value))}
+								class="h-2 w-32 cursor-pointer rounded-lg accent-indigo-600"
+							/>
+							<span class="min-w-[3rem] text-right font-mono text-gray-600 text-sm dark:text-gray-300">
+								{props.executionSpeed}ms
+							</span>
+						</div>
+					</Show>
 
 					<div class="ml-auto flex items-center space-x-3 text-gray-500 text-xs dark:text-gray-400">
 						<div class="flex items-center">
