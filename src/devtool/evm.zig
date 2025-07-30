@@ -123,8 +123,8 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
     
     // Create contract from bytecode using builder pattern
     self.current_contract = Evm.Contract.init_at_address(
-        primitives.Address.zero(), // caller
-        primitives.Address.zero(), // address
+        primitives.Address.ZERO, // caller
+        primitives.Address.ZERO, // address
         0, // value
         1000000, // gas
         self.bytecode,
@@ -139,7 +139,7 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
         &self.evm,
         1000000, // 1M gas
         &contract,
-        primitives.Address.zero(), // caller
+        .{}, // caller
         &[_]u8{} // no input data
     );
     
@@ -165,7 +165,7 @@ pub fn serializeEvmState(self: *DevtoolEvm) ![]u8 {
         .depth = frame.depth,
         .stack = try debug_state.serializeStack(self.allocator, &frame.stack),
         .memory = try debug_state.serializeMemory(self.allocator, &frame.memory),
-        .storage = std.StringHashMap([]const u8).init(self.allocator), // TODO: Implement storage serialization
+        .storage = try self.allocator.alloc(debug_state.StorageEntry, 0), // TODO: Implement storage serialization
         .logs = try self.allocator.alloc([]const u8, 0), // TODO: Implement logs serialization
         .returnData = try debug_state.formatBytesHex(self.allocator, frame.output),
     };
@@ -312,29 +312,28 @@ test "DevtoolEvm.loadBytecodeHex parses hex correctly" {
     try testing.expectEqualSlices(u8, &[_]u8{0x60, 0x10, 0x60, 0x20, 0x01}, devtool_evm.bytecode);
 }
 
-// TODO: Fix JSON serialization of StringHashMap
-// test "DevtoolEvm.serializeEvmState returns valid JSON" {
-//     const allocator = testing.allocator;
-//     
-//     var devtool_evm = try DevtoolEvm.init(allocator);
-//     defer devtool_evm.deinit();
-//     
-//     // Test empty state
-//     const empty_json = try devtool_evm.serializeEvmState();
-//     defer allocator.free(empty_json);
-//     try testing.expect(empty_json.len > 0);
-//     
-//     // Test with loaded bytecode
-//     try devtool_evm.loadBytecodeHex("0x6001600201");
-//     const state_json = try devtool_evm.serializeEvmState();
-//     defer allocator.free(state_json);
-//     try testing.expect(state_json.len > 0);
-//     
-//     // Should contain expected fields (basic check)
-//     try testing.expect(std.mem.indexOf(u8, state_json, "pc") != null);
-//     try testing.expect(std.mem.indexOf(u8, state_json, "opcode") != null);
-//     try testing.expect(std.mem.indexOf(u8, state_json, "gasLeft") != null);
-// }
+test "DevtoolEvm.serializeEvmState returns valid JSON" {
+    const allocator = testing.allocator;
+    
+    var devtool_evm = try DevtoolEvm.init(allocator);
+    defer devtool_evm.deinit();
+    
+    // Test empty state
+    const empty_json = try devtool_evm.serializeEvmState();
+    defer allocator.free(empty_json);
+    try testing.expect(empty_json.len > 0);
+    
+    // Test with loaded bytecode
+    try devtool_evm.loadBytecodeHex("0x6001600201");
+    const state_json = try devtool_evm.serializeEvmState();
+    defer allocator.free(state_json);
+    try testing.expect(state_json.len > 0);
+    
+    // Should contain expected fields (basic check)
+    try testing.expect(std.mem.indexOf(u8, state_json, "pc") != null);
+    try testing.expect(std.mem.indexOf(u8, state_json, "opcode") != null);
+    try testing.expect(std.mem.indexOf(u8, state_json, "gasLeft") != null);
+}
 
 test "DevtoolEvm.stepExecute executes single instructions" {
     const allocator = testing.allocator;
@@ -393,22 +392,22 @@ test "DevtoolEvm step execution modifies stack correctly" {
     const frame = &devtool_evm.current_frame.?;
     
     // Initially stack should be empty
-    try testing.expectEqual(@as(usize, 0), frame.stack.size());
+    try testing.expectEqual(@as(usize, 0), frame.stack.size);
     
     // Execute PUSH1 42
     const step1 = try devtool_evm.stepExecute();
     try testing.expectEqualStrings("PUSH1", step1.opcode_name);
-    try testing.expectEqual(@as(usize, 1), frame.stack.size());
-    const value1 = try frame.stack.peek(0);
+    try testing.expectEqual(@as(usize, 1), frame.stack.size);
+    const value1 = try frame.stack.peek();
     try testing.expectEqual(@as(u256, 42), value1);
     
     // Execute PUSH1 100 
     const step2 = try devtool_evm.stepExecute();
     try testing.expectEqualStrings("PUSH1", step2.opcode_name);
-    try testing.expectEqual(@as(usize, 2), frame.stack.size());
-    const value2 = try frame.stack.peek(0); // Top of stack
+    try testing.expectEqual(@as(usize, 2), frame.stack.size);
+    const value2 = try frame.stack.peek(); // Top of stack
     try testing.expectEqual(@as(u256, 100), value2);
-    const value3 = try frame.stack.peek(1); // Bottom of stack
+    const value3 = try frame.stack.peek_n(1); // Second from top
     try testing.expectEqual(@as(u256, 42), value3);
 }
 
@@ -422,11 +421,10 @@ test "DevtoolEvm complete execution flow PUSH1 5 PUSH1 10 ADD" {
     const test_bytecode = "0x6005600a01";
     try devtool_evm.loadBytecodeHex(test_bytecode);
     
-    // TODO: Fix JSON serialization
     // Get initial state
-    // const initial_state = try devtool_evm.serializeEvmState();
-    // defer allocator.free(initial_state);
-    // try testing.expect(initial_state.len > 0);
+    const initial_state = try devtool_evm.serializeEvmState();
+    defer allocator.free(initial_state);
+    try testing.expect(initial_state.len > 0);
     
     // Step through execution
     var step_count: u32 = 0;
@@ -460,16 +458,15 @@ test "DevtoolEvm complete execution flow PUSH1 5 PUSH1 10 ADD" {
     try testing.expect(final_step.completed);
     try testing.expect(!final_step.error_occurred);
     
-    // TODO: Fix JSON serialization
     // Get final state
-    // const final_state = try devtool_evm.serializeEvmState();
-    // defer allocator.free(final_state);
-    // try testing.expect(final_state.len > 0);
+    const final_state = try devtool_evm.serializeEvmState();
+    defer allocator.free(final_state);
+    try testing.expect(final_state.len > 0);
     
     // Verify stack has result (should be 15 = 5 + 10)
     if (devtool_evm.current_frame) |frame| {
-        try testing.expect(frame.stack.size() > 0);
-        const stack_top = try frame.stack.peek(0);
+        try testing.expect(frame.stack.size > 0);
+        const stack_top = try frame.stack.peek();
         try testing.expectEqual(@as(u256, 15), stack_top);
     } else {
         try testing.expect(false); // Frame should exist

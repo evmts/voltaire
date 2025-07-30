@@ -33,12 +33,18 @@ pub const DebugState = struct {
             .gas_remaining = gas_remaining,
             .depth = depth,
             .is_static = is_static,
-            .stack_size = stack.size(),
+            .stack_size = stack.size,
             .memory_size = memory.size(),
             .has_error = err != null,
             .error_name = if (err) |e| @errorName(e) else null,
         };
     }
+};
+
+/// Storage entry for JSON serialization
+pub const StorageEntry = struct {
+    key: []const u8,
+    value: []const u8,
 };
 
 /// Simple JSON-serializable state for the frontend
@@ -49,7 +55,7 @@ pub const EvmStateJson = struct {
     depth: u32,
     stack: [][]const u8,
     memory: []const u8,
-    storage: std.StringHashMap([]const u8),
+    storage: []StorageEntry,
     logs: [][]const u8,
     returnData: []const u8,
 };
@@ -223,9 +229,9 @@ pub fn serializeStack(allocator: std.mem.Allocator, stack: *const Stack) ![][]co
     
     // Get stack items (top to bottom for debugging visibility)
     var i: usize = 0;
-    while (i < stack.size()) {
-        const idx = stack.size() - 1 - i; // Reverse order to show top first
-        const value = stack.peek(idx) catch break;
+    while (i < stack.size) {
+        const idx = i; // peek_n(0) is top, peek_n(1) is second from top, etc.
+        const value = stack.peek_n(idx) catch break;
         const hex_str = try formatU256Hex(allocator, value);
         try stack_array.append(hex_str);
         i += 1;
@@ -242,10 +248,8 @@ pub fn serializeMemory(allocator: std.mem.Allocator, memory: *const Memory) ![]u
     }
     
     // Read memory contents
-    const memory_data = try allocator.alloc(u8, memory_size);
-    defer allocator.free(memory_data);
-    
-    try memory.read(0, memory_data);
+    const memory_read = @import("evm").memory.read;
+    const memory_data = try memory_read.get_slice(memory, 0, memory_size);
     return try formatBytesHex(allocator, memory_data);
 }
 
@@ -254,7 +258,8 @@ pub fn createEmptyEvmStateJson(allocator: std.mem.Allocator) !EvmStateJson {
     var empty_stack = std.ArrayList([]const u8).init(allocator);
     defer empty_stack.deinit();
     
-    var empty_storage = std.StringHashMap([]const u8).init(allocator);
+    var empty_storage = std.ArrayList(StorageEntry).init(allocator);
+    defer empty_storage.deinit();
     
     var empty_logs = std.ArrayList([]const u8).init(allocator);
     defer empty_logs.deinit();
@@ -266,7 +271,7 @@ pub fn createEmptyEvmStateJson(allocator: std.mem.Allocator) !EvmStateJson {
         .depth = 0,
         .stack = try empty_stack.toOwnedSlice(),
         .memory = try allocator.dupe(u8, "0x"),
-        .storage = empty_storage,
+        .storage = try empty_storage.toOwnedSlice(),
         .logs = try empty_logs.toOwnedSlice(),
         .returnData = try allocator.dupe(u8, "0x"),
     };
@@ -283,13 +288,12 @@ pub fn freeEvmStateJson(allocator: std.mem.Allocator, state: EvmStateJson) void 
     
     allocator.free(state.memory);
     
-    // Free storage map
-    var storage_iterator = state.storage.iterator();
-    while (storage_iterator.next()) |entry| {
-        allocator.free(entry.key_ptr.*);
-        allocator.free(entry.value_ptr.*);
+    // Free storage entries
+    for (state.storage) |entry| {
+        allocator.free(entry.key);
+        allocator.free(entry.value);
     }
-    state.storage.deinit();
+    allocator.free(state.storage);
     
     for (state.logs) |log_item| {
         allocator.free(log_item);
@@ -301,12 +305,12 @@ pub fn freeEvmStateJson(allocator: std.mem.Allocator, state: EvmStateJson) void 
 
 test "DebugState.capture works correctly" {
     const testing = std.testing;
-    const Evm = @import("evm");
+    // const Evm = @import("evm");
     
     // Create minimal stack and memory for testing
     var stack = Stack{};
-    try stack.push(42);
-    try stack.push(100);
+    try stack.append(42);
+    try stack.append(100);
     
     var memory = try Memory.init_default(testing.allocator);
     defer memory.deinit();
@@ -385,9 +389,9 @@ test "serializeStack works correctly" {
     
     // Test stack with values
     var stack = Stack{};
-    try stack.push(42);
-    try stack.push(255);
-    try stack.push(1000);
+    try stack.append(42);
+    try stack.append(255);
+    try stack.append(1000);
     
     const result = try serializeStack(testing.allocator, &stack);
     defer {
@@ -404,7 +408,7 @@ test "serializeStack works correctly" {
 
 test "serializeMemory works correctly" {
     const testing = std.testing;
-    const Evm = @import("evm");
+    // const Evm = @import("evm");
     
     // Test empty memory
     var empty_memory = try Memory.init_default(testing.allocator);
@@ -419,7 +423,8 @@ test "serializeMemory works correctly" {
     defer memory.deinit();
     
     const test_data = [_]u8{0x12, 0x34, 0x56, 0x78};
-    try memory.write(0, &test_data);
+    const memory_write = @import("evm").memory.write;
+    try memory_write.set_data_bounded(&memory, 0, &test_data, 0, test_data.len);
     
     const result = try serializeMemory(testing.allocator, &memory);
     defer testing.allocator.free(result);
@@ -429,7 +434,7 @@ test "serializeMemory works correctly" {
 test "createEmptyEvmStateJson works correctly" {
     const testing = std.testing;
     
-    var empty_state = try createEmptyEvmStateJson(testing.allocator);
+    const empty_state = try createEmptyEvmStateJson(testing.allocator);
     defer freeEvmStateJson(testing.allocator, empty_state);
     
     try testing.expectEqual(@as(usize, 0), empty_state.pc);
@@ -438,7 +443,7 @@ test "createEmptyEvmStateJson works correctly" {
     try testing.expectEqual(@as(u32, 0), empty_state.depth);
     try testing.expectEqual(@as(usize, 0), empty_state.stack.len);
     try testing.expectEqualStrings("0x", empty_state.memory);
-    try testing.expectEqual(@as(u32, 0), empty_state.storage.count());
+    try testing.expectEqual(@as(usize, 0), empty_state.storage.len);
     try testing.expectEqual(@as(usize, 0), empty_state.logs.len);
     try testing.expectEqualStrings("0x", empty_state.returnData);
 }
