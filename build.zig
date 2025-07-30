@@ -25,7 +25,6 @@ const GenerateAssetsStep = struct {
         _ = options;
         const self: *GenerateAssetsStep = @fieldParentPtr("step", step);
         const b = step.owner;
-        const allocator = b.allocator;
 
         var file = try std.fs.cwd().createFile(self.out_path, .{});
         defer file.close();
@@ -69,22 +68,37 @@ const GenerateAssetsStep = struct {
 
         try writer.writeAll("pub const assets = [_]Self{\n");
 
-        var dir = try std.fs.cwd().openDir(self.dist_path, .{ .iterate = true });
-        defer dir.close();
+        // Helper function to get MIME type from file extension
+        const getMimeType = struct {
+            fn get(path: []const u8) []const u8 {
+                if (std.mem.endsWith(u8, path, ".html")) return "text/html";
+                if (std.mem.endsWith(u8, path, ".css")) return "text/css";
+                if (std.mem.endsWith(u8, path, ".js")) return "application/javascript";
+                if (std.mem.endsWith(u8, path, ".svg")) return "image/svg+xml";
+                if (std.mem.endsWith(u8, path, ".png")) return "image/png";
+                if (std.mem.endsWith(u8, path, ".jpg") or std.mem.endsWith(u8, path, ".jpeg")) return "image/jpeg";
+                if (std.mem.endsWith(u8, path, ".ico")) return "image/x-icon";
+                return "application/octet-stream";
+            }
+        }.get;
 
-        var walker = try dir.walk(allocator);
+        // Recursively walk the dist directory and generate assets
+        var dist_dir = try std.fs.cwd().openDir(self.dist_path, .{ .iterate = true });
+        defer dist_dir.close();
+
+        var walker = try dist_dir.walk(b.allocator);
         defer walker.deinit();
 
         while (try walker.next()) |entry| {
             if (entry.kind != .file) continue;
-
-            const mime_type = get_mime_type(entry.basename);
-            const path = try std.fmt.allocPrint(allocator, "/{s}", .{entry.path});
-            defer allocator.free(path);
-
+            
+            const web_path = try std.fmt.allocPrint(b.allocator, "/{s}", .{entry.path});
+            const embed_path = try std.fmt.allocPrint(b.allocator, "dist/{s}", .{entry.path});
+            const mime_type = getMimeType(entry.path);
+            
             try writer.print("    Self.init(\n", .{});
-            try writer.print("        \"{s}\",\n", .{path});
-            try writer.print("        @embedFile(\"dist/{s}\"),\n", .{entry.path});
+            try writer.print("        \"{s}\",\n", .{web_path});
+            try writer.print("        @embedFile(\"{s}\"),\n", .{embed_path});
             try writer.print("        \"{s}\",\n", .{mime_type});
             try writer.print("    ),\n", .{});
         }
@@ -1100,6 +1114,20 @@ pub fn build(b: *std.Build) void {
     const compiler_test_step = b.step("test-compiler", "Run Compiler tests");
     compiler_test_step.dependOn(&run_compiler_test.step);
 
+    // Add Devtool tests
+    const devtool_test = b.addTest(.{
+        .name = "devtool-test",
+        .root_source_file = b.path("src/devtool/evm.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    devtool_test.root_module.addImport("evm", evm_mod);
+    devtool_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_devtool_test = b.addRunArtifact(devtool_test);
+    const devtool_test_step = b.step("test-devtool", "Run Devtool tests");
+    devtool_test_step.dependOn(&run_devtool_test.step);
+
     // Add SnailShellBenchmark test
     const snail_shell_benchmark_test = b.addTest(.{
         .name = "snail-shell-benchmark-test",
@@ -1224,6 +1252,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_contract_call_test.step);
     // Hardfork tests removed completely
     test_step.dependOn(&run_delegatecall_test.step);
+    test_step.dependOn(&run_devtool_test.step);
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
