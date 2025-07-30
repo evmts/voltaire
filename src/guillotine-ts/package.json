@@ -1,0 +1,61 @@
+{
+  "name": "@evmts/guillotine",
+  "version": "0.1.0",
+  "description": "TypeScript bindings for the Guillotine EVM using WebAssembly",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "wasm/",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc && npm run copy-wasm",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "copy-wasm": "mkdir -p dist/wasm && cp ../../zig-out/bin/guillotine*.wasm dist/wasm/ 2>/dev/null || true",
+    "dev": "tsc --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write 'src/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts'",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules coverage"
+  },
+  "keywords": [
+    "ethereum",
+    "evm",
+    "webassembly",
+    "wasm",
+    "blockchain",
+    "smart-contracts",
+    "typescript"
+  ],
+  "author": "EVMTS Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.16",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.2.5",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/evmts/guillotine.git",
+    "directory": "src/guillotine-ts"
+  },
+  "bugs": {
+    "url": "https://github.com/evmts/guillotine/issues"
+  },
+  "homepage": "https://github.com/evmts/guillotine#readme",
+  "sideEffects": false
+}
