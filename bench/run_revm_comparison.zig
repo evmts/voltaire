@@ -46,20 +46,28 @@ fn compareSimpleTransfer(allocator: std.mem.Allocator) !void {
         defer memory_db.deinit();
         
         const db_interface = memory_db.to_database_interface();
-        var vm = try Vm.init(allocator, db_interface, null, null);
+        var vm = try Vm.init(allocator, db_interface, null, null, null, null, 0, false);
         defer vm.deinit();
         
         try vm.state.set_balance(from, value * 2);
         
-        var contract = try Contract.init(allocator, &.{}, .{ .address = to });
+        var contract = Contract.init(
+            from,  // caller
+            to,    // addr
+            value, // value
+            1000000, // gas
+            &.{},  // code
+            [_]u8{0} ** 32, // code_hash
+            &.{},  // input
+            false, // is_static
+        );
         defer contract.deinit(allocator, null);
         
-        var frame = try Frame.init(allocator, &vm, 21000, contract, from, &.{});
+        var frame = try Frame.init(allocator, &contract);
         defer frame.deinit();
-        frame.value = value;
         
         const start = std.time.nanoTimestamp();
-        const result = try vm.interpret(&frame);
+        const result = try vm.interpret(&contract, &.{}, false);
         const end = std.time.nanoTimestamp();
         
         guillotine_total += @intCast(end - start);
@@ -81,7 +89,7 @@ fn compareSimpleTransfer(allocator: std.mem.Allocator) !void {
         const end = std.time.nanoTimestamp();
         
         revm_total += @intCast(end - start);
-        std.mem.doNotOptimizeAway(result.gasUsed);
+        std.mem.doNotOptimizeAway(result.gas_used);
     }
     
     const guillotine_avg = guillotine_total / guillotine_runs;
@@ -128,20 +136,29 @@ fn compareArithmeticOps(allocator: std.mem.Allocator) !void {
             defer memory_db.deinit();
             
             const db_interface = memory_db.to_database_interface();
-            var vm = try Vm.init(allocator, db_interface, null, null);
+            var vm = try Vm.init(allocator, db_interface, null, null, null, null, 0, false);
             defer vm.deinit();
             
             const caller = Address.from_u256(0x1000);
             try vm.state.set_balance(caller, 1000000);
             
-            var contract = try Contract.init(allocator, bytecode, .{ .address = Address.from_u256(0x2000) });
+            var contract = Contract.init(
+                caller,  // caller
+                Address.from_u256(0x2000),  // addr
+                0,  // value
+                100000,  // gas
+                bytecode,  // code
+                [_]u8{0} ** 32,  // code_hash
+                &.{},  // input
+                false,  // is_static
+            );
             defer contract.deinit(allocator, null);
             
-            var frame = try Frame.init(allocator, &vm, 100000, contract, caller, &.{});
+            var frame = try Frame.init(allocator, &contract);
             defer frame.deinit();
             
             const start = std.time.nanoTimestamp();
-            const result = try vm.interpret(&frame);
+            const result = try vm.interpret(&contract, &.{}, false);
             const end = std.time.nanoTimestamp();
             
             guillotine_total += @intCast(end - start);
@@ -165,7 +182,7 @@ fn compareArithmeticOps(allocator: std.mem.Allocator) !void {
             const end = std.time.nanoTimestamp();
             
             revm_total += @intCast(end - start);
-            std.mem.doNotOptimizeAway(result.gasUsed);
+            std.mem.doNotOptimizeAway(result.gas_used);
         }
     }
     
@@ -214,20 +231,29 @@ fn compareMemoryOps(allocator: std.mem.Allocator) !void {
             defer memory_db.deinit();
             
             const db_interface = memory_db.to_database_interface();
-            var vm = try Vm.init(allocator, db_interface, null, null);
+            var vm = try Vm.init(allocator, db_interface, null, null, null, null, 0, false);
             defer vm.deinit();
             
             const caller = Address.from_u256(0x1000);
             try vm.state.set_balance(caller, 1000000);
             
-            var contract = try Contract.init(allocator, bytecode, .{ .address = Address.from_u256(0x2000) });
+            var contract = Contract.init(
+                caller,  // caller
+                Address.from_u256(0x2000),  // addr
+                0,  // value
+                100000,  // gas
+                bytecode,  // code
+                [_]u8{0} ** 32,  // code_hash
+                &.{},  // input
+                false,  // is_static
+            );
             defer contract.deinit(allocator, null);
             
-            var frame = try Frame.init(allocator, &vm, 100000, contract, caller, &.{});
+            var frame = try Frame.init(allocator, &contract);
             defer frame.deinit();
             
             const start = std.time.nanoTimestamp();
-            const result = try vm.interpret(&frame);
+            const result = try vm.interpret(&contract, &.{}, false);
             const end = std.time.nanoTimestamp();
             
             guillotine_total += @intCast(end - start);
@@ -251,7 +277,7 @@ fn compareMemoryOps(allocator: std.mem.Allocator) !void {
             const end = std.time.nanoTimestamp();
             
             revm_total += @intCast(end - start);
-            std.mem.doNotOptimizeAway(result.gasUsed);
+            std.mem.doNotOptimizeAway(result.gas_used);
         }
     }
     
