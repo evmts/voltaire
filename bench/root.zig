@@ -6,6 +6,9 @@ const zbench = @import("zbench");
 pub const Evm = @import("evm");
 pub const primitives = @import("primitives");
 
+// Conditionally export revm if available
+pub const revm = if (@hasDecl(@import("root"), "revm")) @import("revm") else undefined;
+
 pub const zbench_runner = @import("zbench_runner.zig");
 pub const precompile_benchmark = @import("precompile_benchmark.zig");
 pub const opcode_benchmarks = @import("opcode_benchmarks.zig");
@@ -52,6 +55,10 @@ pub fn run(allocator: Allocator) !void {
     // Run stack performance benchmarks (Issue #34)
     std.log.info("Running stack performance benchmarks (Issue #34)", .{});
     try stack_performance_benchmark.run_stack_performance_benchmarks(allocator);
+    
+    // Run all benchmarks including revm comparison
+    std.log.info("Running comprehensive benchmark suite", .{});
+    try benchmarks.run_all_benchmarks(allocator);
     
     std.log.info("Benchmark suite completed", .{});
 }

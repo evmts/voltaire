@@ -478,6 +478,9 @@ pub fn build(b: *std.Build) void {
     bench_mod.addImport("primitives", primitives_mod);
     bench_mod.addImport("evm", bench_evm_mod);  // Use the bench-specific EVM module
     bench_mod.addImport("zbench", zbench_dep.module("zbench"));
+    if (revm_lib != null) {
+        bench_mod.addImport("revm", revm_mod);
+    }
 
     // Add modules to lib_mod so tests can access them
     lib_mod.addImport("primitives", primitives_mod);
@@ -697,6 +700,9 @@ pub fn build(b: *std.Build) void {
     bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
     bench_exe.root_module.addImport("evm", bench_evm_mod);  // Use the bench-specific EVM module
     bench_exe.root_module.addImport("primitives", primitives_mod);
+    if (revm_lib != null) {
+        bench_exe.root_module.addImport("revm", revm_mod);
+    }
     
     b.installArtifact(bench_exe);
     
@@ -705,6 +711,26 @@ pub fn build(b: *std.Build) void {
     
     const bench_step = b.step("bench", "Run benchmarks");
     bench_step.dependOn(&run_bench_cmd.step);
+    
+    // Add revm comparison benchmark executable
+    const revm_bench_exe = b.addExecutable(.{
+        .name = "revm-comparison",
+        .root_source_file = b.path("bench/run_revm_comparison.zig"),
+        .target = target,
+        .optimize = bench_optimize,
+    });
+    revm_bench_exe.root_module.addImport("evm", bench_evm_mod);
+    revm_bench_exe.root_module.addImport("primitives", primitives_mod);
+    if (revm_lib != null) {
+        revm_bench_exe.root_module.addImport("revm", revm_mod);
+    }
+    b.installArtifact(revm_bench_exe);
+    
+    const run_revm_bench_cmd = b.addRunArtifact(revm_bench_exe);
+    run_revm_bench_cmd.step.dependOn(b.getInstallStep());
+    
+    const revm_bench_step = b.step("bench-revm", "Run revm comparison benchmarks");
+    revm_bench_step.dependOn(&run_revm_bench_cmd.step);
     
     // Flamegraph profiling support
     const flamegraph_step = b.step("flamegraph", "Run benchmarks with flamegraph profiling");
@@ -720,6 +746,9 @@ pub fn build(b: *std.Build) void {
     profile_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
     profile_bench_exe.root_module.addImport("evm", bench_evm_mod);
     profile_bench_exe.root_module.addImport("primitives", primitives_mod);
+    if (revm_lib != null) {
+        profile_bench_exe.root_module.addImport("revm", revm_mod);
+    }
     
     // CRITICAL: Include debug symbols for profiling
     profile_bench_exe.root_module.strip = false;  // Keep symbols
