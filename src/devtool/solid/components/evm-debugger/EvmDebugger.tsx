@@ -11,7 +11,7 @@ import StateSummary from '~/components/evm-debugger/StateSummary'
 import Storage from '~/components/evm-debugger/Storage'
 import type { EvmState } from '~/components/evm-debugger/types'
 import { sampleContracts } from '~/components/evm-debugger/types'
-import { getEvmState } from '~/components/evm-debugger/utils'
+import { getEvmState, stepEvm } from '~/components/evm-debugger/utils'
 
 const EvmDebugger = () => {
 	const [bytecode, setBytecode] = createSignal(sampleContracts[7].bytecode)
@@ -33,19 +33,6 @@ const EvmDebugger = () => {
 	const [isDarkMode, setIsDarkMode] = createSignal(false)
 	const [showSample, setShowSample] = createSignal(false)
 	const [activePanel, setActivePanel] = createSignal('all')
-	const [helloResponse, setHelloResponse] = createSignal('')
-
-	// Hello world test function
-	const testHelloWorld = async () => {
-		try {
-			// Call the Zig backend function
-			const response = await (window as any).hello_world('World')
-			setHelloResponse(response)
-			console.log('Hello world response:', response)
-		} catch (err) {
-			setError(`Hello world test failed: ${err}`)
-		}
-	}
 
 	onMount(() => {
 		if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
@@ -58,16 +45,24 @@ const EvmDebugger = () => {
 
 	createEffect(() => {
 		if (!isRunning()) return
-		const refreshState = async () => {
+		const runStep = async () => {
 			try {
-				const freshState = await getEvmState()
+				setIsUpdating(true)
+				const freshState = await stepEvm()
 				setState(freshState)
+				setIsUpdating(false)
+				
+				// Stop running if execution is complete or an error occurred
+				if (freshState.pc === 0 && freshState.opcode === 'COMPLETE') {
+					setIsRunning(false)
+				}
 			} catch (err) {
-				setError(`Failed to get state: ${err}`)
+				setError(`Failed to step: ${err}`)
+				setIsRunning(false)
 			}
 		}
 
-		const interval = setInterval(refreshState, 100)
+		const interval = setInterval(runStep, 100) // Step every 100ms
 
 		onCleanup(() => {
 			clearInterval(interval)
@@ -142,26 +137,6 @@ const EvmDebugger = () => {
 				/>
 				<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6">
 					<ErrorAlert error={error()} setError={setError} />
-					
-					{/* Hello World Test Section */}
-					<div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-						<h3 class="text-lg font-medium text-blue-900 dark:text-blue-100 mb-2">
-							WebUI Communication Test
-						</h3>
-						<button
-							onClick={testHelloWorld}
-							class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors mr-4"
-						>
-							Test Hello World
-						</button>
-						<Show when={helloResponse()}>
-							<div class="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded">
-								<strong class="text-green-800 dark:text-green-200">Response:</strong>{' '}
-								<span class="text-green-700 dark:text-green-300">{helloResponse()}</span>
-							</div>
-						</Show>
-					</div>
-					
 					<BytecodeLoader
 						bytecode={bytecode()}
 						setBytecode={setBytecode}

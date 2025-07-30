@@ -86,11 +86,32 @@ pub fn setBytecode(self: *DevtoolEvm, bytecode: []const u8) !void {
 
 /// Load bytecode from hex string and initialize execution
 pub fn loadBytecodeHex(self: *DevtoolEvm, hex_string: []const u8) !void {
+    // Validate input
+    if (hex_string.len == 0) {
+        return error.EmptyBytecode;
+    }
+    
     // Remove 0x prefix if present
     const hex_data = if (std.mem.startsWith(u8, hex_string, "0x"))
         hex_string[2..]
     else
         hex_string;
+    
+    // Validate hex string
+    if (hex_data.len == 0) {
+        return error.EmptyBytecode;
+    }
+    
+    if (hex_data.len % 2 != 0) {
+        return error.InvalidHexLength;
+    }
+    
+    // Validate all characters are hex
+    for (hex_data) |char| {
+        if (!std.ascii.isHex(char)) {
+            return error.InvalidHexCharacter;
+        }
+    }
     
     // Convert hex string to bytes
     const bytecode_len = hex_data.len / 2;

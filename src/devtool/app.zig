@@ -35,19 +35,27 @@ fn loadBytecodeHandler(e: *webui.Event) void {
     
     if (app.devtool_evm) |*evm| {
         evm.loadBytecodeHex(bytecode_hex) catch |err| {
+            const error_msg = switch (err) {
+                error.EmptyBytecode => "Bytecode cannot be empty",
+                error.InvalidHexLength => "Hex string must have even number of characters",
+                error.InvalidHexCharacter => "Bytecode contains invalid hex characters",
+                error.OutOfMemory => "Out of memory",
+                else => "Unknown error loading bytecode",
+            };
+            
             var buffer: [512]u8 = undefined;
-            const error_msg = std.fmt.bufPrint(&buffer, "{{\"error\": \"Failed to load bytecode: {}\"}}", .{err}) catch "{{\"error\": \"Failed to load bytecode\"}}";
+            const json_msg = std.fmt.bufPrint(&buffer, "{{\"error\": \"{s}\"}}", .{error_msg}) catch "{{\"error\": \"Failed to load bytecode\"}}";
             
             var null_terminated_buffer: [512:0]u8 = undefined;
-            const len = @min(error_msg.len, 511);
-            @memcpy(null_terminated_buffer[0..len], error_msg[0..len]);
+            const len = @min(json_msg.len, 511);
+            @memcpy(null_terminated_buffer[0..len], json_msg[0..len]);
             null_terminated_buffer[len] = 0;
             e.return_string(null_terminated_buffer[0..len :0]);
             return;
         };
     }
     
-    e.return_string("{}");
+    e.return_string("{\"success\": true}");
 }
 
 fn resetEvmHandler(e: *webui.Event) void {
