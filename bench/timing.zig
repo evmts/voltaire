@@ -55,7 +55,19 @@ pub const BenchmarkSuite = struct {
         // Warmup
         var i: u32 = 0;
         while (i < config.warmup_iterations) : (i += 1) {
-            _ = func();
+            if (@typeInfo(@TypeOf(func)) == .@"fn") {
+                const return_type = @typeInfo(@TypeOf(func)).@"fn".return_type.?;
+                if (@typeInfo(return_type) == .error_union) {
+                    func() catch |err| {
+                        std.log.warn("Warmup iteration {} failed: {}", .{ i, err });
+                        continue;
+                    };
+                } else {
+                    _ = func();
+                }
+            } else {
+                _ = func();
+            }
         }
         
         var times = ArrayList(u64).init(self.allocator);
@@ -69,7 +81,19 @@ pub const BenchmarkSuite = struct {
         i = 0;
         while (i < config.iterations) : (i += 1) {
             const start = std.time.nanoTimestamp();
-            _ = func();
+            if (@typeInfo(@TypeOf(func)) == .@"fn") {
+                const return_type = @typeInfo(@TypeOf(func)).@"fn".return_type.?;
+                if (@typeInfo(return_type) == .error_union) {
+                    func() catch |err| {
+                        std.log.warn("Benchmark iteration {} failed: {}", .{ i, err });
+                        continue;
+                    };
+                } else {
+                    _ = func();
+                }
+            } else {
+                _ = func();
+            }
             const end = std.time.nanoTimestamp();
             
             const duration = @as(u64, @intCast(end - start));
@@ -165,7 +189,19 @@ pub fn benchmark_with_args(_: Allocator, config: BenchmarkConfig, comptime func:
     // Warmup
     var i: u32 = 0;
     while (i < config.warmup_iterations) : (i += 1) {
-        _ = @call(.auto, func, args);
+        if (@typeInfo(@TypeOf(func)) == .@"fn") {
+            const return_type = @typeInfo(@TypeOf(func)).@"fn".return_type.?;
+            if (@typeInfo(return_type) == .error_union) {
+                @call(.auto, func, args) catch |err| {
+                    std.log.warn("Warmup iteration {} failed: {}", .{ i, err });
+                    continue;
+                };
+            } else {
+                _ = @call(.auto, func, args);
+            }
+        } else {
+            _ = @call(.auto, func, args);
+        }
     }
     
     var total_time: u64 = 0;
@@ -176,7 +212,19 @@ pub fn benchmark_with_args(_: Allocator, config: BenchmarkConfig, comptime func:
     i = 0;
     while (i < config.iterations) : (i += 1) {
         const start = std.time.nanoTimestamp();
-        _ = @call(.auto, func, args);
+        if (@typeInfo(@TypeOf(func)) == .@"fn") {
+            const return_type = @typeInfo(@TypeOf(func)).@"fn".return_type.?;
+            if (@typeInfo(return_type) == .error_union) {
+                @call(.auto, func, args) catch |err| {
+                    std.log.warn("Benchmark iteration {} failed: {}", .{ i, err });
+                    continue;
+                };
+            } else {
+                _ = @call(.auto, func, args);
+            }
+        } else {
+            _ = @call(.auto, func, args);
+        }
         const end = std.time.nanoTimestamp();
         
         const duration = @as(u64, @intCast(end - start));
