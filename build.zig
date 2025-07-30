@@ -312,6 +312,68 @@ pub fn build(b: *std.Build) void {
     // Link c-kzg library to EVM module
     evm_mod.linkLibrary(c_kzg_lib);
 
+    // REVM Rust wrapper integration
+    const revm_lib = if (rust_target != null) blk: {
+        const rust_profile = if (optimize == .Debug) "dev" else "release";
+        const rust_target_dir = if (optimize == .Debug) "debug" else "release";
+        
+        const rust_build = if (rust_target) |target_triple|
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/revm_wrapper/Cargo.toml", "--verbose" })
+        else
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/revm_wrapper/Cargo.toml", "--verbose" });
+
+        // Fix for macOS linking issues (only on macOS)
+        if (target.result.os.tag == .macos) {
+            rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+        }
+
+        // Create static library artifact for the Rust REVM wrapper
+        const lib = b.addStaticLibrary(.{
+            .name = "revm_wrapper",
+            .target = target,
+            .optimize = optimize,
+        });
+
+        // Determine library path based on target
+        const lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/librevm_wrapper.a", .{ target_triple, rust_target_dir })
+        else
+            b.fmt("target/{s}/librevm_wrapper.a", .{ rust_target_dir });
+
+        lib.addObjectFile(b.path(lib_path));
+        
+        // Make the rust build a dependency
+        lib.step.dependOn(&rust_build.step);
+        
+        break :blk lib;
+    } else null;
+
+    // Create REVM module
+    const revm_mod = b.createModule(.{
+        .root_source_file = b.path("src/revm_wrapper/revm.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    revm_mod.addImport("primitives", primitives_mod);
+    
+    // Link REVM Rust library if available
+    if (revm_lib) |lib| {
+        revm_mod.linkLibrary(lib);
+        revm_mod.addIncludePath(b.path("src/revm_wrapper"));
+        
+        // Link additional libraries needed by revm
+        if (target.result.os.tag == .linux) {
+            lib.linkSystemLibrary("m");
+            lib.linkSystemLibrary("pthread");
+            lib.linkSystemLibrary("dl");
+        } else if (target.result.os.tag == .macos) {
+            lib.linkSystemLibrary("c++");
+            lib.linkFramework("Security");
+            lib.linkFramework("SystemConfiguration");
+            lib.linkFramework("CoreFoundation");
+        }
+    }
+
     // Add Rust Foundry wrapper integration
     // TODO: Fix Rust integration - needs proper zabi dependency
     // const rust_build = @import("src/compilers/rust_build.zig");
@@ -425,6 +487,9 @@ pub fn build(b: *std.Build) void {
     lib_mod.addImport("compilers", compilers_mod);
     lib_mod.addImport("trie", trie_mod);
     lib_mod.addImport("bench", bench_mod);
+    if (revm_lib != null) {
+        lib_mod.addImport("revm", revm_mod);
+    }
 
     const exe_mod = b.createModule(.{ .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize });
     exe_mod.addImport("Guillotine_lib", lib_mod);
@@ -1242,6 +1307,40 @@ pub fn build(b: *std.Build) void {
     if (run_bn254_rust_test) |bn254_test| {
         test_step.dependOn(&bn254_test.step);
     }
+    
+    // Add REVM wrapper tests if available
+    if (revm_lib != null) {
+        const revm_test = b.addTest(.{
+            .name = "revm-test",
+            .root_source_file = b.path("src/revm_wrapper/revm.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        revm_test.root_module.addImport("primitives", primitives_mod);
+        revm_test.linkLibrary(revm_lib.?);
+        revm_test.addIncludePath(b.path("src/revm_wrapper"));
+        revm_test.linkLibC();
+        
+        // Link additional libraries needed by revm
+        if (target.result.os.tag == .linux) {
+            revm_test.linkSystemLibrary("m");
+            revm_test.linkSystemLibrary("pthread");
+            revm_test.linkSystemLibrary("dl");
+        } else if (target.result.os.tag == .macos) {
+            revm_test.linkSystemLibrary("c++");
+            revm_test.linkFramework("Security");
+            revm_test.linkFramework("SystemConfiguration");
+            revm_test.linkFramework("CoreFoundation");
+        }
+        
+        const run_revm_test = b.addRunArtifact(revm_test);
+        test_step.dependOn(&run_revm_test.step);
+        
+        // Also add a separate step for revm tests
+        const revm_test_step = b.step("test-revm", "Run REVM wrapper tests");
+        revm_test_step.dependOn(&run_revm_test.step);
+    }
+    
     test_step.dependOn(&run_e2e_simple_test.step);
     test_step.dependOn(&run_e2e_error_test.step);
     test_step.dependOn(&run_e2e_data_test.step);
