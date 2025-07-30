@@ -247,6 +247,171 @@ export fn guillotine_version() [*:0]const u8 {
     return "1.0.0";
 }
 
+// Additional FFI types and functions for Rust benchmarking
+
+// Opaque types for C
+pub const GuillotineVm = opaque {};
+
+// C-compatible types
+pub const GuillotineAddress = extern struct {
+    bytes: [20]u8,
+};
+
+pub const GuillotineU256 = extern struct {
+    bytes: [32]u8, // Little-endian representation
+};
+
+pub const GuillotineExecutionResult = extern struct {
+    success: bool,
+    gas_used: u64,
+    output: [*]u8,
+    output_len: usize,
+    error_message: ?[*:0]const u8,
+};
+
+// Internal VM structure
+const VmState = struct {
+    vm: *evm_root.Evm,
+    memory_db: *MemoryDatabase,
+    allocator: std.mem.Allocator,
+};
+
+// VM creation and destruction
+export fn guillotine_vm_create() ?*GuillotineVm {
+    const alloc = allocator;
+    
+    const state = alloc.create(VmState) catch return null;
+    
+    state.allocator = alloc;
+    state.memory_db = alloc.create(MemoryDatabase) catch {
+        alloc.destroy(state);
+        return null;
+    };
+    state.memory_db.* = MemoryDatabase.init(alloc);
+    
+    const db_interface = state.memory_db.to_database_interface();
+    state.vm = alloc.create(evm_root.Evm) catch {
+        state.memory_db.deinit();
+        alloc.destroy(state.memory_db);
+        alloc.destroy(state);
+        return null;
+    };
+    
+    var builder = evm_root.EvmBuilder.init(alloc, db_interface);
+    state.vm.* = builder.build() catch {
+        state.memory_db.deinit();
+        alloc.destroy(state.memory_db);
+        alloc.destroy(state.vm);
+        alloc.destroy(state);
+        return null;
+    };
+    
+    return @ptrCast(state);
+}
+
+export fn guillotine_vm_destroy(vm: ?*GuillotineVm) void {
+    if (vm) |v| {
+        const state: *VmState = @ptrCast(@alignCast(v));
+        state.vm.deinit();
+        state.allocator.destroy(state.vm);
+        state.memory_db.deinit();
+        state.allocator.destroy(state.memory_db);
+        state.allocator.destroy(state);
+    }
+}
+
+// State management
+export fn guillotine_set_balance(vm: ?*GuillotineVm, address: ?*const GuillotineAddress, balance: ?*const GuillotineU256) bool {
+    if (vm == null or address == null or balance == null) return false;
+    
+    const state: *VmState = @ptrCast(@alignCast(vm.?));
+    const addr: Address = address.?.bytes;
+    const value = u256_from_bytes(&balance.?.bytes);
+    
+    state.vm.state.set_balance(addr, value) catch return false;
+    return true;
+}
+
+export fn guillotine_set_code(vm: ?*GuillotineVm, address: ?*const GuillotineAddress, code: ?[*]const u8, code_len: usize) bool {
+    if (vm == null or address == null) return false;
+    
+    const state: *VmState = @ptrCast(@alignCast(vm.?));
+    const addr: Address = address.?.bytes;
+    
+    const code_slice = if (code) |c| c[0..code_len] else &[_]u8{};
+    state.vm.state.set_code(addr, code_slice) catch return false;
+    return true;
+}
+
+// Execution - using the new API that accepts frames directly
+export fn guillotine_vm_execute(
+    vm: ?*GuillotineVm,
+    from: ?*const GuillotineAddress,
+    to: ?*const GuillotineAddress,
+    value: ?*const GuillotineU256,
+    input: ?[*]const u8,
+    input_len: usize,
+    gas_limit: u64,
+) GuillotineExecutionResult {
+    var result = GuillotineExecutionResult{
+        .success = false,
+        .gas_used = 0,
+        .output = undefined,
+        .output_len = 0,
+        .error_message = null,
+    };
+    
+    if (vm == null or from == null) return result;
+    
+    const state: *VmState = @ptrCast(@alignCast(vm.?));
+    const from_addr: Address = from.?.bytes;
+    const to_addr = if (to) |t| t.bytes else primitives.Address.ZERO_ADDRESS;
+    const value_u256 = if (value) |v| u256_from_bytes(&v.bytes) else 0;
+    const input_slice = if (input) |i| i[0..input_len] else &[_]u8{};
+    
+    // Create contract for execution
+    const code_hash = [_]u8{0} ** 32; // Empty code hash for now
+    var contract = evm_root.Contract.init(from_addr, to_addr, value_u256, gas_limit, &[_]u8{}, code_hash, input_slice, false);
+    defer contract.deinit(state.allocator, null);
+    
+    // Create frame
+    var frame = evm_root.Frame.init(state.allocator, &contract) catch return result;
+    defer frame.deinit();
+    
+    // Execute
+    const exec_result = state.vm.interpret(&contract, input_slice, false) catch |err| {
+        const err_msg = @errorName(err);
+        const err_c_str = state.allocator.dupeZ(u8, err_msg) catch return result;
+        result.error_message = err_c_str.ptr;
+        return result;
+    };
+    
+    result.success = exec_result.status == .Success;
+    result.gas_used = exec_result.gas_used;
+    
+    // Copy output if any
+    if (exec_result.output) |output| {
+        if (output.len > 0) {
+            const output_copy = state.allocator.alloc(u8, output.len) catch return result;
+            @memcpy(output_copy, output);
+            result.output = output_copy.ptr;
+            result.output_len = output_copy.len;
+        }
+    }
+    
+    return result;
+}
+
+// Helper functions
+fn u256_from_bytes(bytes: *const [32]u8) u256 {
+    // Convert from little-endian bytes to u256
+    var result: u256 = 0;
+    for (bytes, 0..) |byte, i| {
+        result |= @as(u256, byte) << @intCast(i * 8);
+    }
+    return result;
+}
+
 // Test to ensure this compiles
 test "C interface compilation" {
     std.testing.refAllDecls(@This());
