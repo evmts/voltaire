@@ -14,6 +14,7 @@
 	"license": "MIT",
 	"dependencies": {
 		"@kobalte/core": "^0.13.11",
+		"@solid-primitives/platform": "^0.2.1",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"lucide-solid": "^0.534.0",

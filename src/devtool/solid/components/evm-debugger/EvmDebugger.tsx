@@ -1,20 +1,34 @@
-import { createEffect, createSignal, onCleanup, onMount, Show } from "solid-js";
+import {
+	type Accessor,
+	createEffect,
+	createSignal,
+	onCleanup,
+	type Setter,
+	Show,
+} from "solid-js";
 import BytecodeLoader from "~/components/evm-debugger/BytecodeLoader";
-import BytecodeView from "~/components/evm-debugger/BytecodeView";
 import Controls from "~/components/evm-debugger/Controls";
 import ErrorAlert from "~/components/evm-debugger/ErrorAlert";
-import GasUsage from "~/components/evm-debugger/GasUsage";
 import Header from "~/components/evm-debugger/Header";
 import LogsAndReturn from "~/components/evm-debugger/LogsAndReturn";
 import Memory from "~/components/evm-debugger/Memory";
 import Stack from "~/components/evm-debugger/Stack";
 import StateSummary from "~/components/evm-debugger/StateSummary";
 import Storage from "~/components/evm-debugger/Storage";
-import type { EvmState } from "~/components/evm-debugger/types";
-import { sampleContracts } from "~/components/evm-debugger/types";
-import { stepEvm } from "~/components/evm-debugger/utils";
+import {
+	sampleContracts,
+	type EvmState,
+} from "~/components/evm-debugger/types";
+import { stepEvm } from "./utils";
+import BytecodeView from "./BytecodeView";
+import GasUsage from "./GasUsage";
 
-const EvmDebugger = () => {
+interface EvmDebuggerProps {
+	isDarkMode: Accessor<boolean>;
+	setIsDarkMode: Setter<boolean>;
+}
+
+const EvmDebugger = (props: EvmDebuggerProps) => {
 	const [bytecode, setBytecode] = createSignal(sampleContracts[7].bytecode);
 	const [state, setState] = createSignal<EvmState>({
 		pc: 0,
@@ -30,20 +44,8 @@ const EvmDebugger = () => {
 	const [isRunning, setIsRunning] = createSignal(false);
 	const [error, setError] = createSignal("");
 	const [isUpdating, setIsUpdating] = createSignal(false);
-	const [isDarkMode, setIsDarkMode] = createSignal(false);
 	const [activePanel, setActivePanel] = createSignal("all");
 	const [executionSpeed, setExecutionSpeed] = createSignal(100); // milliseconds between steps
-
-	onMount(() => {
-		if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
-			setIsDarkMode(true);
-		}
-		window
-			.matchMedia("(prefers-color-scheme: dark)")
-			.addEventListener("change", (event) => {
-				setIsDarkMode(event.matches);
-			});
-	});
 
 	createEffect(() => {
 		if (!isRunning()) return;
@@ -117,7 +119,7 @@ const EvmDebugger = () => {
 			handleToggleRunPause();
 		} else if (e.key === "d" && e.ctrlKey) {
 			e.preventDefault();
-			setIsDarkMode(!isDarkMode());
+			props.setIsDarkMode(!props.isDarkMode());
 		}
 	};
 
@@ -129,57 +131,52 @@ const EvmDebugger = () => {
 	});
 
 	return (
-		<div
-			class={`min-h-screen transition-colors duration-300 ${isDarkMode() ? "dark" : ""}`}
-		>
-			<div class="min-h-screen bg-background text-foreground">
-				<Header
-					isDarkMode={isDarkMode()}
-					setIsDarkMode={setIsDarkMode}
-					setBytecode={setBytecode}
-					activePanel={activePanel()}
-					setActivePanel={setActivePanel}
-				/>
-				<Controls
-					isRunning={isRunning()}
-					setIsRunning={setIsRunning}
-					setError={setError}
-					setState={setState}
-					isUpdating={isUpdating()}
-					setIsUpdating={setIsUpdating}
-					executionSpeed={executionSpeed()}
-					setExecutionSpeed={setExecutionSpeed}
-				/>
-				<BytecodeLoader
-					bytecode={bytecode()}
-					setBytecode={setBytecode}
-					setError={setError}
-					setIsRunning={setIsRunning}
-					setState={setState}
-				/>
-				<div class="mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-6 sm:px-6">
-					<ErrorAlert error={error()} setError={setError} />
-					<StateSummary state={state()} isUpdating={isUpdating()} />
-					<Show when={activePanel() === "all" || activePanel() === "bytecode"}>
-						<BytecodeView bytecode={bytecode()} pc={state().pc} />
+		<div class="min-h-screen bg-background text-foreground">
+			<Header
+				isDarkMode={props.isDarkMode}
+				setIsDarkMode={props.setIsDarkMode}
+				activePanel={activePanel()}
+				setActivePanel={setActivePanel}
+			/>
+			<Controls
+				isRunning={isRunning()}
+				setIsRunning={setIsRunning}
+				setError={setError}
+				setState={setState}
+				isUpdating={isUpdating()}
+				setIsUpdating={setIsUpdating}
+				executionSpeed={executionSpeed()}
+				setExecutionSpeed={setExecutionSpeed}
+			/>
+			<BytecodeLoader
+				bytecode={bytecode()}
+				setBytecode={setBytecode}
+				setError={setError}
+				setIsRunning={setIsRunning}
+				setState={setState}
+			/>
+			<div class="mx-auto flex max-w-7xl flex-col gap-6 px-3 pb-6 sm:px-6">
+				<ErrorAlert error={error()} setError={setError} />
+				<StateSummary state={state()} isUpdating={isUpdating()} />
+				<Show when={activePanel() === "all" || activePanel() === "bytecode"}>
+					<BytecodeView bytecode={bytecode()} pc={state().pc} />
+				</Show>
+				<Show when={activePanel() === "all" || activePanel() === "gas"}>
+					<GasUsage state={state()} />
+				</Show>
+				<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+					<Show when={activePanel() === "all" || activePanel() === "stack"}>
+						<Stack state={state()} />
 					</Show>
-					<Show when={activePanel() === "all" || activePanel() === "gas"}>
-						<GasUsage state={state()} />
+					<Show when={activePanel() === "all" || activePanel() === "memory"}>
+						<Memory state={state()} />
 					</Show>
-					<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-						<Show when={activePanel() === "all" || activePanel() === "stack"}>
-							<Stack state={state()} />
-						</Show>
-						<Show when={activePanel() === "all" || activePanel() === "memory"}>
-							<Memory state={state()} />
-						</Show>
-						<Show when={activePanel() === "all" || activePanel() === "storage"}>
-							<Storage state={state()} />
-						</Show>
-						<Show when={activePanel() === "all" || activePanel() === "logs"}>
-							<LogsAndReturn state={state()} />
-						</Show>
-					</div>
+					<Show when={activePanel() === "all" || activePanel() === "storage"}>
+						<Storage state={state()} />
+					</Show>
+					<Show when={activePanel() === "all" || activePanel() === "logs"}>
+						<LogsAndReturn state={state()} />
+					</Show>
 				</div>
 			</div>
 		</div>

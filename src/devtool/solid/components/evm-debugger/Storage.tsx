@@ -1,13 +1,16 @@
+import { isMobile } from "@solid-primitives/platform";
 import ArrowRightIcon from "lucide-solid/icons/arrow-right";
 import CopyIcon from "lucide-solid/icons/copy";
 import RectangleEllipsisIcon from "lucide-solid/icons/rectangle-ellipsis";
 import { type Component, For, Show } from "solid-js";
 import { toast } from "solid-sonner";
+import Code from "~/components/Code";
 import { type EvmState, formatHex } from "~/components/evm-debugger/types";
 import { copyToClipboard } from "~/components/evm-debugger/utils";
-import Code from "~/components/Code";
+import InfoTooltip from "~/components/InfoTooltip";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { cn } from "~/lib/cn";
 
 interface StorageProps {
 	state: EvmState;
@@ -30,7 +33,7 @@ const Storage: Component<StorageProps> = ({ state }) => {
 					<CardTitle class="text-sm">
 						Storage ({Object.keys(state.storage).length})
 					</CardTitle>
-					<div class="text-muted-foreground text-xs">Key-value pairs</div>
+					<InfoTooltip>Key-value pairs</InfoTooltip>
 				</div>
 			</CardHeader>
 			<CardContent class="max-h-[300px] overflow-y-auto p-0">
@@ -62,7 +65,11 @@ const Storage: Component<StorageProps> = ({ state }) => {
 												variant="ghost"
 												size="sm"
 												onClick={() => handleCopy(item.key)}
-												class="flex h-7 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+												class={cn(
+													"flex h-7 items-center gap-1",
+													!isMobile &&
+														"opacity-0 transition-opacity group-hover:opacity-100",
+												)}
 												aria-label="Copy to clipboard"
 											>
 												<CopyIcon class="h-4 w-4" />
@@ -72,7 +79,11 @@ const Storage: Component<StorageProps> = ({ state }) => {
 												variant="ghost"
 												size="sm"
 												onClick={() => handleCopy(item.value)}
-												class="flex h-7 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+												class={cn(
+													"flex h-7 items-center gap-1",
+													!isMobile &&
+														"opacity-0 transition-opacity group-hover:opacity-100",
+												)}
 												aria-label="Copy to clipboard"
 											>
 												<CopyIcon class="h-4 w-4" />

@@ -1,14 +1,13 @@
 import MoonIcon from "lucide-solid/icons/moon";
 import SettingsIcon from "lucide-solid/icons/settings";
 import SunIcon from "lucide-solid/icons/sun";
-import { type Component, type Setter, Show } from "solid-js";
+import { type Accessor, type Component, type Setter, Show } from "solid-js";
 import { Button } from "~/components/ui/button";
 import { ToggleButton } from "~/components/ui/toggle";
 
 interface HeaderProps {
-	isDarkMode: boolean;
+	isDarkMode: Accessor<boolean>;
 	setIsDarkMode: Setter<boolean>;
-	setBytecode: Setter<string>;
 	activePanel: string;
 	setActivePanel: Setter<string>;
 }
@@ -102,7 +101,7 @@ const Header: Component<HeaderProps> = (props) => {
 					<Button
 						variant="ghost"
 						size="icon"
-						onClick={() => props.setIsDarkMode(!props.isDarkMode)}
+						onClick={() => props.setIsDarkMode(!props.isDarkMode())}
 						aria-label="Toggle dark mode"
 					>
 						<Show

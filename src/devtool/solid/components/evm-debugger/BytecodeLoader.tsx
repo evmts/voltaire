@@ -34,7 +34,7 @@ const BytecodeLoader: Component<BytecodeLoaderProps> = (props) => {
 
 	return (
 		<Card class="mx-auto mt-6 max-w-7xl rounded-sm border-none bg-transparent shadow-none">
-			<CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+			<CardHeader class="flex flex-col justify-between gap-2 px-3 pb-2 sm:flex-row sm:items-center sm:px-6">
 				<div class="space-y-1">
 					<CardTitle>Bytecode</CardTitle>
 					<CardDescription>Enter EVM bytecode to debug or select a sample contract</CardDescription>
@@ -83,7 +83,7 @@ const BytecodeLoader: Component<BytecodeLoaderProps> = (props) => {
 					<ComboboxContent />
 				</Combobox>
 			</CardHeader>
-			<CardContent class="flex flex-col gap-2">
+			<CardContent class="flex flex-col gap-2 px-3 sm:px-6">
 				<TextFieldRoot>
 					<TextArea
 						id="bytecode"

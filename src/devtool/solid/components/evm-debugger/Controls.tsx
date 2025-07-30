@@ -1,6 +1,7 @@
+import { isMobile } from "@solid-primitives/platform";
+import GaugeIcon from "lucide-solid/icons/gauge";
 import PauseIcon from "lucide-solid/icons/pause";
 import PlayIcon from "lucide-solid/icons/play";
-import GaugeIcon from "lucide-solid/icons/gauge";
 import RotateCcwIcon from "lucide-solid/icons/rotate-ccw";
 import StepForwardIcon from "lucide-solid/icons/step-forward";
 import { type Component, type Setter, Show } from "solid-js";
@@ -73,12 +74,14 @@ const Controls: Component<ControlsProps> = (props) => {
 				>
 					<RotateCcwIcon class="h-4 w-4" />
 					Reset
-					<Badge
-						variant="outline"
-						class="px-1.5 py-0.5 font-mono font-normal text-muted-foreground text-xs"
-					>
-						R
-					</Badge>
+					{!isMobile && (
+						<Badge
+							variant="outline"
+							class="px-1.5 py-0.5 font-mono font-normal text-muted-foreground text-xs"
+						>
+							R
+						</Badge>
+					)}
 				</Button>
 				<Button
 					variant="outline"
@@ -90,12 +93,14 @@ const Controls: Component<ControlsProps> = (props) => {
 				>
 					<StepForwardIcon class="h-4 w-4" />
 					Step
-					<Badge
-						variant="outline"
-						class="px-1.5 py-0.5 font-mono font-normal text-muted-foreground text-xs"
-					>
-						S
-					</Badge>
+					{!isMobile && (
+						<Badge
+							variant="outline"
+							class="px-1.5 py-0.5 font-mono font-normal text-muted-foreground text-xs"
+						>
+							S
+						</Badge>
+					)}
 				</Button>
 				<Button
 					variant={props.isRunning ? "secondary" : "outline"}
@@ -108,12 +113,14 @@ const Controls: Component<ControlsProps> = (props) => {
 						<PauseIcon class="h-4 w-4" />
 					</Show>
 					{props.isRunning ? "Pause" : "Run"}
-					<Badge
-						variant="outline"
-						class="px-1.5 py-0.5 font-mono font-normal text-muted-foreground text-xs"
-					>
-						Space
-					</Badge>
+					{!isMobile && (
+						<Badge
+							variant="outline"
+							class="px-1.5 py-0.5 font-mono font-normal text-muted-foreground text-xs"
+						>
+							Space
+						</Badge>
+					)}
 				</Button>
 				<Button
 					variant="outline"
