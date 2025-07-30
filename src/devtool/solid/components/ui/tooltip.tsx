@@ -31,7 +31,7 @@ export const TooltipContent = <T extends ValidComponent = 'div'>(
 		<TooltipPrimitive.Portal>
 			<TooltipPrimitive.Content
 				class={cn(
-					'data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-xs data-[closed]:animate-out data-[expanded]:animate-in',
+					'data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 z-50 overflow-hidden rounded-sm bg-primary px-3 py-1.5 text-primary-foreground text-xs data-[closed]:animate-out data-[expanded]:animate-in',
 					local.class,
 				)}
 				{...rest}

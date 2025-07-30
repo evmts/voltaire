@@ -16,6 +16,7 @@
 		"@kobalte/core": "^0.13.11",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
+		"lucide-solid": "^0.534.0",
 		"shadcn": "^2.5.0",
 		"solid-js": "^1.9.7",
 		"solid-sonner": "^0.2.8",

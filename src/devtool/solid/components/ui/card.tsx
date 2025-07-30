@@ -5,7 +5,7 @@ import { cn } from '~/lib/cn'
 export const Card = (props: ComponentProps<'div'>) => {
 	const [local, rest] = splitProps(props, ['class'])
 
-	return <div class={cn('rounded-xl border bg-card text-card-foreground shadow', local.class)} {...rest} />
+	return <div class={cn('rounded-sm border bg-card text-card-foreground shadow-sm', local.class)} {...rest} />
 }
 
 export const CardHeader = (props: ComponentProps<'div'>) => {

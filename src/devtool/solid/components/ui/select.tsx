@@ -23,7 +23,7 @@ export const SelectTrigger = <T extends ValidComponent = 'button'>(
 	return (
 		<SelectPrimitive.Trigger
 			class={cn(
-				'flex h-9 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background transition-shadow placeholder:text-muted-foreground focus:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+				'flex h-9 w-full items-center justify-between rounded-sm border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background transition-shadow placeholder:text-muted-foreground focus:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
 				local.class,
 			)}
 			{...rest}
@@ -61,7 +61,7 @@ export const SelectContent = <T extends ValidComponent = 'div'>(props: Polymorph
 		<SelectPrimitive.Portal>
 			<SelectPrimitive.Content
 				class={cn(
-					'data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[closed]:animate-out data-[expanded]:animate-in',
+					'data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 relative z-50 min-w-[8rem] overflow-hidden rounded-sm border bg-popover text-popover-foreground shadow-md data-[closed]:animate-out data-[expanded]:animate-in',
 					local.class,
 				)}
 				{...rest}
