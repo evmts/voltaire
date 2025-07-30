@@ -16,8 +16,8 @@ evm: Evm.Evm,
 bytecode: []u8,
 
 // Debug-specific fields
-current_frame: ?Evm.Frame,
-current_contract: ?Evm.Contract,
+current_frame: ?*Evm.Frame,
+current_contract: ?*Evm.Contract,
 is_paused: bool,
 is_initialized: bool,
 
@@ -57,11 +57,13 @@ pub fn init(allocator: std.mem.Allocator) !DevtoolEvm {
 
 pub fn deinit(self: *DevtoolEvm) void {
     // Clean up current execution state
-    if (self.current_contract != null) {
-        self.current_contract.?.deinit(self.allocator, null);
+    if (self.current_contract) |contract| {
+        contract.deinit(self.allocator, null);
+        self.allocator.destroy(contract);
     }
-    if (self.current_frame != null) {
-        self.current_frame.?.deinit();
+    if (self.current_frame) |frame| {
+        frame.deinit();
+        self.allocator.destroy(frame);
     }
     
     if (self.bytecode.len > 0) {
@@ -107,12 +109,14 @@ pub fn loadBytecodeHex(self: *DevtoolEvm, hex_string: []const u8) !void {
 /// Initialize execution with current bytecode
 pub fn resetExecution(self: *DevtoolEvm) !void {
     // Clean up existing execution state
-    if (self.current_contract != null) {
-        self.current_contract.?.deinit(self.allocator, null);
+    if (self.current_contract) |contract| {
+        contract.deinit(self.allocator, null);
+        self.allocator.destroy(contract);
         self.current_contract = null;
     }
-    if (self.current_frame != null) {
-        self.current_frame.?.deinit();
+    if (self.current_frame) |frame| {
+        frame.deinit();
+        self.allocator.destroy(frame);
         self.current_frame = null;
     }
     
@@ -121,10 +125,13 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
         return;
     }
     
-    // Create contract from bytecode using builder pattern
-    self.current_contract = Evm.Contract.init_at_address(
+    // Create contract from bytecode
+    const contract = try self.allocator.create(Evm.Contract);
+    errdefer self.allocator.destroy(contract);
+    
+    contract.* = Evm.Contract.init_at_address(
         primitives.Address.ZERO, // caller
-        primitives.Address.ZERO, // address
+        primitives.Address.ZERO, // address  
         0, // value
         1000000, // gas
         self.bytecode,
@@ -132,16 +139,16 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
         false // is_static
     );
     
-    // Create execution frame using builder pattern
-    var contract = self.current_contract.?;
-    self.current_frame = try Evm.Frame.init_full(
-        self.allocator,
-        &self.evm,
-        1000000, // 1M gas
-        &contract,
-        .{}, // caller
-        &[_]u8{} // no input data
-    );
+    self.current_contract = contract;
+    
+    // Create execution frame
+    const frame = try self.allocator.create(Evm.Frame);
+    errdefer self.allocator.destroy(frame);
+    
+    frame.* = try Evm.Frame.init(self.allocator, contract);
+    frame.gas_remaining = 1000000; // Set gas after init
+    
+    self.current_frame = frame;
     
     self.is_initialized = true;
     self.is_paused = false;
@@ -155,7 +162,7 @@ pub fn serializeEvmState(self: *DevtoolEvm) ![]u8 {
         return try std.json.stringifyAlloc(self.allocator, empty_state, .{});
     }
     
-    const frame = &self.current_frame.?;
+    const frame = self.current_frame.?;
     const opcode = if (frame.pc < self.bytecode.len) self.bytecode[frame.pc] else 0;
     
     const state = debug_state.EvmStateJson{
@@ -182,7 +189,7 @@ pub fn stepExecute(self: *DevtoolEvm) !DebugStepResult {
         return error.NotInitialized;
     }
     
-    var frame = &self.current_frame.?;
+    const frame = self.current_frame.?;
     
     // Check if execution is complete
     if (frame.pc >= self.bytecode.len or frame.stop or frame.err != null) {
@@ -205,7 +212,9 @@ pub fn stepExecute(self: *DevtoolEvm) !DebugStepResult {
     const opcode = self.bytecode[pc_before];
     
     // Execute single instruction using existing EVM table
-    const result = self.evm.table.execute(pc_before, &self.evm, frame, opcode) catch |err| {
+    const interpreter_ptr: *Evm.Evm = &self.evm;
+    const state_ptr: *Evm.Frame = frame;
+    const result = self.evm.table.execute(pc_before, interpreter_ptr, state_ptr, opcode) catch |err| {
         return DebugStepResult{
             .opcode = opcode,
             .opcode_name = debug_state.opcodeToString(opcode),
@@ -389,7 +398,7 @@ test "DevtoolEvm step execution modifies stack correctly" {
     // Load bytecode: PUSH1 42, PUSH1 100
     try devtool_evm.loadBytecodeHex("0x602a6064");
     
-    const frame = &devtool_evm.current_frame.?;
+    const frame = devtool_evm.current_frame.?;
     
     // Initially stack should be empty
     try testing.expectEqual(@as(usize, 0), frame.stack.size);
@@ -471,4 +480,72 @@ test "DevtoolEvm complete execution flow PUSH1 5 PUSH1 10 ADD" {
     } else {
         try testing.expect(false); // Frame should exist
     }
+}
+
+test "DevtoolEvm JSON serialization integration test" {
+    const allocator = testing.allocator;
+    
+    var devtool_evm = try DevtoolEvm.init(allocator);
+    defer devtool_evm.deinit();
+    
+    // Load simple bytecode: PUSH1 42
+    try devtool_evm.loadBytecodeHex("0x602a");
+    
+    // Get initial state and parse JSON
+    const json_state = try devtool_evm.serializeEvmState();
+    defer allocator.free(json_state);
+    
+    // Parse JSON to verify structure
+    const parsed = std.json.parseFromSlice(
+        std.json.Value,
+        allocator,
+        json_state,
+        .{}
+    ) catch |err| {
+        std.log.err("Failed to parse JSON: {}", .{err});
+        try testing.expect(false);
+        return;
+    };
+    defer parsed.deinit();
+    
+    const obj = parsed.value.object;
+    
+    // Verify required fields exist
+    try testing.expect(obj.contains("pc"));
+    try testing.expect(obj.contains("opcode"));
+    try testing.expect(obj.contains("gasLeft"));
+    try testing.expect(obj.contains("depth"));
+    try testing.expect(obj.contains("stack"));
+    try testing.expect(obj.contains("memory"));
+    try testing.expect(obj.contains("storage"));
+    try testing.expect(obj.contains("logs"));
+    try testing.expect(obj.contains("returnData"));
+    
+    // Verify initial state values
+    try testing.expectEqual(@as(i64, 0), obj.get("pc").?.integer);
+    try testing.expectEqualStrings("PUSH1", obj.get("opcode").?.string);
+    
+    // Execute one step and verify state changes
+    _ = try devtool_evm.stepExecute();
+    
+    const json_after_step = try devtool_evm.serializeEvmState();
+    defer allocator.free(json_after_step);
+    
+    const parsed_after = std.json.parseFromSlice(
+        std.json.Value,
+        allocator,
+        json_after_step,
+        .{}
+    ) catch unreachable;
+    defer parsed_after.deinit();
+    
+    const obj_after = parsed_after.value.object;
+    
+    // PC should have advanced
+    try testing.expectEqual(@as(i64, 2), obj_after.get("pc").?.integer);
+    
+    // Stack should have one item
+    const stack_array = obj_after.get("stack").?.array;
+    try testing.expectEqual(@as(usize, 1), stack_array.items.len);
+    try testing.expectEqualStrings("0x2a", stack_array.items[0].string); // 42 in hex
 }
