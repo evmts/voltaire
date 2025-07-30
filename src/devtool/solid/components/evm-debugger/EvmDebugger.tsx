@@ -1,8 +1,10 @@
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import BytecodeLoader from '~/components/evm-debugger/BytecodeLoader'
+import BytecodeView from '~/components/evm-debugger/BytecodeView'
 import Controls from '~/components/evm-debugger/Controls'
 import CopyToast from '~/components/evm-debugger/CopyToast'
 import ErrorAlert from '~/components/evm-debugger/ErrorAlert'
+import GasUsage from '~/components/evm-debugger/GasUsage'
 import Header from '~/components/evm-debugger/Header'
 import LogsAndReturn from '~/components/evm-debugger/LogsAndReturn'
 import Memory from '~/components/evm-debugger/Memory'
@@ -22,7 +24,7 @@ const EvmDebugger = () => {
 		depth: 0,
 		stack: [],
 		memory: '0x',
-		storage: {},
+		storage: [],
 		logs: [],
 		returnData: '0x',
 	})
@@ -33,6 +35,7 @@ const EvmDebugger = () => {
 	const [isDarkMode, setIsDarkMode] = createSignal(false)
 	const [showSample, setShowSample] = createSignal(false)
 	const [activePanel, setActivePanel] = createSignal('all')
+	const [executionSpeed, setExecutionSpeed] = createSignal(100) // milliseconds between steps
 
 	onMount(() => {
 		if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
@@ -62,7 +65,7 @@ const EvmDebugger = () => {
 			}
 		}
 
-		const interval = setInterval(runStep, 100) // Step every 100ms
+		const interval = setInterval(runStep, executionSpeed()) // Step at configured speed
 
 		onCleanup(() => {
 			clearInterval(interval)
@@ -151,8 +154,16 @@ const EvmDebugger = () => {
 						setState={setState}
 						isUpdating={isUpdating()}
 						setIsUpdating={setIsUpdating}
+						executionSpeed={executionSpeed()}
+						setExecutionSpeed={setExecutionSpeed}
 					/>
 					<StateSummary state={state()} isUpdating={isUpdating()} />
+					<Show when={activePanel() === 'all' || activePanel() === 'bytecode'}>
+						<BytecodeView bytecode={bytecode()} pc={state().pc} />
+					</Show>
+					<Show when={activePanel() === 'all' || activePanel() === 'gas'}>
+						<GasUsage state={state()} />
+					</Show>
 					<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 						<Show when={activePanel() === 'all' || activePanel() === 'stack'}>
 							<Stack state={state()} copied={copied()} setCopied={setCopied} />

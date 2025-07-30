@@ -1,5 +1,5 @@
 import { type Component, For, type Setter, Show } from 'solid-js'
-import { type EvmState, formatHex, formatStorage } from '~/components/evm-debugger/types'
+import { type EvmState, formatHex } from '~/components/evm-debugger/types'
 import { copyToClipboard } from '~/components/evm-debugger/utils'
 
 interface StorageProps {
@@ -15,19 +15,17 @@ const Storage: Component<StorageProps> = (props) => {
 		setTimeout(() => props.setCopied(''), 2000)
 	}
 
-	const storageItems = () => formatStorage(props.state.storage)
-
 	return (
 		<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-[#252525]">
 			<div class="flex items-center justify-between border-gray-200 border-b p-3 dark:border-gray-800">
 				<h2 class="font-medium text-gray-900 text-sm dark:text-white">
-					Storage ({Object.keys(props.state.storage).length})
+					Storage ({props.state.storage.length})
 				</h2>
 				<div class="text-gray-500 text-xs dark:text-gray-400">Key-value pairs</div>
 			</div>
 			<div class="max-h-[300px] overflow-y-auto p-0">
 				<Show
-					when={Object.keys(props.state.storage).length > 0}
+					when={props.state.storage.length > 0}
 					fallback={
 						<div class="flex items-center justify-center p-8 text-gray-500 text-sm italic dark:text-gray-400">
 							<svg
@@ -52,7 +50,7 @@ const Storage: Component<StorageProps> = (props) => {
 					}
 				>
 					<div class="divide-y divide-gray-100 dark:divide-gray-800">
-						<For each={storageItems()}>
+						<For each={props.state.storage}>
 							{(item) => (
 								<div class="group px-4 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-[#2D2D2D]">
 									<div class="flex items-center justify-between">
