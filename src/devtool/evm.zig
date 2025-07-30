@@ -205,7 +205,9 @@ pub fn stepExecute(self: *DevtoolEvm) !DebugStepResult {
     const opcode = self.bytecode[pc_before];
     
     // Execute single instruction using existing EVM table
-    const result = self.evm.table.execute(pc_before, &self.evm, frame, opcode) catch |err| {
+    const interpreter_ptr: *Evm.Evm = &self.evm;
+    const state_ptr: *Evm.Frame = frame;
+    const result = self.evm.table.execute(pc_before, interpreter_ptr, state_ptr, opcode) catch |err| {
         return DebugStepResult{
             .opcode = opcode,
             .opcode_name = debug_state.opcodeToString(opcode),
@@ -471,4 +473,72 @@ test "DevtoolEvm complete execution flow PUSH1 5 PUSH1 10 ADD" {
     } else {
         try testing.expect(false); // Frame should exist
     }
+}
+
+test "DevtoolEvm JSON serialization integration test" {
+    const allocator = testing.allocator;
+    
+    var devtool_evm = try DevtoolEvm.init(allocator);
+    defer devtool_evm.deinit();
+    
+    // Load simple bytecode: PUSH1 42
+    try devtool_evm.loadBytecodeHex("0x602a");
+    
+    // Get initial state and parse JSON
+    const json_state = try devtool_evm.serializeEvmState();
+    defer allocator.free(json_state);
+    
+    // Parse JSON to verify structure
+    const parsed = std.json.parseFromSlice(
+        std.json.Value,
+        allocator,
+        json_state,
+        .{}
+    ) catch |err| {
+        std.log.err("Failed to parse JSON: {}", .{err});
+        try testing.expect(false);
+        return;
+    };
+    defer parsed.deinit();
+    
+    const obj = parsed.value.object;
+    
+    // Verify required fields exist
+    try testing.expect(obj.contains("pc"));
+    try testing.expect(obj.contains("opcode"));
+    try testing.expect(obj.contains("gasLeft"));
+    try testing.expect(obj.contains("depth"));
+    try testing.expect(obj.contains("stack"));
+    try testing.expect(obj.contains("memory"));
+    try testing.expect(obj.contains("storage"));
+    try testing.expect(obj.contains("logs"));
+    try testing.expect(obj.contains("returnData"));
+    
+    // Verify initial state values
+    try testing.expectEqual(@as(i64, 0), obj.get("pc").?.integer);
+    try testing.expectEqualStrings("PUSH1", obj.get("opcode").?.string);
+    
+    // Execute one step and verify state changes
+    _ = try devtool_evm.stepExecute();
+    
+    const json_after_step = try devtool_evm.serializeEvmState();
+    defer allocator.free(json_after_step);
+    
+    const parsed_after = std.json.parseFromSlice(
+        std.json.Value,
+        allocator,
+        json_after_step,
+        .{}
+    ) catch unreachable;
+    defer parsed_after.deinit();
+    
+    const obj_after = parsed_after.value.object;
+    
+    // PC should have advanced
+    try testing.expectEqual(@as(i64, 2), obj_after.get("pc").?.integer);
+    
+    // Stack should have one item
+    const stack_array = obj_after.get("stack").?.array;
+    try testing.expectEqual(@as(usize, 1), stack_array.items.len);
+    try testing.expectEqualStrings("0x2a", stack_array.items[0].string); // 42 in hex
 }

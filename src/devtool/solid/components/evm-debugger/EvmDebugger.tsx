@@ -10,10 +10,11 @@ import Stack from '~/components/evm-debugger/Stack'
 import StateSummary from '~/components/evm-debugger/StateSummary'
 import Storage from '~/components/evm-debugger/Storage'
 import type { EvmState } from '~/components/evm-debugger/types'
+import { sampleContracts } from '~/components/evm-debugger/types'
 import { getEvmState } from '~/components/evm-debugger/utils'
 
 const EvmDebugger = () => {
-	const [bytecode, setBytecode] = createSignal('0x')
+	const [bytecode, setBytecode] = createSignal(sampleContracts[7].bytecode)
 	const [state, setState] = createSignal<EvmState>({
 		pc: 0,
 		opcode: '-',
