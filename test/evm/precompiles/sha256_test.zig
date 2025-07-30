@@ -3,6 +3,10 @@ const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
+const test_build_options = @import("test_build_options");
+
+// Skip tests when precompiles are disabled
+const no_precompiles = if (@hasDecl(test_build_options, "no_precompiles")) test_build_options.no_precompiles else false;
 
 // Convenience aliases
 const sha256 = Evm.precompiles.sha256;
@@ -136,6 +140,8 @@ test "sha256 get output size" {
 }
 
 test "precompile dispatcher sha256 integration" {
+    if (comptime no_precompiles) return testing.skip("precompiles disabled");
+    
     const sha256_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x02 };
 
     // Check address detection
@@ -147,6 +153,7 @@ test "precompile dispatcher sha256 integration" {
 }
 
 test "precompile dispatcher execute sha256" {
+    if (comptime no_precompiles) return testing.skip("precompiles disabled");
     const sha256_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x02 };
 
     var output_buffer: [32]u8 = undefined;
@@ -161,6 +168,7 @@ test "precompile dispatcher execute sha256" {
 }
 
 test "precompile dispatcher estimate gas" {
+    if (comptime no_precompiles) return testing.skip("precompiles disabled");
     const sha256_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x02 };
     const chain_rules = ChainRules.DEFAULT;
 
@@ -170,6 +178,7 @@ test "precompile dispatcher estimate gas" {
 }
 
 test "precompile dispatcher get output size" {
+    if (comptime no_precompiles) return testing.skip("precompiles disabled");
     const sha256_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x02 };
     const chain_rules = ChainRules.DEFAULT;
 
@@ -180,6 +189,7 @@ test "precompile dispatcher get output size" {
 }
 
 test "precompile dispatcher validate call" {
+    if (comptime no_precompiles) return testing.skip("precompiles disabled");
     const sha256_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x02 };
     const chain_rules = ChainRules.DEFAULT;
 

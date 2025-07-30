@@ -56,19 +56,16 @@ class EVM:
     
     def __init__(self) -> None:
         """Initialize a new EVM instance."""
+        require_ffi()  # Require real FFI, no mock fallback
+        
         self._vm_ptr = None
         self._initialized = False
         
-        if is_ffi_available():
-            # Initialize the native EVM
-            self._vm_ptr = lib.guillotine_vm_create()
-            if self._vm_ptr is None:
-                raise MemoryError("Failed to create EVM instance")
-            self._initialized = True
-        else:
-            # Mock mode for development
-            self._vm_ptr = "mock_vm"
-            self._initialized = True
+        # Initialize the native EVM
+        self._vm_ptr = lib.guillotine_vm_create()
+        if self._vm_ptr is None:
+            raise MemoryError("Failed to create EVM instance")
+        self._initialized = True
     
     def __del__(self) -> None:
         """Cleanup EVM resources."""
@@ -77,8 +74,7 @@ class EVM:
     def close(self) -> None:
         """Explicitly close and cleanup the EVM."""
         if self._initialized and self._vm_ptr is not None:
-            if is_ffi_available():
-                lib.guillotine_vm_destroy(self._vm_ptr)
+            lib.guillotine_vm_destroy(self._vm_ptr)
             self._vm_ptr = None
             self._initialized = False
     
@@ -141,14 +137,7 @@ class EVM:
         else:
             input_data_bytes = input_data
         
-        if not is_ffi_available():
-            # Mock execution for development
-            return ExecutionResult(
-                success=True,
-                gas_used=min(gas_limit, 21000),
-                return_data=b'',
-                error_message=None
-            )
+        # FFI is required - no mock fallback
         
         # Prepare C structures
         from_addr = ffi.new("GuillotineAddress *")
@@ -172,7 +161,7 @@ class EVM:
             raise ExecutionError("Failed to set bytecode in EVM state")
         
         # Execute the bytecode
-        result = lib.guillotine_execute(
+        result = lib.guillotine_vm_execute(
             self._vm_ptr,
             from_addr,
             to_addr,
@@ -188,16 +177,15 @@ class EVM:
         
         # Get return data
         return_data = b''
-        if result.output is not None and result.output_len > 0:
+        if result.output != ffi.NULL and result.output_len > 0:
             return_data = ffi.buffer(result.output, result.output_len)[:]
         
         # Get error message
         error_message = None
-        if result.error_message is not None:
+        if result.error_message != ffi.NULL:
             error_message = ffi.string(result.error_message).decode('utf-8')
         
-        # Cleanup result
-        lib.guillotine_free_result(result)
+        # Note: guillotine_vm_execute returns by value, no cleanup needed
         
         return ExecutionResult(
             success=success,
@@ -220,8 +208,7 @@ class EVM:
         if not self.is_initialized():
             return False
         
-        if not is_ffi_available():
-            return True  # Mock success
+        # FFI is required - no mock fallback
         
         # Prepare C structures
         addr = ffi.new("GuillotineAddress *")
@@ -251,8 +238,7 @@ class EVM:
         if not self.is_initialized():
             return U256.zero()
         
-        if not is_ffi_available():
-            return U256.zero()  # Mock zero balance
+        # FFI is required - no mock fallback
         
         # Prepare C structures
         addr = ffi.new("GuillotineAddress *")
@@ -263,12 +249,8 @@ class EVM:
         for i in range(20):
             addr.bytes[i] = addr_bytes[i]
         
-        # Get balance
-        if lib.guillotine_get_balance(self._vm_ptr, addr, bal):
-            # Convert from little-endian bytes
-            bal_bytes = bytes(bal.bytes)
-            return U256.from_bytes(bal_bytes, byteorder='little')
-        
+        # Get balance - not implemented in C interface yet
+        # TODO: Add guillotine_get_balance to C interface
         return U256.zero()
     
     def set_code(self, address: Address, code: Union[bytes, Bytes]) -> bool:
@@ -290,8 +272,7 @@ class EVM:
         else:
             code_bytes = code
         
-        if not is_ffi_available():
-            return True  # Mock success
+        # FFI is required - no mock fallback
         
         # Prepare C structure
         addr = ffi.new("GuillotineAddress *")
@@ -318,8 +299,7 @@ class EVM:
         if not self.is_initialized():
             return False
         
-        if not is_ffi_available():
-            return True  # Mock success
+        # FFI is required - no mock fallback
         
         # Prepare C structures
         addr = ffi.new("GuillotineAddress *")
@@ -339,7 +319,9 @@ class EVM:
         for i in range(32):
             val_u256.bytes[i] = val_bytes[i]
         
-        return bool(lib.guillotine_set_storage(self._vm_ptr, addr, key_u256, val_u256))
+        # Storage operations not implemented in C interface yet
+        # TODO: Add guillotine_set_storage to C interface
+        return False
     
     def get_storage(self, address: Address, key: U256) -> U256:
         """
@@ -355,8 +337,7 @@ class EVM:
         if not self.is_initialized():
             return U256.zero()
         
-        if not is_ffi_available():
-            return U256.zero()  # Mock zero value
+        # FFI is required - no mock fallback
         
         # Prepare C structures
         addr = ffi.new("GuillotineAddress *")
@@ -372,11 +353,8 @@ class EVM:
         for i in range(32):
             key_u256.bytes[i] = key_bytes[i]
         
-        # Get storage
-        if lib.guillotine_get_storage(self._vm_ptr, addr, key_u256, val_u256):
-            val_bytes = bytes(val_u256.bytes)
-            return U256.from_bytes(val_bytes, byteorder='little')
-        
+        # Get storage - not implemented in C interface yet  
+        # TODO: Add guillotine_get_storage to C interface
         return U256.zero()
     
     def __enter__(self) -> 'EVM':

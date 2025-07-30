@@ -3,6 +3,10 @@ const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
+const test_build_options = @import("test_build_options");
+
+// Skip tests when precompiles are disabled
+const no_precompiles = if (@hasDecl(test_build_options, "no_precompiles")) test_build_options.no_precompiles else false;
 
 // Convenience aliases
 const ripemd160 = Evm.precompiles.ripemd160;
@@ -199,6 +203,7 @@ test "ripemd160 execute insufficient output buffer" {
 }
 
 test "precompile dispatcher ripemd160 integration" {
+    if (comptime no_precompiles) return testing.skip("precompiles disabled");
     const ripemd160_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x03 };
 
     // Check address detection
@@ -210,6 +215,7 @@ test "precompile dispatcher ripemd160 integration" {
 }
 
 test "precompile dispatcher execute ripemd160" {
+    if (comptime no_precompiles) return testing.skip("precompiles disabled");
     const ripemd160_address: Address = [_]u8{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x03 };
 
     var output_buffer: [32]u8 = undefined;

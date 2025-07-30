@@ -91,14 +91,9 @@ def get_library_path():
     # Look for the library in the main project
     project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
     
-    # Standard location after zig build - use shared library for FFI
-    lib_path = os.path.join(project_root, "zig-out", "lib", "libGuillotine.dylib")
+    # Standard location after zig build
+    lib_path = os.path.join(project_root, "zig-out", "lib", "libGuillotine.a")
     
-    if os.path.exists(lib_path):
-        return lib_path
-    
-    # Fallback to .so on Linux
-    lib_path = os.path.join(project_root, "zig-out", "lib", "libGuillotine.so")
     if os.path.exists(lib_path):
         return lib_path
     

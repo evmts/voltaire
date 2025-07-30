@@ -563,6 +563,21 @@ pub fn build(b: *std.Build) void {
     // running `zig build`).
     b.installArtifact(lib);
 
+    // Create shared library for Python FFI
+    const shared_lib = b.addLibrary(.{
+        .linkage = .dynamic,
+        .name = "Guillotine",
+        .root_module = lib_mod,
+    });
+
+    // Link BN254 Rust library to the shared library artifact (if enabled)
+    if (bn254_lib) |bn254| {
+        shared_lib.linkLibrary(bn254);
+        shared_lib.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+
+    b.installArtifact(shared_lib);
+
     // This creates another `std.Build.Step.Compile`, but this one builds an executable
     // rather than a static library.
     const exe = b.addExecutable(.{
@@ -1108,35 +1123,41 @@ pub fn build(b: *std.Build) void {
     const static_protection_test_step = b.step("test-static-protection", "Run Static Call Protection tests");
     static_protection_test_step.dependOn(&run_static_protection_test.step);
 
-    // Add Precompile SHA256 tests
-    const sha256_test = b.addTest(.{
-        .name = "sha256-test",
-        .root_source_file = b.path("test/evm/precompiles/sha256_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    sha256_test.root_module.stack_check = false;
-    sha256_test.root_module.addImport("primitives", primitives_mod);
-    sha256_test.root_module.addImport("evm", evm_mod);
+    // Add Precompile SHA256 tests (only if precompiles are enabled)
+    var run_sha256_test: ?*std.Build.Step.Run = null;
+    if (!no_precompiles) {
+        const sha256_test = b.addTest(.{
+            .name = "sha256-test",
+            .root_source_file = b.path("test/evm/precompiles/sha256_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        sha256_test.root_module.stack_check = false;
+        sha256_test.root_module.addImport("primitives", primitives_mod);
+        sha256_test.root_module.addImport("evm", evm_mod);
 
-    const run_sha256_test = b.addRunArtifact(sha256_test);
-    const sha256_test_step = b.step("test-sha256", "Run SHA256 precompile tests");
-    sha256_test_step.dependOn(&run_sha256_test.step);
+        run_sha256_test = b.addRunArtifact(sha256_test);
+        const sha256_test_step = b.step("test-sha256", "Run SHA256 precompile tests");
+        sha256_test_step.dependOn(&run_sha256_test.?.step);
+    }
 
-    // Add RIPEMD160 precompile tests
-    const ripemd160_test = b.addTest(.{
-        .name = "ripemd160-test",
-        .root_source_file = b.path("test/evm/precompiles/ripemd160_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    ripemd160_test.root_module.stack_check = false;
-    ripemd160_test.root_module.addImport("primitives", primitives_mod);
-    ripemd160_test.root_module.addImport("evm", evm_mod);
+    // Add RIPEMD160 precompile tests (only if precompiles are enabled)  
+    var run_ripemd160_test: ?*std.Build.Step.Run = null;
+    if (!no_precompiles) {
+        const ripemd160_test = b.addTest(.{
+            .name = "ripemd160-test", 
+            .root_source_file = b.path("test/evm/precompiles/ripemd160_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        ripemd160_test.root_module.stack_check = false;
+        ripemd160_test.root_module.addImport("primitives", primitives_mod);
+        ripemd160_test.root_module.addImport("evm", evm_mod);
 
-    const run_ripemd160_test = b.addRunArtifact(ripemd160_test);
-    const ripemd160_test_step = b.step("test-ripemd160", "Run RIPEMD160 precompile tests");
-    ripemd160_test_step.dependOn(&run_ripemd160_test.step);
+        run_ripemd160_test = b.addRunArtifact(ripemd160_test);
+        const ripemd160_test_step = b.step("test-ripemd160", "Run RIPEMD160 precompile tests");
+        ripemd160_test_step.dependOn(&run_ripemd160_test.?.step);
+    }
 
     // Add BLAKE2f tests
     const blake2f_test = b.addTest(.{
@@ -1391,11 +1412,17 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_integration_test.step);
     test_step.dependOn(&run_gas_test.step);
     test_step.dependOn(&run_static_protection_test.step);
-    test_step.dependOn(&run_sha256_test.step);
-    test_step.dependOn(&run_ripemd160_test.step);
     test_step.dependOn(&run_blake2f_test.step);
     if (run_bn254_rust_test) |bn254_test| {
         test_step.dependOn(&bn254_test.step);
+    }
+    
+    // Add SHA256 and RIPEMD160 tests if precompiles are enabled
+    if (run_sha256_test) |sha256_test| {
+        test_step.dependOn(&sha256_test.step);
+    }
+    if (run_ripemd160_test) |ripemd160_test| {
+        test_step.dependOn(&ripemd160_test.step);
     }
     
     // Add REVM wrapper tests if available
