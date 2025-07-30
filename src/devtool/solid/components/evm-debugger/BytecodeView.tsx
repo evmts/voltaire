@@ -1,123 +1,128 @@
-import { type Component, For, Show, createMemo } from 'solid-js'
-import { opcodeToString } from '~/components/evm-debugger/utils'
+import { type Component, For, Show, createMemo } from "solid-js";
+import { opcodeToString } from "~/components/evm-debugger/utils";
+import { Card, CardHeader, CardTitle, CardContent } from "~/components/ui/card";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "~/components/ui/table";
+import Code from "~/components/Code";
 
 interface BytecodeViewProps {
-	bytecode: string
-	pc: number
+	bytecode: string;
+	pc: number;
 }
 
 interface DisassembledInstruction {
-	offset: number
-	opcode: string
-	hex: string
-	push?: string
+	offset: number;
+	opcode: string;
+	hex: string;
+	push?: string;
 }
 
 const disassembleBytecode = (bytecode: string): DisassembledInstruction[] => {
-	const instructions: DisassembledInstruction[] = []
-	const bytes = bytecode.startsWith('0x') ? bytecode.slice(2) : bytecode
-	
-	let i = 0
+	const instructions: DisassembledInstruction[] = [];
+	const bytes = bytecode.startsWith("0x") ? bytecode.slice(2) : bytecode;
+
+	let i = 0;
 	while (i < bytes.length) {
-		const offset = i / 2
-		const opcodeByte = parseInt(bytes.slice(i, i + 2), 16)
-		const opcodeName = opcodeToString(opcodeByte)
-		
+		const offset = i / 2;
+		const opcodeByte = parseInt(bytes.slice(i, i + 2), 16);
+		const opcodeName = opcodeToString(opcodeByte);
+
 		const instruction: DisassembledInstruction = {
 			offset,
 			opcode: opcodeName,
 			hex: bytes.slice(i, i + 2),
-		}
-		
+		};
+
 		// Handle PUSH instructions
 		if (opcodeByte >= 0x60 && opcodeByte <= 0x7f) {
-			const pushSize = opcodeByte - 0x5f
-			const pushData = bytes.slice(i + 2, i + 2 + pushSize * 2)
-			instruction.push = pushData
-			i += pushSize * 2
+			const pushSize = opcodeByte - 0x5f;
+			const pushData = bytes.slice(i + 2, i + 2 + pushSize * 2);
+			instruction.push = pushData;
+			i += pushSize * 2;
 		}
-		
-		instructions.push(instruction)
-		i += 2
+
+		instructions.push(instruction);
+		i += 2;
 	}
-	
-	return instructions
-}
+
+	return instructions;
+};
 
 const BytecodeView: Component<BytecodeViewProps> = (props) => {
-	const instructions = createMemo(() => disassembleBytecode(props.bytecode))
-	
+	const instructions = createMemo(() => disassembleBytecode(props.bytecode));
+
 	const currentInstructionIndex = createMemo(() => {
-		const instrs = instructions()
-		return instrs.findIndex((instr) => instr.offset === props.pc)
-	})
-	
+		const instrs = instructions();
+		return instrs.findIndex((instr) => instr.offset === props.pc);
+	});
+
 	return (
-		<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-[#252525]">
-			<div class="flex items-center justify-between border-gray-200 border-b p-3 dark:border-gray-800">
-				<h2 class="font-medium text-gray-900 text-sm dark:text-white">
-					Bytecode Disassembly
-				</h2>
-				<div class="text-gray-500 text-xs dark:text-gray-400">
-					{instructions().length} instructions
+		<Card class="overflow-hidden">
+			<CardHeader class="p-3 border-b">
+				<div class="flex items-center justify-between">
+					<CardTitle class="text-sm">Bytecode Disassembly</CardTitle>
+					<div class="text-muted-foreground text-xs">
+						{instructions().length} instructions
+					</div>
 				</div>
-			</div>
-			<div class="max-h-[400px] overflow-y-auto">
-				<table class="w-full">
-					<thead class="sticky top-0 border-gray-200 border-b bg-gray-50 text-gray-500 text-xs uppercase tracking-wider dark:border-gray-800 dark:bg-[#1E1E1E] dark:text-gray-400">
-						<tr>
-							<th class="px-4 py-2 text-left font-medium">Offset</th>
-							<th class="px-4 py-2 text-left font-medium">Opcode</th>
-							<th class="px-4 py-2 text-left font-medium">Hex</th>
-							<th class="px-4 py-2 text-left font-medium">Data</th>
-						</tr>
-					</thead>
-					<tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+			</CardHeader>
+			<CardContent class="p-0 max-h-[400px] overflow-y-auto">
+				<Table>
+					<TableHeader class="sticky top-0 bg-background z-10">
+						<TableRow>
+							<TableHead class="text-xs uppercase">Offset</TableHead>
+							<TableHead class="text-xs uppercase">Opcode</TableHead>
+							<TableHead class="text-xs uppercase">Hex</TableHead>
+							<TableHead class="text-xs uppercase">Data</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
 						<For each={instructions()}>
 							{(instruction, index) => (
-								<tr
-									class={`group transition-colors ${
-										index() === currentInstructionIndex()
-											? 'bg-indigo-50 dark:bg-indigo-900/20'
-											: 'hover:bg-gray-50 dark:hover:bg-[#2D2D2D]'
-									}`}
+								<TableRow
+									class={
+										index() === currentInstructionIndex() ? "bg-accent/50" : ""
+									}
 								>
-									<td class="px-4 py-2">
-										<span class="font-mono text-gray-500 text-xs dark:text-gray-400">
-											0x{instruction.offset.toString(16).padStart(4, '0')}
-										</span>
-									</td>
-									<td class="px-4 py-2">
-										<span
-											class={`font-mono text-sm ${
-												index() === currentInstructionIndex()
-													? 'font-semibold text-indigo-600 dark:text-indigo-400'
-													: 'text-gray-900 dark:text-white'
-											}`}
+									<TableCell>
+										<Code class="text-xs">
+											0x{instruction.offset.toString(16).padStart(4, "0")}
+										</Code>
+									</TableCell>
+									<TableCell>
+										<Show
+											when={index() === currentInstructionIndex()}
+											fallback={
+												<span class="font-mono text-sm">
+													{instruction.opcode}
+												</span>
+											}
 										>
-											{instruction.opcode}
-										</span>
-									</td>
-									<td class="px-4 py-2">
-										<span class="font-mono text-gray-600 text-xs dark:text-gray-300">
-											0x{instruction.hex}
-										</span>
-									</td>
-									<td class="px-4 py-2">
-										<Show when={instruction.push}>
-											<span class="font-mono text-purple-600 text-xs dark:text-purple-400">
-												0x{instruction.push}
-											</span>
+											<Code variant="default">{instruction.opcode}</Code>
 										</Show>
-									</td>
-								</tr>
+									</TableCell>
+									<TableCell>
+										<Code class="text-xs">0x{instruction.hex}</Code>
+									</TableCell>
+									<TableCell>
+										<Show when={instruction.push}>
+											<Code class="text-xs">0x{instruction.push}</Code>
+										</Show>
+									</TableCell>
+								</TableRow>
 							)}
 						</For>
-					</tbody>
-				</table>
-			</div>
-		</div>
-	)
-}
+					</TableBody>
+				</Table>
+			</CardContent>
+		</Card>
+	);
+};
 
-export default BytecodeView
+export default BytecodeView;
