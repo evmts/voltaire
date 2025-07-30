@@ -216,7 +216,7 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
     var benchmarks = try CodeAnalysisBenchmarks.init(allocator);
     defer benchmarks.deinit();
     
-    std.debug.print("\n=== Code Analysis Benchmarks ===\n");
+    std.debug.print("\n=== Code Analysis Benchmarks ===\n", .{});
     
     // Basic analysis benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -332,5 +332,5 @@ pub fn runCodeAnalysisBenchmarks(allocator: Allocator) !void {
         }
     }{ .bench = &benchmarks });
     
-    std.debug.print("=== Code Analysis Benchmarks Complete ===\n\n");
+    std.debug.print("=== Code Analysis Benchmarks Complete ===\n\n", .{});
 }

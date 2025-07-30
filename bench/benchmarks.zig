@@ -80,11 +80,11 @@ pub fn run_all_benchmarks(allocator: Allocator) !void {
     suite.print_results();
     
     // Run the new frame management benchmark suites
-    std.debug.print("\n=== Running Frame Management Benchmarks ===\n");
+    std.debug.print("\n=== Running Frame Management Benchmarks ===\n", .{});
     try frame_benchmarks.runFrameBenchmarks(allocator);
     try code_analysis_benchmarks.runCodeAnalysisBenchmarks(allocator);
     try comprehensive_frame_benchmarks.runComprehensiveFrameBenchmarks(allocator);
-    std.debug.print("=== All Frame Management Benchmarks Complete ===\n\n");
+    std.debug.print("=== All Frame Management Benchmarks Complete ===\n\n", .{});
     
     // Run revm comparison benchmarks
     std.debug.print("\n=== Running Guillotine vs revm Comparison Benchmarks ===\n", .{});

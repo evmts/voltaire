@@ -3,11 +3,12 @@ const Allocator = std.mem.Allocator;
 const timing = @import("timing.zig");
 const BenchmarkSuite = timing.BenchmarkSuite;
 const BenchmarkConfig = timing.BenchmarkConfig;
+const benchmark_with_args = timing.benchmark_with_args;
 
 // Import EVM components
 const primitives = @import("primitives");
 const Address = primitives.Address;
-const U256 = primitives.U256;
+const U256 = u256;
 const Memory = @import("evm").Memory;
 const Stack = @import("evm").Stack;
 const Frame = @import("evm").Frame;
@@ -25,7 +26,7 @@ pub const FrameBenchmarks = struct {
     const Self = @This();
     
     pub fn init(allocator: Allocator) !Self {
-        const storage_pool = try StoragePool.init(allocator);
+        const storage_pool = StoragePool.init(allocator);
         
         // Sample ERC-20 transfer bytecode (simplified)
         const bytecode = [_]u8{
@@ -56,21 +57,21 @@ pub const FrameBenchmarks = struct {
         var memory_db = MemoryDatabase.init(self.allocator);
         defer memory_db.deinit();
         
-        const contract = try Contract.init(
-            self.allocator,
-            self.sample_bytecode,
-            .{ .address = Address.ZERO },
+        var contract = Contract.init(
+            Address.ZERO, // caller
+            Address.ZERO, // address
+            0,            // value
+            1000000,      // gas
+            self.sample_bytecode, // code
+            [_]u8{0} ** 32,       // code_hash
+            &.{},         // input
+            false,        // is_static
         );
-        defer contract.deinit(self.allocator, &self.storage_pool);
         
         // Create and destroy frame
         var frame = try Frame.init(
             self.allocator,
-            null, // vm ptr will be set later
-            1000000,
-            contract,
-            Address.ZERO,
-            &.{},
+            &contract,
         );
         defer frame.deinit();
     }
@@ -80,20 +81,21 @@ pub const FrameBenchmarks = struct {
         var memory_db = MemoryDatabase.init(self.allocator);
         defer memory_db.deinit();
         
-        const contract = try Contract.init(
-            self.allocator,
-            self.sample_bytecode,
-            .{ .address = Address.ZERO },
+        var contract = Contract.init(
+            Address.ZERO,  // caller
+            Address.ZERO,  // addr
+            0,  // value
+            1000000,  // gas
+            self.sample_bytecode,  // code
+            [_]u8{0} ** 32,  // code_hash
+            &[_]u8{},  // input
+            false,  // is_static
         );
         defer contract.deinit(self.allocator, &self.storage_pool);
         
         var frame = try Frame.init(
             self.allocator,
-            null,
-            1000000,
-            contract,
-            Address.ZERO,
-            &.{},
+            &contract,
         );
         defer frame.deinit();
         
@@ -111,58 +113,69 @@ pub const FrameBenchmarks = struct {
         var memory_db = MemoryDatabase.init(self.allocator);
         defer memory_db.deinit();
         
-        const contract = try Contract.init(
-            self.allocator,
-            self.sample_bytecode,
-            .{ .address = Address.ZERO },
+        var contract = Contract.init(
+            Address.ZERO,  // caller
+            Address.ZERO,  // addr
+            0,  // value
+            1000000,  // gas
+            self.sample_bytecode,  // code
+            [_]u8{0} ** 32,  // code_hash
+            &[_]u8{},  // input
+            false,  // is_static
         );
         defer contract.deinit(self.allocator, &self.storage_pool);
         
         var frame = try Frame.init(
             self.allocator,
-            null,
-            1000000,
-            contract,
-            Address.ZERO,
-            &.{},
+            &contract,
         );
         defer frame.deinit();
         
         // Perform stack operations
-        try frame.stack.push(42);
-        try frame.stack.push(0x123456789ABCDEF);
-        try frame.stack.push(0xDEADBEEF);
+        try frame.stack.append(42);
+        try frame.stack.append(0x123456789ABCDEF);
+        try frame.stack.append(0xDEADBEEF);
         
         _ = try frame.stack.pop();
-        _ = try frame.stack.peek(0);
+        _ = try frame.stack.peek();
         
-        try frame.stack.dup(1);
-        try frame.stack.swap(1);
+        frame.stack.dup_unsafe(1);
+        frame.stack.swap_unsafe(1);
     }
     
     /// Benchmark contract creation
     pub fn contractCreation(self: *Self) !void {
-        const contract = try Contract.init(
-            self.allocator,
-            self.sample_bytecode,
-            .{ .address = Address.ZERO },
+        var contract = Contract.init(
+            Address.ZERO,  // caller
+            Address.ZERO,  // addr
+            0,  // value
+            1000000,  // gas
+            self.sample_bytecode,  // code
+            [_]u8{0} ** 32,  // code_hash
+            &[_]u8{},  // input
+            false,  // is_static
         );
         defer contract.deinit(self.allocator, &self.storage_pool);
     }
     
     /// Benchmark contract with storage operations
     pub fn contractWithStorage(self: *Self) !void {
-        const contract = try Contract.init(
-            self.allocator,
-            self.sample_bytecode,
-            .{ .address = Address.ZERO },
+        var contract = Contract.init(
+            Address.ZERO,  // caller
+            Address.ZERO,  // addr
+            0,  // value
+            1000000,  // gas
+            self.sample_bytecode,  // code
+            [_]u8{0} ** 32,  // code_hash
+            &[_]u8{},  // input
+            false,  // is_static
         );
         defer contract.deinit(self.allocator, &self.storage_pool);
         
         // Simulate storage access patterns
         var i: u32 = 0;
         while (i < 10) : (i += 1) {
-            const key = U256.from(i);
+            const key = @as(u256, @intCast(i);
             contract.markStorageWarm(key);
         }
     }
@@ -176,20 +189,21 @@ pub const FrameBenchmarks = struct {
         
         var i: usize = 0;
         while (i < frames.len) : (i += 1) {
-            const contract = try Contract.init(
-                self.allocator,
-                self.sample_bytecode,
-                .{ .address = Address.ZERO },
+            var contract = Contract.init(
+                Address.ZERO,  // caller
+                Address.ZERO,  // addr
+                0,  // value
+                1000000,  // gas
+                self.sample_bytecode,  // code
+                [_]u8{0} ** 32,  // code_hash
+                &[_]u8{},  // input
+                false,  // is_static
             );
             defer contract.deinit(self.allocator, &self.storage_pool);
             
             frames[i] = try Frame.init(
                 self.allocator,
-                null,
-                1000000,
-                contract,
-                Address.ZERO,
-                &.{},
+                &contract,
             );
         }
         
@@ -210,10 +224,15 @@ pub const FrameBenchmarks = struct {
             byte.* = @as(u8, @intCast((idx % 256)));
         }
         
-        const contract = try Contract.init(
-            self.allocator,
-            large_bytecode,
-            .{ .address = Address.ZERO },
+        var contract = Contract.init(
+            Address.ZERO,  // caller
+            Address.ZERO,  // addr
+            0,  // value
+            1000000,  // gas
+            large_bytecode,  // code
+            [_]u8{0} ** 32,  // code_hash
+            &[_]u8{},  // input
+            false,  // is_static
         );
         defer contract.deinit(self.allocator, &self.storage_pool);
     }
@@ -224,10 +243,15 @@ pub const FrameBenchmarks = struct {
         
         var i: usize = 0;
         while (i < contracts.len) : (i += 1) {
-            contracts[i] = try Contract.init(
-                self.allocator,
-                self.sample_bytecode,
-                .{ .address = Address.ZERO },
+            contracts[i] = Contract.init(
+                Address.ZERO,  // caller
+                Address.ZERO,  // addr
+                0,  // value
+                1000000,  // gas
+                self.sample_bytecode,  // code
+                [_]u8{0} ** 32,  // code_hash
+                &[_]u8{},  // input
+                false,  // is_static
             );
         }
         
@@ -235,7 +259,7 @@ pub const FrameBenchmarks = struct {
         for (&contracts) |*contract| {
             var j: u32 = 0;
             while (j < 5) : (j += 1) {
-                const key = U256.from(j);
+                const key = @as(u256, @intCast(j);
                 contract.markStorageWarm(key);
             }
         }
@@ -251,20 +275,21 @@ pub const FrameBenchmarks = struct {
         var memory_db = MemoryDatabase.init(self.allocator);
         defer memory_db.deinit();
         
-        const contract = try Contract.init(
-            self.allocator,
-            self.sample_bytecode,
-            .{ .address = Address.ZERO },
+        var contract = Contract.init(
+            Address.ZERO,  // caller
+            Address.ZERO,  // addr
+            0,  // value
+            1000000,  // gas
+            self.sample_bytecode,  // code
+            [_]u8{0} ** 32,  // code_hash
+            &[_]u8{},  // input
+            false,  // is_static
         );
         defer contract.deinit(self.allocator, &self.storage_pool);
         
         var frame = try Frame.init(
             self.allocator,
-            null,
-            1000000,
-            contract,
-            Address.ZERO,
-            &.{},
+            &contract,
         );
         defer frame.deinit();
         
@@ -283,10 +308,15 @@ pub const FrameBenchmarks = struct {
         var memory_db = MemoryDatabase.init(self.allocator);
         defer memory_db.deinit();
         
-        const contract = try Contract.init(
-            self.allocator,
-            self.sample_bytecode,
-            .{ .address = Address.ZERO },
+        var contract = Contract.init(
+            Address.ZERO,  // caller
+            Address.ZERO,  // addr
+            0,  // value
+            1000000,  // gas
+            self.sample_bytecode,  // code
+            [_]u8{0} ** 32,  // code_hash
+            &[_]u8{},  // input
+            false,  // is_static
         );
         defer contract.deinit(self.allocator, &self.storage_pool);
         
@@ -296,17 +326,13 @@ pub const FrameBenchmarks = struct {
         while (depth < 10) : (depth += 1) {
             var frame = try Frame.init(
                 self.allocator,
-                null, // vm ptr
-                1000000 - @as(u64, @intCast(depth * 10000)), // decreasing gas
-                contract,
-                Address.ZERO,
-                &.{},
+                &contract,
             );
             defer frame.deinit();
             
             // Simulate some frame operations
-            try frame.stack.push(42 + depth);
-            try frame.stack.push(depth * 2);
+            try frame.stack.append(42 + depth);
+            try frame.stack.append(depth * 2);
             _ = try frame.stack.pop();
             
             // Simulate memory allocation within frame
@@ -320,10 +346,15 @@ pub const FrameBenchmarks = struct {
         var memory_db = MemoryDatabase.init(self.allocator);
         defer memory_db.deinit();
         
-        const contract = try Contract.init(
-            self.allocator,
-            self.sample_bytecode,
-            .{ .address = Address.ZERO },
+        var contract = Contract.init(
+            Address.ZERO,  // caller
+            Address.ZERO,  // addr
+            0,  // value
+            1000000,  // gas
+            self.sample_bytecode,  // code
+            [_]u8{0} ** 32,  // code_hash
+            &[_]u8{},  // input
+            false,  // is_static
         );
         defer contract.deinit(self.allocator, &self.storage_pool);
         
@@ -332,16 +363,12 @@ pub const FrameBenchmarks = struct {
         while (i < 100) : (i += 1) {
             var frame = try Frame.init(
                 self.allocator,
-                null,
-                1000000,
-                contract,
-                Address.ZERO,
-                &.{},
+                &contract,
             );
             defer frame.deinit();
             
             // Minimal operations to measure pure allocation overhead
-            try frame.stack.push(@as(u256, @intCast(i)));
+            try frame.stack.append(@as(u256, @intCast(i)));
             _ = try frame.stack.pop();
         }
     }
@@ -355,135 +382,91 @@ pub fn runFrameBenchmarks(allocator: Allocator) !void {
     var benchmarks = try FrameBenchmarks.init(allocator);
     defer benchmarks.deinit();
     
-    std.debug.print("\n=== Frame Management Benchmarks ===\n");
+    std.debug.print("\n=== Frame Management Benchmarks ===\n", .{});
     
     // Frame lifecycle benchmarks
-    try suite.benchmark(BenchmarkConfig{
+    const lifecycle_result = try benchmark_with_args(allocator, BenchmarkConfig{
         .name = "frame_lifecycle",
         .iterations = 1000,
         .warmup_iterations = 100,
-    }, struct {
-        bench: *FrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.frameLifecycle();
-        }
-    }{ .bench = &benchmarks });
+    }, FrameBenchmarks.frameLifecycle, .{&benchmarks});
+    try suite.results.append(lifecycle_result);
     
-    try suite.benchmark(BenchmarkConfig{
+    const memory_ops_result = try benchmark_with_args(allocator, BenchmarkConfig{
         .name = "frame_with_memory_ops",
         .iterations = 500,
         .warmup_iterations = 50,
-    }, struct {
-        bench: *FrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.frameWithMemoryOps();
-        }
-    }{ .bench = &benchmarks });
+    }, FrameBenchmarks.frameWithMemoryOps, .{&benchmarks});
+    try suite.results.append(memory_ops_result);
     
-    try suite.benchmark(BenchmarkConfig{
+    const stack_ops_result = try benchmark_with_args(allocator, BenchmarkConfig{
         .name = "frame_with_stack_ops",
         .iterations = 1000,
         .warmup_iterations = 100,
-    }, struct {
-        bench: *FrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.frameWithStackOps();
-        }
-    }{ .bench = &benchmarks });
+    }, FrameBenchmarks.frameWithStackOps, .{&benchmarks});
+    try suite.results.append(stack_ops_result);
     
     // Contract management benchmarks
-    try suite.benchmark(BenchmarkConfig{
+    const contract_creation_result = try benchmark_with_args(allocator, BenchmarkConfig{
         .name = "contract_creation",
         .iterations = 1000,
         .warmup_iterations = 100,
-    }, struct {
-        bench: *FrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.contractCreation();
-        }
-    }{ .bench = &benchmarks });
+    }, FrameBenchmarks.contractCreation, .{&benchmarks});
+    try suite.results.append(contract_creation_result);
     
-    try suite.benchmark(BenchmarkConfig{
+    const contract_storage_result = try benchmark_with_args(allocator, BenchmarkConfig{
         .name = "contract_with_storage",
         .iterations = 500,
         .warmup_iterations = 50,
-    }, struct {
-        bench: *FrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.contractWithStorage();
-        }
-    }{ .bench = &benchmarks });
+    }, FrameBenchmarks.contractWithStorage, .{&benchmarks});
+    try suite.results.append(contract_storage_result);
     
     // Call stack benchmarks
-    try suite.benchmark(BenchmarkConfig{
+    const multiple_frames_result = try benchmark_with_args(allocator, BenchmarkConfig{
         .name = "multiple_frames",
         .iterations = 100,
         .warmup_iterations = 10,
-    }, struct {
-        bench: *FrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.multipleFrames();
-        }
-    }{ .bench = &benchmarks });
+    }, FrameBenchmarks.multipleFrames, .{&benchmarks});
+    try suite.results.append(multiple_frames_result);
     
     // Large contract benchmarks
-    try suite.benchmark(BenchmarkConfig{
+    const large_bytecode_result = try benchmark_with_args(allocator, BenchmarkConfig{
         .name = "large_bytecode_contract",
         .iterations = 100,
         .warmup_iterations = 10,
-    }, struct {
-        bench: *FrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.largeBytecodeContract();
-        }
-    }{ .bench = &benchmarks });
+    }, FrameBenchmarks.largeBytecodeContract, .{&benchmarks});
+    try suite.results.append(large_bytecode_result);
     
     // Storage pool benchmarks
-    try suite.benchmark(BenchmarkConfig{
+    const storage_pool_result = try benchmark_with_args(allocator, BenchmarkConfig{
         .name = "storage_pool_efficiency",
         .iterations = 200,
         .warmup_iterations = 20,
-    }, struct {
-        bench: *FrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.storagePoolEfficiency();
-        }
-    }{ .bench = &benchmarks });
+    }, FrameBenchmarks.storagePoolEfficiency, .{&benchmarks});
+    try suite.results.append(storage_pool_result);
     
     // Gas accounting benchmarks
-    try suite.benchmark(BenchmarkConfig{
+    const gas_accounting_result = try benchmark_with_args(allocator, BenchmarkConfig{
         .name = "gas_accounting_overhead",
         .iterations = 1000,
         .warmup_iterations = 100,
-    }, struct {
-        bench: *FrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.gasAccountingOverhead();
-        }
-    }{ .bench = &benchmarks });
+    }, FrameBenchmarks.gasAccountingOverhead, .{&benchmarks});
+    try suite.results.append(gas_accounting_result);
     
     // Frame allocation baseline benchmarks (pre-optimization)
-    try suite.benchmark(BenchmarkConfig{
+    const frame_baseline_result = try benchmark_with_args(allocator, BenchmarkConfig{
         .name = "frame_allocation_baseline",
         .iterations = 1000,
         .warmup_iterations = 100,
-    }, struct {
-        bench: *FrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.frameAllocationBaseline();
-        }
-    }{ .bench = &benchmarks });
+    }, FrameBenchmarks.frameAllocationBaseline, .{&benchmarks});
+    try suite.results.append(frame_baseline_result);
     
-    try suite.benchmark(BenchmarkConfig{
+    const frame_pressure_result = try benchmark_with_args(allocator, BenchmarkConfig{
         .name = "frame_allocation_pressure",
         .iterations = 1000, 
         .warmup_iterations = 100,
-    }, struct {
-        bench: *FrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.frameAllocationPressure();
-        }
-    }{ .bench = &benchmarks });
+    }, FrameBenchmarks.frameAllocationPressure, .{&benchmarks});
+    try suite.results.append(frame_pressure_result);
     
-    std.debug.print("=== Frame Management Benchmarks Complete ===\n\n");
+    std.debug.print("=== Frame Management Benchmarks Complete ===\n\n", .{});
 }

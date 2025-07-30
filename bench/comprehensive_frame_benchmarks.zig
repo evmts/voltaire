@@ -418,7 +418,7 @@ pub fn runComprehensiveFrameBenchmarks(allocator: Allocator) !void {
     var benchmarks = try ComprehensiveFrameBenchmarks.init(allocator);
     defer benchmarks.deinit();
     
-    std.debug.print("\n=== Comprehensive Frame Management Benchmarks ===\n");
+    std.debug.print("\n=== Comprehensive Frame Management Benchmarks ===\n", .{});
     
     // Storage operation benchmarks
     try suite.benchmark(BenchmarkConfig{
@@ -502,5 +502,5 @@ pub fn runComprehensiveFrameBenchmarks(allocator: Allocator) !void {
         }
     }{ .bench = &benchmarks });
     
-    std.debug.print("=== Comprehensive Frame Management Benchmarks Complete ===\n\n");
+    std.debug.print("=== Comprehensive Frame Management Benchmarks Complete ===\n\n", .{});
 }
