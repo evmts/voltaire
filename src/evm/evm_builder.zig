@@ -105,7 +105,7 @@ test "EvmBuilder basic usage" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    
+
     var builder = EvmBuilder.init(allocator, db_interface);
     var evm = try builder.build();
     defer evm.deinit();
@@ -122,7 +122,7 @@ test "EvmBuilder with all options" {
 
     const db_interface = memory_db.to_database_interface();
     const test_data = &[_]u8{ 0x01, 0x02, 0x03, 0x04 };
-    
+
     var builder = EvmBuilder.init(allocator, db_interface);
     var evm = try builder
         .with_return_data(@constCast(test_data))
@@ -144,7 +144,7 @@ test "EvmBuilder fluent API" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    
+
     var builder = EvmBuilder.init(allocator, db_interface);
     var evm = try builder
         .with_depth(5)
@@ -166,7 +166,7 @@ test "EvmBuilder custom jump table and chain rules" {
     const db_interface = memory_db.to_database_interface();
     const custom_table = JumpTable.init_from_hardfork(.ISTANBUL);
     const custom_rules = ChainRules.for_hardfork(.ISTANBUL);
-    
+
     var builder = EvmBuilder.init(allocator, db_interface);
     var evm = try builder
         .with_jump_table(custom_table)
@@ -184,11 +184,11 @@ test "EvmBuilder context configuration" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    
+
     var custom_context = Context.init();
     custom_context.block.number = 12345;
     custom_context.block.timestamp = 1234567890;
-    
+
     var builder = EvmBuilder.init(allocator, db_interface);
     var evm = try builder
         .with_context(custom_context)
@@ -206,9 +206,9 @@ test "EvmBuilder multiple configurations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    
+
     const hardforks = [_]Hardfork{ .FRONTIER, .HOMESTEAD, .BYZANTIUM, .LONDON };
-    
+
     for (hardforks) |hardfork| {
         var builder = EvmBuilder.init(allocator, db_interface);
         var evm = try builder
