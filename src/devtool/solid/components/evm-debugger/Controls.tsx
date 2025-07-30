@@ -59,8 +59,8 @@ const Controls: Component<ControlsProps> = (props) => {
 	}
 
 	return (
-		<div class="sticky top-18 z-10 mx-auto w-min">
-			<div class="flex items-center justify-between gap-4 rounded-sm border border-border/30 bg-amber-50/50 p-2 backdrop-blur-md dark:bg-amber-950/30">
+		<div class="sticky top-18 z-50 flex w-full justify-center px-4">
+			<div class="grid grid-cols-2 xs:grid-cols-4 gap-x-4 gap-y-2 rounded-sm border border-border/30 bg-amber-50/50 p-2 backdrop-blur-md dark:bg-amber-950/30">
 				<Button
 					variant="outline"
 					size="sm"

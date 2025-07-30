@@ -9,6 +9,9 @@
 		"Noto Color Emoji";
 	--font-mono:
 		"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+	--breakpoint-xxs: 20rem;
+	--breakpoint-xs: 30rem;
 }
 
 html,
