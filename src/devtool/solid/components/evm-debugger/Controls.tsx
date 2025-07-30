@@ -1,6 +1,14 @@
+import { isMobile } from '@solid-primitives/platform'
+import GaugeIcon from 'lucide-solid/icons/gauge'
+import PauseIcon from 'lucide-solid/icons/pause'
+import PlayIcon from 'lucide-solid/icons/play'
+import RotateCcwIcon from 'lucide-solid/icons/rotate-ccw'
+import StepForwardIcon from 'lucide-solid/icons/step-forward'
 import { type Component, type Setter, Show } from 'solid-js'
 import type { EvmState } from '~/components/evm-debugger/types'
 import { resetEvm, stepEvm, toggleRunPause } from '~/components/evm-debugger/utils'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
 
 interface ControlsProps {
 	isRunning: boolean
@@ -51,151 +59,67 @@ const Controls: Component<ControlsProps> = (props) => {
 	}
 
 	return (
-		<div class="sticky top-16 z-10 mb-6 overflow-hidden">
-			<div class="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-[#252525]">
-				<div class="flex flex-wrap items-center gap-3 p-3">
-					<button
-						type="button"
-						onClick={handleResetEvm}
-						class="inline-flex transform items-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 text-sm shadow-sm transition-all hover:translate-y-[-1px] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 active:translate-y-[1px] dark:border-gray-700 dark:bg-[#2D2D2D] dark:text-gray-200 dark:focus:ring-indigo-400/50 dark:hover:bg-gray-800"
-						aria-label="Reset EVM (R)"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-400"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<title>Reset</title>
-							<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-							<path d="M3 3v5h5" />
-						</svg>
-						Reset
-					</button>
-					<button
-						type="button"
-						onClick={handleStepEvm}
-						class="inline-flex transform items-center rounded-lg border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-700 text-sm shadow-sm transition-all hover:translate-y-[-1px] hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 active:translate-y-[1px] dark:border-gray-700 dark:bg-[#2D2D2D] dark:text-gray-200 dark:focus:ring-indigo-400/50 dark:hover:bg-gray-800"
-						disabled={props.isRunning}
-						aria-label="Step EVM (S)"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-400"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						>
-							<title>Step</title>
-							<polygon points="5 3 19 12 5 21 5 3" />
-						</svg>
-						Step
-					</button>
-					<button
-						type="button"
-						onClick={handleToggleRunPause}
-						class={`inline-flex transform items-center rounded-lg border px-3 py-1.5 font-medium text-sm shadow-sm transition-all hover:translate-y-[-1px] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 active:translate-y-[1px] dark:focus:ring-indigo-400/50 ${
-							props.isRunning
-								? 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-800/50 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20'
-								: 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100 dark:border-green-800/50 dark:bg-green-500/10 dark:text-green-300 dark:hover:bg-green-500/20'
-						}`}
-						aria-label={props.isRunning ? 'Pause EVM (Space)' : 'Run EVM (Space)'}
-					>
-						<Show
-							when={props.isRunning}
-							fallback={
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="mr-1.5 h-4 w-4 text-green-600 dark:text-green-400"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<title>Run</title>
-									<polygon points="5 3 19 12 5 21 5 3" />
-									<polygon points="19 12 5 21 5 3 19 12" />
-								</svg>
-							}
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								class="mr-1.5 h-4 w-4 text-red-600 dark:text-red-400"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<title>Pause</title>
-								<rect x="6" y="4" width="4" height="16" />
-								<rect x="14" y="4" width="4" height="16" />
-							</svg>
-						</Show>
-						{props.isRunning ? 'Pause' : 'Run'}
-					</button>
-
-					<Show when={props.isRunning}>
-						<div class="ml-4 flex items-center space-x-2">
-							<label class="text-gray-600 text-sm dark:text-gray-300">
-								Speed:
-							</label>
-							<input
-								type="range"
-								min="10"
-								max="1000"
-								step="10"
-								value={props.executionSpeed}
-								onInput={(e) => props.setExecutionSpeed(parseInt(e.currentTarget.value))}
-								class="h-2 w-32 cursor-pointer rounded-lg accent-indigo-600"
-							/>
-							<span class="min-w-[3rem] text-right font-mono text-gray-600 text-sm dark:text-gray-300">
-								{props.executionSpeed}ms
-							</span>
-						</div>
+		<div class="sticky top-18 z-50 flex w-full justify-center px-4">
+			<div class="grid grid-cols-2 xs:grid-cols-4 gap-x-4 gap-y-2 rounded-sm border border-border/30 bg-amber-50/50 p-2 backdrop-blur-md dark:bg-amber-950/30">
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={handleResetEvm}
+					aria-label="Reset EVM (R)"
+					class="flex items-center gap-2"
+				>
+					<RotateCcwIcon class="h-4 w-4" />
+					Reset
+					{!isMobile && (
+						<Badge variant="outline" class="px-1.5 py-0.5 font-mono font-normal text-muted-foreground text-xs">
+							R
+						</Badge>
+					)}
+				</Button>
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={handleStepEvm}
+					disabled={props.isRunning}
+					aria-label="Step EVM (S)"
+					class="flex items-center gap-2"
+				>
+					<StepForwardIcon class="h-4 w-4" />
+					Step
+					{!isMobile && (
+						<Badge variant="outline" class="px-1.5 py-0.5 font-mono font-normal text-muted-foreground text-xs">
+							S
+						</Badge>
+					)}
+				</Button>
+				<Button
+					variant={props.isRunning ? 'secondary' : 'outline'}
+					size="sm"
+					onClick={handleToggleRunPause}
+					aria-label={props.isRunning ? 'Pause EVM (Space)' : 'Run EVM (Space)'}
+					class="flex items-center gap-2"
+				>
+					<Show when={props.isRunning} fallback={<PlayIcon class="h-4 w-4" />}>
+						<PauseIcon class="h-4 w-4" />
 					</Show>
-
-					<div class="ml-auto flex items-center space-x-3 text-gray-500 text-xs dark:text-gray-400">
-						<div class="flex items-center">
-							<kbd class="rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-mono text-gray-800 text-xs dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-								R
-							</kbd>
-							<span class="ml-1">Reset</span>
-						</div>
-						<div class="flex items-center">
-							<kbd class="rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-mono text-gray-800 text-xs dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-								S
-							</kbd>
-							<span class="ml-1">Step</span>
-						</div>
-						<div class="flex items-center">
-							<kbd class="rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-mono text-gray-800 text-xs dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-								Space
-							</kbd>
-							<span class="ml-1">Run/Pause</span>
-						</div>
-						<div class="flex items-center">
-							<kbd class="rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-mono text-gray-800 text-xs dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-								Ctrl
-							</kbd>
-							<span class="mx-0.5">+</span>
-							<kbd class="rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 font-mono text-gray-800 text-xs dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-								D
-							</kbd>
-							<span class="ml-1">Dark Mode</span>
-						</div>
-					</div>
-				</div>
+					{props.isRunning ? 'Pause' : 'Run'}
+					{!isMobile && (
+						<Badge variant="outline" class="px-1.5 py-0.5 font-mono font-normal text-muted-foreground text-xs">
+							Space
+						</Badge>
+					)}
+				</Button>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={!props.isRunning}
+					onClick={handleToggleRunPause}
+					aria-label="Speed"
+					class="flex items-center gap-2"
+				>
+					<GaugeIcon class="h-4 w-4" />
+					Speed
+				</Button>
 			</div>
 		</div>
 	)

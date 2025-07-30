@@ -1,96 +1,95 @@
-import { type Component, For, type Setter, Show } from 'solid-js'
+import { isMobile } from '@solid-primitives/platform'
+import ArrowRightIcon from 'lucide-solid/icons/arrow-right'
+import CopyIcon from 'lucide-solid/icons/copy'
+import RectangleEllipsisIcon from 'lucide-solid/icons/rectangle-ellipsis'
+import { type Component, For, Show } from 'solid-js'
+import { toast } from 'solid-sonner'
+import Code from '~/components/Code'
 import { type EvmState, formatHex } from '~/components/evm-debugger/types'
 import { copyToClipboard } from '~/components/evm-debugger/utils'
+import InfoTooltip from '~/components/InfoTooltip'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
+import { cn } from '~/lib/cn'
 
 interface StorageProps {
 	state: EvmState
-	copied: string
-	setCopied: Setter<string>
 }
 
-const Storage: Component<StorageProps> = (props) => {
-	const handleCopy = (key: string, value: string) => {
-		copyToClipboard(`${key}: ${value}`)
-		props.setCopied(`Storage[${formatHex(key)}]`)
-		setTimeout(() => props.setCopied(''), 2000)
+const Storage: Component<StorageProps> = ({ state }) => {
+	const handleCopy = (value: string) => {
+		copyToClipboard(value)
+		toast.info(
+			<>
+				Copied <Code>{value}</Code> to clipboard
+			</>,
+		)
 	}
 
 	return (
-		<div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-[#252525]">
-			<div class="flex items-center justify-between border-gray-200 border-b p-3 dark:border-gray-800">
-				<h2 class="font-medium text-gray-900 text-sm dark:text-white">
-					Storage ({props.state.storage.length})
-				</h2>
-				<div class="text-gray-500 text-xs dark:text-gray-400">Key-value pairs</div>
-			</div>
-			<div class="max-h-[300px] overflow-y-auto p-0">
+		<Card class="overflow-hidden">
+			<CardHeader class="border-b p-3">
+				<div class="flex items-center justify-between">
+					<CardTitle class="text-sm">Storage ({Object.keys(state.storage).length})</CardTitle>
+					<InfoTooltip>Key-value pairs</InfoTooltip>
+				</div>
+			</CardHeader>
+			<CardContent class="max-h-[300px] overflow-y-auto p-0">
 				<Show
-					when={props.state.storage.length > 0}
+					when={Object.keys(state.storage).length > 0}
 					fallback={
-						<div class="flex items-center justify-center p-8 text-gray-500 text-sm italic dark:text-gray-400">
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								class="mr-2 h-5 w-5 text-gray-400 dark:text-gray-500"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<title>Storage</title>
-								<path d="M2 10V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2" />
-								<path d="M10 2v4" />
-								<path d="M2 6h20" />
-								<path d="M10 18v4" />
-								<path d="M2 18h20" />
-							</svg>
+						<div class="flex items-center justify-center gap-2 p-8 text-muted-foreground text-sm italic">
+							<RectangleEllipsisIcon class="h-5 w-5" />
 							Storage is empty
 						</div>
 					}
 				>
-					<div class="divide-y divide-gray-100 dark:divide-gray-800">
-						<For each={props.state.storage}>
+					<div class="divide-y">
+						<For each={state.storage}>
 							{(item) => (
-								<div class="group px-4 py-2.5 transition-colors hover:bg-gray-50 dark:hover:bg-[#2D2D2D]">
+								<div class="group px-4 py-1.5 transition-colors hover:bg-muted/50">
 									<div class="flex items-center justify-between">
-										<div class="flex items-center">
-											<span class="font-medium text-gray-500 text-xs dark:text-gray-400">Key:</span>
-											<span class="ml-2 font-mono text-gray-900 text-sm dark:text-white">{formatHex(item.key)}</span>
+										<div class="flex items-center gap-2">
+											<Code class="break-all text-sm">{formatHex(item.key)}</Code>
+											<ArrowRightIcon class="h-4 w-4" />
+											<Code class="break-all text-sm">{formatHex(item.value)}</Code>
 										</div>
-										<button
-											type="button"
-											onClick={() => handleCopy(item.key, item.value)}
-											class="rounded-md p-1 text-gray-400 opacity-0 transition-opacity hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100 dark:hover:bg-gray-700 dark:hover:text-gray-300"
-											aria-label="Copy to clipboard"
-										>
-											<svg
-												xmlns="http://www.w3.org/2000/svg"
-												class="h-4 w-4"
-												viewBox="0 0 24 24"
-												fill="none"
-												stroke="currentColor"
-												stroke-width="2"
-												stroke-linecap="round"
-												stroke-linejoin="round"
+										<div class="flex items-center gap-1">
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => handleCopy(item.key)}
+												class={cn(
+													'flex h-7 items-center gap-1',
+													!isMobile && 'opacity-0 transition-opacity group-hover:opacity-100',
+												)}
+												aria-label="Copy to clipboard"
 											>
-												<title>Copy</title>
-												<rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-												<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-											</svg>
-										</button>
-									</div>
-									<div class="mt-1 flex items-center">
-										<span class="font-medium text-gray-500 text-xs dark:text-gray-400">Value:</span>
-										<span class="ml-2 font-mono text-gray-900 text-sm dark:text-white">{formatHex(item.value)}</span>
+												<CopyIcon class="h-4 w-4" />
+												<span class="text-muted-foreground text-xs">key</span>
+											</Button>
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => handleCopy(item.value)}
+												class={cn(
+													'flex h-7 items-center gap-1',
+													!isMobile && 'opacity-0 transition-opacity group-hover:opacity-100',
+												)}
+												aria-label="Copy to clipboard"
+											>
+												<CopyIcon class="h-4 w-4" />
+												<span class="text-muted-foreground text-xs">value</span>
+											</Button>
+										</div>
 									</div>
 								</div>
 							)}
 						</For>
 					</div>
 				</Show>
-			</div>
-		</div>
+			</CardContent>
+		</Card>
 	)
 }
 

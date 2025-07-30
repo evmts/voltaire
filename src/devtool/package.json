@@ -13,8 +13,15 @@
 	},
 	"license": "MIT",
 	"dependencies": {
+		"@kobalte/core": "^0.13.11",
+		"@solid-primitives/platform": "^0.2.1",
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"lucide-solid": "^0.534.0",
 		"shadcn": "^2.5.0",
-		"solid-js": "^1.9.7"
+		"solid-js": "^1.9.7",
+		"solid-sonner": "^0.2.8",
+		"tailwind-merge": "^3.3.1"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.1.3",
@@ -23,7 +30,7 @@
 		"autoprefixer": "^10.4.21",
 		"postcss": "^8.5.3",
 		"tailwindcss": "^4.1.7",
-		"tailwindcss-animate": "^1.0.7",
+		"tw-animate-css": "^1.3.6",
 		"typescript": "~5.8.3",
 		"vite": "^6.3.5",
 		"vite-plugin-solid": "^2.11.6",

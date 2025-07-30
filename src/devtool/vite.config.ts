@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import solid from 'vite-plugin-solid'
 import tsconfigPaths from 'vite-tsconfig-paths'
@@ -27,6 +28,13 @@ export default defineConfig(async () => ({
 		watch: {
 			// 3. tell vite to ignore watching `src-tauri`
 			ignored: ['**/src-tauri/**'],
+		},
+	},
+	resolve: {
+		alias: {
+			// path alias for tree-shaking lucide-solid icons
+			// see: https://christopher.engineering/en/blog/lucide-icons-with-vite-dev-server/
+			'lucide-solid/icons': fileURLToPath(new URL('./node_modules/lucide-solid/dist/source/icons', import.meta.url)),
 		},
 	},
 }))
