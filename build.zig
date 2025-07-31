@@ -977,6 +977,29 @@ pub fn build(b: *std.Build) void {
         dmg_step.dependOn(&create_dmg.step);
     }
 
+    // EVM Benchmark Runner executable
+    const evm_runner_exe = b.addExecutable(.{
+        .name = "evm-runner",
+        .root_source_file = b.path("bench/evm/runner.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    evm_runner_exe.root_module.addImport("evm", evm_mod);
+    evm_runner_exe.root_module.addImport("Address", primitives_mod);
+    
+    b.installArtifact(evm_runner_exe);
+    
+    const run_evm_runner_cmd = b.addRunArtifact(evm_runner_exe);
+    if (b.args) |args| {
+        run_evm_runner_cmd.addArgs(args);
+    }
+    
+    const evm_runner_step = b.step("evm-runner", "Run the EVM benchmark runner");
+    evm_runner_step.dependOn(&run_evm_runner_cmd.step);
+    
+    const build_evm_runner_step = b.step("build-evm-runner", "Build the EVM benchmark runner");
+    build_evm_runner_step.dependOn(&b.addInstallArtifact(evm_runner_exe, .{}).step);
+
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const lib_unit_tests = b.addTest(.{

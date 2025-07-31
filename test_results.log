@@ -1,0 +1,420 @@
+info: Downloading blst library...
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/williamcory/guillotine-0/src/compilers/Cargo.toml
+workspace: /Users/williamcory/guillotine-0/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/williamcory/guillotine-0/src/revm_wrapper/Cargo.toml
+workspace: /Users/williamcory/guillotine-0/Cargo.toml
+warning: /Users/williamcory/guillotine-0/src/revm_wrapper/Cargo.toml: `panic` setting is ignored for `bench` profile
+       Fresh autocfg v1.5.0
+       Fresh unicode-ident v1.0.18
+       Fresh version_check v0.9.5
+       Fresh rand_core v0.6.4
+       Fresh arrayvec v0.7.6
+       Fresh either v1.15.0
+       Fresh once_cell v1.21.3
+       Fresh allocator-api2 v0.2.21
+       Fresh cfg-if v1.0.1
+       Fresh proc-macro2 v1.0.95
+       Fresh itertools v0.13.0
+       Fresh hashbrown v0.15.4
+       Fresh quote v1.0.40
+       Fresh zerocopy v0.8.26
+       Fresh typenum v1.18.0
+       Fresh paste v1.0.15
+       Fresh syn v2.0.104
+       Fresh ppv-lite86 v0.2.21
+       Fresh num-traits v0.2.19
+       Fresh generic-array v0.14.7
+       Fresh ahash v0.8.12
+       Fresh rand_chacha v0.3.1
+       Fresh enum-ordinalize-derive v4.3.1
+       Fresh num-integer v0.1.46
+       Fresh crypto-common v0.1.6
+       Fresh ark-serialize-derive v0.5.0
+       Fresh zeroize_derive v1.4.2
+       Fresh ark-ff-asm v0.5.0
+       Fresh rand v0.8.5
+       Fresh digest v0.10.7
+       Fresh enum-ordinalize v4.3.0
+       Fresh num-bigint v0.4.6
+       Fresh zeroize v1.8.1
+       Fresh ark-std v0.5.0
+       Fresh educe v0.6.0
+       Fresh ark-ff-macros v0.5.0
+       Fresh ark-serialize v0.5.0
+       Fresh ark-ff v0.5.0
+       Fresh ark-poly v0.5.0
+       Fresh ark-ec v0.5.0
+       Fresh ark-bn254 v0.5.0
+       Fresh bn254_wrapper v0.1.0 (/Users/williamcory/guillotine-0/src/bn254_wrapper)
+    Finished `release` profile [optimized] target(s) in 0.04s
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/williamcory/guillotine-0/src/compilers/Cargo.toml
+workspace: /Users/williamcory/guillotine-0/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/williamcory/guillotine-0/src/revm_wrapper/Cargo.toml
+workspace: /Users/williamcory/guillotine-0/Cargo.toml
+warning: /Users/williamcory/guillotine-0/src/revm_wrapper/Cargo.toml: `panic` setting is ignored for `bench` profile
+       Fresh unicode-ident v1.0.18
+       Fresh autocfg v1.5.0
+       Fresh version_check v0.9.5
+       Fresh rand_core v0.6.4
+       Fresh arrayvec v0.7.6
+       Fresh either v1.15.0
+       Fresh cfg-if v1.0.1
+       Fresh once_cell v1.21.3
+       Fresh allocator-api2 v0.2.21
+       Fresh proc-macro2 v1.0.95
+       Fresh itertools v0.13.0
+       Fresh hashbrown v0.15.4
+       Fresh quote v1.0.40
+       Fresh zerocopy v0.8.26
+       Fresh typenum v1.18.0
+       Fresh paste v1.0.15
+       Fresh syn v2.0.104
+       Fresh ppv-lite86 v0.2.21
+       Fresh num-traits v0.2.19
+       Fresh generic-array v0.14.7
+       Fresh ahash v0.8.12
+       Fresh rand_chacha v0.3.1
+       Fresh enum-ordinalize-derive v4.3.1
+       Fresh num-integer v0.1.46
+       Fresh crypto-common v0.1.6
+       Fresh ark-serialize-derive v0.5.0
+       Fresh zeroize_derive v1.4.2
+       Fresh ark-ff-asm v0.5.0
+       Fresh rand v0.8.5
+       Fresh digest v0.10.7
+       Fresh num-bigint v0.4.6
+       Fresh enum-ordinalize v4.3.0
+       Fresh zeroize v1.8.1
+       Fresh ark-std v0.5.0
+       Fresh educe v0.6.0
+       Fresh ark-ff-macros v0.5.0
+       Fresh ark-serialize v0.5.0
+       Fresh ark-ff v0.5.0
+       Fresh ark-poly v0.5.0
+       Fresh ark-ec v0.5.0
+       Fresh ark-bn254 v0.5.0
+       Fresh bn254_wrapper v0.1.0 (/Users/williamcory/guillotine-0/src/bn254_wrapper)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0  583k    0   833    0     0   2789      0  0:03:34 --:--:--  0:03:34  2789100  583k  100  583k    0     0  1291k      0 --:--:-- --:--:-- --:--:-- 3831k
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/williamcory/guillotine-0/src/compilers/Cargo.toml
+workspace: /Users/williamcory/guillotine-0/Cargo.toml
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/williamcory/guillotine-0/src/revm_wrapper/Cargo.toml
+workspace: /Users/williamcory/guillotine-0/Cargo.toml
+warning: /Users/williamcory/guillotine-0/src/revm_wrapper/Cargo.toml: `panic` setting is ignored for `bench` profile
+       Fresh unicode-ident v1.0.18
+       Fresh version_check v0.9.5
+       Fresh subtle v2.6.1
+       Fresh autocfg v1.5.0
+       Fresh const-oid v0.9.6
+       Fresh shlex v1.3.0
+       Fresh base16ct v0.2.0
+       Fresh unicode-xid v0.2.6
+       Fresh proc-macro2 v1.0.95
+       Fresh cc v1.2.29
+       Fresh bytes v1.10.1
+       Fresh foldhash v0.1.5
+       Fresh ruint-macro v1.2.1
+       Fresh const-hex v1.14.1
+       Fresh quote v1.0.40
+       Fresh typenum v1.18.0
+       Fresh crunchy v0.2.4
+       Fresh libc v0.2.174
+       Fresh hashbrown v0.15.4
+       Fresh paste v1.0.15
+       Fresh syn v2.0.104
+       Fresh getrandom v0.2.16
+       Fresh num-traits v0.2.19
+       Fresh cpufeatures v0.2.17
+       Fresh tiny-keccak v2.0.2
+       Fresh num_cpus v1.17.0
+       Fresh hex v0.4.3
+       Fresh tap v1.0.1
+       Fresh errno v0.3.13
+       Fresh radium v0.7.0
+       Fresh zeroize_derive v1.4.2
+       Fresh rand_core v0.6.4
+       Fresh alloy-rlp-derive v0.3.12
+       Fresh derive_more-impl v2.0.1
+       Fresh num-integer v0.1.46
+       Fresh threadpool v1.8.1
+       Fresh serde_derive v1.0.219
+       Fresh wyz v0.5.1
+       Fresh hashbrown v0.12.3
+       Fresh cfg-if v1.0.1
+       Fresh funty v2.0.0
+       Fresh os_str_bytes v6.6.1
+       Fresh zeroize v1.8.1
+       Fresh ff v0.13.1
+       Fresh alloy-rlp v0.3.12
+       Fresh derive_more v2.0.1
+       Fresh serde v1.0.219
+       Fresh num-bigint v0.4.6
+       Fresh num-iter v0.1.45
+       Fresh getrandom v0.3.3
+       Fresh rand v0.8.5
+       Fresh clap_lex v0.2.4
+       Fresh bitvec v1.0.1
+       Fresh indexmap v1.9.3
+       Fresh generic-array v0.14.7
+       Fresh der v0.7.10
+       Fresh group v0.13.0
+       Fresh ruint v1.15.0
+       Fresh blst v0.3.15
+       Fresh rustix v1.0.7
+       Fresh num-rational v0.4.2
+       Fresh auto_impl v1.3.0
+       Fresh enumn v0.1.14
+       Fresh num-complex v0.4.6
+       Fresh atty v0.2.14
+       Fresh fastrand v2.3.0
+       Fresh once_cell v1.21.3
+       Fresh itoa v1.0.15
+       Fresh memchr v2.7.5
+       Fresh crypto-common v0.1.6
+       Fresh block-buffer v0.10.4
+       Fresh crypto-bigint v0.5.5
+       Fresh sec1 v0.7.3
+       Fresh spki v0.7.3
+       Fresh c-kzg v1.0.3
+       Fresh ryu v1.0.20
+       Fresh bitflags v1.3.2
+       Fresh spin v0.9.8
+       Fresh termcolor v1.4.1
+       Fresh textwrap v0.16.2
+       Fresh dyn-clone v1.0.19
+       Fresh strsim v0.10.0
+       Fresh bitflags v2.9.1
+       Fresh num v0.4.3
+       Fresh digest v0.10.7
+       Fresh serde_json v1.0.140
+       Fresh clap v3.2.25
+       Fresh lazy_static v1.5.0
+       Fresh tempfile v3.20.0
+       Fresh syn v1.0.109
+       Fresh toml v0.5.11
+       Fresh secp256k1-sys v0.10.1
+       Fresh rustc-hex v2.1.0
+       Fresh byteorder v1.5.0
+       Fresh log v0.4.27
+       Fresh heck v0.4.1
+       Fresh aurora-engine-modexp v1.2.0
+       Fresh hmac v0.12.1
+       Fresh elliptic-curve v0.13.8
+       Fresh signature v2.2.0
+       Fresh sha2 v0.10.9
+       Fresh secp256k1 v0.29.1
+       Fresh substrate-bn v0.6.0
+       Fresh ripemd v0.1.3
+       Fresh cbindgen v0.24.5
+       Fresh rfc6979 v0.4.0
+       Fresh ecdsa v0.16.9
+       Fresh k256 v0.13.4
+       Fresh alloy-primitives v0.8.25
+       Fresh alloy-eip7702 v0.1.1
+       Fresh alloy-eip2930 v0.1.0
+       Fresh revm-primitives v10.0.0
+       Fresh revm-interpreter v10.0.3
+       Fresh revm-precompile v11.0.3
+       Fresh revm v14.0.3
+       Fresh revm_wrapper v0.1.0 (/Users/williamcory/guillotine-0/src/revm_wrapper)
+warning: unused imports: `B256`, `InMemoryDB`, and `address`
+ --> src/revm_wrapper/src/lib.rs:5:9
+  |
+5 |         address, Address, Bytecode, Bytes, ExecutionResult as RevmExecutionResult, B256, U256,
+  |         ^^^^^^^                                                                    ^^^^
+6 |     },
+7 |     Evm, InMemoryDB,
+  |          ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::collections::HashMap`
+ --> src/revm_wrapper/src/lib.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: variable does not need to be mutable
+   --> src/revm_wrapper/src/lib.rs:545:9
+    |
+545 |     let mut db = &mut vm.db;
+    |         ----^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> src/revm_wrapper/src/lib.rs:587:9
+    |
+587 |     let mut db = &mut vm.db;
+    |         ----^^
+    |         |
+    |         help: remove this `mut`
+
+warning: unused `std::result::Result` that must be used
+   --> src/revm_wrapper/src/lib.rs:296:5
+    |
+296 |     vm.db.insert_account_storage(addr, slot, value);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: this `Result` may be an `Err` variant, which should be handled
+    = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+    |
+296 |     let _ = vm.db.insert_account_storage(addr, slot, value);
+    |     +++++++
+
+warning: `revm_wrapper` (lib) generated 5 warnings (run `cargo fix --lib -p revm_wrapper` to apply 4 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.08s
+test
++- run return-opcode-bug-test stderr
+[default] (debug): Deployment bytecode: 6001600c60003960016000f300
+[default] (debug): [EVM] Evm.init: Initializing EVM with configuration
+[default] (debug): [EVM] EvmState.init: Initializing EVM state with database interface
+[default] (debug): [EVM] EvmState.init: EVM state initialization complete
+[default] (debug): [EVM] Evm.init: EVM initialization complete
+[default] (debug): [EVM] EvmState.get_nonce: addr=1000, nonce=0 (new account)
+[default] (debug): [EVM] EvmState.increment_nonce: addr=1000, old_nonce=0, new_nonce=1
+[default] (debug): [EVM] EvmState.set_nonce: addr=1000, nonce=1
+[default] (debug): [EVM] VM.create_contract_internal: Creating contract from { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0 } to { 148, 16, 201, 3, 27, 141, 22, 139, 34, 187, 134, 172, 189, 50, 176, 175, 44, 98, 164, 168 }, value=0, gas=1000000
+[default] (debug): [EVM] EvmState.get_code: addr=9410c9031b8d168b22bb86acbd32b0af2c62a4a8, code_len=0 (non-existent account)
+[default] (debug): [EVM] EvmState.get_balance: addr=1000, balance=0
+[default] (debug): [EVM] create_contract_internal: Executing init code, size: 13
+[default] (debug): [EVM] VM.interpret: Starting execution, depth=0, gas=1000000, static=false, code_size=13, input_size=0
+[default] (debug): [EVM] JumpTable.execute: Executing opcode 0x60 at pc=0, gas=1000000, stack_size=0
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validating stack, size=0, min_required=0, max_allowed=1023
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validation passed
+[default] (debug): [EVM] JumpTable.execute: Consuming 3 gas for opcode 0x60
+[default] (debug): [EVM] JumpTable.execute: Opcode 0x60 completed, gas_remaining=999997
+[default] (debug): [EVM] JumpTable.execute: Executing opcode 0x60 at pc=2, gas=999997, stack_size=1
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validating stack, size=1, min_required=0, max_allowed=1023
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validation passed
+[default] (debug): [EVM] JumpTable.execute: Consuming 3 gas for opcode 0x60
+[default] (debug): [EVM] JumpTable.execute: Opcode 0x60 completed, gas_remaining=999994
+[default] (debug): [EVM] JumpTable.execute: Executing opcode 0x60 at pc=4, gas=999994, stack_size=2
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validating stack, size=2, min_required=0, max_allowed=1023
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validation passed
+[default] (debug): [EVM] JumpTable.execute: Consuming 3 gas for opcode 0x60
+[default] (debug): [EVM] JumpTable.execute: Opcode 0x60 completed, gas_remaining=999991
+[default] (debug): [EVM] JumpTable.execute: Executing opcode 0x39 at pc=6, gas=999991, stack_size=3
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validating stack, size=3, min_required=3, max_allowed=1024
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validation passed
+[default] (debug): [EVM] JumpTable.execute: Consuming 3 gas for opcode 0x39
+[default] (debug): [EVM] Memory.ensure_context_capacity: Ensuring capacity, min_context_size=1, required_total_len=1, memory_limit=33554432
+[default] (debug): [EVM] Memory.ensure_context_capacity: Expanding buffer from 0 to 1 bytes
+[default] (debug): [EVM] Memory.ensure_context_capacity: Expansion complete, old_words=0, new_words=1, words_added=1
+[default] (debug): [EVM] JumpTable.execute: Opcode 0x39 completed, gas_remaining=999982
+[default] (debug): [EVM] JumpTable.execute: Executing opcode 0x60 at pc=7, gas=999982, stack_size=0
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validating stack, size=0, min_required=0, max_allowed=1023
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validation passed
+[default] (debug): [EVM] JumpTable.execute: Consuming 3 gas for opcode 0x60
+[default] (debug): [EVM] JumpTable.execute: Opcode 0x60 completed, gas_remaining=999979
+[default] (debug): [EVM] JumpTable.execute: Executing opcode 0x60 at pc=9, gas=999979, stack_size=1
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validating stack, size=1, min_required=0, max_allowed=1023
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validation passed
+[default] (debug): [EVM] JumpTable.execute: Consuming 3 gas for opcode 0x60
+[default] (debug): [EVM] JumpTable.execute: Opcode 0x60 completed, gas_remaining=999976
+[default] (debug): [EVM] JumpTable.execute: Executing opcode 0xf3 at pc=11, gas=999976, stack_size=2
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validating stack, size=2, min_required=2, max_allowed=1024
+[default] (debug): [EVM] StackValidation.validate_stack_requirements: Validation passed
+[default] (debug): [EVM] RETURN opcode: offset=0, size=1
+[default] (debug): [EVM] Memory.ensure_context_capacity: Ensuring capacity, min_context_size=1, required_total_len=1, memory_limit=33554432
+[default] (debug): [EVM] Memory.ensure_context_capacity: Buffer already large enough, no expansion needed
+[default] (debug): [EVM] RETURN reading 1 bytes from memory[0..1]
+[default] (debug): [EVM] RETURN data: 00
+[default] (debug): [EVM] RETURN data set to frame.output, size: 1
+[default] (debug): [EVM] RETURN opcode complete, about to return STOP error
+[default] (debug): [EVM] VM.interpret_with_context: Error occurred: error.STOP, output_size=1
+[default] (debug): [EVM] VM.interpret_with_context: Duplicated output, size=1
+[default] (debug): [EVM] VM.interpret_with_context: STOP opcode, output_size=1, creating RunResult
+[default] (debug): [EVM] VM.interpret_with_context: RunResult created, output={ 0 }
+[default] (debug): [EVM] create_contract_internal: Init code execution completed: status=evm.run_result.Status.Success, gas_used=24, output_size=1, output_ptr={ 0 }
+[default] (debug): [EVM] create_contract_internal: Got deployment code, size=1
+[default] (debug): [EVM] EvmState.set_code: addr=9410c9031b8d168b22bb86acbd32b0af2c62a4a8, code_len=1
+[default] (debug): [EVM] Contract code deployed at { 148, 16, 201, 3, 27, 141, 22, 139, 34, 187, 134, 172, 189, 50, 176, 175, 44, 98, 164, 168 }, size: 1
+[default] (debug): [EVM] Contract creation successful! Address: { 148, 16, 201, 3, 27, 141, 22, 139, 34, 187, 134, 172, 189, 50, 176, 175, 44, 98, 164, 168 }, gas_left: 999776
+[default] (debug): Deploy result: success=true, gas_left=999776, address={ 148, 16, 201, 3, 27, 141, 22, 139, 34, 187, 134, 172, 189, 50, 176, 175, 44, 98, 164, 168 }
+[default] (debug): [EVM] EvmState.get_code: addr=9410c9031b8d168b22bb86acbd32b0af2c62a4a8, code_len=1
+[default] (debug): Deployed code length: 1
+[default] (debug): [EVM] EvmState.deinit: Cleaning up EVM state, logs_count=0
+[default] (debug): [EVM] EvmState.deinit: EVM state cleanup complete
+test
++- run jump-table-test stderr
+[default] (debug): === Manual VM.init reproduction ===
+[default] (debug): Step 1: Setting up database
+[default] (debug): Step 1: Database setup complete
+[default] (debug): Step 2: Setting up EvmMemoryAllocator
+[default] (debug): Step 2: EvmMemoryAllocator setup complete
+[default] (debug): Step 3: Setting up EvmState
+[default] (debug): [EVM] EvmState.init: Initializing EVM state with database interface
+[default] (debug): [EVM] EvmState.init: EVM state initialization complete
+[default] (debug): Step 3: EvmState setup complete
+[default] (debug): Step 4: Setting up Context
+[default] (debug): Step 4: Context setup complete
+[default] (debug): Step 5: Setting up AccessList
+[default] (debug): Step 6: Testing static defaults
+[default] (debug): Step 6: Static defaults work
+[default] (debug): Manual VM.init reproduction completed successfully!
+[default] (debug): [EVM] EvmState.deinit: Cleaning up EVM state, logs_count=0
+[default] (debug): [EVM] EvmState.deinit: EVM state cleanup complete
+test
++- run sha256-test
+   +- zig test sha256-test Debug native 1 errors
+test/evm/precompiles/sha256_test.zig:6:36: error: no module named 'test_build_options' available within module root
+const test_build_options = @import("test_build_options");
+                                   ^~~~~~~~~~~~~~~~~~~~
+referenced by:
+    no_precompiles: test/evm/precompiles/sha256_test.zig:9:37
+    test.precompile dispatcher validate call: test/evm/precompiles/sha256_test.zig:192:18
+error: the following command failed with 1 compilation errors:
+/opt/homebrew/Cellar/zig/0.14.1/bin/zig test -fno-stack-check -ODebug --dep primitives --dep evm -Mroot=/Users/williamcory/guillotine-0/test/evm/precompiles/sha256_test.zig /Users/williamcory/guillotine-0/.zig-cache/o/0eba1ebe1c29ae3155defb324dc52805/libc_kzg_4844.a -ODebug -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb -Mprimitives=/Users/williamcory/guillotine-0/src/primitives/root.zig /Users/williamcory/guillotine-0/.zig-cache/o/745003cd7e26c66c3b64f2e464dccbeb/libbn254_wrapper.a /Users/williamcory/guillotine-0/.zig-cache/o/0eba1ebe1c29ae3155defb324dc52805/libc_kzg_4844.a -ODebug -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb -I /Users/williamcory/guillotine-0/src/bn254_wrapper -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb --dep primitives --dep crypto --dep build_options -Mevm=/Users/williamcory/guillotine-0/src/evm/root.zig -ODebug --dep primitives -Mcrypto=/Users/williamcory/guillotine-0/src/crypto/root.zig -Mbuild_options=/Users/williamcory/guillotine-0/.zig-cache/c/51dd772c2c10a848db74cbe63611df28/options.zig /Users/williamcory/guillotine-0/.zig-cache/o/ba00a8d65708ffe3b9043139228dc76f/libblst.a -framework Security -framework CoreFoundation -lc --cache-dir /Users/williamcory/guillotine-0/.zig-cache --global-cache-dir /Users/williamcory/.cache/zig --name sha256-test --zig-lib-dir /opt/homebrew/Cellar/zig/0.14.1/lib/zig/ --listen=- 
+test
++- run ripemd160-test
+   +- zig test ripemd160-test Debug native 1 errors
+test/evm/precompiles/ripemd160_test.zig:6:36: error: no module named 'test_build_options' available within module root
+const test_build_options = @import("test_build_options");
+                                   ^~~~~~~~~~~~~~~~~~~~
+referenced by:
+    no_precompiles: test/evm/precompiles/ripemd160_test.zig:9:37
+    test.precompile dispatcher execute ripemd160: test/evm/precompiles/ripemd160_test.zig:218:18
+error: the following command failed with 1 compilation errors:
+/opt/homebrew/Cellar/zig/0.14.1/bin/zig test -fno-stack-check -ODebug --dep primitives --dep evm -Mroot=/Users/williamcory/guillotine-0/test/evm/precompiles/ripemd160_test.zig /Users/williamcory/guillotine-0/.zig-cache/o/0eba1ebe1c29ae3155defb324dc52805/libc_kzg_4844.a -ODebug -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb -Mprimitives=/Users/williamcory/guillotine-0/src/primitives/root.zig /Users/williamcory/guillotine-0/.zig-cache/o/745003cd7e26c66c3b64f2e464dccbeb/libbn254_wrapper.a /Users/williamcory/guillotine-0/.zig-cache/o/0eba1ebe1c29ae3155defb324dc52805/libc_kzg_4844.a -ODebug -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb -I /Users/williamcory/guillotine-0/src/bn254_wrapper -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb --dep primitives --dep crypto --dep build_options -Mevm=/Users/williamcory/guillotine-0/src/evm/root.zig -ODebug --dep primitives -Mcrypto=/Users/williamcory/guillotine-0/src/crypto/root.zig -Mbuild_options=/Users/williamcory/guillotine-0/.zig-cache/c/51dd772c2c10a848db74cbe63611df28/options.zig /Users/williamcory/guillotine-0/.zig-cache/o/ba00a8d65708ffe3b9043139228dc76f/libblst.a -framework Security -framework CoreFoundation -lc --cache-dir /Users/williamcory/guillotine-0/.zig-cache --global-cache-dir /Users/williamcory/.cache/zig --name ripemd160-test --zig-lib-dir /opt/homebrew/Cellar/zig/0.14.1/lib/zig/ --listen=- 
+test
++- run test
+   +- zig test Debug native 2 errors
+src/root.zig:315:17: error: member function expected 1 argument(s), found 0
+        state.vm.deinit();
+        ~~~~~~~~^~~~~~~
+src/evm/evm.zig:130:5: note: function declared here
+pub fn deinit(self: *Evm, allocator: std.mem.Allocator) void {
+~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+referenced by:
+    guillotine_vm_destroy: src/root.zig:312:1
+src/root.zig:379:16: error: member function expected 1 argument(s), found 0
+    defer frame.deinit();
+          ~~~~~^~~~~~~
+src/evm/frame/frame.zig:270:5: note: function declared here
+pub fn deinit(self: *Frame, allocator: std.mem.Allocator) void {
+~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+error: the following command failed with 2 compilation errors:
+/opt/homebrew/Cellar/zig/0.14.1/bin/zig test /Users/williamcory/guillotine-0/.zig-cache/o/745003cd7e26c66c3b64f2e464dccbeb/libbn254_wrapper.a /Users/williamcory/guillotine-0/.zig-cache/o/745003cd7e26c66c3b64f2e464dccbeb/libbn254_wrapper.a -ODebug -I /Users/williamcory/guillotine-0/src/bn254_wrapper -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb -I /Users/williamcory/guillotine-0/src/bn254_wrapper -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb -I /Users/williamcory/guillotine-0/src/bn254_wrapper --dep primitives --dep crypto --dep evm --dep provider --dep compilers --dep trie --dep bench --dep revm -Mroot=/Users/williamcory/guillotine-0/src/root.zig /Users/williamcory/guillotine-0/.zig-cache/o/0eba1ebe1c29ae3155defb324dc52805/libc_kzg_4844.a -ODebug -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb -Mprimitives=/Users/williamcory/guillotine-0/src/primitives/root.zig -ODebug --dep primitives -Mcrypto=/Users/williamcory/guillotine-0/src/crypto/root.zig /Users/williamcory/guillotine-0/.zig-cache/o/745003cd7e26c66c3b64f2e464dccbeb/libbn254_wrapper.a /Users/williamcory/guillotine-0/.zig-cache/o/0eba1ebe1c29ae3155defb324dc52805/libc_kzg_4844.a -ODebug -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb -I /Users/williamcory/guillotine-0/src/bn254_wrapper -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb --dep primitives --dep crypto --dep build_options -Mevm=/Users/williamcory/guillotine-0/src/evm/root.zig -ODebug --dep primitives -Mprovider=/Users/williamcory/guillotine-0/src/provider/root.zig -ODebug --dep primitives --dep evm -Mcompilers=/Users/williamcory/guillotine-0/src/compilers/package.zig -ODebug --dep primitives --dep utils -Mtrie=/Users/williamcory/guillotine-0/src/trie/root.zig -OReleaseFast --dep primitives --dep evm=evm0 --dep zbench --dep revm -Mbench=/Users/williamcory/guillotine-0/bench/root.zig /Users/williamcory/guillotine-0/.zig-cache/o/a21d05e567643f6d33f7e203f1988e51/librevm_wrapper.a -ODebug -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb -I /Users/williamcory/guillotine-0/src/revm_wrapper --dep primitives -Mrevm=/Users/williamcory/guillotine-0/src/revm_wrapper/revm.zig -Mbuild_options=/Users/williamcory/guillotine-0/.zig-cache/c/51dd772c2c10a848db74cbe63611df28/options.zig -ODebug -Mutils=/Users/williamcory/guillotine-0/src/utils.zig /Users/williamcory/guillotine-0/.zig-cache/o/3e2eaa1123c3625baeb5a0f7fa328d87/libbn254_wrapper_bench.a /Users/williamcory/guillotine-0/.zig-cache/o/0eba1ebe1c29ae3155defb324dc52805/libc_kzg_4844.a -OReleaseFast -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb -I /Users/williamcory/guillotine-0/src/bn254_wrapper -I /Users/williamcory/guillotine-0/.zig-cache/o/efaed383166e26499e4003483132aafb --dep primitives --dep crypto --dep build_options=build_options0 -Mevm0=/Users/williamcory/guillotine-0/src/evm/root.zig -Mzbench=/Users/williamcory/.cache/zig/p/zbench-0.11.0-YTdc75klAQDX2m3fa_EHmQA_wJDgBIGiWXXX091e3qUQ/zbench.zig -Mbuild_options0=/Users/williamcory/guillotine-0/.zig-cache/c/51dd772c2c10a848db74cbe63611df28/options.zig /Users/williamcory/guillotine-0/.zig-cache/o/ba00a8d65708ffe3b9043139228dc76f/libblst.a -framework Security -framework CoreFoundation -framework SystemConfiguration -lc++ -lc --cache-dir /Users/williamcory/guillotine-0/.zig-cache --global-cache-dir /Users/williamcory/.cache/zig --name test --zig-lib-dir /opt/homebrew/Cellar/zig/0.14.1/lib/zig/ --listen=- 
+Build Summary: 64/71 steps succeeded; 3 failed; 705/705 tests passed
+test transitive failure
++- run test transitive failure
+|  +- zig test Debug native 2 errors
++- run sha256-test transitive failure
+|  +- zig test sha256-test Debug native 1 errors
++- run ripemd160-test transitive failure
+   +- zig test ripemd160-test Debug native 1 errors
+error: the following build command failed with exit code 1:
+/Users/williamcory/guillotine-0/.zig-cache/o/58e92d1bebedffd83af6ed80453b5a39/build /opt/homebrew/Cellar/zig/0.14.1/bin/zig /opt/homebrew/Cellar/zig/0.14.1/lib/zig /Users/williamcory/guillotine-0 /Users/williamcory/guillotine-0/.zig-cache /Users/williamcory/.cache/zig --seed 0xc32e73bc -Z2299a7e536529761 test

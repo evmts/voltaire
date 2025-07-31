@@ -9,6 +9,7 @@ use revm::{
 use std::collections::HashMap;
 use std::ffi::{c_char, CStr, CString};
 use std::ptr;
+use std::time::Instant;
 
 /// Error codes for C interop
 #[repr(C)]
@@ -603,6 +604,173 @@ pub unsafe extern "C" fn revm_get_balance(
     1
 }
 
+/// Benchmark result containing execution time and success status
+pub struct BenchmarkResult {
+    pub success: bool,
+    pub execution_time_micros: f64,
+    pub gas_used: u64,
+    pub output: Bytes,
+    pub error_message: Option<String>,
+}
+
+/// Run a benchmark on contract bytecode with calldata
+/// 
+/// This function creates a contract, deploys it, and then calls it with the provided calldata.
+/// It returns timing information and execution results.
+pub fn benchmark_contract_execution(
+    contract_code: &[u8],
+    calldata: &[u8],
+    num_runs: u8,
+) -> Vec<BenchmarkResult> {
+    let mut results = Vec::with_capacity(num_runs as usize);
+    
+    let caller_address = Address::from_slice(&[0x10; 20]); // Fixed caller address
+    let mut db = CacheDB::new(EmptyDB::default());
+    
+    // Set up caller with balance
+    let caller_info = revm::primitives::AccountInfo {
+        balance: U256::from(1_000_000_000_000_000_000u64), // 1 ETH
+        nonce: 0,
+        code_hash: revm::primitives::KECCAK_EMPTY,
+        code: None,
+    };
+    db.insert_account_info(caller_address, caller_info);
+    
+    // Deploy the contract first
+    let contract_address = match deploy_contract(&mut db, caller_address, contract_code) {
+        Ok(addr) => addr,
+        Err(e) => {
+            // Return error results for all runs
+            for _ in 0..num_runs {
+                results.push(BenchmarkResult {
+                    success: false,
+                    execution_time_micros: 0.0,
+                    gas_used: 0,
+                    output: Bytes::new(),
+                    error_message: Some(e.clone()),
+                });
+            }
+            return results;
+        }
+    };
+    
+    // Run the benchmark num_runs times
+    for _ in 0..num_runs {
+        let timer = Instant::now();
+        
+        let mut evm = Evm::builder()
+            .with_db(&mut db)
+            .modify_tx_env(|tx| {
+                tx.caller = caller_address;
+                tx.transact_to = revm::primitives::TxKind::Call(contract_address);
+                tx.value = U256::ZERO;
+                tx.data = Bytes::from(calldata.to_vec());
+                tx.gas_limit = 1_000_000;
+                tx.gas_price = U256::from(0u64);
+            })
+            .build();
+            
+        let exec_result = evm.transact_commit();
+        let execution_time = timer.elapsed().as_micros() as f64 / 1e3; // Convert to milliseconds
+        
+        match exec_result {
+            Ok(RevmExecutionResult::Success {
+                gas_used,
+                output,
+                ..
+            }) => {
+                let output_bytes = match output {
+                    revm::primitives::Output::Call(bytes) => bytes,
+                    revm::primitives::Output::Create(bytes, _) => bytes,
+                };
+                
+                results.push(BenchmarkResult {
+                    success: true,
+                    execution_time_micros: execution_time,
+                    gas_used,
+                    output: output_bytes,
+                    error_message: None,
+                });
+            }
+            Ok(RevmExecutionResult::Revert { gas_used, output }) => {
+                let reason = if output.len() > 4 {
+                    String::from_utf8_lossy(&output[4..]).to_string()
+                } else {
+                    "Execution reverted".to_string()
+                };
+                
+                results.push(BenchmarkResult {
+                    success: false,
+                    execution_time_micros: execution_time,
+                    gas_used,
+                    output,
+                    error_message: Some(reason),
+                });
+            }
+            Ok(RevmExecutionResult::Halt { reason, gas_used }) => {
+                results.push(BenchmarkResult {
+                    success: false,
+                    execution_time_micros: execution_time,
+                    gas_used,
+                    output: Bytes::new(),
+                    error_message: Some(format!("Execution halted: {:?}", reason)),
+                });
+            }
+            Err(e) => {
+                results.push(BenchmarkResult {
+                    success: false,
+                    execution_time_micros: execution_time,
+                    gas_used: 0,
+                    output: Bytes::new(),
+                    error_message: Some(format!("Execution failed: {:?}", e)),
+                });
+            }
+        }
+    }
+    
+    results
+}
+
+/// Deploy a contract and return its address
+fn deploy_contract(
+    db: &mut CacheDB<EmptyDB>,
+    caller: Address,
+    bytecode: &[u8],
+) -> Result<Address, String> {
+    let mut evm = Evm::builder()
+        .with_db(db)
+        .modify_tx_env(|tx| {
+            tx.caller = caller;
+            tx.transact_to = revm::primitives::TxKind::Create;
+            tx.value = U256::ZERO;
+            tx.data = Bytes::from(bytecode.to_vec());
+            tx.gas_limit = u64::MAX;
+            tx.gas_price = U256::from(1u64);
+        })
+        .build();
+        
+    match evm.transact_commit() {
+        Ok(RevmExecutionResult::Success { output, .. }) => {
+            match output {
+                revm::primitives::Output::Create(_, Some(address)) => Ok(address),
+                _ => Err("Contract creation failed - no address returned".to_string()),
+            }
+        }
+        Ok(RevmExecutionResult::Revert { output, .. }) => {
+            let reason = if output.len() > 4 {
+                String::from_utf8_lossy(&output[4..]).to_string()
+            } else {
+                "Contract creation reverted".to_string()
+            };
+            Err(reason)
+        }
+        Ok(RevmExecutionResult::Halt { reason, .. }) => {
+            Err(format!("Contract creation halted: {:?}", reason))
+        }
+        Err(e) => Err(format!("Contract creation failed: {:?}", e)),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -657,6 +825,23 @@ mod tests {
             );
 
             revm_free(vm);
+        }
+    }
+
+    #[test]
+    fn test_benchmark_contract_execution() {
+        // Simple contract that just returns 0x42
+        // PUSH1 0x42, PUSH1 0x00, MSTORE, PUSH1 0x20, PUSH1 0x00, RETURN
+        let contract_code = hex::decode("604260005260206000f3").unwrap();
+        let calldata = hex::decode("").unwrap(); // Empty calldata
+        
+        let results = benchmark_contract_execution(&contract_code, &calldata, 3);
+        
+        assert_eq!(results.len(), 3);
+        for result in results {
+            assert!(result.success, "Benchmark should succeed: {:?}", result.error_message);
+            assert!(result.execution_time_micros >= 0.0, "Execution time should be non-negative");
+            assert!(result.gas_used > 0, "Gas should be consumed");
         }
     }
 }
