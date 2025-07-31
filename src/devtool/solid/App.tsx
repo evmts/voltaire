@@ -2,7 +2,7 @@ import { createEffect, createSignal, onCleanup, onMount } from "solid-js";
 import { createStore } from "solid-js/store";
 import EvmDebugger from "~/components/evm-debugger/EvmDebugger";
 import { Toaster } from "~/components/ui/sonner";
-import { resetEvm, stepEvm } from "~/lib/actions";
+import { loadBytecode, resetEvm, stepEvm } from "~/lib/actions";
 import type { EvmState } from "./components/evm-debugger/types";
 import { sampleContracts } from "./components/evm-debugger/types";
 
@@ -61,10 +61,33 @@ function App() {
 		}
 	};
 
-	onMount(() => {
+	onMount(async () => {
 		window.handleRunPause = handleRunPause;
 		window.handleStep = handleStep;
 		window.handleReset = handleReset;
+
+		// Wait for WebUI bindings to be ready, then load initial bytecode
+		const loadInitialBytecode = async () => {
+			// Check if WebUI functions are available
+			if (
+				typeof window.load_bytecode === "function" &&
+				typeof window.reset_evm === "function"
+			) {
+				try {
+					await loadBytecode(bytecode());
+					const initialState = await resetEvm();
+					setState(initialState);
+				} catch (err) {
+					setError(`Failed to load initial bytecode: ${err}`);
+				}
+			} else {
+				// Retry after a short delay
+				setTimeout(loadInitialBytecode, 100);
+			}
+		};
+
+		// Start the initial loading process
+		setTimeout(loadInitialBytecode, 100);
 
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.code === "Space") {
