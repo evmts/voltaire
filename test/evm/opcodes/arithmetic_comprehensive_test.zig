@@ -394,9 +394,9 @@ test "SUB (0x03): Basic subtraction" {
     defer frame.deinit();
 
     // Test basic subtraction: 10 - 5 = 5
-    // SUB calculates second - top, so we need [10, 5] with 5 on top
-    try frame.stack.append(10);
+    // SUB calculates top - second, so we need [5, 10] with 10 on top
     try frame.stack.append(5);
+    try frame.stack.append(10);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -441,9 +441,9 @@ test "SUB: Underflow wraps to max" {
         .build();
     defer frame.deinit();
 
-    // Test underflow: 0 - 1 = MAX
-    // SUB calculates second - top, so we need [0, 1] with 1 on top
-    try frame.stack.append(0);
+    // Test underflow: 1 - 2 = MAX (wraps around)
+    // SUB calculates top - second, so we need [2, 1] with 1 on top
+    try frame.stack.append(2);
     try frame.stack.append(1);
 
     const interpreter: Evm.Operation.Interpreter = &evm;

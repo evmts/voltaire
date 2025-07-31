@@ -149,8 +149,8 @@ pub fn op_sub(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
 
-    // EVM SUB calculates: second - top (a - b)
-    const result = a -% b;
+    // EVM SUB calculates: top - second (b - a)
+    const result = b -% a;
 
     frame.stack.set_top_unsafe(result);
 
@@ -682,8 +682,8 @@ pub fn op_signextend(pc: usize, interpreter: Operation.Interpreter, state: Opera
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const byte_num = frame.stack.pop_unsafe();
-    const x = frame.stack.peek_unsafe().*;
+    const x = frame.stack.pop_unsafe();
+    const byte_num = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
 

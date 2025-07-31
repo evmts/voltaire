@@ -71,8 +71,11 @@ test "Integration: Complex arithmetic calculation" {
     try frame_ptr.stack.append(3);
     _ = try evm.table.execute(0, interpreter, state, 0x02); // MUL = 90
 
+    // After MUL, stack has [90]
+    // For 90 - 15, we need [15, 90] with 90 on top
     try frame_ptr.stack.append(15);
-    _ = try evm.table.execute(0, interpreter, state, 0x03); // SUB = 75
+    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [15, 90]
+    _ = try evm.table.execute(0, interpreter, state, 0x03); // SUB = 90 - 15 = 75
 
     const result = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 75), result);
@@ -288,10 +291,10 @@ test "Integration: Conditional arithmetic based on comparison" {
     // Now calculate a - b
     // We need to push values again since GT consumed them
     frame_ptr.stack.clear();
-    try frame_ptr.stack.append(a); // Stack: [30]
-    try frame_ptr.stack.append(b); // Stack: [30, 20]
+    try frame_ptr.stack.append(b); // Stack: [20]
+    try frame_ptr.stack.append(a); // Stack: [20, 30]
     
-    // SUB calculates second - top, so 30 - 20 = 10
+    // SUB calculates top - second, so 30 - 20 = 10
     _ = try evm.table.execute(0, interpreter, state, 0x03); // SUB: Stack: [10]
 
     const result1 = try frame_ptr.stack.peek_n(0);

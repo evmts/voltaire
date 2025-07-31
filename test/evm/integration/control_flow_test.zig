@@ -170,8 +170,10 @@ test "Integration: Loop implementation with JUMP" {
     var iterations: u32 = 0;
     while (iterations < 5) : (iterations += 1) {
         // Decrement counter
-        try frame_ptr.stack.append(1);
-        _ = try vm.table.execute(0, interpreter, state, 0x03); // SUB
+        // SUB now does top - second, so we need [1, counter] to get counter - 1
+        try frame_ptr.stack.append(1); // Stack: [counter, 1]
+        _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [1, counter]
+        _ = try vm.table.execute(0, interpreter, state, 0x03); // SUB = counter - 1
 
         // Duplicate for comparison
         _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1

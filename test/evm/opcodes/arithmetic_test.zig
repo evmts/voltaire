@@ -119,25 +119,25 @@ test "Arithmetic: SUB basic operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple subtraction
-    try frame.stack.append(100);
     try frame.stack.append(58);
+    try frame.stack.append(100);
     _ = try evm.table.execute(0, interpreter, state, 0x03);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), result); // 100 - 58 = 42
 
     // Test 2: Subtraction with underflow
     frame.stack.clear();
-    try frame.stack.append(5);
     try frame.stack.append(10);
+    try frame.stack.append(5);
     _ = try evm.table.execute(0, interpreter, state, 0x03);
     const underflow_result = try frame.stack.pop();
     const expected = std.math.maxInt(u256) - 4; // 5 - 10 wraps to max - 4
     try testing.expectEqual(expected, underflow_result);
 
-    // Test 3: Subtracting zero - SUB calculates second - top
+    // Test 3: Subtracting from zero - SUB calculates top - second
     frame.stack.clear();
-    try frame.stack.append(42);
     try frame.stack.append(0);
+    try frame.stack.append(42);
     _ = try evm.table.execute(0, interpreter, state, 0x03);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), zero_result); // 42 - 0 = 42
