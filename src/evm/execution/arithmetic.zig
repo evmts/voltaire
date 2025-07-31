@@ -193,16 +193,20 @@ pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     _ = pc;
     _ = interpreter;
     const frame = state;
+    
+    Log.debug("DIV opcode called", .{});
 
     std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
+    
+    Log.debug("DIV: a={}, b={}, expecting b/a", .{ a, b });
 
-    const result = if (b == 0) blk: {
+    const result = if (a == 0) blk: {
         @branchHint(.unlikely);
         break :blk 0;
-    } else a / b;
+    } else b / a;
 
     frame.stack.set_top_unsafe(result);
 
@@ -317,11 +321,13 @@ pub fn op_mod(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
+    
+    Log.debug("MOD: a={}, b={}, expecting b%a", .{ a, b });
 
-    const result = if (b == 0) blk: {
+    const result = if (a == 0) blk: {
         @branchHint(.unlikely);
         break :blk 0;
-    } else a % b;
+    } else b % a;
 
     frame.stack.set_top_unsafe(result);
 
@@ -429,9 +435,9 @@ pub fn op_addmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
     std.debug.assert(frame.stack.size >= 3);
 
-    const n = frame.stack.pop_unsafe();
     const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+    const a = frame.stack.pop_unsafe();
+    const n = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
     if (n == 0) {
@@ -493,9 +499,9 @@ pub fn op_mulmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
     std.debug.assert(frame.stack.size >= 3);
 
-    const n = frame.stack.pop_unsafe();
     const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+    const a = frame.stack.pop_unsafe();
+    const n = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
     if (n == 0) {
