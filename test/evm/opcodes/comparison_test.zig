@@ -45,20 +45,20 @@ test "Comparison: LT (less than) operations" {
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: a < b (true) - stack order: [b, a] so a gets popped first
+    // Test 1: 5 < 10 (true) - stack: [10, 5] with 5 on top
     try frame.stack.append(10);
     try frame.stack.append(5);
     _ = try evm.table.execute(0, interpreter, state, 0x10);
     const result1 = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 1), result1); // 5 < 10 = true
+    try testing.expectEqual(@as(u256, 1), result1);
 
-    // Test 2: a > b (false) - stack order: [b, a] so a gets popped first
+    // Test 2: 10 < 5 (false) - stack: [5, 10] with 10 on top
     frame.stack.clear();
     try frame.stack.append(5);
     try frame.stack.append(10);
     _ = try evm.table.execute(0, interpreter, state, 0x10);
     const result2 = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 0), result2); // 10 < 5 = false
+    try testing.expectEqual(@as(u256, 0), result2);
 
     // Test 3: a == b (false)
     frame.stack.clear();

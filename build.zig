@@ -250,12 +250,12 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         });
 
-        // Link the compiled Rust dynamic library
-        const dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/libbn254_wrapper.dylib", .{ target_triple, rust_target_dir })
+        // Link the compiled Rust static library
+        const static_lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, rust_target_dir })
         else
-            b.fmt("target/{s}/libbn254_wrapper.dylib", .{rust_target_dir});
-        lib.addObjectFile(b.path(dylib_path));
+            b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
+        lib.addObjectFile(b.path(static_lib_path));
         lib.linkLibC();
         
         // Make the rust build a dependency
@@ -305,14 +305,6 @@ pub fn build(b: *std.Build) void {
     if (bn254_lib) |lib| {
         evm_mod.linkLibrary(lib);
         evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
-        
-        // Also link the dynamic library directly to the module
-        const bn254_rust_target_dir = if (optimize == .Debug) "debug" else "release";
-        const bn254_dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/libbn254_wrapper.dylib", .{ target_triple, bn254_rust_target_dir })
-        else
-            b.fmt("target/{s}/libbn254_wrapper.dylib", .{ bn254_rust_target_dir });
-        evm_mod.addObjectFile(b.path(bn254_dylib_path));
     }
 
     // Link c-kzg library to EVM module
@@ -477,12 +469,12 @@ pub fn build(b: *std.Build) void {
             .optimize = bench_optimize,
         });
         
-        // Link the compiled Rust dynamic library
-        const dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/libbn254_wrapper.dylib", .{ target_triple, bench_rust_target_dir })
+        // Link the compiled Rust static library
+        const static_lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, bench_rust_target_dir })
         else
-            b.fmt("target/{s}/libbn254_wrapper.dylib", .{bench_rust_target_dir});
-        lib.addObjectFile(b.path(dylib_path));
+            b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
+        lib.addObjectFile(b.path(static_lib_path));
         lib.linkLibC();
         
         // Link additional system libraries that Rust might need
@@ -519,14 +511,6 @@ pub fn build(b: *std.Build) void {
     if (bench_bn254_lib) |lib| {
         bench_evm_mod.linkLibrary(lib);
         bench_evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
-        
-        // Also link the dynamic library directly to the bench module
-        const bench_bn254_rust_target_dir = "release"; // bench always uses release
-        const bench_bn254_dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/libbn254_wrapper.dylib", .{ target_triple, bench_bn254_rust_target_dir })
-        else
-            b.fmt("target/{s}/libbn254_wrapper.dylib", .{ bench_bn254_rust_target_dir });
-        bench_evm_mod.addObjectFile(b.path(bench_bn254_dylib_path));
     }
     
     // Link c-kzg library to bench EVM module
@@ -608,6 +592,17 @@ pub fn build(b: *std.Build) void {
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
     b.installArtifact(exe);
+    
+    // Add evm_test_runner executable
+    const evm_test_runner = b.addExecutable(.{
+        .name = "evm_test_runner",
+        .root_source_file = b.path("src/evm_test_runner.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    evm_test_runner.root_module.addImport("evm", evm_mod);
+    evm_test_runner.root_module.addImport("primitives", primitives_mod);
+    b.installArtifact(evm_test_runner);
 
     // WASM library build optimized for size
     const wasm_target = b.resolveTargetQuery(.{
@@ -1011,6 +1006,13 @@ pub fn build(b: *std.Build) void {
     opcode_test_lib.root_module.addImport("primitives", primitives_mod);
     opcode_test_lib.root_module.addImport("crypto", crypto_mod);
     opcode_test_lib.root_module.addImport("build_options", build_options.createModule());
+    
+    // Link BN254 library if available
+    if (bn254_lib) |bn254| {
+        opcode_test_lib.linkLibrary(bn254);
+        opcode_test_lib.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
     b.installArtifact(opcode_test_lib);
 
     // Creates a step for unit testing. This only builds the test executable
@@ -1505,7 +1507,7 @@ pub fn build(b: *std.Build) void {
     if (revm_lib != null) {
         const revm_test = b.addTest(.{
             .name = "revm-test",
-            .root_source_file = b.path("src/revm_wrapper/revm.zig"),
+            .root_source_file = b.path("src/revm_wrapper/test_revm_wrapper.zig"),
             .target = target,
             .optimize = optimize,
         });
@@ -1533,6 +1535,9 @@ pub fn build(b: *std.Build) void {
             revm_test.linkFramework("SystemConfiguration");
             revm_test.linkFramework("CoreFoundation");
         }
+        
+        // Make sure the test depends on the Rust library being built
+        revm_test.step.dependOn(&revm_lib.?.step);
         
         const run_revm_test = b.addRunArtifact(revm_test);
         test_step.dependOn(&run_revm_test.step);
@@ -1684,6 +1689,54 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_compare_test.step);
     const compare_test_step = b.step("test-compare", "Run execution comparison test");
     compare_test_step.dependOn(&run_compare_test.step);
+    
+    // Add comprehensive opcode comparison executable
+    const comprehensive_compare = b.addExecutable(.{
+        .name = "comprehensive-opcode-comparison",
+        .root_source_file = b.path("test/evm/comprehensive_opcode_comparison.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    comprehensive_compare.root_module.addImport("evm", evm_mod);
+    comprehensive_compare.root_module.addImport("primitives", primitives_mod);
+    comprehensive_compare.root_module.addImport("Address", primitives_mod);
+    comprehensive_compare.root_module.addImport("revm", revm_mod);
+    
+    // Link REVM wrapper library if available
+    if (revm_lib) |revm_library| {
+        comprehensive_compare.linkLibrary(revm_library);
+        comprehensive_compare.addIncludePath(b.path("src/revm_wrapper"));
+        comprehensive_compare.linkLibC();
+        
+        // Link the compiled Rust dynamic library
+        const revm_rust_target_dir = if (optimize == .Debug) "debug" else "release";
+        const revm_dylib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir })
+        else
+            b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir});
+        comprehensive_compare.addObjectFile(b.path(revm_dylib_path));
+        
+        // Link additional libraries needed by revm
+        if (target.result.os.tag == .linux) {
+            comprehensive_compare.linkSystemLibrary("m");
+            comprehensive_compare.linkSystemLibrary("pthread");
+            comprehensive_compare.linkSystemLibrary("dl");
+        } else if (target.result.os.tag == .macos) {
+            comprehensive_compare.linkSystemLibrary("c++");
+            comprehensive_compare.linkFramework("Security");
+            comprehensive_compare.linkFramework("CoreFoundation");
+        }
+    }
+    
+    // Link BN254 library if available (required by REVM)
+    if (bn254_lib) |bn254_library| {
+        comprehensive_compare.linkLibrary(bn254_library);
+        comprehensive_compare.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
+    const run_comprehensive_compare = b.addRunArtifact(comprehensive_compare);
+    const comprehensive_compare_step = b.step("run-comprehensive-compare", "Run comprehensive opcode comparison");
+    comprehensive_compare_step.dependOn(&run_comprehensive_compare.step);
     
     // Add ERC20 trace test
     const erc20_trace_test = b.addTest(.{

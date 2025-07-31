@@ -50,6 +50,9 @@ impl From<ZigU256> for U256 {
     }
 }
 
+#[link(name = "bn254_wrapper", kind = "static")]
+extern "C" {}
+
 #[link(name = "guillotine_opcode_test", kind = "static")]
 extern "C" {
     fn zigEvmCreate() -> *mut ZigEvm;

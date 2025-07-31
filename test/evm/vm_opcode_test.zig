@@ -1793,11 +1793,11 @@ test "VM: GT opcode" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test 10 > 5 (true)
-    // Stack after pushes: [10, 5] where 5 is top
-    // GT pops 5, then 10, computes 10 > 5 = true
+    // Stack after pushes: [5, 10] where 10 is top
+    // GT pops 10, then 5, computes 10 > 5 = true
     const bytecode = [_]u8{
-        0x60, 0x0A, // PUSH1 10
         0x60, 0x05, // PUSH1 5
+        0x60, 0x0A, // PUSH1 10
         0x11, // GT
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE

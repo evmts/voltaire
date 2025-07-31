@@ -436,6 +436,60 @@ test "REVM comparison: MOD 17 % 5 = 2" {
     try testing.expectEqual(@as(u64, 21026), gas_used);
 }
 
+test "REVM comparison: MOD by zero 10 % 0 = 0" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x0a, 0x60, 0x00, 0x06, 0x60, 0x00, 0x52, 
+        0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+    
+    // Check gas usage
+    const gas_used = 1_000_000 - result.gas_left;
+    try testing.expectEqual(@as(u64, 21026), gas_used);
+}
+
 test "REVM comparison: SDIV -10 / 3 = -3" {
     const allocator = testing.allocator;
     
@@ -457,6 +511,64 @@ test "REVM comparison: SDIV -10 / 3 = -3" {
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
         0xf6, 0x60, 0x03, 0x05, 0x60, 0x00, 0x52, 0x60, 
+        0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+    
+    // Check gas usage
+    const gas_used = 1_000_000 - result.gas_left;
+    try testing.expectEqual(@as(u64, 21026), gas_used);
+}
+
+test "REVM comparison: SDIV by zero -10 / 0 = 0" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xf6, 0x60, 0x00, 0x05, 0x60, 0x00, 0x52, 0x60, 
         0x20, 0x60, 0x00, 0xf3, 
     };
     
@@ -552,6 +664,126 @@ test "REVM comparison: SMOD -10 % 3 = -1" {
     try testing.expectEqual(@as(u64, 21026), gas_used);
 }
 
+test "REVM comparison: SMOD by zero -10 % 0 = 0" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xf6, 0x60, 0x00, 0x07, 0x60, 0x00, 0x52, 0x60, 
+        0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+    
+    // Check gas usage
+    const gas_used = 1_000_000 - result.gas_left;
+    try testing.expectEqual(@as(u64, 21026), gas_used);
+}
+
+test "REVM comparison: SDIV MIN_INT256 / -1 overflow" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x7f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0x05, 0x60, 0x00, 0x52, 0x60, 0x20, 
+        0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+    
+    // Check gas usage
+    const gas_used = 1_000_000 - result.gas_left;
+    try testing.expectEqual(@as(u64, 21026), gas_used);
+}
+
 test "REVM comparison: ADDMOD (10 + 10) % 8 = 4" {
     const allocator = testing.allocator;
     
@@ -600,6 +832,122 @@ test "REVM comparison: ADDMOD (10 + 10) % 8 = 4" {
     
     // REVM produced: 8
     try testing.expectEqual(@as(u256, 8), result_value);
+    
+    // Check gas usage
+    const gas_used = 1_000_000 - result.gas_left;
+    try testing.expectEqual(@as(u64, 21029), gas_used);
+}
+
+test "REVM comparison: ADDMOD (10 + 10) % 0 = 0" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x0a, 0x60, 0x0a, 0x60, 0x00, 0x08, 0x60, 
+        0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+    
+    // Check gas usage
+    const gas_used = 1_000_000 - result.gas_left;
+    try testing.expectEqual(@as(u64, 21029), gas_used);
+}
+
+test "REVM comparison: ADDMOD MAX + MAX % 10" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0x60, 0x0a, 0x08, 0x60, 0x00, 0x52, 
+        0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 10
+    try testing.expectEqual(@as(u256, 10), result_value);
     
     // Check gas usage
     const gas_used = 1_000_000 - result.gas_left;
@@ -8322,5 +8670,1531 @@ test "REVM comparison: Precompile blake2f" {
     
     // REVM produced: 0
     try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: MULMOD 10 * 10 % 0" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x0a, 0x60, 0x0a, 0x60, 0x00, 0x09, 0x60, 
+        0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+    
+    // Check gas usage
+    const gas_used = 1_000_000 - result.gas_left;
+    try testing.expectEqual(@as(u64, 21029), gas_used);
+}
+
+test "REVM comparison: MULMOD MAX * 2 % 3" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0x60, 0x02, 0x60, 0x03, 0x09, 0x60, 0x00, 
+        0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 6
+    try testing.expectEqual(@as(u256, 6), result_value);
+}
+
+test "REVM comparison: EXP 2 ** 256" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x02, 0x61, 0x01, 0x00, 0x0a, 0x60, 0x00, 
+        0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 65536
+    try testing.expectEqual(@as(u256, 65536), result_value);
+}
+
+test "REVM comparison: EXP 0 ** 0" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x00, 0x60, 0x00, 0x0a, 0x60, 0x00, 0x52, 
+        0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 1
+    try testing.expectEqual(@as(u256, 1), result_value);
+}
+
+test "REVM comparison: BYTE index 32" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x20, 0x60, 0xff, 0x1a, 0x60, 0x00, 0x52, 
+        0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: SIGNEXTEND byte 31" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x1f, 0x7f, 0x80, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+        0x00, 0x00, 0x00, 0x0b, 0x60, 0x00, 0x52, 0x60, 
+        0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 31
+    try testing.expectEqual(@as(u256, 31), result_value);
+}
+
+test "REVM comparison: MLOAD at large offset" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x61, 0xff, 0xff, 0x51, 0x60, 0x00, 0x52, 0x60, 
+        0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: ADD with empty stack" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x01, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    // REVM failed with error, we should fail too
+    // REVM error: Halted: StackUnderflow
+    try testing.expect(!result.success);
+    // Should halt execution
+}
+
+test "REVM comparison: Stack depth 1024" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 
+        0x60, 0x01, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    // REVM failed with error, we should fail too
+    // REVM error: Halted: StackOverflow
+    try testing.expect(!result.success);
+    // Should halt execution
+}
+
+test "REVM comparison: JUMP to non-JUMPDEST" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x04, 0x56, 0x60, 0x42, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    // REVM failed with error, we should fail too
+    // REVM error: Halted: InvalidJump
+    try testing.expect(!result.success);
+    // Should fail with invalid jump
+}
+
+test "REVM comparison: JUMPI with MAX condition" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x07, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0x57, 0x00, 0x5b, 0x60, 0x42, 
+        0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    // REVM failed with error, we should fail too
+    // REVM error: Halted: InvalidJump
+    try testing.expect(!result.success);
+    // Should fail with invalid jump
+}
+
+test "REVM comparison: CALLDATACOPY beyond data" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x20, 0x60, 0x10, 0x60, 0x00, 0x37, 0x60, 
+        0x00, 0x51, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 
+        0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: RETURNDATACOPY no data" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x01, 0x60, 0x00, 0x60, 0x00, 0x3e, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    // REVM failed with error, we should fail too
+    // REVM error: Halted: OutOfOffset
+    try testing.expect(!result.success);
+    // Should halt execution
+}
+
+test "REVM comparison: CREATE2 address calc" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 0x60, 0x42, 
+        0xf5, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 
+        0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: EXTCODEHASH empty" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x00, 0x3f, 0x60, 0x00, 0x52, 0x60, 0x20, 
+        0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: BLOCKHASH future block" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x61, 0xff, 0xff, 0x40, 0x60, 0x00, 0x52, 0x60, 
+        0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: SHL shift > 256" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x01, 0x61, 0x01, 0x00, 0x1b, 0x60, 0x00, 
+        0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: SHR shift > 256" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0x61, 0x01, 0x00, 0x1c, 0x60, 0x00, 0x52, 
+        0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: SAR shift > 256 negative" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0x61, 0x01, 0x00, 0x1d, 0x60, 0x00, 0x52, 
+        0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 115792089237316195423570985008687907853269984665640564039457584007913129639935
+    try testing.expectEqual(@as(u256, 115792089237316195423570985008687907853269984665640564039457584007913129639935), result_value);
+}
+
+test "REVM comparison: ECRECOVER invalid sig" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x00, 0x60, 0x00, 0x52, 0x60, 0x80, 0x60, 
+        0x00, 0x60, 0x20, 0x60, 0x80, 0x60, 0x00, 0x60, 
+        0x01, 0x5a, 0xf1, 0x60, 0x00, 0x52, 0x60, 0x20, 
+        0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 1
+    try testing.expectEqual(@as(u256, 1), result_value);
+}
+
+test "REVM comparison: MSTORE8 at odd offset" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0xff, 0x60, 0x13, 0x53, 0x60, 0x00, 0x51, 
+        0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 20203181441137406086353707335680
+    try testing.expectEqual(@as(u256, 20203181441137406086353707335680), result_value);
+}
+
+test "REVM comparison: ADDMOD MAX + MAX % MAX" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0x08, 0x60, 0x00, 0x52, 0x60, 
+        0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: CODECOPY beyond code" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x20, 0x61, 0xff, 0xff, 0x60, 0x00, 0x39, 
+        0x60, 0x00, 0x51, 0x60, 0x00, 0x52, 0x60, 0x20, 
+        0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: EXTCODECOPY non-existent" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x20, 0x60, 0x00, 0x60, 0x00, 0x60, 0x00, 
+        0x3c, 0x60, 0x00, 0x51, 0x60, 0x00, 0x52, 0x60, 
+        0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: RETURNDATALOAD no data" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x00, 0xf7, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    // REVM failed with error, we should fail too
+    // REVM error: Halted: OpcodeNotFound
+    try testing.expect(!result.success);
+    // Should halt execution
+}
+
+test "REVM comparison: Insufficient gas for MSTORE" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
+        0xff, 0x60, 0x42, 0x81, 0x52, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    // REVM failed with error, we should fail too
+    // REVM error: Halted: OutOfGas(InvalidOperand)
+    try testing.expect(!result.success);
+    // Should fail with invalid opcode
 }
 

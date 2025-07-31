@@ -2,11 +2,10 @@ use revm::{
     Database,
     db::{CacheDB, EmptyDB},
     primitives::{
-        address, Address, Bytecode, Bytes, ExecutionResult as RevmExecutionResult, B256, U256,
+        Address, Bytecode, Bytes, ExecutionResult as RevmExecutionResult, U256,
     },
-    Evm, InMemoryDB,
+    Evm,
 };
-use std::collections::HashMap;
 use std::ffi::{c_char, CStr, CString};
 use std::ptr;
 use std::time::Instant;
@@ -210,22 +209,43 @@ pub unsafe extern "C" fn revm_set_code(
         }
     };
 
+    eprintln!("REVM FFI: revm_set_code called with code_str: {}", code_str);
+    
     let code_str = code_str.trim_start_matches("0x");
     let code_bytes = match hex::decode(code_str) {
         Ok(bytes) => bytes,
-        Err(_) => {
+        Err(e) => {
+            eprintln!("REVM FFI: Failed to decode hex: {:?}", e);
             *out_error = RevmError::new(
                 RevmErrorCode::InvalidInput,
-                "Invalid hex code".to_string(),
+                format!("Invalid hex code: {:?}", e),
             );
             return 0;
         }
     };
 
-    let bytecode = Bytecode::new_raw(Bytes::from(code_bytes));
-    let mut account_info = vm.db.basic(addr).unwrap_or_default().unwrap_or_default();
-    account_info.code = Some(bytecode);
+    let bytecode = Bytecode::new_raw(Bytes::from(code_bytes.clone()));
+    let code_hash = revm::primitives::keccak256(&code_bytes);
+    
+    // Create account info with code
+    let account_info = revm::primitives::AccountInfo {
+        balance: U256::ZERO,
+        nonce: 0,
+        code_hash,
+        code: Some(bytecode),
+    };
+    
+    // Insert the account with code
     vm.db.insert_account_info(addr, account_info);
+    
+    eprintln!("REVM FFI: Set code for {:?}, code_len: {}, code_hash: {:?}", addr, code_bytes.len(), code_hash);
+    
+    // Verify the code was set by checking the contracts map
+    if let Some(contract_code) = vm.db.contracts.get(&code_hash) {
+        eprintln!("REVM FFI: Code successfully stored in contracts map, bytecode len: {}", contract_code.len());
+    } else {
+        panic!("REVM FFI: PANIC - Code not found in contracts map after setCode!");
+    }
 
     1
 }
@@ -297,7 +317,7 @@ pub unsafe extern "C" fn revm_set_storage(
         }
     };
 
-    vm.db.insert_account_storage(addr, slot, value);
+    let _ = vm.db.insert_account_storage(addr, slot, value);
 
     1
 }
@@ -370,6 +390,23 @@ pub unsafe extern "C" fn revm_execute(
         Bytes::from(data.to_vec())
     };
 
+    // Check if 'to' address has code
+    if let Some(to) = to_addr {
+        let account = vm.db.basic(to).unwrap_or_default();
+        eprintln!("REVM FFI: Account at {:?} has code: {}, code_hash: {:?}", 
+            to, 
+            account.as_ref().map(|a| a.code.is_some()).unwrap_or(false),
+            account.as_ref().map(|a| a.code_hash).unwrap_or_default()
+        );
+        
+        // Also check if we can get the account info directly
+        if let Some(acc_info) = account {
+            if let Some(code) = &acc_info.code {
+                eprintln!("REVM FFI: Code bytes len: {}", code.original_bytes().len());
+            }
+        }
+    }
+    
     // Build and execute EVM
     let mut evm = Evm::builder()
         .with_db(&mut vm.db)
@@ -392,15 +429,20 @@ pub unsafe extern "C" fn revm_execute(
                 revm::primitives::TxKind::Create
             };
             tx.value = value;
-            tx.data = input;
+            tx.data = input.clone();
             tx.gas_limit = gas_limit;
             tx.gas_price = U256::from(1u64); // 1 wei to make tests work with small balances
         })
         .build();
 
+    let input_len_debug = input.len();
+    eprintln!("REVM FFI: About to execute transaction - from: {:?}, to: {:?}, value: {:?}, input_len: {}, gas_limit: {}", 
+        from_addr, to_addr, value, input_len_debug, gas_limit);
+    
     let result = match evm.transact_commit() {
         Ok(res) => res,
         Err(e) => {
+            eprintln!("REVM FFI: Transaction failed: {:?}", e);
             *out_error = RevmError::new(
                 RevmErrorCode::ExecutionError,
                 format!("Execution failed: {:?}", e),
@@ -408,6 +450,9 @@ pub unsafe extern "C" fn revm_execute(
             return 0;
         }
     };
+    
+    eprintln!("REVM FFI: Transaction succeeded");
+    eprintln!("REVM FFI: Result type: {:?}", result);
 
     // Convert result
     let (success, gas_used, gas_refunded, output, revert_reason) = match result {
@@ -418,7 +463,10 @@ pub unsafe extern "C" fn revm_execute(
             ..
         } => {
             let output_bytes = match output {
-                revm::primitives::Output::Call(bytes) => bytes,
+                revm::primitives::Output::Call(bytes) => {
+                    eprintln!("REVM FFI: Call output length: {}, bytes: {:?}", bytes.len(), bytes);
+                    bytes
+                },
                 revm::primitives::Output::Create(bytes, _) => bytes,
             };
             (true, gas_used, gas_refunded, output_bytes, None)
@@ -439,6 +487,7 @@ pub unsafe extern "C" fn revm_execute(
     };
 
     // Create result
+    eprintln!("REVM FFI: Creating result with output length: {}", output.len());
     let mut output_vec = output.to_vec();
     let output_ptr = if output_vec.is_empty() {
         ptr::null_mut()
@@ -546,7 +595,7 @@ pub unsafe extern "C" fn revm_get_storage(
         }
     };
 
-    let mut db = &mut vm.db;
+    let db = &mut vm.db;
     let value = db.storage(addr, slot).unwrap_or_default();
     let value_hex = format!("0x{:064x}", value);
 
@@ -588,7 +637,7 @@ pub unsafe extern "C" fn revm_get_balance(
     let addr_bytes = std::slice::from_raw_parts(address, 20);
     let addr = Address::from_slice(addr_bytes);
 
-    let mut db = &mut vm.db;
+    let db = &mut vm.db;
     let account_info = db.basic(addr).unwrap_or_default().unwrap_or_default();
     let balance_hex = format!("0x{:064x}", account_info.balance);
 
@@ -777,6 +826,50 @@ fn deploy_contract(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::ffi::CString;
+    
+    #[test] 
+    fn test_set_code() {
+        unsafe {
+            // Create a new VM
+            let settings = RevmSettings::default();
+            let mut error_ptr: *mut RevmError = ptr::null_mut();
+            let vm_ptr = revm_new(&settings, &mut error_ptr);
+            assert!(!vm_ptr.is_null());
+            assert!(error_ptr.is_null());
+            
+            // Set up test data
+            let address = [0x33u8; 20];
+            let code_hex = CString::new("0x604260005260206000f3").unwrap();
+            
+            // Call revm_set_code
+            let result = revm_set_code(
+                vm_ptr,
+                address.as_ptr(),
+                code_hex.as_ptr(),
+                &mut error_ptr
+            );
+            
+            // Should succeed
+            assert_eq!(result, 1);
+            assert!(error_ptr.is_null());
+            
+            // Now check if we can retrieve the code
+            let vm = &mut *vm_ptr;
+            let addr = Address::from_slice(&address);
+            let account = vm.db.basic(addr).unwrap();
+            
+            println!("Account after setCode: {:?}", account);
+            assert!(account.is_some(), "Account should exist after setCode");
+            
+            let account = account.unwrap();
+            assert!(account.code.is_some(), "Account should have code");
+            assert_ne!(account.code_hash, revm::primitives::KECCAK_EMPTY, "Code hash should not be empty");
+            
+            // Clean up
+            revm_free(vm_ptr);
+        }
+    }
 
     #[test]
     fn test_revm_creation() {

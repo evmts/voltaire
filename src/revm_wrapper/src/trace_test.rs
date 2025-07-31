@@ -1,16 +1,14 @@
 use revm::{
-    Database,
     db::{CacheDB, EmptyDB},
     primitives::{
-        Address, Bytecode, Bytes, ExecutionResult, TransactTo, U256, B256,
-        Env, TxEnv, BlockEnv, CfgEnv, CfgEnvWithHandlerCfg,
+        Address, Bytes, ExecutionResult, TransactTo, U256, B256,
+        Env, TxEnv, BlockEnv, CfgEnv,
     },
     Evm,
     inspector_handle_register,
     inspectors::TracerEip3155,
 };
 use std::fs::File;
-use std::io::Write;
 
 /// Test function to trace ERC20 deployment with REVM
 pub fn trace_erc20_deployment(bytecode: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
@@ -39,7 +37,7 @@ pub fn trace_erc20_deployment(bytecode: &[u8]) -> Result<(), Box<dyn std::error:
         .build();
 
     // Set up environment
-    evm.context.evm.env = Env {
+    evm.context.evm.env = Box::new(Env {
         cfg: CfgEnv::default(),
         block: BlockEnv {
             number: U256::from(1),
@@ -54,7 +52,7 @@ pub fn trace_erc20_deployment(bytecode: &[u8]) -> Result<(), Box<dyn std::error:
             transact_to: TransactTo::Create,
             ..Default::default()
         },
-    };
+    });
 
     // Execute and capture trace
     println!("=== Starting REVM trace of ERC20 deployment ===");
@@ -124,7 +122,7 @@ pub fn trace_erc20_to_file(bytecode: &[u8], output_path: &str) -> Result<(), Box
         .build();
 
     // Set up environment
-    evm.context.evm.env = Env {
+    evm.context.evm.env = Box::new(Env {
         cfg: CfgEnv::default(),
         block: BlockEnv {
             number: U256::from(1),
@@ -139,7 +137,7 @@ pub fn trace_erc20_to_file(bytecode: &[u8], output_path: &str) -> Result<(), Box
             transact_to: TransactTo::Create,
             ..Default::default()
         },
-    };
+    });
 
     // Execute
     println!("Tracing ERC20 deployment to file: {}", output_path);
