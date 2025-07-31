@@ -57,51 +57,53 @@ fn main() {
         // First run the test in revm to get the actual result
         let revm_result = run_revm_test(&test_case);
         
+        println!("Generated test: {}", test_case.name);
+        
+        // Generate Zig test
+        zig_test.push_str(&format!("test \"{}\" {{\n", test_case.name));
+        zig_test.push_str("    const allocator = testing.allocator;\n");
+        zig_test.push_str("    \n");
+        zig_test.push_str("    var memory_db = Evm.MemoryDatabase.init(allocator);\n");
+        zig_test.push_str("    defer memory_db.deinit();\n");
+        zig_test.push_str("    \n");
+        zig_test.push_str("    const db_interface = memory_db.to_database_interface();\n");
+        zig_test.push_str("    var builder = Evm.EvmBuilder.init(allocator, db_interface);\n");
+        zig_test.push_str("    var vm = try builder.build();\n");
+        zig_test.push_str("    defer vm.deinit();\n");
+        zig_test.push_str("    \n");
+        zig_test.push_str("    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);\n");
+        zig_test.push_str("    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);\n");
+        zig_test.push_str("    \n");
+        zig_test.push_str("    // Deploy bytecode\n");
+        zig_test.push_str("    const bytecode = &[_]u8{");
+        
+        // Write bytecode
+        for (i, byte) in test_case.bytecode.iter().enumerate() {
+            if i % 8 == 0 {
+                zig_test.push_str("\n        ");
+            }
+            zig_test.push_str(&format!("0x{:02x}, ", byte));
+        }
+        zig_test.push_str("\n    };\n");
+        zig_test.push_str("    \n");
+        zig_test.push_str("    try vm.state.set_code(contract_address, bytecode);\n");
+        zig_test.push_str("    try vm.state.set_balance(caller, std.math.maxInt(u256));\n");
+        zig_test.push_str("    \n");
+        zig_test.push_str("    // Call contract\n");
+        zig_test.push_str("    const result = try vm.call_contract(\n");
+        zig_test.push_str("        caller,\n");
+        zig_test.push_str("        contract_address,\n");
+        zig_test.push_str("        0,\n");
+        zig_test.push_str("        &[_]u8{},\n");
+        zig_test.push_str("        1_000_000,\n");
+        zig_test.push_str("        false\n");
+        zig_test.push_str("    );\n");
+        zig_test.push_str("    defer if (result.output) |output| allocator.free(output);\n");
+        zig_test.push_str("    \n");
+        
         match revm_result {
             Ok(stack) => {
-                println!("Generated test: {}", test_case.name);
-                
-                // Generate Zig test
-                zig_test.push_str(&format!("test \"{}\" {{\n", test_case.name));
-                zig_test.push_str("    const allocator = testing.allocator;\n");
-                zig_test.push_str("    \n");
-                zig_test.push_str("    var memory_db = Evm.MemoryDatabase.init(allocator);\n");
-                zig_test.push_str("    defer memory_db.deinit();\n");
-                zig_test.push_str("    \n");
-                zig_test.push_str("    const db_interface = memory_db.to_database_interface();\n");
-                zig_test.push_str("    var builder = Evm.EvmBuilder.init(allocator, db_interface);\n");
-                zig_test.push_str("    var vm = try builder.build();\n");
-                zig_test.push_str("    defer vm.deinit();\n");
-                zig_test.push_str("    \n");
-                zig_test.push_str("    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);\n");
-                zig_test.push_str("    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);\n");
-                zig_test.push_str("    \n");
-                zig_test.push_str("    // Deploy bytecode\n");
-                zig_test.push_str("    const bytecode = &[_]u8{");
-                
-                // Write bytecode
-                for (i, byte) in test_case.bytecode.iter().enumerate() {
-                    if i % 8 == 0 {
-                        zig_test.push_str("\n        ");
-                    }
-                    zig_test.push_str(&format!("0x{:02x}, ", byte));
-                }
-                zig_test.push_str("\n    };\n");
-                zig_test.push_str("    \n");
-                zig_test.push_str("    try vm.state.set_code(contract_address, bytecode);\n");
-                zig_test.push_str("    try vm.state.set_balance(caller, std.math.maxInt(u256));\n");
-                zig_test.push_str("    \n");
-                zig_test.push_str("    // Call contract\n");
-                zig_test.push_str("    const result = try vm.call_contract(\n");
-                zig_test.push_str("        caller,\n");
-                zig_test.push_str("        contract_address,\n");
-                zig_test.push_str("        0,\n");
-                zig_test.push_str("        &[_]u8{},\n");
-                zig_test.push_str("        1_000_000,\n");
-                zig_test.push_str("        false\n");
-                zig_test.push_str("    );\n");
-                zig_test.push_str("    defer if (result.output) |output| allocator.free(output);\n");
-                zig_test.push_str("    \n");
+                // Success case - check result matches
                 zig_test.push_str("    try testing.expect(result.success);\n");
                 
                 if !stack.is_empty() {
@@ -126,13 +128,31 @@ fn main() {
                     zig_test.push_str(&format!("    const gas_used = 1_000_000 - result.gas_left;\n"));
                     zig_test.push_str(&format!("    try testing.expectEqual(@as(u64, {}), gas_used);\n", expected_gas));
                 }
-                
-                zig_test.push_str("}\n\n");
             }
             Err(e) => {
-                println!("Skipping test '{}': REVM error: {}", test_case.name, e);
+                // Error case - check we get the same error
+                zig_test.push_str("    // REVM failed with error, we should fail too\n");
+                zig_test.push_str(&format!("    // REVM error: {}\n", e));
+                
+                if e.contains("Reverted") {
+                    zig_test.push_str("    try testing.expect(!result.success);\n");
+                    zig_test.push_str("    try testing.expect(result.is_revert);\n");
+                } else if e.contains("InvalidJump") {
+                    zig_test.push_str("    try testing.expect(!result.success);\n");
+                    zig_test.push_str("    // Should fail with invalid jump\n");
+                } else if e.contains("InvalidFEOpcode") || e.contains("Invalid") {
+                    zig_test.push_str("    try testing.expect(!result.success);\n");
+                    zig_test.push_str("    // Should fail with invalid opcode\n");
+                } else if e.contains("Halted") {
+                    zig_test.push_str("    try testing.expect(!result.success);\n");
+                    zig_test.push_str("    // Should halt execution\n");
+                } else {
+                    zig_test.push_str("    try testing.expect(!result.success);\n");
+                }
             }
         }
+        
+        zig_test.push_str("}\n\n");
     }
     
     // Write the generated test file
@@ -1928,5 +1948,146 @@ fn generate_precompile_tests(tests: &mut Vec<OpcodeTestCase>) {
         expected_gas_used: None,
     });
 
-    // Add tests for precompiles 5-9 similarly...
+    // Precompile 5: modexp
+    tests.push(OpcodeTestCase {
+        name: "REVM comparison: Precompile modexp".to_string(),
+        bytecode: vec![
+            // Simple modexp: 2^3 mod 5 = 3
+            // Input format: base_len(32) | exp_len(32) | mod_len(32) | base | exp | mod
+            0x60, 0x01, // PUSH1 1 (base_len)
+            0x60, 0x00, // PUSH1 0
+            0x52,       // MSTORE at 0
+            0x60, 0x01, // PUSH1 1 (exp_len)
+            0x60, 0x20, // PUSH1 32
+            0x52,       // MSTORE at 32
+            0x60, 0x01, // PUSH1 1 (mod_len)
+            0x60, 0x40, // PUSH1 64
+            0x52,       // MSTORE at 64
+            0x60, 0x02, // PUSH1 2 (base)
+            0x60, 0x60, // PUSH1 96
+            0x52,       // MSTORE at 96
+            0x60, 0x03, // PUSH1 3 (exp)
+            0x60, 0x80, // PUSH1 128
+            0x52,       // MSTORE at 128
+            0x60, 0x05, // PUSH1 5 (mod)
+            0x60, 0xA0, // PUSH1 160
+            0x52,       // MSTORE at 160
+            0x60, 0x20, // PUSH1 32 (output size)
+            0x60, 0xC0, // PUSH1 192 (output offset)
+            0x60, 0xC0, // PUSH1 192 (input size)
+            0x60, 0x00, // PUSH1 0 (input offset)
+            0x60, 0x00, // PUSH1 0 (value)
+            0x60, 0x05, // PUSH1 5 (modexp address)
+            0x5A,       // GAS
+            0xF1,       // CALL
+            0x60, 0xC0, // PUSH1 192
+            0x51,       // MLOAD
+            0x60, 0x00, // PUSH1 0
+            0x52,       // MSTORE
+            0x60, 0x20, // PUSH1 32
+            0x60, 0x00, // PUSH1 0
+            0xF3,       // RETURN
+        ],
+        expected_stack: vec![], // Result of 2^3 mod 5
+        expected_gas_used: None,
+    });
+
+    // Precompile 6: ecAdd (BN254)
+    tests.push(OpcodeTestCase {
+        name: "REVM comparison: Precompile ecAdd".to_string(),
+        bytecode: vec![
+            // Input: two points (64 bytes each = 128 bytes total)
+            0x60, 0x80, // PUSH1 128 (input size)
+            0x60, 0x00, // PUSH1 0 (input offset)
+            0x60, 0x40, // PUSH1 64 (output size)
+            0x60, 0x00, // PUSH1 0 (output offset)
+            0x60, 0x00, // PUSH1 0 (value)
+            0x60, 0x06, // PUSH1 6 (ecAdd address)
+            0x5A,       // GAS
+            0xF1,       // CALL
+            0x60, 0x00, // PUSH1 0
+            0x52,       // MSTORE
+            0x60, 0x20, // PUSH1 32
+            0x60, 0x00, // PUSH1 0
+            0xF3,       // RETURN
+        ],
+        expected_stack: vec![U256::from(1)], // Call success
+        expected_gas_used: None,
+    });
+
+    // Precompile 7: ecMul (BN254)
+    tests.push(OpcodeTestCase {
+        name: "REVM comparison: Precompile ecMul".to_string(),
+        bytecode: vec![
+            // Input: point (64 bytes) + scalar (32 bytes) = 96 bytes
+            0x60, 0x60, // PUSH1 96 (input size)
+            0x60, 0x00, // PUSH1 0 (input offset)
+            0x60, 0x40, // PUSH1 64 (output size)
+            0x60, 0x00, // PUSH1 0 (output offset)
+            0x60, 0x00, // PUSH1 0 (value)
+            0x60, 0x07, // PUSH1 7 (ecMul address)
+            0x5A,       // GAS
+            0xF1,       // CALL
+            0x60, 0x00, // PUSH1 0
+            0x52,       // MSTORE
+            0x60, 0x20, // PUSH1 32
+            0x60, 0x00, // PUSH1 0
+            0xF3,       // RETURN
+        ],
+        expected_stack: vec![U256::from(1)], // Call success
+        expected_gas_used: None,
+    });
+
+    // Precompile 8: ecPairing (BN254)
+    tests.push(OpcodeTestCase {
+        name: "REVM comparison: Precompile ecPairing".to_string(),
+        bytecode: vec![
+            // Empty pairing check (should return 1)
+            0x60, 0x00, // PUSH1 0 (input size)
+            0x60, 0x00, // PUSH1 0 (input offset)
+            0x60, 0x20, // PUSH1 32 (output size)
+            0x60, 0x00, // PUSH1 0 (output offset)
+            0x60, 0x00, // PUSH1 0 (value)
+            0x60, 0x08, // PUSH1 8 (ecPairing address)
+            0x5A,       // GAS
+            0xF1,       // CALL
+            0x60, 0x00, // PUSH1 0
+            0x51,       // MLOAD
+            0x60, 0x00, // PUSH1 0
+            0x52,       // MSTORE
+            0x60, 0x20, // PUSH1 32
+            0x60, 0x00, // PUSH1 0
+            0xF3,       // RETURN
+        ],
+        expected_stack: vec![], // Pairing result
+        expected_gas_used: None,
+    });
+
+    // Precompile 9: blake2f
+    tests.push(OpcodeTestCase {
+        name: "REVM comparison: Precompile blake2f".to_string(),
+        bytecode: vec![
+            // Blake2f requires exactly 213 bytes of input
+            // Setup minimal valid input (rounds=1, h, m, t, f)
+            0x60, 0x01, // PUSH1 1 (rounds, byte 3)
+            0x60, 0x03, // PUSH1 3
+            0x53,       // MSTORE8
+            // The rest needs to be 212 bytes (8*8 for h + 16*8 for m + 2*8 for t + 1 for f)
+            0x61, 0x00, 0xD5, // PUSH2 213 (input size)
+            0x60, 0x00, // PUSH1 0 (input offset)
+            0x60, 0x40, // PUSH1 64 (output size)
+            0x61, 0x01, 0x00, // PUSH2 256 (output offset)
+            0x60, 0x00, // PUSH1 0 (value)
+            0x60, 0x09, // PUSH1 9 (blake2f address)
+            0x5A,       // GAS
+            0xF1,       // CALL
+            0x60, 0x00, // PUSH1 0
+            0x52,       // MSTORE
+            0x60, 0x20, // PUSH1 32
+            0x60, 0x00, // PUSH1 0
+            0xF3,       // RETURN
+        ],
+        expected_stack: vec![U256::from(1)], // Call success
+        expected_gas_used: None,
+    });
 }

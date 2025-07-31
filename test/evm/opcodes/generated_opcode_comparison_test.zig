@@ -1932,6 +1932,47 @@ test "REVM comparison: JUMP to valid destination" {
     try testing.expectEqual(@as(u256, 66), result_value);
 }
 
+test "REVM comparison: JUMPI jump taken" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x01, 0x60, 0x08, 0x57, 0x60, 0x00, 0x00, 
+        0x00, 0x00, 0x5b, 0x60, 0x42, 0x60, 0x00, 0x52, 
+        0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    // REVM failed with error, we should fail too
+    // REVM error: Halted: InvalidJump
+    try testing.expect(!result.success);
+    // Should fail with invalid jump
+}
+
 test "REVM comparison: PC returns program counter" {
     const allocator = testing.allocator;
     
@@ -5701,6 +5742,45 @@ test "REVM comparison: RETURN" {
     try testing.expectEqual(@as(u256, 66), result_value);
 }
 
+test "REVM comparison: REVERT" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x00, 0x60, 0x00, 0xfd, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    // REVM failed with error, we should fail too
+    // REVM error: Reverted: 0x
+    try testing.expect(!result.success);
+    try testing.expect(result.is_revert);
+}
+
 test "REVM comparison: CODECOPY copies code to memory" {
     const allocator = testing.allocator;
     
@@ -7651,6 +7731,45 @@ test "REVM comparison: STOP" {
     try testing.expect(result.success);
 }
 
+test "REVM comparison: INVALID" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0xfe, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    // REVM failed with error, we should fail too
+    // REVM error: Halted: InvalidFEOpcode
+    try testing.expect(!result.success);
+    // Should fail with invalid opcode
+}
+
 test "REVM comparison: JUMPDEST" {
     const allocator = testing.allocator;
     
@@ -7912,6 +8031,267 @@ test "REVM comparison: Precompile identity" {
         0x00, 0x60, 0x20, 0x60, 0x20, 0x60, 0x00, 0x60, 
         0x04, 0x5a, 0xf1, 0x60, 0x20, 0x51, 0x60, 0x00, 
         0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: Precompile modexp" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x01, 0x60, 0x00, 0x52, 0x60, 0x01, 0x60, 
+        0x20, 0x52, 0x60, 0x01, 0x60, 0x40, 0x52, 0x60, 
+        0x02, 0x60, 0x60, 0x52, 0x60, 0x03, 0x60, 0x80, 
+        0x52, 0x60, 0x05, 0x60, 0xa0, 0x52, 0x60, 0x20, 
+        0x60, 0xc0, 0x60, 0xc0, 0x60, 0x00, 0x60, 0x00, 
+        0x60, 0x05, 0x5a, 0xf1, 0x60, 0xc0, 0x51, 0x60, 
+        0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: Precompile ecAdd" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x80, 0x60, 0x00, 0x60, 0x40, 0x60, 0x00, 
+        0x60, 0x00, 0x60, 0x06, 0x5a, 0xf1, 0x60, 0x00, 
+        0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 1
+    try testing.expectEqual(@as(u256, 1), result_value);
+}
+
+test "REVM comparison: Precompile ecMul" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x60, 0x60, 0x00, 0x60, 0x40, 0x60, 0x00, 
+        0x60, 0x00, 0x60, 0x07, 0x5a, 0xf1, 0x60, 0x00, 
+        0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 1
+    try testing.expectEqual(@as(u256, 1), result_value);
+}
+
+test "REVM comparison: Precompile ecPairing" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x00, 0x60, 0x00, 0x60, 0x20, 0x60, 0x00, 
+        0x60, 0x00, 0x60, 0x08, 0x5a, 0xf1, 0x60, 0x00, 
+        0x51, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 
+        0xf3, 
+    };
+    
+    try vm.state.set_code(contract_address, bytecode);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+    
+    // Call contract
+    const result = try vm.call_contract(
+        caller,
+        contract_address,
+        0,
+        &[_]u8{},
+        1_000_000,
+        false
+    );
+    defer if (result.output) |output| allocator.free(output);
+    
+    try testing.expect(result.success);
+    
+    // Check output
+    try testing.expect(result.output != null);
+    const output = result.output.?;
+    try testing.expectEqual(@as(usize, 32), output.len);
+    
+    // Convert output to u256
+    var bytes: [32]u8 = undefined;
+    @memcpy(&bytes, output[0..32]);
+    const result_value = std.mem.readInt(u256, &bytes, .big);
+    
+    // REVM produced: 0
+    try testing.expectEqual(@as(u256, 0), result_value);
+}
+
+test "REVM comparison: Precompile blake2f" {
+    const allocator = testing.allocator;
+    
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+    
+    const caller = Address.from_u256(0x1100000000000000000000000000000000000000);
+    const contract_address = Address.from_u256(0x3300000000000000000000000000000000000000);
+    
+    // Deploy bytecode
+    const bytecode = &[_]u8{
+        0x60, 0x01, 0x60, 0x03, 0x53, 0x61, 0x00, 0xd5, 
+        0x60, 0x00, 0x60, 0x40, 0x61, 0x01, 0x00, 0x60, 
+        0x00, 0x60, 0x09, 0x5a, 0xf1, 0x60, 0x00, 0x52, 
+        0x60, 0x20, 0x60, 0x00, 0xf3, 
     };
     
     try vm.state.set_code(contract_address, bytecode);
