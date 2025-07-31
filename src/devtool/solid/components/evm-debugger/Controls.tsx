@@ -5,10 +5,9 @@ import PlayIcon from 'lucide-solid/icons/play'
 import RotateCcwIcon from 'lucide-solid/icons/rotate-ccw'
 import StepForwardIcon from 'lucide-solid/icons/step-forward'
 import { type Component, type Setter, Show } from 'solid-js'
-import type { EvmState } from '~/components/evm-debugger/types'
-import { resetEvm, stepEvm, toggleRunPause } from '~/components/evm-debugger/utils'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
+import type { EvmState } from './types'
 
 interface ControlsProps {
 	isRunning: boolean
@@ -19,44 +18,16 @@ interface ControlsProps {
 	setIsUpdating: Setter<boolean>
 	executionSpeed: number
 	setExecutionSpeed: Setter<number>
+	handleRunPause: () => void
+	handleStep: () => void
+	handleReset: () => void
+	bytecode: string
 }
 
 const Controls: Component<ControlsProps> = (props) => {
-	const handleResetEvm = async () => {
-		try {
-			props.setError('')
-			props.setIsRunning(false)
-			const state = await resetEvm()
-			props.setState(state)
-		} catch (err) {
-			props.setError(`${err}`)
-		}
-	}
-
-	const handleStepEvm = async () => {
-		try {
-			props.setError('')
-			props.setIsUpdating(true)
-			const state = await stepEvm()
-			props.setState(state)
-			setTimeout(() => props.setIsUpdating(false), 50)
-		} catch (err) {
-			props.setError(`${err}`)
-			props.setIsUpdating(false)
-		}
-	}
-
-	const handleToggleRunPause = async () => {
-		try {
-			props.setError('')
-			props.setIsRunning(!props.isRunning)
-			const state = await toggleRunPause()
-			props.setState(state)
-		} catch (err) {
-			props.setError(`${err}`)
-			props.setIsRunning(false)
-		}
-	}
+	const onReset = () => props.handleReset()
+	const onStep = () => props.handleStep()
+	const onRunPause = () => props.handleRunPause()
 
 	return (
 		<div class="sticky top-18 z-50 flex w-full justify-center px-4">
@@ -64,7 +35,8 @@ const Controls: Component<ControlsProps> = (props) => {
 				<Button
 					variant="outline"
 					size="sm"
-					onClick={handleResetEvm}
+					onClick={onReset}
+					disabled={!props.bytecode}
 					aria-label="Reset EVM (R)"
 					class="flex items-center gap-2"
 				>
@@ -79,8 +51,8 @@ const Controls: Component<ControlsProps> = (props) => {
 				<Button
 					variant="outline"
 					size="sm"
-					onClick={handleStepEvm}
-					disabled={props.isRunning}
+					onClick={onStep}
+					disabled={props.isRunning || !props.bytecode}
 					aria-label="Step EVM (S)"
 					class="flex items-center gap-2"
 				>
@@ -95,7 +67,8 @@ const Controls: Component<ControlsProps> = (props) => {
 				<Button
 					variant={props.isRunning ? 'secondary' : 'outline'}
 					size="sm"
-					onClick={handleToggleRunPause}
+					onClick={onRunPause}
+					disabled={!props.bytecode}
 					aria-label={props.isRunning ? 'Pause EVM (Space)' : 'Run EVM (Space)'}
 					class="flex items-center gap-2"
 				>
@@ -112,8 +85,8 @@ const Controls: Component<ControlsProps> = (props) => {
 				<Button
 					variant="outline"
 					size="sm"
-					disabled={!props.isRunning}
-					onClick={handleToggleRunPause}
+					disabled={!props.isRunning || !props.bytecode}
+					onClick={onRunPause}
 					aria-label="Speed"
 					class="flex items-center gap-2"
 				>
