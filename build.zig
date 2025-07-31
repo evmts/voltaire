@@ -1566,6 +1566,48 @@ pub fn build(b: *std.Build) void {
     constructor_revert_test_step.dependOn(&run_constructor_revert_test.step);
     test_step.dependOn(&run_constructor_revert_test.step);
     
+    // Add ERC20 constructor debug test
+    const erc20_constructor_debug_test = b.addTest(.{
+        .name = "erc20-constructor-debug-test",
+        .root_source_file = b.path("test/evm/erc20_constructor_debug_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    erc20_constructor_debug_test.root_module.addImport("primitives", primitives_mod);
+    erc20_constructor_debug_test.root_module.addImport("evm", evm_mod);
+    erc20_constructor_debug_test.root_module.addImport("Address", primitives_mod);
+    const run_erc20_constructor_debug_test = b.addRunArtifact(erc20_constructor_debug_test);
+    const erc20_constructor_debug_test_step = b.step("test-erc20-constructor", "Run ERC20 constructor debug test");
+    erc20_constructor_debug_test_step.dependOn(&run_erc20_constructor_debug_test.step);
+    
+    // Add trace ERC20 constructor test
+    const trace_erc20_test = b.addTest(.{
+        .name = "trace-erc20-test",
+        .root_source_file = b.path("test/evm/trace_erc20_constructor_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    trace_erc20_test.root_module.addImport("primitives", primitives_mod);
+    trace_erc20_test.root_module.addImport("evm", evm_mod);
+    trace_erc20_test.root_module.addImport("Address", primitives_mod);
+    const run_trace_erc20_test = b.addRunArtifact(trace_erc20_test);
+    const trace_erc20_test_step = b.step("test-trace-erc20", "Trace ERC20 constructor execution");
+    trace_erc20_test_step.dependOn(&run_trace_erc20_test.step);
+    
+    // Add string storage test
+    const string_storage_test = b.addTest(.{
+        .name = "string-storage-test", 
+        .root_source_file = b.path("test/evm/string_storage_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    string_storage_test.root_module.addImport("evm", evm_mod);
+    string_storage_test.root_module.addImport("Address", primitives_mod);
+    
+    const run_string_storage_test = b.addRunArtifact(string_storage_test);
+    const string_storage_test_step = b.step("test-string-storage", "Run string storage tests");
+    string_storage_test_step.dependOn(&run_string_storage_test.step);
+    
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
