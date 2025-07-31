@@ -175,8 +175,8 @@ pub const FrameBenchmarks = struct {
         // Simulate storage access patterns
         var i: u32 = 0;
         while (i < 10) : (i += 1) {
-            const key = @as(u256, @intCast(i);
-            contract.markStorageWarm(key);
+            const key = @as(u256, @intCast(i));
+            _ = try contract.mark_storage_slot_warm(self.allocator, key, null);
         }
     }
     
@@ -259,8 +259,8 @@ pub const FrameBenchmarks = struct {
         for (&contracts) |*contract| {
             var j: u32 = 0;
             while (j < 5) : (j += 1) {
-                const key = @as(u256, @intCast(j);
-                contract.markStorageWarm(key);
+                const key = @as(u256, @intCast(j));
+                _ = try contract.mark_storage_slot_warm(self.allocator, key, null);
             }
         }
         

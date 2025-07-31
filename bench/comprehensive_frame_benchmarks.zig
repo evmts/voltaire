@@ -7,7 +7,7 @@ const BenchmarkConfig = timing.BenchmarkConfig;
 // Import EVM components
 const primitives = @import("primitives");
 const Address = primitives.Address;
-const U256 = primitives.U256;
+// u256 is a built-in Zig type, no import needed
 const Memory = @import("evm").Memory;
 const Stack = @import("evm").Stack;
 const Frame = @import("evm").Frame;
@@ -24,7 +24,7 @@ pub const ComprehensiveFrameBenchmarks = struct {
     const Self = @This();
     
     pub fn init(allocator: Allocator) !Self {
-        const storage_pool = try StoragePool.init(allocator);
+        const storage_pool = StoragePool.init(allocator);
         
         // Different contract types for benchmarking
         const simple_contract = [_]u8{
@@ -78,34 +78,40 @@ pub const ComprehensiveFrameBenchmarks = struct {
     
     /// Benchmark storage operations with warm/cold access patterns
     pub fn storageAccessPatterns(self: *Self) !void {
-        const contract = try Contract.init(
-            self.allocator,
-            self.sample_contracts[1],
-            .{ .address = Address.ZERO },
+        const code_hash = [_]u8{0} ** 32;
+        var contract = Contract.init(
+            Address.ZERO, // caller
+            Address.ZERO, // addr
+            0, // value
+            1000000, // gas
+            self.sample_contracts[1], // code
+            code_hash, // code_hash
+            &[_]u8{}, // input
+            false // is_static
         );
-        defer contract.deinit(self.allocator, &self.storage_pool);
+        defer contract.deinit(self.allocator, null);
         
         // Simulate realistic storage access patterns
         // First access (cold)
         var i: u32 = 0;
         while (i < 10) : (i += 1) {
-            const key = U256.from(i);
-            contract.markStorageWarm(key);
+            const key = @as(u256, i);
+            _ = try (&contract).mark_storage_slot_warm(self.allocator, key, null);
         }
         
         // Subsequent accesses (warm)
         i = 0;
         while (i < 10) : (i += 1) {
-            const key = U256.from(i);
-            _ = contract.isStorageWarm(key);
+            const key = @as(u256, i);
+            _ = (&contract).is_storage_slot_cold(key);
         }
         
         // Mixed pattern
         i = 10;
         while (i < 20) : (i += 1) {
-            const key = U256.from(i);
-            contract.markStorageWarm(key);
-            _ = contract.isStorageWarm(key);
+            const key = @as(u256, i);
+            _ = try (&contract).mark_storage_slot_warm(self.allocator, key, null);
+            _ = (&contract).is_storage_slot_cold(key);
         }
     }
     
@@ -116,38 +122,50 @@ pub const ComprehensiveFrameBenchmarks = struct {
         // Create contracts that will reuse storage from pool
         var i: usize = 0;
         while (i < contracts.len) : (i += 1) {
-            contracts[i] = try Contract.init(
-                self.allocator,
-                self.sample_contracts[i % self.sample_contracts.len],
-                .{ .address = Address.ZERO },
+            const code_hash = [_]u8{0} ** 32;
+            contracts[i] = Contract.init(
+                Address.ZERO, // caller
+                Address.ZERO, // addr
+                0, // value
+                1000000, // gas
+                self.sample_contracts[i % self.sample_contracts.len], // code
+                code_hash, // code_hash
+                &[_]u8{}, // input
+                false // is_static
             );
             
             // Populate storage
             var j: u32 = 0;
             while (j < 5) : (j += 1) {
-                const key = U256.from(j + @as(u32, @intCast(i)) * 10);
-                contracts[i].markStorageWarm(key);
+                const key = @as(u256, j + @as(u32, @intCast(i)) * 10);
+                _ = try contracts[i].mark_storage_slot_warm(self.allocator, key, null);
             }
         }
         
         // Cleanup - this should return storage to pool
         for (&contracts) |*contract| {
-            contract.deinit(self.allocator, &self.storage_pool);
+            contract.deinit(self.allocator, null);
         }
         
         // Create new contracts to test pool reuse
         i = 0;
         while (i < contracts.len) : (i += 1) {
-            contracts[i] = try Contract.init(
-                self.allocator,
-                self.sample_contracts[i % self.sample_contracts.len],
-                .{ .address = Address.ZERO },
+            const code_hash = [_]u8{0} ** 32;
+            contracts[i] = Contract.init(
+                Address.ZERO, // caller
+                Address.ZERO, // addr
+                0, // value
+                1000000, // gas
+                self.sample_contracts[i % self.sample_contracts.len], // code
+                code_hash, // code_hash
+                &[_]u8{}, // input
+                false // is_static
             );
         }
         
         // Final cleanup
         for (&contracts) |*contract| {
-            contract.deinit(self.allocator, &self.storage_pool);
+            contract.deinit(self.allocator, null);
         }
     }
     
@@ -163,23 +181,25 @@ pub const ComprehensiveFrameBenchmarks = struct {
         // Build call stack
         var i: usize = 0;
         while (i < max_depth) : (i += 1) {
-            contracts[i] = try Contract.init(
-                self.allocator,
-                self.sample_contracts[i % self.sample_contracts.len],
-                .{ .address = Address.ZERO },
+            const code_hash = [_]u8{0} ** 32;
+            contracts[i] = Contract.init(
+                Address.ZERO, // caller
+                Address.ZERO, // addr
+                0, // value
+                1000000, // gas
+                self.sample_contracts[i % self.sample_contracts.len], // code
+                code_hash, // code_hash
+                &[_]u8{}, // input
+                false // is_static
             );
             
             frames[i] = try Frame.init(
                 self.allocator,
-                null,
-                1000000 - @as(u64, @intCast(i)) * 1000, // Decreasing gas
-                contracts[i],
-                Address.ZERO,
-                &.{},
+                &contracts[i]
             );
             
             // Simulate frame operations
-            try frames[i].stack.push(@as(u256, @intCast(i)));
+            try frames[i].stack.append(@as(u256, @intCast(i)));
             if (i > 0) {
                 try frames[i].memory.set_u256(0, @as(u256, @intCast(i)));
             }
@@ -199,20 +219,22 @@ pub const ComprehensiveFrameBenchmarks = struct {
         var memory_db = MemoryDatabase.init(self.allocator);
         defer memory_db.deinit();
         
-        const contract = try Contract.init(
-            self.allocator,
+        const code_hash = [_]u8{0} ** 32;
+        var contract = Contract.init(
+            Address.ZERO, // caller
+            Address.ZERO, // addr
+            0, // value
+            1000000, // gas
             self.sample_contracts[2], // Complex contract
-            .{ .address = Address.ZERO },
+            code_hash, // code_hash
+            &[_]u8{}, // input
+            false // is_static
         );
-        defer contract.deinit(self.allocator, &self.storage_pool);
+        defer contract.deinit(self.allocator, null);
         
         var frame = try Frame.init(
             self.allocator,
-            null,
-            1000000,
-            contract,
-            Address.ZERO,
-            &.{},
+            &contract
         );
         defer frame.deinit();
         
@@ -229,10 +251,11 @@ pub const ComprehensiveFrameBenchmarks = struct {
             if (frame.gas_remaining >= total_cost) {
                 frame.gas_remaining -= total_cost;
                 
-                // Track gas refunds for SSTORE operations
+                // Track gas refunds for SSTORE operations (would be in real EVM)
                 if (i % 5 == 0) {
-                    const refund = std.math.min(total_cost / 2, 4800); // EIP-3529 limit
-                    frame.gas_refund = std.math.min(frame.gas_refund + refund, frame.gas_remaining / 5);
+                    const refund = @min(total_cost / 2, 4800); // EIP-3529 limit
+                    // Gas refund tracking not available in current Frame implementation
+                    _ = refund; // Silence unused variable warning
                 }
             } else {
                 break;
@@ -248,8 +271,7 @@ pub const ComprehensiveFrameBenchmarks = struct {
         const max_recursion = 20;
         var call_stack = std.ArrayList(Frame).init(self.allocator);
         defer {
-            while (call_stack.items.len > 0) {
-                var frame = call_stack.pop();
+            for (call_stack.items) |*frame| {
                 frame.deinit();
             }
             call_stack.deinit();
@@ -258,7 +280,7 @@ pub const ComprehensiveFrameBenchmarks = struct {
         var contracts = std.ArrayList(Contract).init(self.allocator);
         defer {
             for (contracts.items) |*contract| {
-                contract.deinit(self.allocator, &self.storage_pool);
+                contract.deinit(self.allocator, null);
             }
             contracts.deinit();
         }
@@ -266,33 +288,38 @@ pub const ComprehensiveFrameBenchmarks = struct {
         // Simulate recursive calls
         var depth: u32 = 0;
         while (depth < max_recursion) : (depth += 1) {
-            const contract = try Contract.init(
-                self.allocator,
-                self.sample_contracts[depth % self.sample_contracts.len],
-                .{ .address = Address.ZERO },
+            const code_hash = [_]u8{0} ** 32;
+            const contract = Contract.init(
+                Address.ZERO, // caller
+                Address.ZERO, // addr
+                0, // value
+                1000000, // gas
+                self.sample_contracts[depth % self.sample_contracts.len], // code
+                code_hash, // code_hash
+                &[_]u8{}, // input
+                false // is_static
             );
             try contracts.append(contract);
             
+            var contract_copy = contract; // Need a mutable copy
             const frame = try Frame.init(
                 self.allocator,
-                null,
-                1000000 - @as(u64, depth) * 10000, // Decreasing gas
-                contract,
-                Address.ZERO,
-                &.{},
+                &contract_copy
             );
             try call_stack.append(frame);
             
             // Simulate work in each frame
-            try call_stack.items[call_stack.items.len - 1].stack.push(@as(u256, depth));
+            try call_stack.items[call_stack.items.len - 1].stack.append(@as(u256, depth));
             try call_stack.items[call_stack.items.len - 1].memory.set_u256(0, @as(u256, depth));
         }
         
         // Simulate return from recursive calls
         while (call_stack.items.len > 0) {
-            var frame = call_stack.pop();
-            _ = try frame.stack.pop(); // Return value
-            frame.deinit();
+            if (call_stack.pop()) |frame| {
+                var mutable_frame = frame;
+                _ = try mutable_frame.stack.pop(); // Return value
+                mutable_frame.deinit();
+            }
         }
     }
     
@@ -307,19 +334,21 @@ pub const ComprehensiveFrameBenchmarks = struct {
         // Create frames with different memory usage patterns
         var i: usize = 0;
         while (i < frames.len) : (i += 1) {
-            contracts[i] = try Contract.init(
-                self.allocator,
-                self.sample_contracts[i % self.sample_contracts.len],
-                .{ .address = Address.ZERO },
+            const code_hash = [_]u8{0} ** 32;
+            contracts[i] = Contract.init(
+                Address.ZERO, // caller
+                Address.ZERO, // addr
+                0, // value
+                1000000, // gas
+                self.sample_contracts[i % self.sample_contracts.len], // code
+                code_hash, // code_hash
+                &[_]u8{}, // input
+                false // is_static
             );
             
             frames[i] = try Frame.init(
                 self.allocator,
-                null,
-                1000000,
-                contracts[i],
-                Address.ZERO,
-                &.{},
+                &contracts[i]
             );
             
             // Create different memory access patterns
@@ -348,7 +377,7 @@ pub const ComprehensiveFrameBenchmarks = struct {
             frame.deinit();
         }
         for (&contracts) |*contract| {
-            contract.deinit(self.allocator, &self.storage_pool);
+            contract.deinit(self.allocator, null);
         }
     }
     
@@ -364,19 +393,21 @@ pub const ComprehensiveFrameBenchmarks = struct {
         // Initialize frames
         var i: usize = 0;
         while (i < num_frames) : (i += 1) {
-            contracts[i] = try Contract.init(
-                self.allocator,
-                self.sample_contracts[i % self.sample_contracts.len],
-                .{ .address = Address.ZERO },
+            const code_hash = [_]u8{0} ** 32;
+            contracts[i] = Contract.init(
+                Address.ZERO, // caller
+                Address.ZERO, // addr
+                0, // value
+                1000000, // gas
+                self.sample_contracts[i % self.sample_contracts.len], // code
+                code_hash, // code_hash
+                &[_]u8{}, // input
+                false // is_static
             );
             
             frames[i] = try Frame.init(
                 self.allocator,
-                null,
-                1000000,
-                contracts[i],
-                Address.ZERO,
-                &.{},
+                &contracts[i]
             );
         }
         
@@ -386,14 +417,14 @@ pub const ComprehensiveFrameBenchmarks = struct {
             i = 0;
             while (i < num_frames) : (i += 1) {
                 // Stack operations
-                try frames[i].stack.push(@as(u256, @intCast(round)) * @as(u256, @intCast(i)));
+                try frames[i].stack.append(@as(u256, @intCast(round)) * @as(u256, @intCast(i)));
                 
                 // Memory operations
                 try frames[i].memory.set_u256(@as(usize, round) * 32, @as(u256, @intCast(i)));
                 
                 // Storage operations
-                const key = U256.from(@as(u32, @intCast(round)) * @as(u32, @intCast(i)));
-                contracts[i].markStorageWarm(key);
+                const key = @as(u256, @as(u32, @intCast(round)) * @as(u32, @intCast(i)));
+                _ = try contracts[i].mark_storage_slot_warm(self.allocator, key, null);
                 
                 // Gas accounting
                 frames[i].gas_remaining = frames[i].gas_remaining -| 100;
@@ -405,18 +436,58 @@ pub const ComprehensiveFrameBenchmarks = struct {
             frame.deinit();
         }
         for (&contracts) |*contract| {
-            contract.deinit(self.allocator, &self.storage_pool);
+            contract.deinit(self.allocator, null);
         }
+    }
+};
+
+// Global benchmark state
+var global_allocator: Allocator = undefined;
+var global_benchmarks: ?ComprehensiveFrameBenchmarks = null;
+
+const BenchmarkFn = struct {
+    fn storage_access_patterns() void {
+        global_benchmarks.?.storageAccessPatterns() catch {};
+    }
+    
+    fn storage_pool_reuse() void {
+        global_benchmarks.?.storagePoolReuse() catch {};
+    }
+    
+    fn call_stack_depth() void {
+        global_benchmarks.?.callStackDepth() catch {};
+    }
+    
+    fn recursive_call_simulation() void {
+        global_benchmarks.?.recursiveCallSimulation() catch {};
+    }
+    
+    fn complex_gas_accounting() void {
+        global_benchmarks.?.complexGasAccounting() catch {};
+    }
+    
+    fn memory_fragmentation_pattern() void {
+        global_benchmarks.?.memoryFragmentationPattern() catch {};
+    }
+    
+    fn concurrent_frame_operations() void {
+        global_benchmarks.?.concurrentFrameOperations() catch {};
     }
 };
 
 /// Run all comprehensive frame benchmarks
 pub fn runComprehensiveFrameBenchmarks(allocator: Allocator) !void {
+    global_allocator = allocator;
+    global_benchmarks = try ComprehensiveFrameBenchmarks.init(allocator);
+    defer {
+        if (global_benchmarks) |*benchmarks| {
+            benchmarks.deinit();
+        }
+        global_benchmarks = null;
+    }
+    
     var suite = BenchmarkSuite.init(allocator);
     defer suite.deinit();
-    
-    var benchmarks = try ComprehensiveFrameBenchmarks.init(allocator);
-    defer benchmarks.deinit();
     
     std.debug.print("\n=== Comprehensive Frame Management Benchmarks ===\n", .{});
     
@@ -425,82 +496,47 @@ pub fn runComprehensiveFrameBenchmarks(allocator: Allocator) !void {
         .name = "storage_access_patterns",
         .iterations = 200,
         .warmup_iterations = 20,
-    }, struct {
-        bench: *ComprehensiveFrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.storageAccessPatterns();
-        }
-    }{ .bench = &benchmarks });
+    }, BenchmarkFn.storage_access_patterns);
     
     try suite.benchmark(BenchmarkConfig{
         .name = "storage_pool_reuse",
         .iterations = 100,
         .warmup_iterations = 10,
-    }, struct {
-        bench: *ComprehensiveFrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.storagePoolReuse();
-        }
-    }{ .bench = &benchmarks });
+    }, BenchmarkFn.storage_pool_reuse);
     
     // Call stack benchmarks
     try suite.benchmark(BenchmarkConfig{
         .name = "call_stack_depth",
         .iterations = 50,
         .warmup_iterations = 5,
-    }, struct {
-        bench: *ComprehensiveFrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.callStackDepth();
-        }
-    }{ .bench = &benchmarks });
+    }, BenchmarkFn.call_stack_depth);
     
     try suite.benchmark(BenchmarkConfig{
         .name = "recursive_call_simulation",
         .iterations = 50,
         .warmup_iterations = 5,
-    }, struct {
-        bench: *ComprehensiveFrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.recursiveCallSimulation();
-        }
-    }{ .bench = &benchmarks });
+    }, BenchmarkFn.recursive_call_simulation);
     
     // Gas accounting benchmarks
     try suite.benchmark(BenchmarkConfig{
         .name = "complex_gas_accounting",
         .iterations = 200,
         .warmup_iterations = 20,
-    }, struct {
-        bench: *ComprehensiveFrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.complexGasAccounting();
-        }
-    }{ .bench = &benchmarks });
+    }, BenchmarkFn.complex_gas_accounting);
     
     // Memory pattern benchmarks
     try suite.benchmark(BenchmarkConfig{
         .name = "memory_fragmentation_pattern",
         .iterations = 100,
         .warmup_iterations = 10,
-    }, struct {
-        bench: *ComprehensiveFrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.memoryFragmentationPattern();
-        }
-    }{ .bench = &benchmarks });
+    }, BenchmarkFn.memory_fragmentation_pattern);
     
     // Concurrent operation benchmarks
     try suite.benchmark(BenchmarkConfig{
         .name = "concurrent_frame_operations",
         .iterations = 100,
         .warmup_iterations = 10,
-    }, struct {
-        bench: *ComprehensiveFrameBenchmarks,
-        fn run(self: @This()) !void {
-            try self.bench.concurrentFrameOperations();
-        }
-    }{ .bench = &benchmarks });
+    }, BenchmarkFn.concurrent_frame_operations);
     
     std.debug.print("=== Comprehensive Frame Management Benchmarks Complete ===\n\n", .{});
 }
