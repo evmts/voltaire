@@ -28,14 +28,14 @@ test "GT opcode comparison bug" {
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // 0xffffff...ffff
         
         // Now do the comparison
-        0x11, // GT - should return 0 (false) since first value is less than second
-        0x15, // ISZERO - should return 1 (true) since GT returned 0
+        0x11, // GT - should return 1 (true) since top > second (0xff...ffff > 0xff...ff01)
+        0x15, // ISZERO - should return 0 (false) since GT returned 1
         
         // Test with JUMPI
         0x60, 0x4A, // PUSH1 0x4A (jump destination at PC 74)
-        0x57, // JUMPI - should jump since condition is 1
+        0x57, // JUMPI - should NOT jump since condition is 0
         
-        // If we don't jump (BUG), we hit this
+        // If we don't jump (expected behavior), we hit this
         0x60, 0x00, // PUSH1 0x00
         0x00, // STOP
         
@@ -94,8 +94,8 @@ test "GT opcode comparison bug" {
         last_pc = parsed.value.pc;
     }
     
-    // The last PC should be 77 (after PUSH1 0x01 at the jump destination)
-    try testing.expectEqual(@as(usize, 77), last_pc);
+    // The last PC should be 73 (STOP after PUSH1 0x00, no jump taken)
+    try testing.expectEqual(@as(usize, 73), last_pc);
 }
 
 const TraceEntry = struct {
@@ -118,16 +118,19 @@ test "GT opcode manual check" {
     const a: u256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff01;
     const b: u256 = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
     
-    // Check what GT should return
-    const gt_result = if (a > b) @as(u256, 1) else 0;
+    // When we push a then b, the stack has: [a, b] with b at top
+    // GT computes: b > a (top > second)
+    // So we're checking: 0xff...ff > 0xff...01 = true
+    const gt_result = if (b > a) @as(u256, 1) else 0;
     const iszero_result = if (gt_result == 0) @as(u256, 1) else 0;
     
     std.debug.print("\nManual GT check:\n", .{});
     std.debug.print("  a = 0x{x}\n", .{a});
     std.debug.print("  b = 0x{x}\n", .{b});
-    std.debug.print("  a > b = {} (should be 0)\n", .{gt_result});
-    std.debug.print("  iszero(a > b) = {} (should be 1)\n", .{iszero_result});
+    std.debug.print("  b > a = {} (0xff...ff > 0xff...01 = true)\n", .{gt_result});
+    std.debug.print("  iszero(b > a) = {} (iszero(1) = 0)\n", .{iszero_result});
     
-    try testing.expectEqual(@as(u256, 0), gt_result);
-    try testing.expectEqual(@as(u256, 1), iszero_result);
+    // GT returns 1 because b > a
+    try testing.expectEqual(@as(u256, 1), gt_result);
+    try testing.expectEqual(@as(u256, 0), iszero_result);
 }

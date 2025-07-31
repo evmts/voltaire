@@ -88,15 +88,12 @@ test "Integration: Token balance check pattern" {
     // Load balance
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD using the remaining slot_hash
 
-    // Check if balance >= 100. The original test comment implied this, but the code aimed for 100 < balance.
-    // We will stick to making `100 < balance` evaluate to true (1) as the expectStackValue suggests.
+    // Check if balance >= 100 using corrected stack order
+    // With the fixed LT opcode: LT now computes (top < second)
     // Original stack after SLOAD: [balance]
     try frame.stack.append(100); // Stack: [balance, 100]
-    // To evaluate 100 < balance (where op_lt is a < b with b=pop, a=pop):
-    // We need stack [100, balance] before LT.
-    // Current: [balance, 100]. So, SWAP1.
-    _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1. Stack: [100, balance]
-    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT pops balance, then 100. Compares 100 < balance.
+    // LT will compute: 100 < balance (which should be true since 1000 > 100)
+    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT pops 100, compares 100 < balance
 
     // Result should be 1 (true) since 100 < 1000
     const result = try frame.stack.pop();
@@ -412,8 +409,14 @@ test "Integration: Bitfield manipulation" {
     try frame.stack.append(bitfield);
     try frame.stack.append(0x80);
     _ = try vm.table.execute(0, interpreter, state, 0x16); // AND
-    try frame.stack.append(0);
-    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT
+    // Stack now has [result_of_AND] where result should be 0x80 if bit 7 is set
+    // We want to check if result > 0
+    // With corrected GT: GT computes (top > second)
+    // So we need stack [0, and_result] for and_result > 0
+    const and_result = try frame.stack.pop(); // Get AND result  
+    try frame.stack.append(0); // Push 0 (second)
+    try frame.stack.append(and_result); // Push AND result (top), Stack: [0, and_result]
+    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT: computes and_result > 0
 
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // Bit 7 is set
@@ -493,11 +496,13 @@ test "Integration: Safe math operations" {
     const sum = try frame.stack.pop();
 
     // Check if sum < a (overflow occurred)
-    try frame.stack.append(sum);
-    try frame.stack.append(a);
-    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT
+    // With corrected LT: LT computes (top < second)
+    // We want to test sum < a to detect overflow
+    try frame.stack.append(a); // Push a (second)
+    try frame.stack.append(sum); // Push sum (top), Stack: [a, sum]
+    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: computes sum < a
 
-    // Should be 0 (no overflow since 50 < 100)
+    // Should be 0 (no overflow since sum >= a when no overflow)
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result1);
 
@@ -509,11 +514,12 @@ test "Integration: Safe math operations" {
     const overflow_sum = try frame.stack.pop();
 
     // Check if overflow_sum < a (overflow occurred)
-    try frame.stack.append(overflow_sum);
-    try frame.stack.append(a);
-    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT
+    // We want to test if overflow_sum < a
+    try frame.stack.append(a); // Push a
+    try frame.stack.append(overflow_sum); // Push overflow_sum, Stack: [a, overflow_sum]
+    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: computes overflow_sum < a
 
-    // Should be 1 (overflow occurred)
+    // Should be 1 (overflow occurred, so overflow_sum < a)
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result2);
 }
@@ -679,12 +685,17 @@ test "Integration: Multi-sig wallet threshold check" {
     // Check if we have enough confirmations
     try frame.stack.append(1); // slot 1
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD - loads confirmation count (2)
+    const confirmations_val = try frame.stack.pop();
 
     try frame.stack.append(0); // slot 0
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD - loads required confirmations (3)
+    const required_val = try frame.stack.pop();
 
-    // Compare: confirmations >= required
-    // Stack is [confirmations, required], LT computes confirmations < required
+    // Compare: confirmations >= required using corrected stack order
+    // We want to check if confirmations >= required
+    // This is equivalent to NOT(confirmations < required)
+    try frame.stack.append(required_val); // Push required
+    try frame.stack.append(confirmations_val); // Push confirmations, Stack: [required, confirmations]  
     _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: confirmations < required
     _ = try vm.table.execute(0, interpreter, state, 0x15); // ISZERO: NOT(confirmations < required) = confirmations >= required
 
@@ -716,17 +727,14 @@ test "Integration: Multi-sig wallet threshold check" {
     try frame.stack.append(confirmations);
     try frame.stack.append(required);
 
-    // Compare: confirmations >= required
-    // Stack is [confirmations, required], LT computes confirmations < required
+    // Compare: confirmations >= required with corrected stack order
+    // Stack is [confirmations, required], LT computes required < confirmations
+    try frame.stack.append(required); // Push required
+    try frame.stack.append(confirmations); // Push confirmations, Stack: [required, confirmations]  
     _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: confirmations < required
-    const lt_result = try frame.stack.pop();
-    // LT result
-
-    try frame.stack.append(lt_result);
     _ = try vm.table.execute(0, interpreter, state, 0x15); // ISZERO: NOT(confirmations < required) = confirmations >= required
 
     // Should be 1 (true) since 3 >= 3 is true, so NOT(3 < 3) = NOT(false) = true
     const result2 = try frame.stack.pop();
-    // ISZERO result
     try testing.expectEqual(@as(u256, 1), result2);
 }

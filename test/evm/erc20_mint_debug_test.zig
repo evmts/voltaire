@@ -5,7 +5,7 @@ const Address = @import("Address").Address;
 
 test {
     // Enable ALL debug logging
-    std.testing.log_level = .debug;
+    // std.testing.log_level = .debug;
 }
 
 fn hexDecode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
@@ -22,23 +22,23 @@ fn hexDecode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
 fn readHexFile(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
     const file_content = try std.fs.cwd().readFileAlloc(allocator, path, 1024 * 1024);
     defer allocator.free(file_content);
-    
+
     return hexDecode(allocator, std.mem.trim(u8, file_content, " \n\r\t"));
 }
 
 test "debug: erc20.mint with full logging" {
     const allocator = testing.allocator;
-    
+
     const bytecode = try readHexFile(allocator, "test/evm/erc20_mint.hex");
     defer allocator.free(bytecode);
-    
+
     const calldata = try hexDecode(allocator, "30627b7c");
     defer allocator.free(calldata);
-    
+
     std.log.debug("=== Starting ERC20 mint test with full debug logging ===", .{});
     std.log.debug("Bytecode length: {}", .{bytecode.len});
     std.log.debug("Calldata: {x}", .{calldata});
-    
+
     // Create EVM
     var memory_db = Evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
@@ -54,16 +54,11 @@ test "debug: erc20.mint with full logging" {
 
     // Deploy contract
     std.log.debug("=== DEPLOYING CONTRACT ===", .{});
-    const create_result = try vm.create_contract(
-        caller,
-        0,
-        bytecode,
-        1_000_000_000
-    );
+    const create_result = try vm.create_contract(caller, 0, bytecode, 1_000_000_000);
     defer if (create_result.output) |output| allocator.free(output);
 
     if (!create_result.success) {
-        std.log.err("Deployment failed - gas_left: {}, success: {}", .{create_result.gas_left, create_result.success});
+        std.log.err("Deployment failed - gas_left: {}, success: {}", .{ create_result.gas_left, create_result.success });
         try testing.expect(false);
     }
 
@@ -73,27 +68,16 @@ test "debug: erc20.mint with full logging" {
     // Call contract
     std.log.debug("=== CALLING CONTRACT ===", .{});
     std.log.debug("Calling Benchmark() function with selector: {x}", .{calldata});
-    
-    const call_result = try vm.call_contract(
-        caller,
-        contract_address,
-        0,
-        calldata,
-        1_000_000_000,
-        false
-    );
+
+    const call_result = try vm.call_contract(caller, contract_address, 0, calldata, 1_000_000_000, false);
     defer if (call_result.output) |output| allocator.free(output);
 
     std.log.debug("=== CALL COMPLETE ===", .{});
-    std.log.debug("Call result - gas_left: {}, success: {}, gas_used: {}", .{
-        call_result.gas_left, 
-        call_result.success,
-        1_000_000_000 - call_result.gas_left
-    });
-    
+    std.log.debug("Call result - gas_left: {}, success: {}, gas_used: {}", .{ call_result.gas_left, call_result.success, 1_000_000_000 - call_result.gas_left });
+
     if (call_result.output) |output| {
-        std.log.debug("Output length: {}, data: {x}", .{output.len, output});
+        std.log.debug("Output length: {}, data: {x}", .{ output.len, output });
     }
-    
+
     try testing.expect(call_result.success);
 }

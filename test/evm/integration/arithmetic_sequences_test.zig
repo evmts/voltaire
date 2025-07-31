@@ -270,46 +270,48 @@ test "Integration: Conditional arithmetic based on comparison" {
     const interpreter: Operation.Interpreter = &evm;
     const state: Operation.State = frame_ptr;
 
-    // Test case 1: a=30, b=20 (a > b)
-    try frame_ptr.stack.append(20); // b
-    try frame_ptr.stack.append(30); // a, Stack: [20, 30] (top is a=30)
+    // Test case 1: a=30, b=20 (want to check if a > b and calculate a - b)
+    const a: u256 = 30;
+    const b: u256 = 20;
+    
+    try frame_ptr.stack.append(b); // Stack: [20]
+    try frame_ptr.stack.append(a); // Stack: [20, 30]
 
-    // Duplicate values for comparison
-    _ = try evm.table.execute(0, interpreter, state, 0x80); // DUP1: Stack: [20, 30, 30]
-    _ = try evm.table.execute(0, interpreter, state, 0x82); // DUP3: Stack: [20, 30, 30, 20]
+    // To check if a > b, we need a on top for GT
+    // GT computes top > second, so we want 30 > 20
+    _ = try evm.table.execute(0, interpreter, state, 0x11); // GT: Stack: [1] (30 > 20 = true)
 
-    // Compare a > b - GT pops b then a, returns 1 if a > b
-    _ = try evm.table.execute(0, interpreter, state, 0x11); // GT: Stack: [20, 30, 1] (30 > 20 = true)
+    // Verify the comparison result
+    const comparison1 = try frame_ptr.stack.peek_n(0);
+    try testing.expectEqual(@as(u256, 1), comparison1); // a > b is true
 
-    // If true (a > b), calculate a - b
-    // Since we got 1 (true), we proceed with a - b
-    _ = try evm.table.execute(0, interpreter, state, 0x50); // POP: Stack: [20, 30]
-
-    // SUB pops b then a, calculates a - b
-    // With [20, 30] on stack, SUB pops 30 (b) then 20 (a), calculates 20 - 30 which underflows
-    // We need to swap to get [30, 20] so SUB calculates 30 - 20 = 10
-    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1: Stack: [30, 20]
-    _ = try evm.table.execute(0, interpreter, state, 0x03); // SUB: Stack: [10] (30 - 20)
+    // Now calculate a - b
+    // We need to push values again since GT consumed them
+    frame_ptr.stack.clear();
+    try frame_ptr.stack.append(a); // Stack: [30]
+    try frame_ptr.stack.append(b); // Stack: [30, 20]
+    
+    // SUB calculates second - top, so 30 - 20 = 10
+    _ = try evm.table.execute(0, interpreter, state, 0x03); // SUB: Stack: [10]
 
     const result1 = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 10), result1);
 
-    // Test case 2: a=15, b=25 (a < b)
+    // Test case 2: a=15, b=25 (want to check if a > b)
     frame_ptr.stack.clear();
-    try frame_ptr.stack.append(25); // b
-    try frame_ptr.stack.append(15); // a, Stack: [25, 15] (top is a=15)
+    const a2: u256 = 15;
+    const b2: u256 = 25;
+    
+    try frame_ptr.stack.append(b2); // Stack: [25]
+    try frame_ptr.stack.append(a2); // Stack: [25, 15]
 
-    // Duplicate values for comparison
-    _ = try evm.table.execute(0, interpreter, state, 0x80); // DUP1: Stack: [25, 15, 15]
-    _ = try evm.table.execute(0, interpreter, state, 0x82); // DUP3: Stack: [25, 15, 15, 25]
+    // To check if a > b, we have a=15 on top and b=25 second
+    // GT computes top > second, so 15 > 25 = 0 (false)
+    _ = try evm.table.execute(0, interpreter, state, 0x11); // GT: Stack: [0]
 
-    // Compare a > b - GT pops b then a, returns 1 if a > b
-    _ = try evm.table.execute(0, interpreter, state, 0x11); // GT: Stack: [25, 15, 0] (15 > 25 = false)
-
-    // If false (a <= b), we would calculate b - a
-    // For this test, we'll just verify the comparison result
+    // Verify the comparison result
     const comparison_result = try frame_ptr.stack.peek_n(0);
-    try testing.expectEqual(@as(u256, 0), comparison_result); // Comparison was false as expected
+    try testing.expectEqual(@as(u256, 0), comparison_result); // 15 > 25 = false
 }
 
 test "Integration: Calculate average of multiple values" {

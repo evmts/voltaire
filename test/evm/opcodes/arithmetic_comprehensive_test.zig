@@ -394,6 +394,7 @@ test "SUB (0x03): Basic subtraction" {
     defer frame.deinit();
 
     // Test basic subtraction: 10 - 5 = 5
+    // SUB calculates second - top, so we need [10, 5] with 5 on top
     try frame.stack.append(10);
     try frame.stack.append(5);
 
@@ -441,6 +442,7 @@ test "SUB: Underflow wraps to max" {
     defer frame.deinit();
 
     // Test underflow: 0 - 1 = MAX
+    // SUB calculates second - top, so we need [0, 1] with 1 on top
     try frame.stack.append(0);
     try frame.stack.append(1);
 

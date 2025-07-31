@@ -1653,6 +1653,20 @@ pub fn build(b: *std.Build) void {
     const compare_test_step = b.step("test-compare", "Run execution comparison test");
     compare_test_step.dependOn(&run_compare_test.step);
     
+    // Add ERC20 trace test
+    const erc20_trace_test = b.addTest(.{
+        .name = "erc20-trace-test",
+        .root_source_file = b.path("test/evm/trace_erc20_constructor.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    erc20_trace_test.root_module.addImport("evm", evm_mod);
+    erc20_trace_test.root_module.addImport("primitives", primitives_mod);
+    
+    const run_erc20_trace_test = b.addRunArtifact(erc20_trace_test);
+    const erc20_trace_test_step = b.step("test-erc20-trace", "Run ERC20 constructor trace test");
+    erc20_trace_test_step.dependOn(&run_erc20_trace_test.step);
+    
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);

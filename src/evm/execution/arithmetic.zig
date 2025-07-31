@@ -149,6 +149,7 @@ pub fn op_sub(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
 
+    // EVM SUB calculates: second - top (a - b)
     const result = a -% b;
 
     frame.stack.set_top_unsafe(result);
