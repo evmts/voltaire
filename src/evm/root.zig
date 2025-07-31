@@ -189,6 +189,9 @@ pub const opcode = @import("opcodes/opcode.zig");
 /// Logger for EVM operations
 pub const Log = @import("log.zig");
 
+/// Tracer for capturing execution traces
+pub const Tracer = @import("tracer.zig").Tracer;
+
 /// EIP-7702 EOA delegation bytecode format
 pub const eip_7702_bytecode = @import("frame/eip_7702_bytecode.zig");
 

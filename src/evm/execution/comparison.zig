@@ -3,6 +3,7 @@ const Operation = @import("../opcodes/operation.zig");
 const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
+const Log = @import("../log.zig");
 
 // Helper to convert Stack errors to ExecutionError
 // These are redundant and can be removed.
@@ -48,6 +49,8 @@ pub fn op_gt(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
         .gt => 1,
         .eq, .lt => 0,
     };
+    
+    Log.debug("GT: a={}, b={}, result={} (a > b = {})", .{ a, b, result, a > b });
 
     // Modify the current top of the stack in-place with the result
     frame.stack.set_top_unsafe(result);
@@ -135,6 +138,8 @@ pub fn op_iszero(pc: usize, interpreter: Operation.Interpreter, state: Operation
     // Optimized: Use @intFromBool for direct bool to int conversion
     // This should compile to more efficient assembly than if/else
     const result: u256 = @intFromBool(value == 0);
+    
+    Log.debug("ISZERO: value={}, result={} (value == 0 = {})", .{ value, result, value == 0 });
 
     // Modify the current top of the stack in-place with the result
     frame.stack.set_top_unsafe(result);

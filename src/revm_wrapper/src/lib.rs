@@ -11,6 +11,9 @@ use std::ffi::{c_char, CStr, CString};
 use std::ptr;
 use std::time::Instant;
 
+#[cfg(test)]
+mod trace_test;
+
 /// Error codes for C interop
 #[repr(C)]
 pub enum RevmErrorCode {

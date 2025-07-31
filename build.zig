@@ -1608,6 +1608,36 @@ pub fn build(b: *std.Build) void {
     const string_storage_test_step = b.step("test-string-storage", "Run string storage tests");
     string_storage_test_step.dependOn(&run_string_storage_test.step);
     
+    // Add JUMPI bug test
+    const jumpi_bug_test = b.addTest(.{
+        .name = "jumpi-bug-test",
+        .root_source_file = b.path("test/evm/jumpi_bug_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    jumpi_bug_test.root_module.addImport("evm", evm_mod);
+    jumpi_bug_test.root_module.addImport("Address", primitives_mod);
+    
+    const run_jumpi_bug_test = b.addRunArtifact(jumpi_bug_test);
+    test_step.dependOn(&run_jumpi_bug_test.step);
+    const jumpi_bug_test_step = b.step("test-jumpi", "Run JUMPI bug test");
+    jumpi_bug_test_step.dependOn(&run_jumpi_bug_test.step);
+    
+    // Add tracer test
+    const tracer_test = b.addTest(.{
+        .name = "tracer-test",
+        .root_source_file = b.path("test/evm/tracer_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    tracer_test.root_module.addImport("evm", evm_mod);
+    tracer_test.root_module.addImport("Address", primitives_mod);
+    
+    const run_tracer_test = b.addRunArtifact(tracer_test);
+    test_step.dependOn(&run_tracer_test.step);
+    const tracer_test_step = b.step("test-tracer", "Run tracer test");
+    tracer_test_step.dependOn(&run_tracer_test.step);
+    
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
