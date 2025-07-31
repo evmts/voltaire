@@ -17,8 +17,8 @@ pub fn main() !void {
     
     std.debug.print("\n=== Direct Guillotine vs revm Performance Comparison ===\n\n", .{});
     
-    // Test 1: Simple Transfer
-    try compareSimpleTransfer(allocator);
+    // Test 1: Simple Smart Contract
+    try compareSimpleContract(allocator);
     
     // Test 2: Arithmetic Operations
     try compareArithmeticOps(allocator);
@@ -29,12 +29,20 @@ pub fn main() !void {
     std.debug.print("\n=== Comparison Complete ===\n", .{});
 }
 
-fn compareSimpleTransfer(allocator: std.mem.Allocator) !void {
-    std.debug.print("--- Simple ETH Transfer ---\n", .{});
+fn compareSimpleContract(allocator: std.mem.Allocator) !void {
+    std.debug.print("--- Simple Smart Contract ---\n", .{});
     
-    const from = Address.from_u256(0x1111);
-    const to = Address.from_u256(0x2222);
-    const value: u256 = 1000;
+    // Use bytecode from solidity test files - simple constructor that returns a small contract
+    const contract_bytecode_hex = "608060405234801561001057600080fd5b50610100565b6101008061001f6000396000f3fe";
+    
+    // Convert hex to bytes
+    const bytecode_len = contract_bytecode_hex.len / 2;
+    const bytecode = try allocator.alloc(u8, bytecode_len);
+    defer allocator.free(bytecode);
+    _ = try std.fmt.hexToBytes(bytecode, contract_bytecode_hex);
+    
+    const caller = Address.from_u256(0x1111);
+    const contract_addr = Address.from_u256(0x2222);
     
     // Guillotine benchmark
     var guillotine_total: u64 = 0;
@@ -49,22 +57,18 @@ fn compareSimpleTransfer(allocator: std.mem.Allocator) !void {
         var vm = try Vm.init(allocator, db_interface, null, null, null, null, 0, false);
         defer vm.deinit();
         
-        try vm.state.set_balance(from, value * 2);
+        try vm.state.set_balance(caller, 1000000);
         
         var contract = Contract.init(
-            from,  // caller
-            to,    // addr
-            value, // value
+            caller,  // caller
+            contract_addr,    // addr
+            0, // value
             1000000, // gas
-            &.{},  // code
+            bytecode,  // code
             [_]u8{0} ** 32, // code_hash
             &.{},  // input
             false, // is_static
         );
-        defer contract.deinit(allocator, null);
-        
-        var frame = try Frame.init(allocator, &contract);
-        defer frame.deinit();
         
         const start = std.time.nanoTimestamp();
         const result = try vm.interpret(&contract, &.{}, false);
@@ -81,10 +85,11 @@ fn compareSimpleTransfer(allocator: std.mem.Allocator) !void {
         var vm = try Revm.init(allocator, .{});
         defer vm.deinit();
         
-        try vm.setBalance(from, value * 2);
+        try vm.setBalance(caller, 1000000);
+        try vm.setCode(contract_addr, bytecode);
         
         const start = std.time.nanoTimestamp();
-        var result = try vm.call(from, to, value, &.{}, 21000);
+        var result = try vm.call(caller, contract_addr, 0, &.{}, 1000000);
         defer result.deinit();
         const end = std.time.nanoTimestamp();
         
@@ -152,10 +157,6 @@ fn compareArithmeticOps(allocator: std.mem.Allocator) !void {
                 &.{},  // input
                 false,  // is_static
             );
-            defer contract.deinit(allocator, null);
-            
-            var frame = try Frame.init(allocator, &contract);
-            defer frame.deinit();
             
             const start = std.time.nanoTimestamp();
             const result = try vm.interpret(&contract, &.{}, false);
@@ -247,10 +248,6 @@ fn compareMemoryOps(allocator: std.mem.Allocator) !void {
                 &.{},  // input
                 false,  // is_static
             );
-            defer contract.deinit(allocator, null);
-            
-            var frame = try Frame.init(allocator, &contract);
-            defer frame.deinit();
             
             const start = std.time.nanoTimestamp();
             const result = try vm.interpret(&contract, &.{}, false);
