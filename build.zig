@@ -1521,6 +1521,21 @@ pub fn build(b: *std.Build) void {
     // Hardfork tests removed completely
     test_step.dependOn(&run_delegatecall_test.step);
     test_step.dependOn(&run_devtool_test.step);
+    
+    // Add Benchmark tests
+    const benchmark_test = b.addTest(.{
+        .name = "benchmark-test",
+        .root_source_file = b.path("test/evm/benchmark_tests.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    benchmark_test.root_module.addImport("primitives", primitives_mod);
+    benchmark_test.root_module.addImport("evm", evm_mod);
+    benchmark_test.root_module.addImport("Address", primitives_mod);
+    const run_benchmark_test = b.addRunArtifact(benchmark_test);
+    const benchmark_test_step = b.step("test-evm-bench", "Run EVM benchmark reproduction tests");
+    benchmark_test_step.dependOn(&run_benchmark_test.step);
+    test_step.dependOn(&run_benchmark_test.step);
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
