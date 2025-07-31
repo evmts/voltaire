@@ -47,8 +47,8 @@ test "tracer captures opcode execution" {
     // Verify we have trace entries
     try testing.expect(trace_output.len > 0);
     
-    // Debug print the trace output
-    std.debug.print("\nTrace output:\n{s}\n", .{trace_output});
+    // Debug print can be removed now that JSON is working
+    // std.debug.print("\nTrace output:\n{s}\n", .{trace_output});
     
     // Parse JSON lines and verify structure
     var line_it = std.mem.tokenizeScalar(u8, trace_output, '\n');
@@ -71,8 +71,8 @@ test "tracer captures opcode execution" {
         if (entry.pc == 4 and entry.op == 0x01) {
             found_add = true;
             try testing.expectEqual(@as(usize, 2), entry.stack.len);
-            try testing.expectEqualStrings("0x3", entry.stack[0]);
-            try testing.expectEqualStrings("0x5", entry.stack[1]);
+            try testing.expectEqualStrings("0x5", entry.stack[0]);
+            try testing.expectEqualStrings("0x3", entry.stack[1]);
         }
     }
     

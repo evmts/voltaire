@@ -25,11 +25,11 @@ pub const Tracer = struct {
         const op_name = opcodes.get_name(op_enum);
         
         // Format gas values as hex strings to match REVM
-        var gas_hex: [18]u8 = undefined;
-        _ = try std.fmt.bufPrint(&gas_hex, "0x{x}", .{gas});
+        var gas_hex_buf: [18]u8 = undefined;
+        const gas_hex = try std.fmt.bufPrint(&gas_hex_buf, "0x{x}", .{gas});
         
-        var gas_cost_hex: [18]u8 = undefined;
-        _ = try std.fmt.bufPrint(&gas_cost_hex, "0x{x}", .{gas_cost});
+        var gas_cost_hex_buf: [18]u8 = undefined;
+        const gas_cost_hex = try std.fmt.bufPrint(&gas_cost_hex_buf, "0x{x}", .{gas_cost});
         
         // Start JSON object
         try self.writer.writeAll("{\"pc\":");
@@ -39,11 +39,11 @@ pub const Tracer = struct {
         try std.json.stringify(opcode, .{}, self.writer);
         
         try self.writer.writeAll(",\"gas\":\"");
-        try self.writer.writeAll(gas_hex[0..std.mem.indexOfScalar(u8, &gas_hex, 0) orelse gas_hex.len]);
+        try self.writer.writeAll(gas_hex);
         try self.writer.writeAll("\"");
         
         try self.writer.writeAll(",\"gasCost\":\"");
-        try self.writer.writeAll(gas_cost_hex[0..std.mem.indexOfScalar(u8, &gas_cost_hex, 0) orelse gas_cost_hex.len]);
+        try self.writer.writeAll(gas_cost_hex);
         try self.writer.writeAll("\"");
         
         // Write stack as array of hex strings
