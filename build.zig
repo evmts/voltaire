@@ -922,6 +922,8 @@ pub fn build(b: *std.Build) void {
         .name = "guillotine-devtool",
         .root_module = devtool_mod,
     });
+    devtool_exe.addCSourceFile(.{ .file = b.path("src/devtool/native_menu.c"), .flags = &[_][]const u8{"-ObjC"} });
+    devtool_exe.addIncludePath(webui.path("src"));
 
     // Link webui library
     devtool_exe.linkLibrary(webui.artifact("webui"));
@@ -930,6 +932,8 @@ pub fn build(b: *std.Build) void {
     devtool_exe.linkLibC();
     if (target.result.os.tag == .macos) {
         devtool_exe.linkFramework("WebKit");
+        devtool_exe.linkFramework("AppKit");
+        devtool_exe.linkFramework("Foundation");
     }
 
     // Make devtool build depend on asset generation
