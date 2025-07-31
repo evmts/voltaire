@@ -521,8 +521,8 @@ fn run_zig_test(test: &OpcodeTest) -> Result<Vec<U256>, String> {
             zigSetGasRemaining(frame, 1000);
         }
         
-        // Push values to stack
-        for value in &test.stack_input {
+        // Push values to stack in reverse order to match REVM
+        for value in test.stack_input.iter().rev() {
             zigStackPush(frame, (*value).into());
         }
         

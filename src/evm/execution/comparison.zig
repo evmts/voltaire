@@ -14,10 +14,9 @@ pub fn op_lt(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
-    const result: u256 = switch (std.math.order(a, b)) {
-        .lt => 1,
-        .eq, .gt => 0,
-    };
+    const result: u256 = if (b < a) 1 else 0;
+    
+    Log.debug("LT: a={}, b={}, result={} (b < a = {})", .{ a, b, result, b < a });
 
     frame.stack.set_top_unsafe(result);
 
@@ -32,10 +31,7 @@ pub fn op_gt(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
-    const result: u256 = switch (std.math.order(a, b)) {
-        .gt => 1,
-        .eq, .lt => 0,
-    };
+    const result: u256 = if (b > a) 1 else 0;
     
     Log.debug("GT: a={}, b={}, result={} (b > a = {})", .{ a, b, result, b > a });
 
@@ -56,10 +52,7 @@ pub fn op_slt(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     const a_i256 = @as(i256, @bitCast(a));
     const b_i256 = @as(i256, @bitCast(b));
 
-    const result: u256 = switch (std.math.order(a_i256, b_i256)) {
-        .lt => 1,
-        .eq, .gt => 0,
-    };
+    const result: u256 = if (b_i256 < a_i256) 1 else 0;
 
     frame.stack.set_top_unsafe(result);
 
@@ -77,7 +70,7 @@ pub fn op_sgt(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 
     const a_i256 = @as(i256, @bitCast(a));
     const b_i256 = @as(i256, @bitCast(b));
-    const result: u256 = if (a_i256 > b_i256) 1 else 0;
+    const result: u256 = if (b_i256 > a_i256) 1 else 0;
 
     frame.stack.set_top_unsafe(result);
 

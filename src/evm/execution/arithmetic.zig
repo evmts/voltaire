@@ -56,6 +56,7 @@ const Operation = @import("../opcodes/operation.zig");
 const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
+const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
 const StackValidation = @import("../stack/stack_validation.zig");
 
@@ -579,8 +580,10 @@ pub fn op_exp(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const exp = frame.stack.pop_unsafe();
-    const base = frame.stack.peek_unsafe().*;
+    const base = frame.stack.pop_unsafe();
+    const exp = frame.stack.peek_unsafe().*;
+    
+    Log.debug("EXP: base={}, exp={}", .{ base, exp });
 
     // Calculate gas cost based on exponent byte size
     var exp_copy = exp;

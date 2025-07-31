@@ -1,0 +1,56 @@
+=== Comprehensive Opcode Comparison: Zig EVM vs REVM ===
+
+Testing Arithmetic Opcodes:
+==========================
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+❌ FAIL
+    REVM output: [42]
+    Zig output:  [0]
+✅ PASS
+❌ FAIL
+    REVM output: [2]
+    Zig output:  [5]
+✅ PASS
+❌ FAIL
+    REVM output: [4]
+    Zig output:  [8]
+❌ FAIL
+    REVM output: [4]
+    Zig output:  [0]
+❌ FAIL
+    REVM output: [8]
+    Zig output:  [9]
+❌ FAIL
+    REVM output: [115792089237316195423570985008687907853269984665640564039457584007913129639935]
+    Zig output:  [0]
+
+Testing Comparison Opcodes:
+===========================
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+
+Testing Bitwise Opcodes:
+========================
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+✅ PASS
+
+=== Final Summary ===
+Total Passed: 24
+Total Failed: 6
