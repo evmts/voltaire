@@ -1000,6 +1000,19 @@ pub fn build(b: *std.Build) void {
     const build_evm_runner_step = b.step("build-evm-runner", "Build the EVM benchmark runner");
     build_evm_runner_step.dependOn(&b.addInstallArtifact(evm_runner_exe, .{}).step);
 
+    // Static library for opcode testing FFI
+    const opcode_test_lib = b.addStaticLibrary(.{
+        .name = "guillotine_opcode_test",
+        .root_source_file = b.path("src/evm_opcode_test_ffi.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    opcode_test_lib.root_module.addImport("evm", evm_mod);
+    opcode_test_lib.root_module.addImport("primitives", primitives_mod);
+    opcode_test_lib.root_module.addImport("crypto", crypto_mod);
+    opcode_test_lib.root_module.addImport("build_options", build_options.createModule());
+    b.installArtifact(opcode_test_lib);
+
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const lib_unit_tests = b.addTest(.{
@@ -1102,6 +1115,25 @@ pub fn build(b: *std.Build) void {
     const run_opcodes_test = b.addRunArtifact(opcodes_test);
     const opcodes_test_step = b.step("test-opcodes", "Run Opcodes tests");
     opcodes_test_step.dependOn(&run_opcodes_test.step);
+    
+    // Add Generated Opcode Comparison tests
+    const opcode_comparison_test = b.addTest(.{
+        .name = "opcode-comparison-test",
+        .root_source_file = b.path("test/evm/opcodes/generated_opcode_comparison_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    opcode_comparison_test.root_module.stack_check = false;
+    opcode_comparison_test.root_module.addImport("primitives", primitives_mod);
+    opcode_comparison_test.root_module.addImport("evm", evm_mod);
+    opcode_comparison_test.root_module.addImport("Address", primitives_mod);
+    opcode_comparison_test.root_module.addImport("crypto", crypto_mod);
+    opcode_comparison_test.root_module.addImport("build_options", build_options.createModule());
+
+    const run_opcode_comparison_test = b.addRunArtifact(opcode_comparison_test);
+    const opcode_comparison_test_step = b.step("test-opcode-comparison", "Run opcode comparison tests");
+    opcode_comparison_test_step.dependOn(&run_opcode_comparison_test.step);
 
     // Add VM opcode tests
     const vm_opcode_test = b.addTest(.{

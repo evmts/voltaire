@@ -12,4 +12,9 @@ fn main() {
         .generate()
         .expect("Unable to generate bindings")
         .write_to_file(output_path);
+        
+    // Tell cargo to look for the library in zig-out/lib
+    println!("cargo:rustc-link-search=/Users/williamcory/guillotine-0/zig-out/lib");
+    println!("cargo:rustc-link-search=/Users/williamcory/guillotine-0/target/aarch64-apple-darwin/release");
+    println!("cargo:rustc-link-lib=bn254_wrapper");
 }
