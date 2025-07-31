@@ -43,7 +43,7 @@ fn deployAndCall(allocator: std.mem.Allocator, bytecode: []const u8, calldata: [
         caller,
         0,
         bytecode,
-        10_000_000
+        1_000_000_000 // 1B gas for deployment
     );
     defer if (create_result.output) |output| allocator.free(output);
 
@@ -61,7 +61,7 @@ fn deployAndCall(allocator: std.mem.Allocator, bytecode: []const u8, calldata: [
         contract_address,
         0,
         calldata,
-        100_000_000, // 100M gas
+        1_000_000_000, // 1B gas to match the runner
         false
     );
     defer if (call_result.output) |output| allocator.free(output);
@@ -71,6 +71,18 @@ fn deployAndCall(allocator: std.mem.Allocator, bytecode: []const u8, calldata: [
         call_result.success, 
         if (call_result.output) |output| output.len else 0
     });
+    
+    if (!call_result.success) {
+        std.log.debug("Call failed with gas_left: {}, gas_used: {}", .{
+            call_result.gas_left,
+            1_000_000_000 - call_result.gas_left
+        });
+        if (call_result.output) |output| {
+            if (output.len > 0) {
+                std.log.debug("Revert output: {x}", .{output});
+            }
+        }
+    }
 
     return call_result.success;
 }
@@ -97,7 +109,11 @@ test "benchmark: erc20.mint (failing)" {
     const calldata = try hexDecode(allocator, "30627b7c");
     defer allocator.free(calldata);
     
+    std.log.debug("Running erc20.mint benchmark test", .{});
     const success = try deployAndCall(allocator, bytecode, calldata);
+    if (!success) {
+        std.log.err("erc20.mint test failed - contract execution was not successful", .{});
+    }
     try testing.expect(success);
 }
 

@@ -1536,6 +1536,36 @@ pub fn build(b: *std.Build) void {
     const benchmark_test_step = b.step("test-evm-bench", "Run EVM benchmark reproduction tests");
     benchmark_test_step.dependOn(&run_benchmark_test.step);
     test_step.dependOn(&run_benchmark_test.step);
+    
+    // Add ERC20 mint debug test
+    const erc20_mint_debug_test = b.addTest(.{
+        .name = "erc20-mint-debug-test",
+        .root_source_file = b.path("test/evm/erc20_mint_debug_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    erc20_mint_debug_test.root_module.addImport("primitives", primitives_mod);
+    erc20_mint_debug_test.root_module.addImport("evm", evm_mod);
+    erc20_mint_debug_test.root_module.addImport("Address", primitives_mod);
+    const run_erc20_mint_debug_test = b.addRunArtifact(erc20_mint_debug_test);
+    const erc20_mint_debug_test_step = b.step("test-erc20-debug", "Run ERC20 mint test with full debug logging");
+    erc20_mint_debug_test_step.dependOn(&run_erc20_mint_debug_test.step);
+    
+    // Add constructor REVERT test
+    const constructor_revert_test = b.addTest(.{
+        .name = "constructor-revert-test",
+        .root_source_file = b.path("test/evm/constructor_revert_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    constructor_revert_test.root_module.addImport("primitives", primitives_mod);
+    constructor_revert_test.root_module.addImport("evm", evm_mod);
+    constructor_revert_test.root_module.addImport("Address", primitives_mod);
+    const run_constructor_revert_test = b.addRunArtifact(constructor_revert_test);
+    const constructor_revert_test_step = b.step("test-constructor-revert", "Run constructor REVERT test");
+    constructor_revert_test_step.dependOn(&run_constructor_revert_test.step);
+    test_step.dependOn(&run_constructor_revert_test.step);
+    
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);

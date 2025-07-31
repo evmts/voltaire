@@ -71,6 +71,12 @@ pub fn create_contract_internal(self: *Vm, creator: primitives.Address.Address, 
         init_result.output,
     });
 
+    // Check if init code reverted
+    if (init_result.status == .Revert) {
+        Log.debug("create_contract_internal: Init code reverted, contract creation failed", .{});
+        return CreateResult.init_failure(init_result.gas_left, init_result.output);
+    }
+
     const deployment_code = init_result.output orelse &[_]u8{};
 
     if (deployment_code.len == 0) {
