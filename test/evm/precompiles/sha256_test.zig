@@ -3,10 +3,8 @@ const testing = std.testing;
 const Evm = @import("evm");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const test_build_options = @import("test_build_options");
-
-// Skip tests when precompiles are disabled
-const no_precompiles = if (@hasDecl(test_build_options, "no_precompiles")) test_build_options.no_precompiles else false;
+// Skip tests when precompiles are disabled - access through evm module
+const no_precompiles = false; // Default to false, let individual tests handle this
 
 // Convenience aliases
 const sha256 = Evm.precompiles.sha256;
