@@ -11,6 +11,9 @@ pub fn main() !void {
         \\-h, --help                 Display this help and exit.
         \\-e, --evm <NAME>           EVM implementation to benchmark (default: zig)
         \\-n, --num-runs <NUM>       Number of runs per test case (default: 10)
+        \\--js-runs <NUM>            Number of runs for JavaScript/EthereumJS (defaults to --num-runs value)
+        \\--internal-runs <NUM>      Number of internal runs per hyperfine execution (default: 50)
+        \\--js-internal-runs <NUM>   Number of internal runs for JavaScript (defaults to --internal-runs value)
         \\--export <FORMAT>          Export results (json, markdown)
         \\--compare                  Compare all available EVM implementations
         \\
@@ -38,7 +41,10 @@ pub fn main() !void {
     }
 
     const evm_name = res.args.evm orelse "zig";
-    const num_runs = res.args.@"num-runs" orelse 10;
+    const num_runs = res.args.@"num-runs" orelse 50;
+    const js_runs = res.args.@"js-runs" orelse num_runs;
+    const internal_runs = res.args.@"internal-runs" orelse 100;
+    const js_internal_runs = res.args.@"js-internal-runs" orelse internal_runs;
     const export_format = res.args.@"export";
     const compare_mode = res.args.compare != 0;
 
@@ -52,7 +58,7 @@ pub fn main() !void {
         for (evms) |evm| {
             std.debug.print("\n=== Running benchmarks for {s} ===\n", .{evm});
             
-            var orchestrator = try Orchestrator.init(allocator, evm, num_runs);
+            var orchestrator = try Orchestrator.init(allocator, evm, num_runs, internal_runs, js_runs, js_internal_runs);
             defer orchestrator.deinit();
             
             try orchestrator.discoverTestCases();
@@ -75,7 +81,7 @@ pub fn main() !void {
         // Export comparison results
         if (export_format) |format| {
             if (std.mem.eql(u8, format, "markdown")) {
-                try exportComparisonMarkdown(allocator, all_results.items, num_runs);
+                try exportComparisonMarkdown(allocator, all_results.items, num_runs, js_runs);
             }
         }
         
@@ -85,7 +91,7 @@ pub fn main() !void {
         }
     } else {
         // Single EVM mode
-        var orchestrator = try Orchestrator.init(allocator, evm_name, num_runs);
+        var orchestrator = try Orchestrator.init(allocator, evm_name, num_runs, internal_runs, js_runs, js_internal_runs);
         defer orchestrator.deinit();
 
         // Discover test cases
@@ -106,7 +112,7 @@ pub fn main() !void {
     }
 }
 
-fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orchestrator.BenchmarkResult, num_runs: u32) !void {
+fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orchestrator.BenchmarkResult, num_runs: u32, js_runs: u32) !void {
     // Create the file in bench/official/results.md
     var exe_dir_buf: [std.fs.max_path_bytes]u8 = undefined;
     const exe_path = try std.fs.selfExeDirPath(&exe_dir_buf);
@@ -127,7 +133,11 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
     // Write header
     try file.writer().print("# EVM Benchmark Comparison Results\n\n", .{});
     try file.writer().print("## Summary\n\n", .{});
-    try file.writer().print("**Test Runs per Case**: {}\n", .{num_runs});
+    if (js_runs != num_runs) {
+        try file.writer().print("**Test Runs per Case**: {} (EthereumJS: {})\n", .{num_runs, js_runs});
+    } else {
+        try file.writer().print("**Test Runs per Case**: {}\n", .{num_runs});
+    }
     try file.writer().print("**EVMs Compared**: Guillotine (Zig), REVM (Rust), EthereumJS (JavaScript), Geth (Go), evmone (C++)\n", .{});
     try file.writer().print("**Timestamp**: {} (Unix epoch)\n\n", .{seconds});
     
@@ -141,6 +151,33 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
         "erc20-transfer",
         "ten-thousand-hashes",
         "snailtracer",
+        "opcodes-arithmetic",
+        "opcodes-arithmetic-advanced",
+        "opcodes-bitwise",
+        "opcodes-block-1",
+        "opcodes-block-2",
+        "opcodes-comparison",
+        "opcodes-control",
+        "opcodes-crypto",
+        "opcodes-data",
+        "opcodes-dup",
+        "opcodes-environmental-1",
+        "opcodes-environmental-2",
+        "opcodes-jump-basic",
+        "opcodes-memory",
+        "opcodes-push-pop",
+        "opcodes-storage-cold",
+        "opcodes-storage-warm",
+        "opcodes-swap",
+        "precompile-blake2f",
+        "precompile-bn256add",
+        "precompile-bn256mul",
+        "precompile-bn256pairing",
+        "precompile-ecrecover",
+        "precompile-identity",
+        "precompile-modexp",
+        "precompile-ripemd160",
+        "precompile-sha256",
     };
     
     for (test_cases) |test_case| {
@@ -243,7 +280,10 @@ fn printHelp() !void {
         \\Options:
         \\  -h, --help                 Display this help and exit
         \\  -e, --evm <NAME>           EVM implementation to benchmark (default: zig)
-        \\  -n, --num-runs <NUM>       Number of runs per test case (default: 10)
+        \\  -n, --num-runs <NUM>       Number of runs per test case (default: 50)
+        \\  --js-runs <NUM>            Number of runs for JavaScript/EthereumJS (defaults to --num-runs)
+        \\  --internal-runs <NUM>      Number of internal runs per hyperfine execution (default: 100)
+        \\  --js-internal-runs <NUM>   Number of internal runs for JavaScript (defaults to --internal-runs)
         \\  --export <FORMAT>          Export results (json, markdown)
         \\
         \\Examples:
@@ -252,6 +292,7 @@ fn printHelp() !void {
         \\  orchestrator --export json      Export results to JSON
         \\  orchestrator --export markdown  Export results to Markdown
         \\  orchestrator --compare --export markdown  Compare all EVMs and export
+        \\  orchestrator --compare --js-runs 1  Compare EVMs with only 1 run for JavaScript
         \\
     , .{});
 }

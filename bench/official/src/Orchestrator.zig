@@ -23,6 +23,9 @@ const Orchestrator = @This();
 allocator: std.mem.Allocator,
 evm_name: []const u8,
 num_runs: u32,
+internal_runs: u32,
+js_runs: u32,
+js_internal_runs: u32,
 test_cases: []TestCase,
 results: std.ArrayList(BenchmarkResult),
 
@@ -42,11 +45,14 @@ pub const BenchmarkResult = struct {
     runs: u32,
 };
 
-pub fn init(allocator: std.mem.Allocator, evm_name: []const u8, num_runs: u32) !Orchestrator {
+pub fn init(allocator: std.mem.Allocator, evm_name: []const u8, num_runs: u32, internal_runs: u32, js_runs: u32, js_internal_runs: u32) !Orchestrator {
     return Orchestrator{
         .allocator = allocator,
         .evm_name = evm_name,
         .num_runs = num_runs,
+        .internal_runs = internal_runs,
+        .js_runs = js_runs,
+        .js_internal_runs = js_internal_runs,
         .test_cases = &[_]TestCase{},
         .results = std.ArrayList(BenchmarkResult).init(allocator),
     };
@@ -124,6 +130,10 @@ pub fn runBenchmarks(self: *Orchestrator) !void {
 }
 
 fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
+    // Check if this is JavaScript running snailtracer - use reduced runs if so
+    const is_js_snailtracer = std.mem.eql(u8, self.evm_name, "ethereumjs") and std.mem.eql(u8, test_case.name, "snailtracer");
+    const runs_to_use = if (is_js_snailtracer) self.js_runs else self.num_runs;
+    const internal_runs_to_use = if (is_js_snailtracer) self.js_internal_runs else self.internal_runs;
     // Read calldata
     const calldata_file = try std.fs.cwd().openFile(test_case.calldata_path, .{});
     defer calldata_file.close();
@@ -151,14 +161,14 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
     };
     defer if (!std.mem.eql(u8, self.evm_name, "zig") and !std.mem.eql(u8, self.evm_name, "ethereumjs") and !std.mem.eql(u8, self.evm_name, "geth") and !std.mem.eql(u8, self.evm_name, "evmone")) self.allocator.free(runner_path);
     
-    const num_runs_str = try std.fmt.allocPrint(self.allocator, "{}", .{self.num_runs});
+    const num_runs_str = try std.fmt.allocPrint(self.allocator, "{}", .{runs_to_use});
     defer self.allocator.free(num_runs_str);
     
     // Build hyperfine command
     const hyperfine_cmd = try std.fmt.allocPrint(
         self.allocator,
-        "{s} --contract-code-path {s} --calldata {s} --num-runs 1",
-        .{ runner_path, test_case.bytecode_path, trimmed_calldata }
+        "{s} --contract-code-path {s} --calldata {s} --num-runs {}",
+        .{ runner_path, test_case.bytecode_path, trimmed_calldata, internal_runs_to_use }
     );
     defer self.allocator.free(hyperfine_cmd);
 
@@ -168,6 +178,7 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
             "hyperfine",
             "--runs", num_runs_str,
             "--warmup", "3",
+            "--shell=none",
             "--export-json", "-",  // Export to stdout
             hyperfine_cmd,
         },
@@ -181,11 +192,11 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
 
     // Parse JSON results
     if (result.stdout.len > 0) {
-        try self.parseHyperfineJson(test_case.name, result.stdout);
+        try self.parseHyperfineJson(test_case.name, result.stdout, runs_to_use);
     }
 }
 
-fn parseHyperfineJson(self: *Orchestrator, test_name: []const u8, json_data: []const u8) !void {
+fn parseHyperfineJson(self: *Orchestrator, test_name: []const u8, json_data: []const u8, runs: u32) !void {
     // Simple JSON parsing - look for the key values we need
     // This is a basic parser that extracts the values we need
     
@@ -236,7 +247,14 @@ fn parseHyperfineJson(self: *Orchestrator, test_name: []const u8, json_data: []c
         const start = stddev_pos + 10;
         if (std.mem.indexOfPos(u8, json_data, start, ",")) |end| {
             const stddev_str = std.mem.trim(u8, json_data[start..end], " ");
-            stddev = try std.fmt.parseFloat(f64, stddev_str);
+            if (!std.mem.eql(u8, stddev_str, "null")) {
+                stddev = try std.fmt.parseFloat(f64, stddev_str);
+            }
+        } else if (std.mem.indexOfPos(u8, json_data, start, "}")) |end| {
+            const stddev_str = std.mem.trim(u8, json_data[start..end], " ");
+            if (!std.mem.eql(u8, stddev_str, "null")) {
+                stddev = try std.fmt.parseFloat(f64, stddev_str);
+            }
         }
     }
     
@@ -248,7 +266,7 @@ fn parseHyperfineJson(self: *Orchestrator, test_name: []const u8, json_data: []c
         .max_ms = max * 1000.0,
         .std_dev_ms = stddev * 1000.0,
         .median_ms = median * 1000.0,
-        .runs = self.num_runs,
+        .runs = runs,
     };
     
     try self.results.append(result);
