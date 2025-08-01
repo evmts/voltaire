@@ -1,13 +1,12 @@
 import UploadIcon from 'lucide-solid/icons/upload'
 import { type Component, createSignal, type Setter } from 'solid-js'
-import { sampleContracts } from '~/components/evm-debugger/types'
-import { loadBytecode, resetEvm } from '~/components/evm-debugger/utils'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Combobox, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxTrigger } from '~/components/ui/combobox'
 import { TextArea } from '~/components/ui/textarea'
 import { TextFieldRoot } from '~/components/ui/textfield'
-import type { EvmState } from './types'
+import { type EvmState, sampleContracts } from '~/lib/types'
+import { loadBytecode, resetEvm } from '~/lib/utils'
 
 interface BytecodeLoaderProps {
 	bytecode: string

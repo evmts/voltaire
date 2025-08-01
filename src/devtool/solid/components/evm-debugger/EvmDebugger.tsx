@@ -1,16 +1,16 @@
 import { type Accessor, createSignal, type Setter, Show } from 'solid-js'
 import BytecodeLoader from '~/components/evm-debugger/BytecodeLoader'
+import BytecodeView from '~/components/evm-debugger/BytecodeView'
 import Controls from '~/components/evm-debugger/Controls'
 import ErrorAlert from '~/components/evm-debugger/ErrorAlert'
+import GasUsage from '~/components/evm-debugger/GasUsage'
 import Header from '~/components/evm-debugger/Header'
 import LogsAndReturn from '~/components/evm-debugger/LogsAndReturn'
 import Memory from '~/components/evm-debugger/Memory'
 import Stack from '~/components/evm-debugger/Stack'
 import StateSummary from '~/components/evm-debugger/StateSummary'
 import Storage from '~/components/evm-debugger/Storage'
-import BytecodeView from './BytecodeView'
-import GasUsage from './GasUsage'
-import type { EvmState } from './types'
+import type { EvmState } from '~/lib/types'
 
 interface EvmDebuggerProps {
 	isDarkMode: Accessor<boolean>

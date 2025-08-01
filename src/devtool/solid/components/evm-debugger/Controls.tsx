@@ -7,7 +7,7 @@ import StepForwardIcon from 'lucide-solid/icons/step-forward'
 import { type Component, type Setter, Show } from 'solid-js'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import type { EvmState } from './types'
+import type { EvmState } from '~/lib/types'
 
 interface ControlsProps {
 	isRunning: boolean

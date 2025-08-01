@@ -1,2 +1,5 @@
 node_modules
 dist
+
+# Don't ignore lib folder (ignored because of python)
+!lib/

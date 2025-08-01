@@ -4,12 +4,12 @@ import RectangleEllipsisIcon from 'lucide-solid/icons/rectangle-ellipsis'
 import { type Component, For, Show } from 'solid-js'
 import { toast } from 'solid-sonner'
 import Code from '~/components/Code'
-import { type EvmState, formatHex, formatMemory } from '~/components/evm-debugger/types'
-import { copyToClipboard } from '~/components/evm-debugger/utils'
 import InfoTooltip from '~/components/InfoTooltip'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { cn } from '~/lib/cn'
+import { type EvmState, formatHex, formatMemory } from '~/lib/types'
+import { copyToClipboard } from '~/lib/utils'
 
 interface MemoryProps {
 	state: EvmState
