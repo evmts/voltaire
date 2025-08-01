@@ -66,11 +66,11 @@ pub fn op_slt(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     // Peek the new top operand (a) unsafely
     const a = frame.stack.peek_unsafe().*;
 
-    // Signed less than
+    // Signed less than: b < a (where b was popped first, a is remaining top)
     const a_i256 = @as(i256, @bitCast(a));
     const b_i256 = @as(i256, @bitCast(b));
 
-    const result: u256 = switch (std.math.order(a_i256, b_i256)) {
+    const result: u256 = switch (std.math.order(b_i256, a_i256)) {
         .lt => 1,
         .eq, .gt => 0,
     };
@@ -92,11 +92,11 @@ pub fn op_sgt(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     // Peek the new top operand (a) unsafely
     const a = frame.stack.peek_unsafe().*;
 
-    // Signed greater than
+    // Signed greater than: b > a (where b was popped first, a is remaining top)
     const a_i256 = @as(i256, @bitCast(a));
     const b_i256 = @as(i256, @bitCast(b));
 
-    const result: u256 = if (a_i256 > b_i256) 1 else 0;
+    const result: u256 = if (b_i256 > a_i256) 1 else 0;
 
     // Modify the current top of the stack in-place with the result
     frame.stack.set_top_unsafe(result);

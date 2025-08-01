@@ -181,32 +181,32 @@ pub fn op_mcopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.
     }
 
     // Pop three values unsafely - bounds checking is done in jump_table.zig
-    // EVM stack order: [..., dest, src, size] (top to bottom)
-    const size = frame.stack.pop_unsafe();
+    // EVM stack order per EIP-5656: [length, src, dst] (top to bottom)
+    const length = frame.stack.pop_unsafe();
     const src = frame.stack.pop_unsafe();
     const dest = frame.stack.pop_unsafe();
 
-    if (size == 0) {
+    if (length == 0) {
         @branchHint(.unlikely);
         return Operation.ExecutionResult{};
     }
 
     // Check bounds
-    if (dest > std.math.maxInt(usize) or src > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
+    if (dest > std.math.maxInt(usize) or src > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
         @branchHint(.unlikely);
         return ExecutionError.Error.OutOfOffset;
     }
     const dest_usize = @as(usize, @intCast(dest));
     const src_usize = @as(usize, @intCast(src));
-    const size_usize = @as(usize, @intCast(size));
+    const length_usize = @as(usize, @intCast(length));
 
     // Calculate memory expansion gas cost
-    const max_addr = @max(dest_usize + size_usize, src_usize + size_usize);
+    const max_addr = @max(dest_usize + length_usize, src_usize + length_usize);
     const memory_gas = frame.memory.get_expansion_cost(@as(u64, @intCast(max_addr)));
     try frame.consume_gas(memory_gas);
 
     // Dynamic gas for copy operation
-    const word_size = (size_usize + 31) / 32;
+    const word_size = (length_usize + 31) / 32;
     try frame.consume_gas(GasConstants.CopyGas * word_size);
 
     // Ensure memory is available for both source and destination
@@ -218,17 +218,17 @@ pub fn op_mcopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.
     if (mem_slice.len >= max_addr) {
         @branchHint(.likely);
         // Handle overlapping memory copy correctly
-        if (dest_usize > src_usize and dest_usize < src_usize + size_usize) {
+        if (dest_usize > src_usize and dest_usize < src_usize + length_usize) {
             @branchHint(.unlikely);
             // Forward overlap: dest is within source range, copy backwards
-            std.mem.copyBackwards(u8, mem_slice[dest_usize .. dest_usize + size_usize], mem_slice[src_usize .. src_usize + size_usize]);
-        } else if (src_usize > dest_usize and src_usize < dest_usize + size_usize) {
+            std.mem.copyBackwards(u8, mem_slice[dest_usize .. dest_usize + length_usize], mem_slice[src_usize .. src_usize + length_usize]);
+        } else if (src_usize > dest_usize and src_usize < dest_usize + length_usize) {
             @branchHint(.unlikely);
             // Backward overlap: src is within dest range, copy forwards
-            std.mem.copyForwards(u8, mem_slice[dest_usize .. dest_usize + size_usize], mem_slice[src_usize .. src_usize + size_usize]);
+            std.mem.copyForwards(u8, mem_slice[dest_usize .. dest_usize + length_usize], mem_slice[src_usize .. src_usize + length_usize]);
         } else {
             // No overlap, either direction is fine
-            std.mem.copyForwards(u8, mem_slice[dest_usize .. dest_usize + size_usize], mem_slice[src_usize .. src_usize + size_usize]);
+            std.mem.copyForwards(u8, mem_slice[dest_usize .. dest_usize + length_usize], mem_slice[src_usize .. src_usize + length_usize]);
         }
     } else {
         return ExecutionError.Error.OutOfOffset;
