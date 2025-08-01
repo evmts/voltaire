@@ -91,11 +91,11 @@ const GenerateAssetsStep = struct {
 
         while (try walker.next()) |entry| {
             if (entry.kind != .file) continue;
-            
+
             const web_path = try std.fmt.allocPrint(b.allocator, "/{s}", .{entry.path});
             const embed_path = try std.fmt.allocPrint(b.allocator, "dist/{s}", .{entry.path});
             const mime_type = getMimeType(entry.path);
-            
+
             try writer.print("    Self.init(\n", .{});
             try writer.print("        \"{s}\",\n", .{web_path});
             try writer.print("        @embedFile(\"{s}\"),\n", .{embed_path});
@@ -150,14 +150,14 @@ pub fn build(b: *std.Build) void {
 
     // Custom build option to disable precompiles
     const no_precompiles = b.option(bool, "no_precompiles", "Disable all EVM precompiles for minimal build") orelse false;
-    
+
     // Detect Ubuntu native build (has Rust library linking issues)
     const force_bn254 = b.option(bool, "force_bn254", "Force BN254 even on Ubuntu") orelse false;
     const is_ubuntu_native = target.result.os.tag == .linux and target.result.cpu.arch == .x86_64 and !force_bn254;
-    
+
     // Disable BN254 on Ubuntu native builds to avoid Rust library linking issues
     const no_bn254 = no_precompiles or is_ubuntu_native;
-    
+
     // Create build options module
     const build_options = b.addOptions();
     build_options.addOption(bool, "no_precompiles", no_precompiles);
@@ -212,7 +212,7 @@ pub fn build(b: *std.Build) void {
     // BN254 Rust library integration for ECMUL and ECPAIRING precompiles
     // Uses arkworks ecosystem for production-grade elliptic curve operations
     // Skip on Ubuntu native builds due to Rust library linking issues
-    
+
     // Determine the Rust target triple based on the Zig target
     // Always specify explicit Rust target for consistent library format
     const rust_target = switch (target.result.os.tag) {
@@ -228,11 +228,11 @@ pub fn build(b: *std.Build) void {
         },
         else => null,
     };
-    
+
     const bn254_lib = if (!no_bn254) blk: {
         const rust_profile = if (optimize == .Debug) "dev" else "release";
         const rust_target_dir = if (optimize == .Debug) "debug" else "release";
-        
+
         const rust_build = if (rust_target) |target_triple|
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
         else
@@ -257,10 +257,10 @@ pub fn build(b: *std.Build) void {
             b.fmt("target/{s}/libbn254_wrapper.dylib", .{rust_target_dir});
         lib.addObjectFile(b.path(dylib_path));
         lib.linkLibC();
-        
+
         // Make the rust build a dependency
         lib.step.dependOn(&rust_build.step);
-        
+
         break :blk lib;
     } else null;
 
@@ -305,13 +305,13 @@ pub fn build(b: *std.Build) void {
     if (bn254_lib) |lib| {
         evm_mod.linkLibrary(lib);
         evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
-        
+
         // Also link the dynamic library directly to the module
         const bn254_rust_target_dir = if (optimize == .Debug) "debug" else "release";
         const bn254_dylib_path = if (rust_target) |target_triple|
             b.fmt("target/{s}/{s}/libbn254_wrapper.dylib", .{ target_triple, bn254_rust_target_dir })
         else
-            b.fmt("target/{s}/libbn254_wrapper.dylib", .{ bn254_rust_target_dir });
+            b.fmt("target/{s}/libbn254_wrapper.dylib", .{bn254_rust_target_dir});
         evm_mod.addObjectFile(b.path(bn254_dylib_path));
     }
 
@@ -322,7 +322,7 @@ pub fn build(b: *std.Build) void {
     const revm_lib = if (rust_target != null) blk: {
         const rust_profile = if (optimize == .Debug) "dev" else "release";
         const rust_target_dir = if (optimize == .Debug) "debug" else "release";
-        
+
         const rust_build = if (rust_target) |target_triple|
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/revm_wrapper/Cargo.toml", "--verbose" })
         else
@@ -344,12 +344,12 @@ pub fn build(b: *std.Build) void {
         const dylib_path = if (rust_target) |target_triple|
             b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, rust_target_dir })
         else
-            b.fmt("target/{s}/librevm_wrapper.dylib", .{ rust_target_dir });
+            b.fmt("target/{s}/librevm_wrapper.dylib", .{rust_target_dir});
         lib.addObjectFile(b.path(dylib_path));
-        
+
         // Make the rust build a dependency
         lib.step.dependOn(&rust_build.step);
-        
+
         break :blk lib;
     } else null;
 
@@ -360,20 +360,20 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     revm_mod.addImport("primitives", primitives_mod);
-    
+
     // Link REVM Rust library if available
     if (revm_lib) |lib| {
         revm_mod.linkLibrary(lib);
         revm_mod.addIncludePath(b.path("src/revm_wrapper"));
-        
+
         // Also link the dynamic library directly to the module
         const revm_rust_target_dir = if (optimize == .Debug) "debug" else "release";
         const revm_dylib_path = if (rust_target) |target_triple|
             b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir })
         else
-            b.fmt("target/{s}/librevm_wrapper.dylib", .{ revm_rust_target_dir });
+            b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir});
         revm_mod.addObjectFile(b.path(revm_dylib_path));
-        
+
         // Link additional libraries needed by revm
         if (target.result.os.tag == .linux) {
             lib.linkSystemLibrary("m");
@@ -391,7 +391,7 @@ pub fn build(b: *std.Build) void {
     const evm_bench_lib = if (rust_target != null) blk: {
         const rust_profile = if (optimize == .Debug) "dev" else "release";
         const rust_target_dir = if (optimize == .Debug) "debug" else "release";
-        
+
         const rust_build = if (rust_target) |target_triple|
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/guillotine-rs/Cargo.toml", "--verbose" })
         else
@@ -413,13 +413,13 @@ pub fn build(b: *std.Build) void {
         const lib_path = if (rust_target) |target_triple|
             b.fmt("target/{s}/{s}/libguillotine_ffi.rlib", .{ target_triple, rust_target_dir })
         else
-            b.fmt("target/{s}/libguillotine_ffi.rlib", .{ rust_target_dir });
+            b.fmt("target/{s}/libguillotine_ffi.rlib", .{rust_target_dir});
 
         lib.addObjectFile(b.path(lib_path));
-        
+
         // Make the rust build a dependency
         lib.step.dependOn(&rust_build.step);
-        
+
         // Link additional libraries needed by the benchmark crate
         if (target.result.os.tag == .linux) {
             lib.linkSystemLibrary("m");
@@ -427,11 +427,11 @@ pub fn build(b: *std.Build) void {
             lib.linkSystemLibrary("dl");
         } else if (target.result.os.tag == .macos) {
             lib.linkSystemLibrary("c++");
-            lib.linkFramework("Security");  
+            lib.linkFramework("Security");
             lib.linkFramework("SystemConfiguration");
             lib.linkFramework("CoreFoundation");
         }
-        
+
         break :blk lib;
     } else null;
 
@@ -454,29 +454,29 @@ pub fn build(b: *std.Build) void {
 
     // Create bench module - always use ReleaseFast for benchmarks
     const bench_optimize = if (optimize == .Debug) .ReleaseFast else optimize;
-    
+
     // Create a separate BN254 library for benchmarks that always uses release mode (if enabled)
     const bench_bn254_lib = if (!no_bn254) blk: {
         const bench_rust_profile = "release";
         const bench_rust_target_dir = "release";
-        
+
         const bench_rust_build = if (rust_target) |target_triple|
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
         else
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
-        
+
         // Fix for macOS linking issues (only on macOS)
         if (target.result.os.tag == .macos) {
             bench_rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
         }
-        
+
         // Create static library artifact for the Rust BN254 wrapper (bench version)
         const lib = b.addStaticLibrary(.{
             .name = "bn254_wrapper_bench",
             .target = target,
             .optimize = bench_optimize,
         });
-        
+
         // Link the compiled Rust dynamic library
         const dylib_path = if (rust_target) |target_triple|
             b.fmt("target/{s}/{s}/libbn254_wrapper.dylib", .{ target_triple, bench_rust_target_dir })
@@ -484,7 +484,7 @@ pub fn build(b: *std.Build) void {
             b.fmt("target/{s}/libbn254_wrapper.dylib", .{bench_rust_target_dir});
         lib.addObjectFile(b.path(dylib_path));
         lib.linkLibC();
-        
+
         // Link additional system libraries that Rust might need
         if (target.result.os.tag == .linux) {
             lib.linkSystemLibrary("dl");
@@ -495,16 +495,16 @@ pub fn build(b: *std.Build) void {
             lib.linkFramework("Security");
             lib.linkFramework("CoreFoundation");
         }
-        
+
         // Add include path for C header
         lib.addIncludePath(b.path("src/bn254_wrapper"));
-        
+
         // Make the rust build a dependency
         lib.step.dependOn(&bench_rust_build.step);
-        
+
         break :blk lib;
     } else null;
-    
+
     // Create a separate EVM module for benchmarks with release-mode Rust dependencies
     const bench_evm_mod = b.createModule(.{
         .root_source_file = b.path("src/evm/root.zig"),
@@ -514,36 +514,36 @@ pub fn build(b: *std.Build) void {
     bench_evm_mod.addImport("primitives", primitives_mod);
     bench_evm_mod.addImport("crypto", crypto_mod);
     bench_evm_mod.addImport("build_options", build_options.createModule());
-    
+
     // Link BN254 Rust library to bench EVM module (native targets only, if enabled)
     if (bench_bn254_lib) |lib| {
         bench_evm_mod.linkLibrary(lib);
         bench_evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
-        
+
         // Also link the dynamic library directly to the bench module
         const bench_bn254_rust_target_dir = "release"; // bench always uses release
         const bench_bn254_dylib_path = if (rust_target) |target_triple|
             b.fmt("target/{s}/{s}/libbn254_wrapper.dylib", .{ target_triple, bench_bn254_rust_target_dir })
         else
-            b.fmt("target/{s}/libbn254_wrapper.dylib", .{ bench_bn254_rust_target_dir });
+            b.fmt("target/{s}/libbn254_wrapper.dylib", .{bench_bn254_rust_target_dir});
         bench_evm_mod.addObjectFile(b.path(bench_bn254_dylib_path));
     }
-    
+
     // Link c-kzg library to bench EVM module
     bench_evm_mod.linkLibrary(c_kzg_lib);
-    
+
     const zbench_dep = b.dependency("zbench", .{
         .target = target,
         .optimize = bench_optimize,
     });
-    
+
     const bench_mod = b.createModule(.{
         .root_source_file = b.path("bench/root.zig"),
         .target = target,
         .optimize = bench_optimize,
     });
     bench_mod.addImport("primitives", primitives_mod);
-    bench_mod.addImport("evm", bench_evm_mod);  // Use the bench-specific EVM module
+    bench_mod.addImport("evm", bench_evm_mod); // Use the bench-specific EVM module
     bench_mod.addImport("zbench", zbench_dep.module("zbench"));
     if (revm_lib != null) {
         bench_mod.addImport("revm", revm_mod);
@@ -706,16 +706,14 @@ pub fn build(b: *std.Build) void {
     const wasm_evm_install = b.addInstallArtifact(wasm_evm_lib, .{ .dest_sub_path = "guillotine-evm.wasm" });
 
     // Add step to report WASM bundle sizes for all three builds
-    const wasm_size_step = b.addSystemCommand(&[_][]const u8{ "sh", "-c", 
-        "echo '\\n=== WASM Bundle Size Report ===' && " ++
+    const wasm_size_step = b.addSystemCommand(&[_][]const u8{ "sh", "-c", "echo '\\n=== WASM Bundle Size Report ===' && " ++
         "echo 'Main WASM build:' && " ++
         "ls -lh zig-out/bin/guillotine.wasm | awk '{print \"  Size: \" $5}' && " ++
         "echo '\\nPrimitives WASM build:' && " ++
         "ls -lh zig-out/bin/guillotine-primitives.wasm | awk '{print \"  Size: \" $5}' && " ++
         "echo '\\nEVM WASM build:' && " ++
         "ls -lh zig-out/bin/guillotine-evm.wasm | awk '{print \"  Size: \" $5}' && " ++
-        "echo '=== End Report ===\\n'" 
-    });
+        "echo '=== End Report ===\\n'" });
     wasm_size_step.step.dependOn(&wasm_install.step);
     wasm_size_step.step.dependOn(&wasm_primitives_install.step);
     wasm_size_step.step.dependOn(&wasm_evm_install.step);
@@ -780,27 +778,27 @@ pub fn build(b: *std.Build) void {
     });
     bench_exe.root_module.addImport("bench", bench_mod);
     bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    bench_exe.root_module.addImport("evm", bench_evm_mod);  // Use the bench-specific EVM module
+    bench_exe.root_module.addImport("evm", bench_evm_mod); // Use the bench-specific EVM module
     bench_exe.root_module.addImport("primitives", primitives_mod);
     if (revm_lib != null) {
         bench_exe.root_module.addImport("revm", revm_mod);
     }
-    
+
     // Link the EVM benchmark Rust library if available
     if (evm_bench_lib) |evm_bench| {
         bench_exe.linkLibrary(evm_bench);
         bench_exe.addIncludePath(b.path("src/guillotine-rs"));
     }
-    
+
     // TEMPORARILY DISABLED: benchmark compilation issue
     // b.installArtifact(bench_exe);
-    
+
     const run_bench_cmd = b.addRunArtifact(bench_exe);
     run_bench_cmd.step.dependOn(b.getInstallStep());
-    
+
     const bench_step = b.step("bench", "Run benchmarks");
     bench_step.dependOn(&run_bench_cmd.step);
-    
+
     // Add revm comparison benchmark executable
     const revm_bench_exe = b.addExecutable(.{
         .name = "revm-comparison",
@@ -813,21 +811,21 @@ pub fn build(b: *std.Build) void {
     if (revm_lib != null) {
         revm_bench_exe.root_module.addImport("revm", revm_mod);
     }
-    
+
     // Link the EVM benchmark Rust library if available
     if (evm_bench_lib) |evm_bench| {
         revm_bench_exe.linkLibrary(evm_bench);
         revm_bench_exe.addIncludePath(b.path("src/guillotine-rs"));
     }
-    
+
     b.installArtifact(revm_bench_exe);
-    
+
     const run_revm_bench_cmd = b.addRunArtifact(revm_bench_exe);
     run_revm_bench_cmd.step.dependOn(b.getInstallStep());
-    
+
     const revm_bench_step = b.step("bench-revm", "Run revm comparison benchmarks");
     revm_bench_step.dependOn(&run_revm_bench_cmd.step);
-    
+
     // Official benchmark runner
     const official_bench_exe = b.addExecutable(.{
         .name = "benchmark",
@@ -835,31 +833,31 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    
+
     const clap_dep = b.dependency("clap", .{
         .target = target,
         .optimize = optimize,
     });
     official_bench_exe.root_module.addImport("clap", clap_dep.module("clap"));
-    
+
     b.installArtifact(official_bench_exe);
-    
+
     const run_official_bench_cmd = b.addRunArtifact(official_bench_exe);
     run_official_bench_cmd.step.dependOn(b.getInstallStep());
-    
+
     if (b.args) |args| {
         run_official_bench_cmd.addArgs(args);
     }
-    
+
     // Build revm runner
     const build_revm_runner = b.addSystemCommand(&[_][]const u8{
         "cargo", "build", "--release", "--manifest-path", "bench/official/evms/revm/Cargo.toml",
     });
-    
+
     const official_bench_step = b.step("bench-official", "Run official benchmarks");
     official_bench_step.dependOn(&run_official_bench_cmd.step);
     official_bench_step.dependOn(&build_revm_runner.step);
-    
+
     // Zig EVM runner for benchmarks
     const zig_runner_exe = b.addExecutable(.{
         .name = "zig-runner",
@@ -870,19 +868,19 @@ pub fn build(b: *std.Build) void {
     zig_runner_exe.root_module.addImport("evm", evm_mod);
     zig_runner_exe.root_module.addImport("primitives", primitives_mod);
     b.installArtifact(zig_runner_exe);
-    
+
     // Make bench-official depend on zig-runner
     official_bench_step.dependOn(&zig_runner_exe.step);
-    
+
     // Flamegraph profiling support
     const flamegraph_step = b.step("flamegraph", "Run benchmarks with flamegraph profiling");
-    
+
     // Build bench executable with debug symbols for profiling
     const profile_bench_exe = b.addExecutable(.{
         .name = "guillotine-bench-profile",
         .root_source_file = b.path("bench/main.zig"),
         .target = target,
-        .optimize = .ReleaseFast,  // Always use optimized build for profiling
+        .optimize = .ReleaseFast, // Always use optimized build for profiling
     });
     profile_bench_exe.root_module.addImport("bench", bench_mod);
     profile_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
@@ -891,20 +889,20 @@ pub fn build(b: *std.Build) void {
     if (revm_lib != null) {
         profile_bench_exe.root_module.addImport("revm", revm_mod);
     }
-    
+
     // CRITICAL: Include debug symbols for profiling
-    profile_bench_exe.root_module.strip = false;  // Keep symbols
-    profile_bench_exe.root_module.omit_frame_pointer = false;  // Keep frame pointers
-    
+    profile_bench_exe.root_module.strip = false; // Keep symbols
+    profile_bench_exe.root_module.omit_frame_pointer = false; // Keep frame pointers
+
     // Platform-specific profiling commands
     if (target.result.os.tag == .linux) {
         const perf_cmd = b.addSystemCommand(&[_][]const u8{
-            "perf", "record", "-F", "997", "-g", "--call-graph", "dwarf",
-            "-o", "perf.data",
+            "perf", "record",    "-F", "997", "-g", "--call-graph", "dwarf",
+            "-o",   "perf.data",
         });
         perf_cmd.addArtifactArg(profile_bench_exe);
         perf_cmd.addArg("--profile");
-        
+
         const flamegraph_cmd = b.addSystemCommand(&[_][]const u8{
             "flamegraph", "--perfdata", "perf.data", "-o", "guillotine-bench.svg",
         });
@@ -1036,7 +1034,6 @@ pub fn build(b: *std.Build) void {
     });
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
-
 
     // Add Memory tests
     const memory_test = b.addTest(.{
@@ -1208,11 +1205,11 @@ pub fn build(b: *std.Build) void {
         sha256_test_step.dependOn(&run_sha256_test.?.step);
     }
 
-    // Add RIPEMD160 precompile tests (only if precompiles are enabled)  
+    // Add RIPEMD160 precompile tests (only if precompiles are enabled)
     var run_ripemd160_test: ?*std.Build.Step.Run = null;
     if (!no_precompiles) {
         const ripemd160_test = b.addTest(.{
-            .name = "ripemd160-test", 
+            .name = "ripemd160-test",
             .root_source_file = b.path("test/evm/precompiles/ripemd160_test.zig"),
             .target = target,
             .optimize = optimize,
@@ -1258,7 +1255,7 @@ pub fn build(b: *std.Build) void {
         const run_test = b.addRunArtifact(bn254_rust_test);
         const test_step_bn254 = b.step("test-bn254-rust", "Run BN254 Rust wrapper precompile tests");
         test_step_bn254.dependOn(&run_test.step);
-        
+
         break :blk run_test;
     } else null;
 
@@ -1401,7 +1398,6 @@ pub fn build(b: *std.Build) void {
     const snail_shell_benchmark_test_step = b.step("test-benchmark", "Run SnailShellBenchmark tests");
     snail_shell_benchmark_test_step.dependOn(&run_snail_shell_benchmark_test.step);
 
-
     // Add Constructor Bug test
     const constructor_bug_test = b.addTest(.{
         .name = "constructor-bug-test",
@@ -1472,7 +1468,6 @@ pub fn build(b: *std.Build) void {
     const delegatecall_test_step = b.step("test-delegatecall", "Run DELEGATECALL tests");
     delegatecall_test_step.dependOn(&run_delegatecall_test.step);
 
-
     // Add combined E2E test step
     const e2e_all_test_step = b.step("test-e2e", "Run all E2E tests");
     e2e_all_test_step.dependOn(&run_e2e_simple_test.step);
@@ -1499,7 +1494,7 @@ pub fn build(b: *std.Build) void {
     if (run_bn254_rust_test) |bn254_test| {
         test_step.dependOn(&bn254_test.step);
     }
-    
+
     // Add SHA256 and RIPEMD160 tests if precompiles are enabled
     if (run_sha256_test) |sha256_test| {
         test_step.dependOn(&sha256_test.step);
@@ -1507,7 +1502,7 @@ pub fn build(b: *std.Build) void {
     if (run_ripemd160_test) |ripemd160_test| {
         test_step.dependOn(&ripemd160_test.step);
     }
-    
+
     // Add REVM wrapper tests if available
     if (revm_lib != null) {
         const revm_test = b.addTest(.{
@@ -1520,7 +1515,7 @@ pub fn build(b: *std.Build) void {
         revm_test.linkLibrary(revm_lib.?);
         revm_test.addIncludePath(b.path("src/revm_wrapper"));
         revm_test.linkLibC();
-        
+
         // Link the compiled Rust dynamic library
         const revm_rust_target_dir = if (optimize == .Debug) "debug" else "release";
         const revm_dylib_path = if (rust_target) |target_triple|
@@ -1528,7 +1523,7 @@ pub fn build(b: *std.Build) void {
         else
             b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir});
         revm_test.addObjectFile(b.path(revm_dylib_path));
-        
+
         // Link additional libraries needed by revm
         if (target.result.os.tag == .linux) {
             revm_test.linkSystemLibrary("m");
@@ -1540,15 +1535,15 @@ pub fn build(b: *std.Build) void {
             revm_test.linkFramework("SystemConfiguration");
             revm_test.linkFramework("CoreFoundation");
         }
-        
+
         const run_revm_test = b.addRunArtifact(revm_test);
         test_step.dependOn(&run_revm_test.step);
-        
+
         // Also add a separate step for revm tests
         const revm_test_step = b.step("test-revm", "Run REVM wrapper tests");
         revm_test_step.dependOn(&run_revm_test.step);
     }
-    
+
     test_step.dependOn(&run_e2e_simple_test.step);
     test_step.dependOn(&run_e2e_error_test.step);
     test_step.dependOn(&run_e2e_data_test.step);
@@ -1560,7 +1555,7 @@ pub fn build(b: *std.Build) void {
     // Hardfork tests removed completely
     test_step.dependOn(&run_delegatecall_test.step);
     test_step.dependOn(&run_devtool_test.step);
-    
+
     // Add Differential tests (only if revm is available)
     if (revm_lib != null) {
         const differential_test = b.addTest(.{
@@ -1575,7 +1570,7 @@ pub fn build(b: *std.Build) void {
         differential_test.linkLibrary(revm_lib.?);
         differential_test.addIncludePath(b.path("src/revm_wrapper"));
         differential_test.linkLibC();
-        
+
         // Link the compiled Rust dynamic library
         const diff_rust_target_dir = if (optimize == .Debug) "debug" else "release";
         const diff_dylib_path = if (rust_target) |target_triple|
@@ -1583,7 +1578,7 @@ pub fn build(b: *std.Build) void {
         else
             b.fmt("target/{s}/librevm_wrapper.dylib", .{diff_rust_target_dir});
         differential_test.addObjectFile(b.path(diff_dylib_path));
-        
+
         // Link additional libraries needed by revm
         if (target.result.os.tag == .linux) {
             differential_test.linkSystemLibrary("m");
@@ -1595,13 +1590,125 @@ pub fn build(b: *std.Build) void {
             differential_test.linkFramework("SystemConfiguration");
             differential_test.linkFramework("CoreFoundation");
         }
-        
+
         const run_differential_test = b.addRunArtifact(differential_test);
         test_step.dependOn(&run_differential_test.step);
-        
+
+        // Add bitwise differential tests
+        const bitwise_differential_test = b.addTest(.{
+            .name = "bitwise-differential-test",
+            .root_source_file = b.path("test/differential/bitwise_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        bitwise_differential_test.root_module.addImport("primitives", primitives_mod);
+        bitwise_differential_test.root_module.addImport("evm", evm_mod);
+        bitwise_differential_test.root_module.addImport("revm", revm_mod);
+        bitwise_differential_test.linkLibrary(revm_lib.?);
+        bitwise_differential_test.addIncludePath(b.path("src/revm_wrapper"));
+        bitwise_differential_test.linkLibC();
+        bitwise_differential_test.addObjectFile(b.path(diff_dylib_path));
+        if (target.result.os.tag == .linux) {
+            bitwise_differential_test.linkSystemLibrary("m");
+            bitwise_differential_test.linkSystemLibrary("pthread");
+            bitwise_differential_test.linkSystemLibrary("dl");
+        } else if (target.result.os.tag == .macos) {
+            bitwise_differential_test.linkSystemLibrary("c++");
+            bitwise_differential_test.linkFramework("Security");
+            bitwise_differential_test.linkFramework("SystemConfiguration");
+            bitwise_differential_test.linkFramework("CoreFoundation");
+        }
+        const run_bitwise_differential_test = b.addRunArtifact(bitwise_differential_test);
+        test_step.dependOn(&run_bitwise_differential_test.step);
+
+        // Add comparison differential tests
+        const comparison_differential_test = b.addTest(.{
+            .name = "comparison-differential-test",
+            .root_source_file = b.path("test/differential/comparison_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        comparison_differential_test.root_module.addImport("primitives", primitives_mod);
+        comparison_differential_test.root_module.addImport("evm", evm_mod);
+        comparison_differential_test.root_module.addImport("revm", revm_mod);
+        comparison_differential_test.linkLibrary(revm_lib.?);
+        comparison_differential_test.addIncludePath(b.path("src/revm_wrapper"));
+        comparison_differential_test.linkLibC();
+        comparison_differential_test.addObjectFile(b.path(diff_dylib_path));
+        if (target.result.os.tag == .linux) {
+            comparison_differential_test.linkSystemLibrary("m");
+            comparison_differential_test.linkSystemLibrary("pthread");
+            comparison_differential_test.linkSystemLibrary("dl");
+        } else if (target.result.os.tag == .macos) {
+            comparison_differential_test.linkSystemLibrary("c++");
+            comparison_differential_test.linkFramework("Security");
+            comparison_differential_test.linkFramework("SystemConfiguration");
+            comparison_differential_test.linkFramework("CoreFoundation");
+        }
+        const run_comparison_differential_test = b.addRunArtifact(comparison_differential_test);
+        test_step.dependOn(&run_comparison_differential_test.step);
+
+        // Add memory differential tests
+        const memory_differential_test = b.addTest(.{
+            .name = "memory-differential-test",
+            .root_source_file = b.path("test/differential/memory_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        memory_differential_test.root_module.addImport("primitives", primitives_mod);
+        memory_differential_test.root_module.addImport("evm", evm_mod);
+        memory_differential_test.root_module.addImport("revm", revm_mod);
+        memory_differential_test.linkLibrary(revm_lib.?);
+        memory_differential_test.addIncludePath(b.path("src/revm_wrapper"));
+        memory_differential_test.linkLibC();
+        memory_differential_test.addObjectFile(b.path(diff_dylib_path));
+        if (target.result.os.tag == .linux) {
+            memory_differential_test.linkSystemLibrary("m");
+            memory_differential_test.linkSystemLibrary("pthread");
+            memory_differential_test.linkSystemLibrary("dl");
+        } else if (target.result.os.tag == .macos) {
+            memory_differential_test.linkSystemLibrary("c++");
+            memory_differential_test.linkFramework("Security");
+            memory_differential_test.linkFramework("SystemConfiguration");
+            memory_differential_test.linkFramework("CoreFoundation");
+        }
+        const run_memory_differential_test = b.addRunArtifact(memory_differential_test);
+        test_step.dependOn(&run_memory_differential_test.step);
+
+        // Add environment differential tests
+        const environment_differential_test = b.addTest(.{
+            .name = "environment-differential-test",
+            .root_source_file = b.path("test/differential/environment_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        environment_differential_test.root_module.addImport("primitives", primitives_mod);
+        environment_differential_test.root_module.addImport("evm", evm_mod);
+        environment_differential_test.root_module.addImport("revm", revm_mod);
+        environment_differential_test.linkLibrary(revm_lib.?);
+        environment_differential_test.addIncludePath(b.path("src/revm_wrapper"));
+        environment_differential_test.linkLibC();
+        environment_differential_test.addObjectFile(b.path(diff_dylib_path));
+        if (target.result.os.tag == .linux) {
+            environment_differential_test.linkSystemLibrary("m");
+            environment_differential_test.linkSystemLibrary("pthread");
+            environment_differential_test.linkSystemLibrary("dl");
+        } else if (target.result.os.tag == .macos) {
+            environment_differential_test.linkSystemLibrary("c++");
+            environment_differential_test.linkFramework("Security");
+            environment_differential_test.linkFramework("SystemConfiguration");
+            environment_differential_test.linkFramework("CoreFoundation");
+        }
+        const run_environment_differential_test = b.addRunArtifact(environment_differential_test);
+        test_step.dependOn(&run_environment_differential_test.step);
+
         // Also add a separate step for differential tests
         const differential_test_step = b.step("test-differential", "Run differential tests against revm");
         differential_test_step.dependOn(&run_differential_test.step);
+        differential_test_step.dependOn(&run_bitwise_differential_test.step);
+        differential_test_step.dependOn(&run_comparison_differential_test.step);
+        differential_test_step.dependOn(&run_memory_differential_test.step);
+        differential_test_step.dependOn(&run_environment_differential_test.step);
     }
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
@@ -1759,9 +1866,7 @@ pub fn build(b: *std.Build) void {
     docs_step.dependOn(&docs_install.step);
 
     // Python bindings build step
-    const python_build_cmd = b.addSystemCommand(&[_][]const u8{
-        "python3", "build.py"
-    });
+    const python_build_cmd = b.addSystemCommand(&[_][]const u8{ "python3", "build.py" });
     python_build_cmd.setCwd(b.path("src/guillotine-py"));
     python_build_cmd.step.dependOn(b.getInstallStep()); // Ensure native library is built first
 
@@ -1769,9 +1874,7 @@ pub fn build(b: *std.Build) void {
     python_build_step.dependOn(&python_build_cmd.step);
 
     // Python development install step
-    const python_dev_cmd = b.addSystemCommand(&[_][]const u8{
-        "python3", "build.py", "--dev"
-    });
+    const python_dev_cmd = b.addSystemCommand(&[_][]const u8{ "python3", "build.py", "--dev" });
     python_dev_cmd.setCwd(b.path("src/guillotine-py"));
     python_dev_cmd.step.dependOn(b.getInstallStep());
 
@@ -1779,9 +1882,7 @@ pub fn build(b: *std.Build) void {
     python_dev_step.dependOn(&python_dev_cmd.step);
 
     // Python tests step
-    const python_test_cmd = b.addSystemCommand(&[_][]const u8{
-        "python3", "-m", "pytest", "tests/", "-v"
-    });
+    const python_test_cmd = b.addSystemCommand(&[_][]const u8{ "python3", "-m", "pytest", "tests/", "-v" });
     python_test_cmd.setCwd(b.path("src/guillotine-py"));
     python_test_cmd.step.dependOn(&python_build_cmd.step);
 
@@ -1789,204 +1890,164 @@ pub fn build(b: *std.Build) void {
     python_test_step.dependOn(&python_test_cmd.step);
 
     // Python examples step
-    const python_examples_cmd = b.addSystemCommand(&[_][]const u8{
-        "python3", "examples.py"
-    });
+    const python_examples_cmd = b.addSystemCommand(&[_][]const u8{ "python3", "examples.py" });
     python_examples_cmd.setCwd(b.path("src/guillotine-py"));
     python_examples_cmd.step.dependOn(&python_build_cmd.step);
 
     const python_examples_step = b.step("python-examples", "Run Python binding examples");
     python_examples_step.dependOn(&python_examples_cmd.step);
-    
+
     // Swift build commands
     addSwiftSteps(b);
-    
+
     // Go build commands
     addGoSteps(b);
-    
+
     // TypeScript build commands
     addTypeScriptSteps(b);
 }
 
 fn addSwiftSteps(b: *std.Build) void {
     // Swift build step
-    const swift_build_cmd = b.addSystemCommand(&[_][]const u8{
-        "swift", "build"
-    });
+    const swift_build_cmd = b.addSystemCommand(&[_][]const u8{ "swift", "build" });
     swift_build_cmd.setCwd(b.path("src/guillotine-swift"));
     swift_build_cmd.step.dependOn(b.getInstallStep()); // Ensure native library is built first
-    
+
     const swift_build_step = b.step("swift", "Build Swift bindings");
     swift_build_step.dependOn(&swift_build_cmd.step);
-    
+
     // Swift test step
-    const swift_test_cmd = b.addSystemCommand(&[_][]const u8{
-        "swift", "test"
-    });
+    const swift_test_cmd = b.addSystemCommand(&[_][]const u8{ "swift", "test" });
     swift_test_cmd.setCwd(b.path("src/guillotine-swift"));
     swift_test_cmd.step.dependOn(&swift_build_cmd.step);
-    
+
     const swift_test_step = b.step("swift-test", "Run Swift binding tests");
     swift_test_step.dependOn(&swift_test_cmd.step);
-    
+
     // Swift package validation step
-    const swift_validate_cmd = b.addSystemCommand(&[_][]const u8{
-        "swift", "package", "validate"
-    });
+    const swift_validate_cmd = b.addSystemCommand(&[_][]const u8{ "swift", "package", "validate" });
     swift_validate_cmd.setCwd(b.path("src/guillotine-swift"));
-    
+
     const swift_validate_step = b.step("swift-validate", "Validate Swift package");
     swift_validate_step.dependOn(&swift_validate_cmd.step);
 }
 
 fn addGoSteps(b: *std.Build) void {
     // Go mod tidy step to download dependencies
-    const go_mod_tidy_cmd = b.addSystemCommand(&[_][]const u8{
-        "go", "mod", "tidy"
-    });
+    const go_mod_tidy_cmd = b.addSystemCommand(&[_][]const u8{ "go", "mod", "tidy" });
     go_mod_tidy_cmd.setCwd(b.path("src/guillotine-go"));
     go_mod_tidy_cmd.step.dependOn(b.getInstallStep()); // Ensure native library is built first
-    
+
     // Go build step
-    const go_build_cmd = b.addSystemCommand(&[_][]const u8{
-        "go", "build", "./..."
-    });
+    const go_build_cmd = b.addSystemCommand(&[_][]const u8{ "go", "build", "./..." });
     go_build_cmd.setCwd(b.path("src/guillotine-go"));
     go_build_cmd.step.dependOn(&go_mod_tidy_cmd.step);
-    
+
     const go_build_step = b.step("go", "Build Go bindings");
     go_build_step.dependOn(&go_build_cmd.step);
-    
+
     // Go test step
-    const go_test_cmd = b.addSystemCommand(&[_][]const u8{
-        "go", "test", "./..."
-    });
+    const go_test_cmd = b.addSystemCommand(&[_][]const u8{ "go", "test", "./..." });
     go_test_cmd.setCwd(b.path("src/guillotine-go"));
     go_test_cmd.step.dependOn(&go_build_cmd.step);
-    
+
     const go_test_step = b.step("go-test", "Run Go binding tests");
     go_test_step.dependOn(&go_test_cmd.step);
-    
+
     // Go vet step for code analysis
-    const go_vet_cmd = b.addSystemCommand(&[_][]const u8{
-        "go", "vet", "./..."
-    });
+    const go_vet_cmd = b.addSystemCommand(&[_][]const u8{ "go", "vet", "./..." });
     go_vet_cmd.setCwd(b.path("src/guillotine-go"));
     go_vet_cmd.step.dependOn(&go_build_cmd.step);
-    
+
     const go_vet_step = b.step("go-vet", "Run Go code analysis");
     go_vet_step.dependOn(&go_vet_cmd.step);
-    
+
     // Go format check step
-    const go_fmt_check_cmd = b.addSystemCommand(&[_][]const u8{
-        "sh", "-c", "test -z \"$(gofmt -l .)\" || (echo 'Code is not formatted. Run: go fmt ./...' && exit 1)"
-    });
+    const go_fmt_check_cmd = b.addSystemCommand(&[_][]const u8{ "sh", "-c", "test -z \"$(gofmt -l .)\" || (echo 'Code is not formatted. Run: go fmt ./...' && exit 1)" });
     go_fmt_check_cmd.setCwd(b.path("src/guillotine-go"));
-    
+
     const go_fmt_check_step = b.step("go-fmt-check", "Check Go code formatting");
     go_fmt_check_step.dependOn(&go_fmt_check_cmd.step);
-    
+
     // Go format step
-    const go_fmt_cmd = b.addSystemCommand(&[_][]const u8{
-        "go", "fmt", "./..."
-    });
+    const go_fmt_cmd = b.addSystemCommand(&[_][]const u8{ "go", "fmt", "./..." });
     go_fmt_cmd.setCwd(b.path("src/guillotine-go"));
-    
+
     const go_fmt_step = b.step("go-fmt", "Format Go code");
     go_fmt_step.dependOn(&go_fmt_cmd.step);
 }
 
 fn addTypeScriptSteps(b: *std.Build) void {
     // TypeScript install dependencies step
-    const ts_install_cmd = b.addSystemCommand(&[_][]const u8{
-        "npm", "install"
-    });
+    const ts_install_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "install" });
     ts_install_cmd.setCwd(b.path("src/guillotine-ts"));
     ts_install_cmd.step.dependOn(b.getInstallStep()); // Ensure native library is built first
-    
+
     // Copy WASM files step
-    const ts_copy_wasm_cmd = b.addSystemCommand(&[_][]const u8{
-        "npm", "run", "copy-wasm"
-    });
+    const ts_copy_wasm_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "run", "copy-wasm" });
     ts_copy_wasm_cmd.setCwd(b.path("src/guillotine-ts"));
     ts_copy_wasm_cmd.step.dependOn(&ts_install_cmd.step);
-    
+
     // TypeScript build step
-    const ts_build_cmd = b.addSystemCommand(&[_][]const u8{
-        "npm", "run", "build"
-    });
+    const ts_build_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "run", "build" });
     ts_build_cmd.setCwd(b.path("src/guillotine-ts"));
     ts_build_cmd.step.dependOn(&ts_copy_wasm_cmd.step);
-    
+
     const ts_build_step = b.step("ts", "Build TypeScript bindings");
     ts_build_step.dependOn(&ts_build_cmd.step);
-    
+
     // TypeScript test step
-    const ts_test_cmd = b.addSystemCommand(&[_][]const u8{
-        "npm", "test"
-    });
+    const ts_test_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "test" });
     ts_test_cmd.setCwd(b.path("src/guillotine-ts"));
     ts_test_cmd.step.dependOn(&ts_build_cmd.step);
-    
+
     const ts_test_step = b.step("ts-test", "Run TypeScript binding tests");
     ts_test_step.dependOn(&ts_test_cmd.step);
-    
+
     // TypeScript lint step
-    const ts_lint_cmd = b.addSystemCommand(&[_][]const u8{
-        "npm", "run", "lint"
-    });
+    const ts_lint_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "run", "lint" });
     ts_lint_cmd.setCwd(b.path("src/guillotine-ts"));
     ts_lint_cmd.step.dependOn(&ts_install_cmd.step);
-    
+
     const ts_lint_step = b.step("ts-lint", "Run TypeScript linting");
     ts_lint_step.dependOn(&ts_lint_cmd.step);
-    
+
     // TypeScript format check step
-    const ts_format_check_cmd = b.addSystemCommand(&[_][]const u8{
-        "npm", "run", "format:check"
-    });
+    const ts_format_check_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "run", "format:check" });
     ts_format_check_cmd.setCwd(b.path("src/guillotine-ts"));
     ts_format_check_cmd.step.dependOn(&ts_install_cmd.step);
-    
+
     const ts_format_check_step = b.step("ts-format-check", "Check TypeScript code formatting");
     ts_format_check_step.dependOn(&ts_format_check_cmd.step);
-    
+
     // TypeScript format step
-    const ts_format_cmd = b.addSystemCommand(&[_][]const u8{
-        "npm", "run", "format"
-    });
+    const ts_format_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "run", "format" });
     ts_format_cmd.setCwd(b.path("src/guillotine-ts"));
     ts_format_cmd.step.dependOn(&ts_install_cmd.step);
-    
+
     const ts_format_step = b.step("ts-format", "Format TypeScript code");
     ts_format_step.dependOn(&ts_format_cmd.step);
-    
+
     // TypeScript type check step
-    const ts_typecheck_cmd = b.addSystemCommand(&[_][]const u8{
-        "npm", "run", "typecheck"
-    });
+    const ts_typecheck_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "run", "typecheck" });
     ts_typecheck_cmd.setCwd(b.path("src/guillotine-ts"));
     ts_typecheck_cmd.step.dependOn(&ts_install_cmd.step);
-    
+
     const ts_typecheck_step = b.step("ts-typecheck", "Run TypeScript type checking");
     ts_typecheck_step.dependOn(&ts_typecheck_cmd.step);
-    
+
     // TypeScript development step (watch mode)
-    const ts_dev_cmd = b.addSystemCommand(&[_][]const u8{
-        "npm", "run", "dev"
-    });
+    const ts_dev_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "run", "dev" });
     ts_dev_cmd.setCwd(b.path("src/guillotine-ts"));
     ts_dev_cmd.step.dependOn(&ts_install_cmd.step);
-    
+
     const ts_dev_step = b.step("ts-dev", "Run TypeScript in development/watch mode");
     ts_dev_step.dependOn(&ts_dev_cmd.step);
-    
+
     // TypeScript clean step
-    const ts_clean_cmd = b.addSystemCommand(&[_][]const u8{
-        "npm", "run", "clean"
-    });
+    const ts_clean_cmd = b.addSystemCommand(&[_][]const u8{ "npm", "run", "clean" });
     ts_clean_cmd.setCwd(b.path("src/guillotine-ts"));
-    
+
     const ts_clean_step = b.step("ts-clean", "Clean TypeScript build artifacts");
     ts_clean_step.dependOn(&ts_clean_cmd.step);
 }
