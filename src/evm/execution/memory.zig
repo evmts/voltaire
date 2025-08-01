@@ -181,10 +181,10 @@ pub fn op_mcopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.
     }
 
     // Pop three values unsafely - bounds checking is done in jump_table.zig
-    // EVM stack order per EIP-5656: [length, src, dst] (top to bottom)
-    const length = frame.stack.pop_unsafe();
-    const src = frame.stack.pop_unsafe();
+    // EVM stack order per EIP-5656: [dst, src, length] (top to bottom)
     const dest = frame.stack.pop_unsafe();
+    const src = frame.stack.pop_unsafe();
+    const length = frame.stack.pop_unsafe();
 
     if (length == 0) {
         @branchHint(.unlikely);
