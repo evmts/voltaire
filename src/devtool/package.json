@@ -35,5 +35,8 @@
 		"vite": "^7.0.6",
 		"vite-plugin-solid": "^2.11.8",
 		"vite-tsconfig-paths": "^5.1.4"
+	},
+	"overrides": {
+		"rollup": "4.45.1"
 	}
 }

@@ -4,19 +4,17 @@ import type {
 	ComboboxItemProps,
 	ComboboxTriggerProps,
 } from '@kobalte/core/combobox'
-// for some reason this import is breaking the build
-// import { Combobox as ComboboxPrimitive } from "@kobalte/core/combobox";
+import { Combobox as ComboboxPrimitive } from '@kobalte/core/combobox'
 import type { PolymorphicProps } from '@kobalte/core/polymorphic'
 import type { ParentProps, ValidComponent, VoidProps } from 'solid-js'
 import { splitProps } from 'solid-js'
 import { cn } from '~/lib/cn'
 
-// For some reason this import is breaking the build
-export const Combobox = () => <></> // ComboboxPrimitive;
-export const ComboboxDescription = () => <></> // ComboboxPrimitive.Description;
-export const ComboboxErrorMessage = () => <></> // ComboboxPrimitive.ErrorMessage;
-export const ComboboxItemDescription = () => <></> // ComboboxPrimitive.ItemDescription;
-export const ComboboxHiddenSelect = () => <></> // ComboboxPrimitive.HiddenSelect;
+export const Combobox = ComboboxPrimitive
+export const ComboboxDescription = ComboboxPrimitive.Description
+export const ComboboxErrorMessage = ComboboxPrimitive.ErrorMessage
+export const ComboboxItemDescription = ComboboxPrimitive.ItemDescription
+export const ComboboxHiddenSelect = ComboboxPrimitive.HiddenSelect
 
 type comboboxInputProps<T extends ValidComponent = 'input'> = VoidProps<
 	ComboboxInputProps<T> & {
@@ -27,17 +25,16 @@ type comboboxInputProps<T extends ValidComponent = 'input'> = VoidProps<
 export const ComboboxInput = <T extends ValidComponent = 'input'>(
 	props: PolymorphicProps<T, comboboxInputProps<T>>,
 ) => {
-	const [_local, _rest] = splitProps(props as comboboxInputProps, ['class'])
+	const [local, rest] = splitProps(props as comboboxInputProps, ['class'])
 
 	return (
-		<></>
-		// <ComboboxPrimitive.Input
-		// 		class={cn(
-		// 		"h-full bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
-		// 	local.class,
-		// 			)}
-		// 			{...rest}
-		// 		/>
+		<ComboboxPrimitive.Input
+			class={cn(
+				'h-full bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+				local.class,
+			)}
+			{...rest}
+		/>
 	)
 }
 
@@ -50,38 +47,33 @@ type comboboxTriggerProps<T extends ValidComponent = 'button'> = ParentProps<
 export const ComboboxTrigger = <T extends ValidComponent = 'button'>(
 	props: PolymorphicProps<T, comboboxTriggerProps<T>>,
 ) => {
-	const [_local, _rest] = splitProps(props as comboboxTriggerProps, ['class', 'children'])
+	const [local, rest] = splitProps(props as comboboxTriggerProps, ['class', 'children'])
 
 	return (
-		<></>
-		// 		<ComboboxPrimitive.Control>
-		// 			<ComboboxPrimitive.Trigger
-		// 				class={cn(
-		// 					"flex h-9 w-full items-center justify-between rounded-sm border border-input px-2 shadow-sm",
-		// 					local.class,
-		// 				)}
-		// 				{...rest}
-		// 			>
-		// 				{local.children}
-		// 				<ComboboxPrimitive.Icon class="flex h-3.5 w-3.5 items-center justify-center">
-		// 					<svg
-		// 						xmlns="http://www.w3.org/2000/svg"
-		// 						viewBox="0 0 24 24"
-		// 						class="h-4 w-4 opacity-50"
-		// 					>
-		// 						<path
-		// 							fill="none"
-		// 							stroke="currentColor"
-		// 							stroke-linecap="round"
-		// 							stroke-linejoin="round"
-		// 							stroke-width="2"
-		// 							d="m8 9l4-4l4 4m0 6l-4 4l-4-4"
-		// 						/>
-		// 						<title>Arrow</title>
-		// 					</svg>
-		// 				</ComboboxPrimitive.Icon>
-		// 			</ComboboxPrimitive.Trigger>
-		// 		</ComboboxPrimitive.Control>
+		<ComboboxPrimitive.Control>
+			<ComboboxPrimitive.Trigger
+				class={cn(
+					'flex h-9 w-full items-center justify-between rounded-md border border-input px-3 shadow-sm',
+					local.class,
+				)}
+				{...rest}
+			>
+				{local.children}
+				<ComboboxPrimitive.Icon class="flex h-3.5 w-3.5 items-center justify-center">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="h-4 w-4 opacity-50">
+						<path
+							fill="none"
+							stroke="currentColor"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="m8 9l4-4l4 4m0 6l-4 4l-4-4"
+						/>
+						<title>Arrow</title>
+					</svg>
+				</ComboboxPrimitive.Icon>
+			</ComboboxPrimitive.Trigger>
+		</ComboboxPrimitive.Control>
 	)
 }
 
@@ -98,7 +90,7 @@ export const ComboboxContent = <T extends ValidComponent = 'div'>(
 		<ComboboxPrimitive.Portal>
 			<ComboboxPrimitive.Content
 				class={cn(
-					'data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 relative z-50 min-w-[8rem] origin-[--kb-combobox-content-transform-origin] overflow-hidden rounded-sm border bg-popover text-popover-foreground shadow-md data-[closed]:animate-out data-[expanded]:animate-in',
+					'data-[closed]:fade-out-0 data-[expanded]:fade-in-0 data-[closed]:zoom-out-95 data-[expanded]:zoom-in-95 relative z-50 min-w-[8rem] origin-[--kb-combobox-content-transform-origin] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[closed]:animate-out data-[expanded]:animate-in',
 					local.class,
 				)}
 				{...rest}
