@@ -21,10 +21,13 @@ const Evm = evm_root.Evm;
 const MemoryDatabase = evm_root.MemoryDatabase;
 const Frame = evm_root.Frame;
 const Contract = evm_root.Contract;
-const Address = primitives.Address;
+const Address = primitives.Address.Address;
 
-// Use C allocator for FFI compatibility
-const c_allocator = std.heap.c_allocator;
+// Use page allocator for WASM (no libc dependency)
+const allocator = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding)
+    std.heap.page_allocator
+else
+    std.heap.c_allocator;
 
 // Global VM instance
 var vm_instance: ?*Evm = null;
@@ -68,7 +71,7 @@ export fn evm_init() c_int {
     };
 
     var builder = evm_root.EvmBuilder.init(allocator, db_interface);
-    vm.* = try builder.build() catch |err| {
+    vm.* = builder.build() catch |err| {
         log(.err, .evm_c, "Failed to initialize VM: {}", .{err});
         allocator.destroy(vm);
         return @intFromEnum(EvmError.EVM_ERROR_MEMORY);
@@ -122,12 +125,23 @@ export fn evm_execute(
     // Convert inputs
     const bytecode = bytecode_ptr[0..bytecode_len];
     const caller_bytes = caller_ptr[0..20];
-    const caller_address: primitives.Address.Address = caller_bytes.*;
+    const caller_address = caller_bytes.*;
 
     // Create contract for execution
     const target_address = primitives.Address.ZERO_ADDRESS; // Use zero address for contract execution
-    var contract = evm_root.Contract.init_at_address(caller_address, target_address, @as(u256, value), gas_limit, bytecode, &[_]u8{}, // empty input for now
-        false // not static
+    // Calculate code hash
+    var code_hash: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash(bytecode, &code_hash, .{});
+    
+    var contract = Contract.init(
+        caller_address,
+        target_address,
+        @as(u256, value),
+        gas_limit,
+        bytecode,
+        code_hash,
+        &[_]u8{},  // empty input
+        false      // not static
     );
     defer contract.deinit(allocator, null);
 
@@ -139,8 +153,10 @@ export fn evm_execute(
         return @intFromEnum(EvmError.EVM_ERROR_EXECUTION_FAILED);
     };
 
+    // Caller and value are now passed to Contract.init
+
     // Execute bytecode
-    const run_result = vm.interpret(&contract, &[_]u8{}) catch |err| {
+    const run_result = vm.interpret(&contract, &[_]u8{}, false) catch |err| {
         log(.err, .evm_c, "Execution failed: {}", .{err});
         result_ptr.success = 0;
         result_ptr.error_code = @intFromEnum(EvmError.EVM_ERROR_EXECUTION_FAILED);
@@ -154,7 +170,8 @@ export fn evm_execute(
         result_ptr.return_data_ptr = output.ptr;
         result_ptr.return_data_len = output.len;
     } else {
-        result_ptr.return_data_ptr = &[_]u8{};
+        const empty: []const u8 = &[_]u8{};
+        result_ptr.return_data_ptr = empty.ptr;
         result_ptr.return_data_len = 0;
     }
     result_ptr.error_code = @intFromEnum(EvmError.EVM_OK);
@@ -212,7 +229,6 @@ const VmState = struct {
 
 // VM creation and destruction
 export fn guillotine_vm_create() ?*GuillotineVm {
-    const allocator = c_allocator;
     
     const state = allocator.create(VmState) catch return null;
     
@@ -231,7 +247,9 @@ export fn guillotine_vm_create() ?*GuillotineVm {
         return null;
     };
     
-    state.vm.* = Evm.init(allocator, db_interface, null, null) catch {
+    // Create EvmBuilder and build with defaults
+    var builder = evm_root.EvmBuilder.init(allocator, db_interface);
+    state.vm.* = builder.build() catch {
         state.memory_db.deinit();
         allocator.destroy(state.memory_db);
         allocator.destroy(state.vm);
@@ -258,7 +276,7 @@ export fn guillotine_set_balance(vm: ?*GuillotineVm, address: ?*const Guillotine
     if (vm == null or address == null or balance == null) return false;
     
     const state: *VmState = @ptrCast(@alignCast(vm.?));
-    const addr = Address.from_slice(&address.?.bytes) catch return false;
+    const addr = address.?.bytes;
     const value = u256_from_bytes(&balance.?.bytes);
     
     state.vm.state.set_balance(addr, value) catch return false;
@@ -269,7 +287,7 @@ export fn guillotine_set_code(vm: ?*GuillotineVm, address: ?*const GuillotineAdd
     if (vm == null or address == null) return false;
     
     const state: *VmState = @ptrCast(@alignCast(vm.?));
-    const addr = Address.from_slice(&address.?.bytes) catch return false;
+    const addr = address.?.bytes;
     
     const code_slice = if (code) |c| c[0..code_len] else &[_]u8{};
     state.vm.state.set_code(addr, code_slice) catch return false;
@@ -289,7 +307,7 @@ export fn guillotine_execute(
     var result = GuillotineExecutionResult{
         .success = false,
         .gas_used = 0,
-        .output = null,
+        .output = &[_]u8{},
         .output_len = 0,
         .error_message = null,
     };
@@ -297,22 +315,33 @@ export fn guillotine_execute(
     if (vm == null or from == null) return result;
     
     const state: *VmState = @ptrCast(@alignCast(vm.?));
-    const from_addr = Address.from_slice(&from.?.bytes) catch return result;
-    const to_addr = if (to) |t| Address.from_slice(&t.bytes) catch return result else Address.ZERO;
+    const from_addr = from.?.bytes;
+    const to_addr = if (to) |t| t.bytes else primitives.Address.ZERO_ADDRESS;
     const value_u256 = if (value) |v| u256_from_bytes(&v.bytes) else 0;
     const input_slice = if (input) |i| i[0..input_len] else &[_]u8{};
     
     // Create contract for execution
-    var contract = Contract.init(state.allocator, input_slice, .{ .address = to_addr }) catch return result;
+    // Calculate code hash for empty code (for call target)
+    var empty_code_hash: [32]u8 = undefined;
+    std.crypto.hash.sha3.Keccak256.hash(&[_]u8{}, &empty_code_hash, .{});
+    
+    var contract = Contract.init(
+        from_addr,
+        to_addr,
+        value_u256,
+        gas_limit,
+        &[_]u8{},         // empty code for calls
+        empty_code_hash,
+        input_slice,
+        false             // not static
+    );
     defer contract.deinit(state.allocator, null);
     
-    // Create frame
-    var frame = Frame.init(state.allocator, state.vm, gas_limit, contract, from_addr, input_slice) catch return result;
-    defer frame.deinit();
-    frame.value = value_u256;
+    // Frame is not needed - interpret takes the contract directly
+    contract.value = value_u256;
     
     // Execute
-    const exec_result = state.vm.interpret(&frame) catch |err| {
+    const exec_result = state.vm.interpret(&contract, input_slice, false) catch |err| {
         const err_msg = @errorName(err);
         const err_c_str = state.allocator.dupeZ(u8, err_msg) catch return result;
         result.error_message = err_c_str.ptr;
@@ -323,26 +352,28 @@ export fn guillotine_execute(
     result.gas_used = exec_result.gas_used;
     
     // Copy output if any
-    if (exec_result.output.len > 0) {
-        const output_copy = state.allocator.alloc(u8, exec_result.output.len) catch return result;
-        @memcpy(output_copy, exec_result.output);
-        result.output = output_copy.ptr;
-        result.output_len = output_copy.len;
+    if (exec_result.output) |output| {
+        if (output.len > 0) {
+            const output_copy = state.allocator.alloc(u8, output.len) catch return result;
+            @memcpy(output_copy, output);
+            result.output = output_copy.ptr;
+            result.output_len = output_copy.len;
+        }
     }
     
     return result;
 }
 
 // Utility functions
-export fn guillotine_u256_from_u64(value: u64, u256: ?*GuillotineU256) void {
-    if (u256 == null) return;
+export fn guillotine_u256_from_u64(value: u64, out_u256: ?*GuillotineU256) void {
+    if (out_u256 == null) return;
     
     // Clear the bytes first
-    @memset(&u256.?.bytes, 0);
+    @memset(&out_u256.?.bytes, 0);
     
     // Set the lower 8 bytes (little-endian)
     const value_bytes = std.mem.asBytes(&value);
-    @memcpy(u256.?.bytes[0..8], value_bytes);
+    @memcpy(out_u256.?.bytes[0..8], value_bytes);
 }
 
 // Helper functions
