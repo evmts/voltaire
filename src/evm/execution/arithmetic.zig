@@ -260,13 +260,13 @@ pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
         const a_i256 = @as(i256, @bitCast(a));
         const b_i256 = @as(i256, @bitCast(b));
         const min_i256 = std.math.minInt(i256);
-        if (a_i256 == min_i256 and b_i256 == -1) {
+        if (b_i256 == min_i256 and a_i256 == -1) {
             @branchHint(.unlikely);
             // MIN_I256 / -1 = MIN_I256 (overflow wraps)
             // This matches EVM behavior where overflow wraps around
-            result = a;
+            result = b;
         } else {
-            const result_i256 = @divTrunc(a_i256, b_i256);
+            const result_i256 = @divTrunc(b_i256, a_i256);
             result = @as(u256, @bitCast(result_i256));
         }
     }
@@ -377,7 +377,7 @@ pub fn op_smod(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
     } else {
         const a_i256 = @as(i256, @bitCast(a));
         const b_i256 = @as(i256, @bitCast(b));
-        const result_i256 = @rem(a_i256, b_i256);
+        const result_i256 = @rem(b_i256, a_i256);
         result = @as(u256, @bitCast(result_i256));
     }
 
@@ -427,17 +427,17 @@ pub fn op_addmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
     std.debug.assert(frame.stack.size >= 3);
 
-    const n = frame.stack.pop_unsafe();
     const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+    const a = frame.stack.pop_unsafe();
+    const n = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
     if (n == 0) {
         result = 0;
     } else {
-        // Use @addWithOverflow for more idiomatic overflow handling
-        const overflow = @addWithOverflow(a, b);
-        result = overflow[0] % n;
+        // Add the two numbers, then take modulo n
+        const sum = a +% b;
+        result = sum % n;
     }
 
     frame.stack.set_top_unsafe(result);
@@ -491,9 +491,9 @@ pub fn op_mulmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
     std.debug.assert(frame.stack.size >= 3);
 
-    const n = frame.stack.pop_unsafe();
     const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+    const a = frame.stack.pop_unsafe();
+    const n = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
     if (n == 0) {
@@ -698,12 +698,11 @@ pub fn op_signextend(pc: usize, interpreter: Operation.Interpreter, state: Opera
         const keep_bits = sign_bit_pos + 1;
 
         if (sign_bit == 1) {
-            // First, create a mask of all 1s for the upper bits
+            // Sign bit is 1, extend with 1s
             if (keep_bits >= 256) {
                 result = x;
             } else {
-                const shift_amount = @as(u9, 256) - @as(u9, keep_bits);
-                const ones_mask = ~(@as(u256, 0) >> @intCast(shift_amount));
+                const ones_mask = ~((@as(u256, 1) << @intCast(keep_bits)) - 1);
                 result = x | ones_mask;
             }
         } else {
