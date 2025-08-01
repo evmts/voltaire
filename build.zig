@@ -922,8 +922,36 @@ pub fn build(b: *std.Build) void {
         .name = "guillotine-devtool",
         .root_module = devtool_mod,
     });
-    devtool_exe.addCSourceFile(.{ .file = b.path("src/devtool/native_menu.c"), .flags = &[_][]const u8{"-ObjC"} });
     devtool_exe.addIncludePath(webui.path("src"));
+    devtool_exe.addIncludePath(webui.path("include"));
+
+    // Add native menu implementation on macOS
+    if (target.result.os.tag == .macos) {
+        // Compile Swift code to dynamic library
+        const swift_compile = b.addSystemCommand(&[_][]const u8{
+            "swiftc",
+            "-emit-library",
+            "-parse-as-library",
+            "-target", "arm64-apple-macosx15.0",
+            "-o", "zig-out/libnative_menu_swift.dylib",
+            "src/devtool/native_menu.swift",
+        });
+        
+        // Create output directory
+        const mkdir_cmd = b.addSystemCommand(&[_][]const u8{
+            "mkdir", "-p", "zig-out",
+        });
+        swift_compile.step.dependOn(&mkdir_cmd.step);
+        
+        // Link the compiled Swift dynamic library
+        devtool_exe.addLibraryPath(b.path("zig-out"));
+        devtool_exe.linkSystemLibrary("native_menu_swift");
+        devtool_exe.step.dependOn(&swift_compile.step);
+        
+        // Add Swift runtime library search paths
+        devtool_exe.addLibraryPath(.{ .cwd_relative = "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx" });
+        devtool_exe.addLibraryPath(.{ .cwd_relative = "/usr/lib/swift" });
+    }
 
     // Link webui library
     devtool_exe.linkLibrary(webui.artifact("webui"));
