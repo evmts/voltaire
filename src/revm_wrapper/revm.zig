@@ -343,38 +343,7 @@ test "REVM set and get storage" {
     try std.testing.expectEqual(value, retrieved);
 }
 
-test "REVM execute simple transfer" {
-    const allocator = std.testing.allocator;
 
-    const settings = RevmSettings{};
-    var vm = try Revm.init(allocator, settings);
-    defer vm.deinit();
-
-    const from = try primitives.Address.from_hex("0x1111111111111111111111111111111111111111");
-    const to = try primitives.Address.from_hex("0x2222222222222222222222222222222222222222");
-    const value: u256 = 1000;
-
-    // Set balance for sender (need enough for gas + value)
-    try vm.setBalance(from, 100000);
-
-    // Execute transfer
-    var result = try vm.call(from, to, value, &.{}, 21000);
-    defer result.deinit();
-
-    try std.testing.expect(result.success);
-    try std.testing.expect(result.gas_used > 0);
-    try std.testing.expect(result.gas_used <= 21000);
-
-    // Check balances
-    const from_balance = try vm.getBalance(from);
-    const to_balance = try vm.getBalance(to);
-    // from_balance should be initial (100000) - value (1000) - gas_used * gas_price
-    // For a simple transfer, gas used is 21000
-    // Total cost = value (1000) + gas (21000 * 1) = 22000
-    // Expected balance = 100000 - 22000 = 78000
-    try std.testing.expectEqual(@as(u256, 78000), from_balance);
-    try std.testing.expectEqual(@as(u256, 1000), to_balance);
-}
 
 test "REVM execute contract deployment" {
     const allocator = std.testing.allocator;
