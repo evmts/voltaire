@@ -1,6 +1,140 @@
 const std = @import("std");
-const asset_generator = @import("build/asset_generator.zig");
-const rust_build = @import("build/rust_build.zig");
+
+// Asset generation step for devtool
+const GenerateAssetsStep = struct {
+    step: std.Build.Step,
+    dist_path: []const u8,
+    out_path: []const u8,
+
+    fn init(b: *std.Build, dist_path: []const u8, out_path: []const u8) *GenerateAssetsStep {
+        const self = b.allocator.create(GenerateAssetsStep) catch @panic("OOM");
+        self.* = GenerateAssetsStep{
+            .step = std.Build.Step.init(.{
+                .id = .custom,
+                .name = "generate assets",
+                .owner = b,
+                .makeFn = make,
+            }),
+            .dist_path = b.dupe(dist_path),
+            .out_path = b.dupe(out_path),
+        };
+        return self;
+    }
+
+    fn make(step: *std.Build.Step, options: std.Build.Step.MakeOptions) !void {
+        _ = options;
+        const self: *GenerateAssetsStep = @fieldParentPtr("step", step);
+        const b = step.owner;
+
+        var file = try std.fs.cwd().createFile(self.out_path, .{});
+        defer file.close();
+
+        var writer = file.writer();
+
+        try writer.writeAll("// This file is auto-generated. Do not edit manually.\n");
+        try writer.writeAll("const std = @import(\"std\");\n\n");
+        try writer.writeAll("const Self = @This();\n\n");
+        try writer.writeAll("path: []const u8,\n");
+        try writer.writeAll("content: []const u8,\n");
+        try writer.writeAll("mime_type: []const u8,\n");
+        try writer.writeAll("response: [:0]const u8,\n\n");
+
+        try writer.writeAll("pub fn init(\n");
+        try writer.writeAll("    comptime path: []const u8,\n");
+        try writer.writeAll("    comptime content: []const u8,\n");
+        try writer.writeAll("    comptime mime_type: []const u8,\n");
+        try writer.writeAll(") Self {\n");
+        try writer.writeAll("    var buf: [20]u8 = undefined;\n");
+        try writer.writeAll("    const n = std.fmt.bufPrint(&buf, \"{d}\", .{content.len}) catch unreachable;\n");
+        try writer.writeAll("    const content_length = buf[0..n.len];\n");
+        try writer.writeAll("    const response = \"HTTP/1.1 200 OK\\n\" ++\n");
+        try writer.writeAll("        \"Content-Type: \" ++ mime_type ++ \"\\n\" ++\n");
+        try writer.writeAll("        \"Content-Length: \" ++ content_length ++ \"\\n\" ++\n");
+        try writer.writeAll("        \"\\n\" ++\n");
+        try writer.writeAll("        content;\n");
+        try writer.writeAll("    return Self{\n");
+        try writer.writeAll("        .path = path,\n");
+        try writer.writeAll("        .content = content,\n");
+        try writer.writeAll("        .mime_type = mime_type,\n");
+        try writer.writeAll("        .response = response,\n");
+        try writer.writeAll("    };\n");
+        try writer.writeAll("}\n\n");
+
+        try writer.writeAll("pub const not_found_asset = Self.init(\n");
+        try writer.writeAll("    \"/notfound.html\",\n");
+        try writer.writeAll("    \"<div>Page not found</div>\",\n");
+        try writer.writeAll("    \"text/html\",\n");
+        try writer.writeAll(");\n\n");
+
+        try writer.writeAll("pub const assets = [_]Self{\n");
+
+        // Helper function to get MIME type from file extension
+        const getMimeType = struct {
+            fn get(path: []const u8) []const u8 {
+                if (std.mem.endsWith(u8, path, ".html")) return "text/html";
+                if (std.mem.endsWith(u8, path, ".css")) return "text/css";
+                if (std.mem.endsWith(u8, path, ".js")) return "application/javascript";
+                if (std.mem.endsWith(u8, path, ".svg")) return "image/svg+xml";
+                if (std.mem.endsWith(u8, path, ".png")) return "image/png";
+                if (std.mem.endsWith(u8, path, ".jpg") or std.mem.endsWith(u8, path, ".jpeg")) return "image/jpeg";
+                if (std.mem.endsWith(u8, path, ".ico")) return "image/x-icon";
+                return "application/octet-stream";
+            }
+        }.get;
+
+        // Recursively walk the dist directory and generate assets
+        var dist_dir = try std.fs.cwd().openDir(self.dist_path, .{ .iterate = true });
+        defer dist_dir.close();
+
+        var walker = try dist_dir.walk(b.allocator);
+        defer walker.deinit();
+
+        while (try walker.next()) |entry| {
+            if (entry.kind != .file) continue;
+            
+            const web_path = try std.fmt.allocPrint(b.allocator, "/{s}", .{entry.path});
+            const embed_path = try std.fmt.allocPrint(b.allocator, "dist/{s}", .{entry.path});
+            const mime_type = getMimeType(entry.path);
+            
+            try writer.print("    Self.init(\n", .{});
+            try writer.print("        \"{s}\",\n", .{web_path});
+            try writer.print("        @embedFile(\"{s}\"),\n", .{embed_path});
+            try writer.print("        \"{s}\",\n", .{mime_type});
+            try writer.print("    ),\n", .{});
+        }
+
+        try writer.writeAll("};\n\n");
+
+        try writer.writeAll("pub fn get_asset(path: []const u8) Self {\n");
+        try writer.writeAll("    for (assets) |asset| {\n");
+        try writer.writeAll("        if (std.mem.eql(u8, asset.path, path)) {\n");
+        try writer.writeAll("            return asset;\n");
+        try writer.writeAll("        }\n");
+        try writer.writeAll("    }\n");
+        try writer.writeAll("    return not_found_asset;\n");
+        try writer.writeAll("}\n");
+    }
+
+    fn get_mime_type(filename: []const u8) []const u8 {
+        if (std.mem.endsWith(u8, filename, ".html")) return "text/html";
+        if (std.mem.endsWith(u8, filename, ".js")) return "application/javascript";
+        if (std.mem.endsWith(u8, filename, ".css")) return "text/css";
+        if (std.mem.endsWith(u8, filename, ".svg")) return "image/svg+xml";
+        if (std.mem.endsWith(u8, filename, ".png")) return "image/png";
+        if (std.mem.endsWith(u8, filename, ".jpg") or std.mem.endsWith(u8, filename, ".jpeg")) return "image/jpeg";
+        if (std.mem.endsWith(u8, filename, ".gif")) return "image/gif";
+        if (std.mem.endsWith(u8, filename, ".ico")) return "image/x-icon";
+        if (std.mem.endsWith(u8, filename, ".woff")) return "font/woff";
+        if (std.mem.endsWith(u8, filename, ".woff2")) return "font/woff2";
+        if (std.mem.endsWith(u8, filename, ".ttf")) return "font/ttf";
+        if (std.mem.endsWith(u8, filename, ".otf")) return "font/otf";
+        if (std.mem.endsWith(u8, filename, ".json")) return "application/json";
+        if (std.mem.endsWith(u8, filename, ".xml")) return "application/xml";
+        if (std.mem.endsWith(u8, filename, ".pdf")) return "application/pdf";
+        if (std.mem.endsWith(u8, filename, ".txt")) return "text/plain";
+        return "application/octet-stream";
+    }
+};
 
 pub fn build(b: *std.Build) void {
     // Standard target options allows the person running `zig build` to choose
@@ -95,17 +229,57 @@ pub fn build(b: *std.Build) void {
         else => null,
     };
     
-    const bn254_lib = if (!no_bn254) rust_build.buildRustLibrary(b, target, optimize, .{
-        .name = "bn254_wrapper",
-        .manifest_path = "src/bn254_wrapper/Cargo.toml",
-        .target_triple = rust_target,
-        .profile = if (optimize == .Debug) .dev else .release,
-        .library_type = .static_lib,
-    }) else null;
+    const bn254_lib = if (!no_bn254) blk: {
+        const rust_profile = if (optimize == .Debug) "dev" else "release";
+        const rust_target_dir = if (optimize == .Debug) "debug" else "release";
+        
+        const rust_build = if (rust_target) |target_triple|
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
+        else
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
 
-    // Add include path for C header if BN254 is enabled
+        // Fix for macOS linking issues (only on macOS)
+        if (target.result.os.tag == .macos) {
+            rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+        }
+
+        // Create static library artifact for the Rust BN254 wrapper
+        const lib = b.addStaticLibrary(.{
+            .name = "bn254_wrapper",
+            .target = target,
+            .optimize = optimize,
+        });
+
+        // Link the compiled Rust static library
+        const static_lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, rust_target_dir })
+        else
+            b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
+        lib.addObjectFile(b.path(static_lib_path));
+        lib.linkLibC();
+        
+        // Make the rust build a dependency
+        lib.step.dependOn(&rust_build.step);
+        
+        break :blk lib;
+    } else null;
+
+    // Link additional system libraries that Rust might need (only if BN254 is enabled)
     if (bn254_lib) |lib| {
+        if (target.result.os.tag == .linux) {
+            lib.linkSystemLibrary("dl");
+            lib.linkSystemLibrary("pthread");
+            lib.linkSystemLibrary("m");
+            lib.linkSystemLibrary("rt");
+        } else if (target.result.os.tag == .macos) {
+            lib.linkFramework("Security");
+            lib.linkFramework("CoreFoundation");
+        }
+
+        // Add include path for C header
         lib.addIncludePath(b.path("src/bn254_wrapper"));
+
+        // The rust build dependency is already set up above in the conditional block
     }
 
     // C-KZG-4844 Zig bindings from evmts/c-kzg-4844
@@ -141,14 +315,14 @@ pub fn build(b: *std.Build) void {
         const rust_profile = if (optimize == .Debug) "dev" else "release";
         const rust_target_dir = if (optimize == .Debug) "debug" else "release";
         
-        const rust_build_cmd = if (rust_target) |target_triple|
+        const rust_build = if (rust_target) |target_triple|
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/revm_wrapper/Cargo.toml", "--verbose" })
         else
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/revm_wrapper/Cargo.toml", "--verbose" });
 
         // Fix for macOS linking issues (only on macOS)
         if (target.result.os.tag == .macos) {
-            rust_build_cmd.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+            rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
         }
 
         // Create static library artifact for the Rust REVM wrapper
@@ -166,7 +340,7 @@ pub fn build(b: *std.Build) void {
         lib.addObjectFile(b.path(dylib_path));
         
         // Make the rust build a dependency
-        lib.step.dependOn(&rust_build_cmd.step);
+        lib.step.dependOn(&rust_build.step);
         
         break :blk lib;
     } else null;
@@ -210,14 +384,14 @@ pub fn build(b: *std.Build) void {
         const rust_profile = if (optimize == .Debug) "dev" else "release";
         const rust_target_dir = if (optimize == .Debug) "debug" else "release";
         
-        const rust_build_cmd = if (rust_target) |target_triple|
+        const rust_build = if (rust_target) |target_triple|
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/guillotine-rs/Cargo.toml", "--verbose" })
         else
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/guillotine-rs/Cargo.toml", "--verbose" });
 
         // Fix for macOS linking issues (only on macOS)
         if (target.result.os.tag == .macos) {
-            rust_build_cmd.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+            rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
         }
 
         // Create static library artifact for the Rust EVM benchmark crate
@@ -236,7 +410,7 @@ pub fn build(b: *std.Build) void {
         lib.addObjectFile(b.path(lib_path));
         
         // Make the rust build a dependency
-        lib.step.dependOn(&rust_build_cmd.step);
+        lib.step.dependOn(&rust_build.step);
         
         // Link additional libraries needed by the benchmark crate
         if (target.result.os.tag == .linux) {
@@ -278,14 +452,14 @@ pub fn build(b: *std.Build) void {
         const bench_rust_profile = "release";
         const bench_rust_target_dir = "release";
         
-        const bench_rust_build_cmd = if (rust_target) |target_triple|
+        const bench_rust_build = if (rust_target) |target_triple|
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
         else
             b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
         
         // Fix for macOS linking issues (only on macOS)
         if (target.result.os.tag == .macos) {
-            bench_rust_build_cmd.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+            bench_rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
         }
         
         // Create static library artifact for the Rust BN254 wrapper (bench version)
@@ -318,7 +492,7 @@ pub fn build(b: *std.Build) void {
         lib.addIncludePath(b.path("src/bn254_wrapper"));
         
         // Make the rust build a dependency
-        lib.step.dependOn(&bench_rust_build_cmd.step);
+        lib.step.dependOn(&bench_rust_build.step);
         
         break :blk lib;
     } else null;
@@ -726,7 +900,7 @@ pub fn build(b: *std.Build) void {
     npm_build.step.dependOn(&npm_install.step);
 
     // Generate assets from the built Solid app
-    const generate_assets = asset_generator.GenerateAssetsStep.init(b, "src/devtool/dist", "src/devtool/assets.zig");
+    const generate_assets = GenerateAssetsStep.init(b, "src/devtool/dist", "src/devtool/assets.zig");
     generate_assets.step.dependOn(&npm_build.step);
 
     const devtool_mod = b.createModule(.{
@@ -830,12 +1004,12 @@ pub fn build(b: *std.Build) void {
         dmg_step.dependOn(&create_dmg.step);
     }
 
-    // EVM Benchmark Runner executable (always optimized for benchmarks)
+    // EVM Benchmark Runner executable
     const evm_runner_exe = b.addExecutable(.{
         .name = "evm-runner",
         .root_source_file = b.path("bench/evm/runner.zig"),
         .target = target,
-        .optimize = .ReleaseFast,  // Always use ReleaseFast for benchmarks
+        .optimize = optimize,
     });
     evm_runner_exe.root_module.addImport("evm", evm_mod);
     evm_runner_exe.root_module.addImport("Address", primitives_mod);
@@ -852,33 +1026,6 @@ pub fn build(b: *std.Build) void {
     
     const build_evm_runner_step = b.step("build-evm-runner", "Build the EVM benchmark runner");
     build_evm_runner_step.dependOn(&b.addInstallArtifact(evm_runner_exe, .{}).step);
-
-    // Benchmark Orchestrator executable
-    const clap_dep = b.dependency("clap", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    
-    const orchestrator_exe = b.addExecutable(.{
-        .name = "orchestrator",
-        .root_source_file = b.path("bench/official/src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    orchestrator_exe.root_module.addImport("clap", clap_dep.module("clap"));
-    
-    b.installArtifact(orchestrator_exe);
-    
-    const run_orchestrator_cmd = b.addRunArtifact(orchestrator_exe);
-    if (b.args) |args| {
-        run_orchestrator_cmd.addArgs(args);
-    }
-    
-    const orchestrator_step = b.step("orchestrator", "Run the benchmark orchestrator");
-    orchestrator_step.dependOn(&run_orchestrator_cmd.step);
-    
-    const build_orchestrator_step = b.step("build-orchestrator", "Build the benchmark orchestrator");
-    build_orchestrator_step.dependOn(&b.addInstallArtifact(orchestrator_exe, .{}).step);
 
     // Static library for opcode testing FFI
     const opcode_test_lib = b.addStaticLibrary(.{
