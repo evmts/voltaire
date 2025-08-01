@@ -31,7 +31,7 @@ fn create_evm_context_for_precompiles(allocator: std.mem.Allocator) !struct {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(10000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     
     return .{

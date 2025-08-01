@@ -35,7 +35,7 @@ test "fuzz_crypto_keccak256_empty" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     
@@ -80,7 +80,7 @@ test "fuzz_crypto_keccak256_basic" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     
@@ -133,7 +133,7 @@ test "fuzz_crypto_keccak256_edge_cases" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     

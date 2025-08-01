@@ -26,9 +26,9 @@ const CU256 = extern struct {
 fn cU256ToZig(c_value: CU256) u256 {
     // Zig uses little-endian u256 representation
     return @as(u256, c_value.words[0]) |
-           (@as(u256, c_value.words[1]) << 64) |
-           (@as(u256, c_value.words[2]) << 128) |
-           (@as(u256, c_value.words[3]) << 192);
+        (@as(u256, c_value.words[1]) << 64) |
+        (@as(u256, c_value.words[2]) << 128) |
+        (@as(u256, c_value.words[3]) << 192);
 }
 
 fn zigU256ToC(value: u256) CU256 {
@@ -45,23 +45,23 @@ fn zigU256ToC(value: u256) CU256 {
 export fn zigEvmCreate() ?*anyopaque {
     const memory_db = allocator.create(Evm.MemoryDatabase) catch return null;
     memory_db.* = Evm.MemoryDatabase.init(allocator);
-    
+
     const db_interface = memory_db.to_database_interface();
     var builder = Evm.EvmBuilder.init(allocator, db_interface);
-    
+
     const evm = allocator.create(Evm.Evm) catch {
         memory_db.deinit();
         allocator.destroy(memory_db);
         return null;
     };
-    
+
     evm.* = builder.build() catch {
         memory_db.deinit();
         allocator.destroy(memory_db);
         allocator.destroy(evm);
         return null;
     };
-    
+
     const wrapper = allocator.create(EvmWrapper) catch {
         evm.deinit();
         memory_db.deinit();
@@ -69,12 +69,12 @@ export fn zigEvmCreate() ?*anyopaque {
         allocator.destroy(evm);
         return null;
     };
-    
+
     wrapper.* = EvmWrapper{
         .evm = evm,
         .memory_db = memory_db,
     };
-    
+
     return @ptrCast(wrapper);
 }
 
@@ -92,10 +92,10 @@ export fn zigEvmDestroy(evm_ptr: ?*anyopaque) void {
 export fn zigFrameCreate(evm_ptr: ?*anyopaque) ?*anyopaque {
     if (evm_ptr) |ptr| {
         const evm_wrapper: *EvmWrapper = @ptrCast(@alignCast(ptr));
-        
+
         const caller: Address.Address = [_]u8{0x11} ** 20;
         const contract_addr: Address.Address = [_]u8{0x33} ** 20;
-        
+
         const contract = allocator.create(Evm.Contract) catch return null;
         contract.* = Evm.Contract.init(
             caller,
@@ -107,26 +107,26 @@ export fn zigFrameCreate(evm_ptr: ?*anyopaque) ?*anyopaque {
             &[_]u8{},
             false,
         );
-        
+
         var builder = Evm.Frame.builder(allocator);
         const frame = allocator.create(Evm.Frame) catch {
             contract.deinit(allocator, null);
             allocator.destroy(contract);
             return null;
         };
-        
+
         frame.* = builder
             .withVm(evm_wrapper.evm)
             .withContract(contract)
             .withGas(1000)
-            .withCaller(.{})
+            .withCaller(primitives.Address.ZERO_ADDRESS)
             .build() catch {
-                contract.deinit(allocator, null);
-                allocator.destroy(contract);
-                allocator.destroy(frame);
-                return null;
-            };
-        
+            contract.deinit(allocator, null);
+            allocator.destroy(contract);
+            allocator.destroy(frame);
+            return null;
+        };
+
         const wrapper = allocator.create(FrameWrapper) catch {
             frame.deinit();
             contract.deinit(allocator, null);
@@ -134,12 +134,12 @@ export fn zigFrameCreate(evm_ptr: ?*anyopaque) ?*anyopaque {
             allocator.destroy(contract);
             return null;
         };
-        
+
         wrapper.* = FrameWrapper{
             .frame = frame,
             .contract = contract,
         };
-        
+
         return @ptrCast(wrapper);
     }
     return null;
@@ -192,10 +192,10 @@ export fn zigExecuteOpcode(evm_ptr: ?*anyopaque, frame_ptr: ?*anyopaque, opcode:
         if (frame_ptr) |frame_p| {
             const evm_wrapper: *EvmWrapper = @ptrCast(@alignCast(evm_p));
             const frame_wrapper: *FrameWrapper = @ptrCast(@alignCast(frame_p));
-            
+
             const interpreter: Evm.Operation.Interpreter = evm_wrapper.evm;
             const state: Evm.Operation.State = frame_wrapper.frame;
-            
+
             _ = evm_wrapper.evm.table.execute(0, interpreter, state, opcode) catch |err| {
                 // Return error code based on error type
                 switch (err) {
@@ -207,7 +207,7 @@ export fn zigExecuteOpcode(evm_ptr: ?*anyopaque, frame_ptr: ?*anyopaque, opcode:
                     else => return -99,
                 }
             };
-            
+
             return 0; // Success
         }
     }

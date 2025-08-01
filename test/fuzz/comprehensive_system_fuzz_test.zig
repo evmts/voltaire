@@ -25,11 +25,11 @@ fn create_evm_context_with_code(allocator: std.mem.Allocator, code: []const u8) 
     );
     
     var builder = evm.Frame.builder(allocator);
-    var frame = try builder
+    const frame = try builder
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     
     return .{
@@ -146,8 +146,8 @@ test "fuzz_return_operation_edge_cases" {
             try ctx.frame.stack.append(@as(u256, i));
             try ctx.frame.stack.append(@as(u256, byte));
             
-            var interpreter = evm.Operation.Interpreter = &ctx.vm;
-            var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+            const interpreter: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+            const state: *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, interpreter, state, 0x53); // MSTORE8
         }
         
@@ -159,8 +159,8 @@ test "fuzz_return_operation_edge_cases" {
         try ctx.frame.stack.append(test_case.offset);
         try ctx.frame.stack.append(test_case.length);
         
-        var interpreter = evm.Operation.Interpreter = &ctx.vm;
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        const interpreter: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        const state: *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // RETURN should terminate execution
         const result = ctx.vm.table.execute(0, interpreter, state, 0xF3); // RETURN
@@ -262,8 +262,8 @@ test "fuzz_revert_operation_edge_cases" {
             try ctx.frame.stack.append(@as(u256, i));
             try ctx.frame.stack.append(@as(u256, byte));
             
-            var interpreter = evm.Operation.Interpreter = &ctx.vm;
-            var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+            const interpreter: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+            const state: *evm.Operation.State = @ptrCast(&ctx.frame);
             _ = try ctx.vm.table.execute(0, interpreter, state, 0x53); // MSTORE8
         }
         
@@ -275,8 +275,8 @@ test "fuzz_revert_operation_edge_cases" {
         try ctx.frame.stack.append(test_case.offset);
         try ctx.frame.stack.append(test_case.length);
         
-        var interpreter = evm.Operation.Interpreter = &ctx.vm;
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        const interpreter: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        const state: *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // REVERT should always cause execution to revert
         const result = ctx.vm.table.execute(0, interpreter, state, 0xFD); // REVERT
@@ -320,8 +320,8 @@ test "fuzz_stop_operation" {
         
         const initial_stack_size = ctx.frame.stack.items.len;
         
-        var interpreter = evm.Operation.Interpreter = &ctx.vm;
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        const interpreter: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        const state: *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // STOP should halt execution successfully
         const result = ctx.vm.table.execute(0, interpreter, state, 0x00); // STOP
@@ -357,8 +357,8 @@ test "fuzz_invalid_operation" {
             try ctx.frame.stack.append(value);
         }
         
-        var interpreter = evm.Operation.Interpreter = &ctx.vm;
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        const interpreter: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        const state: *evm.Operation.State = @ptrCast(&ctx.frame);
         
         // INVALID should always cause an error
         const result = ctx.vm.table.execute(0, interpreter, state, 0xFE); // INVALID
@@ -421,8 +421,8 @@ test "fuzz_system_operations_memory_expansion" {
             try ctx.frame.stack.append(test_case.offset);
             try ctx.frame.stack.append(test_case.length);
             
-            var interpreter = evm.Operation.Interpreter = &ctx.vm;
-            var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+            const interpreter: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+            const state: *evm.Operation.State = @ptrCast(&ctx.frame);
             
             // Large memory expansions might run out of gas
             const result = ctx.vm.table.execute(0, interpreter, state, 0xF3); // RETURN
@@ -452,8 +452,8 @@ test "fuzz_system_operations_memory_expansion" {
             try ctx.frame.stack.append(test_case.offset);
             try ctx.frame.stack.append(test_case.length);
             
-            var interpreter = evm.Operation.Interpreter = &ctx.vm;
-            var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+            const interpreter: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+            const state: *evm.Operation.State = @ptrCast(&ctx.frame);
             
             const result = ctx.vm.table.execute(0, interpreter, state, 0xFD); // REVERT
             
@@ -494,8 +494,8 @@ test "fuzz_system_operations_stress_test" {
             try ctx.frame.stack.append(length);
         }
         
-        var interpreter = evm.Operation.Interpreter = &ctx.vm;
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        const interpreter: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        const state: *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = ctx.vm.table.execute(0, interpreter, state, opcode);
         
@@ -610,10 +610,10 @@ test "fuzz_system_operations_gas_consumption" {
             try ctx.frame.stack.append(0); // length
         }
         
-        const initial_gas = ctx.frame.gas_remaining;
+        _ = ctx.frame.gas_remaining; // Keep track of initial gas
         
-        var interpreter = evm.Operation.Interpreter = &ctx.vm;
-        var state = *evm.Operation.State = @ptrCast(&ctx.frame);
+        const interpreter: *evm.Operation.Interpreter = @ptrCast(&ctx.vm);
+        const state: *evm.Operation.State = @ptrCast(&ctx.frame);
         
         const result = ctx.vm.table.execute(0, interpreter, state, test_case.opcode);
         

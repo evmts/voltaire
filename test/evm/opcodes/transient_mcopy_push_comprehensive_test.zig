@@ -211,9 +211,9 @@ test "MCOPY (0x5E): Memory to memory copy" {
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x52); // MSTORE at 0
 
     // Copy 32 bytes from offset 0 to offset 64
-    try frame.stack.append(64); // dest
+    try frame.stack.append(32); // size
     try frame.stack.append(0); // src
-    try frame.stack.append(32); // size (on top)
+    try frame.stack.append(64); // dest (on top)
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
 
     // Verify data was copied
@@ -224,9 +224,9 @@ test "MCOPY (0x5E): Memory to memory copy" {
 
     // Test 2: Copy with forward overlap (dest > src)
     // Copy from offset 0 to offset 16 (partial overlap)
-    try frame.stack.append(16); // dest
+    try frame.stack.append(32); // size
     try frame.stack.append(0); // src
-    try frame.stack.append(32); // size (on top)
+    try frame.stack.append(16); // dest (on top)
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
 
     // Test 3: Copy with backward overlap (dest < src)
@@ -237,16 +237,16 @@ test "MCOPY (0x5E): Memory to memory copy" {
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x52); // MSTORE
 
     // Copy from offset 32 to offset 16 (backward overlap)
-    try frame.stack.append(16); // dest
+    try frame.stack.append(32); // size
     try frame.stack.append(32); // src
-    try frame.stack.append(32); // size (on top)
+    try frame.stack.append(16); // dest (on top)
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
 
     // Test 4: Zero-size copy (should be no-op)
     const gas_before = frame.gas_remaining;
-    try frame.stack.append(100); // dest
+    try frame.stack.append(0); // size=0
     try frame.stack.append(200); // src
-    try frame.stack.append(0); // size=0 (on top)
+    try frame.stack.append(100); // dest (on top)
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
     // Should only consume base gas (3)
     try testing.expectEqual(@as(u64, gas_before - 3), frame.gas_remaining);
@@ -581,7 +581,7 @@ test "Transient storage and memory opcodes: Gas consumption" {
     gas_before = frame.gas_remaining;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x5E);
     gas_used = gas_before - frame.gas_remaining;
-    try testing.expectEqual(@as(u64, 27), gas_used); // MCOPY base cost is currently 27 (should be 3)
+    try testing.expectEqual(@as(u64, 3), gas_used); // MCOPY base cost is 3
 
     // Test MCOPY with copy gas
     frame.stack.clear();
@@ -652,9 +652,9 @@ test "MCOPY: Edge cases" {
     const state: Evm.Operation.State = &frame;
 
     // Test: MCOPY with huge size should run out of gas or fail with offset error
-    try frame.stack.append(0); // dest
+    try frame.stack.append(std.math.maxInt(u256)); // huge size
     try frame.stack.append(0); // src
-    try frame.stack.append(std.math.maxInt(u256)); // huge size (on top)
+    try frame.stack.append(0); // dest (on top)
     const result = evm.table.execute(0, interpreter, state, 0x5E);
     try testing.expectError(ExecutionError.Error.OutOfOffset, result);
 }

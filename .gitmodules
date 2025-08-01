@@ -4,6 +4,3 @@
 [submodule "evm-bench"]
 	path = evm-bench
 	url = https://github.com/ziyadedher/evm-bench.git
-[submodule "bench/evm-bench"]
-	path = bench/evm-bench
-	url = git@github.com:ziyadedher/evm-bench.git

@@ -211,9 +211,11 @@ test "Integration: Memory copy operations" {
     _ = try evm.table.execute(0, interpreter, state, 0x52);
 
     // Copy 32 bytes from offset 0 to offset 64
-    try frame.stack.append(64); // dst
-    try frame.stack.append(0); // src
-    try frame.stack.append(32); // size
+    // MCOPY expects [dst, src, length] from top to bottom
+    // So we push in reverse order: length, src, dst
+    try frame.stack.append(32); // size (will be on top)
+    try frame.stack.append(0); // src (will be in middle)
+    try frame.stack.append(64); // dst (will be on bottom)
     _ = try evm.table.execute(0, interpreter, state, 0x5E);
 
     // Verify copy

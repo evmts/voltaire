@@ -431,7 +431,12 @@ pub unsafe extern "C" fn revm_execute(
             tx.value = value;
             tx.data = input.clone();
             tx.gas_limit = gas_limit;
-            tx.gas_price = U256::from(1u64); // 1 wei to make tests work with small balances
+            // Use 0 gas price for calls (like main.rs benchmark), 1 wei for contract creation
+            tx.gas_price = if to_addr.is_some() { 
+                U256::ZERO // Free gas for calls
+            } else { 
+                U256::from(1u64) // 1 wei for contract creation
+            };
         })
         .build();
 
@@ -498,7 +503,8 @@ pub unsafe extern "C" fn revm_execute(
     };
 
     let revert_ptr = revert_reason
-        .map(|r| CString::new(r).unwrap().into_raw())
+        .and_then(|r| CString::new(r).ok())
+        .map(|cstr| cstr.into_raw())
         .unwrap_or(ptr::null_mut());
 
     let exec_result = Box::new(ExecutionResult {

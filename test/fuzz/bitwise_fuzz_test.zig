@@ -30,7 +30,7 @@ test "fuzz_bitwise_and_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     
@@ -73,7 +73,7 @@ test "fuzz_bitwise_or_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     
@@ -116,7 +116,7 @@ test "fuzz_bitwise_xor_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     
@@ -159,7 +159,7 @@ test "fuzz_bitwise_not_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     

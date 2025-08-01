@@ -481,11 +481,11 @@ test "MCOPY: copy memory to memory" {
     try frame.memory.set_data(10, &src_data);
 
     // Push parameters in order for stack
-    // MCOPY pops: size (first), src (second), dest (third)
-    // So push: dest, src, size (size on top)
-    try frame.stack.append(50);
-    try frame.stack.append(10);
+    // MCOPY pops: dest (first), src (second), length (third)
+    // So push: length, src, dest (dest on top)
     try frame.stack.append(5);
+    try frame.stack.append(10);
+    try frame.stack.append(50);
 
     // Execute MCOPY
     _ = try evm.table.execute(0, interpreter, state, 0x5E);
@@ -547,10 +547,10 @@ test "MCOPY: overlapping copy forward" {
     try frame.memory.set_data(10, &src_data);
 
     // Copy with overlap (forward)
-    // MCOPY pops: size, src, dest
-    try frame.stack.append(12);
-    try frame.stack.append(10);
+    // MCOPY pops: dest, src, length
     try frame.stack.append(5);
+    try frame.stack.append(10);
+    try frame.stack.append(12);
 
     // Execute MCOPY
     _ = try evm.table.execute(0, interpreter, state, 0x5E);
@@ -606,10 +606,10 @@ test "MCOPY: overlapping copy backward" {
     try frame.memory.set_data(10, &src_data);
 
     // Copy with overlap (backward)
-    // MCOPY pops: size, src, dest
-    try frame.stack.append(8);
-    try frame.stack.append(10);
+    // MCOPY pops: dest, src, length
     try frame.stack.append(5);
+    try frame.stack.append(10);
+    try frame.stack.append(8);
 
     // Execute MCOPY
     _ = try evm.table.execute(0, interpreter, state, 0x5E);
@@ -1051,10 +1051,10 @@ test "MCOPY: source offset overflow" {
     const state: Evm.Operation.State = &frame;
 
     // Push parameters that would overflow
-    // MCOPY pops: size, src, dest
-    try frame.stack.append(0);
-    try frame.stack.append(std.math.maxInt(u256));
+    // MCOPY pops: dest, src, length
     try frame.stack.append(100);
+    try frame.stack.append(std.math.maxInt(u256));
+    try frame.stack.append(0);
 
     // Execute MCOPY - should fail
     const result = evm.table.execute(0, interpreter, state, 0x5E);

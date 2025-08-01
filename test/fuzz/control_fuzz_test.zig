@@ -30,7 +30,7 @@ test "fuzz_control_pc_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     
@@ -70,7 +70,7 @@ test "fuzz_control_gas_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     
@@ -112,7 +112,7 @@ test "fuzz_control_jumpdest_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     

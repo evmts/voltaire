@@ -31,7 +31,7 @@ test "fuzz_environment_address_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     
@@ -72,7 +72,7 @@ test "fuzz_environment_caller_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     
@@ -113,7 +113,7 @@ test "fuzz_environment_callvalue_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     
@@ -153,7 +153,7 @@ test "fuzz_environment_codesize_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
     

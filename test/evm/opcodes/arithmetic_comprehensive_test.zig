@@ -495,7 +495,7 @@ test "DIV (0x04): Basic division" {
 
     // Test basic division: 20 / 5 = 4
     // DIV pops dividend first, then divisor, so dividend must be on top
-    try frame.stack.append(5);  // divisor (bottom)
+    try frame.stack.append(5); // divisor (bottom)
     try frame.stack.append(20); // dividend (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -543,7 +543,7 @@ test "DIV: Division by zero returns zero" {
 
     // Test division by zero: 100 / 0 = 0
     // DIV pops dividend first, then divisor, so dividend must be on top
-    try frame.stack.append(0);   // divisor (bottom)
+    try frame.stack.append(0); // divisor (bottom)
     try frame.stack.append(100); // dividend (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -643,7 +643,7 @@ test "SDIV (0x05): Signed division positive" {
 
     // Test positive division: 20 / 5 = 4
     // SDIV pops dividend first, then divisor, so dividend must be on top
-    try frame.stack.append(5);  // divisor (bottom)
+    try frame.stack.append(5); // divisor (bottom)
     try frame.stack.append(20); // dividend (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -693,7 +693,7 @@ test "SDIV: Signed division negative" {
     // In two's complement: -20 = MAX - 19
     // SDIV pops dividend first, then divisor, so dividend must be on top
     const neg_20 = std.math.maxInt(u256) - 19;
-    try frame.stack.append(5);      // divisor (bottom)
+    try frame.stack.append(5); // divisor (bottom)
     try frame.stack.append(neg_20); // dividend (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -742,7 +742,7 @@ test "SDIV: Division by zero returns zero" {
 
     // Test division by zero
     // SDIV pops dividend first, then divisor, so dividend must be on top
-    try frame.stack.append(0);   // divisor (bottom)
+    try frame.stack.append(0); // divisor (bottom)
     try frame.stack.append(100); // dividend (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -792,7 +792,7 @@ test "SDIV: Edge case MIN / -1" {
     const min_i256 = @as(u256, 1) << 255; // -2^255 in two's complement
     const neg_1 = std.math.maxInt(u256); // -1 in two's complement
     // SDIV pops dividend first, then divisor, so dividend must be on top
-    try frame.stack.append(neg_1);    // divisor (bottom)
+    try frame.stack.append(neg_1); // divisor (bottom)
     try frame.stack.append(min_i256); // dividend (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -844,7 +844,7 @@ test "MOD (0x06): Basic modulo" {
 
     // Test basic modulo: 17 % 5 = 2
     // MOD pops dividend first, then divisor, so dividend must be on top
-    try frame.stack.append(5);  // divisor (bottom)
+    try frame.stack.append(5); // divisor (bottom)
     try frame.stack.append(17); // dividend (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -892,7 +892,7 @@ test "MOD: Modulo by zero returns zero" {
 
     // Test modulo by zero: 100 % 0 = 0
     // MOD pops dividend first, then divisor, so dividend must be on top
-    try frame.stack.append(0);   // divisor (bottom)
+    try frame.stack.append(0); // divisor (bottom)
     try frame.stack.append(100); // dividend (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -944,7 +944,7 @@ test "SMOD (0x07): Signed modulo positive" {
 
     // Test positive modulo: 17 % 5 = 2
     // SMOD pops dividend first, then divisor, so dividend must be on top
-    try frame.stack.append(5);  // divisor (bottom)
+    try frame.stack.append(5); // divisor (bottom)
     try frame.stack.append(17); // dividend (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -993,7 +993,7 @@ test "SMOD: Signed modulo negative" {
     // Test negative modulo: -17 % 5 = -2
     const neg_17 = std.math.maxInt(u256) - 16;
     // SMOD pops dividend first, then divisor, so dividend must be on top
-    try frame.stack.append(5);      // divisor (bottom)
+    try frame.stack.append(5); // divisor (bottom)
     try frame.stack.append(neg_17); // dividend (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -1046,7 +1046,7 @@ test "ADDMOD (0x08): Basic modular addition" {
 
     // Test: (10 + 10) % 8 = 4
     // ADDMOD pops modulus first, then second addend, then first addend
-    try frame.stack.append(8);  // modulus (bottom)
+    try frame.stack.append(8); // modulus (bottom)
     try frame.stack.append(10); // second addend (middle)
     try frame.stack.append(10); // first addend (top)
 
@@ -1095,7 +1095,7 @@ test "ADDMOD: Modulo zero returns zero" {
 
     // Test: (10 + 10) % 0 = 0
     // ADDMOD pops modulus first, then second addend, then first addend
-    try frame.stack.append(0);  // modulus (bottom)
+    try frame.stack.append(0); // modulus (bottom)
     try frame.stack.append(10); // second addend (middle)
     try frame.stack.append(10); // first addend (top)
 
@@ -1145,7 +1145,7 @@ test "ADDMOD: No intermediate overflow" {
     // Test with values that would overflow u256
     const max = std.math.maxInt(u256);
     // ADDMOD pops modulus first, then second addend, then first addend
-    try frame.stack.append(10);  // modulus (bottom)
+    try frame.stack.append(10); // modulus (bottom)
     try frame.stack.append(max); // second addend (middle)
     try frame.stack.append(max); // first addend (top)
 
@@ -1201,7 +1201,7 @@ test "MULMOD (0x09): Basic modular multiplication" {
 
     // Test: (10 * 10) % 8 = 4
     // MULMOD pops modulus first, then second factor, then first factor
-    try frame.stack.append(8);  // modulus (bottom)
+    try frame.stack.append(8); // modulus (bottom)
     try frame.stack.append(10); // second factor (middle)
     try frame.stack.append(10); // first factor (top)
 
@@ -1251,7 +1251,7 @@ test "MULMOD: No intermediate overflow" {
     // Test with values that would overflow u256
     const large = @as(u256, 1) << 200;
     // MULMOD pops modulus first, then second factor, then first factor
-    try frame.stack.append(100);  // modulus (bottom)
+    try frame.stack.append(100); // modulus (bottom)
     try frame.stack.append(large); // second factor (middle)
     try frame.stack.append(large); // first factor (top)
 
@@ -1353,7 +1353,7 @@ test "EXP: Zero exponent" {
 
     // Test: 100^0 = 1
     // EXP pops base first, then exponent, so base must be on top
-    try frame.stack.append(0);   // exponent (bottom)
+    try frame.stack.append(0); // exponent (bottom)
     try frame.stack.append(100); // base (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -1402,7 +1402,7 @@ test "EXP: Zero base with non-zero exponent" {
     // Test: 0^10 = 0
     // EXP pops base first, then exponent, so base must be on top
     try frame.stack.append(10); // exponent (bottom)
-    try frame.stack.append(0);  // base (top)
+    try frame.stack.append(0); // base (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1450,7 +1450,7 @@ test "EXP: Gas consumption scales with exponent size" {
     // Test with large exponent
     // EXP pops base first, then exponent, so base must be on top
     try frame.stack.append(0x10000); // exponent (bottom)
-    try frame.stack.append(2);       // base (top)
+    try frame.stack.append(2); // base (top)
 
     const gas_before = frame.gas_remaining;
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -1505,8 +1505,8 @@ test "SIGNEXTEND (0x0B): Extend positive byte" {
 
     // Test: sign extend 0x7F (positive) from byte 0
     // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
-    try frame.stack.append(0x7F); // value (bottom) 
-    try frame.stack.append(0);    // byte_index (top)
+    try frame.stack.append(0x7F); // value (bottom)
+    try frame.stack.append(0); // byte_index (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1554,7 +1554,7 @@ test "SIGNEXTEND: Extend negative byte" {
     // Test: sign extend 0xFF (negative) from byte 0
     // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
     try frame.stack.append(0xFF); // value (bottom)
-    try frame.stack.append(0);    // byte_index (top)
+    try frame.stack.append(0); // byte_index (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1604,7 +1604,7 @@ test "SIGNEXTEND: Extend from higher byte position" {
     // Test: sign extend 0x00FF from byte 1 (second byte)
     // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
     try frame.stack.append(0x00FF); // value (bottom)
-    try frame.stack.append(1);      // byte_index (top)
+    try frame.stack.append(1); // byte_index (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1654,7 +1654,7 @@ test "SIGNEXTEND: Byte position >= 31 returns value unchanged" {
     const test_value = 0x123456789ABCDEF;
     // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
     try frame.stack.append(test_value); // value (bottom)
-    try frame.stack.append(31);         // byte_index (top)
+    try frame.stack.append(31); // byte_index (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1712,7 +1712,7 @@ test "Arithmetic opcodes: Gas consumption" {
             .setup = struct { // ADDMOD
                 fn setup(frame: *Frame) !void {
                     // ADDMOD pops modulus first, then second addend, then first addend
-                    try frame.stack.append(8);  // modulus (bottom)
+                    try frame.stack.append(8); // modulus (bottom)
                     try frame.stack.append(10); // second addend (middle)
                     try frame.stack.append(10); // first addend (top)
                 }

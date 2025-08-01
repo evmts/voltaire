@@ -170,7 +170,7 @@ pub fn init_full(
     vm: *Vm,
     gas_limit: u64,
     contract: *Contract,
-    caller: primitives.Address,
+    caller: primitives.Address.Address,
     input: []const u8,
 ) !Frame {
     _ = vm; // VM parameter for future use
@@ -298,7 +298,7 @@ pub const FrameBuilder = struct {
     vm: ?*Vm = null,
     gas: u64 = 1000000,
     contract: ?*Contract = null,
-    caller: primitives.Address = .{},
+    caller: primitives.Address.Address = primitives.Address.ZERO_ADDRESS,
     input: []const u8 = &.{},
     value: u256 = 0,
     is_static: bool = false,
@@ -347,7 +347,7 @@ pub const FrameBuilder = struct {
     /// @param self Builder instance
     /// @param caller Calling address
     /// @return Builder instance for method chaining
-    pub fn withCaller(self: *FrameBuilder, caller: primitives.Address) *FrameBuilder {
+    pub fn withCaller(self: *FrameBuilder, caller: primitives.Address.Address) *FrameBuilder {
         self.caller = caller;
         return self;
     }
@@ -1028,7 +1028,7 @@ test "FrameBuilder.init creates builder with default values" {
     try std.testing.expect(frame_builder.vm == null);
     try std.testing.expect(frame_builder.gas == 1000000);
     try std.testing.expect(frame_builder.contract == null);
-    try std.testing.expect(primitives.Address.eql(frame_builder.caller, primitives.Address.zero()));
+    try std.testing.expect(primitives.Address.eql(frame_builder.caller, primitives.Address.ZERO_ADDRESS));
     try std.testing.expect(frame_builder.input.len == 0);
     try std.testing.expect(frame_builder.value == 0);
     try std.testing.expect(frame_builder.is_static == false);

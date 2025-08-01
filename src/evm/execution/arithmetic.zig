@@ -56,7 +56,6 @@ const Operation = @import("../opcodes/operation.zig");
 const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
-const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
 const StackValidation = @import("../stack/stack_validation.zig");
 
@@ -150,7 +149,6 @@ pub fn op_sub(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
 
-    // EVM SUB calculates: top - second (b - a)
     const result = b -% a;
 
     frame.stack.set_top_unsafe(result);
@@ -196,13 +194,13 @@ pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const a = frame.stack.pop_unsafe();
-    const b = frame.stack.peek_unsafe().*;
+    const b = frame.stack.pop_unsafe();
+    const a = frame.stack.peek_unsafe().*;
 
-    const result = if (b == 0) blk: {
+    const result = if (a == 0) blk: {
         @branchHint(.unlikely);
         break :blk 0;
-    } else a / b;
+    } else b / a;
 
     frame.stack.set_top_unsafe(result);
 
@@ -212,27 +210,27 @@ pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 /// SDIV opcode (0x05) - Signed integer division
 ///
 /// Pops two values from the stack, interprets them as signed integers,
-/// divides the second by the top, and pushes the signed quotient.
+/// divides the first popped value by the second, and pushes the signed quotient.
 /// Division by zero returns 0.
 ///
 /// ## Stack Input
-/// - `a`: Dividend as signed i256 (second from top)
-/// - `b`: Divisor as signed i256 (top)
+/// - `b`: Dividend as signed i256 (top)
+/// - `a`: Divisor as signed i256 (second from top)
 ///
 /// ## Stack Output
-/// - `a / b`: Signed integer quotient, or 0 if b = 0
+/// - `b / a`: Signed integer quotient, or 0 if a = 0
 ///
 /// ## Gas Cost
 /// 5 gas (GasFastStep)
 ///
 /// ## Execution
-/// 1. Pop b from stack
-/// 2. Pop a from stack
+/// 1. Pop b from stack (dividend)
+/// 2. Peek a from stack (divisor, stays on stack)
 /// 3. Interpret both as two's complement signed integers
-/// 4. If b = 0, result = 0
-/// 5. Else if a = -2^255 and b = -1, result = -2^255 (overflow case)
-/// 6. Else result = truncated division a / b
-/// 7. Push result to stack
+/// 4. If a = 0, result = 0
+/// 5. Else if b = -2^255 and a = -1, result = -2^255 (overflow case)
+/// 6. Else result = truncated division b / a
+/// 7. Replace top of stack with result
 ///
 /// ## Example
 /// Stack: [20, 5] => [4]
@@ -251,24 +249,24 @@ pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const a = frame.stack.pop_unsafe();
-    const b = frame.stack.peek_unsafe().*;
+    const b = frame.stack.pop_unsafe();
+    const a = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
-    if (b == 0) {
+    if (a == 0) {
         @branchHint(.unlikely);
         result = 0;
     } else {
         const a_i256 = @as(i256, @bitCast(a));
         const b_i256 = @as(i256, @bitCast(b));
         const min_i256 = std.math.minInt(i256);
-        if (a_i256 == min_i256 and b_i256 == -1) {
+        if (b_i256 == min_i256 and a_i256 == -1) {
             @branchHint(.unlikely);
             // MIN_I256 / -1 = MIN_I256 (overflow wraps)
             // This matches EVM behavior where overflow wraps around
-            result = a;
+            result = b;
         } else {
-            const result_i256 = @divTrunc(a_i256, b_i256);
+            const result_i256 = @divTrunc(b_i256, a_i256);
             result = @as(u256, @bitCast(result_i256));
         }
     }
@@ -315,13 +313,13 @@ pub fn op_mod(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const a = frame.stack.pop_unsafe();
-    const b = frame.stack.peek_unsafe().*;
+    const b = frame.stack.pop_unsafe();
+    const a = frame.stack.peek_unsafe().*;
 
-    const result = if (b == 0) blk: {
+    const result = if (a == 0) blk: {
         @branchHint(.unlikely);
         break :blk 0;
-    } else a % b;
+    } else b % a;
 
     frame.stack.set_top_unsafe(result);
 
@@ -369,17 +367,17 @@ pub fn op_smod(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const a = frame.stack.pop_unsafe();
-    const b = frame.stack.peek_unsafe().*;
+    const b = frame.stack.pop_unsafe();
+    const a = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
-    if (b == 0) {
+    if (a == 0) {
         @branchHint(.unlikely);
         result = 0;
     } else {
         const a_i256 = @as(i256, @bitCast(a));
         const b_i256 = @as(i256, @bitCast(b));
-        const result_i256 = @rem(a_i256, b_i256);
+        const result_i256 = @rem(b_i256, a_i256);
         result = @as(u256, @bitCast(result_i256));
     }
 
@@ -429,17 +427,17 @@ pub fn op_addmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
     std.debug.assert(frame.stack.size >= 3);
 
-    const a = frame.stack.pop_unsafe();
     const b = frame.stack.pop_unsafe();
+    const a = frame.stack.pop_unsafe();
     const n = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
     if (n == 0) {
         result = 0;
     } else {
-        // Use @addWithOverflow for more idiomatic overflow handling
-        const overflow = @addWithOverflow(a, b);
-        result = overflow[0] % n;
+        // Add the two numbers, then take modulo n
+        const sum = a +% b;
+        result = sum % n;
     }
 
     frame.stack.set_top_unsafe(result);
@@ -582,8 +580,6 @@ pub fn op_exp(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 
     const base = frame.stack.pop_unsafe();
     const exp = frame.stack.peek_unsafe().*;
-    
-    Log.debug("EXP: base={}, exp={}", .{ base, exp });
 
     // Calculate gas cost based on exponent byte size
     var exp_copy = exp;
@@ -702,12 +698,11 @@ pub fn op_signextend(pc: usize, interpreter: Operation.Interpreter, state: Opera
         const keep_bits = sign_bit_pos + 1;
 
         if (sign_bit == 1) {
-            // First, create a mask of all 1s for the upper bits
+            // Sign bit is 1, extend with 1s
             if (keep_bits >= 256) {
                 result = x;
             } else {
-                const shift_amount = @as(u9, 256) - @as(u9, keep_bits);
-                const ones_mask = ~(@as(u256, 0) >> @intCast(shift_amount));
+                const ones_mask = ~((@as(u256, 1) << @intCast(keep_bits)) - 1);
                 result = x | ones_mask;
             }
         } else {
