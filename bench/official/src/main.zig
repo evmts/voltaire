@@ -44,7 +44,7 @@ pub fn main() !void {
 
     if (compare_mode) {
         // Compare mode: run benchmarks for all available EVMs
-        const evms = [_][]const u8{ "zig", "revm", "tevm", "geth" };
+        const evms = [_][]const u8{ "zig", "revm", "ethereumjs", "geth", "evmone" };
         
         var all_results = std.ArrayList(Orchestrator.BenchmarkResult).init(allocator);
         defer all_results.deinit();
@@ -128,7 +128,7 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
     try file.writer().print("# EVM Benchmark Comparison Results\n\n", .{});
     try file.writer().print("## Summary\n\n", .{});
     try file.writer().print("**Test Runs per Case**: {}\n", .{num_runs});
-    try file.writer().print("**EVMs Compared**: Guillotine (Zig), REVM (Rust), TEVM (TypeScript), Geth (Go)\n", .{});
+    try file.writer().print("**EVMs Compared**: Guillotine (Zig), REVM (Rust), EthereumJS (JavaScript), Geth (Go), evmone (C++)\n", .{});
     try file.writer().print("**Timestamp**: {} (Unix epoch)\n\n", .{seconds});
     
     // Group results by test case
@@ -155,10 +155,12 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
                     "Guillotine" 
                 else if (std.mem.indexOf(u8, result.test_case, "(revm)") != null) 
                     "REVM"
-                else if (std.mem.indexOf(u8, result.test_case, "(tevm)") != null)
-                    "TEVM"
+                else if (std.mem.indexOf(u8, result.test_case, "(ethereumjs)") != null)
+                    "EthereumJS"
+                else if (std.mem.indexOf(u8, result.test_case, "(geth)") != null)
+                    "Geth"
                 else 
-                    "Geth";
+                    "evmone";
                 try file.writer().print("| {s:<11} | {d:>9.2} | {d:>11.2} | {d:>8.2} | {d:>8.2} | {d:>11.2} |\n", .{
                     evm_name,
                     result.mean_ms,
@@ -170,59 +172,57 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
             }
         }
         
-        // Calculate speedup
-        var zig_mean: f64 = 0;
-        var revm_mean: f64 = 0;
-        for (results) |result| {
-            if (std.mem.indexOf(u8, result.test_case, test_case) != null) {
-                if (std.mem.indexOf(u8, result.test_case, "(zig)") != null) {
-                    zig_mean = result.mean_ms;
-                } else {
-                    revm_mean = result.mean_ms;
-                }
-            }
-        }
-        
-        if (zig_mean > 0 and revm_mean > 0) {
-            const speedup = zig_mean / revm_mean;
-            try file.writer().print("\n**Speedup**: REVM is {d:.2}x faster than Guillotine\n\n", .{speedup});
-        }
+        try file.writer().print("\n", .{});
     }
     
     // Add summary statistics
     try file.writer().print("## Overall Performance Summary\n\n", .{});
-    try file.writeAll("| Test Case | Guillotine (ms) | REVM (ms) | Speedup |\n");
-    try file.writeAll("|-----------|-----------------|-----------|----------|\n");
+    try file.writeAll("| Test Case | Guillotine (ms) | REVM (ms) | EthereumJS (ms) | Geth (ms) | evmone (ms) |\n");
+    try file.writeAll("|-----------|-----------------|-----------|-----------|-----------|-------------|\n");
     
     for (test_cases) |test_case| {
         var zig_mean: f64 = 0;
         var revm_mean: f64 = 0;
+        var ethereumjs_mean: f64 = 0;
+        var geth_mean: f64 = 0;
+        var evmone_mean: f64 = 0;
+        
         for (results) |result| {
             if (std.mem.indexOf(u8, result.test_case, test_case) != null) {
                 if (std.mem.indexOf(u8, result.test_case, "(zig)") != null) {
                     zig_mean = result.mean_ms;
-                } else {
+                } else if (std.mem.indexOf(u8, result.test_case, "(revm)") != null) {
                     revm_mean = result.mean_ms;
+                } else if (std.mem.indexOf(u8, result.test_case, "(ethereumjs)") != null) {
+                    ethereumjs_mean = result.mean_ms;
+                } else if (std.mem.indexOf(u8, result.test_case, "(geth)") != null) {
+                    geth_mean = result.mean_ms;
+                } else if (std.mem.indexOf(u8, result.test_case, "(evmone)") != null) {
+                    evmone_mean = result.mean_ms;
                 }
             }
         }
         
-        if (zig_mean > 0 and revm_mean > 0) {
-            const speedup = zig_mean / revm_mean;
-            try file.writer().print("| {s:<25} | {d:>15.2} | {d:>9.2} | {d:>7.2}x |\n", .{
-                test_case,
-                zig_mean,
-                revm_mean,
-                speedup,
-            });
-        }
+        try file.writer().print("| {s:<25} | {d:>15.2} | {d:>9.2} | {d:>9.2} | {d:>9.2} | {d:>11.2} |\n", .{
+            test_case,
+            zig_mean,
+            revm_mean,
+            ethereumjs_mean,
+            geth_mean,
+            evmone_mean,
+        });
     }
     
     // Add notes
     try file.writeAll("\n## Notes\n\n");
-    try file.writeAll("- Both implementations use optimized builds (ReleaseFast for Zig, --release for Rust)\n");
+    try file.writeAll("- All implementations use optimized builds:\n");
+    try file.writeAll("  - Zig: ReleaseFast\n");
+    try file.writeAll("  - Rust (REVM): --release\n");
+    try file.writeAll("  - JavaScript (EthereumJS): Bun runtime\n");
+    try file.writeAll("  - Go (geth): -O3 optimizations\n");
+    try file.writeAll("  - C++ (evmone): -O3 -march=native\n");
     try file.writeAll("- All times are in milliseconds (ms)\n");
-    try file.writeAll("- Speedup shows how many times faster REVM is compared to Guillotine\n");
+    try file.writeAll("- Lower values indicate better performance\n");
     try file.writeAll("- These benchmarks measure the full execution time including contract deployment\n\n");
     
     try file.writeAll("---\n\n");

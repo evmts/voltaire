@@ -137,17 +137,19 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
     // Build the runner path
     const runner_path = if (std.mem.eql(u8, self.evm_name, "zig")) 
         "/Users/williamcory/Guillotine/zig-out/bin/evm-runner"
-    else if (std.mem.eql(u8, self.evm_name, "tevm"))
-        "/Users/williamcory/Guillotine/bench/official/evms/tevm/runner.js"
+    else if (std.mem.eql(u8, self.evm_name, "ethereumjs"))
+        "/Users/williamcory/Guillotine/bench/official/evms/ethereumjs/runner.js"
     else if (std.mem.eql(u8, self.evm_name, "geth"))
         "/Users/williamcory/Guillotine/bench/official/evms/geth/runner"
+    else if (std.mem.eql(u8, self.evm_name, "evmone"))
+        "/Users/williamcory/Guillotine/bench/official/evms/evmone/build/evmone-runner"
     else blk: {
         const runner_name = try std.fmt.allocPrint(self.allocator, "{s}-runner", .{self.evm_name});
         defer self.allocator.free(runner_name);
         const path = try std.fmt.allocPrint(self.allocator, "/Users/williamcory/Guillotine/bench/official/evms/{s}/target/release/{s}", .{self.evm_name, runner_name});
         break :blk path;
     };
-    defer if (!std.mem.eql(u8, self.evm_name, "zig") and !std.mem.eql(u8, self.evm_name, "tevm") and !std.mem.eql(u8, self.evm_name, "geth")) self.allocator.free(runner_path);
+    defer if (!std.mem.eql(u8, self.evm_name, "zig") and !std.mem.eql(u8, self.evm_name, "ethereumjs") and !std.mem.eql(u8, self.evm_name, "geth") and !std.mem.eql(u8, self.evm_name, "evmone")) self.allocator.free(runner_path);
     
     const num_runs_str = try std.fmt.allocPrint(self.allocator, "{}", .{self.num_runs});
     defer self.allocator.free(num_runs_str);

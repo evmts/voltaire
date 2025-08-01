@@ -1053,6 +1053,30 @@ pub fn build(b: *std.Build) void {
     
     const build_orchestrator_step = b.step("build-orchestrator", "Build the benchmark orchestrator");
     build_orchestrator_step.dependOn(&b.addInstallArtifact(orchestrator_exe, .{}).step);
+    
+    // Build Go (geth) runner
+    const geth_runner_build = b.addSystemCommand(&[_][]const u8{
+        "go", "build", "-o", "runner", "runner.go"
+    });
+    geth_runner_build.setCwd(b.path("bench/official/evms/geth"));
+    
+    // Build evmone runner using CMake
+    const evmone_cmake_configure = b.addSystemCommand(&[_][]const u8{
+        "cmake", "-S", "bench/official/evms/evmone", "-B", "bench/official/evms/evmone/build", "-DCMAKE_BUILD_TYPE=Release"
+    });
+    evmone_cmake_configure.setCwd(b.path(""));
+    
+    const evmone_cmake_build = b.addSystemCommand(&[_][]const u8{
+        "cmake", "--build", "bench/official/evms/evmone/build", "--parallel"
+    });
+    evmone_cmake_build.setCwd(b.path(""));
+    evmone_cmake_build.step.dependOn(&evmone_cmake_configure.step);
+    
+    // Make benchmark targets depend on runner builds
+    orchestrator_step.dependOn(&geth_runner_build.step);
+    orchestrator_step.dependOn(&evmone_cmake_build.step);
+    build_orchestrator_step.dependOn(&geth_runner_build.step);
+    build_orchestrator_step.dependOn(&evmone_cmake_build.step);
 
     // Static library for opcode testing FFI
     const opcode_test_lib = b.addStaticLibrary(.{

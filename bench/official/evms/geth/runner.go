@@ -10,12 +10,14 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm/runtime"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/uint256"
 )
 
 var callerAddress = common.HexToAddress("0x1000000000000000000000000000000000000001")
-var contractAddress = common.HexToAddress("0x5DDDfCe53EE040D9EB21AFbC0aE1BB4Dbb0BA643")
 
 func main() {
 	// Parse command line arguments
@@ -85,26 +87,47 @@ func main() {
 		TerminalTotalDifficulty:       big.NewInt(0),
 	}
 	
+	// Create state database
+	statedb, _ := state.New(types.EmptyRootHash, state.NewDatabaseForTesting())
+	
+	// Set up caller account with balance
+	statedb.CreateAccount(callerAddress)
+	statedb.SetBalance(callerAddress, uint256.MustFromBig(new(big.Int).Lsh(big.NewInt(1), 256-1)), 0) // Max balance
+	
+	// Deploy contract configuration
 	cfg := runtime.Config{
 		ChainConfig: chainConfig,
 		Origin:      callerAddress,
-		GasLimit:    1_000_000_000,
+		GasLimit:    10_000_000,
 		GasPrice:    big.NewInt(0),
 		Value:       big.NewInt(0),
 		Difficulty:  big.NewInt(0),
 		Time:        1, // Time must be > 0 for Shanghai
 		Coinbase:    common.Address{},
 		BlockNumber: big.NewInt(1),
+		State:       statedb,
 	}
+
+	// Deploy the contract first
+	deployedCode, contractAddr, _, err := runtime.Create(contractCode, &cfg)
+	if err != nil {
+		panic(fmt.Sprintf("Contract creation failed: %v", err))
+	}
+	
+	// The deployed code is automatically set by runtime.Create
+	// but we need to ensure the state is committed
+	_ = deployedCode
 
 	// Run the benchmark num_runs times
 	for i := 0; i < numRuns; i++ {
 		// Start timing
 		start := time.Now()
 
-		// Execute the contract code directly
-		// This simulates the contract already being deployed
-		ret, _, err := runtime.Execute(contractCode, calldata, &cfg)
+		// Update gas limit for the call
+		cfg.GasLimit = 1_000_000_000
+		
+		// Call the deployed contract
+		ret, _, err := runtime.Call(contractAddr, calldata, &cfg)
 
 		// End timing
 		duration := time.Since(start)
