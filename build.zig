@@ -1004,12 +1004,12 @@ pub fn build(b: *std.Build) void {
         dmg_step.dependOn(&create_dmg.step);
     }
 
-    // EVM Benchmark Runner executable
+    // EVM Benchmark Runner executable (always optimized for benchmarks)
     const evm_runner_exe = b.addExecutable(.{
         .name = "evm-runner",
         .root_source_file = b.path("bench/evm/runner.zig"),
         .target = target,
-        .optimize = optimize,
+        .optimize = .ReleaseFast,  // Always use ReleaseFast for benchmarks
     });
     evm_runner_exe.root_module.addImport("evm", evm_mod);
     evm_runner_exe.root_module.addImport("Address", primitives_mod);
@@ -1026,6 +1026,33 @@ pub fn build(b: *std.Build) void {
     
     const build_evm_runner_step = b.step("build-evm-runner", "Build the EVM benchmark runner");
     build_evm_runner_step.dependOn(&b.addInstallArtifact(evm_runner_exe, .{}).step);
+
+    // Benchmark Orchestrator executable
+    const clap_dep = b.dependency("clap", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    
+    const orchestrator_exe = b.addExecutable(.{
+        .name = "orchestrator",
+        .root_source_file = b.path("bench/official/src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    orchestrator_exe.root_module.addImport("clap", clap_dep.module("clap"));
+    
+    b.installArtifact(orchestrator_exe);
+    
+    const run_orchestrator_cmd = b.addRunArtifact(orchestrator_exe);
+    if (b.args) |args| {
+        run_orchestrator_cmd.addArgs(args);
+    }
+    
+    const orchestrator_step = b.step("orchestrator", "Run the benchmark orchestrator");
+    orchestrator_step.dependOn(&run_orchestrator_cmd.step);
+    
+    const build_orchestrator_step = b.step("build-orchestrator", "Build the benchmark orchestrator");
+    build_orchestrator_step.dependOn(&b.addInstallArtifact(orchestrator_exe, .{}).step);
 
     // Static library for opcode testing FFI
     const opcode_test_lib = b.addStaticLibrary(.{

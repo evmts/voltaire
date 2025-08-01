@@ -472,12 +472,43 @@ git commit -m "🔧 ci: add Ubuntu native build to CI workflow"
 zig build test                              # Run all tests (correct way)
 zig build                                   # Build the project
 zig build run                               # Run the executable
+zig build bench                             # Run benchmarks
+zig build build-evm-runner                  # Build the official benchmark runner
 ```
 
 Do NOT use:
 ```bash
 zig test src/file.zig                       # Wrong - will fail with import errors
 ```
+
+### Running Official EVM Benchmarks
+
+The project includes official EVM benchmarks in `bench/official/` for performance testing:
+
+1. **Install hyperfine** (required):
+   ```bash
+   brew install hyperfine  # macOS
+   cargo install hyperfine # Linux/other
+   ```
+
+2. **Build the benchmark runner**:
+   ```bash
+   zig build build-evm-runner
+   ```
+
+3. **Run benchmarks**:
+   ```bash
+   # Single benchmark example
+   hyperfine --runs 10 --warmup 3 \
+     "zig-out/bin/evm-runner --contract-code-path bench/official/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
+   ```
+
+Available benchmark cases:
+- `erc20-approval-transfer` - ERC20 approval and transfer
+- `erc20-mint` - ERC20 minting
+- `erc20-transfer` - Basic ERC20 transfers
+- `snailtracer` - Complex computation
+- `ten-thousand-hashes` - Hash-intensive operations
 
 ### Enabling Debug Logging in Tests
 
