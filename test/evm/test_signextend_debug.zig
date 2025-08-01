@@ -42,9 +42,11 @@ test "SIGNEXTEND direct test" {
         .build();
     defer frame_ptr.deinit();
     
-    // Push test values: [0, 0xFF]
-    try frame_ptr.stack.append(0);
-    try frame_ptr.stack.append(0xFF);
+    // Push test values: [0xFF, 0]
+    // SIGNEXTEND pops byte_index first, then value
+    // So value (0xFF) goes on bottom, byte_index (0) goes on top
+    try frame_ptr.stack.append(0xFF);  // value
+    try frame_ptr.stack.append(0);     // byte_index
     
     std.debug.print("\nBefore SIGNEXTEND: stack size={}, values=[{}, {}]\n", .{
         frame_ptr.stack.size,

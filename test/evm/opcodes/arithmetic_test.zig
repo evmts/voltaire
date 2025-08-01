@@ -246,26 +246,26 @@ test "Arithmetic: DIV basic operations" {
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: Simple division - DIV pops divisor first, then dividend
-    // To compute 42 / 6, we need divisor (6) on top, dividend (42) below
-    try frame.stack.append(42); // dividend (bottom)
-    try frame.stack.append(6);  // divisor (top)
+    // Test 1: Simple division - DIV pops dividend first, then divisor
+    // To compute 42 / 6, we need divisor (6) on bottom, dividend (42) on top
+    try frame.stack.append(6);  // divisor (bottom)
+    try frame.stack.append(42); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x04);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 7), result); // 42 / 6 = 7
 
-    // Test 2: Division by zero - DIV pops divisor first, then dividend
+    // Test 2: Division by zero - DIV pops dividend first, then divisor
     frame.stack.clear();
-    try frame.stack.append(42); // dividend (bottom)
-    try frame.stack.append(0);  // divisor (top)
+    try frame.stack.append(0);  // divisor (bottom)
+    try frame.stack.append(42); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x04);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Division by zero returns 0
 
-    // Test 3: Division with remainder - DIV pops divisor first, then dividend
+    // Test 3: Division with remainder - DIV pops dividend first, then divisor
     frame.stack.clear();
-    try frame.stack.append(50); // dividend (bottom)
-    try frame.stack.append(7);  // divisor (top)
+    try frame.stack.append(7);  // divisor (bottom)
+    try frame.stack.append(50); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x04);
     const remainder_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 7), remainder_result); // 50 / 7 = 7 (integer division)
@@ -309,26 +309,26 @@ test "Arithmetic: MOD basic operations" {
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: Simple modulo - MOD pops divisor first, then dividend
-    // To compute 50 % 7, we need divisor (7) on top, dividend (50) below
-    try frame.stack.append(50); // dividend (bottom)
-    try frame.stack.append(7);  // divisor (top)
+    // Test 1: Simple modulo - MOD pops dividend first, then divisor
+    // To compute 50 % 7, we need divisor (7) on bottom, dividend (50) on top
+    try frame.stack.append(7);  // divisor (bottom)
+    try frame.stack.append(50); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x06);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result); // 50 % 7 = 1
 
-    // Test 2: Modulo by zero - MOD pops divisor first, then dividend
+    // Test 2: Modulo by zero - MOD pops dividend first, then divisor
     frame.stack.clear();
-    try frame.stack.append(42); // dividend (bottom)
-    try frame.stack.append(0);  // divisor (top)
+    try frame.stack.append(0);  // divisor (bottom)
+    try frame.stack.append(42); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x06);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Modulo by zero returns 0
 
-    // Test 3: Perfect division - MOD pops divisor first, then dividend
+    // Test 3: Perfect division - MOD pops dividend first, then divisor
     frame.stack.clear();
-    try frame.stack.append(42); // dividend (bottom)
-    try frame.stack.append(6);  // divisor (top)
+    try frame.stack.append(6);  // divisor (bottom)
+    try frame.stack.append(42); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x06);
     const perfect_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), perfect_result); // 42 % 6 = 0
@@ -505,34 +505,35 @@ test "Arithmetic: EXP exponential operations" {
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: Simple exponentiation
-    try frame.stack.append(2);
-    try frame.stack.append(3);
+    // Test 1: Simple exponentiation - EXP pops base first, then exponent
+    // To compute 2^3, we need exponent (3) on bottom, base (2) on top
+    try frame.stack.append(3); // exponent (bottom)
+    try frame.stack.append(2); // base (top)
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 8), result); // 2^3 = 8
 
-    // Test 2: Zero exponent
+    // Test 2: Zero exponent - EXP pops base first, then exponent
     frame.stack.clear();
-    try frame.stack.append(42);
-    try frame.stack.append(0);
+    try frame.stack.append(0);  // exponent (bottom)
+    try frame.stack.append(42); // base (top)
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     const zero_exp_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), zero_exp_result); // 42^0 = 1
 
-    // Test 3: Zero base
+    // Test 3: Zero base - EXP pops base first, then exponent
     frame.stack.clear();
-    try frame.stack.append(0);
-    try frame.stack.append(5);
+    try frame.stack.append(5); // exponent (bottom)
+    try frame.stack.append(0); // base (top)
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     const zero_base_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_base_result); // 0^5 = 0
 
-    // Test 4: Large exponent (gas consumption)
+    // Test 4: Large exponent (gas consumption) - EXP pops base first, then exponent
     frame.stack.clear();
     frame.gas_remaining = 10000;
-    try frame.stack.append(2);
-    try frame.stack.append(256);
+    try frame.stack.append(256); // exponent (bottom)
+    try frame.stack.append(2);   // base (top)
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     // Gas should be consumed: 10 (base) + 50 * 2 (256 = 0x100 = 2 bytes)
     const expected_gas = 10 + 50 * 2;

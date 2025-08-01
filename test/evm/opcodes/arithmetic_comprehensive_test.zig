@@ -494,7 +494,7 @@ test "DIV (0x04): Basic division" {
     defer frame.deinit();
 
     // Test basic division: 20 / 5 = 4
-    // DIV pops dividend first, then divisor, so divisor must be on top
+    // DIV pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(5);  // divisor (bottom)
     try frame.stack.append(20); // dividend (top)
 
@@ -542,7 +542,7 @@ test "DIV: Division by zero returns zero" {
     defer frame.deinit();
 
     // Test division by zero: 100 / 0 = 0
-    // DIV pops dividend first, then divisor, so divisor must be on top
+    // DIV pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(0);   // divisor (bottom)
     try frame.stack.append(100); // dividend (top)
 
@@ -590,7 +590,7 @@ test "DIV: Integer division truncates" {
     defer frame.deinit();
 
     // Test truncation: 7 / 3 = 2 (not 2.33...)
-    // DIV pops dividend first, then divisor, so divisor must be on top
+    // DIV pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(3); // divisor (bottom)
     try frame.stack.append(7); // dividend (top)
 
@@ -642,7 +642,7 @@ test "SDIV (0x05): Signed division positive" {
     defer frame.deinit();
 
     // Test positive division: 20 / 5 = 4
-    // SDIV pops dividend first, then divisor, so divisor must be on top
+    // SDIV pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(5);  // divisor (bottom)
     try frame.stack.append(20); // dividend (top)
 
@@ -691,7 +691,7 @@ test "SDIV: Signed division negative" {
 
     // Test negative division: -20 / 5 = -4
     // In two's complement: -20 = MAX - 19
-    // SDIV pops dividend first, then divisor, so divisor must be on top
+    // SDIV pops dividend first, then divisor, so dividend must be on top
     const neg_20 = std.math.maxInt(u256) - 19;
     try frame.stack.append(5);      // divisor (bottom)
     try frame.stack.append(neg_20); // dividend (top)
@@ -741,7 +741,7 @@ test "SDIV: Division by zero returns zero" {
     defer frame.deinit();
 
     // Test division by zero
-    // SDIV pops dividend first, then divisor, so divisor must be on top
+    // SDIV pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(0);   // divisor (bottom)
     try frame.stack.append(100); // dividend (top)
 
@@ -791,7 +791,7 @@ test "SDIV: Edge case MIN / -1" {
     // Test MIN / -1 = MIN (special case)
     const min_i256 = @as(u256, 1) << 255; // -2^255 in two's complement
     const neg_1 = std.math.maxInt(u256); // -1 in two's complement
-    // SDIV pops dividend first, then divisor, so divisor must be on top
+    // SDIV pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(neg_1);    // divisor (bottom)
     try frame.stack.append(min_i256); // dividend (top)
 
@@ -843,7 +843,7 @@ test "MOD (0x06): Basic modulo" {
     defer frame.deinit();
 
     // Test basic modulo: 17 % 5 = 2
-    // MOD pops dividend first, then divisor, so divisor must be on top
+    // MOD pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(5);  // divisor (bottom)
     try frame.stack.append(17); // dividend (top)
 
@@ -891,7 +891,7 @@ test "MOD: Modulo by zero returns zero" {
     defer frame.deinit();
 
     // Test modulo by zero: 100 % 0 = 0
-    // MOD pops dividend first, then divisor, so divisor must be on top
+    // MOD pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(0);   // divisor (bottom)
     try frame.stack.append(100); // dividend (top)
 
@@ -943,7 +943,7 @@ test "SMOD (0x07): Signed modulo positive" {
     defer frame.deinit();
 
     // Test positive modulo: 17 % 5 = 2
-    // SMOD pops dividend first, then divisor, so divisor must be on top
+    // SMOD pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(5);  // divisor (bottom)
     try frame.stack.append(17); // dividend (top)
 
@@ -992,7 +992,7 @@ test "SMOD: Signed modulo negative" {
 
     // Test negative modulo: -17 % 5 = -2
     const neg_17 = std.math.maxInt(u256) - 16;
-    // SMOD pops dividend first, then divisor, so divisor must be on top
+    // SMOD pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(5);      // divisor (bottom)
     try frame.stack.append(neg_17); // dividend (top)
 
@@ -1304,7 +1304,7 @@ test "EXP (0x0A): Basic exponentiation" {
     defer frame.deinit();
 
     // Test: 2^8 = 256
-    // EXP pops base first, then exponent, so exponent must be on top
+    // EXP pops base first, then exponent, so base must be on top
     try frame.stack.append(8); // exponent (bottom)
     try frame.stack.append(2); // base (top)
 
@@ -1352,7 +1352,7 @@ test "EXP: Zero exponent" {
     defer frame.deinit();
 
     // Test: 100^0 = 1
-    // EXP pops base first, then exponent, so exponent must be on top
+    // EXP pops base first, then exponent, so base must be on top
     try frame.stack.append(0);   // exponent (bottom)
     try frame.stack.append(100); // base (top)
 
@@ -1400,7 +1400,7 @@ test "EXP: Zero base with non-zero exponent" {
     defer frame.deinit();
 
     // Test: 0^10 = 0
-    // EXP pops base first, then exponent, so exponent must be on top
+    // EXP pops base first, then exponent, so base must be on top
     try frame.stack.append(10); // exponent (bottom)
     try frame.stack.append(0);  // base (top)
 
@@ -1448,7 +1448,7 @@ test "EXP: Gas consumption scales with exponent size" {
     defer frame.deinit();
 
     // Test with large exponent
-    // EXP pops base first, then exponent, so exponent must be on top
+    // EXP pops base first, then exponent, so base must be on top
     try frame.stack.append(0x10000); // exponent (bottom)
     try frame.stack.append(2);       // base (top)
 
@@ -1504,7 +1504,7 @@ test "SIGNEXTEND (0x0B): Extend positive byte" {
     defer frame.deinit();
 
     // Test: sign extend 0x7F (positive) from byte 0
-    // SIGNEXTEND pops byte_index first, then peeks value, so byte_index must be on top
+    // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
     try frame.stack.append(0x7F); // value (bottom) 
     try frame.stack.append(0);    // byte_index (top)
 
@@ -1552,7 +1552,7 @@ test "SIGNEXTEND: Extend negative byte" {
     defer frame.deinit();
 
     // Test: sign extend 0xFF (negative) from byte 0
-    // SIGNEXTEND pops byte_index first, then peeks value, so byte_index must be on top
+    // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
     try frame.stack.append(0xFF); // value (bottom)
     try frame.stack.append(0);    // byte_index (top)
 
@@ -1602,7 +1602,7 @@ test "SIGNEXTEND: Extend from higher byte position" {
     defer frame.deinit();
 
     // Test: sign extend 0x00FF from byte 1 (second byte)
-    // SIGNEXTEND pops byte_index first, then peeks value, so byte_index must be on top
+    // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
     try frame.stack.append(0x00FF); // value (bottom)
     try frame.stack.append(1);      // byte_index (top)
 
@@ -1652,7 +1652,7 @@ test "SIGNEXTEND: Byte position >= 31 returns value unchanged" {
 
     // Test: byte position >= 31 returns original value
     const test_value = 0x123456789ABCDEF;
-    // SIGNEXTEND pops byte_index first, then peeks value, so byte_index must be on top
+    // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
     try frame.stack.append(test_value); // value (bottom)
     try frame.stack.append(31);         // byte_index (top)
 
