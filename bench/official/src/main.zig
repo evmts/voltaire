@@ -3,13 +3,16 @@ const clap = @import("clap");
 const process = std.process;
 const print = std.debug.print;
 
-const BenchmarkMode = enum {
-    basic,
-    detailed,
-    comparison,
-    @"export",
-    all,
+const TestCase = struct {
+    name: []const u8,
+    bytecode_path: []const u8,
+    calldata_path: []const u8,
 };
+
+// Get the directory containing this source file
+fn getSourceDir() []const u8 {
+    return std.fs.path.dirname(@src().file) orelse ".";
+}
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -18,13 +21,13 @@ pub fn main() !void {
 
     const params = comptime clap.parseParamsComptime(
         \\-h, --help             Display this help and exit.
-        \\-m, --mode <MODE>      Benchmark mode: basic, detailed, comparison, export, all (default: all)
-        \\-r, --runs <NUM>       Number of runs for detailed mode (default: 50)
+        \\-e, --evm <NAME>       EVM implementation to benchmark (default: revm)
+        \\-n, --num-runs <NUM>   Number of runs per test case (default: 10)
         \\
     );
 
     const parsers = comptime .{
-        .MODE = clap.parsers.enumeration(BenchmarkMode),
+        .NAME = clap.parsers.string,
         .NUM = clap.parsers.int(u32, 10),
     };
 
@@ -43,121 +46,158 @@ pub fn main() !void {
         return;
     }
 
-    const mode = res.args.mode orelse .all;
-    const num_runs = res.args.runs orelse 50;
+    const evm_name = res.args.evm orelse "revm";
+    const num_runs = res.args.@"num-runs" orelse 10;
 
-    // Build the Rust program first
-    print("Building the Rust program...\n", .{});
-    const build_result = try std.process.Child.run(.{
-        .allocator = allocator,
-        .argv = &[_][]const u8{ "cargo", "build", "--release" },
-    });
-    defer allocator.free(build_result.stdout);
-    defer allocator.free(build_result.stderr);
+    // Build the EVM runner first
+    print("Building {s} runner...\n", .{evm_name});
+    try buildEvmRunner(allocator, evm_name);
 
-    if (build_result.term.Exited != 0) {
-        print("Build failed:\n{s}\n", .{build_result.stderr});
-        return error.BuildFailed;
+    // Discover all test cases
+    const test_cases = try discoverTestCases(allocator);
+    defer {
+        for (test_cases) |tc| {
+            allocator.free(tc.bytecode_path);
+            allocator.free(tc.calldata_path);
+        }
+        allocator.free(test_cases);
     }
 
-    // Determine the binary path relative to workspace root
-    const release_bin = "../../target/release/hyperfine-bench";
-    const debug_bin = "../../target/debug/hyperfine-bench";
-
-    switch (mode) {
-        .basic => try runBasicBenchmark(allocator, release_bin),
-        .detailed => try runDetailedBenchmark(allocator, release_bin, num_runs),
-        .comparison => try runComparisonBenchmark(allocator, debug_bin, release_bin),
-        .@"export" => try runExportBenchmark(allocator, release_bin),
-        .all => {
-            try runBasicBenchmark(allocator, release_bin);
-            try runDetailedBenchmark(allocator, release_bin, num_runs);
-            try runComparisonBenchmark(allocator, debug_bin, release_bin);
-            try runExportBenchmark(allocator, release_bin);
-        },
+    // Run benchmarks for each test case
+    for (test_cases) |test_case| {
+        print("\n=== Benchmarking {s} ===\n", .{test_case.name});
+        try runBenchmark(allocator, evm_name, test_case, num_runs);
     }
 }
 
 fn printHelp() !void {
     const stdout = std.io.getStdOut().writer();
     try stdout.print(
-        \\Zig Benchmark Runner
+        \\EVM Benchmark Runner
         \\
-        \\This tool runs hyperfine benchmarks on the hello world Rust program.
+        \\This tool runs benchmarks on various EVM implementations using test cases.
         \\
         \\Options:
         \\  -h, --help             Display this help and exit
-        \\  -m, --mode <MODE>      Benchmark mode: basic, detailed, comparison, export, all (default: all)
-        \\  -r, --runs <NUM>       Number of runs for detailed mode (default: 50)
+        \\  -e, --evm <NAME>       EVM implementation to benchmark (default: revm)
+        \\  -n, --num-runs <NUM>   Number of runs per test case (default: 10)
         \\
         \\Examples:
-        \\  benchmark               Run all benchmarks
-        \\  benchmark -m basic      Run only basic benchmark
-        \\  benchmark -m detailed -r 100  Run detailed benchmark with 100 runs
+        \\  benchmark              Run benchmarks with revm
+        \\  benchmark -e revm      Explicitly use revm
+        \\  benchmark -n 50        Run 50 iterations per test case
         \\
     , .{});
 }
 
-fn runBasicBenchmark(allocator: std.mem.Allocator, release_bin: []const u8) !void {
-    print("\n=== Basic Hello World Benchmark ===\n", .{});
-    
+fn buildEvmRunner(allocator: std.mem.Allocator, evm_name: []const u8) !void {
+    // Get path relative to source file location
+    const source_dir = getSourceDir();
+    const evm_dir = try std.fs.path.join(allocator, &[_][]const u8{ source_dir, "..", "evms", evm_name });
+    defer allocator.free(evm_dir);
+
     const result = try std.process.Child.run(.{
         .allocator = allocator,
-        .argv = &[_][]const u8{ "hyperfine", release_bin },
+        .argv = &[_][]const u8{ "cargo", "build", "--release" },
+        .cwd = evm_dir,
     });
     defer allocator.free(result.stdout);
     defer allocator.free(result.stderr);
 
-    print("{s}", .{result.stdout});
-    if (result.stderr.len > 0) {
-        print("{s}", .{result.stderr});
+    if (result.term.Exited != 0) {
+        print("Build failed:\n{s}\n", .{result.stderr});
+        return error.BuildFailed;
     }
 }
 
-fn runDetailedBenchmark(allocator: std.mem.Allocator, release_bin: []const u8, num_runs: u32) !void {
-    print("\n=== Benchmark with {} runs ===\n", .{num_runs});
+fn discoverTestCases(allocator: std.mem.Allocator) ![]TestCase {
+    const source_dir = getSourceDir();
+    const cases_path = try std.fs.path.join(allocator, &[_][]const u8{ source_dir, "..", "cases" });
+    defer allocator.free(cases_path);
     
-    var runs_str_buf: [32]u8 = undefined;
-    const runs_str = try std.fmt.bufPrint(&runs_str_buf, "{}", .{num_runs});
+    const cases_dir = try std.fs.openDirAbsolute(cases_path, .{ .iterate = true });
     
-    const result = try std.process.Child.run(.{
-        .allocator = allocator,
-        .argv = &[_][]const u8{ "hyperfine", "--runs", runs_str, release_bin },
-    });
-    defer allocator.free(result.stdout);
-    defer allocator.free(result.stderr);
+    var test_cases = std.ArrayList(TestCase).init(allocator);
+    defer test_cases.deinit();
 
-    print("{s}", .{result.stdout});
-    if (result.stderr.len > 0) {
-        print("{s}", .{result.stderr});
+    var it = cases_dir.iterate();
+    while (try it.next()) |entry| {
+        if (entry.kind != .directory) continue;
+
+        const bytecode_path = try std.fs.path.join(allocator, &[_][]const u8{ cases_path, entry.name, "bytecode.txt" });
+        errdefer allocator.free(bytecode_path);
+        
+        const calldata_path = try std.fs.path.join(allocator, &[_][]const u8{ cases_path, entry.name, "calldata.txt" });
+        errdefer allocator.free(calldata_path);
+
+        // Verify files exist
+        if (std.fs.openFileAbsolute(bytecode_path, .{})) |file| {
+            file.close();
+        } else |err| {
+            print("Warning: Missing bytecode file for {s}: {}\n", .{ entry.name, err });
+            allocator.free(bytecode_path);
+            allocator.free(calldata_path);
+            continue;
+        }
+        
+        if (std.fs.openFileAbsolute(calldata_path, .{})) |file| {
+            file.close();
+        } else |err| {
+            print("Warning: Missing calldata file for {s}: {}\n", .{ entry.name, err });
+            allocator.free(bytecode_path);
+            allocator.free(calldata_path);
+            continue;
+        }
+
+        try test_cases.append(.{
+            .name = entry.name,
+            .bytecode_path = bytecode_path,
+            .calldata_path = calldata_path,
+        });
     }
+
+    return test_cases.toOwnedSlice();
 }
 
-fn runComparisonBenchmark(allocator: std.mem.Allocator, debug_bin: []const u8, release_bin: []const u8) !void {
-    print("\n=== Debug vs Release Comparison ===\n", .{});
+fn runBenchmark(allocator: std.mem.Allocator, evm_name: []const u8, test_case: TestCase, num_runs: u32) !void {
+    // Read calldata to pass directly
+    const calldata_file = try std.fs.openFileAbsolute(test_case.calldata_path, .{});
+    defer calldata_file.close();
     
-    // Build debug version first
-    const debug_result = try std.process.Child.run(.{
-        .allocator = allocator,
-        .argv = &[_][]const u8{ "cargo", "build" },
+    const calldata = try calldata_file.readToEndAlloc(allocator, 1024 * 1024); // 1MB max
+    defer allocator.free(calldata);
+    
+    // Trim whitespace
+    const trimmed_calldata = std.mem.trim(u8, calldata, " \t\n\r");
+    
+    // Build the runner path
+    const source_dir = getSourceDir();
+    const runner_name = try std.fmt.allocPrint(allocator, "{s}-runner", .{evm_name});
+    defer allocator.free(runner_name);
+    
+    const runner_path = try std.fs.path.join(allocator, &[_][]const u8{ 
+        source_dir, "..", "evms", evm_name, "target", "release", runner_name
     });
-    defer allocator.free(debug_result.stdout);
-    defer allocator.free(debug_result.stderr);
-
-    if (debug_result.term.Exited != 0) {
-        print("Debug build failed:\n{s}\n", .{debug_result.stderr});
-        return error.DebugBuildFailed;
-    }
+    defer allocator.free(runner_path);
+    
+    const num_runs_str = try std.fmt.allocPrint(allocator, "{}", .{num_runs});
+    defer allocator.free(num_runs_str);
+    
+    // Build hyperfine command
+    const hyperfine_cmd = try std.fmt.allocPrint(
+        allocator,
+        "{s} --contract-code-path {s} --calldata {s} --num-runs 1",
+        .{ runner_path, test_case.bytecode_path, trimmed_calldata }
+    );
+    defer allocator.free(hyperfine_cmd);
 
     const result = try std.process.Child.run(.{
         .allocator = allocator,
         .argv = &[_][]const u8{
             "hyperfine",
+            "--runs", num_runs_str,
             "--warmup", "3",
-            "-n", "debug build",
-            debug_bin,
-            "-n", "release build",
-            release_bin,
+            hyperfine_cmd,
         },
     });
     defer allocator.free(result.stdout);
@@ -165,30 +205,6 @@ fn runComparisonBenchmark(allocator: std.mem.Allocator, debug_bin: []const u8, r
 
     print("{s}", .{result.stdout});
     if (result.stderr.len > 0) {
-        print("{s}", .{result.stderr});
+        print("Errors:\n{s}", .{result.stderr});
     }
-}
-
-fn runExportBenchmark(allocator: std.mem.Allocator, release_bin: []const u8) !void {
-    print("\n=== Exporting Results ===\n", .{});
-    
-    const result = try std.process.Child.run(.{
-        .allocator = allocator,
-        .argv = &[_][]const u8{
-            "hyperfine",
-            "--runs", "20",
-            "--export-markdown", "results.md",
-            "--export-json", "results.json",
-            release_bin,
-        },
-    });
-    defer allocator.free(result.stdout);
-    defer allocator.free(result.stderr);
-
-    print("{s}", .{result.stdout});
-    if (result.stderr.len > 0) {
-        print("{s}", .{result.stderr});
-    }
-    
-    print("\nBenchmark complete! Results saved to results.md and results.json\n", .{});
 }
