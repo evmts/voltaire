@@ -3,6 +3,8 @@ const asset_generator = @import("build_utils/asset_generator.zig");
 const rust_build = @import("build_utils/rust_build.zig");
 const tests = @import("build_utils/tests.zig");
 const wasm = @import("build_utils/wasm.zig");
+const devtool = @import("build_utils/devtool.zig");
+const typescript = @import("build_utils/typescript.zig");
 
 pub fn build(b: *std.Build) void {
     // Standard target options allows the person running `zig build` to choose
