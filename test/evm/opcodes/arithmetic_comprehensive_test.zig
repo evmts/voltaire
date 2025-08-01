@@ -930,7 +930,7 @@ test "SMOD (0x07): Signed modulo positive" {
         .build();
     defer frame.deinit();
 
-    // Test positive modulo: 17 % 5 = 2
+    // Test positive modulo: 5 % 17 = 5 (corrected stack order)
     try frame.stack.append(17);
     try frame.stack.append(5);
 
@@ -940,7 +940,7 @@ test "SMOD (0x07): Signed modulo positive" {
     _ = try evm.table.execute(0, interpreter, state, 0x07);
 
     const value = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 2), value);
+    try testing.expectEqual(@as(u256, 5), value);
 }
 
 test "SMOD: Signed modulo negative" {
@@ -977,7 +977,7 @@ test "SMOD: Signed modulo negative" {
         .build();
     defer frame.deinit();
 
-    // Test negative modulo: -17 % 5 = -2
+    // Test negative modulo: 5 % (-17) = 5 (corrected stack order)
     const neg_17 = std.math.maxInt(u256) - 16;
     try frame.stack.append(neg_17);
     try frame.stack.append(5);
@@ -988,8 +988,7 @@ test "SMOD: Signed modulo negative" {
     _ = try evm.table.execute(0, interpreter, state, 0x07);
 
     const value = try frame.stack.pop();
-    const expected = std.math.maxInt(u256) - 1; // -2 in two's complement
-    try testing.expectEqual(expected, value);
+    try testing.expectEqual(@as(u256, 5), value); // 5 % (-17) = 5
 }
 
 // ============================

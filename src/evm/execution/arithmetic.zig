@@ -377,7 +377,7 @@ pub fn op_smod(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
     } else {
         const a_i256 = @as(i256, @bitCast(a));
         const b_i256 = @as(i256, @bitCast(b));
-        const result_i256 = @rem(a_i256, b_i256);
+        const result_i256 = @rem(b_i256, a_i256);
         result = @as(u256, @bitCast(result_i256));
     }
 
