@@ -1351,9 +1351,7 @@ test "GT opcode 10 > 5 = 1" {
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
 
-    var contract = Contract.init_at_address(
-        contract_address, contract_address, 0, 1000000, &bytecode, &[_]u8{}, false
-    );
+    var contract = Contract.init_at_address(contract_address, contract_address, 0, 1000000, &bytecode, &[_]u8{}, false);
     defer contract.deinit(allocator, null);
 
     try vm_instance.state.set_code(contract_address, &bytecode);
@@ -1381,4 +1379,85 @@ test "GT opcode 10 > 5 = 1" {
     }
 
     std.debug.print("✓ GT test passed: 10 > 5 = 1\n", .{});
+}
+
+test "EQ opcode 42 == 42 = 1" {
+    const allocator = testing.allocator;
+
+    // PUSH32 42, PUSH32 42, EQ, MSTORE, RETURN (computes 42 == 42 = 1)
+    const bytecode = [_]u8{
+        0x7f, // PUSH32
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 42 (32 bytes)
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A,
+        0x7f, // PUSH32
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 42 (32 bytes)
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A,
+        0x14, // EQ
+        0x60, 0x00, // PUSH1 0 (memory offset)
+        0x52, // MSTORE
+        0x60, 0x20, // PUSH1 32 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0xf3, // RETURN
+    };
+
+    // Execute on REVM first as baseline
+    const revm_settings = revm_wrapper.RevmSettings{};
+    var revm_vm = try revm_wrapper.Revm.init(allocator, revm_settings);
+    defer revm_vm.deinit();
+
+    const revm_deployer = try Address.from_hex("0x1111111111111111111111111111111111111111");
+    try revm_vm.setBalance(revm_deployer, 10000000);
+
+    var revm_result = try revm_vm.create(revm_deployer, 0, &bytecode, 1000000);
+    defer revm_result.deinit();
+
+    // Execute on Guillotine
+    const MemoryDatabase = evm.MemoryDatabase;
+    const Contract = evm.Contract;
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var builder = evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm_instance = try builder.build();
+    defer vm_instance.deinit();
+
+    const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
+
+    var contract = Contract.init_at_address(
+        contract_address, contract_address, 0, 1000000, &bytecode, &[_]u8{}, false
+    );
+    defer contract.deinit(allocator, null);
+
+    try vm_instance.state.set_code(contract_address, &bytecode);
+
+    const guillotine_result = try vm_instance.interpret(&contract, &[_]u8{}, false);
+    defer if (guillotine_result.output) |output| allocator.free(output);
+
+    // Compare results
+    const revm_succeeded = revm_result.success;
+    const guillotine_succeeded = guillotine_result.status == .Success;
+
+    try testing.expect(revm_succeeded == guillotine_succeeded);
+
+    if (revm_succeeded and guillotine_succeeded) {
+        const revm_value = std.mem.readInt(u256, revm_result.output[0..32], .big);
+        const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
+
+        try testing.expectEqual(revm_value, guillotine_value);
+        std.debug.print("EQ test: REVM returned {}, Guillotine returned {}\n", .{ revm_value, guillotine_value });
+    } else {
+        std.debug.print("REVM success: {}, Guillotine status: {s}\n", .{ revm_succeeded, @tagName(guillotine_result.status) });
+        if (guillotine_result.err) |err| {
+            std.debug.print("Guillotine error: {}\n", .{err});
+        }
+    }
+
+    std.debug.print("✓ EQ test passed: 42 == 42 = 1\n", .{});
 }
