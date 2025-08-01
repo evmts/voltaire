@@ -2,6 +2,7 @@ const std = @import("std");
 const asset_generator = @import("build_utils/asset_generator.zig");
 const rust_build = @import("build_utils/rust_build.zig");
 const tests = @import("build_utils/tests.zig");
+const wasm = @import("build_utils/wasm.zig");
 
 pub fn build(b: *std.Build) void {
     // Standard target options allows the person running `zig build` to choose
@@ -342,148 +343,89 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(evm_test_runner);
 
     // WASM library build optimized for size
-    const wasm_target = b.resolveTargetQuery(.{
-        .cpu_arch = .wasm32,
-        .os_tag = .freestanding, // Use freestanding for minimal size
-    });
-
-    // Use the same optimization mode as specified by the user
+    const wasm_target = wasm.setupWasmTarget(b);
     const wasm_optimize = optimize;
 
     // Create WASM-specific modules with minimal dependencies
-    // Create WASM-specific primitives module without c-kzg
-    const wasm_primitives_mod = b.createModule(.{
-        .root_source_file = b.path("src/primitives/root.zig"),
-        .target = wasm_target,
-        .optimize = wasm_optimize,
-    });
+    const wasm_primitives_mod = wasm.createWasmModule(b, "src/primitives/root.zig", wasm_target, wasm_optimize);
     // Note: WASM build excludes c-kzg-4844 (not available for WASM)
 
-    // Create WASM-specific crypto module
-    const wasm_crypto_mod = b.createModule(.{
-        .root_source_file = b.path("src/crypto/root.zig"),
-        .target = wasm_target,
-        .optimize = wasm_optimize,
-    });
+    const wasm_crypto_mod = wasm.createWasmModule(b, "src/crypto/root.zig", wasm_target, wasm_optimize);
     wasm_crypto_mod.addImport("primitives", wasm_primitives_mod);
 
-    // Create WASM-specific EVM module without Rust dependencies
-    const wasm_evm_mod = b.createModule(.{
-        .root_source_file = b.path("src/evm/root.zig"),
-        .target = wasm_target,
-        .optimize = wasm_optimize,
-    });
+    const wasm_evm_mod = wasm.createWasmModule(b, "src/evm/root.zig", wasm_target, wasm_optimize);
     wasm_evm_mod.addImport("primitives", wasm_primitives_mod);
     wasm_evm_mod.addImport("crypto", wasm_crypto_mod);
     wasm_evm_mod.addImport("build_options", build_options.createModule());
     // Note: WASM build uses pure Zig implementations for BN254 operations
 
     // Main WASM build (includes both primitives and EVM)
-    const wasm_lib_mod = b.createModule(.{
-        .root_source_file = b.path("src/root.zig"),
-        .target = wasm_target,
-        .optimize = wasm_optimize,
-        .single_threaded = true,
-    });
+    const wasm_lib_mod = wasm.createWasmModule(b, "src/root.zig", wasm_target, wasm_optimize);
     wasm_lib_mod.addImport("primitives", wasm_primitives_mod);
-    wasm_lib_mod.addImport("evm", wasm_evm_mod); // Use WASM-specific EVM module
+    wasm_lib_mod.addImport("evm", wasm_evm_mod);
 
-    const wasm_lib = b.addExecutable(.{
+    const wasm_lib_build = wasm.buildWasmExecutable(b, .{
         .name = "guillotine",
-        .root_module = wasm_lib_mod,
-    });
-
-    wasm_lib.entry = .disabled;
-    wasm_lib.rdynamic = true;
-
-    const wasm_install = b.addInstallArtifact(wasm_lib, .{ .dest_sub_path = "guillotine.wasm" });
+        .root_source_file = "src/root.zig",
+        .dest_sub_path = "guillotine.wasm",
+    }, wasm_lib_mod);
 
     // Primitives-only WASM build
-    const wasm_primitives_lib_mod = b.createModule(.{
-        .root_source_file = b.path("src/primitives_c.zig"),
-        .target = wasm_target,
-        .optimize = wasm_optimize,
-        .single_threaded = true,
-    });
+    const wasm_primitives_lib_mod = wasm.createWasmModule(b, "src/primitives_c.zig", wasm_target, wasm_optimize);
     wasm_primitives_lib_mod.addImport("primitives", wasm_primitives_mod);
 
-    const wasm_primitives_lib = b.addExecutable(.{
+    const wasm_primitives_build = wasm.buildWasmExecutable(b, .{
         .name = "guillotine-primitives",
-        .root_module = wasm_primitives_lib_mod,
-    });
-
-    wasm_primitives_lib.entry = .disabled;
-    wasm_primitives_lib.rdynamic = true;
-
-    const wasm_primitives_install = b.addInstallArtifact(wasm_primitives_lib, .{ .dest_sub_path = "guillotine-primitives.wasm" });
+        .root_source_file = "src/primitives_c.zig",
+        .dest_sub_path = "guillotine-primitives.wasm",
+    }, wasm_primitives_lib_mod);
 
     // EVM-only WASM build
-    const wasm_evm_lib_mod = b.createModule(.{
-        .root_source_file = b.path("src/evm_c.zig"),
-        .target = wasm_target,
-        .optimize = wasm_optimize,
-        .single_threaded = true,
-    });
+    const wasm_evm_lib_mod = wasm.createWasmModule(b, "src/evm_c.zig", wasm_target, wasm_optimize);
     wasm_evm_lib_mod.addImport("primitives", wasm_primitives_mod);
     wasm_evm_lib_mod.addImport("evm", wasm_evm_mod);
 
-    const wasm_evm_lib = b.addExecutable(.{
+    const wasm_evm_build = wasm.buildWasmExecutable(b, .{
         .name = "guillotine-evm",
-        .root_module = wasm_evm_lib_mod,
-    });
-
-    wasm_evm_lib.entry = .disabled;
-    wasm_evm_lib.rdynamic = true;
-
-    const wasm_evm_install = b.addInstallArtifact(wasm_evm_lib, .{ .dest_sub_path = "guillotine-evm.wasm" });
+        .root_source_file = "src/evm_c.zig",
+        .dest_sub_path = "guillotine-evm.wasm",
+    }, wasm_evm_lib_mod);
 
     // Add step to report WASM bundle sizes for all three builds
-    const wasm_size_step = b.addSystemCommand(&[_][]const u8{ "sh", "-c", 
-        "echo '\\n=== WASM Bundle Size Report ===' && " ++
-        "echo 'Main WASM build:' && " ++
-        "ls -lh zig-out/bin/guillotine.wasm | awk '{print \"  Size: \" $5}' && " ++
-        "echo '\\nPrimitives WASM build:' && " ++
-        "ls -lh zig-out/bin/guillotine-primitives.wasm | awk '{print \"  Size: \" $5}' && " ++
-        "echo '\\nEVM WASM build:' && " ++
-        "ls -lh zig-out/bin/guillotine-evm.wasm | awk '{print \"  Size: \" $5}' && " ++
-        "echo '=== End Report ===\\n'" 
-    });
-    wasm_size_step.step.dependOn(&wasm_install.step);
-    wasm_size_step.step.dependOn(&wasm_primitives_install.step);
-    wasm_size_step.step.dependOn(&wasm_evm_install.step);
+    const wasm_size_step = wasm.addWasmSizeReportStep(
+        b,
+        &[_][]const u8{"guillotine.wasm", "guillotine-primitives.wasm", "guillotine-evm.wasm"},
+        &[_]*std.Build.Step{
+            &wasm_lib_build.install.step,
+            &wasm_primitives_build.install.step,
+            &wasm_evm_build.install.step,
+        },
+    );
 
     const wasm_step = b.step("wasm", "Build all WASM libraries and show bundle sizes");
     wasm_step.dependOn(&wasm_size_step.step);
 
     // Individual WASM build steps
     const wasm_primitives_step = b.step("wasm-primitives", "Build primitives-only WASM library");
-    wasm_primitives_step.dependOn(&wasm_primitives_install.step);
+    wasm_primitives_step.dependOn(&wasm_primitives_build.install.step);
 
     const wasm_evm_step = b.step("wasm-evm", "Build EVM-only WASM library");
-    wasm_evm_step.dependOn(&wasm_evm_install.step);
+    wasm_evm_step.dependOn(&wasm_evm_build.install.step);
 
     // Debug WASM build for analysis
-    const wasm_debug_mod = b.createModule(.{
-        .root_source_file = b.path("src/root.zig"),
-        .target = wasm_target,
-        .optimize = .Debug, // Debug mode for symbols
-        .single_threaded = true,
-    });
+    const wasm_debug_mod = wasm.createWasmModule(b, "src/root.zig", wasm_target, .Debug);
     wasm_debug_mod.addImport("primitives", wasm_primitives_mod);
     wasm_debug_mod.addImport("evm", wasm_evm_mod);
 
-    const wasm_debug = b.addExecutable(.{
+    const wasm_debug_build = wasm.buildWasmExecutable(b, .{
         .name = "guillotine-debug",
-        .root_module = wasm_debug_mod,
-    });
-
-    wasm_debug.entry = .disabled;
-    wasm_debug.rdynamic = true;
-
-    const wasm_debug_install = b.addInstallArtifact(wasm_debug, .{ .dest_sub_path = "../bin/guillotine-debug.wasm" });
+        .root_source_file = "src/root.zig",
+        .dest_sub_path = "../bin/guillotine-debug.wasm",
+        .debug_build = true,
+    }, wasm_debug_mod);
 
     const wasm_debug_step = b.step("wasm-debug", "Build debug WASM for analysis");
-    wasm_debug_step.dependOn(&wasm_debug_install.step);
+    wasm_debug_step.dependOn(&wasm_debug_build.install.step);
 
     // This *creates* a Run step in the build graph, to be executed when another
     // step is evaluated that depends on it. The next line below will establish
