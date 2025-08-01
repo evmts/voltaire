@@ -68,16 +68,9 @@ pub fn deinit(self: *Orchestrator) void {
 }
 
 pub fn discoverTestCases(self: *Orchestrator) !void {
-    // Try to find the cases directory relative to executable location
-    var exe_dir_buf: [std.fs.max_path_bytes]u8 = undefined;
-    const exe_path = try std.fs.selfExeDirPath(&exe_dir_buf);
-    
-    // Go up two directories from zig-out/bin to project root
-    const project_root = try std.fs.path.resolve(self.allocator, &[_][]const u8{ exe_path, "..", ".." });
-    defer self.allocator.free(project_root);
-    
-    const cases_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "official", "cases" });
-    defer self.allocator.free(cases_path);
+    // Get the absolute path to cases directory
+    // This works whether we're in zig-out/bin or running from project root
+    const cases_path = "/Users/williamcory/Guillotine/bench/official/cases";
     
     const cases_dir = try std.fs.openDirAbsolute(cases_path, .{ .iterate = true });
     
@@ -142,20 +135,15 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
     const trimmed_calldata = std.mem.trim(u8, calldata, " \t\n\r");
     
     // Build the runner path
-    var exe_dir_buf: [std.fs.max_path_bytes]u8 = undefined;
-    const exe_path = try std.fs.selfExeDirPath(&exe_dir_buf);
-    
-    const project_root = try std.fs.path.resolve(self.allocator, &[_][]const u8{ exe_path, "..", ".." });
-    defer self.allocator.free(project_root);
-    
     const runner_path = if (std.mem.eql(u8, self.evm_name, "zig")) 
-        try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "zig-out", "bin", "evm-runner" })
+        "/Users/williamcory/Guillotine/zig-out/bin/evm-runner"
     else blk: {
         const runner_name = try std.fmt.allocPrint(self.allocator, "{s}-runner", .{self.evm_name});
         defer self.allocator.free(runner_name);
-        break :blk try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "official", "evms", self.evm_name, "target", "release", runner_name });
+        const path = try std.fmt.allocPrint(self.allocator, "/Users/williamcory/Guillotine/bench/official/evms/{s}/target/release/{s}", .{self.evm_name, runner_name});
+        break :blk path;
     };
-    defer self.allocator.free(runner_path);
+    defer if (!std.mem.eql(u8, self.evm_name, "zig")) self.allocator.free(runner_path);
     
     const num_runs_str = try std.fmt.allocPrint(self.allocator, "{}", .{self.num_runs});
     defer self.allocator.free(num_runs_str);
