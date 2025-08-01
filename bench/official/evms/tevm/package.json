@@ -1,0 +1,16 @@
+{
+  "name": "tevm",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@tevm/memory-client": "^1.0.0-next.147",
+    "tevm": "^1.0.0-next.147"
+  }
+}

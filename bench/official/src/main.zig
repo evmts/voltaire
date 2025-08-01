@@ -44,7 +44,7 @@ pub fn main() !void {
 
     if (compare_mode) {
         // Compare mode: run benchmarks for all available EVMs
-        const evms = [_][]const u8{ "zig", "revm" };
+        const evms = [_][]const u8{ "zig", "revm", "tevm" };
         
         var all_results = std.ArrayList(Orchestrator.BenchmarkResult).init(allocator);
         defer all_results.deinit();
@@ -128,7 +128,7 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
     try file.writer().print("# EVM Benchmark Comparison Results\n\n", .{});
     try file.writer().print("## Summary\n\n", .{});
     try file.writer().print("**Test Runs per Case**: {}\n", .{num_runs});
-    try file.writer().print("**EVMs Compared**: Guillotine (Zig), REVM (Rust)\n", .{});
+    try file.writer().print("**EVMs Compared**: Guillotine (Zig), REVM (Rust), TEVM (TypeScript)\n", .{});
     try file.writer().print("**Timestamp**: {} (Unix epoch)\n\n", .{seconds});
     
     // Group results by test case
@@ -151,7 +151,12 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
         // Find results for this test case
         for (results) |result| {
             if (std.mem.indexOf(u8, result.test_case, test_case) != null) {
-                const evm_name = if (std.mem.indexOf(u8, result.test_case, "(zig)") != null) "Guillotine" else "REVM";
+                const evm_name = if (std.mem.indexOf(u8, result.test_case, "(zig)") != null) 
+                    "Guillotine" 
+                else if (std.mem.indexOf(u8, result.test_case, "(revm)") != null) 
+                    "REVM"
+                else 
+                    "TEVM";
                 try file.writer().print("| {s:<11} | {d:>9.2} | {d:>11.2} | {d:>8.2} | {d:>8.2} | {d:>11.2} |\n", .{
                     evm_name,
                     result.mean_ms,
