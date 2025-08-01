@@ -50,6 +50,8 @@ context: Context,
 // Data fields (moderate access frequency)
 /// Return data from the most recent operation
 return_data: []u8 = &[_]u8{},
+/// Optional tracer for capturing execution traces
+tracer: ?std.io.AnyWriter = null,
 
 // Large state structures (placed last to minimize offset impact)
 /// World state including accounts, storage, and code
@@ -89,7 +91,7 @@ comptime {
 ///
 /// Example using direct initialization:
 /// ```zig
-/// var evm = try Evm.init(allocator, database, null, null, null, null, 0, false);
+/// var evm = try Evm.init(allocator, database, null, null, null, null, 0, false, null);
 /// defer evm.deinit();
 /// ```
 pub fn init(
@@ -101,6 +103,7 @@ pub fn init(
     context: ?Context,
     depth: u16,
     read_only: bool,
+    tracer: ?std.io.AnyWriter,
 ) !Evm {
     Log.debug("Evm.init: Initializing EVM with configuration", .{});
 
@@ -122,6 +125,7 @@ pub fn init(
         .context = ctx,
         .depth = depth,
         .read_only = read_only,
+        .tracer = tracer,
     };
 }
 

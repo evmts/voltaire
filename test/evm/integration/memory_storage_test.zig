@@ -135,16 +135,18 @@ test "Integration: Storage with conditional updates" {
     const sum = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 150), sum);
 
-    // Duplicate for comparison
-    try frame.stack.append(sum);
-    _ = try evm.table.execute(0, interpreter, state, 0x80);
-
-    // Compare with 120
-    try frame.stack.append(120);
-    _ = try evm.table.execute(0, interpreter, state, 0x11);
+    // Compare sum > 120
+    // We want to check if 150 > 120 = true
+    // GT computes top > second, so we need 150 on top
+    try frame.stack.append(120); // Stack: [120]
+    try frame.stack.append(sum); // Stack: [120, 150]
+    _ = try evm.table.execute(0, interpreter, state, 0x11); // GT: 150 > 120 = 1
 
     const comparison_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), comparison_result);
+
+    // Push sum back for storage
+    try frame.stack.append(sum);
 
     // Since condition is true, store the value
     // Stack has the value (150), need to store it

@@ -1,10 +1,10 @@
 import { type Component, createMemo, createSignal, onMount } from 'solid-js'
 import Code from '~/components/Code'
-import type { EvmState } from '~/components/evm-debugger/types'
 import { Badge } from '~/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Progress, ProgressLabel, ProgressValueLabel } from '~/components/ui/progress'
 import { cn } from '~/lib/cn'
+import type { EvmState } from '~/lib/types'
 
 interface GasUsageProps {
 	state: EvmState

@@ -16,7 +16,7 @@ const Vm = Evm.Evm;
 const Context = Evm.Context;
 
 test {
-    std.testing.log_level = .debug;
+    // std.testing.log_level = .debug;
 }
 
 test "JumpTable basic operations" {
@@ -71,10 +71,10 @@ test "JumpTable gas constants" {
 test "JumpTable basic initialization" {
     // Test minimal jump table functionality without VM
     const jt = JumpTable.init_from_hardfork(.FRONTIER);
-    
+
     // Verify the jump table was created
     try std.testing.expect(jt.table.len == 256);
-    
+
     // Test a basic operation lookup
     const add_op = jt.get_operation(0x01);
     try std.testing.expect(!add_op.undefined);
@@ -83,16 +83,16 @@ test "JumpTable basic initialization" {
 test "Manual VM.init reproduction" {
     // Manually reproduce VM.init steps to isolate the ARM64 issue
     std.log.debug("=== Manual VM.init reproduction ===", .{});
-    
+
     const test_allocator = testing.allocator;
-    
+
     // Step 1: Database setup (we know this works)
     std.log.debug("Step 1: Setting up database", .{});
     var memory_db = MemoryDatabase.init(test_allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
     std.log.debug("Step 1: Database setup complete", .{});
-    
+
     // Step 2: EvmMemoryAllocator (we know this works individually)
     std.log.debug("Step 2: Setting up EvmMemoryAllocator", .{});
     const EvmMemoryAllocator = @import("evm").memory.EvmMemoryAllocator;
@@ -100,23 +100,23 @@ test "Manual VM.init reproduction" {
     defer evm_allocator.deinit();
     const evm_alloc = evm_allocator.allocator();
     std.log.debug("Step 2: EvmMemoryAllocator setup complete", .{});
-    
+
     // Step 3: EvmState (we know this works individually)
     std.log.debug("Step 3: Setting up EvmState", .{});
     var state = try Evm.EvmState.init(evm_alloc, db_interface);
     defer state.deinit();
     std.log.debug("Step 3: EvmState setup complete", .{});
-    
+
     // Step 4: Context.init (test this step specifically)
     std.log.debug("Step 4: Setting up Context", .{});
     const context = Context.init();
     _ = context; // Use the context
     std.log.debug("Step 4: Context setup complete", .{});
-    
-    // Step 5: AccessList.init (test this step specifically)  
+
+    // Step 5: AccessList.init (test this step specifically)
     std.log.debug("Step 5: Setting up AccessList", .{});
     // We'll skip this for now since we couldn't import it earlier
-    
+
     // Step 6: Test static defaults
     std.log.debug("Step 6: Testing static defaults", .{});
     const jump_table = JumpTable.DEFAULT;
@@ -125,7 +125,7 @@ test "Manual VM.init reproduction" {
     _ = jump_table;
     _ = chain_rules;
     std.log.debug("Step 6: Static defaults work", .{});
-    
+
     std.log.debug("Manual VM.init reproduction completed successfully!", .{});
 }
 

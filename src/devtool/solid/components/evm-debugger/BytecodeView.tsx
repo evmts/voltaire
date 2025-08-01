@@ -1,8 +1,8 @@
 import { type Component, createMemo, For, Show } from 'solid-js'
 import Code from '~/components/Code'
-import { opcodeToString } from '~/components/evm-debugger/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '~/components/ui/table'
+import { opcodeToString } from '~/lib/utils'
 
 interface BytecodeViewProps {
 	bytecode: string

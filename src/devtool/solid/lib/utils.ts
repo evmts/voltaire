@@ -1,9 +1,9 @@
-import type { EvmState } from '~/components/evm-debugger/types'
+import type { EvmState } from '~/lib/types'
 
 export async function loadBytecode(bytecodeHex: string): Promise<void> {
 	try {
 		console.log('load_bytecode', { bytecodeHex })
-		const response = await (window as any).load_bytecode(bytecodeHex)
+		const response = await window.load_bytecode(bytecodeHex)
 		console.log('load_bytecode response:', response)
 
 		// Check if response contains error
@@ -21,7 +21,7 @@ export async function loadBytecode(bytecodeHex: string): Promise<void> {
 export async function resetEvm(): Promise<EvmState> {
 	try {
 		console.log('reset_evm')
-		const response = await (window as any).reset_evm()
+		const response = await window.reset_evm()
 		console.log('reset_evm response:', response)
 
 		if (typeof response === 'string') {
@@ -40,7 +40,7 @@ export async function resetEvm(): Promise<EvmState> {
 export async function stepEvm(): Promise<EvmState> {
 	try {
 		console.log('step_evm')
-		const response = await (window as any).step_evm()
+		const response = await window.step_evm()
 		console.log('step_evm response:', response)
 
 		if (typeof response === 'string') {
@@ -69,7 +69,7 @@ export async function toggleRunPause(): Promise<EvmState> {
 export async function getEvmState(): Promise<EvmState> {
 	try {
 		console.log('get_evm_state')
-		const response = await (window as any).get_evm_state()
+		const response = await window.get_evm_state()
 		console.log('get_evm_state response:', response)
 
 		if (typeof response === 'string') {
