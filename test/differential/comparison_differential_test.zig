@@ -102,9 +102,9 @@ test "LT opcode 5 < 10 = 1" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For LT, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ LT test passed: 5 < 10 = 1\n", .{});
 }
 
 test "GT opcode 10 > 5 = 1" {
@@ -202,9 +202,9 @@ test "GT opcode 10 > 5 = 1" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For GT, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ GT test passed: 10 > 5 = 1\n", .{});
 }
 
 test "EQ opcode 42 == 42 = 1" {
@@ -302,9 +302,9 @@ test "EQ opcode 42 == 42 = 1" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For EQ, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ EQ test passed: 42 == 42 = 1\n", .{});
 }
 
 test "SLT opcode signed -1 < 1 = 1" {
@@ -402,9 +402,9 @@ test "SLT opcode signed -1 < 1 = 1" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SLT, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SLT test passed: signed -1 < 1 = 1\n", .{});
 }
 
 test "SGT opcode signed 1 > -1 = 1" {
@@ -502,9 +502,9 @@ test "SGT opcode signed 1 > -1 = 1" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SGT, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SGT test passed: signed 1 > -1 = 1\n", .{});
 }
 
 test "ISZERO opcode 0 == 0 ? 1 : 0" {
@@ -597,9 +597,9 @@ test "ISZERO opcode 0 == 0 ? 1 : 0" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For ISZERO(0), we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ ISZERO test passed: iszero(0) = 1\n", .{});
 }
 
 test "ISZERO opcode 42 == 0 ? 1 : 0" {
@@ -692,7 +692,7 @@ test "ISZERO opcode 42 == 0 ? 1 : 0" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For ISZERO(42), we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ ISZERO test passed: iszero(42) = 0\n", .{});
 }

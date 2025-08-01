@@ -102,9 +102,9 @@ test "MLOAD opcode reads memory" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For MLOAD, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ MLOAD test passed: memory read/write = 0x42\n", .{});
 }
 
 test "MSTORE opcode stores data to memory" {
@@ -209,9 +209,9 @@ test "MSTORE opcode stores data to memory" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For MSTORE, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ MSTORE test passed: memory store operation = 0x123\n", .{});
 }
 
 test "MSTORE8 opcode stores single byte to memory" {
@@ -308,9 +308,9 @@ test "MSTORE8 opcode stores single byte to memory" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For MSTORE8, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ MSTORE8 test passed: single byte store operation\n", .{});
 }
 
 test "MSIZE opcode returns memory size" {
@@ -410,9 +410,9 @@ test "MSIZE opcode returns memory size" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For MSIZE, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ MSIZE test passed: memory size operation\n", .{});
 }
 
 test "MCOPY opcode copies memory regions" {
@@ -515,7 +515,7 @@ test "MCOPY opcode copies memory regions" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For MCOPY, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ MCOPY test passed: memory copy operation = 0x1234\n", .{});
 }

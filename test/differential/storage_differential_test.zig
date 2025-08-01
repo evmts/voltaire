@@ -109,9 +109,9 @@ test "SSTORE then SLOAD storage operations" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SSTORE/SLOAD, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SSTORE/SLOAD test passed: storage read/write = 0x42\n", .{});
 }
 
 test "SLOAD from empty storage slot returns 0" {
@@ -205,9 +205,9 @@ test "SLOAD from empty storage slot returns 0" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SLOAD empty slot, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SLOAD empty test passed: empty storage slot returns 0\n", .{});
 }
 
 test "TSTORE then TLOAD transient storage operations" {
@@ -312,7 +312,7 @@ test "TSTORE then TLOAD transient storage operations" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For TSTORE/TLOAD, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ TSTORE/TLOAD test passed: transient storage read/write = 0x123\n", .{});
 }

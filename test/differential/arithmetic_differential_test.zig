@@ -103,9 +103,9 @@ test "ADD opcode 0 + 0 = 0" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For ADD 0 + 0 = 0, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ ADD test passed: 0 + 0 = 0\n", .{});
 }
 
 test "ADD opcode 1 + 1 = 2" {
@@ -204,9 +204,9 @@ test "ADD opcode 1 + 1 = 2" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For ADD 1 + 1 = 2, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ ADD test passed: 1 + 1 = 2\n", .{});
 }
 
 test "ADD opcode max_u256 + 1 = 0 (overflow)" {
@@ -305,9 +305,9 @@ test "ADD opcode max_u256 + 1 = 0 (overflow)" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For ADD overflow, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ ADD test passed: max_u256 + 1 = 0 (overflow)\n", .{});
 }
 
 test "SUB opcode 10 - 5 = 5" {
@@ -406,9 +406,9 @@ test "SUB opcode 10 - 5 = 5" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SUB 10 - 5 = 5, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SUB test passed: 10 - 5 = 5\n", .{});
 }
 
 test "SUB opcode underflow 5 - 10 = max_u256 - 4" {
@@ -507,9 +507,9 @@ test "SUB opcode underflow 5 - 10 = max_u256 - 4" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SUB underflow, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SUB test passed: 5 - 10 = max_u256 - 4 (underflow)\n", .{});
 }
 
 test "MUL opcode 7 * 6 = 42" {
@@ -608,9 +608,9 @@ test "MUL opcode 7 * 6 = 42" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For MUL 7 * 6 = 42, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ MUL test passed: 7 * 6 = 42\n", .{});
 }
 
 test "DIV opcode 6 / 42 = 0" {
@@ -709,9 +709,9 @@ test "DIV opcode 6 / 42 = 0" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For DIV 6 / 42 = 0, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ DIV test passed: 6 / 42 = 0\n", .{});
 }
 
 test "DIV opcode division by zero = 0" {
@@ -810,9 +810,9 @@ test "DIV opcode division by zero = 0" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For DIV 0 / 42 = 0, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ DIV test passed: 0 / 42 = 0\n", .{});
 }
 
 test "DIV opcode division by zero 42 / 0 = 0" {
@@ -911,9 +911,9 @@ test "DIV opcode division by zero 42 / 0 = 0" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For DIV by zero, we expect this to succeed (EVM spec says div by 0 = 0)
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ DIV test passed: 42 / 0 = 0 (division by zero)\n", .{});
 }
 
 test "MOD opcode 50 % 7 = 1" {
@@ -1012,9 +1012,9 @@ test "MOD opcode 50 % 7 = 1" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For MOD 50 % 7 = 1, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ MOD test passed: 50 % 7 = 1\n", .{});
 }
 
 test "EXP opcode 2 ** 3 = 8" {
@@ -1113,9 +1113,9 @@ test "EXP opcode 2 ** 3 = 8" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For EXP 2 ** 3 = 8, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ EXP test passed: 2 ** 3 = 8\n", .{});
 }
 
 tens-normalize.js/est "SDIV opcode signed division -8 / 2 = -4" {
@@ -1213,9 +1213,9 @@ tens-normalize.js/est "SDIV opcode signed division -8 / 2 = -4" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SDIV -8 / 2 = -4, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SDIV test passed: signed division -8 / 2\n", .{});
 }
 
 test "SMOD opcode signed modulo -8 % 3 = -2" {
@@ -1313,9 +1313,9 @@ test "SMOD opcode signed modulo -8 % 3 = -2" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SMOD -8 % 3 = -2, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SMOD test passed: signed modulo -8 % 3\n", .{});
 }
 
 test "ADDMOD opcode (5 + 10) % 7 = 1" {
@@ -1418,9 +1418,9 @@ test "ADDMOD opcode (5 + 10) % 7 = 1" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For ADDMOD (5 + 10) % 7 = 1, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ ADDMOD test passed: (5 + 10) % 7 = 1\n", .{});
 }
 
 test "MULMOD opcode (5 * 6) % 7 = 2" {
@@ -1523,9 +1523,9 @@ test "MULMOD opcode (5 * 6) % 7 = 2" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For MULMOD (5 * 6) % 7 = 2, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ MULMOD test passed: (5 * 6) % 7 = 2\n", .{});
 }
 
 test "SIGNEXTEND opcode sign extend byte 1 of 0x80" {
@@ -1624,7 +1624,7 @@ test "SIGNEXTEND opcode sign extend byte 1 of 0x80" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SIGNEXTEND, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SIGNEXTEND test passed: sign extend operation\n", .{});
 }
