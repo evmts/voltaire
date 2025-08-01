@@ -971,8 +971,8 @@ test "VM: MOD opcode" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
-        0x60, 0x0A, // PUSH1 10 (dividend)
         0x60, 0x03, // PUSH1 3 (divisor)
+        0x60, 0x0A, // PUSH1 10 (dividend)
         0x06, // MOD (10 % 3 = 1)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -996,8 +996,8 @@ test "VM: MOD by zero returns zero" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
-        0x60, 0x0A, // PUSH1 10
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (divisor)
+        0x60, 0x0A, // PUSH1 10 (dividend)
         0x06, // MOD (10 % 0)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1021,8 +1021,8 @@ test "VM: MOD perfect division" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
-        0x60, 0x14, // PUSH1 20
-        0x60, 0x05, // PUSH1 5
+        0x60, 0x05, // PUSH1 5 (divisor)
+        0x60, 0x14, // PUSH1 20 (dividend)
         0x06, // MOD (20 % 5 = 0)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1046,8 +1046,8 @@ test "VM: MOD by one" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
-        0x61, 0x04, 0xD2, // PUSH2 1234
-        0x60, 0x01, // PUSH1 1
+        0x60, 0x01, // PUSH1 1 (divisor)
+        0x61, 0x04, 0xD2, // PUSH2 1234 (dividend)
         0x06, // MOD (1234 % 1 = 0)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
