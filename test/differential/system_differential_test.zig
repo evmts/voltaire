@@ -138,7 +138,7 @@ test "REVERT opcode reverts execution" {
 
     try testing.expect(revm_succeeded == guillotine_succeeded);
     try testing.expect(!revm_succeeded); // REVERT should fail
-    try testing.expect(revm_result.output.len == 0); // No output from REVERT
+    try testing.expect(revm_result.output.len == 32); // REVERT returns 32 bytes as specified in bytecode
 }
 
 test "INVALID opcode causes invalid instruction error" {
