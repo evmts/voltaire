@@ -1504,9 +1504,9 @@ test "SIGNEXTEND (0x0B): Extend positive byte" {
     defer frame.deinit();
 
     // Test: sign extend 0x7F (positive) from byte 0
-    // SIGNEXTEND pops byte_index first, then value, so value must be on top
-    try frame.stack.append(0);    // byte_index (bottom)
-    try frame.stack.append(0x7F); // value (top)
+    // SIGNEXTEND pops byte_index first, then peeks value, so byte_index must be on top
+    try frame.stack.append(0x7F); // value (bottom) 
+    try frame.stack.append(0);    // byte_index (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1552,9 +1552,9 @@ test "SIGNEXTEND: Extend negative byte" {
     defer frame.deinit();
 
     // Test: sign extend 0xFF (negative) from byte 0
-    // SIGNEXTEND pops byte_index first, then value, so value must be on top
-    try frame.stack.append(0);    // byte_index (bottom)
-    try frame.stack.append(0xFF); // value (top)
+    // SIGNEXTEND pops byte_index first, then peeks value, so byte_index must be on top
+    try frame.stack.append(0xFF); // value (bottom)
+    try frame.stack.append(0);    // byte_index (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1602,9 +1602,9 @@ test "SIGNEXTEND: Extend from higher byte position" {
     defer frame.deinit();
 
     // Test: sign extend 0x00FF from byte 1 (second byte)
-    // SIGNEXTEND pops byte_index first, then value, so value must be on top
-    try frame.stack.append(1);      // byte_index (bottom)
-    try frame.stack.append(0x00FF); // value (top)
+    // SIGNEXTEND pops byte_index first, then peeks value, so byte_index must be on top
+    try frame.stack.append(0x00FF); // value (bottom)
+    try frame.stack.append(1);      // byte_index (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1652,9 +1652,9 @@ test "SIGNEXTEND: Byte position >= 31 returns value unchanged" {
 
     // Test: byte position >= 31 returns original value
     const test_value = 0x123456789ABCDEF;
-    // SIGNEXTEND pops byte_index first, then value, so value must be on top
-    try frame.stack.append(31);         // byte_index (bottom)
-    try frame.stack.append(test_value); // value (top)
+    // SIGNEXTEND pops byte_index first, then peeks value, so byte_index must be on top
+    try frame.stack.append(test_value); // value (bottom)
+    try frame.stack.append(31);         // byte_index (top)
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
