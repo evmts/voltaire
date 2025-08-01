@@ -2,9 +2,9 @@
 
 ## Summary
 
-**Test Runs per Case**: 5
-**EVMs Compared**: Guillotine (Zig), REVM (Rust)
-**Timestamp**: 1754070872 (Unix epoch)
+**Test Runs per Case**: 20
+**EVMs Compared**: Guillotine (Zig), REVM (Rust), EthereumJS (JavaScript), Geth (Go), evmone (C++)
+**Timestamp**: 1754080165 (Unix epoch)
 
 ## Performance Comparison
 
@@ -12,62 +12,72 @@
 
 | EVM | Mean (ms) | Median (ms) | Min (ms) | Max (ms) | Std Dev (ms) |
 |-----|-----------|-------------|----------|----------|-------------|
-| Guillotine  |      7.88 |        7.87 |     7.70 |     8.06 |        0.13 |
-| REVM        |      6.59 |        6.54 |     6.33 |     7.02 |        0.26 |
-
-**Speedup**: REVM is 1.20x faster than Guillotine
+| Guillotine  |      7.83 |        7.77 |     7.62 |     8.40 |        0.19 |
+| REVM        |      7.51 |        6.92 |     6.63 |    11.66 |        1.22 |
+| EthereumJS  |    447.68 |      445.36 |   437.61 |   464.85 |        8.12 |
+| Geth        |     15.15 |       15.30 |    13.65 |    16.56 |        0.90 |
+| evmone      |      1.58 |        1.55 |     1.41 |     1.86 |        0.13 |
 
 ### erc20-mint
 
 | EVM | Mean (ms) | Median (ms) | Min (ms) | Max (ms) | Std Dev (ms) |
 |-----|-----------|-------------|----------|----------|-------------|
-| Guillotine  |      6.46 |        6.43 |     6.28 |     6.67 |        0.15 |
-| REVM        |      5.63 |        5.42 |     5.34 |     6.61 |        0.55 |
-
-**Speedup**: REVM is 1.15x faster than Guillotine
+| Guillotine  |      6.34 |        6.32 |     6.21 |     6.64 |        0.12 |
+| REVM        |      5.59 |        5.56 |     5.26 |     5.97 |        0.18 |
+| EthereumJS  |    464.35 |      456.00 |   449.32 |   501.67 |       16.21 |
+| Geth        |     15.99 |       15.72 |    12.49 |    22.50 |        2.21 |
+| evmone      |      1.56 |        1.51 |     1.37 |     1.93 |        0.14 |
 
 ### erc20-transfer
 
 | EVM | Mean (ms) | Median (ms) | Min (ms) | Max (ms) | Std Dev (ms) |
 |-----|-----------|-------------|----------|----------|-------------|
-| Guillotine  |      9.63 |        9.62 |     9.14 |    10.14 |        0.44 |
-| REVM        |      8.00 |        8.02 |     7.80 |     8.19 |        0.18 |
-
-**Speedup**: REVM is 1.20x faster than Guillotine
+| Guillotine  |      9.80 |        9.44 |     8.68 |    11.96 |        1.10 |
+| REVM        |      8.58 |        8.26 |     7.92 |     9.66 |        0.60 |
+| EthereumJS  |    571.27 |      566.11 |   558.45 |   600.04 |       11.86 |
+| Geth        |     17.86 |       17.87 |    17.51 |    18.21 |        0.20 |
+| evmone      |      1.65 |        1.63 |     1.51 |     1.94 |        0.12 |
 
 ### ten-thousand-hashes
 
 | EVM | Mean (ms) | Median (ms) | Min (ms) | Max (ms) | Std Dev (ms) |
 |-----|-----------|-------------|----------|----------|-------------|
-| Guillotine  |      5.08 |        4.99 |     4.52 |     6.21 |        0.67 |
-| REVM        |      3.27 |        3.10 |     3.01 |     3.76 |        0.33 |
-
-**Speedup**: REVM is 1.55x faster than Guillotine
+| Guillotine  |      6.35 |        6.30 |     5.10 |     8.38 |        0.86 |
+| REVM        |      3.15 |        3.14 |     3.04 |     3.36 |        0.08 |
+| EthereumJS  |    326.86 |      326.03 |   322.92 |   337.37 |        3.29 |
+| Geth        |      9.25 |        9.02 |     8.82 |    11.36 |        0.62 |
+| evmone      |      1.60 |        1.56 |     1.44 |     1.91 |        0.12 |
 
 ### snailtracer
 
 | EVM | Mean (ms) | Median (ms) | Min (ms) | Max (ms) | Std Dev (ms) |
 |-----|-----------|-------------|----------|----------|-------------|
-| Guillotine  |    113.80 |      113.96 |   112.66 |   114.64 |        0.72 |
-| REVM        |     37.34 |       37.24 |    36.75 |    38.38 |        0.65 |
-
-**Speedup**: REVM is 3.05x faster than Guillotine
+| Guillotine  |    116.43 |      114.14 |   111.42 |   124.83 |        4.62 |
+| REVM        |     38.30 |       38.02 |    36.07 |    41.73 |        1.52 |
+| EthereumJS  |   3084.32 |     3013.53 |  2983.10 |  3443.32 |      152.74 |
+| Geth        |     85.55 |       85.77 |    83.54 |    86.88 |        0.81 |
+| evmone      |      1.76 |        1.74 |     1.62 |     2.04 |        0.09 |
 
 ## Overall Performance Summary
 
-| Test Case | Guillotine (ms) | REVM (ms) | Speedup |
-|-----------|-----------------|-----------|----------|
-| erc20-approval-transfer   |            7.88 |      6.59 |    1.20x |
-| erc20-mint                |            6.46 |      5.63 |    1.15x |
-| erc20-transfer            |            9.63 |      8.00 |    1.20x |
-| ten-thousand-hashes       |            5.08 |      3.27 |    1.55x |
-| snailtracer               |          113.80 |     37.34 |    3.05x |
+| Test Case | Guillotine (ms) | REVM (ms) | EthereumJS (ms) | Geth (ms) | evmone (ms) |
+|-----------|-----------------|-----------|-----------|-----------|-------------|
+| erc20-approval-transfer   |            7.83 |      7.51 |    447.68 |     15.15 |        1.58 |
+| erc20-mint                |            6.34 |      5.59 |    464.35 |     15.99 |        1.56 |
+| erc20-transfer            |            9.80 |      8.58 |    571.27 |     17.86 |        1.65 |
+| ten-thousand-hashes       |            6.35 |      3.15 |    326.86 |      9.25 |        1.60 |
+| snailtracer               |          116.43 |     38.30 |   3084.32 |     85.55 |        1.76 |
 
 ## Notes
 
-- Both implementations use optimized builds (ReleaseFast for Zig, --release for Rust)
+- All implementations use optimized builds:
+  - Zig: ReleaseFast
+  - Rust (REVM): --release
+  - JavaScript (EthereumJS): Bun runtime
+  - Go (geth): -O3 optimizations
+  - C++ (evmone): -O3 -march=native
 - All times are in milliseconds (ms)
-- Speedup shows how many times faster REVM is compared to Guillotine
+- Lower values indicate better performance
 - These benchmarks measure the full execution time including contract deployment
 
 ---
