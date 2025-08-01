@@ -140,6 +140,7 @@ test "Integration: Modular arithmetic with overflow" {
     _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD
 
     try frame_ptr.stack.append(1000); // Push modulus
+    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [1000, 4]
     _ = try evm.table.execute(0, interpreter, state, 0x06); // MOD = 4 % 1000 = 4
 
     const result = try frame_ptr.stack.peek_n(0);
@@ -382,6 +383,7 @@ test "Integration: Calculate average of multiple values" {
 
     // Divide by count
     try frame_ptr.stack.append(5);
+    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [5, 150]
     _ = try evm.table.execute(0, interpreter, state, 0x04); // DIV: 150/5=30
 
     const result = try frame_ptr.stack.peek_n(0);
@@ -443,13 +445,13 @@ test "Integration: Complex ADDMOD and MULMOD calculations" {
     const n: u256 = 100;
 
     // Calculate (a + b) % n
-    // ADDMOD pops n, b, then peeks a (and overwrites a with result)
-    // So we need stack: [a, b, n] (n on top)
+    // ADDMOD pops a, pops b, then peeks n (and overwrites n with result)
+    // So we need stack: [n, b, a] (a on top)
     // a = MAX_U256 - 10, b = 20, n = 100
     // a + b wraps to 9, so result should be 9 % 100 = 9
-    try frame_ptr.stack.append(a); // first addend (bottom)
+    try frame_ptr.stack.append(n); // modulus (bottom)
     try frame_ptr.stack.append(b); // second addend (middle)
-    try frame_ptr.stack.append(n); // modulus (top)
+    try frame_ptr.stack.append(a); // first addend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x08); // ADDMOD
 
     const addmod_result = try frame_ptr.stack.peek_n(0);
@@ -525,15 +527,18 @@ test "Integration: Exponentiation chain" {
     const state: Operation.State = frame_ptr;
 
     // First calculate 3^2
-    // EXP pops exponent then base, so for 3^2 we need [3, 2] on stack
-    try frame_ptr.stack.append(3); // base
+    // EXP pops base then peeks exp, so for 3^2 we need [2, 3] on stack (3 on top)
     try frame_ptr.stack.append(2); // exponent
+    try frame_ptr.stack.append(3); // base
     _ = try evm.table.execute(0, interpreter, state, 0x0A); // EXP: 3^2 = 9
 
+    // Verify intermediate result
+    const intermediate = try frame_ptr.stack.peek_n(0);
+    try testing.expectEqual(@as(u256, 9), intermediate);
+
     // Then calculate 2^9
-    // Stack currently has [9], we need [2, 9] for 2^9
+    // Stack currently has [9], we need [9, 2] for 2^9 (2 on top as base)
     try frame_ptr.stack.append(2); // Push base
-    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [2, 9]
     _ = try evm.table.execute(0, interpreter, state, 0x0A); // EXP: 2^9 = 512
 
     const result = try frame_ptr.stack.peek_n(0);
