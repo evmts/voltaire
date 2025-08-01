@@ -119,16 +119,16 @@ test "Arithmetic: SUB basic operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple subtraction
-    try frame.stack.append(10);
     try frame.stack.append(5);
+    try frame.stack.append(10);
     _ = try evm.table.execute(0, interpreter, state, 0x03);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 5), result); // 10 - 5 = 5
 
     // Test 2: Subtraction with underflow
     frame.stack.clear();
-    try frame.stack.append(5);
     try frame.stack.append(10);
+    try frame.stack.append(5);
     _ = try evm.table.execute(0, interpreter, state, 0x03);
     const underflow_result = try frame.stack.pop();
     const expected = std.math.maxInt(u256) - 4; // 5 - 10 wraps to max - 4
@@ -136,8 +136,8 @@ test "Arithmetic: SUB basic operations" {
 
     // Test 3: Subtracting zero
     frame.stack.clear();
-    try frame.stack.append(42);
     try frame.stack.append(0);
+    try frame.stack.append(42);
     _ = try evm.table.execute(0, interpreter, state, 0x03);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), zero_result); // 42 - 0 = 42
@@ -247,8 +247,8 @@ test "Arithmetic: DIV basic operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple division
-    try frame.stack.append(42);
     try frame.stack.append(6);
+    try frame.stack.append(42);
     _ = try evm.table.execute(0, interpreter, state, 0x04);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 7), result); // 42 / 6 = 7
@@ -263,8 +263,8 @@ test "Arithmetic: DIV basic operations" {
 
     // Test 3: Division with remainder
     frame.stack.clear();
-    try frame.stack.append(50);
     try frame.stack.append(7);
+    try frame.stack.append(50);
     _ = try evm.table.execute(0, interpreter, state, 0x04);
     const remainder_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 7), remainder_result); // 50 / 7 = 7 (integer division)
@@ -309,8 +309,8 @@ test "Arithmetic: MOD basic operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple modulo
-    try frame.stack.append(50);
     try frame.stack.append(7);
+    try frame.stack.append(50);
     _ = try evm.table.execute(0, interpreter, state, 0x06);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result); // 50 % 7 = 1
@@ -325,8 +325,8 @@ test "Arithmetic: MOD basic operations" {
 
     // Test 3: Perfect division
     frame.stack.clear();
-    try frame.stack.append(42);
     try frame.stack.append(6);
+    try frame.stack.append(42);
     _ = try evm.table.execute(0, interpreter, state, 0x06);
     const perfect_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), perfect_result); // 42 % 6 = 0
@@ -371,9 +371,9 @@ test "Arithmetic: ADDMOD complex operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple addmod
-    try frame.stack.append(5);
-    try frame.stack.append(7);
     try frame.stack.append(10);
+    try frame.stack.append(7);
+    try frame.stack.append(5);
     _ = try evm.table.execute(0, interpreter, state, 0x08);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 2), result); // (5 + 7) % 10 = 2
@@ -390,9 +390,9 @@ test "Arithmetic: ADDMOD complex operations" {
 
     // Test 3: Modulo by zero
     frame.stack.clear();
-    try frame.stack.append(7);
-    try frame.stack.append(5);
     try frame.stack.append(0);
+    try frame.stack.append(5);
+    try frame.stack.append(7);
     _ = try evm.table.execute(0, interpreter, state, 0x08);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Modulo by zero returns 0
@@ -437,9 +437,9 @@ test "Arithmetic: MULMOD complex operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple mulmod
-    try frame.stack.append(5);
-    try frame.stack.append(7);
     try frame.stack.append(10);
+    try frame.stack.append(7);
+    try frame.stack.append(5);
     _ = try evm.table.execute(0, interpreter, state, 0x09);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 5), result); // (5 * 7) % 10 = 5
@@ -457,9 +457,9 @@ test "Arithmetic: MULMOD complex operations" {
 
     // Test 3: Modulo by zero
     frame.stack.clear();
-    try frame.stack.append(5);
-    try frame.stack.append(7);
     try frame.stack.append(0);
+    try frame.stack.append(7);
+    try frame.stack.append(5);
     _ = try evm.table.execute(0, interpreter, state, 0x09);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Modulo by zero returns 0
@@ -503,24 +503,24 @@ test "Arithmetic: EXP exponential operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple exponentiation
-    try frame.stack.append(2);
     try frame.stack.append(3);
+    try frame.stack.append(2);
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 8), result); // 2^3 = 8
 
     // Test 2: Zero exponent
     frame.stack.clear();
-    try frame.stack.append(42);
     try frame.stack.append(0);
+    try frame.stack.append(42);
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     const zero_exp_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), zero_exp_result); // 42^0 = 1
 
     // Test 3: Zero base
     frame.stack.clear();
-    try frame.stack.append(0);
     try frame.stack.append(5);
+    try frame.stack.append(0);
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     const zero_base_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_base_result); // 0^5 = 0
@@ -528,8 +528,8 @@ test "Arithmetic: EXP exponential operations" {
     // Test 4: Large exponent (gas consumption)
     frame.stack.clear();
     frame.gas_remaining = 10000;
-    try frame.stack.append(2);
     try frame.stack.append(256);
+    try frame.stack.append(2);
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     // Gas should be consumed: 10 (base) + 50 * 2 (256 = 0x100 = 2 bytes)
     const expected_gas = 10 + 50 * 2;

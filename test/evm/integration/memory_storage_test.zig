@@ -139,9 +139,11 @@ test "Integration: Storage with conditional updates" {
     try frame.stack.append(sum);
     _ = try evm.table.execute(0, interpreter, state, 0x80);
 
-    // Compare with 120
+    // Compare with 120 - we want to check if 150 > 120
+    // GT does top > second, so we need [120, 150] on stack
     try frame.stack.append(120);
-    _ = try evm.table.execute(0, interpreter, state, 0x11);
+    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [120, 150]
+    _ = try evm.table.execute(0, interpreter, state, 0x11); // GT: 150 > 120 = 1
 
     const comparison_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), comparison_result);
@@ -209,9 +211,11 @@ test "Integration: Memory copy operations" {
     _ = try evm.table.execute(0, interpreter, state, 0x52);
 
     // Copy 32 bytes from offset 0 to offset 64
-    try frame.stack.append(64); // dst
+    // MCOPY pops in order: dest, src, length
+    // So for dest=64, src=0, length=32, we need stack [32, 0, 64]
+    try frame.stack.append(32); // length
     try frame.stack.append(0); // src
-    try frame.stack.append(32); // size
+    try frame.stack.append(64); // dst
     _ = try evm.table.execute(0, interpreter, state, 0x5E);
 
     // Verify copy

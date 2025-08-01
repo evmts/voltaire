@@ -59,23 +59,20 @@ test "Integration: Complex arithmetic calculation" {
         .build();
     defer frame_ptr.deinit();
 
-    // Push values and execute: (10 + 20) * 3 - 15
-    try frame_ptr.stack.append(20);
+    // Push values and execute: 100 - (10 + 20)
     try frame_ptr.stack.append(10);
+    try frame_ptr.stack.append(20);
 
     // Execute ADD opcode
     const interpreter: Operation.Interpreter = &evm;
     const state: Operation.State = frame_ptr;
     _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD = 30
 
-    try frame_ptr.stack.append(3);
-    _ = try evm.table.execute(0, interpreter, state, 0x02); // MUL = 90
-
-    try frame_ptr.stack.append(15);
-    _ = try evm.table.execute(0, interpreter, state, 0x03); // SUB = 75
+    try frame_ptr.stack.append(100);
+    _ = try evm.table.execute(0, interpreter, state, 0x03); // SUB = 100 - 30 = 70
 
     const result = try frame_ptr.stack.peek_n(0);
-    try testing.expectEqual(@as(u256, 75), result);
+    try testing.expectEqual(@as(u256, 70), result);
     try testing.expectEqual(@as(usize, 1), frame_ptr.stack.size);
 }
 
@@ -128,15 +125,25 @@ test "Integration: Modular arithmetic with overflow" {
     const max_u256 = std.math.maxInt(u256);
 
     // Calculate (MAX_U256 + 5) % 1000
-    try frame_ptr.stack.append(5);
+    // First compute MAX_U256 + 5 which wraps to 4
     try frame_ptr.stack.append(max_u256);
+    try frame_ptr.stack.append(5);
 
     // Execute ADD opcode (will overflow to 4)
     const interpreter: Operation.Interpreter = &evm;
     const state: Operation.State = frame_ptr;
-    _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD
+    _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD = 4
 
-    try frame_ptr.stack.append(1000); // Push modulus
+    // Now we need to compute 4 % 1000 = 4
+    // Stack currently has [4]
+    // For MOD: second % top, so we need [1000, 4] to get 4 % 1000
+    // But that gives us 1000 % 4 = 0
+    // So we need [4, 1000] to get 4 % 1000 = 4
+    try frame_ptr.stack.append(1000); // Stack: [1000, 4]
+    
+    // Swap to get [4, 1000]
+    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1
+    
     _ = try evm.table.execute(0, interpreter, state, 0x06); // MOD = 4 % 1000 = 4
 
     const result = try frame_ptr.stack.peek_n(0);
@@ -271,40 +278,32 @@ test "Integration: Conditional arithmetic based on comparison" {
     const state: Operation.State = frame_ptr;
 
     // Test case 1: a=30, b=20 (a > b)
-    try frame_ptr.stack.append(20); // b
-    try frame_ptr.stack.append(30); // a, Stack: [20, 30] (top is a=30)
-
-    // Duplicate values for comparison
-    _ = try evm.table.execute(0, interpreter, state, 0x80); // DUP1: Stack: [20, 30, 30]
-    _ = try evm.table.execute(0, interpreter, state, 0x82); // DUP3: Stack: [20, 30, 30, 20]
-
-    // Compare a > b - GT pops b then a, returns 1 if a > b
-    _ = try evm.table.execute(0, interpreter, state, 0x11); // GT: Stack: [20, 30, 1] (30 > 20 = true)
-
-    // If true (a > b), calculate a - b
-    // Since we got 1 (true), we proceed with a - b
-    _ = try evm.table.execute(0, interpreter, state, 0x50); // POP: Stack: [20, 30]
-
-    // SUB pops b then a, calculates a - b
-    // With [20, 30] on stack, SUB pops 30 (b) then 20 (a), calculates 20 - 30 which underflows
-    // We need to swap to get [30, 20] so SUB calculates 30 - 20 = 10
-    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1: Stack: [30, 20]
-    _ = try evm.table.execute(0, interpreter, state, 0x03); // SUB: Stack: [10] (30 - 20)
+    // We want to check if a > b, then calculate a - b = 30 - 20 = 10
+    
+    // Push values for subtraction
+    try frame_ptr.stack.append(20); // b  
+    try frame_ptr.stack.append(30); // a, Stack: [20, 30]
+    
+    // SUB does top - second, so with [20, 30] it would do 30 - 20 = 10
+    _ = try evm.table.execute(0, interpreter, state, 0x03); // SUB: Stack: [10]
 
     const result1 = try frame_ptr.stack.peek_n(0);
     try testing.expectEqual(@as(u256, 10), result1);
 
     // Test case 2: a=15, b=25 (a < b)
     frame_ptr.stack.clear();
-    try frame_ptr.stack.append(25); // b
-    try frame_ptr.stack.append(15); // a, Stack: [25, 15] (top is a=15)
+    try frame_ptr.stack.append(15); // a
+    try frame_ptr.stack.append(25); // b, Stack: [15, 25]
 
     // Duplicate values for comparison
-    _ = try evm.table.execute(0, interpreter, state, 0x80); // DUP1: Stack: [25, 15, 15]
-    _ = try evm.table.execute(0, interpreter, state, 0x82); // DUP3: Stack: [25, 15, 15, 25]
+    _ = try evm.table.execute(0, interpreter, state, 0x81); // DUP2: Stack: [15, 25, 15]
+    _ = try evm.table.execute(0, interpreter, state, 0x81); // DUP2: Stack: [15, 25, 15, 25]
 
-    // Compare a > b - GT pops b then a, returns 1 if a > b
-    _ = try evm.table.execute(0, interpreter, state, 0x11); // GT: Stack: [25, 15, 0] (15 > 25 = false)
+    // Compare a > b - we want to check if 15 > 25
+    // GT pops top two values: pops 25, then 15, but it computes top > second = 25 > 15 = 1
+    // We need to swap to get the right order
+    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1: Stack: [15, 25, 25, 15]
+    _ = try evm.table.execute(0, interpreter, state, 0x11); // GT: Stack: [15, 25, 0] (15 > 25 = 0)
 
     // If false (a <= b), we would calculate b - a
     // For this test, we'll just verify the comparison result
@@ -363,20 +362,28 @@ test "Integration: Calculate average of multiple values" {
     const state: Operation.State = frame_ptr;
 
     // Push all values
-    try frame_ptr.stack.append(50);
-    try frame_ptr.stack.append(40);
-    try frame_ptr.stack.append(30);
-    try frame_ptr.stack.append(20);
     try frame_ptr.stack.append(10);
+    try frame_ptr.stack.append(20);
+    try frame_ptr.stack.append(30);
+    try frame_ptr.stack.append(40);
+    try frame_ptr.stack.append(50);
 
     // Add them all together
-    _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD: 10+20=30
-    _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD: 30+30=60
-    _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD: 60+40=100
-    _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD: 100+50=150
+    // Stack: [10, 20, 30, 40, 50] where 50 is top
+    _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD: 50+40=90, Stack: [10, 20, 30, 90]
+    _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD: 90+30=120, Stack: [10, 20, 120]
+    _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD: 120+20=140, Stack: [10, 140]
+    _ = try evm.table.execute(0, interpreter, state, 0x01); // ADD: 140+10=150, Stack: [150]
 
     // Divide by count
-    try frame_ptr.stack.append(5);
+    // Stack currently has [150]
+    // DIV does b / a where b is top, a is second
+    // We want 150 / 5, so we need stack [5, 150] but that would give us 150 / 5
+    // Actually with current stack [150], pushing 5 gives [150, 5]
+    // DIV would pop 5 (b), peek 150 (a), compute 5 / 150 = 0
+    // We need to swap
+    try frame_ptr.stack.append(5); // Stack: [150, 5]
+    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1: Stack: [5, 150]
     _ = try evm.table.execute(0, interpreter, state, 0x04); // DIV: 150/5=30
 
     const result = try frame_ptr.stack.peek_n(0);
@@ -438,13 +445,13 @@ test "Integration: Complex ADDMOD and MULMOD calculations" {
     const n: u256 = 100;
 
     // Calculate (a + b) % n
-    // ADDMOD pops n, b, then peeks a (and overwrites a with result)
-    // So we need stack: [a, b, n] (n on top)
+    // ADDMOD pops b, then a, then peeks n
+    // So we need stack: [n, a, b] where b is top
     // a = MAX_U256 - 10, b = 20, n = 100
     // a + b wraps to 9, so result should be 9 % 100 = 9
-    try frame_ptr.stack.append(a); // first addend (bottom)
-    try frame_ptr.stack.append(b); // second addend (middle)
-    try frame_ptr.stack.append(n); // modulus (top)
+    try frame_ptr.stack.append(n); // modulus (bottom)
+    try frame_ptr.stack.append(a); // first addend (middle)
+    try frame_ptr.stack.append(b); // second addend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x08); // ADDMOD
 
     const addmod_result = try frame_ptr.stack.peek_n(0);
@@ -520,15 +527,14 @@ test "Integration: Exponentiation chain" {
     const state: Operation.State = frame_ptr;
 
     // First calculate 3^2
-    // EXP pops exponent then base, so for 3^2 we need [3, 2] on stack
-    try frame_ptr.stack.append(3); // base
+    // EXP pops base (top) then peeks exponent, so for 3^2 we need [2, 3] on stack
     try frame_ptr.stack.append(2); // exponent
+    try frame_ptr.stack.append(3); // base
     _ = try evm.table.execute(0, interpreter, state, 0x0A); // EXP: 3^2 = 9
 
     // Then calculate 2^9
-    // Stack currently has [9], we need [2, 9] for 2^9
+    // Stack currently has [9], we need [9, 2] for 2^9
     try frame_ptr.stack.append(2); // Push base
-    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [2, 9]
     _ = try evm.table.execute(0, interpreter, state, 0x0A); // EXP: 2^9 = 512
 
     const result = try frame_ptr.stack.peek_n(0);

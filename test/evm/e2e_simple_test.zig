@@ -166,8 +166,8 @@ test "E2E: Arithmetic operations" {
     try testing.expectEqual(@as(u256, 42), sum);
 
     // Test SUB operation: 100 - 58 = 42
-    try frame.stack.append(100);
     try frame.stack.append(58);
+    try frame.stack.append(100);
 
     const sub_result = try evm_instance.table.execute(0, interpreter, state, 0x03); // SUB
     try testing.expect(sub_result.output.len == 0);

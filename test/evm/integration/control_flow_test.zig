@@ -95,8 +95,9 @@ test "Integration: Conditional jump patterns" {
     frame_ptr.pc = 0;
 
     // Calculate condition: 5 > 3
-    try frame_ptr.stack.append(5);
+    // GT computes top > second, so for 5 > 3 we need [3, 5]
     try frame_ptr.stack.append(3);
+    try frame_ptr.stack.append(5);
     _ = try vm.table.execute(0, interpreter, state, 0x11); // GT Result: 1, Stack: [1]
 
     // Push destination (30) on top of condition
@@ -169,15 +170,23 @@ test "Integration: Loop implementation with JUMP" {
     var iterations: u32 = 0;
     while (iterations < 5) : (iterations += 1) {
         // Decrement counter
-        try frame_ptr.stack.append(1);
-        _ = try vm.table.execute(0, interpreter, state, 0x03); // SUB
+        // SUB does top - second, we want counter - 1
+        // Stack has [counter], we need to get counter - 1
+        _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1: [counter, counter]
+        try frame_ptr.stack.append(1); // [counter, counter, 1]
+        _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1: [counter, 1, counter]
+        _ = try vm.table.execute(0, interpreter, state, 0x03); // SUB: [counter, result]
+        _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1: [result, counter]
+        _ = try vm.table.execute(0, interpreter, state, 0x50); // POP: [result]
 
         // Duplicate for comparison
         _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1
 
         // Check if counter > 0
+        // GT does top > second, we want counter > 0
         try frame_ptr.stack.append(0);
-        _ = try vm.table.execute(0, interpreter, state, 0x11); // GT
+        _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [0, counter]
+        _ = try vm.table.execute(0, interpreter, state, 0x11); // GT: counter > 0
 
         // If counter > 0, we would jump back to loop start
         const condition = try frame_ptr.stack.pop();
@@ -504,8 +513,9 @@ test "Integration: Nested conditions with jumps" {
     const d: u256 = 8;
 
     // First condition: a > b (should be true)
-    try frame_ptr.stack.append(a);
+    // GT does top > second, for 10 > 5 we need [5, 10]
     try frame_ptr.stack.append(b);
+    try frame_ptr.stack.append(a);
     _ = try vm.table.execute(0, interpreter, state, 0x11); // GT
 
     // If first condition is false, jump to end
@@ -520,8 +530,9 @@ test "Integration: Nested conditions with jumps" {
     try testing.expectEqual(@as(u256, 0), should_skip_first); // Should not skip
 
     // Second condition: c < d (should be true)
-    try frame_ptr.stack.append(c);
+    // LT does top < second, for 3 < 8 we need [8, 3]
     try frame_ptr.stack.append(d);
+    try frame_ptr.stack.append(c);
     _ = try vm.table.execute(0, interpreter, state, 0x10); // LT
 
     // AND the conditions

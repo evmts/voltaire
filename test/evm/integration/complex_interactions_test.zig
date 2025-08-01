@@ -74,16 +74,15 @@ test "Integration: Token balance check pattern" {
     _ = try vm.table.execute(0, interpreter, state, 0x52); // MSTORE
 
     // Hash to get storage slot
-    try frame.stack.append(0); // offset
     try frame.stack.append(64); // size
+    try frame.stack.append(0); // offset
     _ = try vm.table.execute(0, interpreter, state, 0x20); // SHA3
 
     // Set initial balance
     const initial_balance: u256 = 1000;
     _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1 - duplicate slot
     try frame.stack.append(initial_balance); // Stack: [slot_hash, slot_hash, initial_balance]
-    _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1: [slot_hash, initial_balance, slot_hash]
-    _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE: pops slot_hash, then initial_balance
+    _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE: pops slot_hash (top), then initial_balance
 
     // Load balance
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD using the remaining slot_hash
@@ -165,8 +164,10 @@ test "Integration: Packed struct storage" {
 
     // Store packed value
     const slot: u256 = 5;
-    try frame.stack.append(slot); // Now stack is [packed_value, slot]
+    _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1 to preserve packed_value
+    try frame.stack.append(slot); // Now stack is [packed_value, packed_value, slot]
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE: pops slot, then packed_value
+    _ = try vm.table.execute(0, interpreter, state, 0x50); // POP the extra packed_value
 
     // Load and unpack 'a' (lower 128 bits)
     try frame.stack.append(slot);
@@ -328,7 +329,7 @@ test "Integration: Reentrancy guard pattern" {
     _ = try vm.table.execute(0, interpreter, state, 0x50); // POP - Remove old value from stack
     try frame.stack.append(ENTERED);
     try frame.stack.append(guard_slot); // Stack: [ENTERED, guard_slot]
-    _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE: pops guard_slot, then ENTERED
+    _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE: pops guard_slot (top), then ENTERED (second)
 
     // Verify guard is set
     try frame.stack.append(guard_slot);
@@ -413,7 +414,8 @@ test "Integration: Bitfield manipulation" {
     try frame.stack.append(0x80);
     _ = try vm.table.execute(0, interpreter, state, 0x16); // AND
     try frame.stack.append(0);
-    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT
+    _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [0, result]
+    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT: result > 0
 
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // Bit 7 is set
@@ -493,9 +495,10 @@ test "Integration: Safe math operations" {
     const sum = try frame.stack.pop();
 
     // Check if sum < a (overflow occurred)
-    try frame.stack.append(sum);
+    // LT does top < second, we want sum < a
     try frame.stack.append(a);
-    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT
+    try frame.stack.append(sum);
+    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: sum < a
 
     // Should be 0 (no overflow since 50 < 100)
     const result1 = try frame.stack.pop();
@@ -509,8 +512,8 @@ test "Integration: Safe math operations" {
     const overflow_sum = try frame.stack.pop();
 
     // Check if overflow_sum < a (overflow occurred)
-    try frame.stack.append(overflow_sum);
     try frame.stack.append(a);
+    try frame.stack.append(overflow_sum);
     _ = try vm.table.execute(0, interpreter, state, 0x10); // LT
 
     // Should be 1 (overflow occurred)
@@ -648,14 +651,14 @@ test "Integration: Multi-sig wallet threshold check" {
     // slot 1: confirmation count for current transaction
 
     // Set required confirmations to 3
-    // SSTORE pops key first, then value, so we need [value, key] with key on top
-    try frame.stack.append(3); // value 3
-    try frame.stack.append(0); // slot 0 (key on top)
+    // SSTORE pops slot first (top), then value (second), so we need [value, slot] with slot on top
+    try frame.stack.append(3); // value 3 (bottom)
+    try frame.stack.append(0); // slot 0 (top)
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE
 
     // Initialize confirmation count to 0
-    try frame.stack.append(0); // value 0
-    try frame.stack.append(1); // slot 1 (key on top)
+    try frame.stack.append(0); // value 0 (bottom)
+    try frame.stack.append(1); // slot 1 (top)
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE
 
     // First confirmation - load, increment, store
@@ -663,8 +666,8 @@ test "Integration: Multi-sig wallet threshold check" {
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD
     try frame.stack.append(1);
     _ = try vm.table.execute(0, interpreter, state, 0x01); // ADD
-    // Stack has incremented value on top
-    try frame.stack.append(1); // slot 1 (key on top)
+    // Stack has incremented value on top, SSTORE needs [value, slot] with slot on top
+    try frame.stack.append(1); // slot 1 (on top)
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE
 
     // Second confirmation - load, increment, store
@@ -672,8 +675,8 @@ test "Integration: Multi-sig wallet threshold check" {
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD
     try frame.stack.append(1);
     _ = try vm.table.execute(0, interpreter, state, 0x01); // ADD
-    // Stack has incremented value on top
-    try frame.stack.append(1); // slot 1 (key on top)
+    // Stack has incremented value on top, SSTORE needs [value, slot] with slot on top
+    try frame.stack.append(1); // slot 1 (on top)
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE
 
     // Check if we have enough confirmations
@@ -684,9 +687,12 @@ test "Integration: Multi-sig wallet threshold check" {
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD - loads required confirmations (3)
 
     // Compare: confirmations >= required
-    // Stack is [confirmations, required], LT computes confirmations < required
-    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: confirmations < required
-    _ = try vm.table.execute(0, interpreter, state, 0x15); // ISZERO: NOT(confirmations < required) = confirmations >= required
+    // Stack is [confirmations=2, required=3], LT pops top (3), then compares with second (2)
+    // We want to compute confirmations < required (2 < 3 = true)
+    // So we need to swap to get [required, confirmations]
+    _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1: [required=3, confirmations=2]
+    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: confirmations < required (2 < 3 = true = 1)
+    _ = try vm.table.execute(0, interpreter, state, 0x15); // ISZERO: NOT(confirmations < required) = confirmations >= required = 0
 
     // Should be 0 (false) since 2 >= 3 is false
     const result1 = try frame.stack.pop();
@@ -697,8 +703,8 @@ test "Integration: Multi-sig wallet threshold check" {
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD
     try frame.stack.append(1);
     _ = try vm.table.execute(0, interpreter, state, 0x01); // ADD
-    // Stack has incremented value on top
-    try frame.stack.append(1); // slot 1 (key on top)
+    // Stack has incremented value on top, SSTORE needs [value, slot] with slot on top
+    try frame.stack.append(1); // slot 1 (on top)
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE
 
     // Check again

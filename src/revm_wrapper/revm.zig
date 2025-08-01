@@ -167,7 +167,7 @@ pub const Revm = struct {
         var out_value: [67]u8 = undefined; // 0x + 64 hex chars + null
         var error_ptr: ?*c.RevmError = null;
         const addr_bytes = address;
-        
+
         const success = c.revm_get_storage(
             self.ptr,
             &addr_bytes,
@@ -192,7 +192,7 @@ pub const Revm = struct {
         var out_balance: [67]u8 = undefined; // 0x + 64 hex chars + null
         var error_ptr: ?*c.RevmError = null;
         const addr_bytes = address;
-        
+
         const success = c.revm_get_balance(
             self.ptr,
             &addr_bytes,
@@ -343,8 +343,6 @@ test "REVM set and get storage" {
     try std.testing.expectEqual(value, retrieved);
 }
 
-
-
 test "REVM execute contract deployment" {
     const allocator = std.testing.allocator;
 
@@ -353,17 +351,17 @@ test "REVM execute contract deployment" {
     defer vm.deinit();
 
     const deployer = try primitives.Address.from_hex("0x1111111111111111111111111111111111111111");
-    
+
     // Simple contract bytecode that stores 42 in storage slot 0 and returns empty code
     // PUSH1 0x2a (42) PUSH1 0x00 SSTORE
     // PUSH1 0x00 PUSH1 0x00 RETURN (return empty deployed code)
-    const init_code = &[_]u8{ 
+    const init_code = &[_]u8{
         0x60, 0x2a, // PUSH1 42
         0x60, 0x00, // PUSH1 0
-        0x55,       // SSTORE
+        0x55, // SSTORE
         0x60, 0x00, // PUSH1 0 (return data size)
         0x60, 0x00, // PUSH1 0 (return data offset)
-        0xF3,       // RETURN
+        0xF3, // RETURN
     };
 
     // Set balance for deployer
@@ -387,7 +385,7 @@ test "REVM execute failing transaction" {
 
     const from = try primitives.Address.from_hex("0x1111111111111111111111111111111111111111");
     const to = try primitives.Address.from_hex("0x2222222222222222222222222222222222222222");
-    
+
     // Try to send more than balance
     const value: u256 = 1000;
 
@@ -409,14 +407,14 @@ test "REVM contract execution with storage" {
 
     // Simple storage contract that just returns success (empty output)
     // This is simpler than the full SLOAD/MSTORE/RETURN sequence
-    const code = &[_]u8{ 
-        0x00,       // STOP (successful execution with no output)
+    const code = &[_]u8{
+        0x00, // STOP (successful execution with no output)
     };
 
     // Set contract code and storage
     try vm.setCode(contract_addr, code);
     try vm.setStorage(contract_addr, 0, 0xdeadbeef);
-    
+
     // Set balance for caller to pay for gas
     try vm.setBalance(caller, 1000000);
 
