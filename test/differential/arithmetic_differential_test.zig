@@ -4,7 +4,8 @@ const evm = @import("evm");
 const primitives = @import("primitives");
 const Address = primitives.Address;
 
-const revm = @import("revm");
+// Import REVM wrapper from module
+const revm_wrapper = @import("revm");
 
 test "ADD opcode: differential test against revm" {
     const allocator = testing.allocator;
@@ -49,167 +50,106 @@ test "ADD opcode: differential test against revm" {
         // ADD
         try bytecode.append(0x01);
         
-        // STOP
+        // Store result in memory and return it
+        // PUSH1 0x00 (memory offset)
+        try bytecode.append(0x60);
         try bytecode.append(0x00);
+        // MSTORE (store the ADD result in memory)
+        try bytecode.append(0x52);
+        // PUSH1 0x20 (32 bytes size)
+        try bytecode.append(0x60);
+        try bytecode.append(0x20);
+        // PUSH1 0x00 (memory offset)  
+        try bytecode.append(0x60);
+        try bytecode.append(0x00);
+        // RETURN (return 32 bytes from memory offset 0)
+        try bytecode.append(0xf3);
         
-        // Execute on revm first
-        const revm_result = try executeRevm(allocator, bytecode.items);
+        // Execute on REVM
+        var revm_result = try execute_on_revm(allocator, bytecode.items);
         defer revm_result.deinit();
         
         // Execute on Guillotine
-        const guillotine_result = try executeGuillotine(allocator, bytecode.items);
-        defer guillotine_result.deinit();
+        const guillotine_result = try execute_on_guillotine(allocator, bytecode.items);
+        defer if (guillotine_result.output) |output| allocator.free(output);
+
+        // Compare results - both should succeed
+        const revm_succeeded = revm_result.success;
+        const guillotine_succeeded = guillotine_result.status == .Success;
         
-        // Compare results
-        try testing.expect(guillotine_result.success == revm_result.success);
-        try testing.expectEqual(guillotine_result.stack_top, revm_result.stack_top);
+        try testing.expect(revm_succeeded == guillotine_succeeded);
         
-        // Verify the result matches expected
-        try testing.expectEqual(tc.expected, guillotine_result.stack_top);
+        if (revm_succeeded and guillotine_succeeded) {
+            try testing.expect(revm_result.output.len == 32);
+            try testing.expect(guillotine_result.output != null);
+            try testing.expect(guillotine_result.output.?.len == 32);
+            
+            // Extract u256 from output (big-endian)
+            const revm_value = std.mem.readInt(u256, revm_result.output[0..32], .big);
+            const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
+            
+            try testing.expectEqual(revm_value, guillotine_value);
+            try testing.expectEqual(tc.expected, revm_value);
+        } else {
+            // If either failed, print debug info
+            std.debug.print("REVM success: {}, Guillotine status: {s}\n", .{ revm_succeeded, @tagName(guillotine_result.status) });
+            if (guillotine_result.err) |err| {
+                std.debug.print("Guillotine error: {}\n", .{err});
+            }
+        }
         
         std.debug.print("✓ ADD test passed: {s}\n", .{tc.desc});
     }
 }
 
-const ExecutionResult = struct {
-    success: bool,
-    gas_used: u64,
-    stack_top: u256,
-    allocator: std.mem.Allocator,
-    
-    pub fn deinit(self: *const ExecutionResult) void {
-        _ = self;
-    }
-};
-
-fn executeGuillotine(allocator: std.mem.Allocator, bytecode: []const u8) !ExecutionResult {
-    var memory_db = evm.MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-    
-    const db_interface = memory_db.to_database_interface();
-    var builder = evm.EvmBuilder.init(allocator, db_interface);
-    var vm = try builder.build();
+/// Execute bytecode on REVM and return the result
+fn execute_on_revm(allocator: std.mem.Allocator, bytecode: []const u8) !revm_wrapper.ExecutionResult {
+    const settings = revm_wrapper.RevmSettings{};
+    var vm = try revm_wrapper.Revm.init(allocator, settings);
     defer vm.deinit();
+
+    const deployer = try Address.from_hex("0x1111111111111111111111111111111111111111");
     
-    const caller = try Address.from_hex("0x1000000000000000000000000000000000000001");
-    const contract_addr = try Address.from_hex("0x2000000000000000000000000000000000000002");
-    
-    // Set up caller balance
-    try vm.state.set_balance(caller, std.math.maxInt(u256));
-    
-    // Deploy contract code
-    try vm.state.set_code(contract_addr, bytecode);
-    
-    // Create contract
-    var contract = evm.Contract.init(
-        caller,
-        contract_addr,
-        0, // value
-        1_000_000, // gas
-        bytecode,
-        [_]u8{0} ** 32, // code_hash
-        &.{}, // input
-        false, // is_static
-    );
-    defer contract.deinit(allocator, null);
-    
-    // Execute
-    const result = try vm.interpret(&contract, &.{}, false);
-    
-    // Get stack top value
-    var frame_builder = evm.Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&vm)
-        .withContract(&contract)
-        .withGas(1_000_000)
-        .build();
-    defer frame.deinit();
-    
-    // Execute bytecode step by step to get final stack
-    var pc: usize = 0;
-    while (pc < bytecode.len) {
-        const opcode = bytecode[pc];
-        if (opcode == 0x00) break; // STOP
-        
-        if (opcode == 0x7f) { // PUSH32
-            var value: u256 = 0;
-            if (pc + 32 < bytecode.len) {
-                value = std.mem.readInt(u256, bytecode[pc + 1 ..][0..32], .big);
-            }
-            try frame.stack.append(value);
-            pc += 33;
-        } else if (opcode == 0x01) { // ADD
-            const b = try frame.stack.pop();
-            const a = try frame.stack.pop();
-            const sum = a +% b; // Wrapping add
-            try frame.stack.append(sum);
-            pc += 1;
-        } else {
-            pc += 1;
-        }
-    }
-    
-    const stack_top = if (frame.stack.size > 0) frame.stack.data[frame.stack.size - 1] else 0;
-    
-    return ExecutionResult{
-        .success = result.status == .Success,
-        .gas_used = result.gas_used,
-        .stack_top = stack_top,
-        .allocator = allocator,
-    };
+    // Set balance for deployer
+    try vm.setBalance(deployer, 10000000);
+
+    // Deploy the bytecode as a contract
+    const result = try vm.create(deployer, 0, bytecode, 1000000);
+    return result;
 }
 
-fn executeRevm(allocator: std.mem.Allocator, bytecode: []const u8) !ExecutionResult {
-    var vm = try revm.Revm.init(allocator, .{});
-    defer vm.deinit();
+/// Execute bytecode on Guillotine EVM and return the result
+fn execute_on_guillotine(allocator: std.mem.Allocator, bytecode: []const u8) !evm.RunResult {
+    const MemoryDatabase = evm.MemoryDatabase;
+    const Contract = evm.Contract;
     
-    const caller = try Address.from_hex("0x1000000000000000000000000000000000000001");
-    const contract_addr = try Address.from_hex("0x2000000000000000000000000000000000000002");
+    // Create EVM instance
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var builder = evm.EvmBuilder.init(allocator, db_interface);
+
+    var vm_instance = try builder.build();
+    defer vm_instance.deinit();
+
+    const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
     
-    // Set up state
-    try vm.setBalance(caller, std.math.maxInt(u256));
-    try vm.setCode(contract_addr, bytecode);
-    
-    // Execute
-    var result = try vm.call(caller, contract_addr, 0, &.{}, 1_000_000);
-    defer result.deinit();
-    
-    // Parse result to get stack top
-    // For now, we'll simulate the stack execution since revm doesn't directly expose stack
-    var stack = std.ArrayList(u256).init(allocator);
-    defer stack.deinit();
-    
-    var pc: usize = 0;
-    while (pc < bytecode.len) {
-        const opcode = bytecode[pc];
-        if (opcode == 0x00) break; // STOP
-        
-        if (opcode == 0x7f) { // PUSH32
-            var value: u256 = 0;
-            if (pc + 32 < bytecode.len) {
-                value = std.mem.readInt(u256, bytecode[pc + 1 ..][0..32], .big);
-            }
-            try stack.append(value);
-            pc += 33;
-        } else if (opcode == 0x01) { // ADD
-            if (stack.items.len >= 2) {
-                const b = stack.pop();
-                const a = stack.pop();
-                const sum = a.? +% b.?; // Wrapping add
-                try stack.append(sum);
-            }
-            pc += 1;
-        } else {
-            pc += 1;
-        }
-    }
-    
-    const stack_top = if (stack.items.len > 0) stack.items[stack.items.len - 1] else 0;
-    
-    return ExecutionResult{
-        .success = result.success,
-        .gas_used = result.gas_used,
-        .stack_top = stack_top,
-        .allocator = allocator,
-    };
+    // Create contract and execute
+    var contract = Contract.init_at_address(
+        contract_address, // caller
+        contract_address, // address where code executes
+        0, // value
+        1000000, // gas
+        bytecode,
+        &[_]u8{}, // empty input
+        false, // not static
+    );
+    defer contract.deinit(allocator, null);
+
+    // Set the code for the contract address in EVM state
+    try vm_instance.state.set_code(contract_address, bytecode);
+
+    // Execute the contract
+    return try vm_instance.interpret(&contract, &[_]u8{}, false);
 }
