@@ -85,12 +85,53 @@ test "ADD opcode: differential test against revm" {
         // Create bytecode for ADD operation
         const bytecode = createAddBytecode(tc.a, tc.b);
 
-        // Execute on REVM
-        var revm_result = try execute_on_revm(allocator, &bytecode);
-        defer revm_result.deinit();
+        // Execute on REVM - inline all setup
+        const revm_settings = revm_wrapper.RevmSettings{};
+        var revm_vm = try revm_wrapper.Revm.init(allocator, revm_settings);
+        defer revm_vm.deinit();
 
-        // Execute on Guillotine
-        const guillotine_result = try execute_on_guillotine(allocator, &bytecode);
+        const revm_deployer = try Address.from_hex("0x1111111111111111111111111111111111111111");
+        
+        // Set balance for deployer
+        try revm_vm.setBalance(revm_deployer, 10000000);
+
+        // Deploy the bytecode as a contract
+        var revm_result = try revm_vm.create(revm_deployer, 0, &bytecode, 1000000);
+        defer revm_result.deinit();
+        
+        // Execute on Guillotine - inline all setup
+        const MemoryDatabase = evm.MemoryDatabase;
+        const Contract = evm.Contract;
+        
+        // Create EVM instance
+        var memory_db = MemoryDatabase.init(allocator);
+        defer memory_db.deinit();
+
+        const db_interface = memory_db.to_database_interface();
+        var builder = evm.EvmBuilder.init(allocator, db_interface);
+
+        var vm_instance = try builder.build();
+        defer vm_instance.deinit();
+
+        const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
+        
+        // Create contract and execute
+        var contract = Contract.init_at_address(
+            contract_address, // caller
+            contract_address, // address where code executes
+            0, // value
+            1000000, // gas
+            &bytecode,
+            &[_]u8{}, // empty input
+            false, // not static
+        );
+        defer contract.deinit(allocator, null);
+
+        // Set the code for the contract address in EVM state
+        try vm_instance.state.set_code(contract_address, &bytecode);
+
+        // Execute the contract
+        const guillotine_result = try vm_instance.interpret(&contract, &[_]u8{}, false);
         defer if (guillotine_result.output) |output| allocator.free(output);
 
         // Compare results - both should succeed
@@ -120,56 +161,4 @@ test "ADD opcode: differential test against revm" {
 
         std.debug.print("✓ ADD test passed: {s}\n", .{tc.desc});
     }
-}
-
-/// Execute bytecode on REVM and return the result
-fn execute_on_revm(allocator: std.mem.Allocator, bytecode: []const u8) !revm_wrapper.ExecutionResult {
-    const settings = revm_wrapper.RevmSettings{};
-    var vm = try revm_wrapper.Revm.init(allocator, settings);
-    defer vm.deinit();
-
-    const deployer = try Address.from_hex("0x1111111111111111111111111111111111111111");
-
-    // Set balance for deployer
-    try vm.setBalance(deployer, 10000000);
-
-    // Deploy the bytecode as a contract
-    const result = try vm.create(deployer, 0, bytecode, 1000000);
-    return result;
-}
-
-/// Execute bytecode on Guillotine EVM and return the result
-fn execute_on_guillotine(allocator: std.mem.Allocator, bytecode: []const u8) !evm.RunResult {
-    const MemoryDatabase = evm.MemoryDatabase;
-    const Contract = evm.Contract;
-
-    // Create EVM instance
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var builder = evm.EvmBuilder.init(allocator, db_interface);
-
-    var vm_instance = try builder.build();
-    defer vm_instance.deinit();
-
-    const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
-
-    // Create contract and execute
-    var contract = Contract.init_at_address(
-        contract_address, // caller
-        contract_address, // address where code executes
-        0, // value
-        1000000, // gas
-        bytecode,
-        &[_]u8{}, // empty input
-        false, // not static
-    );
-    defer contract.deinit(allocator, null);
-
-    // Set the code for the contract address in EVM state
-    try vm_instance.state.set_code(contract_address, bytecode);
-
-    // Execute the contract
-    return try vm_instance.interpret(&contract, &[_]u8{}, false);
 }
