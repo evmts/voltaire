@@ -49,10 +49,6 @@ pub fn main() !void {
     const evm_name = res.args.evm orelse "revm";
     const num_runs = res.args.@"num-runs" orelse 10;
 
-    // Build the EVM runner first
-    print("Building {s} runner...\n", .{evm_name});
-    try buildEvmRunner(allocator, evm_name);
-
     // Discover all test cases
     const test_cases = try discoverTestCases(allocator);
     defer {
@@ -90,32 +86,12 @@ fn printHelp() !void {
     , .{});
 }
 
-fn buildEvmRunner(allocator: std.mem.Allocator, evm_name: []const u8) !void {
-    // Get path relative to source file location
-    const source_dir = getSourceDir();
-    const evm_dir = try std.fs.path.join(allocator, &[_][]const u8{ source_dir, "..", "evms", evm_name });
-    defer allocator.free(evm_dir);
-
-    const result = try std.process.Child.run(.{
-        .allocator = allocator,
-        .argv = &[_][]const u8{ "cargo", "build", "--release" },
-        .cwd = evm_dir,
-    });
-    defer allocator.free(result.stdout);
-    defer allocator.free(result.stderr);
-
-    if (result.term.Exited != 0) {
-        print("Build failed:\n{s}\n", .{result.stderr});
-        return error.BuildFailed;
-    }
-}
 
 fn discoverTestCases(allocator: std.mem.Allocator) ![]TestCase {
-    const source_dir = getSourceDir();
-    const cases_path = try std.fs.path.join(allocator, &[_][]const u8{ source_dir, "..", "cases" });
-    defer allocator.free(cases_path);
+    // Cases are in bench/official/cases relative to project root
+    const cases_path = "bench/official/cases";
     
-    const cases_dir = try std.fs.openDirAbsolute(cases_path, .{ .iterate = true });
+    const cases_dir = try std.fs.cwd().openDir(cases_path, .{ .iterate = true });
     
     var test_cases = std.ArrayList(TestCase).init(allocator);
     defer test_cases.deinit();
@@ -131,7 +107,7 @@ fn discoverTestCases(allocator: std.mem.Allocator) ![]TestCase {
         errdefer allocator.free(calldata_path);
 
         // Verify files exist
-        if (std.fs.openFileAbsolute(bytecode_path, .{})) |file| {
+        if (std.fs.cwd().openFile(bytecode_path, .{})) |file| {
             file.close();
         } else |err| {
             print("Warning: Missing bytecode file for {s}: {}\n", .{ entry.name, err });
@@ -140,7 +116,7 @@ fn discoverTestCases(allocator: std.mem.Allocator) ![]TestCase {
             continue;
         }
         
-        if (std.fs.openFileAbsolute(calldata_path, .{})) |file| {
+        if (std.fs.cwd().openFile(calldata_path, .{})) |file| {
             file.close();
         } else |err| {
             print("Warning: Missing calldata file for {s}: {}\n", .{ entry.name, err });
@@ -161,7 +137,7 @@ fn discoverTestCases(allocator: std.mem.Allocator) ![]TestCase {
 
 fn runBenchmark(allocator: std.mem.Allocator, evm_name: []const u8, test_case: TestCase, num_runs: u32) !void {
     // Read calldata to pass directly
-    const calldata_file = try std.fs.openFileAbsolute(test_case.calldata_path, .{});
+    const calldata_file = try std.fs.cwd().openFile(test_case.calldata_path, .{});
     defer calldata_file.close();
     
     const calldata = try calldata_file.readToEndAlloc(allocator, 1024 * 1024); // 1MB max
@@ -171,13 +147,13 @@ fn runBenchmark(allocator: std.mem.Allocator, evm_name: []const u8, test_case: T
     const trimmed_calldata = std.mem.trim(u8, calldata, " \t\n\r");
     
     // Build the runner path
-    const source_dir = getSourceDir();
     const runner_name = try std.fmt.allocPrint(allocator, "{s}-runner", .{evm_name});
     defer allocator.free(runner_name);
     
-    const runner_path = try std.fs.path.join(allocator, &[_][]const u8{ 
-        source_dir, "..", "evms", evm_name, "target", "release", runner_name
-    });
+    const runner_path = if (std.mem.eql(u8, evm_name, "zig"))
+        try allocator.dupe(u8, "zig-out/bin/zig-runner")
+    else
+        try std.fmt.allocPrint(allocator, "bench/official/evms/{s}/target/release/{s}", .{evm_name, runner_name});
     defer allocator.free(runner_path);
     
     const num_runs_str = try std.fmt.allocPrint(allocator, "{}", .{num_runs});

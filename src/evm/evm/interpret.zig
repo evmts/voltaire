@@ -45,7 +45,7 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
         .withVm(self)
         .withContract(contract)
         .withGas(contract.gas)
-        .withCaller(.{})
+        .withCaller(contract.caller)
         .withInput(input)
         .isStatic(self.read_only)
         .withDepth(@as(u32, @intCast(self.depth)))

@@ -851,8 +851,28 @@ pub fn build(b: *std.Build) void {
         run_official_bench_cmd.addArgs(args);
     }
     
+    // Build revm runner
+    const build_revm_runner = b.addSystemCommand(&[_][]const u8{
+        "cargo", "build", "--release", "--manifest-path", "bench/official/evms/revm/Cargo.toml",
+    });
+    
     const official_bench_step = b.step("bench-official", "Run official benchmarks");
     official_bench_step.dependOn(&run_official_bench_cmd.step);
+    official_bench_step.dependOn(&build_revm_runner.step);
+    
+    // Zig EVM runner for benchmarks
+    const zig_runner_exe = b.addExecutable(.{
+        .name = "zig-runner",
+        .root_source_file = b.path("bench/official/evms/zig/src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    zig_runner_exe.root_module.addImport("evm", evm_mod);
+    zig_runner_exe.root_module.addImport("primitives", primitives_mod);
+    b.installArtifact(zig_runner_exe);
+    
+    // Make bench-official depend on zig-runner
+    official_bench_step.dependOn(&zig_runner_exe.step);
     
     // Flamegraph profiling support
     const flamegraph_step = b.step("flamegraph", "Run benchmarks with flamegraph profiling");
@@ -1305,6 +1325,22 @@ pub fn build(b: *std.Build) void {
     const run_e2e_inheritance_test = b.addRunArtifact(e2e_inheritance_test);
     const e2e_inheritance_test_step = b.step("test-e2e-inheritance", "Run E2E inheritance tests");
     e2e_inheritance_test_step.dependOn(&run_e2e_inheritance_test.step);
+
+    // Add Runner test
+    const runner_test = b.addTest(.{
+        .name = "runner-test",
+        .root_source_file = b.path("test/evm/runner_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    runner_test.root_module.stack_check = false;
+    runner_test.root_module.addImport("evm", evm_mod);
+    runner_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_runner_test = b.addRunArtifact(runner_test);
+    const runner_test_step = b.step("test-runner", "Run runner tests");
+    runner_test_step.dependOn(&run_runner_test.step);
 
     // Add Compiler tests
     const compiler_test = b.addTest(.{
