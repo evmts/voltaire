@@ -246,25 +246,26 @@ test "Arithmetic: DIV basic operations" {
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: Simple division
-    try frame.stack.append(42);
-    try frame.stack.append(6);
+    // Test 1: Simple division - DIV pops divisor first, then dividend
+    // To compute 42 / 6, we need divisor (6) on top, dividend (42) below
+    try frame.stack.append(42); // dividend (bottom)
+    try frame.stack.append(6);  // divisor (top)
     _ = try evm.table.execute(0, interpreter, state, 0x04);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 7), result); // 42 / 6 = 7
 
-    // Test 2: Division by zero
+    // Test 2: Division by zero - DIV pops divisor first, then dividend
     frame.stack.clear();
-    try frame.stack.append(42);
-    try frame.stack.append(0);
+    try frame.stack.append(42); // dividend (bottom)
+    try frame.stack.append(0);  // divisor (top)
     _ = try evm.table.execute(0, interpreter, state, 0x04);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Division by zero returns 0
 
-    // Test 3: Division with remainder
+    // Test 3: Division with remainder - DIV pops divisor first, then dividend
     frame.stack.clear();
-    try frame.stack.append(50);
-    try frame.stack.append(7);
+    try frame.stack.append(50); // dividend (bottom)
+    try frame.stack.append(7);  // divisor (top)
     _ = try evm.table.execute(0, interpreter, state, 0x04);
     const remainder_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 7), remainder_result); // 50 / 7 = 7 (integer division)
@@ -308,25 +309,26 @@ test "Arithmetic: MOD basic operations" {
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: Simple modulo
-    try frame.stack.append(50);
-    try frame.stack.append(7);
+    // Test 1: Simple modulo - MOD pops divisor first, then dividend
+    // To compute 50 % 7, we need divisor (7) on top, dividend (50) below
+    try frame.stack.append(50); // dividend (bottom)
+    try frame.stack.append(7);  // divisor (top)
     _ = try evm.table.execute(0, interpreter, state, 0x06);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result); // 50 % 7 = 1
 
-    // Test 2: Modulo by zero
+    // Test 2: Modulo by zero - MOD pops divisor first, then dividend
     frame.stack.clear();
-    try frame.stack.append(42);
-    try frame.stack.append(0);
+    try frame.stack.append(42); // dividend (bottom)
+    try frame.stack.append(0);  // divisor (top)
     _ = try evm.table.execute(0, interpreter, state, 0x06);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Modulo by zero returns 0
 
-    // Test 3: Perfect division
+    // Test 3: Perfect division - MOD pops divisor first, then dividend
     frame.stack.clear();
-    try frame.stack.append(42);
-    try frame.stack.append(6);
+    try frame.stack.append(42); // dividend (bottom)
+    try frame.stack.append(6);  // divisor (top)
     _ = try evm.table.execute(0, interpreter, state, 0x06);
     const perfect_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), perfect_result); // 42 % 6 = 0
