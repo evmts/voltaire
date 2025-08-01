@@ -39,7 +39,7 @@ test "Arithmetic: ADD basic operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-
+        .withCaller([_]u8{0x11} ** 20)
         .build();
     defer frame.deinit();
 
@@ -111,7 +111,7 @@ test "Arithmetic: SUB basic operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-
+        .withCaller([_]u8{0x11} ** 20)
         .build();
     defer frame.deinit();
 
@@ -174,7 +174,7 @@ test "Arithmetic: MUL basic operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-
+        .withCaller([_]u8{0x11} ** 20)
         .build();
     defer frame.deinit();
 
@@ -239,7 +239,7 @@ test "Arithmetic: DIV basic operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-
+        .withCaller([_]u8{0x11} ** 20)
         .build();
     defer frame.deinit();
 
@@ -301,7 +301,7 @@ test "Arithmetic: MOD basic operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-
+        .withCaller([_]u8{0x11} ** 20)
         .build();
     defer frame.deinit();
 
@@ -363,7 +363,7 @@ test "Arithmetic: ADDMOD complex operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-
+        .withCaller([_]u8{0x11} ** 20)
         .build();
     defer frame.deinit();
 
@@ -429,7 +429,7 @@ test "Arithmetic: MULMOD complex operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-
+        .withCaller([_]u8{0x11} ** 20)
         .build();
     defer frame.deinit();
 
@@ -496,7 +496,6 @@ test "Arithmetic: EXP exponential operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(10000)
-
         .build();
     defer frame.deinit();
 
@@ -569,7 +568,7 @@ test "Arithmetic: Stack underflow errors" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-
+        .withCaller([_]u8{0x11} ** 20)
         .build();
     defer frame.deinit();
 

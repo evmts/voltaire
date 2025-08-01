@@ -146,7 +146,7 @@ test "E2E: Arithmetic operations" {
         .withVm(evm_instance)
         .withContract(&test_contract)
         .withGas(100_000)
-
+        .withCaller([_]u8{0x11} ** 20)
         .withInput(test_contract.input)
         .build();
     defer frame.deinit();
@@ -233,6 +233,7 @@ test "E2E: Memory operations" {
         .withVm(evm_instance)
         .withContract(&test_contract)
         .withGas(100_000)
+        .withCaller([_]u8{0x11} ** 20)
         .withInput(test_contract.input)
         .build();
     defer frame.deinit();
@@ -318,6 +319,7 @@ test "E2E: Storage operations" {
         .withVm(evm_instance)
         .withContract(&test_contract)
         .withGas(100_000)
+        .withCaller([_]u8{0x11} ** 20)
         .withInput(test_contract.input)
         .build();
     defer frame.deinit();
@@ -389,6 +391,7 @@ test "E2E: Stack operations" {
         .withVm(evm_instance)
         .withContract(&test_contract)
         .withGas(100_000)
+        .withCaller([_]u8{0x11} ** 20)
         .withInput(test_contract.input)
         .build();
     defer frame.deinit();
@@ -474,6 +477,7 @@ test "E2E: Gas consumption patterns" {
         .withVm(evm_instance)
         .withContract(&test_contract)
         .withGas(100_000)
+        .withCaller([_]u8{0x11} ** 20)
         .withInput(test_contract.input)
         .build();
     defer frame.deinit();
