@@ -1560,6 +1560,49 @@ pub fn build(b: *std.Build) void {
     // Hardfork tests removed completely
     test_step.dependOn(&run_delegatecall_test.step);
     test_step.dependOn(&run_devtool_test.step);
+    
+    // Add Differential tests (only if revm is available)
+    if (revm_lib != null) {
+        const differential_test = b.addTest(.{
+            .name = "differential-test",
+            .root_source_file = b.path("test/differential/arithmetic_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        differential_test.root_module.addImport("primitives", primitives_mod);
+        differential_test.root_module.addImport("evm", evm_mod);
+        differential_test.root_module.addImport("revm", revm_mod);
+        differential_test.linkLibrary(revm_lib.?);
+        differential_test.addIncludePath(b.path("src/revm_wrapper"));
+        differential_test.linkLibC();
+        
+        // Link the compiled Rust dynamic library
+        const diff_rust_target_dir = if (optimize == .Debug) "debug" else "release";
+        const diff_dylib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, diff_rust_target_dir })
+        else
+            b.fmt("target/{s}/librevm_wrapper.dylib", .{diff_rust_target_dir});
+        differential_test.addObjectFile(b.path(diff_dylib_path));
+        
+        // Link additional libraries needed by revm
+        if (target.result.os.tag == .linux) {
+            differential_test.linkSystemLibrary("m");
+            differential_test.linkSystemLibrary("pthread");
+            differential_test.linkSystemLibrary("dl");
+        } else if (target.result.os.tag == .macos) {
+            differential_test.linkSystemLibrary("c++");
+            differential_test.linkFramework("Security");
+            differential_test.linkFramework("SystemConfiguration");
+            differential_test.linkFramework("CoreFoundation");
+        }
+        
+        const run_differential_test = b.addRunArtifact(differential_test);
+        test_step.dependOn(&run_differential_test.step);
+        
+        // Also add a separate step for differential tests
+        const differential_test_step = b.step("test-differential", "Run differential tests against revm");
+        differential_test_step.dependOn(&run_differential_test.step);
+    }
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
