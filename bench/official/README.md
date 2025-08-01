@@ -1,44 +1,162 @@
-# Hyperfine Benchmark Example
+# Official EVM Benchmarks
 
-This is a simple Rust hello world program set up for benchmarking with hyperfine.
+This directory contains a comprehensive benchmarking suite for comparing EVM implementations across different languages. The benchmarks are designed to measure real-world performance using standardized test cases.
+
+## Overview
+
+The benchmarking system uses [hyperfine](https://github.com/sharkdp/hyperfine) to measure execution times across multiple EVM implementations:
+
+- **Guillotine (Zig)** - Our high-performance Zig implementation
+- **REVM (Rust)** - Reference Rust implementation
+- **EthereumJS (JavaScript)** - JavaScript implementation running on Bun
+- **Geth (Go)** - Official Go-Ethereum implementation
+- **evmone (C++)** - Fast C++ implementation
+
+## Structure
+
+```
+bench/official/
+├── src/                    # Benchmark orchestrator source
+│   ├── main.zig           # CLI entry point
+│   └── Orchestrator.zig   # Benchmark execution logic
+├── cases/                 # Test cases with bytecode and calldata
+│   ├── erc20-approval-transfer/
+│   ├── erc20-mint/
+│   ├── erc20-transfer/
+│   ├── snailtracer/
+│   └── ten-thousand-hashes/
+├── evms/                  # EVM implementation runners
+│   ├── zig/              # Guillotine runner
+│   ├── revm/             # Rust REVM runner
+│   ├── ethereumjs/       # JavaScript runner
+│   ├── geth/             # Go-Ethereum runner
+│   └── evmone/           # C++ evmone runner
+└── results.md            # Benchmark results (auto-generated)
+```
 
 ## Prerequisites
 
-Install hyperfine:
-```bash
-# Using cargo
-cargo install hyperfine
+1. **Install hyperfine**:
+   ```bash
+   # macOS
+   brew install hyperfine
+   
+   # Linux/Other
+   cargo install hyperfine
+   ```
 
-# Or using your system package manager
-# macOS: brew install hyperfine
-# Ubuntu/Debian: apt install hyperfine
-# Arch: pacman -S hyperfine
-```
+2. **Build the Guillotine project**:
+   ```bash
+   cd ../..  # Go to project root
+   zig build build-evm-runner
+   ```
+
+3. **Build other EVM runners** (optional, for comparison):
+   ```bash
+   # REVM (Rust)
+   cd evms/revm && cargo build --release
+   
+   # EthereumJS
+   cd evms/ethereumjs && bun install
+   
+   # Geth
+   cd evms/geth && go build -o runner runner.go
+   
+   # evmone
+   cd evms/evmone && mkdir build && cd build && cmake .. && make
+   ```
 
 ## Running Benchmarks
 
-Execute the benchmark script:
+### Single EVM Benchmark
+
+Run benchmarks for a specific EVM implementation:
+
 ```bash
-./benchmark.sh
+# From project root
+zig-out/bin/bench-orchestrator --evm zig --num-runs 50
 ```
 
-This will:
-1. Build the Rust program in release mode
-2. Run a basic benchmark
-3. Run a more thorough benchmark with 50 runs
-4. Compare debug vs release builds
-5. Export results to `results.md` and `results.json`
+### Compare All EVMs
 
-## Manual Benchmarking
+Compare performance across all available implementations:
 
-You can also run hyperfine manually:
 ```bash
-# Build first
-cargo build --release
+# From project root
+zig-out/bin/bench-orchestrator --compare --export markdown
+```
 
-# Simple benchmark
-hyperfine './target/release/hyperfine-bench'
+This generates a comprehensive comparison in `bench/official/results.md`.
 
-# With custom options
-hyperfine --runs 100 --warmup 5 './target/release/hyperfine-bench'
+### Running Individual Test Cases
+
+You can also run specific test cases directly:
+
+```bash
+hyperfine --runs 10 --warmup 3 \
+  "zig-out/bin/evm-runner --contract-code-path bench/official/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
+```
+
+## Test Cases
+
+### ERC20 Operations
+- **erc20-transfer**: Standard ERC20 token transfer
+- **erc20-mint**: Token minting operation
+- **erc20-approval-transfer**: Approval followed by transferFrom
+
+### Computational Benchmarks
+- **ten-thousand-hashes**: Performs 10,000 keccak256 operations
+- **snailtracer**: Complex computational workload
+
+## Understanding Results
+
+Benchmark results include:
+- **Mean**: Average execution time
+- **Median**: Middle value (less affected by outliers)
+- **Min/Max**: Best and worst case times
+- **Std Dev**: Consistency measure (lower = more consistent)
+
+All times are in milliseconds (ms). Lower values indicate better performance.
+
+## How It Works
+
+1. **Test Discovery**: The orchestrator scans the `cases/` directory for test cases
+2. **Runner Execution**: Each EVM runner executes the bytecode with provided calldata
+3. **Timing**: Hyperfine measures execution time with statistical accuracy
+4. **Results**: Performance data is collected and formatted for analysis
+
+### Runner Protocol
+
+All EVM runners follow the same command-line interface:
+```
+runner --contract-code-path <path> --calldata <hex> --num-runs <n>
+```
+
+Each runner:
+1. Deploys the contract bytecode
+2. Executes the contract with the provided calldata
+3. Outputs execution time for each run
+4. Returns non-zero on failure
+
+## Adding New Test Cases
+
+To add a new benchmark test case:
+
+1. Create a directory under `cases/` with a descriptive name
+2. Add two files:
+   - `bytecode.txt`: Hex-encoded contract bytecode
+   - `calldata.txt`: Hex-encoded calldata for the contract call
+3. Run the benchmarks - the orchestrator will automatically discover it
+
+## Development
+
+To modify the benchmark system:
+
+- **Orchestrator logic**: Edit `src/Orchestrator.zig`
+- **CLI interface**: Edit `src/main.zig`
+- **EVM runners**: Edit files in `evms/*/`
+
+Remember to rebuild after changes:
+```bash
+zig build build-bench-orchestrator
 ```

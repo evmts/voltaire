@@ -735,6 +735,22 @@ pub fn build(b: *std.Build) void {
     const build_orchestrator_step = b.step("build-orchestrator", "Build the benchmark orchestrator");
     build_orchestrator_step.dependOn(&b.addInstallArtifact(orchestrator_exe, .{}).step);
     
+    // Add a comparison step with default --js-runs=1 and --js-internal-runs=1
+    const run_comparison_cmd = b.addRunArtifact(orchestrator_exe);
+    run_comparison_cmd.addArg("--compare");
+    run_comparison_cmd.addArg("--js-runs");
+    run_comparison_cmd.addArg("1");
+    run_comparison_cmd.addArg("--js-internal-runs");
+    run_comparison_cmd.addArg("1");
+    run_comparison_cmd.addArg("--export");
+    run_comparison_cmd.addArg("markdown");
+    if (b.args) |args| {
+        run_comparison_cmd.addArgs(args);
+    }
+    
+    const compare_step = b.step("bench-compare", "Run EVM comparison benchmarks with --js-runs=1 --js-internal-runs=1 by default");
+    compare_step.dependOn(&run_comparison_cmd.step);
+    
     // Build Go (geth) runner
     const geth_runner_build = b.addSystemCommand(&[_][]const u8{
         "go", "build", "-o", "runner", "runner.go"
@@ -758,6 +774,8 @@ pub fn build(b: *std.Build) void {
     orchestrator_step.dependOn(&evmone_cmake_build.step);
     build_orchestrator_step.dependOn(&geth_runner_build.step);
     build_orchestrator_step.dependOn(&evmone_cmake_build.step);
+    compare_step.dependOn(&geth_runner_build.step);
+    compare_step.dependOn(&evmone_cmake_build.step);
 
     // Static library for opcode testing FFI
     const opcode_test_lib = b.addStaticLibrary(.{
