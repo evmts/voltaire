@@ -578,8 +578,8 @@ pub fn op_exp(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const exp = frame.stack.pop_unsafe();
-    const base = frame.stack.peek_unsafe().*;
+    const base = frame.stack.pop_unsafe();
+    const exp = frame.stack.peek_unsafe().*;
 
     // Calculate gas cost based on exponent byte size
     var exp_copy = exp;
