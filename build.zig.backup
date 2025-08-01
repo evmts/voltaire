@@ -1,10 +1,140 @@
 const std = @import("std");
-const asset_generator = @import("build_utils/asset_generator.zig");
-const rust_build = @import("build_utils/rust_build.zig");
-const tests = @import("build_utils/tests.zig");
-const wasm = @import("build_utils/wasm.zig");
-const devtool = @import("build_utils/devtool.zig");
-const typescript = @import("build_utils/typescript.zig");
+
+// Asset generation step for devtool
+const GenerateAssetsStep = struct {
+    step: std.Build.Step,
+    dist_path: []const u8,
+    out_path: []const u8,
+
+    fn init(b: *std.Build, dist_path: []const u8, out_path: []const u8) *GenerateAssetsStep {
+        const self = b.allocator.create(GenerateAssetsStep) catch @panic("OOM");
+        self.* = GenerateAssetsStep{
+            .step = std.Build.Step.init(.{
+                .id = .custom,
+                .name = "generate assets",
+                .owner = b,
+                .makeFn = make,
+            }),
+            .dist_path = b.dupe(dist_path),
+            .out_path = b.dupe(out_path),
+        };
+        return self;
+    }
+
+    fn make(step: *std.Build.Step, options: std.Build.Step.MakeOptions) !void {
+        _ = options;
+        const self: *GenerateAssetsStep = @fieldParentPtr("step", step);
+        const b = step.owner;
+
+        var file = try std.fs.cwd().createFile(self.out_path, .{});
+        defer file.close();
+
+        var writer = file.writer();
+
+        try writer.writeAll("// This file is auto-generated. Do not edit manually.\n");
+        try writer.writeAll("const std = @import(\"std\");\n\n");
+        try writer.writeAll("const Self = @This();\n\n");
+        try writer.writeAll("path: []const u8,\n");
+        try writer.writeAll("content: []const u8,\n");
+        try writer.writeAll("mime_type: []const u8,\n");
+        try writer.writeAll("response: [:0]const u8,\n\n");
+
+        try writer.writeAll("pub fn init(\n");
+        try writer.writeAll("    comptime path: []const u8,\n");
+        try writer.writeAll("    comptime content: []const u8,\n");
+        try writer.writeAll("    comptime mime_type: []const u8,\n");
+        try writer.writeAll(") Self {\n");
+        try writer.writeAll("    var buf: [20]u8 = undefined;\n");
+        try writer.writeAll("    const n = std.fmt.bufPrint(&buf, \"{d}\", .{content.len}) catch unreachable;\n");
+        try writer.writeAll("    const content_length = buf[0..n.len];\n");
+        try writer.writeAll("    const response = \"HTTP/1.1 200 OK\\n\" ++\n");
+        try writer.writeAll("        \"Content-Type: \" ++ mime_type ++ \"\\n\" ++\n");
+        try writer.writeAll("        \"Content-Length: \" ++ content_length ++ \"\\n\" ++\n");
+        try writer.writeAll("        \"\\n\" ++\n");
+        try writer.writeAll("        content;\n");
+        try writer.writeAll("    return Self{\n");
+        try writer.writeAll("        .path = path,\n");
+        try writer.writeAll("        .content = content,\n");
+        try writer.writeAll("        .mime_type = mime_type,\n");
+        try writer.writeAll("        .response = response,\n");
+        try writer.writeAll("    };\n");
+        try writer.writeAll("}\n\n");
+
+        try writer.writeAll("pub const not_found_asset = Self.init(\n");
+        try writer.writeAll("    \"/notfound.html\",\n");
+        try writer.writeAll("    \"<div>Page not found</div>\",\n");
+        try writer.writeAll("    \"text/html\",\n");
+        try writer.writeAll(");\n\n");
+
+        try writer.writeAll("pub const assets = [_]Self{\n");
+
+        // Helper function to get MIME type from file extension
+        const getMimeType = struct {
+            fn get(path: []const u8) []const u8 {
+                if (std.mem.endsWith(u8, path, ".html")) return "text/html";
+                if (std.mem.endsWith(u8, path, ".css")) return "text/css";
+                if (std.mem.endsWith(u8, path, ".js")) return "application/javascript";
+                if (std.mem.endsWith(u8, path, ".svg")) return "image/svg+xml";
+                if (std.mem.endsWith(u8, path, ".png")) return "image/png";
+                if (std.mem.endsWith(u8, path, ".jpg") or std.mem.endsWith(u8, path, ".jpeg")) return "image/jpeg";
+                if (std.mem.endsWith(u8, path, ".ico")) return "image/x-icon";
+                return "application/octet-stream";
+            }
+        }.get;
+
+        // Recursively walk the dist directory and generate assets
+        var dist_dir = try std.fs.cwd().openDir(self.dist_path, .{ .iterate = true });
+        defer dist_dir.close();
+
+        var walker = try dist_dir.walk(b.allocator);
+        defer walker.deinit();
+
+        while (try walker.next()) |entry| {
+            if (entry.kind != .file) continue;
+            
+            const web_path = try std.fmt.allocPrint(b.allocator, "/{s}", .{entry.path});
+            const embed_path = try std.fmt.allocPrint(b.allocator, "dist/{s}", .{entry.path});
+            const mime_type = getMimeType(entry.path);
+            
+            try writer.print("    Self.init(\n", .{});
+            try writer.print("        \"{s}\",\n", .{web_path});
+            try writer.print("        @embedFile(\"{s}\"),\n", .{embed_path});
+            try writer.print("        \"{s}\",\n", .{mime_type});
+            try writer.print("    ),\n", .{});
+        }
+
+        try writer.writeAll("};\n\n");
+
+        try writer.writeAll("pub fn get_asset(path: []const u8) Self {\n");
+        try writer.writeAll("    for (assets) |asset| {\n");
+        try writer.writeAll("        if (std.mem.eql(u8, asset.path, path)) {\n");
+        try writer.writeAll("            return asset;\n");
+        try writer.writeAll("        }\n");
+        try writer.writeAll("    }\n");
+        try writer.writeAll("    return not_found_asset;\n");
+        try writer.writeAll("}\n");
+    }
+
+    fn get_mime_type(filename: []const u8) []const u8 {
+        if (std.mem.endsWith(u8, filename, ".html")) return "text/html";
+        if (std.mem.endsWith(u8, filename, ".js")) return "application/javascript";
+        if (std.mem.endsWith(u8, filename, ".css")) return "text/css";
+        if (std.mem.endsWith(u8, filename, ".svg")) return "image/svg+xml";
+        if (std.mem.endsWith(u8, filename, ".png")) return "image/png";
+        if (std.mem.endsWith(u8, filename, ".jpg") or std.mem.endsWith(u8, filename, ".jpeg")) return "image/jpeg";
+        if (std.mem.endsWith(u8, filename, ".gif")) return "image/gif";
+        if (std.mem.endsWith(u8, filename, ".ico")) return "image/x-icon";
+        if (std.mem.endsWith(u8, filename, ".woff")) return "font/woff";
+        if (std.mem.endsWith(u8, filename, ".woff2")) return "font/woff2";
+        if (std.mem.endsWith(u8, filename, ".ttf")) return "font/ttf";
+        if (std.mem.endsWith(u8, filename, ".otf")) return "font/otf";
+        if (std.mem.endsWith(u8, filename, ".json")) return "application/json";
+        if (std.mem.endsWith(u8, filename, ".xml")) return "application/xml";
+        if (std.mem.endsWith(u8, filename, ".pdf")) return "application/pdf";
+        if (std.mem.endsWith(u8, filename, ".txt")) return "text/plain";
+        return "application/octet-stream";
+    }
+};
 
 pub fn build(b: *std.Build) void {
     // Standard target options allows the person running `zig build` to choose
@@ -99,17 +229,57 @@ pub fn build(b: *std.Build) void {
         else => null,
     };
     
-    const bn254_lib = if (!no_bn254) rust_build.buildRustLibrary(b, target, optimize, .{
-        .name = "bn254_wrapper",
-        .manifest_path = "src/bn254_wrapper/Cargo.toml",
-        .target_triple = rust_target,
-        .profile = if (optimize == .Debug) .dev else .release,
-        .library_type = .static_lib,
-    }) else null;
+    const bn254_lib = if (!no_bn254) blk: {
+        const rust_profile = if (optimize == .Debug) "dev" else "release";
+        const rust_target_dir = if (optimize == .Debug) "debug" else "release";
+        
+        const rust_build = if (rust_target) |target_triple|
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
+        else
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
 
-    // Add include path for C header if BN254 is enabled
+        // Fix for macOS linking issues (only on macOS)
+        if (target.result.os.tag == .macos) {
+            rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+        }
+
+        // Create static library artifact for the Rust BN254 wrapper
+        const lib = b.addStaticLibrary(.{
+            .name = "bn254_wrapper",
+            .target = target,
+            .optimize = optimize,
+        });
+
+        // Link the compiled Rust static library
+        const static_lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, rust_target_dir })
+        else
+            b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
+        lib.addObjectFile(b.path(static_lib_path));
+        lib.linkLibC();
+        
+        // Make the rust build a dependency
+        lib.step.dependOn(&rust_build.step);
+        
+        break :blk lib;
+    } else null;
+
+    // Link additional system libraries that Rust might need (only if BN254 is enabled)
     if (bn254_lib) |lib| {
+        if (target.result.os.tag == .linux) {
+            lib.linkSystemLibrary("dl");
+            lib.linkSystemLibrary("pthread");
+            lib.linkSystemLibrary("m");
+            lib.linkSystemLibrary("rt");
+        } else if (target.result.os.tag == .macos) {
+            lib.linkFramework("Security");
+            lib.linkFramework("CoreFoundation");
+        }
+
+        // Add include path for C header
         lib.addIncludePath(b.path("src/bn254_wrapper"));
+
+        // The rust build dependency is already set up above in the conditional block
     }
 
     // C-KZG-4844 Zig bindings from evmts/c-kzg-4844
@@ -142,15 +312,37 @@ pub fn build(b: *std.Build) void {
 
     // REVM Rust wrapper integration
     const revm_lib = if (rust_target != null) blk: {
-        const revm_rust_build = rust_build.buildRustLibrary(b, target, optimize, .{
+        const rust_profile = if (optimize == .Debug) "dev" else "release";
+        const rust_target_dir = if (optimize == .Debug) "debug" else "release";
+        
+        const rust_build = if (rust_target) |target_triple|
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/revm_wrapper/Cargo.toml", "--verbose" })
+        else
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/revm_wrapper/Cargo.toml", "--verbose" });
+
+        // Fix for macOS linking issues (only on macOS)
+        if (target.result.os.tag == .macos) {
+            rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+        }
+
+        // Create static library artifact for the Rust REVM wrapper
+        const lib = b.addStaticLibrary(.{
             .name = "revm_wrapper",
-            .manifest_path = "src/revm_wrapper/Cargo.toml",
-            .target_triple = rust_target,
-            .profile = if (optimize == .Debug) .dev else .release,
-            .library_type = .dynamic_lib,
-            .verbose = true,
+            .target = target,
+            .optimize = optimize,
         });
-        break :blk revm_rust_build;
+
+        // Link the compiled Rust dynamic library
+        const dylib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, rust_target_dir })
+        else
+            b.fmt("target/{s}/librevm_wrapper.dylib", .{ rust_target_dir });
+        lib.addObjectFile(b.path(dylib_path));
+        
+        // Make the rust build a dependency
+        lib.step.dependOn(&rust_build.step);
+        
+        break :blk lib;
     } else null;
 
     // Create REVM module
@@ -189,15 +381,50 @@ pub fn build(b: *std.Build) void {
 
     // EVM Benchmark Rust crate integration
     const evm_bench_lib = if (rust_target != null) blk: {
-        const guillotine_rust_build = rust_build.buildRustLibrary(b, target, optimize, .{
-            .name = "guillotine_ffi",
-            .manifest_path = "src/guillotine-rs/Cargo.toml",
-            .target_triple = rust_target,
-            .profile = if (optimize == .Debug) .dev else .release,
-            .library_type = .rlib,
-            .verbose = true,
+        const rust_profile = if (optimize == .Debug) "dev" else "release";
+        const rust_target_dir = if (optimize == .Debug) "debug" else "release";
+        
+        const rust_build = if (rust_target) |target_triple|
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/guillotine-rs/Cargo.toml", "--verbose" })
+        else
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/guillotine-rs/Cargo.toml", "--verbose" });
+
+        // Fix for macOS linking issues (only on macOS)
+        if (target.result.os.tag == .macos) {
+            rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+        }
+
+        // Create static library artifact for the Rust EVM benchmark crate
+        const lib = b.addStaticLibrary(.{
+            .name = "evm_bench_rust",
+            .target = target,
+            .optimize = optimize,
         });
-        break :blk guillotine_rust_build;
+
+        // Determine library path based on target (using workspace target directory)
+        const lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/libguillotine_ffi.rlib", .{ target_triple, rust_target_dir })
+        else
+            b.fmt("target/{s}/libguillotine_ffi.rlib", .{ rust_target_dir });
+
+        lib.addObjectFile(b.path(lib_path));
+        
+        // Make the rust build a dependency
+        lib.step.dependOn(&rust_build.step);
+        
+        // Link additional libraries needed by the benchmark crate
+        if (target.result.os.tag == .linux) {
+            lib.linkSystemLibrary("m");
+            lib.linkSystemLibrary("pthread");
+            lib.linkSystemLibrary("dl");
+        } else if (target.result.os.tag == .macos) {
+            lib.linkSystemLibrary("c++");
+            lib.linkFramework("Security");  
+            lib.linkFramework("SystemConfiguration");
+            lib.linkFramework("CoreFoundation");
+        }
+        
+        break :blk lib;
     } else null;
 
     // Add Rust Foundry wrapper integration
@@ -222,19 +449,52 @@ pub fn build(b: *std.Build) void {
     
     // Create a separate BN254 library for benchmarks that always uses release mode (if enabled)
     const bench_bn254_lib = if (!no_bn254) blk: {
-        const bench_bn254_rust_build = rust_build.buildRustLibrary(b, target, bench_optimize, .{
-            .name = "bn254_wrapper",
-            .manifest_path = "src/bn254_wrapper/Cargo.toml",
-            .target_triple = rust_target,
-            .profile = .release, // Always use release for benchmarks
-            .library_type = .static_lib,
-            .verbose = true,
+        const bench_rust_profile = "release";
+        const bench_rust_target_dir = "release";
+        
+        const bench_rust_build = if (rust_target) |target_triple|
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
+        else
+            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
+        
+        // Fix for macOS linking issues (only on macOS)
+        if (target.result.os.tag == .macos) {
+            bench_rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+        }
+        
+        // Create static library artifact for the Rust BN254 wrapper (bench version)
+        const lib = b.addStaticLibrary(.{
+            .name = "bn254_wrapper_bench",
+            .target = target,
+            .optimize = bench_optimize,
         });
         
-        // Add include path for C header
-        bench_bn254_rust_build.addIncludePath(b.path("src/bn254_wrapper"));
+        // Link the compiled Rust static library
+        const static_lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, bench_rust_target_dir })
+        else
+            b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
+        lib.addObjectFile(b.path(static_lib_path));
+        lib.linkLibC();
         
-        break :blk bench_bn254_rust_build;
+        // Link additional system libraries that Rust might need
+        if (target.result.os.tag == .linux) {
+            lib.linkSystemLibrary("dl");
+            lib.linkSystemLibrary("pthread");
+            lib.linkSystemLibrary("m");
+            lib.linkSystemLibrary("rt");
+        } else if (target.result.os.tag == .macos) {
+            lib.linkFramework("Security");
+            lib.linkFramework("CoreFoundation");
+        }
+        
+        // Add include path for C header
+        lib.addIncludePath(b.path("src/bn254_wrapper"));
+        
+        // Make the rust build a dependency
+        lib.step.dependOn(&bench_rust_build.step);
+        
+        break :blk lib;
     } else null;
     
     // Create a separate EVM module for benchmarks with release-mode Rust dependencies
@@ -345,89 +605,148 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(evm_test_runner);
 
     // WASM library build optimized for size
-    const wasm_target = wasm.setupWasmTarget(b);
+    const wasm_target = b.resolveTargetQuery(.{
+        .cpu_arch = .wasm32,
+        .os_tag = .freestanding, // Use freestanding for minimal size
+    });
+
+    // Use the same optimization mode as specified by the user
     const wasm_optimize = optimize;
 
     // Create WASM-specific modules with minimal dependencies
-    const wasm_primitives_mod = wasm.createWasmModule(b, "src/primitives/root.zig", wasm_target, wasm_optimize);
+    // Create WASM-specific primitives module without c-kzg
+    const wasm_primitives_mod = b.createModule(.{
+        .root_source_file = b.path("src/primitives/root.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+    });
     // Note: WASM build excludes c-kzg-4844 (not available for WASM)
 
-    const wasm_crypto_mod = wasm.createWasmModule(b, "src/crypto/root.zig", wasm_target, wasm_optimize);
+    // Create WASM-specific crypto module
+    const wasm_crypto_mod = b.createModule(.{
+        .root_source_file = b.path("src/crypto/root.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+    });
     wasm_crypto_mod.addImport("primitives", wasm_primitives_mod);
 
-    const wasm_evm_mod = wasm.createWasmModule(b, "src/evm/root.zig", wasm_target, wasm_optimize);
+    // Create WASM-specific EVM module without Rust dependencies
+    const wasm_evm_mod = b.createModule(.{
+        .root_source_file = b.path("src/evm/root.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+    });
     wasm_evm_mod.addImport("primitives", wasm_primitives_mod);
     wasm_evm_mod.addImport("crypto", wasm_crypto_mod);
     wasm_evm_mod.addImport("build_options", build_options.createModule());
     // Note: WASM build uses pure Zig implementations for BN254 operations
 
     // Main WASM build (includes both primitives and EVM)
-    const wasm_lib_mod = wasm.createWasmModule(b, "src/root.zig", wasm_target, wasm_optimize);
+    const wasm_lib_mod = b.createModule(.{
+        .root_source_file = b.path("src/root.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+        .single_threaded = true,
+    });
     wasm_lib_mod.addImport("primitives", wasm_primitives_mod);
-    wasm_lib_mod.addImport("evm", wasm_evm_mod);
+    wasm_lib_mod.addImport("evm", wasm_evm_mod); // Use WASM-specific EVM module
 
-    const wasm_lib_build = wasm.buildWasmExecutable(b, .{
+    const wasm_lib = b.addExecutable(.{
         .name = "guillotine",
-        .root_source_file = "src/root.zig",
-        .dest_sub_path = "guillotine.wasm",
-    }, wasm_lib_mod);
+        .root_module = wasm_lib_mod,
+    });
+
+    wasm_lib.entry = .disabled;
+    wasm_lib.rdynamic = true;
+
+    const wasm_install = b.addInstallArtifact(wasm_lib, .{ .dest_sub_path = "guillotine.wasm" });
 
     // Primitives-only WASM build
-    const wasm_primitives_lib_mod = wasm.createWasmModule(b, "src/primitives_c.zig", wasm_target, wasm_optimize);
+    const wasm_primitives_lib_mod = b.createModule(.{
+        .root_source_file = b.path("src/primitives_c.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+        .single_threaded = true,
+    });
     wasm_primitives_lib_mod.addImport("primitives", wasm_primitives_mod);
 
-    const wasm_primitives_build = wasm.buildWasmExecutable(b, .{
+    const wasm_primitives_lib = b.addExecutable(.{
         .name = "guillotine-primitives",
-        .root_source_file = "src/primitives_c.zig",
-        .dest_sub_path = "guillotine-primitives.wasm",
-    }, wasm_primitives_lib_mod);
+        .root_module = wasm_primitives_lib_mod,
+    });
+
+    wasm_primitives_lib.entry = .disabled;
+    wasm_primitives_lib.rdynamic = true;
+
+    const wasm_primitives_install = b.addInstallArtifact(wasm_primitives_lib, .{ .dest_sub_path = "guillotine-primitives.wasm" });
 
     // EVM-only WASM build
-    const wasm_evm_lib_mod = wasm.createWasmModule(b, "src/evm_c.zig", wasm_target, wasm_optimize);
+    const wasm_evm_lib_mod = b.createModule(.{
+        .root_source_file = b.path("src/evm_c.zig"),
+        .target = wasm_target,
+        .optimize = wasm_optimize,
+        .single_threaded = true,
+    });
     wasm_evm_lib_mod.addImport("primitives", wasm_primitives_mod);
     wasm_evm_lib_mod.addImport("evm", wasm_evm_mod);
 
-    const wasm_evm_build = wasm.buildWasmExecutable(b, .{
+    const wasm_evm_lib = b.addExecutable(.{
         .name = "guillotine-evm",
-        .root_source_file = "src/evm_c.zig",
-        .dest_sub_path = "guillotine-evm.wasm",
-    }, wasm_evm_lib_mod);
+        .root_module = wasm_evm_lib_mod,
+    });
+
+    wasm_evm_lib.entry = .disabled;
+    wasm_evm_lib.rdynamic = true;
+
+    const wasm_evm_install = b.addInstallArtifact(wasm_evm_lib, .{ .dest_sub_path = "guillotine-evm.wasm" });
 
     // Add step to report WASM bundle sizes for all three builds
-    const wasm_size_step = wasm.addWasmSizeReportStep(
-        b,
-        &[_][]const u8{"guillotine.wasm", "guillotine-primitives.wasm", "guillotine-evm.wasm"},
-        &[_]*std.Build.Step{
-            &wasm_lib_build.install.step,
-            &wasm_primitives_build.install.step,
-            &wasm_evm_build.install.step,
-        },
-    );
+    const wasm_size_step = b.addSystemCommand(&[_][]const u8{ "sh", "-c", 
+        "echo '\\n=== WASM Bundle Size Report ===' && " ++
+        "echo 'Main WASM build:' && " ++
+        "ls -lh zig-out/bin/guillotine.wasm | awk '{print \"  Size: \" $5}' && " ++
+        "echo '\\nPrimitives WASM build:' && " ++
+        "ls -lh zig-out/bin/guillotine-primitives.wasm | awk '{print \"  Size: \" $5}' && " ++
+        "echo '\\nEVM WASM build:' && " ++
+        "ls -lh zig-out/bin/guillotine-evm.wasm | awk '{print \"  Size: \" $5}' && " ++
+        "echo '=== End Report ===\\n'" 
+    });
+    wasm_size_step.step.dependOn(&wasm_install.step);
+    wasm_size_step.step.dependOn(&wasm_primitives_install.step);
+    wasm_size_step.step.dependOn(&wasm_evm_install.step);
 
     const wasm_step = b.step("wasm", "Build all WASM libraries and show bundle sizes");
     wasm_step.dependOn(&wasm_size_step.step);
 
     // Individual WASM build steps
     const wasm_primitives_step = b.step("wasm-primitives", "Build primitives-only WASM library");
-    wasm_primitives_step.dependOn(&wasm_primitives_build.install.step);
+    wasm_primitives_step.dependOn(&wasm_primitives_install.step);
 
     const wasm_evm_step = b.step("wasm-evm", "Build EVM-only WASM library");
-    wasm_evm_step.dependOn(&wasm_evm_build.install.step);
+    wasm_evm_step.dependOn(&wasm_evm_install.step);
 
     // Debug WASM build for analysis
-    const wasm_debug_mod = wasm.createWasmModule(b, "src/root.zig", wasm_target, .Debug);
+    const wasm_debug_mod = b.createModule(.{
+        .root_source_file = b.path("src/root.zig"),
+        .target = wasm_target,
+        .optimize = .Debug, // Debug mode for symbols
+        .single_threaded = true,
+    });
     wasm_debug_mod.addImport("primitives", wasm_primitives_mod);
     wasm_debug_mod.addImport("evm", wasm_evm_mod);
 
-    const wasm_debug_build = wasm.buildWasmExecutable(b, .{
+    const wasm_debug = b.addExecutable(.{
         .name = "guillotine-debug",
-        .root_source_file = "src/root.zig",
-        .dest_sub_path = "../bin/guillotine-debug.wasm",
-        .debug_build = true,
-    }, wasm_debug_mod);
+        .root_module = wasm_debug_mod,
+    });
+
+    wasm_debug.entry = .disabled;
+    wasm_debug.rdynamic = true;
+
+    const wasm_debug_install = b.addInstallArtifact(wasm_debug, .{ .dest_sub_path = "../bin/guillotine-debug.wasm" });
 
     const wasm_debug_step = b.step("wasm-debug", "Build debug WASM for analysis");
-    wasm_debug_step.dependOn(&wasm_debug_build.install.step);
+    wasm_debug_step.dependOn(&wasm_debug_install.step);
 
     // This *creates* a Run step in the build graph, to be executed when another
     // step is evaluated that depends on it. The next line below will establish
@@ -581,7 +900,7 @@ pub fn build(b: *std.Build) void {
     npm_build.step.dependOn(&npm_install.step);
 
     // Generate assets from the built Solid app
-    const generate_assets = asset_generator.GenerateAssetsStep.init(b, "src/devtool/dist", "src/devtool/assets.zig");
+    const generate_assets = GenerateAssetsStep.init(b, "src/devtool/dist", "src/devtool/assets.zig");
     generate_assets.step.dependOn(&npm_build.step);
 
     const devtool_mod = b.createModule(.{
@@ -685,12 +1004,12 @@ pub fn build(b: *std.Build) void {
         dmg_step.dependOn(&create_dmg.step);
     }
 
-    // EVM Benchmark Runner executable (always optimized for benchmarks)
+    // EVM Benchmark Runner executable
     const evm_runner_exe = b.addExecutable(.{
         .name = "evm-runner",
         .root_source_file = b.path("bench/evm/runner.zig"),
         .target = target,
-        .optimize = .ReleaseFast,  // Always use ReleaseFast for benchmarks
+        .optimize = optimize,
     });
     evm_runner_exe.root_module.addImport("evm", evm_mod);
     evm_runner_exe.root_module.addImport("Address", primitives_mod);
@@ -707,33 +1026,6 @@ pub fn build(b: *std.Build) void {
     
     const build_evm_runner_step = b.step("build-evm-runner", "Build the EVM benchmark runner");
     build_evm_runner_step.dependOn(&b.addInstallArtifact(evm_runner_exe, .{}).step);
-
-    // Benchmark Orchestrator executable
-    const clap_dep = b.dependency("clap", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    
-    const orchestrator_exe = b.addExecutable(.{
-        .name = "orchestrator",
-        .root_source_file = b.path("bench/official/src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    orchestrator_exe.root_module.addImport("clap", clap_dep.module("clap"));
-    
-    b.installArtifact(orchestrator_exe);
-    
-    const run_orchestrator_cmd = b.addRunArtifact(orchestrator_exe);
-    if (b.args) |args| {
-        run_orchestrator_cmd.addArgs(args);
-    }
-    
-    const orchestrator_step = b.step("orchestrator", "Run the benchmark orchestrator");
-    orchestrator_step.dependOn(&run_orchestrator_cmd.step);
-    
-    const build_orchestrator_step = b.step("build-orchestrator", "Build the benchmark orchestrator");
-    build_orchestrator_step.dependOn(&b.addInstallArtifact(orchestrator_exe, .{}).step);
 
     // Static library for opcode testing FFI
     const opcode_test_lib = b.addStaticLibrary(.{
@@ -1482,43 +1774,147 @@ pub fn build(b: *std.Build) void {
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);
 
-    // Add Fuzz Testing using test configuration data
+    // Add Fuzz Testing
+    const fuzz_stack_test = b.addTest(.{
+        .name = "fuzz-stack-test",
+        .root_source_file = b.path("test/fuzz/stack_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_stack_test.root_module.addImport("evm", evm_mod);
+
+    const run_fuzz_stack_test = b.addRunArtifact(fuzz_stack_test);
+    const fuzz_stack_test_step = b.step("fuzz-stack", "Run stack fuzz tests");
+    fuzz_stack_test_step.dependOn(&run_fuzz_stack_test.step);
+
+    const fuzz_memory_test = b.addTest(.{
+        .name = "fuzz-memory-test",
+        .root_source_file = b.path("test/fuzz/memory_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_memory_test.root_module.addImport("evm", evm_mod);
+
+    const run_fuzz_memory_test = b.addRunArtifact(fuzz_memory_test);
+    const fuzz_memory_test_step = b.step("fuzz-memory", "Run memory fuzz tests");
+    fuzz_memory_test_step.dependOn(&run_fuzz_memory_test.step);
+
+    const fuzz_arithmetic_test = b.addTest(.{
+        .name = "fuzz-arithmetic-test",
+        .root_source_file = b.path("test/fuzz/arithmetic_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_arithmetic_test.root_module.addImport("evm", evm_mod);
+    fuzz_arithmetic_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_arithmetic_test = b.addRunArtifact(fuzz_arithmetic_test);
+    const fuzz_arithmetic_test_step = b.step("fuzz-arithmetic", "Run arithmetic fuzz tests");
+    fuzz_arithmetic_test_step.dependOn(&run_fuzz_arithmetic_test.step);
+
+    const fuzz_bitwise_test = b.addTest(.{
+        .name = "fuzz-bitwise-test",
+        .root_source_file = b.path("test/fuzz/bitwise_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_bitwise_test.root_module.addImport("evm", evm_mod);
+    fuzz_bitwise_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_bitwise_test = b.addRunArtifact(fuzz_bitwise_test);
+    const fuzz_bitwise_test_step = b.step("fuzz-bitwise", "Run bitwise fuzz tests");
+    fuzz_bitwise_test_step.dependOn(&run_fuzz_bitwise_test.step);
+
+    const fuzz_comparison_test = b.addTest(.{
+        .name = "fuzz-comparison-test",
+        .root_source_file = b.path("test/fuzz/comparison_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_comparison_test.root_module.addImport("evm", evm_mod);
+    fuzz_comparison_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_comparison_test = b.addRunArtifact(fuzz_comparison_test);
+    const fuzz_comparison_test_step = b.step("fuzz-comparison", "Run comparison fuzz tests");
+    fuzz_comparison_test_step.dependOn(&run_fuzz_comparison_test.step);
+
+    const fuzz_control_test = b.addTest(.{
+        .name = "fuzz-control-test",
+        .root_source_file = b.path("test/fuzz/control_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_control_test.root_module.addImport("evm", evm_mod);
+    fuzz_control_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_control_test = b.addRunArtifact(fuzz_control_test);
+    const fuzz_control_test_step = b.step("fuzz-control", "Run control fuzz tests");
+    fuzz_control_test_step.dependOn(&run_fuzz_control_test.step);
+
+    const fuzz_crypto_test = b.addTest(.{
+        .name = "fuzz-crypto-test",
+        .root_source_file = b.path("test/fuzz/crypto_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_crypto_test.root_module.addImport("evm", evm_mod);
+    fuzz_crypto_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_crypto_test = b.addRunArtifact(fuzz_crypto_test);
+    const fuzz_crypto_test_step = b.step("fuzz-crypto", "Run crypto fuzz tests");
+    fuzz_crypto_test_step.dependOn(&run_fuzz_crypto_test.step);
+
+    const fuzz_environment_test = b.addTest(.{
+        .name = "fuzz-environment-test",
+        .root_source_file = b.path("test/fuzz/environment_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_environment_test.root_module.addImport("evm", evm_mod);
+    fuzz_environment_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_environment_test = b.addRunArtifact(fuzz_environment_test);
+    const fuzz_environment_test_step = b.step("fuzz-environment", "Run environment fuzz tests");
+    fuzz_environment_test_step.dependOn(&run_fuzz_environment_test.step);
+
+    const fuzz_storage_test = b.addTest(.{
+        .name = "fuzz-storage-test",
+        .root_source_file = b.path("test/fuzz/storage_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_storage_test.root_module.addImport("evm", evm_mod);
+    fuzz_storage_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_fuzz_storage_test = b.addRunArtifact(fuzz_storage_test);
+    const fuzz_storage_test_step = b.step("fuzz-storage", "Run storage fuzz tests");
+    fuzz_storage_test_step.dependOn(&run_fuzz_storage_test.step);
+
+    // Add State Fuzz Testing
+    const fuzz_state_test = b.addTest(.{
+        .name = "fuzz-state-test",
+        .root_source_file = b.path("test/fuzz/state_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    fuzz_state_test.root_module.addImport("evm", evm_mod);
+    fuzz_state_test.root_module.addImport("primitives", primitives_mod);
+    const run_fuzz_state_test = b.addRunArtifact(fuzz_state_test);
+    const fuzz_state_test_step = b.step("fuzz-state", "Run state fuzz tests");
+    fuzz_state_test_step.dependOn(&run_fuzz_state_test.step);
+
+    // Combined fuzz test step
     const fuzz_test_step = b.step("fuzz", "Run all fuzz tests");
-    
-    // Create fuzz tests from configuration
-    for (tests.fuzz_tests) |test_info| {
-        const fuzz_test = b.addTest(.{
-            .name = test_info.name,
-            .root_source_file = b.path(test_info.source_file),
-            .target = target,
-            .optimize = optimize,
-        });
-        fuzz_test.root_module.addImport("evm", evm_mod);
-        
-        // Some fuzz tests also need primitives
-        if (std.mem.indexOf(u8, test_info.name, "arithmetic") != null or
-            std.mem.indexOf(u8, test_info.name, "bitwise") != null or
-            std.mem.indexOf(u8, test_info.name, "comparison") != null or
-            std.mem.indexOf(u8, test_info.name, "control") != null or
-            std.mem.indexOf(u8, test_info.name, "crypto") != null or
-            std.mem.indexOf(u8, test_info.name, "environment") != null or
-            std.mem.indexOf(u8, test_info.name, "storage") != null or
-            std.mem.indexOf(u8, test_info.name, "state") != null) {
-            fuzz_test.root_module.addImport("primitives", primitives_mod);
-        }
-        
-        const run_fuzz_test = b.addRunArtifact(fuzz_test);
-        fuzz_test_step.dependOn(&run_fuzz_test.step);
-        
-        // Create individual test step if specified
-        if (test_info.step_name) |step_name| {
-            const individual_step = b.step(
-                step_name,
-                test_info.step_desc orelse "Run test",
-            );
-            individual_step.dependOn(&run_fuzz_test.step);
-        }
-    }
+    fuzz_test_step.dependOn(&run_fuzz_stack_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_memory_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_arithmetic_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_bitwise_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_comparison_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_control_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_crypto_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_environment_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_storage_test.step);
+    fuzz_test_step.dependOn(&run_fuzz_state_test.step);
 
     // Documentation generation step
     const docs_step = b.step("docs", "Generate and install documentation");
