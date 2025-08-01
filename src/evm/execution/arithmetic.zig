@@ -429,8 +429,8 @@ pub fn op_addmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
     std.debug.assert(frame.stack.size >= 3);
 
-    const b = frame.stack.pop_unsafe();
     const a = frame.stack.pop_unsafe();
+    const b = frame.stack.pop_unsafe();
     const n = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;

@@ -373,12 +373,13 @@ test "Arithmetic: ADDMOD complex operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple addmod
-    try frame.stack.append(5);
-    try frame.stack.append(7);
-    try frame.stack.append(10);
+    try frame.stack.append(5);  // bottom (will be modulus after pops)
+    try frame.stack.append(7);  // middle 
+    try frame.stack.append(10); // top (will be first addend)
     _ = try evm.table.execute(0, interpreter, state, 0x08);
     const result = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 2), result); // (5 + 7) % 10 = 2
+    // ADDMOD pops a=10, b=7, peeks n=5: (10 + 7) % 5 = 17 % 5 = 2
+    try testing.expectEqual(@as(u256, 2), result);
 
     // Test 2: Addmod with overflow
     frame.stack.clear();
@@ -392,9 +393,9 @@ test "Arithmetic: ADDMOD complex operations" {
 
     // Test 3: Modulo by zero
     frame.stack.clear();
-    try frame.stack.append(7);
-    try frame.stack.append(5);
-    try frame.stack.append(0);
+    try frame.stack.append(7);  // a (first addend)
+    try frame.stack.append(5);  // b (second addend)
+    try frame.stack.append(0);  // n (modulus)
     _ = try evm.table.execute(0, interpreter, state, 0x08);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Modulo by zero returns 0
@@ -439,12 +440,13 @@ test "Arithmetic: MULMOD complex operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple mulmod
-    try frame.stack.append(5);
-    try frame.stack.append(7);
-    try frame.stack.append(10);
+    try frame.stack.append(10); // bottom (will be modulus after pops)
+    try frame.stack.append(7);  // middle
+    try frame.stack.append(5);  // top (will be first multiplicand)
     _ = try evm.table.execute(0, interpreter, state, 0x09);
     const result = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 5), result); // (5 * 7) % 10 = 5
+    // MULMOD pops a=5, b=7, peeks n=10: (5 * 7) % 10 = 35 % 10 = 5
+    try testing.expectEqual(@as(u256, 5), result);
 
     // Test 2: Mulmod with large numbers
     frame.stack.clear();
