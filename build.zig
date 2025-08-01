@@ -828,6 +828,32 @@ pub fn build(b: *std.Build) void {
     const revm_bench_step = b.step("bench-revm", "Run revm comparison benchmarks");
     revm_bench_step.dependOn(&run_revm_bench_cmd.step);
     
+    // Official benchmark runner
+    const official_bench_exe = b.addExecutable(.{
+        .name = "benchmark",
+        .root_source_file = b.path("bench/official/src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    
+    const clap_dep = b.dependency("clap", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    official_bench_exe.root_module.addImport("clap", clap_dep.module("clap"));
+    
+    b.installArtifact(official_bench_exe);
+    
+    const run_official_bench_cmd = b.addRunArtifact(official_bench_exe);
+    run_official_bench_cmd.step.dependOn(b.getInstallStep());
+    
+    if (b.args) |args| {
+        run_official_bench_cmd.addArgs(args);
+    }
+    
+    const official_bench_step = b.step("bench-official", "Run official benchmarks");
+    official_bench_step.dependOn(&run_official_bench_cmd.step);
+    
     // Flamegraph profiling support
     const flamegraph_step = b.step("flamegraph", "Run benchmarks with flamegraph profiling");
     
