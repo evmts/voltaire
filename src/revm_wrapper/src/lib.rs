@@ -450,7 +450,8 @@ pub unsafe extern "C" fn revm_execute(
     };
 
     let revert_ptr = revert_reason
-        .map(|r| CString::new(r).unwrap().into_raw())
+        .and_then(|r| CString::new(r).ok())
+        .map(|cstr| cstr.into_raw())
         .unwrap_or(ptr::null_mut());
 
     let exec_result = Box::new(ExecutionResult {
