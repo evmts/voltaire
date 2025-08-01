@@ -60,6 +60,12 @@ zig build test
 
 # Run benchmarks
 zig build bench
+
+# Run official EVM benchmarks (hyperfine required)
+zig build build-evm-runner  # Build the benchmark runner
+# Then use hyperfine to benchmark specific test cases:
+hyperfine --runs 10 \
+  "zig-out/bin/evm-runner --contract-code-path bench/official/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
 ```
 
 ### Development Workflow
@@ -252,6 +258,55 @@ Describe:
 - Your proposed solution
 - Alternative approaches considered
 - Impact on existing functionality
+
+## Benchmarking
+
+### Official EVM Benchmarks
+
+The `bench/official` directory contains standardized EVM benchmarks for performance testing:
+
+#### Available Test Cases
+- `erc20-approval-transfer` - ERC20 approval and transfer operations
+- `erc20-mint` - ERC20 token minting
+- `erc20-transfer` - Basic ERC20 transfers
+- `snailtracer` - Complex computation benchmark
+- `ten-thousand-hashes` - Hash-intensive operations (keccak256)
+
+#### Running Benchmarks
+
+1. **Install hyperfine** (required for statistical benchmarking):
+   ```bash
+   # macOS
+   brew install hyperfine
+   
+   # Linux/WSL
+   cargo install hyperfine
+   ```
+
+2. **Build the benchmark runner**:
+   ```bash
+   zig build build-evm-runner
+   ```
+
+3. **Run individual benchmarks**:
+   ```bash
+   # Example: ten-thousand-hashes benchmark
+   hyperfine --runs 10 --warmup 3 \
+     "zig-out/bin/evm-runner --contract-code-path bench/official/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
+   ```
+
+4. **Run all benchmarks** (work in progress):
+   ```bash
+   # The orchestrator at bench/official/src/main.zig will eventually automate this
+   zig-out/bin/evm-runner --help  # See available options
+   ```
+
+#### Benchmark Structure
+- Test cases are in `bench/official/cases/`
+- Each case contains:
+  - `bytecode.txt` - Contract bytecode in hex format
+  - `calldata.txt` - Input data for contract calls
+- The runner deploys the contract and executes it with the provided calldata
 
 ## Review Process
 

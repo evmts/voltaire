@@ -1,18 +1,6 @@
 const std = @import("std");
 const clap = @import("clap");
-const process = std.process;
-const print = std.debug.print;
-
-const TestCase = struct {
-    name: []const u8,
-    bytecode_path: []const u8,
-    calldata_path: []const u8,
-};
-
-// Get the directory containing this source file
-fn getSourceDir() []const u8 {
-    return std.fs.path.dirname(@src().file) orelse ".";
-}
+const Orchestrator = @import("Orchestrator.zig");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -20,15 +8,18 @@ pub fn main() !void {
     const allocator = gpa.allocator();
 
     const params = comptime clap.parseParamsComptime(
-        \\-h, --help             Display this help and exit.
-        \\-e, --evm <NAME>       EVM implementation to benchmark (default: revm)
-        \\-n, --num-runs <NUM>   Number of runs per test case (default: 10)
+        \\-h, --help                 Display this help and exit.
+        \\-e, --evm <NAME>           EVM implementation to benchmark (default: zig)
+        \\-n, --num-runs <NUM>       Number of runs per test case (default: 10)
+        \\--export <FORMAT>          Export results (json, markdown)
+        \\--compare                  Compare all available EVM implementations
         \\
     );
 
     const parsers = comptime .{
         .NAME = clap.parsers.string,
         .NUM = clap.parsers.int(u32, 10),
+        .FORMAT = clap.parsers.string,
     };
 
     var diag = clap.Diagnostic{};
@@ -46,141 +37,214 @@ pub fn main() !void {
         return;
     }
 
-    const evm_name = res.args.evm orelse "revm";
+    const evm_name = res.args.evm orelse "zig";
     const num_runs = res.args.@"num-runs" orelse 10;
+    const export_format = res.args.@"export";
+    const compare_mode = res.args.compare != 0;
 
-    // Discover all test cases
-    const test_cases = try discoverTestCases(allocator);
-    defer {
-        for (test_cases) |tc| {
-            allocator.free(tc.bytecode_path);
-            allocator.free(tc.calldata_path);
+    if (compare_mode) {
+        // Compare mode: run benchmarks for all available EVMs
+        const evms = [_][]const u8{ "zig", "revm" };
+        
+        var all_results = std.ArrayList(Orchestrator.BenchmarkResult).init(allocator);
+        defer all_results.deinit();
+        
+        for (evms) |evm| {
+            std.debug.print("\n=== Running benchmarks for {s} ===\n", .{evm});
+            
+            var orchestrator = try Orchestrator.init(allocator, evm, num_runs);
+            defer orchestrator.deinit();
+            
+            try orchestrator.discoverTestCases();
+            try orchestrator.runBenchmarks();
+            
+            // Collect results
+            for (orchestrator.results.items) |result| {
+                try all_results.append(.{
+                    .test_case = try std.fmt.allocPrint(allocator, "{s} ({s})", .{ result.test_case, evm }),
+                    .mean_ms = result.mean_ms,
+                    .min_ms = result.min_ms,
+                    .max_ms = result.max_ms,
+                    .std_dev_ms = result.std_dev_ms,
+                    .median_ms = result.median_ms,
+                    .runs = result.runs,
+                });
+            }
         }
-        allocator.free(test_cases);
-    }
+        
+        // Export comparison results
+        if (export_format) |format| {
+            if (std.mem.eql(u8, format, "markdown")) {
+                try exportComparisonMarkdown(allocator, all_results.items, num_runs);
+            }
+        }
+        
+        // Free allocated memory
+        for (all_results.items) |result| {
+            allocator.free(result.test_case);
+        }
+    } else {
+        // Single EVM mode
+        var orchestrator = try Orchestrator.init(allocator, evm_name, num_runs);
+        defer orchestrator.deinit();
 
-    // Run benchmarks for each test case
-    for (test_cases) |test_case| {
-        print("\n=== Benchmarking {s} ===\n", .{test_case.name});
-        try runBenchmark(allocator, evm_name, test_case, num_runs);
+        // Discover test cases
+        try orchestrator.discoverTestCases();
+        
+        std.debug.print("Discovered {} test cases\n", .{orchestrator.test_cases.len});
+
+        // Run benchmarks
+        try orchestrator.runBenchmarks();
+
+        // Print summary
+        orchestrator.printSummary();
+
+        // Export results if requested
+        if (export_format) |format| {
+            try orchestrator.exportResults(format);
+        }
     }
+}
+
+fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orchestrator.BenchmarkResult, num_runs: u32) !void {
+    // Create the file in bench/official/results.md
+    var exe_dir_buf: [std.fs.max_path_bytes]u8 = undefined;
+    const exe_path = try std.fs.selfExeDirPath(&exe_dir_buf);
+    
+    const project_root = try std.fs.path.resolve(allocator, &[_][]const u8{ exe_path, "..", ".." });
+    defer allocator.free(project_root);
+    
+    const results_path = try std.fs.path.join(allocator, &[_][]const u8{ project_root, "bench", "official", "results.md" });
+    defer allocator.free(results_path);
+    
+    const file = try std.fs.createFileAbsolute(results_path, .{});
+    defer file.close();
+    
+    // Get current timestamp
+    const timestamp = std.time.timestamp();
+    const seconds = @as(u64, @intCast(timestamp));
+    
+    // Write header
+    try file.writer().print("# EVM Benchmark Comparison Results\n\n", .{});
+    try file.writer().print("## Summary\n\n", .{});
+    try file.writer().print("**Test Runs per Case**: {}\n", .{num_runs});
+    try file.writer().print("**EVMs Compared**: Guillotine (Zig), REVM (Rust)\n", .{});
+    try file.writer().print("**Timestamp**: {} (Unix epoch)\n\n", .{seconds});
+    
+    // Group results by test case
+    try file.writer().print("## Performance Comparison\n\n", .{});
+    
+    // Write comparison tables for each test case
+    const test_cases = [_][]const u8{
+        "erc20-approval-transfer",
+        "erc20-mint",
+        "erc20-transfer",
+        "ten-thousand-hashes",
+        "snailtracer",
+    };
+    
+    for (test_cases) |test_case| {
+        try file.writer().print("### {s}\n\n", .{test_case});
+        try file.writeAll("| EVM | Mean (ms) | Median (ms) | Min (ms) | Max (ms) | Std Dev (ms) |\n");
+        try file.writeAll("|-----|-----------|-------------|----------|----------|-------------|\n");
+        
+        // Find results for this test case
+        for (results) |result| {
+            if (std.mem.indexOf(u8, result.test_case, test_case) != null) {
+                const evm_name = if (std.mem.indexOf(u8, result.test_case, "(zig)") != null) "Guillotine" else "REVM";
+                try file.writer().print("| {s:<11} | {d:>9.2} | {d:>11.2} | {d:>8.2} | {d:>8.2} | {d:>11.2} |\n", .{
+                    evm_name,
+                    result.mean_ms,
+                    result.median_ms,
+                    result.min_ms,
+                    result.max_ms,
+                    result.std_dev_ms,
+                });
+            }
+        }
+        
+        // Calculate speedup
+        var zig_mean: f64 = 0;
+        var revm_mean: f64 = 0;
+        for (results) |result| {
+            if (std.mem.indexOf(u8, result.test_case, test_case) != null) {
+                if (std.mem.indexOf(u8, result.test_case, "(zig)") != null) {
+                    zig_mean = result.mean_ms;
+                } else {
+                    revm_mean = result.mean_ms;
+                }
+            }
+        }
+        
+        if (zig_mean > 0 and revm_mean > 0) {
+            const speedup = zig_mean / revm_mean;
+            try file.writer().print("\n**Speedup**: REVM is {d:.2}x faster than Guillotine\n\n", .{speedup});
+        }
+    }
+    
+    // Add summary statistics
+    try file.writer().print("## Overall Performance Summary\n\n", .{});
+    try file.writeAll("| Test Case | Guillotine (ms) | REVM (ms) | Speedup |\n");
+    try file.writeAll("|-----------|-----------------|-----------|----------|\n");
+    
+    for (test_cases) |test_case| {
+        var zig_mean: f64 = 0;
+        var revm_mean: f64 = 0;
+        for (results) |result| {
+            if (std.mem.indexOf(u8, result.test_case, test_case) != null) {
+                if (std.mem.indexOf(u8, result.test_case, "(zig)") != null) {
+                    zig_mean = result.mean_ms;
+                } else {
+                    revm_mean = result.mean_ms;
+                }
+            }
+        }
+        
+        if (zig_mean > 0 and revm_mean > 0) {
+            const speedup = zig_mean / revm_mean;
+            try file.writer().print("| {s:<25} | {d:>15.2} | {d:>9.2} | {d:>7.2}x |\n", .{
+                test_case,
+                zig_mean,
+                revm_mean,
+                speedup,
+            });
+        }
+    }
+    
+    // Add notes
+    try file.writeAll("\n## Notes\n\n");
+    try file.writeAll("- Both implementations use optimized builds (ReleaseFast for Zig, --release for Rust)\n");
+    try file.writeAll("- All times are in milliseconds (ms)\n");
+    try file.writeAll("- Speedup shows how many times faster REVM is compared to Guillotine\n");
+    try file.writeAll("- These benchmarks measure the full execution time including contract deployment\n\n");
+    
+    try file.writeAll("---\n\n");
+    try file.writeAll("*Generated by Guillotine Benchmark Orchestrator*\n");
+    
+    std.debug.print("Comparison results exported to bench/official/results.md\n", .{});
 }
 
 fn printHelp() !void {
     const stdout = std.io.getStdOut().writer();
     try stdout.print(
-        \\EVM Benchmark Runner
+        \\EVM Benchmark Orchestrator
         \\
-        \\This tool runs benchmarks on various EVM implementations using test cases.
+        \\This tool orchestrates benchmarks across various EVM implementations using hyperfine.
+        \\
+        \\Usage: orchestrator [OPTIONS]
         \\
         \\Options:
-        \\  -h, --help             Display this help and exit
-        \\  -e, --evm <NAME>       EVM implementation to benchmark (default: revm)
-        \\  -n, --num-runs <NUM>   Number of runs per test case (default: 10)
+        \\  -h, --help                 Display this help and exit
+        \\  -e, --evm <NAME>           EVM implementation to benchmark (default: zig)
+        \\  -n, --num-runs <NUM>       Number of runs per test case (default: 10)
+        \\  --export <FORMAT>          Export results (json, markdown)
         \\
         \\Examples:
-        \\  benchmark              Run benchmarks with revm
-        \\  benchmark -e revm      Explicitly use revm
-        \\  benchmark -n 50        Run 50 iterations per test case
+        \\  orchestrator                    Run benchmarks with Zig EVM
+        \\  orchestrator -e zig -n 50       Run 50 iterations per test case
+        \\  orchestrator --export json      Export results to JSON
+        \\  orchestrator --export markdown  Export results to Markdown
+        \\  orchestrator --compare --export markdown  Compare all EVMs and export
         \\
     , .{});
-}
-
-
-fn discoverTestCases(allocator: std.mem.Allocator) ![]TestCase {
-    // Cases are in bench/official/cases relative to project root
-    const cases_path = "bench/official/cases";
-    
-    const cases_dir = try std.fs.cwd().openDir(cases_path, .{ .iterate = true });
-    
-    var test_cases = std.ArrayList(TestCase).init(allocator);
-    defer test_cases.deinit();
-
-    var it = cases_dir.iterate();
-    while (try it.next()) |entry| {
-        if (entry.kind != .directory) continue;
-
-        const bytecode_path = try std.fs.path.join(allocator, &[_][]const u8{ cases_path, entry.name, "bytecode.txt" });
-        errdefer allocator.free(bytecode_path);
-        
-        const calldata_path = try std.fs.path.join(allocator, &[_][]const u8{ cases_path, entry.name, "calldata.txt" });
-        errdefer allocator.free(calldata_path);
-
-        // Verify files exist
-        if (std.fs.cwd().openFile(bytecode_path, .{})) |file| {
-            file.close();
-        } else |err| {
-            print("Warning: Missing bytecode file for {s}: {}\n", .{ entry.name, err });
-            allocator.free(bytecode_path);
-            allocator.free(calldata_path);
-            continue;
-        }
-        
-        if (std.fs.cwd().openFile(calldata_path, .{})) |file| {
-            file.close();
-        } else |err| {
-            print("Warning: Missing calldata file for {s}: {}\n", .{ entry.name, err });
-            allocator.free(bytecode_path);
-            allocator.free(calldata_path);
-            continue;
-        }
-
-        try test_cases.append(.{
-            .name = entry.name,
-            .bytecode_path = bytecode_path,
-            .calldata_path = calldata_path,
-        });
-    }
-
-    return test_cases.toOwnedSlice();
-}
-
-fn runBenchmark(allocator: std.mem.Allocator, evm_name: []const u8, test_case: TestCase, num_runs: u32) !void {
-    // Read calldata to pass directly
-    const calldata_file = try std.fs.cwd().openFile(test_case.calldata_path, .{});
-    defer calldata_file.close();
-    
-    const calldata = try calldata_file.readToEndAlloc(allocator, 1024 * 1024); // 1MB max
-    defer allocator.free(calldata);
-    
-    // Trim whitespace
-    const trimmed_calldata = std.mem.trim(u8, calldata, " \t\n\r");
-    
-    // Build the runner path
-    const runner_name = try std.fmt.allocPrint(allocator, "{s}-runner", .{evm_name});
-    defer allocator.free(runner_name);
-    
-    const runner_path = if (std.mem.eql(u8, evm_name, "zig"))
-        try allocator.dupe(u8, "zig-out/bin/zig-runner")
-    else
-        try std.fmt.allocPrint(allocator, "bench/official/evms/{s}/target/release/{s}", .{evm_name, runner_name});
-    defer allocator.free(runner_path);
-    
-    const num_runs_str = try std.fmt.allocPrint(allocator, "{}", .{num_runs});
-    defer allocator.free(num_runs_str);
-    
-    // Build hyperfine command
-    const hyperfine_cmd = try std.fmt.allocPrint(
-        allocator,
-        "{s} --contract-code-path {s} --calldata {s} --num-runs 1",
-        .{ runner_path, test_case.bytecode_path, trimmed_calldata }
-    );
-    defer allocator.free(hyperfine_cmd);
-
-    const result = try std.process.Child.run(.{
-        .allocator = allocator,
-        .argv = &[_][]const u8{
-            "hyperfine",
-            "--runs", num_runs_str,
-            "--warmup", "3",
-            hyperfine_cmd,
-        },
-    });
-    defer allocator.free(result.stdout);
-    defer allocator.free(result.stderr);
-
-    print("{s}", .{result.stdout});
-    if (result.stderr.len > 0) {
-        print("Errors:\n{s}", .{result.stderr});
-    }
 }
