@@ -103,9 +103,9 @@ test "AND opcode 0xFF & 0x0F = 0x0F" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For AND, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ AND test passed: 0xFF & 0x0F = 0x0F\n", .{});
 }
 
 test "OR opcode 0x0F | 0xF0 = 0xFF" {
@@ -204,9 +204,9 @@ test "OR opcode 0x0F | 0xF0 = 0xFF" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For OR, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ OR test passed: 0x0F | 0xF0 = 0xFF\n", .{});
 }
 
 test "SHL opcode 1 << 4 = 16" {
@@ -305,9 +305,9 @@ test "SHL opcode 1 << 4 = 16" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SHL, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SHL test passed: 1 << 4 = 16\n", .{});
 }
 
 test "XOR opcode 0xF0 ^ 0x0F = 0xFF" {
@@ -405,9 +405,9 @@ test "XOR opcode 0xF0 ^ 0x0F = 0xFF" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For XOR, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ XOR test passed: 0xF0 ^ 0x0F = 0xFF\n", .{});
 }
 
 test "NOT opcode ~0x0F = 0xFF...F0" {
@@ -500,9 +500,9 @@ test "NOT opcode ~0x0F = 0xFF...F0" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For NOT, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ NOT test passed: ~0x0F\n", .{});
 }
 
 test "SHR opcode 16 >> 2 = 4" {
@@ -600,9 +600,9 @@ test "SHR opcode 16 >> 2 = 4" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SHR, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SHR test passed: 16 >> 2 = 4\n", .{});
 }
 
 test "SAR opcode arithmetic right shift with sign" {
@@ -701,9 +701,9 @@ test "SAR opcode arithmetic right shift with sign" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For SAR, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ SAR test passed: arithmetic right shift\n", .{});
 }
 
 test "BYTE opcode extract byte from word" {
@@ -802,7 +802,7 @@ test "BYTE opcode extract byte from word" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For BYTE, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ BYTE test passed: extract byte from word\n", .{});
 }

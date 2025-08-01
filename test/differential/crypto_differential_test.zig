@@ -105,9 +105,9 @@ test "KECCAK256 opcode hashes empty data" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For KECCAK256, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ KECCAK256 empty test passed: empty data hash\n", .{});
 }
 
 test "KECCAK256 opcode hashes test data" {
@@ -216,9 +216,9 @@ test "KECCAK256 opcode hashes test data" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For KECCAK256, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ KECCAK256 abc test passed: \"abc\" data hash\n", .{});
 }
 
 test "KECCAK256 opcode hashes 32-byte data" {
@@ -327,7 +327,7 @@ test "KECCAK256 opcode hashes 32-byte data" {
         if (guillotine_result.err) |err| {
             std.debug.print("Guillotine error: {}\n", .{err});
         }
+        // For KECCAK256, we expect this to succeed
+        try testing.expect(false);
     }
-
-    std.debug.print("✓ KECCAK256 32-byte test passed: 32-byte data hash\n", .{});
 }
