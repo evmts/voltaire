@@ -1702,6 +1702,27 @@ pub fn build(b: *std.Build) void {
         const run_environment_differential_test = b.addRunArtifact(environment_differential_test);
         test_step.dependOn(&run_environment_differential_test.step);
 
+        // Add storage differential tests
+        const storage_differential_test = b.addTest(.{
+            .name = "storage-differential-test",
+            .root_source_file = b.path("test/differential/storage_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        storage_differential_test.root_module.addImport("primitives", primitives_mod);
+        storage_differential_test.root_module.addImport("evm", evm_mod);
+        storage_differential_test.root_module.addImport("revm", revm_mod);
+        storage_differential_test.linkLibC();
+        if (target.result.os.tag == .macos) {
+            storage_differential_test.linkSystemLibrary("c++");
+            storage_differential_test.linkFramework("Security");
+            storage_differential_test.linkFramework("SystemConfiguration");
+            storage_differential_test.linkFramework("CoreFoundation");
+        }
+
+        const run_storage_differential_test = b.addRunArtifact(storage_differential_test);
+        test_step.dependOn(&run_storage_differential_test.step);
+
         // Also add a separate step for differential tests
         const differential_test_step = b.step("test-differential", "Run differential tests against revm");
         differential_test_step.dependOn(&run_differential_test.step);
@@ -1709,6 +1730,7 @@ pub fn build(b: *std.Build) void {
         differential_test_step.dependOn(&run_comparison_differential_test.step);
         differential_test_step.dependOn(&run_memory_differential_test.step);
         differential_test_step.dependOn(&run_environment_differential_test.step);
+        differential_test_step.dependOn(&run_storage_differential_test.step);
     }
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
