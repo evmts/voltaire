@@ -15,6 +15,7 @@ declare global {
 		handleRunPause: () => void
 		handleStep: () => void
 		handleReset: () => void
+		on_web_ui_ready: () => void
 	}
 }
 
@@ -65,25 +66,16 @@ function App() {
 		window.handleStep = handleStep
 		window.handleReset = handleReset
 
-		// Wait for WebUI bindings to be ready, then load initial bytecode
-		const loadInitialBytecode = async () => {
-			// Check if WebUI functions are available
-			if (typeof window.load_bytecode === 'function' && typeof window.reset_evm === 'function') {
-				try {
-					await loadBytecode(bytecode())
-					const initialState = await resetEvm()
-					setState(initialState)
-				} catch (err) {
-					setError(`Failed to load initial bytecode: ${err}`)
-				}
-			} else {
-				// Retry after a short delay
-				setTimeout(loadInitialBytecode, 100)
+		// Wait for WebUI connection event
+		window.on_web_ui_ready = async () => {
+			try {
+				await loadBytecode(bytecode())
+				const initialState = await resetEvm()
+				setState(initialState)
+			} catch (err) {
+				setError(err instanceof Error ? err.message : 'Unknown error')
 			}
 		}
-
-		// Start the initial loading process
-		setTimeout(loadInitialBytecode, 100)
 
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.code === 'Space') {
