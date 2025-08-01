@@ -149,7 +149,7 @@ pub fn op_sub(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
 
-    const result = a -% b;
+    const result = b -% a;
 
     frame.stack.set_top_unsafe(result);
 
