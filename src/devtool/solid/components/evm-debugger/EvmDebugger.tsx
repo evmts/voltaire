@@ -1,134 +1,37 @@
-import {
-	type Accessor,
-	createEffect,
-	createSignal,
-	onCleanup,
-	type Setter,
-	Show,
-} from "solid-js";
-import BytecodeLoader from "~/components/evm-debugger/BytecodeLoader";
-import Controls from "~/components/evm-debugger/Controls";
-import ErrorAlert from "~/components/evm-debugger/ErrorAlert";
-import Header from "~/components/evm-debugger/Header";
-import LogsAndReturn from "~/components/evm-debugger/LogsAndReturn";
-import Memory from "~/components/evm-debugger/Memory";
-import Stack from "~/components/evm-debugger/Stack";
-import StateSummary from "~/components/evm-debugger/StateSummary";
-import Storage from "~/components/evm-debugger/Storage";
-import {
-	type EvmState,
-	sampleContracts,
-} from "~/components/evm-debugger/types";
-import BytecodeView from "./BytecodeView";
-import GasUsage from "./GasUsage";
-import { stepEvm } from "./utils";
+import { type Accessor, createSignal, type Setter, Show } from 'solid-js'
+import BytecodeLoader from '~/components/evm-debugger/BytecodeLoader'
+import BytecodeView from '~/components/evm-debugger/BytecodeView'
+import Controls from '~/components/evm-debugger/Controls'
+import ErrorAlert from '~/components/evm-debugger/ErrorAlert'
+import GasUsage from '~/components/evm-debugger/GasUsage'
+import Header from '~/components/evm-debugger/Header'
+import LogsAndReturn from '~/components/evm-debugger/LogsAndReturn'
+import Memory from '~/components/evm-debugger/Memory'
+import Stack from '~/components/evm-debugger/Stack'
+import StateSummary from '~/components/evm-debugger/StateSummary'
+import Storage from '~/components/evm-debugger/Storage'
+import type { EvmState } from '~/lib/types'
 
 interface EvmDebuggerProps {
-	isDarkMode: Accessor<boolean>;
-	setIsDarkMode: Setter<boolean>;
+	isDarkMode: Accessor<boolean>
+	setIsDarkMode: Setter<boolean>
+	isRunning: Accessor<boolean>
+	setIsRunning: Setter<boolean>
+	error: Accessor<string>
+	setError: Setter<string>
+	state: EvmState
+	setState: Setter<EvmState>
+	bytecode: Accessor<string>
+	setBytecode: Setter<string>
+	handleRunPause: () => void
+	handleStep: () => void
+	handleReset: () => void
 }
 
 const EvmDebugger = (props: EvmDebuggerProps) => {
-	const [bytecode, setBytecode] = createSignal(sampleContracts[7].bytecode);
-	const [state, setState] = createSignal<EvmState>({
-		pc: 0,
-		opcode: "-",
-		gasLeft: 0,
-		depth: 0,
-		stack: [],
-		memory: "0x",
-		storage: [],
-		logs: [],
-		returnData: "0x",
-	});
-	const [isRunning, setIsRunning] = createSignal(false);
-	const [error, setError] = createSignal("");
-	const [isUpdating, setIsUpdating] = createSignal(false);
-	const [activePanel, setActivePanel] = createSignal("all");
-	const [executionSpeed, setExecutionSpeed] = createSignal(100); // milliseconds between steps
-
-	createEffect(() => {
-		if (!isRunning()) return;
-		const runStep = async () => {
-			try {
-				setIsUpdating(true);
-				const freshState = await stepEvm();
-				setState(freshState);
-				setIsUpdating(false);
-
-				// Stop running if execution is complete or an error occurred
-				if (freshState.pc === 0 && freshState.opcode === "COMPLETE") {
-					setIsRunning(false);
-				}
-			} catch (err) {
-				setError(`Failed to step: ${err}`);
-				setIsRunning(false);
-			}
-		};
-
-		const interval = setInterval(runStep, executionSpeed()); // Step at configured speed
-
-		onCleanup(() => {
-			clearInterval(interval);
-		});
-	});
-
-	const handleKeyDown = (e: KeyboardEvent) => {
-		if (
-			e.target instanceof HTMLInputElement ||
-			e.target instanceof HTMLTextAreaElement
-		) {
-			return;
-		}
-
-		if (e.key === "r" || e.key === "R") {
-			const handleResetEvm = async () => {
-				try {
-					setError("");
-					setIsRunning(false);
-				} catch (err) {
-					setError(`${err}`);
-				}
-			};
-
-			handleResetEvm();
-		} else if (e.key === "s" || e.key === "S") {
-			const handleStepEvm = async () => {
-				try {
-					setError("");
-					setIsUpdating(true);
-				} catch (err) {
-					setError(`${err}`);
-					setIsUpdating(false);
-				}
-			};
-
-			handleStepEvm();
-		} else if (e.key === " ") {
-			e.preventDefault();
-			const handleToggleRunPause = async () => {
-				try {
-					setError("");
-					setIsRunning(!isRunning());
-				} catch (err) {
-					setError(`${err}`);
-					setIsRunning(false);
-				}
-			};
-
-			handleToggleRunPause();
-		} else if (e.key === "d" && e.ctrlKey) {
-			e.preventDefault();
-			props.setIsDarkMode(!props.isDarkMode());
-		}
-	};
-
-	createEffect(() => {
-		window.addEventListener("keydown", handleKeyDown);
-		onCleanup(() => {
-			window.removeEventListener("keydown", handleKeyDown);
-		});
-	});
+	const [isUpdating, setIsUpdating] = createSignal(false)
+	const [activePanel, setActivePanel] = createSignal('all')
+	const [executionSpeed, setExecutionSpeed] = createSignal(100)
 
 	return (
 		<div class="min-h-screen bg-background text-foreground">
@@ -139,48 +42,52 @@ const EvmDebugger = (props: EvmDebuggerProps) => {
 				setActivePanel={setActivePanel}
 			/>
 			<Controls
-				isRunning={isRunning()}
-				setIsRunning={setIsRunning}
-				setError={setError}
-				setState={setState}
+				isRunning={props.isRunning()}
+				setIsRunning={props.setIsRunning}
+				setError={props.setError}
+				setState={props.setState as Setter<EvmState>}
 				isUpdating={isUpdating()}
 				setIsUpdating={setIsUpdating}
 				executionSpeed={executionSpeed()}
 				setExecutionSpeed={setExecutionSpeed}
+				handleRunPause={props.handleRunPause}
+				handleStep={props.handleStep}
+				handleReset={props.handleReset}
+				bytecode={props.bytecode()}
 			/>
 			<BytecodeLoader
-				bytecode={bytecode()}
-				setBytecode={setBytecode}
-				setError={setError}
-				setIsRunning={setIsRunning}
-				setState={setState}
+				bytecode={props.bytecode()}
+				setBytecode={props.setBytecode}
+				setError={props.setError}
+				setIsRunning={props.setIsRunning}
+				setState={props.setState as Setter<EvmState>}
 			/>
 			<div class="mx-auto flex max-w-7xl flex-col gap-6 px-3 pb-6 sm:px-6">
-				<ErrorAlert error={error()} setError={setError} />
-				<StateSummary state={state()} isUpdating={isUpdating()} />
-				<Show when={activePanel() === "all" || activePanel() === "bytecode"}>
-					<BytecodeView bytecode={bytecode()} pc={state().pc} />
+				<ErrorAlert error={props.error()} setError={props.setError} />
+				<StateSummary state={props.state as EvmState} isUpdating={isUpdating()} />
+				<Show when={activePanel() === 'all' || activePanel() === 'bytecode'}>
+					<BytecodeView bytecode={props.bytecode()} pc={props.state.pc} />
 				</Show>
-				<Show when={activePanel() === "all" || activePanel() === "gas"}>
-					<GasUsage state={state()} />
+				<Show when={activePanel() === 'all' || activePanel() === 'gas'}>
+					<GasUsage state={props.state as EvmState} />
 				</Show>
 				<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-					<Show when={activePanel() === "all" || activePanel() === "stack"}>
-						<Stack state={state()} />
+					<Show when={activePanel() === 'all' || activePanel() === 'stack'}>
+						<Stack state={props.state as EvmState} />
 					</Show>
-					<Show when={activePanel() === "all" || activePanel() === "memory"}>
-						<Memory state={state()} />
+					<Show when={activePanel() === 'all' || activePanel() === 'memory'}>
+						<Memory state={props.state as EvmState} />
 					</Show>
-					<Show when={activePanel() === "all" || activePanel() === "storage"}>
-						<Storage state={state()} />
+					<Show when={activePanel() === 'all' || activePanel() === 'storage'}>
+						<Storage state={props.state as EvmState} />
 					</Show>
-					<Show when={activePanel() === "all" || activePanel() === "logs"}>
-						<LogsAndReturn state={state()} />
+					<Show when={activePanel() === 'all' || activePanel() === 'logs'}>
+						<LogsAndReturn state={props.state as EvmState} />
 					</Show>
 				</div>
 			</div>
 		</div>
-	);
-};
+	)
+}
 
-export default EvmDebugger;
+export default EvmDebugger

@@ -89,6 +89,8 @@ pub const EventKind = enum(usize) {
     event_navigation,
     /// 4. Function call event
     event_callback,
+    /// 5. Key press event
+    event_key_press,
 };
 
 pub const Config = enum(c_int) {

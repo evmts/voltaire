@@ -109,7 +109,7 @@ pub const Revm = struct {
             &error_ptr,
         );
 
-        if (success == 0) {
+        if (success != 1) {
             defer c.revm_free_error(error_ptr);
             return error.OperationFailed;
         }
@@ -129,7 +129,7 @@ pub const Revm = struct {
             &error_ptr,
         );
 
-        if (success == 0) {
+        if (success != 1) {
             defer c.revm_free_error(error_ptr);
             return error.OperationFailed;
         }
@@ -153,7 +153,7 @@ pub const Revm = struct {
             &error_ptr,
         );
 
-        if (success == 0) {
+        if (success != 1) {
             defer c.revm_free_error(error_ptr);
             return error.OperationFailed;
         }
@@ -177,7 +177,7 @@ pub const Revm = struct {
             &error_ptr,
         );
 
-        if (success == 0) {
+        if (success != 1) {
             defer c.revm_free_error(error_ptr);
             return error.OperationFailed;
         }
@@ -201,7 +201,7 @@ pub const Revm = struct {
             &error_ptr,
         );
 
-        if (success == 0) {
+        if (success != 1) {
             defer c.revm_free_error(error_ptr);
             return error.OperationFailed;
         }
@@ -243,7 +243,7 @@ pub const Revm = struct {
             &error_ptr,
         );
 
-        if (success == 0) {
+        if (success != 1) {
             defer c.revm_free_error(error_ptr);
             return error.ExecutionFailed;
         }

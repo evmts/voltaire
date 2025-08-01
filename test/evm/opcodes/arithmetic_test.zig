@@ -39,7 +39,7 @@ test "Arithmetic: ADD basic operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-        .withCaller([_]u8{0x11} ** 20)
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
 
@@ -111,7 +111,7 @@ test "Arithmetic: SUB basic operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-        .withCaller([_]u8{0x11} ** 20)
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
 
@@ -119,11 +119,11 @@ test "Arithmetic: SUB basic operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple subtraction
-    try frame.stack.append(5);
-    try frame.stack.append(10);
+    try frame.stack.append(58);
+    try frame.stack.append(100);
     _ = try evm.table.execute(0, interpreter, state, 0x03);
     const result = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 5), result); // 10 - 5 = 5
+    try testing.expectEqual(@as(u256, 42), result); // 100 - 58 = 42
 
     // Test 2: Subtraction with underflow
     frame.stack.clear();
@@ -134,7 +134,7 @@ test "Arithmetic: SUB basic operations" {
     const expected = std.math.maxInt(u256) - 4; // 5 - 10 wraps to max - 4
     try testing.expectEqual(expected, underflow_result);
 
-    // Test 3: Subtracting zero
+    // Test 3: Subtracting from zero - SUB calculates top - second
     frame.stack.clear();
     try frame.stack.append(0);
     try frame.stack.append(42);
@@ -174,7 +174,7 @@ test "Arithmetic: MUL basic operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-        .withCaller([_]u8{0x11} ** 20)
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
 
@@ -239,32 +239,33 @@ test "Arithmetic: DIV basic operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-        .withCaller([_]u8{0x11} ** 20)
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: Simple division
-    try frame.stack.append(6);
-    try frame.stack.append(42);
+    // Test 1: Simple division - DIV pops dividend first, then divisor
+    // To compute 42 / 6, we need divisor (6) on bottom, dividend (42) on top
+    try frame.stack.append(6);  // divisor (bottom)
+    try frame.stack.append(42); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x04);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 7), result); // 42 / 6 = 7
 
-    // Test 2: Division by zero
+    // Test 2: Division by zero - DIV pops dividend first, then divisor
     frame.stack.clear();
-    try frame.stack.append(42);
-    try frame.stack.append(0);
+    try frame.stack.append(0);  // divisor (bottom)
+    try frame.stack.append(42); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x04);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Division by zero returns 0
 
-    // Test 3: Division with remainder
+    // Test 3: Division with remainder - DIV pops dividend first, then divisor
     frame.stack.clear();
-    try frame.stack.append(7);
-    try frame.stack.append(50);
+    try frame.stack.append(7);  // divisor (bottom)
+    try frame.stack.append(50); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x04);
     const remainder_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 7), remainder_result); // 50 / 7 = 7 (integer division)
@@ -301,32 +302,33 @@ test "Arithmetic: MOD basic operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-        .withCaller([_]u8{0x11} ** 20)
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: Simple modulo
-    try frame.stack.append(7);
-    try frame.stack.append(50);
+    // Test 1: Simple modulo - MOD pops dividend first, then divisor
+    // To compute 50 % 7, we need divisor (7) on bottom, dividend (50) on top
+    try frame.stack.append(7);  // divisor (bottom)
+    try frame.stack.append(50); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x06);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result); // 50 % 7 = 1
 
-    // Test 2: Modulo by zero
+    // Test 2: Modulo by zero - MOD pops dividend first, then divisor
     frame.stack.clear();
-    try frame.stack.append(42);
-    try frame.stack.append(0);
+    try frame.stack.append(0);  // divisor (bottom)
+    try frame.stack.append(42); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x06);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Modulo by zero returns 0
 
-    // Test 3: Perfect division
+    // Test 3: Perfect division - MOD pops dividend first, then divisor
     frame.stack.clear();
-    try frame.stack.append(6);
-    try frame.stack.append(42);
+    try frame.stack.append(6);  // divisor (bottom)
+    try frame.stack.append(42); // dividend (top)
     _ = try evm.table.execute(0, interpreter, state, 0x06);
     const perfect_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), perfect_result); // 42 % 6 = 0
@@ -363,7 +365,7 @@ test "Arithmetic: ADDMOD complex operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-        .withCaller([_]u8{0x11} ** 20)
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
 
@@ -371,12 +373,13 @@ test "Arithmetic: ADDMOD complex operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple addmod
-    try frame.stack.append(10);
-    try frame.stack.append(7);
-    try frame.stack.append(5);
+    try frame.stack.append(5);  // bottom (will be modulus after pops)
+    try frame.stack.append(7);  // middle 
+    try frame.stack.append(10); // top (will be first addend)
     _ = try evm.table.execute(0, interpreter, state, 0x08);
     const result = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 2), result); // (5 + 7) % 10 = 2
+    // ADDMOD pops a=10, b=7, peeks n=5: (10 + 7) % 5 = 17 % 5 = 2
+    try testing.expectEqual(@as(u256, 2), result);
 
     // Test 2: Addmod with overflow
     frame.stack.clear();
@@ -390,9 +393,9 @@ test "Arithmetic: ADDMOD complex operations" {
 
     // Test 3: Modulo by zero
     frame.stack.clear();
-    try frame.stack.append(0);
-    try frame.stack.append(5);
-    try frame.stack.append(7);
+    try frame.stack.append(0);  // n (modulus) - bottom
+    try frame.stack.append(5);  // b (second addend) - middle
+    try frame.stack.append(7);  // a (first addend) - top
     _ = try evm.table.execute(0, interpreter, state, 0x08);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Modulo by zero returns 0
@@ -429,7 +432,7 @@ test "Arithmetic: MULMOD complex operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-        .withCaller([_]u8{0x11} ** 20)
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
 
@@ -437,12 +440,13 @@ test "Arithmetic: MULMOD complex operations" {
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Simple mulmod
-    try frame.stack.append(10);
-    try frame.stack.append(7);
-    try frame.stack.append(5);
+    try frame.stack.append(10); // bottom (will be modulus after pops)
+    try frame.stack.append(7);  // middle
+    try frame.stack.append(5);  // top (will be first multiplicand)
     _ = try evm.table.execute(0, interpreter, state, 0x09);
     const result = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 5), result); // (5 * 7) % 10 = 5
+    // MULMOD pops a=5, b=7, peeks n=10: (5 * 7) % 10 = 35 % 10 = 5
+    try testing.expectEqual(@as(u256, 5), result);
 
     // Test 2: Mulmod with large numbers
     frame.stack.clear();
@@ -457,9 +461,9 @@ test "Arithmetic: MULMOD complex operations" {
 
     // Test 3: Modulo by zero
     frame.stack.clear();
-    try frame.stack.append(0);
-    try frame.stack.append(7);
     try frame.stack.append(5);
+    try frame.stack.append(7);
+    try frame.stack.append(0);
     _ = try evm.table.execute(0, interpreter, state, 0x09);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Modulo by zero returns 0
@@ -496,40 +500,42 @@ test "Arithmetic: EXP exponential operations" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(10000)
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: Simple exponentiation
-    try frame.stack.append(3);
-    try frame.stack.append(2);
+    // Test 1: Simple exponentiation - EXP pops base first, then exponent
+    // To compute 2^3, we need exponent (3) on bottom, base (2) on top
+    try frame.stack.append(3); // exponent (bottom)
+    try frame.stack.append(2); // base (top)
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 8), result); // 2^3 = 8
 
-    // Test 2: Zero exponent
+    // Test 2: Zero exponent - EXP pops base first, then exponent
     frame.stack.clear();
-    try frame.stack.append(0);
-    try frame.stack.append(42);
+    try frame.stack.append(0);  // exponent (bottom)
+    try frame.stack.append(42); // base (top)
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     const zero_exp_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), zero_exp_result); // 42^0 = 1
 
-    // Test 3: Zero base
+    // Test 3: Zero base - EXP pops base first, then exponent
     frame.stack.clear();
-    try frame.stack.append(5);
-    try frame.stack.append(0);
+    try frame.stack.append(5); // exponent (bottom)
+    try frame.stack.append(0); // base (top)
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     const zero_base_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_base_result); // 0^5 = 0
 
-    // Test 4: Large exponent (gas consumption)
+    // Test 4: Large exponent (gas consumption) - EXP pops base first, then exponent
     frame.stack.clear();
     frame.gas_remaining = 10000;
-    try frame.stack.append(256);
-    try frame.stack.append(2);
+    try frame.stack.append(256); // exponent (bottom)
+    try frame.stack.append(2);   // base (top)
     _ = try evm.table.execute(0, interpreter, state, 0x0A);
     // Gas should be consumed: 10 (base) + 50 * 2 (256 = 0x100 = 2 bytes)
     const expected_gas = 10 + 50 * 2;
@@ -568,7 +574,7 @@ test "Arithmetic: Stack underflow errors" {
         .withVm(&evm)
         .withContract(&contract)
         .withGas(1000)
-        .withCaller([_]u8{0x11} ** 20)
+        .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
 

@@ -210,27 +210,27 @@ pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 /// SDIV opcode (0x05) - Signed integer division
 ///
 /// Pops two values from the stack, interprets them as signed integers,
-/// divides the second by the top, and pushes the signed quotient.
+/// divides the first popped value by the second, and pushes the signed quotient.
 /// Division by zero returns 0.
 ///
 /// ## Stack Input
-/// - `a`: Dividend as signed i256 (second from top)
-/// - `b`: Divisor as signed i256 (top)
+/// - `b`: Dividend as signed i256 (top)
+/// - `a`: Divisor as signed i256 (second from top)
 ///
 /// ## Stack Output
-/// - `a / b`: Signed integer quotient, or 0 if b = 0
+/// - `b / a`: Signed integer quotient, or 0 if a = 0
 ///
 /// ## Gas Cost
 /// 5 gas (GasFastStep)
 ///
 /// ## Execution
-/// 1. Pop b from stack
-/// 2. Pop a from stack
+/// 1. Pop b from stack (dividend)
+/// 2. Peek a from stack (divisor, stays on stack)
 /// 3. Interpret both as two's complement signed integers
-/// 4. If b = 0, result = 0
-/// 5. Else if a = -2^255 and b = -1, result = -2^255 (overflow case)
-/// 6. Else result = truncated division a / b
-/// 7. Push result to stack
+/// 4. If a = 0, result = 0
+/// 5. Else if b = -2^255 and a = -1, result = -2^255 (overflow case)
+/// 6. Else result = truncated division b / a
+/// 7. Replace top of stack with result
 ///
 /// ## Example
 /// Stack: [20, 5] => [4]
@@ -253,7 +253,7 @@ pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
     const a = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
-    if (b == 0) {
+    if (a == 0) {
         @branchHint(.unlikely);
         result = 0;
     } else {
@@ -371,7 +371,7 @@ pub fn op_smod(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
     const a = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
-    if (b == 0) {
+    if (a == 0) {
         @branchHint(.unlikely);
         result = 0;
     } else {

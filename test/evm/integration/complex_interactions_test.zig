@@ -74,28 +74,26 @@ test "Integration: Token balance check pattern" {
     _ = try vm.table.execute(0, interpreter, state, 0x52); // MSTORE
 
     // Hash to get storage slot
-    try frame.stack.append(64); // size
     try frame.stack.append(0); // offset
+    try frame.stack.append(64); // size
     _ = try vm.table.execute(0, interpreter, state, 0x20); // SHA3
 
     // Set initial balance
     const initial_balance: u256 = 1000;
     _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1 - duplicate slot
     try frame.stack.append(initial_balance); // Stack: [slot_hash, slot_hash, initial_balance]
-    _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE: pops slot_hash (top), then initial_balance
+    _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1: [slot_hash, initial_balance, slot_hash]
+    _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE: pops slot_hash, then initial_balance
 
     // Load balance
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD using the remaining slot_hash
 
-    // Check if balance >= 100. The original test comment implied this, but the code aimed for 100 < balance.
-    // We will stick to making `100 < balance` evaluate to true (1) as the expectStackValue suggests.
+    // Check if balance >= 100 using corrected stack order
+    // With the fixed LT opcode: LT now computes (top < second)
     // Original stack after SLOAD: [balance]
     try frame.stack.append(100); // Stack: [balance, 100]
-    // To evaluate 100 < balance (where op_lt is a < b with b=pop, a=pop):
-    // We need stack [100, balance] before LT.
-    // Current: [balance, 100]. So, SWAP1.
-    _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1. Stack: [100, balance]
-    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT pops balance, then 100. Compares 100 < balance.
+    // LT will compute: 100 < balance (which should be true since 1000 > 100)
+    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT pops 100, compares 100 < balance
 
     // Result should be 1 (true) since 100 < 1000
     const result = try frame.stack.pop();
@@ -164,10 +162,8 @@ test "Integration: Packed struct storage" {
 
     // Store packed value
     const slot: u256 = 5;
-    _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1 to preserve packed_value
-    try frame.stack.append(slot); // Now stack is [packed_value, packed_value, slot]
+    try frame.stack.append(slot); // Now stack is [packed_value, slot]
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE: pops slot, then packed_value
-    _ = try vm.table.execute(0, interpreter, state, 0x50); // POP the extra packed_value
 
     // Load and unpack 'a' (lower 128 bits)
     try frame.stack.append(slot);
@@ -329,7 +325,7 @@ test "Integration: Reentrancy guard pattern" {
     _ = try vm.table.execute(0, interpreter, state, 0x50); // POP - Remove old value from stack
     try frame.stack.append(ENTERED);
     try frame.stack.append(guard_slot); // Stack: [ENTERED, guard_slot]
-    _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE: pops guard_slot (top), then ENTERED (second)
+    _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE: pops guard_slot, then ENTERED
 
     // Verify guard is set
     try frame.stack.append(guard_slot);
@@ -413,9 +409,14 @@ test "Integration: Bitfield manipulation" {
     try frame.stack.append(bitfield);
     try frame.stack.append(0x80);
     _ = try vm.table.execute(0, interpreter, state, 0x16); // AND
-    try frame.stack.append(0);
-    _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [0, result]
-    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT: result > 0
+    // Stack now has [result_of_AND] where result should be 0x80 if bit 7 is set
+    // We want to check if result > 0
+    // With corrected GT: GT computes (top > second)
+    // So we need stack [0, and_result] for and_result > 0
+    const and_result = try frame.stack.pop(); // Get AND result  
+    try frame.stack.append(0); // Push 0 (second)
+    try frame.stack.append(and_result); // Push AND result (top), Stack: [0, and_result]
+    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT: computes and_result > 0
 
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // Bit 7 is set
@@ -495,12 +496,13 @@ test "Integration: Safe math operations" {
     const sum = try frame.stack.pop();
 
     // Check if sum < a (overflow occurred)
-    // LT does top < second, we want sum < a
-    try frame.stack.append(a);
-    try frame.stack.append(sum);
-    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: sum < a
+    // With corrected LT: LT computes (top < second)
+    // We want to test sum < a to detect overflow
+    try frame.stack.append(a); // Push a (second)
+    try frame.stack.append(sum); // Push sum (top), Stack: [a, sum]
+    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: computes sum < a
 
-    // Should be 0 (no overflow since 50 < 100)
+    // Should be 0 (no overflow since sum >= a when no overflow)
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result1);
 
@@ -512,11 +514,12 @@ test "Integration: Safe math operations" {
     const overflow_sum = try frame.stack.pop();
 
     // Check if overflow_sum < a (overflow occurred)
-    try frame.stack.append(a);
-    try frame.stack.append(overflow_sum);
-    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT
+    // We want to test if overflow_sum < a
+    try frame.stack.append(a); // Push a
+    try frame.stack.append(overflow_sum); // Push overflow_sum, Stack: [a, overflow_sum]
+    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: computes overflow_sum < a
 
-    // Should be 1 (overflow occurred)
+    // Should be 1 (overflow occurred, so overflow_sum < a)
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result2);
 }
@@ -651,14 +654,14 @@ test "Integration: Multi-sig wallet threshold check" {
     // slot 1: confirmation count for current transaction
 
     // Set required confirmations to 3
-    // SSTORE pops slot first (top), then value (second), so we need [value, slot] with slot on top
-    try frame.stack.append(3); // value 3 (bottom)
-    try frame.stack.append(0); // slot 0 (top)
+    // SSTORE pops key first, then value, so we need [value, key] with key on top
+    try frame.stack.append(3); // value 3
+    try frame.stack.append(0); // slot 0 (key on top)
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE
 
     // Initialize confirmation count to 0
-    try frame.stack.append(0); // value 0 (bottom)
-    try frame.stack.append(1); // slot 1 (top)
+    try frame.stack.append(0); // value 0
+    try frame.stack.append(1); // slot 1 (key on top)
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE
 
     // First confirmation - load, increment, store
@@ -666,8 +669,8 @@ test "Integration: Multi-sig wallet threshold check" {
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD
     try frame.stack.append(1);
     _ = try vm.table.execute(0, interpreter, state, 0x01); // ADD
-    // Stack has incremented value on top, SSTORE needs [value, slot] with slot on top
-    try frame.stack.append(1); // slot 1 (on top)
+    // Stack has incremented value on top
+    try frame.stack.append(1); // slot 1 (key on top)
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE
 
     // Second confirmation - load, increment, store
@@ -675,24 +678,26 @@ test "Integration: Multi-sig wallet threshold check" {
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD
     try frame.stack.append(1);
     _ = try vm.table.execute(0, interpreter, state, 0x01); // ADD
-    // Stack has incremented value on top, SSTORE needs [value, slot] with slot on top
-    try frame.stack.append(1); // slot 1 (on top)
+    // Stack has incremented value on top
+    try frame.stack.append(1); // slot 1 (key on top)
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE
 
     // Check if we have enough confirmations
     try frame.stack.append(1); // slot 1
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD - loads confirmation count (2)
+    const confirmations_val = try frame.stack.pop();
 
     try frame.stack.append(0); // slot 0
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD - loads required confirmations (3)
+    const required_val = try frame.stack.pop();
 
-    // Compare: confirmations >= required
-    // Stack is [confirmations=2, required=3], LT pops top (3), then compares with second (2)
-    // We want to compute confirmations < required (2 < 3 = true)
-    // So we need to swap to get [required, confirmations]
-    _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1: [required=3, confirmations=2]
-    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: confirmations < required (2 < 3 = true = 1)
-    _ = try vm.table.execute(0, interpreter, state, 0x15); // ISZERO: NOT(confirmations < required) = confirmations >= required = 0
+    // Compare: confirmations >= required using corrected stack order
+    // We want to check if confirmations >= required
+    // This is equivalent to NOT(confirmations < required)
+    try frame.stack.append(required_val); // Push required
+    try frame.stack.append(confirmations_val); // Push confirmations, Stack: [required, confirmations]  
+    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: confirmations < required
+    _ = try vm.table.execute(0, interpreter, state, 0x15); // ISZERO: NOT(confirmations < required) = confirmations >= required
 
     // Should be 0 (false) since 2 >= 3 is false
     const result1 = try frame.stack.pop();
@@ -703,8 +708,8 @@ test "Integration: Multi-sig wallet threshold check" {
     _ = try vm.table.execute(0, interpreter, state, 0x54); // SLOAD
     try frame.stack.append(1);
     _ = try vm.table.execute(0, interpreter, state, 0x01); // ADD
-    // Stack has incremented value on top, SSTORE needs [value, slot] with slot on top
-    try frame.stack.append(1); // slot 1 (on top)
+    // Stack has incremented value on top
+    try frame.stack.append(1); // slot 1 (key on top)
     _ = try vm.table.execute(0, interpreter, state, 0x55); // SSTORE
 
     // Check again
@@ -722,17 +727,14 @@ test "Integration: Multi-sig wallet threshold check" {
     try frame.stack.append(confirmations);
     try frame.stack.append(required);
 
-    // Compare: confirmations >= required
-    // Stack is [confirmations, required], LT computes confirmations < required
+    // Compare: confirmations >= required with corrected stack order
+    // Stack is [confirmations, required], LT computes required < confirmations
+    try frame.stack.append(required); // Push required
+    try frame.stack.append(confirmations); // Push confirmations, Stack: [required, confirmations]  
     _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: confirmations < required
-    const lt_result = try frame.stack.pop();
-    // LT result
-
-    try frame.stack.append(lt_result);
     _ = try vm.table.execute(0, interpreter, state, 0x15); // ISZERO: NOT(confirmations < required) = confirmations >= required
 
     // Should be 1 (true) since 3 >= 3 is true, so NOT(3 < 3) = NOT(false) = true
     const result2 = try frame.stack.pop();
-    // ISZERO result
     try testing.expectEqual(@as(u256, 1), result2);
 }

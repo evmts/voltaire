@@ -29,7 +29,7 @@ fn create_evm_context_with_code(allocator: std.mem.Allocator, code: []const u8) 
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+        .withCaller(primitives.Address.ZERO)
         .build();
     
     return .{

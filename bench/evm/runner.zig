@@ -1,0 +1,246 @@
+const std = @import("std");
+
+fn print(comptime format: []const u8, args: anytype) !void {
+    const stdout = std.io.getStdOut().writer();
+    try stdout.print(format, args);
+}
+const testing = std.testing;
+const primitives = @import("Address"); // This imports the primitives module
+const Address = primitives.Address.Address;
+const Evm = @import("evm");
+
+// Command-line arguments structure
+const Args = struct {
+    contract_code_path: []const u8,
+    calldata: []const u8,
+    num_runs: u8,
+};
+
+const CALLER_ADDRESS_U256: u256 = 0x1000000000000000000000000000000000000001;
+
+// Override log level to suppress debug output for clean benchmark results
+pub const std_options: std.Options = .{
+    .log_level = .info,
+};
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    // Parse command line arguments
+    const args = try parseArgs(allocator);
+    defer allocator.free(args.contract_code_path);
+    defer allocator.free(args.calldata);
+
+    // Create caller address from u256 constant
+    const caller_address = primitives.Address.from_u256(CALLER_ADDRESS_U256);
+
+    // Read and decode contract code
+    const contract_code_hex = try std.fs.cwd().readFileAlloc(allocator, args.contract_code_path, 1024 * 1024);
+    defer allocator.free(contract_code_hex);
+    
+    const contract_code = try hexDecode(allocator, std.mem.trim(u8, contract_code_hex, " \n\r\t"));
+    defer allocator.free(contract_code);
+
+    // Decode calldata
+    const calldata = try hexDecode(allocator, args.calldata);
+    defer allocator.free(calldata);
+
+    // Create EVM state
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var vm = try builder.build();
+    defer vm.deinit();
+
+    // Set up caller account with large balance
+    const caller_balance = std.math.maxInt(u256); // Maximum balance
+    try vm.state.set_balance(caller_address, caller_balance);
+
+    // Deploy the contract first
+    const contract_address = try deployContract(&vm, allocator, caller_address, contract_code);
+
+    // Run the benchmark num_runs times
+    var i: u8 = 0;
+    while (i < args.num_runs) : (i += 1) {
+        const timer = std.time.nanoTimestamp();
+        
+        // Execute the contract call
+        const result = executeContract(&vm, allocator, caller_address, contract_address, calldata) catch |err| {
+            std.debug.print("Execution failed: {}\n", .{err});
+            std.process.exit(1);
+        };
+        
+        const duration_ns = std.time.nanoTimestamp() - timer;
+        const duration_ms = @as(f64, @floatFromInt(duration_ns)) / 1_000_000.0;
+        
+        if (result.success) {
+            // Output as integer milliseconds for benchmark framework compatibility
+            const duration_ms_rounded = @as(u64, @intFromFloat(@round(duration_ms)));
+            if (duration_ms_rounded == 0) {
+                // For sub-millisecond times, output as 1ms minimum
+                try print("1\n", .{});
+            } else {
+                try print("{d}\n", .{duration_ms_rounded});
+            }
+        } else {
+            std.debug.print("Execution failed: {s}\n", .{result.revert_reason orelse "Unknown error"});
+            std.process.exit(1);
+        }
+    }
+}
+
+fn parseArgs(allocator: std.mem.Allocator) !Args {
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+
+    var contract_code_path: ?[]const u8 = null;
+    var calldata: ?[]const u8 = null;
+    var num_runs: u8 = 1;
+
+    var i: usize = 1;
+    while (i < args.len) {
+        const arg = args[i];
+        
+        if (std.mem.eql(u8, arg, "--contract-code-path")) {
+            i += 1;
+            if (i >= args.len) {
+                std.debug.print("Error: --contract-code-path requires a value\n", .{});
+                std.process.exit(1);
+            }
+            contract_code_path = try allocator.dupe(u8, args[i]);
+        } else if (std.mem.eql(u8, arg, "--calldata")) {
+            i += 1;
+            if (i >= args.len) {
+                std.debug.print("Error: --calldata requires a value\n", .{});
+                std.process.exit(1);
+            }
+            calldata = try allocator.dupe(u8, args[i]);
+        } else if (std.mem.eql(u8, arg, "--num-runs") or std.mem.eql(u8, arg, "-n")) {
+            i += 1;
+            if (i >= args.len) {
+                std.debug.print("Error: --num-runs requires a value\n", .{});
+                std.process.exit(1);
+            }
+            num_runs = std.fmt.parseInt(u8, args[i], 10) catch |err| {
+                std.debug.print("Error: invalid num-runs value: {}\n", .{err});
+                std.process.exit(1);
+            };
+        } else if (std.mem.eql(u8, arg, "--help") or std.mem.eql(u8, arg, "-h")) {
+            try print("Zig EVM runner interface\n\n", .{});
+            try print("Usage: runner [OPTIONS]\n\n", .{});
+            try print("Options:\n", .{});
+            try print("  --contract-code-path <PATH>  Path to the hex contract code to deploy and run\n", .{});
+            try print("  --calldata <HEX>            Hex of calldata to use when calling the contract\n", .{});
+            try print("  -n, --num-runs <N>          Number of times to run the benchmark [default: 1]\n", .{});
+            try print("  -h, --help                  Print help information\n", .{});
+            std.process.exit(0);
+        } else {
+            std.debug.print("Error: unknown argument: {s}\n", .{arg});
+            std.process.exit(1);
+        }
+        i += 1;
+    }
+
+    if (contract_code_path == null) {
+        std.debug.print("Error: --contract-code-path is required\n", .{});
+        std.process.exit(1);
+    }
+    if (calldata == null) {
+        std.debug.print("Error: --calldata is required\n", .{});
+        std.process.exit(1);
+    }
+
+    return Args{
+        .contract_code_path = contract_code_path.?,
+        .calldata = calldata.?,
+        .num_runs = num_runs,
+    };
+}
+
+fn hexDecode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
+    // Remove 0x prefix if present
+    const clean_hex = if (std.mem.startsWith(u8, hex_str, "0x"))
+        hex_str[2..]
+    else
+        hex_str;
+
+    const result = try allocator.alloc(u8, clean_hex.len / 2);
+    _ = try std.fmt.hexToBytes(result, clean_hex);
+    return result;
+}
+
+const ExecutionResult = struct {
+    success: bool,
+    revert_reason: ?[]const u8 = null,
+};
+
+fn deployContract(vm: *Evm.Evm, allocator: std.mem.Allocator, caller: Address, bytecode: []const u8) !Address {
+    // Use the high-level create_contract API
+    const create_result = try vm.create_contract(
+        caller,        // deployer
+        0,            // value
+        bytecode,     // init_code (constructor + runtime code)
+        10_000_000    // gas
+    );
+    defer if (create_result.output) |output| allocator.free(output);
+
+    if (!create_result.success) {
+        return error.DeploymentFailed;
+    }
+
+    return create_result.address;
+}
+
+fn executeContract(vm: *Evm.Evm, allocator: std.mem.Allocator, caller: Address, contract_address: Address, calldata: []const u8) !ExecutionResult {
+    // Use the high-level call_contract API
+    const call_result = try vm.call_contract(
+        caller,           // caller
+        contract_address, // address
+        0,               // value
+        calldata,        // input
+        1_000_000_000,   // gas
+        false            // not static
+    );
+    defer if (call_result.output) |output| allocator.free(output);
+
+    if (call_result.success) {
+        return ExecutionResult{ .success = true };
+    } else {
+        // Provide more detailed error information
+        const reason = if (call_result.output) |output| 
+            if (output.len > 0) "Contract reverted with output" else "Contract reverted without output"
+        else 
+            "Execution failed without output";
+        
+        std.debug.print("Debug: Call failed - Gas left: {}, Success: {}, Output len: {}\n", .{
+            call_result.gas_left, call_result.success, if (call_result.output) |output| output.len else 0
+        });
+        
+        return ExecutionResult{ 
+            .success = false, 
+            .revert_reason = reason
+        };
+    }
+}
+
+test "hex decode" {
+    const allocator = testing.allocator;
+    
+    const result = try hexDecode(allocator, "0x48656c6c6f");
+    defer allocator.free(result);
+    
+    try testing.expectEqualSlices(u8, "Hello", result);
+}
+
+test "hex decode without prefix" {
+    const allocator = testing.allocator;
+    
+    const result = try hexDecode(allocator, "48656c6c6f");
+    defer allocator.free(result);
+    
+    try testing.expectEqualSlices(u8, "Hello", result);
+}

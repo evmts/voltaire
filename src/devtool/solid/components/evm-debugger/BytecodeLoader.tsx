@@ -1,68 +1,51 @@
-import UploadIcon from "lucide-solid/icons/upload";
-import { type Component, createSignal, type Setter } from "solid-js";
-import type { EvmState } from "~/components/evm-debugger/types";
-import { sampleContracts } from "~/components/evm-debugger/types";
-import { loadBytecode, resetEvm } from "~/components/evm-debugger/utils";
-import { Button } from "~/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "~/components/ui/card";
-import {
-	Combobox,
-	ComboboxContent,
-	ComboboxInput,
-	ComboboxItem,
-	ComboboxTrigger,
-} from "~/components/ui/combobox";
-import { TextArea } from "~/components/ui/textarea";
-import { TextFieldRoot } from "~/components/ui/textfield";
+import UploadIcon from 'lucide-solid/icons/upload'
+import { type Component, createSignal, type Setter } from 'solid-js'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Combobox, ComboboxContent, ComboboxInput, ComboboxItem, ComboboxTrigger } from '~/components/ui/combobox'
+import { TextArea } from '~/components/ui/textarea'
+import { TextFieldRoot } from '~/components/ui/textfield'
+import { type EvmState, sampleContracts } from '~/lib/types'
+import { loadBytecode, resetEvm } from '~/lib/utils'
 
 interface BytecodeLoaderProps {
-	bytecode: string;
-	setBytecode: Setter<string>;
-	setError: Setter<string>;
-	setIsRunning: Setter<boolean>;
-	setState: Setter<EvmState>;
+	bytecode: string
+	setBytecode: Setter<string>
+	setError: Setter<string>
+	setIsRunning: Setter<boolean>
+	setState: Setter<EvmState>
 }
 
 const BytecodeLoader: Component<BytecodeLoaderProps> = (props) => {
-	const [selectedContract, setSelectedContract] = createSignal(
-		sampleContracts[7].name,
-	);
+	const [selectedContract, setSelectedContract] = createSignal(sampleContracts[7].name)
 
 	const handleLoadBytecode = async () => {
 		try {
-			props.setError("");
-			await loadBytecode(props.bytecode);
-			props.setIsRunning(false);
-			const state = await resetEvm();
-			props.setState(state);
+			props.setError('')
+			await loadBytecode(props.bytecode)
+			props.setIsRunning(false)
+			const state = await resetEvm()
+			props.setState(state)
 		} catch (err) {
-			props.setError(`${err}`);
+			props.setError(`${err}`)
 		}
-	};
+	}
 
 	return (
 		<Card class="mx-auto mt-6 max-w-7xl rounded-sm border-none bg-transparent shadow-none">
 			<CardHeader class="flex flex-col justify-between gap-2 px-3 pb-2 sm:flex-row sm:items-center sm:px-6">
 				<div class="space-y-1">
 					<CardTitle>Bytecode</CardTitle>
-					<CardDescription>
-						Enter EVM bytecode to debug or select a sample contract
-					</CardDescription>
+					<CardDescription>Enter EVM bytecode to debug or select a sample contract</CardDescription>
 				</div>
 				{/** For some reason this Combobox is breaking the build. Currently it's not rendering at all*/}
 				<Combobox
 					value={selectedContract()}
 					onChange={(value) => {
-						setSelectedContract(value || "");
-						const contract = sampleContracts.find((c) => c.name === value);
+						setSelectedContract(value || '')
+						const contract = sampleContracts.find((c) => c.name === value)
 						if (contract) {
-							props.setBytecode(contract.bytecode);
+							props.setBytecode(contract.bytecode)
 						}
 					}}
 					options={sampleContracts.map((c) => c.name)}
@@ -72,19 +55,13 @@ const BytecodeLoader: Component<BytecodeLoaderProps> = (props) => {
 							<div class="flex flex-col items-start">
 								<span class="font-medium">{props.item.rawValue}</span>
 								<span class="text-muted-foreground text-xs">
-									{
-										sampleContracts.find((c) => c.name === props.item.rawValue)
-											?.description
-									}
+									{sampleContracts.find((c) => c.name === props.item.rawValue)?.description}
 								</span>
 							</div>
 						</ComboboxItem>
 					)}
 				>
-					<ComboboxTrigger
-						class="w-[250px]"
-						aria-label="Select sample contract"
-					>
+					<ComboboxTrigger class="w-[250px]" aria-label="Select sample contract">
 						<div class="flex items-center">
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
@@ -117,19 +94,13 @@ const BytecodeLoader: Component<BytecodeLoaderProps> = (props) => {
 						aria-label="EVM bytecode input"
 					/>
 				</TextFieldRoot>
-				<Button
-					variant="secondary"
-					size="sm"
-					onClick={handleLoadBytecode}
-					aria-label="Load bytecode"
-					class="gap-2"
-				>
+				<Button variant="secondary" size="sm" onClick={handleLoadBytecode} aria-label="Load bytecode" class="gap-2">
 					<UploadIcon class="h-4 w-4" />
 					Load Bytecode
 				</Button>
 			</CardContent>
 		</Card>
-	);
-};
+	)
+}
 
-export default BytecodeLoader;
+export default BytecodeLoader

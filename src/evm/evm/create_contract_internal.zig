@@ -71,9 +71,9 @@ pub fn create_contract_internal(self: *Vm, creator: primitives.Address.Address, 
         init_result.output,
     });
 
-    // Check if init code execution was successful
-    if (init_result.status != .Success) {
-        Log.debug("create_contract_internal: Init code failed with status: {}", .{init_result.status});
+    // Check if init code reverted
+    if (init_result.status == .Revert) {
+        Log.debug("create_contract_internal: Init code reverted, contract creation failed", .{});
         return CreateResult.init_failure(init_result.gas_left, init_result.output);
     }
 

@@ -135,18 +135,18 @@ test "Integration: Storage with conditional updates" {
     const sum = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 150), sum);
 
-    // Duplicate for comparison
-    try frame.stack.append(sum);
-    _ = try evm.table.execute(0, interpreter, state, 0x80);
-
-    // Compare with 120 - we want to check if 150 > 120
-    // GT does top > second, so we need [120, 150] on stack
-    try frame.stack.append(120);
-    _ = try evm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [120, 150]
+    // Compare sum > 120
+    // We want to check if 150 > 120 = true
+    // GT computes top > second, so we need 150 on top
+    try frame.stack.append(120); // Stack: [120]
+    try frame.stack.append(sum); // Stack: [120, 150]
     _ = try evm.table.execute(0, interpreter, state, 0x11); // GT: 150 > 120 = 1
 
     const comparison_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), comparison_result);
+
+    // Push sum back for storage
+    try frame.stack.append(sum);
 
     // Since condition is true, store the value
     // Stack has the value (150), need to store it
@@ -211,11 +211,11 @@ test "Integration: Memory copy operations" {
     _ = try evm.table.execute(0, interpreter, state, 0x52);
 
     // Copy 32 bytes from offset 0 to offset 64
-    // MCOPY pops in order: dest, src, length
-    // So for dest=64, src=0, length=32, we need stack [32, 0, 64]
-    try frame.stack.append(32); // length
-    try frame.stack.append(0); // src
-    try frame.stack.append(64); // dst
+    // MCOPY expects [dst, src, length] from top to bottom
+    // So we push in reverse order: length, src, dst
+    try frame.stack.append(32); // size (will be on top)
+    try frame.stack.append(0); // src (will be in middle)
+    try frame.stack.append(64); // dst (will be on bottom)
     _ = try evm.table.execute(0, interpreter, state, 0x5E);
 
     // Verify copy

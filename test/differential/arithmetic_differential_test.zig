@@ -1118,7 +1118,7 @@ test "EXP opcode 2 ** 3 = 8" {
     std.debug.print("✓ EXP test passed: 2 ** 3 = 8\n", .{});
 }
 
-test "SDIV opcode signed division -8 / 2 = -4" {
+tens-normalize.js/est "SDIV opcode signed division -8 / 2 = -4" {
     const allocator = testing.allocator;
 
     // PUSH32 2, PUSH32 -8 (as u256), SDIV, MSTORE, RETURN (computes 2 / -8 = 0)

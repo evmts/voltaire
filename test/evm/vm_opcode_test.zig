@@ -971,8 +971,8 @@ test "VM: MOD opcode" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
-        0x60, 0x0A, // PUSH1 10 (dividend)
         0x60, 0x03, // PUSH1 3 (divisor)
+        0x60, 0x0A, // PUSH1 10 (dividend)
         0x06, // MOD (10 % 3 = 1)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -996,8 +996,8 @@ test "VM: MOD by zero returns zero" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
-        0x60, 0x0A, // PUSH1 10
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (divisor)
+        0x60, 0x0A, // PUSH1 10 (dividend)
         0x06, // MOD (10 % 0)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1021,8 +1021,8 @@ test "VM: MOD perfect division" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
-        0x60, 0x14, // PUSH1 20
-        0x60, 0x05, // PUSH1 5
+        0x60, 0x05, // PUSH1 5 (divisor)
+        0x60, 0x14, // PUSH1 20 (dividend)
         0x06, // MOD (20 % 5 = 0)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1046,8 +1046,8 @@ test "VM: MOD by one" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
-        0x61, 0x04, 0xD2, // PUSH2 1234
-        0x60, 0x01, // PUSH1 1
+        0x60, 0x01, // PUSH1 1 (divisor)
+        0x61, 0x04, 0xD2, // PUSH2 1234 (dividend)
         0x06, // MOD (1234 % 1 = 0)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1073,7 +1073,8 @@ test "VM: SDIV opcode" {
     // Test: -10 / 3 = -3
     // -10 in two's complement: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF6
     const bytecode = [_]u8{
-        0x7f, // PUSH32
+        0x60, 0x03, // PUSH1 3 (divisor)
+        0x7f, // PUSH32 (-10, dividend)
         0xFF,
         0xFF,
         0xFF,
@@ -1099,7 +1100,6 @@ test "VM: SDIV opcode" {
         0xFF,
         0xFF,
         0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF6, // -10
-        0x60, 0x03, // PUSH1 3
         0x05, // SDIV (-10 / 3 = -3),
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1125,8 +1125,8 @@ test "VM: SDIV by zero returns zero" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
-        0x60, 0x0A, // PUSH1 10
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (divisor)
+        0x60, 0x0A, // PUSH1 10 (dividend) 
         0x05, // SDIV (10 / 0)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1152,7 +1152,40 @@ test "VM: SDIV overflow case MIN_I256 / -1" {
     // MIN_I256 = -2^255 = 0x80000000000000000000000000000000000000000000000000000000000000000
     // -1 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
     const bytecode = [_]u8{
-        0x7f, // PUSH32 (MIN_I256)
+        0x7f, // PUSH32 (-1, divisor)
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0x7f, // PUSH32 (MIN_I256, dividend)
         0x80,
         0x00,
         0x00,
@@ -1184,39 +1217,6 @@ test "VM: SDIV overflow case MIN_I256 / -1" {
         0x00,
         0x00,
         0x00, // 32nd byte for MIN_I256
-        0x7f, // PUSH32 (-1)
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
         0x05, // SDIV,
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1244,8 +1244,7 @@ test "VM: SDIV positive by negative" {
     // Test: 10 / -3 = -3
     // -3 in two's complement: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD
     const bytecode = [_]u8{
-        0x60, 0x0A, // PUSH1 10
-        0x7f, // PUSH32 (-3)
+        0x7f, // PUSH32 (-3, divisor)
         0xFF,
         0xFF,
         0xFF,
@@ -1278,6 +1277,7 @@ test "VM: SDIV positive by negative" {
         0xFF,
         0xFF,
         0xFD,
+        0x60, 0x0A, // PUSH1 10 (dividend)
         0x05, // SDIV (10 / -3 = -3),
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1304,7 +1304,40 @@ test "VM: SDIV negative by negative" {
 
     // Test: -10 / -3 = 3
     const bytecode = [_]u8{
-        0x7f, // PUSH32 (-10)
+        0x7f, // PUSH32 (-3, divisor)
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFD,
+        0x7f, // PUSH32 (-10, dividend)
         0xFF,
         0xFF,
         0xFF,
@@ -1337,39 +1370,6 @@ test "VM: SDIV negative by negative" {
         0xFF,
         0xFF,
         0xF6,
-        0x7f, // PUSH32 (-3)
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFF,
-        0xFD,
         0x05, // SDIV (-10 / -3 = 3)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1395,7 +1395,8 @@ test "VM: SDIV truncation behavior" {
     // Test: -17 / 5 = -3 (truncates toward zero)
     // -17 in two's complement: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEF
     const bytecode = [_]u8{
-        0x7f, // PUSH32 (-17)
+        0x60, 0x05, // PUSH1 5 (divisor)
+        0x7f, // PUSH32 (-17, dividend)
         0xFF,
         0xFF,
         0xFF,
@@ -1428,7 +1429,6 @@ test "VM: SDIV truncation behavior" {
         0xFF,
         0xFF,
         0xEF,
-        0x60, 0x05, // PUSH1 5
         0x05, // SDIV (-17 / 5 = -3),
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1456,7 +1456,8 @@ test "VM: SMOD opcode" {
     // Test: -10 % 3 = -1
     // -10 in two's complement: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF6
     const bytecode = [_]u8{
-        0x7f, // PUSH32 (-10)
+        0x60, 0x03, // PUSH1 3 (divisor)
+        0x7f, // PUSH32 (-10, dividend)
         0xFF,
         0xFF,
         0xFF,
@@ -1489,7 +1490,6 @@ test "VM: SMOD opcode" {
         0xFF,
         0xFF,
         0xF6,
-        0x60, 0x03, // PUSH1 3
         0x07, // SMOD (-10 % 3 = -1),
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1515,8 +1515,8 @@ test "VM: SMOD by zero returns zero" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     const bytecode = [_]u8{
-        0x60, 0x0A, // PUSH1 10
-        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0 (divisor)
+        0x60, 0x0A, // PUSH1 10 (dividend)
         0x07, // SMOD (10 % 0)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1541,8 +1541,8 @@ test "VM: SMOD positive by positive" {
 
     // Test: 17 % 5 = 2
     const bytecode = [_]u8{
-        0x60, 0x11, // PUSH1 17
-        0x60, 0x05, // PUSH1 5
+        0x60, 0x05, // PUSH1 5 (divisor)
+        0x60, 0x11, // PUSH1 17 (dividend)
         0x07, // SMOD (17 % 5 = 2)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1568,8 +1568,7 @@ test "VM: SMOD positive by negative" {
     // Test: 10 % -3 = 1
     // -3 in two's complement: 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD
     const bytecode = [_]u8{
-        0x60, 0x0A, // PUSH1 10
-        0x7f, // PUSH32 (-3)
+        0x7f, // PUSH32 (-3, divisor)
         0xFF,
         0xFF,
         0xFF,
@@ -1602,6 +1601,7 @@ test "VM: SMOD positive by negative" {
         0xFF,
         0xFF,
         0xFD,
+        0x60, 0x0A, // PUSH1 10 (dividend)
         0x07, // SMOD (10 % -3 = 1)
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1627,7 +1627,8 @@ test "VM: SMOD large negative number" {
     // Test: MIN_I256 % 100
     // MIN_I256 = -2^255 = 0x80000000000000000000000000000000000000000000000000000000000000000
     const bytecode = [_]u8{
-        0x7f, // PUSH32 (MIN_I256)
+        0x60, 0x64, // PUSH1 100 (divisor)
+        0x7f, // PUSH32 (MIN_I256, dividend)
         0x80,
         0x00,
         0x00,
@@ -1660,7 +1661,6 @@ test "VM: SMOD large negative number" {
         0x00,
         0x00,
         0x00,
-        0x60, 0x64, // PUSH1 100
         0x07, // SMOD
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -1793,11 +1793,11 @@ test "VM: GT opcode" {
     defer destroy_test_evm(allocator, evm, test_setup.memory_db);
 
     // Test 10 > 5 (true)
-    // Stack after pushes: [10, 5] where 5 is top
-    // GT pops 5, then 10, computes 10 > 5 = true
+    // Stack after pushes: [5, 10] where 10 is top
+    // GT pops 10, then 5, computes 10 > 5 = true
     const bytecode = [_]u8{
-        0x60, 0x0A, // PUSH1 10
         0x60, 0x05, // PUSH1 5
+        0x60, 0x0A, // PUSH1 10
         0x11, // GT
         0x60, 0x00, // PUSH1 0
         0x52, // MSTORE
@@ -2033,7 +2033,7 @@ test "VM: Conditional logic with comparison" {
     const bytecode = [_]u8{
         0x60, 0x05, // PUSH1 5
         0x60, 0x0A, // PUSH1 10
-        0x11, // GT (10 > 5 = 1)
+        0x11, // GT (top > second: 10 > 5 = 1)
         0x60, 0x0D, // PUSH1 13 (jump dest if true)
         0x57, // JUMPI
         0x60, 0xC8, // PUSH1 200 (false path)

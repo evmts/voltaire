@@ -95,10 +95,10 @@ test "Integration: Conditional jump patterns" {
     frame_ptr.pc = 0;
 
     // Calculate condition: 5 > 3
-    // GT computes top > second, so for 5 > 3 we need [3, 5]
+    // GT computes top > second, so we need 5 on top
     try frame_ptr.stack.append(3);
     try frame_ptr.stack.append(5);
-    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT Result: 1, Stack: [1]
+    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT Result: 1, Stack: [1] (5 > 3 = true)
 
     // Push destination (30) on top of condition
     try frame_ptr.stack.append(30); // Stack: [1, 30] with 30 on top
@@ -170,22 +170,20 @@ test "Integration: Loop implementation with JUMP" {
     var iterations: u32 = 0;
     while (iterations < 5) : (iterations += 1) {
         // Decrement counter
-        // SUB does top - second, we want counter - 1
-        // Stack has [counter], we need to get counter - 1
-        _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1: [counter, counter]
-        try frame_ptr.stack.append(1); // [counter, counter, 1]
-        _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1: [counter, 1, counter]
-        _ = try vm.table.execute(0, interpreter, state, 0x03); // SUB: [counter, result]
-        _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1: [result, counter]
-        _ = try vm.table.execute(0, interpreter, state, 0x50); // POP: [result]
+        // SUB now does top - second, so we need [1, counter] to get counter - 1
+        try frame_ptr.stack.append(1); // Stack: [counter, 1]
+        _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [1, counter]
+        _ = try vm.table.execute(0, interpreter, state, 0x03); // SUB = counter - 1
 
         // Duplicate for comparison
         _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1
 
         // Check if counter > 0
-        // GT does top > second, we want counter > 0
-        try frame_ptr.stack.append(0);
-        _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1 to get [0, counter]
+        // Stack after DUP1: [counter, counter]
+        // GT computes top > second, so we need counter on top and 0 second
+        // Current stack has counter, so we push 0 then swap
+        try frame_ptr.stack.append(0); // Stack: [counter, counter, 0]
+        _ = try vm.table.execute(0, interpreter, state, 0x90); // SWAP1: Stack: [counter, 0, counter]
         _ = try vm.table.execute(0, interpreter, state, 0x11); // GT: counter > 0
 
         // If counter > 0, we would jump back to loop start
@@ -512,11 +510,11 @@ test "Integration: Nested conditions with jumps" {
     const c: u256 = 3;
     const d: u256 = 8;
 
-    // First condition: a > b (should be true)
-    // GT does top > second, for 10 > 5 we need [5, 10]
-    try frame_ptr.stack.append(b);
-    try frame_ptr.stack.append(a);
-    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT
+    // First condition: a > b (should be true) with corrected GT
+    // GT now computes (top > second), so we need [b, a] for a > b
+    try frame_ptr.stack.append(b); // Push b (second)
+    try frame_ptr.stack.append(a); // Push a (top), Stack: [b, a]
+    _ = try vm.table.execute(0, interpreter, state, 0x11); // GT: computes a > b
 
     // If first condition is false, jump to end
     _ = try vm.table.execute(0, interpreter, state, 0x80); // DUP1
@@ -529,11 +527,11 @@ test "Integration: Nested conditions with jumps" {
     _ = try frame_ptr.stack.pop(); // Pop destination
     try testing.expectEqual(@as(u256, 0), should_skip_first); // Should not skip
 
-    // Second condition: c < d (should be true)
-    // LT does top < second, for 3 < 8 we need [8, 3]
-    try frame_ptr.stack.append(d);
-    try frame_ptr.stack.append(c);
-    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT
+    // Second condition: c < d (should be true) with corrected LT  
+    // LT now computes (top < second), so we need [d, c] for c < d
+    try frame_ptr.stack.append(d); // Push d (second)
+    try frame_ptr.stack.append(c); // Push c (top), Stack: [d, c] 
+    _ = try vm.table.execute(0, interpreter, state, 0x10); // LT: computes c < d
 
     // AND the conditions
     _ = try vm.table.execute(0, interpreter, state, 0x02); // MUL (using as AND for 0/1 values)
