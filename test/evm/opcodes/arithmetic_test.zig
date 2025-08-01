@@ -393,9 +393,9 @@ test "Arithmetic: ADDMOD complex operations" {
 
     // Test 3: Modulo by zero
     frame.stack.clear();
-    try frame.stack.append(7);  // a (first addend)
-    try frame.stack.append(5);  // b (second addend)
-    try frame.stack.append(0);  // n (modulus)
+    try frame.stack.append(0);  // n (modulus) - bottom
+    try frame.stack.append(5);  // b (second addend) - middle
+    try frame.stack.append(7);  // a (first addend) - top
     _ = try evm.table.execute(0, interpreter, state, 0x08);
     const zero_result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), zero_result); // Modulo by zero returns 0
