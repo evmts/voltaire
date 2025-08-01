@@ -3,7 +3,7 @@ import { createStore } from 'solid-js/store'
 import EvmDebugger from '~/components/evm-debugger/EvmDebugger'
 import { Toaster } from '~/components/ui/sonner'
 import { type EvmState, sampleContracts } from '~/lib/types'
-import { resetEvm, stepEvm } from '~/lib/utils'
+import { loadBytecode, resetEvm, stepEvm } from '~/lib/utils'
 
 declare global {
 	interface Window {
@@ -15,6 +15,7 @@ declare global {
 		handleRunPause: () => void
 		handleStep: () => void
 		handleReset: () => void
+		on_web_ui_ready: () => void
 	}
 }
 
@@ -60,10 +61,21 @@ function App() {
 		}
 	}
 
-	onMount(() => {
+	onMount(async () => {
 		window.handleRunPause = handleRunPause
 		window.handleStep = handleStep
 		window.handleReset = handleReset
+
+		// Wait for WebUI connection event
+		window.on_web_ui_ready = async () => {
+			try {
+				await loadBytecode(bytecode())
+				const initialState = await resetEvm()
+				setState(initialState)
+			} catch (err) {
+				setError(err instanceof Error ? err.message : 'Unknown error')
+			}
+		}
 
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.code === 'Space') {

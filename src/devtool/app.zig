@@ -221,5 +221,14 @@ pub fn run(self: *App) !void {
     // Try using the embedded file directly with @embedFile
     const html_content = @embedFile("dist/index.html");
     try self.window.show(html_content);
+    
+    // After showing the window, WebUI bindings are ready
+    // Execute JavaScript to trigger initialization
+    self.window.run(
+        \\if (window.on_web_ui_ready) {
+        \\    window.on_web_ui_ready();
+        \\}
+    );
+    
     webui.wait();
 }
