@@ -1723,6 +1723,153 @@ pub fn build(b: *std.Build) void {
         const run_storage_differential_test = b.addRunArtifact(storage_differential_test);
         test_step.dependOn(&run_storage_differential_test.step);
 
+        // Add crypto differential tests
+        const crypto_differential_test = b.addTest(.{
+            .name = "crypto-differential-test",
+            .root_source_file = b.path("test/differential/crypto_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        crypto_differential_test.root_module.addImport("primitives", primitives_mod);
+        crypto_differential_test.root_module.addImport("evm", evm_mod);
+        crypto_differential_test.root_module.addImport("revm", revm_mod);
+        crypto_differential_test.linkLibC();
+        if (target.result.os.tag == .macos) {
+            crypto_differential_test.linkSystemLibrary("c++");
+            crypto_differential_test.linkFramework("Security");
+            crypto_differential_test.linkFramework("SystemConfiguration");
+            crypto_differential_test.linkFramework("CoreFoundation");
+        }
+
+        const run_crypto_differential_test = b.addRunArtifact(crypto_differential_test);
+        test_step.dependOn(&run_crypto_differential_test.step);
+
+        // Add stack differential tests
+        const stack_differential_test = b.addTest(.{
+            .name = "stack-differential-test",
+            .root_source_file = b.path("test/differential/stack_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        stack_differential_test.root_module.addImport("primitives", primitives_mod);
+        stack_differential_test.root_module.addImport("evm", evm_mod);
+        stack_differential_test.root_module.addImport("revm", revm_mod);
+        stack_differential_test.linkLibC();
+        if (target.result.os.tag == .macos) {
+            stack_differential_test.linkSystemLibrary("c++");
+            stack_differential_test.linkFramework("Security");
+            stack_differential_test.linkFramework("SystemConfiguration");
+            stack_differential_test.linkFramework("CoreFoundation");
+        }
+
+        const run_stack_differential_test = b.addRunArtifact(stack_differential_test);
+        test_step.dependOn(&run_stack_differential_test.step);
+
+        // Add control differential tests
+        const control_differential_test = b.addTest(.{
+            .name = "control-differential-test",
+            .root_source_file = b.path("test/differential/control_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        control_differential_test.root_module.addImport("primitives", primitives_mod);
+        control_differential_test.root_module.addImport("evm", evm_mod);
+        control_differential_test.root_module.addImport("revm", revm_mod);
+        control_differential_test.linkLibC();
+        if (target.result.os.tag == .macos) {
+            control_differential_test.linkSystemLibrary("c++");
+            control_differential_test.linkFramework("Security");
+            control_differential_test.linkFramework("SystemConfiguration");
+            control_differential_test.linkFramework("CoreFoundation");
+        }
+
+        const run_control_differential_test = b.addRunArtifact(control_differential_test);
+        test_step.dependOn(&run_control_differential_test.step);
+
+        // Add block differential tests
+        const block_differential_test = b.addTest(.{
+            .name = "block-differential-test",
+            .root_source_file = b.path("test/differential/block_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        block_differential_test.root_module.addImport("primitives", primitives_mod);
+        block_differential_test.root_module.addImport("evm", evm_mod);
+        block_differential_test.root_module.addImport("revm", revm_mod);
+        block_differential_test.linkLibC();
+        if (target.result.os.tag == .macos) {
+            block_differential_test.linkSystemLibrary("c++");
+            block_differential_test.linkFramework("Security");
+            block_differential_test.linkFramework("SystemConfiguration");
+            block_differential_test.linkFramework("CoreFoundation");
+        }
+
+        const run_block_differential_test = b.addRunArtifact(block_differential_test);
+        test_step.dependOn(&run_block_differential_test.step);
+
+        // Add system differential tests
+        const system_differential_test = b.addTest(.{
+            .name = "system-differential-test",
+            .root_source_file = b.path("test/differential/system_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        system_differential_test.root_module.addImport("primitives", primitives_mod);
+        system_differential_test.root_module.addImport("evm", evm_mod);
+        system_differential_test.root_module.addImport("revm", revm_mod);
+        system_differential_test.linkLibC();
+        if (target.result.os.tag == .macos) {
+            system_differential_test.linkSystemLibrary("c++");
+            system_differential_test.linkFramework("Security");
+            system_differential_test.linkFramework("SystemConfiguration");
+            system_differential_test.linkFramework("CoreFoundation");
+        }
+
+        const run_system_differential_test = b.addRunArtifact(system_differential_test);
+        test_step.dependOn(&run_system_differential_test.step);
+
+        // Add logging differential tests
+        const logging_differential_test = b.addTest(.{
+            .name = "logging-differential-test",
+            .root_source_file = b.path("test/differential/logging_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        logging_differential_test.root_module.addImport("primitives", primitives_mod);
+        logging_differential_test.root_module.addImport("evm", evm_mod);
+        logging_differential_test.root_module.addImport("revm", revm_mod);
+        logging_differential_test.linkLibC();
+        if (target.result.os.tag == .macos) {
+            logging_differential_test.linkSystemLibrary("c++");
+            logging_differential_test.linkFramework("Security");
+            logging_differential_test.linkFramework("SystemConfiguration");
+            logging_differential_test.linkFramework("CoreFoundation");
+        }
+
+        const run_logging_differential_test = b.addRunArtifact(logging_differential_test);
+        test_step.dependOn(&run_logging_differential_test.step);
+
+        // Add precompile differential tests
+        const precompile_differential_test = b.addTest(.{
+            .name = "precompile-differential-test",
+            .root_source_file = b.path("test/differential/precompile_differential_test.zig"),
+            .target = target,
+            .optimize = optimize,
+        });
+        precompile_differential_test.root_module.addImport("primitives", primitives_mod);
+        precompile_differential_test.root_module.addImport("evm", evm_mod);
+        precompile_differential_test.root_module.addImport("revm", revm_mod);
+        precompile_differential_test.linkLibC();
+        if (target.result.os.tag == .macos) {
+            precompile_differential_test.linkSystemLibrary("c++");
+            precompile_differential_test.linkFramework("Security");
+            precompile_differential_test.linkFramework("SystemConfiguration");
+            precompile_differential_test.linkFramework("CoreFoundation");
+        }
+
+        const run_precompile_differential_test = b.addRunArtifact(precompile_differential_test);
+        test_step.dependOn(&run_precompile_differential_test.step);
+
         // Also add a separate step for differential tests
         const differential_test_step = b.step("test-differential", "Run differential tests against revm");
         differential_test_step.dependOn(&run_differential_test.step);
@@ -1731,6 +1878,13 @@ pub fn build(b: *std.Build) void {
         differential_test_step.dependOn(&run_memory_differential_test.step);
         differential_test_step.dependOn(&run_environment_differential_test.step);
         differential_test_step.dependOn(&run_storage_differential_test.step);
+        differential_test_step.dependOn(&run_crypto_differential_test.step);
+        differential_test_step.dependOn(&run_stack_differential_test.step);
+        differential_test_step.dependOn(&run_control_differential_test.step);
+        differential_test_step.dependOn(&run_block_differential_test.step);
+        differential_test_step.dependOn(&run_system_differential_test.step);
+        differential_test_step.dependOn(&run_logging_differential_test.step);
+        differential_test_step.dependOn(&run_precompile_differential_test.step);
     }
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
