@@ -20,8 +20,8 @@ pub fn op_lt(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
     // Peek the new top operand (a) unsafely
     const a = frame.stack.peek_unsafe().*;
 
-    // EVM LT computes: a < b (where a was second from top, b was top)
-    const result: u256 = switch (std.math.order(a, b)) {
+    // EVM LT computes: b < a (where b was top, a was second from top)
+    const result: u256 = switch (std.math.order(b, a)) {
         .lt => 1,
         .eq, .gt => 0,
     };
