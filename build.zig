@@ -250,12 +250,12 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         });
 
-        // Link the compiled Rust dynamic library
-        const dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/libbn254_wrapper.dylib", .{ target_triple, rust_target_dir })
+        // Link the compiled Rust static library
+        const static_lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, rust_target_dir })
         else
-            b.fmt("target/{s}/libbn254_wrapper.dylib", .{rust_target_dir});
-        lib.addObjectFile(b.path(dylib_path));
+            b.fmt("target/{s}/libbn254_wrapper.a", .{rust_target_dir});
+        lib.addObjectFile(b.path(static_lib_path));
         lib.linkLibC();
         
         // Make the rust build a dependency
@@ -305,14 +305,6 @@ pub fn build(b: *std.Build) void {
     if (bn254_lib) |lib| {
         evm_mod.linkLibrary(lib);
         evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
-        
-        // Also link the dynamic library directly to the module
-        const bn254_rust_target_dir = if (optimize == .Debug) "debug" else "release";
-        const bn254_dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/libbn254_wrapper.dylib", .{ target_triple, bn254_rust_target_dir })
-        else
-            b.fmt("target/{s}/libbn254_wrapper.dylib", .{ bn254_rust_target_dir });
-        evm_mod.addObjectFile(b.path(bn254_dylib_path));
     }
 
     // Link c-kzg library to EVM module
@@ -477,12 +469,12 @@ pub fn build(b: *std.Build) void {
             .optimize = bench_optimize,
         });
         
-        // Link the compiled Rust dynamic library
-        const dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/libbn254_wrapper.dylib", .{ target_triple, bench_rust_target_dir })
+        // Link the compiled Rust static library
+        const static_lib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, bench_rust_target_dir })
         else
-            b.fmt("target/{s}/libbn254_wrapper.dylib", .{bench_rust_target_dir});
-        lib.addObjectFile(b.path(dylib_path));
+            b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
+        lib.addObjectFile(b.path(static_lib_path));
         lib.linkLibC();
         
         // Link additional system libraries that Rust might need
@@ -519,14 +511,6 @@ pub fn build(b: *std.Build) void {
     if (bench_bn254_lib) |lib| {
         bench_evm_mod.linkLibrary(lib);
         bench_evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
-        
-        // Also link the dynamic library directly to the bench module
-        const bench_bn254_rust_target_dir = "release"; // bench always uses release
-        const bench_bn254_dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/libbn254_wrapper.dylib", .{ target_triple, bench_bn254_rust_target_dir })
-        else
-            b.fmt("target/{s}/libbn254_wrapper.dylib", .{ bench_bn254_rust_target_dir });
-        bench_evm_mod.addObjectFile(b.path(bench_bn254_dylib_path));
     }
     
     // Link c-kzg library to bench EVM module
@@ -608,6 +592,17 @@ pub fn build(b: *std.Build) void {
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
     b.installArtifact(exe);
+    
+    // Add evm_test_runner executable
+    const evm_test_runner = b.addExecutable(.{
+        .name = "evm_test_runner",
+        .root_source_file = b.path("src/evm_test_runner.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    evm_test_runner.root_module.addImport("evm", evm_mod);
+    evm_test_runner.root_module.addImport("primitives", primitives_mod);
+    b.installArtifact(evm_test_runner);
 
     // WASM library build optimized for size
     const wasm_target = b.resolveTargetQuery(.{
@@ -1009,6 +1004,49 @@ pub fn build(b: *std.Build) void {
         dmg_step.dependOn(&create_dmg.step);
     }
 
+    // EVM Benchmark Runner executable
+    const evm_runner_exe = b.addExecutable(.{
+        .name = "evm-runner",
+        .root_source_file = b.path("bench/evm/runner.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    evm_runner_exe.root_module.addImport("evm", evm_mod);
+    evm_runner_exe.root_module.addImport("Address", primitives_mod);
+    
+    b.installArtifact(evm_runner_exe);
+    
+    const run_evm_runner_cmd = b.addRunArtifact(evm_runner_exe);
+    if (b.args) |args| {
+        run_evm_runner_cmd.addArgs(args);
+    }
+    
+    const evm_runner_step = b.step("evm-runner", "Run the EVM benchmark runner");
+    evm_runner_step.dependOn(&run_evm_runner_cmd.step);
+    
+    const build_evm_runner_step = b.step("build-evm-runner", "Build the EVM benchmark runner");
+    build_evm_runner_step.dependOn(&b.addInstallArtifact(evm_runner_exe, .{}).step);
+
+    // Static library for opcode testing FFI
+    const opcode_test_lib = b.addStaticLibrary(.{
+        .name = "guillotine_opcode_test",
+        .root_source_file = b.path("src/evm_opcode_test_ffi.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    opcode_test_lib.root_module.addImport("evm", evm_mod);
+    opcode_test_lib.root_module.addImport("primitives", primitives_mod);
+    opcode_test_lib.root_module.addImport("crypto", crypto_mod);
+    opcode_test_lib.root_module.addImport("build_options", build_options.createModule());
+    
+    // Link BN254 library if available
+    if (bn254_lib) |bn254| {
+        opcode_test_lib.linkLibrary(bn254);
+        opcode_test_lib.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
+    b.installArtifact(opcode_test_lib);
+
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const lib_unit_tests = b.addTest(.{
@@ -1111,6 +1149,25 @@ pub fn build(b: *std.Build) void {
     const run_opcodes_test = b.addRunArtifact(opcodes_test);
     const opcodes_test_step = b.step("test-opcodes", "Run Opcodes tests");
     opcodes_test_step.dependOn(&run_opcodes_test.step);
+    
+    // Add Generated Opcode Comparison tests
+    const opcode_comparison_test = b.addTest(.{
+        .name = "opcode-comparison-test",
+        .root_source_file = b.path("test/evm/opcodes/generated_opcode_comparison_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    opcode_comparison_test.root_module.stack_check = false;
+    opcode_comparison_test.root_module.addImport("primitives", primitives_mod);
+    opcode_comparison_test.root_module.addImport("evm", evm_mod);
+    opcode_comparison_test.root_module.addImport("Address", primitives_mod);
+    opcode_comparison_test.root_module.addImport("crypto", crypto_mod);
+    opcode_comparison_test.root_module.addImport("build_options", build_options.createModule());
+
+    const run_opcode_comparison_test = b.addRunArtifact(opcode_comparison_test);
+    const opcode_comparison_test_step = b.step("test-opcode-comparison", "Run opcode comparison tests");
+    opcode_comparison_test_step.dependOn(&run_opcode_comparison_test.step);
 
     // Add VM opcode tests
     const vm_opcode_test = b.addTest(.{
@@ -1482,7 +1539,7 @@ pub fn build(b: *std.Build) void {
     if (revm_lib != null) {
         const revm_test = b.addTest(.{
             .name = "revm-test",
-            .root_source_file = b.path("src/revm_wrapper/revm.zig"),
+            .root_source_file = b.path("src/revm_wrapper/test_revm_wrapper.zig"),
             .target = target,
             .optimize = optimize,
         });
@@ -1511,6 +1568,9 @@ pub fn build(b: *std.Build) void {
             revm_test.linkFramework("CoreFoundation");
         }
         
+        // Make sure the test depends on the Rust library being built
+        revm_test.step.dependOn(&revm_lib.?.step);
+        
         const run_revm_test = b.addRunArtifact(revm_test);
         test_step.dependOn(&run_revm_test.step);
         
@@ -1530,6 +1590,186 @@ pub fn build(b: *std.Build) void {
     // Hardfork tests removed completely
     test_step.dependOn(&run_delegatecall_test.step);
     test_step.dependOn(&run_devtool_test.step);
+    
+    
+    // Add ERC20 mint debug test
+    const erc20_mint_debug_test = b.addTest(.{
+        .name = "erc20-mint-debug-test",
+        .root_source_file = b.path("test/evm/erc20_mint_debug_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    erc20_mint_debug_test.root_module.addImport("primitives", primitives_mod);
+    erc20_mint_debug_test.root_module.addImport("evm", evm_mod);
+    erc20_mint_debug_test.root_module.addImport("Address", primitives_mod);
+    const run_erc20_mint_debug_test = b.addRunArtifact(erc20_mint_debug_test);
+    const erc20_mint_debug_test_step = b.step("test-erc20-debug", "Run ERC20 mint test with full debug logging");
+    erc20_mint_debug_test_step.dependOn(&run_erc20_mint_debug_test.step);
+    
+    // Add constructor REVERT test
+    const constructor_revert_test = b.addTest(.{
+        .name = "constructor-revert-test",
+        .root_source_file = b.path("test/evm/constructor_revert_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    constructor_revert_test.root_module.addImport("primitives", primitives_mod);
+    constructor_revert_test.root_module.addImport("evm", evm_mod);
+    constructor_revert_test.root_module.addImport("Address", primitives_mod);
+    const run_constructor_revert_test = b.addRunArtifact(constructor_revert_test);
+    const constructor_revert_test_step = b.step("test-constructor-revert", "Run constructor REVERT test");
+    constructor_revert_test_step.dependOn(&run_constructor_revert_test.step);
+    test_step.dependOn(&run_constructor_revert_test.step);
+    
+    // Add ERC20 constructor debug test
+    const erc20_constructor_debug_test = b.addTest(.{
+        .name = "erc20-constructor-debug-test",
+        .root_source_file = b.path("test/evm/erc20_constructor_debug_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    erc20_constructor_debug_test.root_module.addImport("primitives", primitives_mod);
+    erc20_constructor_debug_test.root_module.addImport("evm", evm_mod);
+    erc20_constructor_debug_test.root_module.addImport("Address", primitives_mod);
+    const run_erc20_constructor_debug_test = b.addRunArtifact(erc20_constructor_debug_test);
+    const erc20_constructor_debug_test_step = b.step("test-erc20-constructor", "Run ERC20 constructor debug test");
+    erc20_constructor_debug_test_step.dependOn(&run_erc20_constructor_debug_test.step);
+    
+    // Add trace ERC20 constructor test
+    const trace_erc20_test = b.addTest(.{
+        .name = "trace-erc20-test",
+        .root_source_file = b.path("test/evm/trace_erc20_constructor_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    trace_erc20_test.root_module.addImport("primitives", primitives_mod);
+    trace_erc20_test.root_module.addImport("evm", evm_mod);
+    trace_erc20_test.root_module.addImport("Address", primitives_mod);
+    const run_trace_erc20_test = b.addRunArtifact(trace_erc20_test);
+    const trace_erc20_test_step = b.step("test-trace-erc20", "Trace ERC20 constructor execution");
+    trace_erc20_test_step.dependOn(&run_trace_erc20_test.step);
+    
+    // Add string storage test
+    const string_storage_test = b.addTest(.{
+        .name = "string-storage-test", 
+        .root_source_file = b.path("test/evm/string_storage_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    string_storage_test.root_module.addImport("evm", evm_mod);
+    string_storage_test.root_module.addImport("Address", primitives_mod);
+    
+    const run_string_storage_test = b.addRunArtifact(string_storage_test);
+    const string_storage_test_step = b.step("test-string-storage", "Run string storage tests");
+    string_storage_test_step.dependOn(&run_string_storage_test.step);
+    
+    // Add JUMPI bug test
+    const jumpi_bug_test = b.addTest(.{
+        .name = "jumpi-bug-test",
+        .root_source_file = b.path("test/evm/jumpi_bug_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    jumpi_bug_test.root_module.addImport("evm", evm_mod);
+    jumpi_bug_test.root_module.addImport("Address", primitives_mod);
+    
+    const run_jumpi_bug_test = b.addRunArtifact(jumpi_bug_test);
+    test_step.dependOn(&run_jumpi_bug_test.step);
+    const jumpi_bug_test_step = b.step("test-jumpi", "Run JUMPI bug test");
+    jumpi_bug_test_step.dependOn(&run_jumpi_bug_test.step);
+    
+    // Add tracer test
+    const tracer_test = b.addTest(.{
+        .name = "tracer-test",
+        .root_source_file = b.path("test/evm/tracer_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    tracer_test.root_module.addImport("evm", evm_mod);
+    tracer_test.root_module.addImport("Address", primitives_mod);
+    
+    const run_tracer_test = b.addRunArtifact(tracer_test);
+    test_step.dependOn(&run_tracer_test.step);
+    const tracer_test_step = b.step("test-tracer", "Run tracer test");
+    tracer_test_step.dependOn(&run_tracer_test.step);
+    
+    // Add compare execution test
+    const compare_test = b.addTest(.{
+        .name = "compare-test",
+        .root_source_file = b.path("test/evm/compare_execution.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    compare_test.root_module.addImport("evm", evm_mod);
+    compare_test.root_module.addImport("primitives", primitives_mod);
+    
+    const run_compare_test = b.addRunArtifact(compare_test);
+    test_step.dependOn(&run_compare_test.step);
+    const compare_test_step = b.step("test-compare", "Run execution comparison test");
+    compare_test_step.dependOn(&run_compare_test.step);
+    
+    // Add comprehensive opcode comparison executable
+    const comprehensive_compare = b.addExecutable(.{
+        .name = "comprehensive-opcode-comparison",
+        .root_source_file = b.path("test/evm/comprehensive_opcode_comparison.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    comprehensive_compare.root_module.addImport("evm", evm_mod);
+    comprehensive_compare.root_module.addImport("primitives", primitives_mod);
+    comprehensive_compare.root_module.addImport("Address", primitives_mod);
+    comprehensive_compare.root_module.addImport("revm", revm_mod);
+    
+    // Link REVM wrapper library if available
+    if (revm_lib) |revm_library| {
+        comprehensive_compare.linkLibrary(revm_library);
+        comprehensive_compare.addIncludePath(b.path("src/revm_wrapper"));
+        comprehensive_compare.linkLibC();
+        
+        // Link the compiled Rust dynamic library
+        const revm_rust_target_dir = if (optimize == .Debug) "debug" else "release";
+        const revm_dylib_path = if (rust_target) |target_triple|
+            b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir })
+        else
+            b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir});
+        comprehensive_compare.addObjectFile(b.path(revm_dylib_path));
+        
+        // Link additional libraries needed by revm
+        if (target.result.os.tag == .linux) {
+            comprehensive_compare.linkSystemLibrary("m");
+            comprehensive_compare.linkSystemLibrary("pthread");
+            comprehensive_compare.linkSystemLibrary("dl");
+        } else if (target.result.os.tag == .macos) {
+            comprehensive_compare.linkSystemLibrary("c++");
+            comprehensive_compare.linkFramework("Security");
+            comprehensive_compare.linkFramework("CoreFoundation");
+        }
+    }
+    
+    // Link BN254 library if available (required by REVM)
+    if (bn254_lib) |bn254_library| {
+        comprehensive_compare.linkLibrary(bn254_library);
+        comprehensive_compare.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
+    const run_comprehensive_compare = b.addRunArtifact(comprehensive_compare);
+    const comprehensive_compare_step = b.step("run-comprehensive-compare", "Run comprehensive opcode comparison");
+    comprehensive_compare_step.dependOn(&run_comprehensive_compare.step);
+    
+    // Add ERC20 trace test
+    const erc20_trace_test = b.addTest(.{
+        .name = "erc20-trace-test",
+        .root_source_file = b.path("test/evm/trace_erc20_constructor.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    erc20_trace_test.root_module.addImport("evm", evm_mod);
+    erc20_trace_test.root_module.addImport("primitives", primitives_mod);
+    
+    const run_erc20_trace_test = b.addRunArtifact(erc20_trace_test);
+    const erc20_trace_test_step = b.step("test-erc20-trace", "Run ERC20 constructor trace test");
+    erc20_trace_test_step.dependOn(&run_erc20_trace_test.step);
+    
     // TODO: Re-enable when Rust integration is fixed
     // test_step.dependOn(&run_compiler_test.step);
     // test_step.dependOn(&run_snail_tracer_test.step);

@@ -56,6 +56,7 @@ const Operation = @import("../opcodes/operation.zig");
 const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
+const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
 const StackValidation = @import("../stack/stack_validation.zig");
 
@@ -149,7 +150,8 @@ pub fn op_sub(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
 
-    const result = a -% b;
+    // EVM SUB calculates: top - second (b - a)
+    const result = b -% a;
 
     frame.stack.set_top_unsafe(result);
 
@@ -194,8 +196,8 @@ pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+    const a = frame.stack.pop_unsafe();
+    const b = frame.stack.peek_unsafe().*;
 
     const result = if (b == 0) blk: {
         @branchHint(.unlikely);
@@ -249,8 +251,8 @@ pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+    const a = frame.stack.pop_unsafe();
+    const b = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
     if (b == 0) {
@@ -313,8 +315,8 @@ pub fn op_mod(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+    const a = frame.stack.pop_unsafe();
+    const b = frame.stack.peek_unsafe().*;
 
     const result = if (b == 0) blk: {
         @branchHint(.unlikely);
@@ -367,8 +369,8 @@ pub fn op_smod(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+    const a = frame.stack.pop_unsafe();
+    const b = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
     if (b == 0) {
@@ -427,9 +429,9 @@ pub fn op_addmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
     std.debug.assert(frame.stack.size >= 3);
 
-    const n = frame.stack.pop_unsafe();
+    const a = frame.stack.pop_unsafe();
     const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+    const n = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
     if (n == 0) {
@@ -491,9 +493,9 @@ pub fn op_mulmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
     std.debug.assert(frame.stack.size >= 3);
 
-    const n = frame.stack.pop_unsafe();
     const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe().*;
+    const a = frame.stack.pop_unsafe();
+    const n = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
     if (n == 0) {
@@ -578,8 +580,10 @@ pub fn op_exp(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 
     std.debug.assert(frame.stack.size >= 2);
 
-    const exp = frame.stack.pop_unsafe();
-    const base = frame.stack.peek_unsafe().*;
+    const base = frame.stack.pop_unsafe();
+    const exp = frame.stack.peek_unsafe().*;
+    
+    Log.debug("EXP: base={}, exp={}", .{ base, exp });
 
     // Calculate gas cost based on exponent byte size
     var exp_copy = exp;

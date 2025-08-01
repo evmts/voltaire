@@ -45,20 +45,20 @@ test "Comparison: LT (less than) operations" {
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: a < b (true)
-    try frame.stack.append(5);
+    // Test 1: 5 < 10 (true) - stack: [10, 5] with 5 on top
     try frame.stack.append(10);
+    try frame.stack.append(5);
     _ = try evm.table.execute(0, interpreter, state, 0x10);
     const result1 = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 1), result1); // 5 < 10 = true
+    try testing.expectEqual(@as(u256, 1), result1);
 
-    // Test 2: a > b (false)
+    // Test 2: 10 < 5 (false) - stack: [5, 10] with 10 on top
     frame.stack.clear();
-    try frame.stack.append(10);
     try frame.stack.append(5);
+    try frame.stack.append(10);
     _ = try evm.table.execute(0, interpreter, state, 0x10);
     const result2 = try frame.stack.pop();
-    try testing.expectEqual(@as(u256, 0), result2); // 10 < 5 = false
+    try testing.expectEqual(@as(u256, 0), result2);
 
     // Test 3: a == b (false)
     frame.stack.clear();
@@ -68,10 +68,10 @@ test "Comparison: LT (less than) operations" {
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // 42 < 42 = false
 
-    // Test 4: Compare with zero
+    // Test 4: Compare with zero - stack order: [b, a] so a gets popped first
     frame.stack.clear();
-    try frame.stack.append(0);
     try frame.stack.append(1);
+    try frame.stack.append(0);
     _ = try evm.table.execute(0, interpreter, state, 0x10);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result4); // 0 < 1 = true
@@ -79,8 +79,8 @@ test "Comparison: LT (less than) operations" {
     // Test 5: Compare with max value
     frame.stack.clear();
     const max_u256 = std.math.maxInt(u256);
-    try frame.stack.append(max_u256 - 1);
     try frame.stack.append(max_u256);
+    try frame.stack.append(max_u256 - 1);
     _ = try evm.table.execute(0, interpreter, state, 0x10);
     const result5 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result5); // (max-1) < max = true
@@ -132,17 +132,17 @@ test "Comparison: GT (greater than) operations" {
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: a > b (true)
-    try frame.stack.append(10);
+    // Test 1: a > b (true) - stack order: [b, a] so a gets popped first
     try frame.stack.append(5);
+    try frame.stack.append(10);
     _ = try evm.table.execute(0, interpreter, state, 0x11);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // 10 > 5 = true
 
-    // Test 2: a < b (false)
+    // Test 2: a < b (false) - stack order: [b, a] so a gets popped first
     frame.stack.clear();
-    try frame.stack.append(5);
     try frame.stack.append(10);
+    try frame.stack.append(5);
     _ = try evm.table.execute(0, interpreter, state, 0x11);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2); // 5 > 10 = false
@@ -155,10 +155,10 @@ test "Comparison: GT (greater than) operations" {
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // 42 > 42 = false
 
-    // Test 4: Compare with zero
+    // Test 4: Compare with zero - stack order: [b, a] so a gets popped first
     frame.stack.clear();
-    try frame.stack.append(1);
     try frame.stack.append(0);
+    try frame.stack.append(1);
     _ = try evm.table.execute(0, interpreter, state, 0x11);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result4); // 1 > 0 = true
@@ -210,35 +210,35 @@ test "Comparison: SLT (signed less than) operations" {
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: Both positive, a < b
-    try frame.stack.append(5);
+    // Test 1: Both positive, a < b - stack order: [b, a] so a gets popped first
     try frame.stack.append(10);
+    try frame.stack.append(5);
     _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // 5 < 10 = true
 
-    // Test 2: Negative < positive
+    // Test 2: Negative < positive - stack order: [b, a] so a gets popped first
     frame.stack.clear();
     const negative_one = std.math.maxInt(u256); // -1 in two's complement
-    try frame.stack.append(negative_one);
     try frame.stack.append(10);
+    try frame.stack.append(negative_one);
     _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result2); // -1 < 10 = true
 
-    // Test 3: Positive < negative (false)
+    // Test 3: Positive < negative (false) - stack order: [b, a] so a gets popped first
     frame.stack.clear();
-    try frame.stack.append(10);
     try frame.stack.append(negative_one);
+    try frame.stack.append(10);
     _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // 10 < -1 = false
 
-    // Test 4: Both negative
+    // Test 4: Both negative - stack order: [b, a] so a gets popped first
     frame.stack.clear();
     const negative_two = std.math.maxInt(u256) - 1; // -2 in two's complement
-    try frame.stack.append(negative_two);
     try frame.stack.append(negative_one);
+    try frame.stack.append(negative_two);
     _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result4); // -2 < -1 = true
@@ -247,8 +247,8 @@ test "Comparison: SLT (signed less than) operations" {
     frame.stack.clear();
     const most_negative = @as(u256, 1) << 255; // 0x80000...0
     const most_positive = (@as(u256, 1) << 255) - 1; // 0x7FFFF...F
-    try frame.stack.append(most_negative);
     try frame.stack.append(most_positive);
+    try frame.stack.append(most_negative);
     _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result5 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result5); // most_negative < most_positive = true
@@ -300,35 +300,35 @@ test "Comparison: SGT (signed greater than) operations" {
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
-    // Test 1: Both positive, a > b
-    try frame.stack.append(10);
+    // Test 1: Both positive, a > b - stack order: [b, a] so a gets popped first
     try frame.stack.append(5);
+    try frame.stack.append(10);
     _ = try evm.table.execute(0, interpreter, state, 0x13);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // 10 > 5 = true
 
-    // Test 2: Positive > negative
+    // Test 2: Positive > negative - stack order: [b, a] so a gets popped first
     frame.stack.clear();
     const negative_one = std.math.maxInt(u256); // -1 in two's complement
-    try frame.stack.append(10);
     try frame.stack.append(negative_one);
+    try frame.stack.append(10);
     _ = try evm.table.execute(0, interpreter, state, 0x13);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result2); // 10 > -1 = true
 
-    // Test 3: Negative > positive (false)
+    // Test 3: Negative > positive (false) - stack order: [b, a] so a gets popped first
     frame.stack.clear();
-    try frame.stack.append(negative_one);
     try frame.stack.append(10);
+    try frame.stack.append(negative_one);
     _ = try evm.table.execute(0, interpreter, state, 0x13);
     const result3 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result3); // -1 > 10 = false
 
-    // Test 4: Both negative
+    // Test 4: Both negative - stack order: [b, a] so a gets popped first
     frame.stack.clear();
     const negative_two = std.math.maxInt(u256) - 1; // -2 in two's complement
-    try frame.stack.append(negative_one);
     try frame.stack.append(negative_two);
+    try frame.stack.append(negative_one);
     _ = try evm.table.execute(0, interpreter, state, 0x13);
     const result4 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result4); // -1 > -2 = true
@@ -584,17 +584,17 @@ test "Comparison: Edge cases" {
     // Test signed comparison edge cases
     const sign_bit = @as(u256, 1) << 255;
 
-    // Test: 0x8000...0000 (most negative) vs 0x7FFF...FFFF (most positive)
-    try frame.stack.append(sign_bit);
+    // Test: 0x8000...0000 (most negative) vs 0x7FFF...FFFF (most positive) - stack order: [b, a] so a gets popped first
     try frame.stack.append(sign_bit - 1);
+    try frame.stack.append(sign_bit);
     _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result1 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 1), result1); // most_negative < most_positive
 
-    // Test: Boundary between positive and negative
+    // Test: Boundary between positive and negative - stack order: [b, a] so a gets popped first
     frame.stack.clear();
-    try frame.stack.append(sign_bit - 1);
     try frame.stack.append(sign_bit);
+    try frame.stack.append(sign_bit - 1);
     _ = try evm.table.execute(0, interpreter, state, 0x12);
     const result2 = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result2); // most_positive < most_negative = false

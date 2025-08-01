@@ -48,12 +48,18 @@ pub fn op_jump(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 }
 
 pub fn op_jumpi(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
-    _ = pc;
     _ = interpreter;
 
     const frame = state;
 
     std.debug.assert(frame.stack.size >= 2);
+
+    // Log the stack before popping
+    Log.debug("JUMPI: Stack before pop (size={}): ", .{frame.stack.size});
+    var i: usize = 0;
+    while (i < @min(frame.stack.size, 10)) : (i += 1) {
+        Log.debug("  Stack[{}] = {}", .{ i, frame.stack.data[frame.stack.size - 1 - i] });
+    }
 
     // Use batch pop for performance - pop 2 values at once
     // Stack order (top to bottom): [destination, condition]
@@ -61,11 +67,16 @@ pub fn op_jumpi(pc: usize, interpreter: Operation.Interpreter, state: Operation.
     const destination = values.b; // Top
     const condition = values.a; // Second from top
 
+    Log.debug("JUMPI: condition={}, destination={}, current_pc={}", .{ condition, destination, pc });
+    
     if (condition != 0) {
         @branchHint(.likely);
+        Log.debug("JUMPI: condition is non-zero, checking jump destination", .{});
+        
         // Check if destination is a valid JUMPDEST (pass u256 directly)
         if (!frame.contract.valid_jumpdest(frame.allocator, destination)) {
             @branchHint(.unlikely);
+            Log.debug("JUMPI: Invalid jump destination {}", .{destination});
             return ExecutionError.Error.InvalidJump;
         }
 
@@ -75,7 +86,11 @@ pub fn op_jumpi(pc: usize, interpreter: Operation.Interpreter, state: Operation.
             return ExecutionError.Error.InvalidJump;
         }
 
-        frame.pc = @as(usize, @intCast(destination));
+        const new_pc = @as(usize, @intCast(destination));
+        Log.debug("JUMPI: Setting frame.pc from {} to {}", .{ frame.pc, new_pc });
+        frame.pc = new_pc;
+    } else {
+        Log.debug("JUMPI: condition is zero, not jumping", .{});
     }
 
     return ExecutionResult{};
