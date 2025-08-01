@@ -1,6 +1,6 @@
 const std = @import("std");
-const asset_generator = @import("build/asset_generator.zig");
-const rust_build = @import("build/rust_build.zig");
+const asset_generator = @import("build_utils/asset_generator.zig");
+const rust_build = @import("build_utils/rust_build.zig");
 
 pub fn build(b: *std.Build) void {
     // Standard target options allows the person running `zig build` to choose
