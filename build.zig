@@ -138,37 +138,15 @@ pub fn build(b: *std.Build) void {
 
     // REVM Rust wrapper integration
     const revm_lib = if (rust_target != null) blk: {
-        const rust_profile = if (optimize == .Debug) "dev" else "release";
-        const rust_target_dir = if (optimize == .Debug) "debug" else "release";
-        
-        const rust_build_cmd = if (rust_target) |target_triple|
-            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/revm_wrapper/Cargo.toml", "--verbose" })
-        else
-            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/revm_wrapper/Cargo.toml", "--verbose" });
-
-        // Fix for macOS linking issues (only on macOS)
-        if (target.result.os.tag == .macos) {
-            rust_build_cmd.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
-        }
-
-        // Create static library artifact for the Rust REVM wrapper
-        const lib = b.addStaticLibrary(.{
+        const revm_rust_build = rust_build.buildRustLibrary(b, target, optimize, .{
             .name = "revm_wrapper",
-            .target = target,
-            .optimize = optimize,
+            .manifest_path = "src/revm_wrapper/Cargo.toml",
+            .target_triple = rust_target,
+            .profile = if (optimize == .Debug) .dev else .release,
+            .library_type = .dynamic_lib,
+            .verbose = true,
         });
-
-        // Link the compiled Rust dynamic library
-        const dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, rust_target_dir })
-        else
-            b.fmt("target/{s}/librevm_wrapper.dylib", .{ rust_target_dir });
-        lib.addObjectFile(b.path(dylib_path));
-        
-        // Make the rust build a dependency
-        lib.step.dependOn(&rust_build_cmd.step);
-        
-        break :blk lib;
+        break :blk revm_rust_build;
     } else null;
 
     // Create REVM module
@@ -207,50 +185,15 @@ pub fn build(b: *std.Build) void {
 
     // EVM Benchmark Rust crate integration
     const evm_bench_lib = if (rust_target != null) blk: {
-        const rust_profile = if (optimize == .Debug) "dev" else "release";
-        const rust_target_dir = if (optimize == .Debug) "debug" else "release";
-        
-        const rust_build_cmd = if (rust_target) |target_triple|
-            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--target", target_triple, "--manifest-path", "src/guillotine-rs/Cargo.toml", "--verbose" })
-        else
-            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", rust_profile, "--manifest-path", "src/guillotine-rs/Cargo.toml", "--verbose" });
-
-        // Fix for macOS linking issues (only on macOS)
-        if (target.result.os.tag == .macos) {
-            rust_build_cmd.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
-        }
-
-        // Create static library artifact for the Rust EVM benchmark crate
-        const lib = b.addStaticLibrary(.{
-            .name = "evm_bench_rust",
-            .target = target,
-            .optimize = optimize,
+        const guillotine_rust_build = rust_build.buildRustLibrary(b, target, optimize, .{
+            .name = "guillotine_ffi",
+            .manifest_path = "src/guillotine-rs/Cargo.toml",
+            .target_triple = rust_target,
+            .profile = if (optimize == .Debug) .dev else .release,
+            .library_type = .rlib,
+            .verbose = true,
         });
-
-        // Determine library path based on target (using workspace target directory)
-        const lib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/libguillotine_ffi.rlib", .{ target_triple, rust_target_dir })
-        else
-            b.fmt("target/{s}/libguillotine_ffi.rlib", .{ rust_target_dir });
-
-        lib.addObjectFile(b.path(lib_path));
-        
-        // Make the rust build a dependency
-        lib.step.dependOn(&rust_build_cmd.step);
-        
-        // Link additional libraries needed by the benchmark crate
-        if (target.result.os.tag == .linux) {
-            lib.linkSystemLibrary("m");
-            lib.linkSystemLibrary("pthread");
-            lib.linkSystemLibrary("dl");
-        } else if (target.result.os.tag == .macos) {
-            lib.linkSystemLibrary("c++");
-            lib.linkFramework("Security");  
-            lib.linkFramework("SystemConfiguration");
-            lib.linkFramework("CoreFoundation");
-        }
-        
-        break :blk lib;
+        break :blk guillotine_rust_build;
     } else null;
 
     // Add Rust Foundry wrapper integration
@@ -275,52 +218,19 @@ pub fn build(b: *std.Build) void {
     
     // Create a separate BN254 library for benchmarks that always uses release mode (if enabled)
     const bench_bn254_lib = if (!no_bn254) blk: {
-        const bench_rust_profile = "release";
-        const bench_rust_target_dir = "release";
-        
-        const bench_rust_build_cmd = if (rust_target) |target_triple|
-            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--target", target_triple, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" })
-        else
-            b.addSystemCommand(&[_][]const u8{ "cargo", "build", "--profile", bench_rust_profile, "--manifest-path", "src/bn254_wrapper/Cargo.toml", "--verbose" });
-        
-        // Fix for macOS linking issues (only on macOS)
-        if (target.result.os.tag == .macos) {
-            bench_rust_build_cmd.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
-        }
-        
-        // Create static library artifact for the Rust BN254 wrapper (bench version)
-        const lib = b.addStaticLibrary(.{
-            .name = "bn254_wrapper_bench",
-            .target = target,
-            .optimize = bench_optimize,
+        const bench_bn254_rust_build = rust_build.buildRustLibrary(b, target, bench_optimize, .{
+            .name = "bn254_wrapper",
+            .manifest_path = "src/bn254_wrapper/Cargo.toml",
+            .target_triple = rust_target,
+            .profile = .release, // Always use release for benchmarks
+            .library_type = .static_lib,
+            .verbose = true,
         });
         
-        // Link the compiled Rust static library
-        const static_lib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/libbn254_wrapper.a", .{ target_triple, bench_rust_target_dir })
-        else
-            b.fmt("target/{s}/libbn254_wrapper.a", .{bench_rust_target_dir});
-        lib.addObjectFile(b.path(static_lib_path));
-        lib.linkLibC();
-        
-        // Link additional system libraries that Rust might need
-        if (target.result.os.tag == .linux) {
-            lib.linkSystemLibrary("dl");
-            lib.linkSystemLibrary("pthread");
-            lib.linkSystemLibrary("m");
-            lib.linkSystemLibrary("rt");
-        } else if (target.result.os.tag == .macos) {
-            lib.linkFramework("Security");
-            lib.linkFramework("CoreFoundation");
-        }
-        
         // Add include path for C header
-        lib.addIncludePath(b.path("src/bn254_wrapper"));
+        bench_bn254_rust_build.addIncludePath(b.path("src/bn254_wrapper"));
         
-        // Make the rust build a dependency
-        lib.step.dependOn(&bench_rust_build_cmd.step);
-        
-        break :blk lib;
+        break :blk bench_bn254_rust_build;
     } else null;
     
     // Create a separate EVM module for benchmarks with release-mode Rust dependencies
