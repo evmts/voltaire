@@ -146,7 +146,7 @@ test "E2E: Arithmetic operations" {
         .withVm(evm_instance)
         .withContract(&test_contract)
         .withGas(100_000)
-        .withCaller(.{})
+
         .withInput(test_contract.input)
         .build();
     defer frame.deinit();

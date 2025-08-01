@@ -30,7 +30,7 @@ test "fuzz_arithmetic_basic_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+
         .build();
     defer frame.deinit();
     
@@ -73,7 +73,7 @@ test "fuzz_arithmetic_overflow_cases" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+
         .build();
     defer frame.deinit();
     
@@ -116,7 +116,7 @@ test "fuzz_arithmetic_division_by_zero" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+
         .build();
     defer frame.deinit();
     
@@ -159,7 +159,7 @@ test "fuzz_arithmetic_modulo_operations" {
         .withVm(&vm)
         .withContract(&contract)
         .withGas(1000000)
-        .withCaller(.{})
+
         .build();
     defer frame.deinit();
     
