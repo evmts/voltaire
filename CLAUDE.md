@@ -41,9 +41,42 @@ Example Response: "I detected potential sensitive information in your prompt (AP
 - **Single word variables**: Prefer single word variable names where possible (e.g., `n` over `number`, `i` over `index`)
 - **Defer patterns**: Always use defer for cleanup immediately after allocation
 - **Memory consciousness**: Always think about memory ownership and lifecycle
-- **camelCase naming**: Use camelCase for all function names, variable names, and identifiers (e.g., `parseData` not `parse_data`)
+- **Zig standard naming conventions**: Follow the conventions used by Zig's standard library
 - **Tests in source files**: Always include tests in the same file as the source code, not in separate test files
 - **Direct imports**: Import modules directly without creating unnecessary aliases (e.g., use `address.Address` not `Address = address.Address`)
+
+### Zig Naming Conventions
+
+Following Zig standard library conventions:
+
+1. **Functions**: `snake_case`
+   - `pub fn init_with_allocator(allocator: Allocator) !Self`
+   - `pub fn parse_integer(str: []const u8) !u32`
+   - `pub fn is_valid() bool`
+
+2. **Types**: `PascalCase`
+   - `const ArrayList = struct { ... }`
+   - `const ExecutionError = error{ ... }`
+   - `pub const HashMap = struct { ... }`
+
+3. **Variables**: `snake_case`
+   - `const max_value = 100;`
+   - `var current_index: usize = 0;`
+   - `const allocator = std.testing.allocator;`
+
+4. **Constants**: `SCREAMING_SNAKE_CASE` for module-level constants
+   - `pub const MAX_STACK_SIZE = 1024;`
+   - `const DEFAULT_GAS_LIMIT = 30_000_000;`
+
+5. **Struct fields**: `snake_case`
+   - `gas_remaining: u64,`
+   - `is_static: bool,`
+   - `memory_size: usize,`
+
+6. **Enum variants**: `snake_case`
+   - `.out_of_gas`
+   - `.invalid_jump`
+   - `.stack_underflow`
 
 ### Function Design
 ```zig
