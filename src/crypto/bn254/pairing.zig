@@ -1,21 +1,13 @@
-const g1_mod = @import("g1.zig");
-const g2_mod = @import("g2.zig");
-const fr_mod = @import("Fr.zig");
-const Fp_mod = @import("Fp.zig");
-const Fp2_mod = @import("Fp2.zig");
-const Fp6_mod = @import("Fp6.zig");
-const Fp12_mod = @import("Fp12.zig");
+const G1 = @import("g1.zig");
+const G2 = @import("g2.zig");
+const Fr = @import("Fr.zig");
+const Fp = @import("Fp.zig");
+const Fp2 = @import("Fp2.zig");
+const Fp6 = @import("Fp6.zig");
+const Fp12 = @import("Fp12.zig");
 const std = @import("std");
 
-const Fp = Fp_mod.Fp;
-const Fp2 = Fp2_mod.Fp2;
-const Fp6 = Fp6_mod.Fp6;
-const Fp12 = Fp12_mod.Fp12;
-const G1 = g1_mod.G1;
-const G2 = g2_mod.G2;
-const Fr = fr_mod.Fr;
-
-const FR_MOD = fr_mod.FR_MOD;
+const FR_MOD = Fr.FR_MOD;
 
 const miller_loop_constant_signed = &[_]i2{ 0, 0, 0, 1, 0, 1, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, -1, 0, -1, 0, 0, 0, 1, 0, -1, 0, 0, 0, 0, -1, 0, 0, 1, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, -1, 0, 0, -1, 0, 1, 0, -1, 0, 0, 0, -1, 0, -1, 0, 0, 0, 1, 0, 1, 1 };
 //slightly better
