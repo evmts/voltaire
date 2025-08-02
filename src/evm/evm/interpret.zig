@@ -10,6 +10,12 @@ const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
 const opcode = @import("../opcodes/opcode.zig");
 
+// Named struct to avoid type mismatch in if expression
+const OpInfo = struct {
+    operation: *const Operation.Operation,
+    opcode: u8,
+};
+
 /// Pre-build a direct PC-to-operation mapping for a contract's bytecode.
 /// This eliminates the double indirection of bytecode[pc] -> opcode -> operation.
 /// 
@@ -87,20 +93,26 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
     while (pc < contract.code_size) {
         @branchHint(.likely);
         
-        // Direct PC-to-operation lookup if table is available
-        const operation = if (pc_to_op_table) |table|
-            table[@intCast(pc)]
-        else blk: {
+        // Direct PC-to-operation lookup if table is available, avoiding redundant opcode fetch
+        const op_info = if (pc_to_op_table) |table| blk: {
+            const opcode_byte = contract.code[@intCast(pc)];
+            break :blk OpInfo{
+                .operation = table[@intCast(pc)],
+                .opcode = opcode_byte,
+            };
+        } else blk: {
             // Fallback to double indirection if table allocation failed
             const opcode_byte = contract.code[@intCast(pc)];
-            break :blk self.table.table[opcode_byte];
+            break :blk OpInfo{
+                .operation = self.table.table[opcode_byte],
+                .opcode = opcode_byte,
+            };
         };
         
+        const operation = op_info.operation;
+        const opcode_byte = op_info.opcode;
+        
         frame.pc = pc;
-        
-        
-        // Get opcode byte for logging (only when needed)
-        const opcode_byte = contract.code[@intCast(pc)];
         
         // INLINE: self.table.execute(...)
         // Execute the operation directly
