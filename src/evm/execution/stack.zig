@@ -10,6 +10,7 @@ const Vm = @import("../evm.zig");
 const MemoryDatabase = @import("../state/memory_database.zig");
 const Contract = @import("../frame/contract.zig");
 const Address = @import("primitives").Address;
+const tracy = @import("../tracy_support.zig");
 
 pub fn op_pop(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     const zone = tracy.zone(@src(), "op_pop\x00");
@@ -1543,7 +1544,6 @@ test "stack operations handle maximum capacity correctly" {
 test "stack operations maintain consistency under stress" {
     const allocator = std.testing.allocator;
     const primitives = @import("primitives");
-const tracy = @import("../tracy_support.zig");
 
     var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
     defer memory_db.deinit();

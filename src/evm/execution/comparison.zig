@@ -3,6 +3,7 @@ const Operation = @import("../opcodes/operation.zig");
 const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
+const tracy = @import("../tracy_support.zig");
 
 // Helper to convert Stack errors to ExecutionError
 // These are redundant and can be removed.
@@ -178,7 +179,6 @@ pub fn fuzz_comparison_operations(allocator: std.mem.Allocator, operations: []co
         defer contract.deinit(allocator, null);
 
         const primitives = @import("primitives");
-const tracy = @import("../tracy_support.zig");
         var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
         defer frame.deinit();
 

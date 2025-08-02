@@ -5,6 +5,7 @@ const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
+const tracy = @import("../tracy_support.zig");
 
 // Stack buffer sizes for common hash operations
 const SMALL_BUFFER_SIZE = 64;   // Most common (addresses, small data)
@@ -86,7 +87,6 @@ pub fn op_sha3(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 
     // Check if the end position exceeds reasonable memory limits
     const memory_limits = @import("../constants/memory_limits.zig");
-const tracy = @import("../tracy_support.zig");
     if (end > memory_limits.MAX_MEMORY_SIZE) {
         @branchHint(.unlikely);
         return ExecutionError.Error.OutOfOffset;

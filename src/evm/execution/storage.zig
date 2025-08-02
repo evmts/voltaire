@@ -7,6 +7,7 @@ const Vm = @import("../evm.zig");
 const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
 const storage_costs = @import("../gas/storage_costs.zig");
+const tracy = @import("../tracy_support.zig");
 
 pub fn op_sload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     const zone = tracy.zone(@src(), "op_sload\x00");
@@ -157,7 +158,6 @@ pub fn fuzz_storage_operations(allocator: std.mem.Allocator, operations: []const
     const Memory = @import("../memory/memory.zig");
     const MemoryDatabase = @import("../state/memory_database.zig");
     const Contract = @import("../frame/contract.zig");
-const tracy = @import("../tracy_support.zig");
     _ = primitives.Address;
     
     for (operations) |op| {
