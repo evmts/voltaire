@@ -245,15 +245,6 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 Log.debug("PC unchanged by opcode - pc={}, frame.pc={}, advancing by {} bytes", .{ pc, frame.pc, result.bytes_consumed });
                 pc += result.bytes_consumed;
             }
-            
-            // Prefetch next operation for better cache performance
-            if (pc < contract.code_size and pc_to_op_entry_table != null) {
-                // Prefetch the next operation entry
-                _ = @prefetch(&pc_to_op_entry_table.?[@intCast(pc)], .{
-                    .locality = 3, // High temporal locality (will use soon)
-                    .cache = .data,
-                });
-            }
         } else |err| {
             // Error case - handle various error conditions
             contract.gas = frame.gas_remaining;
