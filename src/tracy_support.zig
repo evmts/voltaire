@@ -8,7 +8,7 @@ pub const enabled = build_options.enable_tracy;
 const ztracy = if (enabled) @import("ztracy") else undefined;
 
 /// Zero-cost zone wrapper
-pub inline fn zone(comptime src: std.builtin.SourceLocation, comptime name: ?[]const u8) Zone {
+pub inline fn zone(comptime src: std.builtin.SourceLocation, comptime name: ?[*:0]const u8) Zone {
     if (comptime enabled) {
         const tracy_name = name orelse src.fn_name;
         return .{ 
@@ -77,14 +77,14 @@ pub fn TrackedAllocator(comptime T: type) type {
         
         const Self = @This();
         
-        pub fn init(child: T, name: []const u8) Self {
+        pub fn init(child: T, name: [*:0]const u8) Self {
+            _ = name; // Always mark as used to avoid compiler error
             if (comptime enabled) {
                 return .{
                     .child = child,
                     .tracy_allocator = ztracy.TrackedAllocator.init(child, name),
                 };
             } else {
-                _ = name;
                 return .{ .child = child, .tracy_allocator = {} };
             }
         }
@@ -114,7 +114,7 @@ pub inline fn setThreadName(name: []const u8) void {
 
 test "tracy support compiles" {
     // This test ensures tracy_support compiles correctly
-    const z = zone(@src(), "test_zone");
+    const z = zone(@src(), "test_zone\x00");
     defer z.end();
     
     frameMarker();

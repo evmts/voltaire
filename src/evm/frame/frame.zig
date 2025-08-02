@@ -491,11 +491,19 @@ pub inline fn consume_gas(self: *Frame, amount: u64) ConsumeGasError!void {
     const zone = tracy.zone(@src(), "frame_consume_gas\x00");
     defer zone.end();
     
+    const overflow_check_zone = tracy.zone(@src(), "gas_overflow_check\x00");
     if (amount > self.gas_remaining) {
         @branchHint(.cold);
+        overflow_check_zone.end();
+        const out_of_gas_zone = tracy.zone(@src(), "gas_out_of_gas\x00");
+        defer out_of_gas_zone.end();
         return ConsumeGasError.OutOfGas;
     }
+    overflow_check_zone.end();
+    
+    const subtract_zone = tracy.zone(@src(), "gas_subtract\x00");
     self.gas_remaining -= amount;
+    subtract_zone.end();
 }
 
 // ============================================================================
