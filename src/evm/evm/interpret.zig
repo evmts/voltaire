@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const ExecutionError = @import("../execution/execution_error.zig");
 const Contract = @import("../frame/contract.zig");
 const Frame = @import("../frame/frame.zig");
@@ -7,6 +8,7 @@ const RunResult = @import("run_result.zig").RunResult;
 const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
+const opcode = @import("../opcodes/opcode.zig");
 
 /// Execute contract bytecode and return the result.
 ///
@@ -59,12 +61,16 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
     const interpreter: Operation.Interpreter = self;
     const state: Operation.State = &frame;
 
+    // Main execution loop - the heart of the EVM
     while (pc < contract.code_size) {
         @branchHint(.likely);
-        const opcode = contract.get_op(pc);
+        
+        // INLINE: contract.get_op(pc)
+        // Fetch opcode with bounds checking
+        const opcode_byte = if (pc < contract.code_size) contract.code[@intCast(pc)] else @intFromEnum(opcode.Enum.STOP);
         frame.pc = pc;
 
-        // Log stack state before operation
+        // Log stack state before operation (debug builds)
         if (frame.stack.size > 0) {
             Log.debug("Stack before pc={}: size={}, top 5 values:", .{ pc, frame.stack.size });
             var i: usize = 0;
@@ -73,17 +79,18 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
             }
         }
         
+        // INLINE: self.table.get_operation(opcode_byte)
+        // Direct array access to get operation handler
+        const operation = self.table.table[opcode_byte];
+        
         // Trace execution if tracer is available
         if (self.tracer) |writer| {
             var tracer = @import("../tracer.zig").Tracer.init(writer);
-            // Get stack slice
             const stack_slice = frame.stack.data[0..frame.stack.size];
-            // Calculate gas cost for this operation
-            const op_meta = self.table.get_operation(opcode);
-            const gas_cost = op_meta.constant_gas;
+            const gas_cost = operation.constant_gas;
             tracer.trace(
                 pc,
-                opcode,
+                opcode_byte,
                 stack_slice,
                 frame.gas_remaining,
                 gas_cost,
@@ -94,7 +101,60 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
             };
         }
         
-        const result = self.table.execute(pc, interpreter, state, opcode) catch |err| {
+        // INLINE: self.table.execute(...)
+        // Execute the operation directly
+        const exec_result = blk: {
+            Log.debug("Executing opcode 0x{x:0>2} at pc={}, gas={}, stack_size={}", .{ opcode_byte, pc, frame.gas_remaining, frame.stack.size });
+            
+            // Check if opcode is undefined (cold path)
+            if (operation.undefined) {
+                @branchHint(.cold);
+                Log.debug("Invalid opcode 0x{x:0>2}", .{opcode_byte});
+                frame.gas_remaining = 0;
+                break :blk ExecutionError.Error.InvalidOpcode;
+            }
+            
+            // Validate stack requirements
+            if (comptime builtin.mode == .ReleaseFast) {
+                // Fast path for release builds
+                const stack_height_changes = @import("../opcodes/stack_height_changes.zig");
+                stack_height_changes.validate_stack_requirements_fast(
+                    @intCast(frame.stack.size),
+                    opcode_byte,
+                    operation.min_stack,
+                    operation.max_stack,
+                ) catch |err| break :blk err;
+            } else {
+                // Full validation for debug builds
+                const stack_validation = @import("../stack/stack_validation.zig");
+                stack_validation.validate_stack_requirements(&frame.stack, operation) catch |err| break :blk err;
+            }
+            
+            // Consume gas (likely path)
+            if (operation.constant_gas > 0) {
+                @branchHint(.likely);
+                Log.debug("Consuming {} gas for opcode 0x{x:0>2}", .{ operation.constant_gas, opcode_byte });
+                frame.consume_gas(operation.constant_gas) catch |err| break :blk err;
+            }
+            
+            // Execute the operation
+            const res = operation.execute(pc, interpreter, state) catch |err| break :blk err;
+            Log.debug("Opcode 0x{x:0>2} completed, gas_remaining={}", .{ opcode_byte, frame.gas_remaining });
+            break :blk res;
+        };
+        
+        // Handle execution result
+        if (exec_result) |result| {
+            // Success case - update program counter
+            if (frame.pc != pc) {
+                Log.debug("PC changed by opcode - old_pc={}, frame.pc={}, jumping to frame.pc", .{ pc, frame.pc });
+                pc = frame.pc;
+            } else {
+                Log.debug("PC unchanged by opcode - pc={}, frame.pc={}, advancing by {} bytes", .{ pc, frame.pc, result.bytes_consumed });
+                pc += result.bytes_consumed;
+            }
+        } else |err| {
+            // Error case - handle various error conditions
             contract.gas = frame.gas_remaining;
             // Don't store frame's return data in EVM - it will be freed when frame deinits
             self.return_data = &[_]u8{};
@@ -147,14 +207,6 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 },
                 else => return err, // Unexpected error
             };
-        };
-
-        if (frame.pc != pc) {
-            Log.debug("interpret: PC changed by opcode - old_pc={}, frame.pc={}, jumping to frame.pc", .{ pc, frame.pc });
-            pc = frame.pc;
-        } else {
-            Log.debug("interpret: PC unchanged by opcode - pc={}, frame.pc={}, advancing by {} bytes", .{ pc, frame.pc, result.bytes_consumed });
-            pc += result.bytes_consumed;
         }
     }
 
