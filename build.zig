@@ -267,6 +267,7 @@ pub fn build(b: *std.Build) void {
         .optimize = bench_optimize,
     });
     bench_mod.addImport("primitives", primitives_mod);
+    bench_mod.addImport("crypto", crypto_mod);
     bench_mod.addImport("evm", bench_evm_mod);  // Use the bench-specific EVM module
     bench_mod.addImport("zbench", zbench_dep.module("zbench"));
     if (revm_lib != null) {
@@ -458,6 +459,7 @@ pub fn build(b: *std.Build) void {
     bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
     bench_exe.root_module.addImport("evm", bench_evm_mod);  // Use the bench-specific EVM module
     bench_exe.root_module.addImport("primitives", primitives_mod);
+    bench_exe.root_module.addImport("crypto", crypto_mod);
     if (revm_lib != null) {
         bench_exe.root_module.addImport("revm", revm_mod);
     }
@@ -518,6 +520,7 @@ pub fn build(b: *std.Build) void {
     profile_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
     profile_bench_exe.root_module.addImport("evm", bench_evm_mod);
     profile_bench_exe.root_module.addImport("primitives", primitives_mod);
+    profile_bench_exe.root_module.addImport("crypto", crypto_mod);
     if (revm_lib != null) {
         profile_bench_exe.root_module.addImport("revm", revm_mod);
     }
