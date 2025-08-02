@@ -1,5 +1,6 @@
 const Fp2 = @import("Fp2.zig");
 const Fp = @import("Fp.zig");
+const curve_parameters = @import("curve_parameters.zig");
 pub const FP_MOD = Fp2.FP_MOD;
 
 pub const Fp6 = @This();
@@ -10,8 +11,8 @@ v2: Fp2,
 pub const ZERO = Fp6{ .v0 = Fp2.ZERO, .v1 = Fp2.ZERO, .v2 = Fp2.ZERO };
 pub const ONE = Fp6{ .v0 = Fp2.ONE, .v1 = Fp2.ZERO, .v2 = Fp2.ZERO };
 
-pub const FROBENIUS_COEFF_V1 = Fp2.init_from_int(21575463638280843010398324269430826099269044274347216827212613867836435027261, 10307601595873709700152284273816112264069230130616436755625194854815875713954);
-pub const FROBENIUS_COEFF_V2 = Fp2.init_from_int(2581911344467009335267311115468803099551665605076196740867805258568234346338, 19937756971775647987995932169929341994314640652964949448313374472400716661030);
+pub const FROBENIUS_COEFF_V1 = curve_parameters.FROBENIUS_COEFF_FP6_V1;
+pub const FROBENIUS_COEFF_V2 = curve_parameters.FROBENIUS_COEFF_FP6_V2;
 
 pub fn init(val_v0: *const Fp2, val_v1: *const Fp2, val_v2: *const Fp2) Fp6 {
     return Fp6{
@@ -67,7 +68,7 @@ pub fn subAssign(self: *Fp6, other: *const Fp6) void {
 
 pub fn mul(self: *const Fp6, other: *const Fp6) Fp6 {
     // ξ = 9 + u ∈ Fp2
-    const xi = Fp2.init_from_int(9, 1);
+    const xi = curve_parameters.XI;
 
     // s0 = a0 * b0, s1 = a1 * b1, s2 = a2 * b2
     const s0 = self.v0.mul(&other.v0);
@@ -152,7 +153,7 @@ pub fn powAssign(self: *Fp6, exponent: u256) void {
 }
 
 pub fn norm(self: *const Fp6) Fp2 {
-    const xi = Fp2.init_from_int(9, 1);
+    const xi = curve_parameters.XI;
 
     // c0 = v0^2 - ξ * (v1 * v2)
     const c0 = self.v0.mul(&self.v0).sub(&xi.mul(&self.v1.mul(&self.v2)));
@@ -180,7 +181,7 @@ pub fn scalarMulAssign(self: *Fp6, scalar: *const Fp) void {
 }
 
 pub fn inv(self: *const Fp6) Fp6 {
-    const xi = Fp2.init_from_int(9, 1);
+    const xi = curve_parameters.XI;
     const three = Fp.init(3);
 
     // Calculate squares and basic products

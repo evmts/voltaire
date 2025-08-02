@@ -1,6 +1,7 @@
 const Fp = @import("Fp.zig");
 const Fr = @import("Fr.zig");
 const std = @import("std");
+const curve_parameters = @import("curve_parameters.zig");
 
 //G1 is the group of points on the elliptic curve y^2 = x^3 + 3
 // We use the Jacobian projective coordinates to represent the points
@@ -9,8 +10,8 @@ x: Fp,
 y: Fp,
 z: Fp,
 
-pub const INFINITY = G1{ .x = Fp.ZERO, .y = Fp.ONE, .z = Fp.ZERO };
-pub const GENERATOR = G1{ .x = Fp.init(1), .y = Fp.init(2), .z = Fp.init(1) };
+pub const INFINITY = curve_parameters.G1_INFINITY;
+pub const GENERATOR = curve_parameters.G1_GENERATOR;
 
 pub fn isInfinity(self: *const G1) bool {
     return self.z.value == 0;

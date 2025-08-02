@@ -4,6 +4,7 @@ const std = @import("std");
 const Fp6_mod = @import("Fp6.zig");
 const Fp12_mod = @import("Fp12.zig");
 const Fp = @import("Fp.zig");
+const curve_parameters = @import("curve_parameters.zig");
 
 const FP_MOD = Fp2.FP_MOD;
 const Fp12 = Fp12_mod.Fp12;
@@ -16,11 +17,11 @@ x: Fp2,
 y: Fp2,
 z: Fp2,
 
-pub const INFINITY = G2{ .x = Fp2.ZERO, .y = Fp2.ONE, .z = Fp2.ZERO };
-pub const GENERATOR = G2{ .x = Fp2.init_from_int(10857046999023057135944570762232829481370756359578518086990519993285655852781, 11559732032986387107991004021392285783925812861821192530917403151452391805634), .y = Fp2.init_from_int(8495653923123431417604973247489272438418190587263600148770280649306958101930, 4082367875863433681332203403145435568316851327593401208105741076214120093531), .z = Fp2.init_from_int(1, 0) };
+pub const INFINITY = curve_parameters.G2_INFINITY;
+pub const GENERATOR = curve_parameters.G2_GENERATOR;
 
-pub const FROBENIUS_X_COEFF = Fp2.init_from_int(21575463638280843010398324269430826099269044274347216827212613867836435027261, 10307601595873709700152284273816112264069230130616436755625194854815875713954);
-pub const FROBENIUS_Y_COEFF = Fp2.init_from_int(2821565182194536844548159561693502659359617185244120367078079554186484126554, 3505843767911556378687030309984248845540243509899259641013678093033130930403);
+pub const FROBENIUS_X_COEFF = curve_parameters.FROBENIUS_G2_X_COEFF;
+pub const FROBENIUS_Y_COEFF = curve_parameters.FROBENIUS_G2_Y_COEFF;
 
 pub fn isInfinity(self: *const G2) bool {
     return self.z.u0.value == 0 and self.z.u1.value == 0;
@@ -57,7 +58,7 @@ pub fn toAffine(self: *const G2) G2 {
 
 pub fn isOnCurve(self: *const G2) bool {
     if (self.isInfinity()) return true;
-    const xi = Fp2.init_from_int(9, 1);
+    const xi = curve_parameters.XI;
     const z_factor = Fp2.init_from_int(3, 0).mul(&xi.inv());
 
     // BN254 Jacobian equation: Y² = X³ + (3/xi)Z⁶

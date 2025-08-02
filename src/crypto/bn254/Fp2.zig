@@ -1,4 +1,5 @@
 const Fp = @import("Fp.zig");
+const curve_parameters = @import("curve_parameters.zig");
 pub const FP_MOD = Fp.FP_MOD;
 
 pub const Fp2 = @This();

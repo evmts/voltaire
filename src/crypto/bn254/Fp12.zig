@@ -1,6 +1,7 @@
 const Fp6 = @import("Fp6.zig");
 const Fp = @import("Fp.zig");
 const Fp2 = @import("Fp2.zig");
+const curve_parameters = @import("curve_parameters.zig");
 
 pub const Fp12 = @This();
 w0: Fp6,
@@ -9,11 +10,7 @@ w1: Fp6,
 pub const ZERO = Fp12{ .w0 = Fp6.ZERO, .w1 = Fp6.ZERO };
 pub const ONE = Fp12{ .w0 = Fp6.ONE, .w1 = Fp6.ZERO };
 
-const FROBENIUS_COEFF_Fp6 = Fp6{
-    .v0 = Fp2.init_from_int(8376118865763821496583973867626364092589906065868298776909617916018768340080, 16469823323077808223889137241176536799009286646108169935659301613961712198316),
-    .v1 = Fp2.ZERO,
-    .v2 = Fp2.ZERO,
-};
+const FROBENIUS_COEFF_Fp6 = curve_parameters.FROBENIUS_COEFF_FP12;
 
 pub fn init(w0: *const Fp6, w1: *const Fp6) Fp12 {
     return Fp12{ .w0 = w0.*, .w1 = w1.* };
@@ -62,7 +59,7 @@ pub fn subAssign(self: *Fp12, other: *const Fp12) void {
 }
 
 pub fn mul(self: *const Fp12, other: *const Fp12) Fp12 {
-    const v = Fp6.init_from_int(0, 0, 1, 0, 0, 0);
+    const v = curve_parameters.V;
 
     const w0_mul_w0 = self.w0.mul(&other.w0);
     const w1_mul_w1 = self.w1.mul(&other.w1);
@@ -125,7 +122,7 @@ pub fn powAssign(self: *Fp12, exponent: u256) void {
 }
 
 pub fn inv(self: *const Fp12) Fp12 {
-    const v = Fp6.init_from_int(0, 0, 1, 0, 0, 0);
+    const v = curve_parameters.V;
 
     const w0_squared = self.w0.mul(&self.w0);
     const w1_squared = self.w1.mul(&self.w1);
