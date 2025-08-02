@@ -122,6 +122,45 @@ pub fn discoverTestCases(self: *Orchestrator) !void {
     self.test_cases = try test_cases.toOwnedSlice();
 }
 
+pub fn filterCoreTestCases(self: *Orchestrator) !void {
+    // Define core benchmarks
+    const core_benchmarks = [_][]const u8{
+        "erc20-approval-transfer",
+        "erc20-mint",
+        "erc20-transfer",
+        "ten-thousand-hashes",
+        "opcodes-push-pop",
+        "snailtracer",
+    };
+    
+    var filtered_cases = std.ArrayList(TestCase).init(self.allocator);
+    defer filtered_cases.deinit();
+    
+    // Keep only core benchmarks
+    for (self.test_cases) |test_case| {
+        var is_core = false;
+        for (core_benchmarks) |core_name| {
+            if (std.mem.eql(u8, test_case.name, core_name)) {
+                is_core = true;
+                break;
+            }
+        }
+        
+        if (is_core) {
+            try filtered_cases.append(test_case);
+        } else {
+            // Free non-core test case memory
+            self.allocator.free(test_case.name);
+            self.allocator.free(test_case.bytecode_path);
+            self.allocator.free(test_case.calldata_path);
+        }
+    }
+    
+    // Replace test_cases with filtered list
+    self.allocator.free(self.test_cases);
+    self.test_cases = try filtered_cases.toOwnedSlice();
+}
+
 pub fn runBenchmarks(self: *Orchestrator) !void {
     for (self.test_cases) |test_case| {
         print("\n=== Benchmarking {s} ===\n", .{test_case.name});
