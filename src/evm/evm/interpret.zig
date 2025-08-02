@@ -10,12 +10,6 @@ const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
 const opcode = @import("../opcodes/opcode.zig");
 
-// Named struct to avoid type mismatch in if expression
-const OpInfo = struct {
-    operation: *const Operation.Operation,
-    opcode: u8,
-};
-
 // Pre-computed operation info including stack validation data
 const PcToOpEntry = struct {
     operation: *const Operation.Operation,
