@@ -25,6 +25,7 @@ const PcToOpEntry = struct {
     max_stack: u32,
     constant_gas: u64,
     undefined: bool,
+    needs_pc: bool, // Whether this opcode reads PC (JUMP, JUMPI, PC)
 };
 
 /// Pre-build a direct PC-to-operation mapping for a contract's bytecode.
@@ -52,6 +53,17 @@ fn buildPcToOpEntryTable(allocator: std.mem.Allocator, contract: *const Contract
     for (0..contract.code_size) |pc| {
         const opcode_byte = contract.code[@intCast(pc)];
         const operation = jump_table.table[opcode_byte];
+        
+        // Determine if this opcode needs PC
+        // JUMP (0x56), JUMPI (0x57), PC (0x58), and opcodes that may modify PC internally
+        const needs_pc = switch (opcode_byte) {
+            0x56, // JUMP
+            0x57, // JUMPI  
+            0x58, // PC
+            => true,
+            else => false,
+        };
+        
         table[pc] = PcToOpEntry{
             .operation = operation,
             .opcode_byte = opcode_byte,
@@ -59,6 +71,7 @@ fn buildPcToOpEntryTable(allocator: std.mem.Allocator, contract: *const Contract
             .max_stack = operation.max_stack,
             .constant_gas = operation.constant_gas,
             .undefined = operation.undefined,
+            .needs_pc = needs_pc,
         };
     }
     
@@ -134,6 +147,16 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
             // Fallback: build entry on the fly
             const opcode_byte = contract.code[pc_index];
             const operation = self.table.table[opcode_byte];
+            
+            // Determine if this opcode needs PC
+            const needs_pc = switch (opcode_byte) {
+                0x56, // JUMP
+                0x57, // JUMPI  
+                0x58, // PC
+                => true,
+                else => false,
+            };
+            
             break :blk PcToOpEntry{
                 .operation = operation,
                 .opcode_byte = opcode_byte,
@@ -141,13 +164,17 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 .max_stack = operation.max_stack,
                 .constant_gas = operation.constant_gas,
                 .undefined = operation.undefined,
+                .needs_pc = needs_pc,
             };
         };
         
         const operation = entry.operation;
         const opcode_byte = entry.opcode_byte;
         
-        frame.pc = pc;
+        // Only set frame.pc when needed (most opcodes don't need it)
+        if (entry.needs_pc) {
+            frame.pc = pc;
+        }
         
         // INLINE: self.table.execute(...)
         // Execute the operation directly
@@ -194,6 +221,12 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 if (entry.constant_gas > 0) {
                     Log.debug("Consumed {} gas for opcode 0x{x:0>2}", .{ entry.constant_gas, opcode_byte });
                 }
+            }
+            
+            // Set frame.pc for operations that might read it internally
+            // (in case we didn't catch all opcodes that need it)
+            if (!entry.needs_pc) {
+                frame.pc = pc;
             }
             
             // Execute the operation
