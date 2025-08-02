@@ -1247,6 +1247,86 @@ pub fn build(b: *std.Build) void {
     const snail_shell_benchmark_test_step = b.step("test-benchmark", "Run SnailShellBenchmark tests");
     snail_shell_benchmark_test_step.dependOn(&run_snail_shell_benchmark_test.step);
 
+    // Add BN254 fuzz tests
+    const bn254_fuzz_test = b.addTest(.{
+        .name = "bn254-fuzz-test",
+        .root_source_file = b.path("src/crypto/bn254/fuzz.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bn254_fuzz_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_bn254_fuzz_test = b.addRunArtifact(bn254_fuzz_test);
+    if (b.args) |args| {
+        run_bn254_fuzz_test.addArgs(args);
+    }
+    const bn254_fuzz_test_step = b.step("fuzz-bn254", "Run BN254 fuzz tests (use: zig build fuzz-bn254 -- --fuzz)");
+    bn254_fuzz_test_step.dependOn(&run_bn254_fuzz_test.step);
+
+    // Add ECMUL precompile fuzz tests
+    const ecmul_fuzz_test = b.addTest(.{
+        .name = "ecmul-fuzz-test",
+        .root_source_file = b.path("src/evm/precompiles/ecmul_fuzz.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    ecmul_fuzz_test.root_module.addImport("primitives", primitives_mod);
+    ecmul_fuzz_test.root_module.addImport("crypto", crypto_mod);
+    ecmul_fuzz_test.root_module.addImport("evm", evm_mod);
+
+    const run_ecmul_fuzz_test = b.addRunArtifact(ecmul_fuzz_test);
+    if (b.args) |args| {
+        run_ecmul_fuzz_test.addArgs(args);
+    }
+    const ecmul_fuzz_test_step = b.step("fuzz-ecmul", "Run ECMUL precompile fuzz tests (use: zig build fuzz-ecmul -- --fuzz)");
+    ecmul_fuzz_test_step.dependOn(&run_ecmul_fuzz_test.step);
+
+    // Add ECPAIRING precompile fuzz tests
+    const ecpairing_fuzz_test = b.addTest(.{
+        .name = "ecpairing-fuzz-test",
+        .root_source_file = b.path("src/evm/precompiles/ecpairing_fuzz.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    ecpairing_fuzz_test.root_module.addImport("primitives", primitives_mod);
+    ecpairing_fuzz_test.root_module.addImport("crypto", crypto_mod);
+    ecpairing_fuzz_test.root_module.addImport("evm", evm_mod);
+
+    const run_ecpairing_fuzz_test = b.addRunArtifact(ecpairing_fuzz_test);
+    if (b.args) |args| {
+        run_ecpairing_fuzz_test.addArgs(args);
+    }
+    const ecpairing_fuzz_test_step = b.step("fuzz-ecpairing", "Run ECPAIRING precompile fuzz tests (use: zig build fuzz-ecpairing -- --fuzz)");
+    ecpairing_fuzz_test_step.dependOn(&run_ecpairing_fuzz_test.step);
+
+    // Add BN254 comparison fuzz test (Zig vs Rust)
+    const bn254_comparison_fuzz_test = b.addTest(.{
+        .name = "bn254-comparison-fuzz-test",
+        .root_source_file = b.path("test/fuzz/bn254_comparison_fuzz_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bn254_comparison_fuzz_test.root_module.addImport("primitives", primitives_mod);
+    bn254_comparison_fuzz_test.root_module.addImport("crypto", crypto_mod);
+    bn254_comparison_fuzz_test.root_module.addImport("evm", evm_mod);
+    if (bn254_lib) |bn254| {
+        bn254_comparison_fuzz_test.linkLibrary(bn254);
+    }
+
+    const run_bn254_comparison_fuzz_test = b.addRunArtifact(bn254_comparison_fuzz_test);
+    if (b.args) |args| {
+        run_bn254_comparison_fuzz_test.addArgs(args);
+    }
+    const bn254_comparison_fuzz_test_step = b.step("fuzz-compare", "Run BN254 comparison fuzz tests (use: zig build fuzz-compare -- --fuzz)");
+    bn254_comparison_fuzz_test_step.dependOn(&run_bn254_comparison_fuzz_test.step);
+
+    // Add a master fuzz test step that runs all fuzz tests
+    const fuzz_all_step = b.step("fuzz", "Run all fuzz tests (use: zig build fuzz -- --fuzz)");
+    fuzz_all_step.dependOn(&run_bn254_fuzz_test.step);
+    fuzz_all_step.dependOn(&run_ecmul_fuzz_test.step);
+    fuzz_all_step.dependOn(&run_ecpairing_fuzz_test.step);
+    fuzz_all_step.dependOn(&run_bn254_comparison_fuzz_test.step);
+
 
     // Add Constructor Bug test
     const constructor_bug_test = b.addTest(.{
@@ -1691,7 +1771,7 @@ pub fn build(b: *std.Build) void {
     // test_step.dependOn(&run_snail_tracer_test.step);
 
     // Add Fuzz Testing using test configuration data
-    const fuzz_test_step = b.step("fuzz", "Run all fuzz tests");
+    // Removed duplicate - fuzz step already defined above
     
     // Create fuzz tests from configuration
     for (tests.fuzz_tests) |test_info| {
@@ -1716,7 +1796,10 @@ pub fn build(b: *std.Build) void {
         }
         
         const run_fuzz_test = b.addRunArtifact(fuzz_test);
-        fuzz_test_step.dependOn(&run_fuzz_test.step);
+        if (b.args) |args| {
+            run_fuzz_test.addArgs(args);
+        }
+        fuzz_all_step.dependOn(&run_fuzz_test.step);
         
         // Create individual test step if specified
         if (test_info.step_name) |step_name| {
