@@ -105,6 +105,7 @@ pub fn append(self: *Stack, value: u256) Error!void {
 /// @param value The 256-bit value to push
 pub fn append_unsafe(self: *Stack, value: u256) void {
     @branchHint(.likely);
+    std.debug.assert(self.size < CAPACITY); // Help compiler know we won't overflow
     self.data[self.size] = value;
     self.size += 1;
 }
@@ -144,6 +145,7 @@ pub fn pop(self: *Stack) Error!u256 {
 /// @return The popped value
 pub fn pop_unsafe(self: *Stack) u256 {
     @branchHint(.likely);
+    std.debug.assert(self.size > 0); // Help compiler know we won't underflow
     self.size -= 1;
     const value = self.data[self.size];
     self.data[self.size] = 0;
@@ -158,6 +160,7 @@ pub fn pop_unsafe(self: *Stack) u256 {
 /// @return Pointer to the top value
 pub fn peek_unsafe(self: *const Stack) *const u256 {
     @branchHint(.likely);
+    std.debug.assert(self.size > 0); // Help compiler know bounds are valid
     return &self.data[self.size - 1];
 }
 
@@ -170,6 +173,8 @@ pub fn peek_unsafe(self: *const Stack) *const u256 {
 pub fn dup_unsafe(self: *Stack, n: usize) void {
     @branchHint(.likely);
     @setRuntimeSafety(false);
+    std.debug.assert(self.size >= n); // We have enough items to dup from
+    std.debug.assert(self.size < CAPACITY); // We have space to push
     self.append_unsafe(self.data[self.size - n]);
 }
 
@@ -177,6 +182,7 @@ pub fn dup_unsafe(self: *Stack, n: usize) void {
 pub fn pop2_unsafe(self: *Stack) struct { a: u256, b: u256 } {
     @branchHint(.likely); 
     @setRuntimeSafety(false);
+    std.debug.assert(self.size >= 2); // We have at least 2 items
     const new_size = self.size - 2;
     const a = self.data[new_size];
     const b = self.data[new_size + 1];
@@ -188,6 +194,7 @@ pub fn pop2_unsafe(self: *Stack) struct { a: u256, b: u256 } {
 pub fn pop3_unsafe(self: *Stack) struct { a: u256, b: u256, c: u256 } {
     @branchHint(.likely);
     @setRuntimeSafety(false);
+    std.debug.assert(self.size >= 3); // We have at least 3 items
     self.size -= 3;
     return .{
         .a = self.data[self.size],
@@ -200,6 +207,7 @@ pub fn set_top_unsafe(self: *Stack, value: u256) void {
     @branchHint(.likely);
     // Assumes stack is not empty; this should be guaranteed by jump_table validation
     // for opcodes that use this pattern (e.g., after a pop and peek on a stack with >= 2 items).
+    std.debug.assert(self.size > 0); // Stack must not be empty
     self.data[self.size - 1] = value;
 }
 
@@ -213,6 +221,7 @@ pub fn set_top_unsafe(self: *Stack, value: u256) void {
 /// @param n Position below top to swap with (1-16)
 pub fn swap_unsafe(self: *Stack, n: usize) void {
     @branchHint(.likely);
+    std.debug.assert(self.size > n); // We have enough items to swap
     std.mem.swap(u256, &self.data[self.size - 1], &self.data[self.size - 1 - n]);
 }
 
