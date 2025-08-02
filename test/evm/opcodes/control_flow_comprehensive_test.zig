@@ -174,6 +174,9 @@ test "JUMP: Jump to various valid destinations" {
             .build();
         defer test_frame.deinit();
 
+        // Initialize stack for tests that directly use frame.stack
+        test_frame.stack.ensureInitialized();
+
         try test_frame.stack.append(dest);
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &test_frame;
@@ -229,6 +232,9 @@ test "JUMP: Invalid jump destinations" {
             .withGas(1000)
             .build();
         defer test_frame.deinit();
+
+        // Initialize stack for tests that directly use frame.stack
+        test_frame.stack.ensureInitialized();
 
         try test_frame.stack.append(dest);
         const interpreter: Evm.Operation.Interpreter = &evm;
@@ -334,6 +340,9 @@ test "JUMPI (0x57): Conditional jump with true condition" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+
+    // Initialize stack for tests that directly execute opcodes
+    frame.stack.ensureInitialized();
 
     // Execute the PUSH1 instructions in the bytecode
     // PUSH1 1 (condition)
@@ -459,6 +468,9 @@ test "JUMPI: Various condition values" {
             .build();
         defer test_frame.deinit();
 
+
+    // Initialize stack for tests that directly execute opcodes
+    test_frame.stack.ensureInitialized();
         test_frame.pc = 10; // Set to non-zero position
         try test_frame.stack.append(condition); // condition
         try test_frame.stack.append(0); // dest=0
@@ -478,6 +490,9 @@ test "JUMPI: Various condition values" {
             .build();
         defer test_frame.deinit();
 
+
+    // Initialize stack for tests that directly execute opcodes
+    test_frame.stack.ensureInitialized();
         test_frame.pc = 10;
         try test_frame.stack.append(0); // condition=0
         try test_frame.stack.append(0); // dest=0
@@ -758,6 +773,9 @@ test "GAS (0x5A): Get remaining gas" {
             .build();
         defer test_frame.deinit();
 
+
+    // Initialize stack for tests that directly execute opcodes
+    test_frame.stack.ensureInitialized();
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &test_frame;
         _ = try evm.table.execute(0, interpreter, state, 0x5A);
@@ -861,6 +879,9 @@ test "GAS: Low gas scenarios" {
             .build();
         defer test_frame.deinit();
 
+
+    // Initialize stack for tests that directly execute opcodes
+    test_frame.stack.ensureInitialized();
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &test_frame;
         _ = try evm.table.execute(0, interpreter, state, 0x5A);
@@ -878,6 +899,9 @@ test "GAS: Low gas scenarios" {
             .build();
         defer test_frame.deinit();
 
+
+    // Initialize stack for tests that directly execute opcodes
+    test_frame.stack.ensureInitialized();
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &test_frame;
         const result = evm.table.execute(0, interpreter, state, 0x5A);
@@ -1053,6 +1077,9 @@ test "JUMPDEST: Jump destination validation" {
         .build();
     defer frame.deinit();
 
+
+    // Initialize stack for tests that directly execute opcodes
+    frame.stack.ensureInitialized();
     frame.pc = 5; // Position before JUMP
     try frame.stack.append(9); // Jump to JUMPDEST at position 9
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -1113,6 +1140,9 @@ test "JUMPDEST: Code analysis edge cases" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+
+        // Initialize stack for tests that directly use frame.stack
+            frame.stack.ensureInitialized();
 
     try frame.stack.append(3);
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -1229,6 +1259,9 @@ test "Control Flow: Gas consumption verification" {
             .withGas(1000)
             .build();
         defer test_frame.deinit();
+
+        // Initialize stack for tests that directly execute opcodes
+        test_frame.stack.ensureInitialized();
 
         const gas_before = test_frame.gas_remaining;
 
