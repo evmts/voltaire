@@ -52,6 +52,8 @@ test "RETURN (0xF3): Return data from execution" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Write data to memory
     const return_data = "Hello from RETURN!" ++ ([_]u8{0} ** 14);
     _ = try frame.memory.set_data(0, return_data[0..]);
@@ -115,6 +117,8 @@ test "RETURN: Empty return data" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Execute push operations
     frame.pc = 0;
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -176,6 +180,8 @@ test "REVERT (0xFD): Revert with data" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Write revert reason to memory
     const revert_data = "Revert reason!" ++ ([_]u8{0} ** 2);
     _ = try frame.memory.set_data(0, revert_data[0..]);
@@ -239,6 +245,8 @@ test "REVERT: Empty revert data" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Execute instructions
     for (0..2) |i| {
         frame.pc = i * 2;
@@ -298,6 +306,8 @@ test "INVALID (0xFE): Consume all gas and fail" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     const gas_before = frame.gas_remaining;
 
     // Execute INVALID
@@ -378,6 +388,8 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Execute PUSH20
     frame.pc = 0;
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -428,6 +440,8 @@ test "SELFDESTRUCT: Static call protection" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Set static mode
     frame.is_static = true;
 
@@ -478,6 +492,8 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Ensure beneficiary is cold
     evm.access_list.clear();
 
@@ -538,6 +554,8 @@ test "Control opcodes: Gas consumption" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Return large data requiring memory expansion
     try frame.stack.append(0x1000); // size (4096 bytes)
     try frame.stack.append(0); // offset
@@ -701,6 +719,8 @@ test "Control flow interaction: Call with REVERT" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Push CALL parameters in reverse order (stack is LIFO)
     // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, value, to, gas

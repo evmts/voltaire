@@ -113,6 +113,11 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
     };
     defer frame.deinit();
 
+    // Initialize the stack's top pointer if not already initialized.
+    // This is required for the pointer-based stack implementation to work correctly.
+    // We do this once at the start to avoid overhead in the hot path.
+    frame.stack.ensureInitialized();
+
     const interpreter: Operation.Interpreter = self;
     const state: Operation.State = &frame;
 
@@ -146,7 +151,7 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
         // INLINE: self.table.execute(...)
         // Execute the operation directly
         const exec_result = blk: {
-            Log.debug("Executing opcode 0x{x:0>2} at pc={}, gas={}, stack_size={}", .{ opcode_byte, pc, frame.gas_remaining, frame.stack.size });
+            Log.debug("Executing opcode 0x{x:0>2} at pc={}, gas={}, stack_size={}", .{ opcode_byte, pc, frame.gas_remaining, frame.stack.size() });
             
             // Check if opcode is undefined (cold path) - use pre-computed flag
             if (entry.undefined) {
@@ -161,7 +166,7 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 // Fast path for release builds - use pre-computed min/max
                 const stack_height_changes = @import("../opcodes/stack_height_changes.zig");
                 stack_height_changes.validate_stack_requirements_fast(
-                    @intCast(frame.stack.size),
+                    @intCast(frame.stack.size()),
                     opcode_byte,
                     entry.min_stack,
                     entry.max_stack,

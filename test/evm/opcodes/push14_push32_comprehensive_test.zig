@@ -51,6 +51,9 @@ test "PUSH14 (0x6D): Push 14 bytes onto stack" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -108,6 +111,9 @@ test "PUSH15 (0x6E): Push 15 bytes onto stack" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -157,6 +163,9 @@ test "PUSH16 (0x6F): Push 16 bytes onto stack" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -234,6 +243,9 @@ test "PUSH17-PUSH19: Various sizes" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -333,6 +345,9 @@ test "PUSH20-PUSH24: Various sizes" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -434,6 +449,9 @@ test "PUSH25-PUSH31: Various sizes" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -603,6 +621,9 @@ test "PUSH32 (0x7F): Push full 32 bytes onto stack" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -685,6 +706,9 @@ test "PUSH14-PUSH32: Gas consumption" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -763,6 +787,9 @@ test "PUSH operations: Truncated data at end of code" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -836,6 +863,9 @@ test "PUSH20: Address pushing pattern" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -920,6 +950,9 @@ test "PUSH32: Hash value pattern" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1003,6 +1036,9 @@ test "Large PUSH operations with stack near limit" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1015,7 +1051,7 @@ test "Large PUSH operations with stack near limit" {
     // One more PUSH32 should succeed (reaching limit of 1024)
     const result = try evm.table.execute(frame.pc, interpreter, state, 0x7F);
     try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
-    try testing.expectEqual(@as(usize, 1024), frame.stack.size);
+    try testing.expectEqual(@as(usize, 1024), frame.stack.size());
 
     // Clear one item to test overflow
     _ = try frame.stack.pop();
@@ -1076,6 +1112,9 @@ test "PUSH operations sequence verification" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1106,5 +1145,5 @@ test "PUSH operations sequence verification" {
     const top3_2 = try frame.stack.peek_n(2);
     try testing.expectEqual(@as(u256, 1), top3_2);
 
-    try testing.expectEqual(@as(usize, 3), frame.stack.size);
+    try testing.expectEqual(@as(usize, 3), frame.stack.size());
 }

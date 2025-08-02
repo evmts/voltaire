@@ -693,7 +693,7 @@ test "Evm.init_with_state creates EVM with custom settings" {
     defer evm.deinit();
 
     try testing.expectEqualSlices(u8, test_return_data, evm.return_data);
-    try testing.expectEqual(@as(usize, 0), evm.stack.size);
+    try testing.expectEqual(@as(usize, 0), evm.frame.stack.size());
     try testing.expectEqual(@as(u16, 42), evm.depth);
     try testing.expectEqual(true, evm.read_only);
 }
@@ -710,7 +710,7 @@ test "Evm.init_with_state uses defaults for null parameters" {
     defer evm.deinit();
 
     try testing.expectEqual(@as(usize, 0), evm.return_data.len);
-    try testing.expectEqual(@as(usize, 0), evm.stack.size);
+    try testing.expectEqual(@as(usize, 0), evm.frame.stack.size());
     try testing.expectEqual(@as(u16, 0), evm.depth);
     try testing.expectEqual(false, evm.read_only);
 }

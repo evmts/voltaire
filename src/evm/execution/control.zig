@@ -25,7 +25,7 @@ pub fn op_jump(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 
     const frame = state;
 
-    std.debug.assert(frame.stack.size >= 1);
+    std.debug.assert(frame.stack.size() >= 1);
 
     // Use unsafe pop since bounds checking is done by jump_table
     const dest = frame.stack.pop_unsafe();
@@ -52,13 +52,14 @@ pub fn op_jumpi(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 
     const frame = state;
 
-    std.debug.assert(frame.stack.size >= 2);
+    std.debug.assert(frame.stack.size() >= 2);
 
     // Log the stack before popping
-    Log.debug("JUMPI: Stack before pop (size={}): ", .{frame.stack.size});
+    Log.debug("JUMPI: Stack before pop (size={}): ", .{frame.stack.size()});
     var i: usize = 0;
-    while (i < @min(frame.stack.size, 10)) : (i += 1) {
-        Log.debug("  Stack[{}] = {}", .{ i, frame.stack.data[frame.stack.size - 1 - i] });
+    while (i < @min(frame.stack.size(), 10)) : (i += 1) {
+        const value = frame.stack.peek_n(i) catch break;
+        Log.debug("  Stack[{}] = {}", .{ i, value });
     }
 
     // Use batch pop for performance - pop 2 values at once
@@ -101,7 +102,7 @@ pub fn op_pc(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
 
     const frame = state;
 
-    std.debug.assert(frame.stack.size < Stack.CAPACITY);
+    std.debug.assert(frame.stack.size() < Stack.CAPACITY);
 
     // Use unsafe push since bounds checking is done by jump_table
     frame.stack.append_unsafe(@as(u256, @intCast(pc)));
@@ -124,7 +125,7 @@ pub fn op_return(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
     const frame = state;
 
-    std.debug.assert(frame.stack.size >= 2);
+    std.debug.assert(frame.stack.size() >= 2);
 
     // Use batch pop for performance - pop 2 values at once
     // Stack order (top to bottom): [offset, size] with offset on top
@@ -182,7 +183,7 @@ pub fn op_revert(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
     const frame = state;
 
-    std.debug.assert(frame.stack.size >= 2);
+    std.debug.assert(frame.stack.size() >= 2);
 
     // Use batch pop for performance - pop 2 values at once
     // Stack order (top to bottom): [offset, size] with offset on top
@@ -248,7 +249,7 @@ pub fn op_selfdestruct(pc: usize, interpreter: Operation.Interpreter, state: Ope
         return ExecutionError.Error.WriteProtection;
     }
 
-    std.debug.assert(frame.stack.size >= 1);
+    std.debug.assert(frame.stack.size() >= 1);
 
     // Use unsafe pop since bounds checking is done by jump_table
     const recipient_u256 = frame.stack.pop_unsafe();
@@ -429,7 +430,7 @@ fn validate_control_result(frame: *const Frame, op: FuzzControlOperation, result
         .pc => {
             // PC should succeed and push current PC to stack
             _ = try result; // Should not error
-            try testing.expectEqual(@as(usize, 1), frame.stack.size);
+            try testing.expectEqual(@as(usize, 1), frame.stack.size());
             // Stack should contain the PC value
             try testing.expect(frame.stack.data[0] >= 0);
         },

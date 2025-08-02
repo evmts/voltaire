@@ -209,9 +209,9 @@ fn validate_comparison_result(stack: *const Stack, op: FuzzComparisonOperation) 
     const testing = std.testing;
 
     // Stack should have exactly one result
-    try testing.expectEqual(@as(usize, 1), stack.size);
+    try testing.expectEqual(@as(usize, 1), stack.size());
 
-    const result = stack.data[0];
+    const result = try stack.peek();
 
     // All comparison operations return 0 or 1
     try testing.expect(result == 0 or result == 1);

@@ -48,6 +48,8 @@ test "Invalid Opcodes: 0x21-0x24 should fail" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test each invalid opcode from 0x21 to 0x24
     const invalid_opcodes = [_]u8{ 0x21, 0x22, 0x23, 0x24 };
 
@@ -112,6 +114,8 @@ test "Invalid Opcodes: Full 0x21-0x2F range" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test all opcodes from 0x21 to 0x2F
     var opcode: u8 = 0x21;
     while (opcode <= 0x2F) : (opcode += 1) {

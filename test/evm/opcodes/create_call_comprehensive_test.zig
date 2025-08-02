@@ -55,6 +55,8 @@ test "CREATE (0xF0): Basic contract creation" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Write init code to memory (simple bytecode that returns empty)
     const init_code = [_]u8{
         0x60, 0x00, // PUSH1 0x00
@@ -122,6 +124,8 @@ test "CREATE: Static call protection" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Set static mode
     frame.is_static = true;
 
@@ -174,6 +178,8 @@ test "CREATE: EIP-3860 initcode size limit" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Enable EIP-3860 (Shanghai)
     evm.chain_rules.is_eip3860 = true;
 
@@ -226,6 +232,8 @@ test "CREATE: Depth limit" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Set depth to maximum
     frame.depth = 1024;
 
@@ -292,6 +300,8 @@ test "CREATE2 (0xF5): Deterministic contract creation" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Write init code to memory
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 } ++ ([_]u8{0x11} ** 20);
     _ = try frame.memory.set_data(0, &init_code);
@@ -358,6 +368,8 @@ test "CALL (0xF1): Basic external call" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Push CALL parameters in reverse order (stack is LIFO)
     // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, value, to, gas
@@ -416,6 +428,8 @@ test "CALL: Value transfer in static context" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Set static mode
     frame.is_static = true;
 
@@ -472,6 +486,8 @@ test "CALL: Cold address access (EIP-2929)" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Ensure address is cold
     evm.access_list.clear();
 
@@ -536,6 +552,8 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Push CALLCODE parameters in reverse order (stack is LIFO)
     // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, value, to, gas
@@ -597,6 +615,8 @@ test "DELEGATECALL (0xF4): Execute with current context" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Push DELEGATECALL parameters in reverse order (stack is LIFO, no value parameter)
     // EVM pops: gas, to, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, to, gas
@@ -662,6 +682,8 @@ test "STATICCALL (0xFA): Read-only external call" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Push STATICCALL parameters in reverse order (stack is LIFO, no value parameter)
     // EVM pops: gas, to, args_offset, args_size, ret_offset, ret_size
     // So push: ret_size, ret_offset, args_size, args_offset, to, gas
@@ -722,6 +744,8 @@ test "System opcodes: Gas consumption" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test CREATE gas with EIP-3860
     evm.chain_rules.is_eip3860 = true;
 
@@ -787,6 +811,8 @@ test "CALL operations: Depth limit" {
             .build();
         defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
         // Set depth to maximum
         frame.depth = 1024;
 
@@ -859,6 +885,8 @@ test "CREATE/CREATE2: Failed creation scenarios" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test failed creation - push parameters in reverse order (stack is LIFO)
     // CREATE pops: value, offset, size
     // So push: size, offset, value

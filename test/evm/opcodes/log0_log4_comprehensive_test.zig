@@ -51,6 +51,8 @@ test "LOG0 (0xA0): Emit log with no topics" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Write some data to memory
     const test_data = "Hello, Ethereum logs!";
     const padded_data = test_data ++ ([_]u8{0} ** (32 - test_data.len));
@@ -149,6 +151,8 @@ test "LOG1 (0xA1): Emit log with one topic" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Write some data to memory at offset 32
     const test_data: [16]u8 = .{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10 };
     _ = try frame.memory.set_data(32, &test_data);
@@ -235,6 +239,8 @@ test "LOG2-LOG4: Multiple topics" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Write test data to memory
     const data1: [8]u8 = .{ 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
     const data2: [8]u8 = .{ 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18 };
@@ -343,6 +349,9 @@ test "LOG0-LOG4: Gas consumption" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -432,6 +441,8 @@ test "LOG operations: Static call protection" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Set static mode
     frame.is_static = true;
 
@@ -502,6 +513,9 @@ test "LOG operations: Stack underflow" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -564,6 +578,9 @@ test "LOG operations: Empty data" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -620,6 +637,8 @@ test "LOG operations: Large memory offset" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Push large offset and size (bottom to top: size, offset)
     try frame.stack.append(0x20); // size = 32
     try frame.stack.append(0x1000); // offset = 4096
@@ -756,6 +775,8 @@ test "LOG operations: ERC20 Transfer event pattern" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Write amount to memory (1000 tokens = 0x3E8)
     var amount_data: [32]u8 = [_]u8{0} ** 32;
     amount_data[31] = 0xE8;
@@ -846,6 +867,8 @@ test "LOG operations: Multiple logs in sequence" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Write data to memory
     _ = try frame.memory.set_data(0, &[_]u8{ 0xAA, 0xBB, 0xCC, 0xDD });
     _ = try frame.memory.set_data(4, &[_]u8{ 0x11, 0x22, 0x33, 0x44 });

@@ -42,6 +42,9 @@ test "PUSH0: append zero value" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -90,6 +93,9 @@ test "PUSH1: append 1 byte value" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -144,6 +150,9 @@ test "PUSH2: append 2 byte value" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -201,6 +210,9 @@ test "PUSH32: append 32 byte value" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -254,6 +266,9 @@ test "POP: remove top stack item" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -267,7 +282,7 @@ test "POP: remove top stack item" {
 
     // Should have removed top item (0x456)
     try testing.expectEqual(@as(u256, 0x123), try frame.stack.pop());
-    try testing.expectEqual(@as(usize, 0), frame.stack.size);
+    try testing.expectEqual(@as(usize, 0), frame.stack.size());
 }
 
 // Test DUP operations
@@ -304,6 +319,9 @@ test "DUP1: duplicate top stack item" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -352,6 +370,9 @@ test "DUP2: duplicate second stack item" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -402,6 +423,9 @@ test "DUP16: duplicate 16th stack item" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -459,6 +483,9 @@ test "SWAP1: swap top two stack items" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -508,6 +535,9 @@ test "SWAP2: swap 1st and 3rd stack items" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -559,6 +589,9 @@ test "SWAP16: swap 1st and 17th stack items" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -622,6 +655,9 @@ test "PUSH1: at end of code" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -679,6 +715,9 @@ test "PUSH32: partial data available" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -738,6 +777,9 @@ test "POP: stack underflow" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -782,6 +824,9 @@ test "DUP1: stack underflow" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -826,6 +871,9 @@ test "DUP16: insufficient stack items" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -874,6 +922,9 @@ test "SWAP1: stack underflow" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -922,6 +973,9 @@ test "PUSH1: stack overflow" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -972,6 +1026,9 @@ test "DUP1: stack overflow" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

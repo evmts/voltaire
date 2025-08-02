@@ -58,6 +58,9 @@ test "EXTCODESIZE (0x3B): Get external code size" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -126,6 +129,9 @@ test "EXTCODECOPY (0x3C): Copy external code to memory" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -199,6 +205,9 @@ test "RETURNDATASIZE (0x3D): Get return data size" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -332,6 +341,9 @@ test "EXTCODEHASH (0x3F): Get external code hash" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -408,6 +420,9 @@ test "BLOCKHASH (0x40): Get block hash" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -502,6 +517,9 @@ test "COINBASE (0x41): Get block coinbase" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -570,6 +588,9 @@ test "TIMESTAMP (0x42): Get block timestamp" {
             .withGas(1000)
             .build();
         defer frame.deinit();
+        
+        // Initialize stack for tests that directly use frame.stack
+        frame.stack.ensureInitialized();
 
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
@@ -639,6 +660,9 @@ test "NUMBER (0x43): Get block number" {
             .withGas(1000)
             .build();
         defer frame.deinit();
+        
+        // Initialize stack for tests that directly use frame.stack
+        frame.stack.ensureInitialized();
 
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
@@ -707,6 +731,9 @@ test "PREVRANDAO (0x44): Get previous RANDAO" {
             .withGas(1000)
             .build();
         defer frame.deinit();
+        
+        // Initialize stack for tests that directly use frame.stack
+        frame.stack.ensureInitialized();
 
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
@@ -761,6 +788,9 @@ test "EXTCODE* opcodes: Gas consumption with EIP-2929" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -845,7 +875,7 @@ test "Block opcodes: Gas consumption" {
         try testing.expectEqual(op.expected_gas, gas_used);
 
         // Pop result if needed
-        if (frame.stack.size > 0) {
+        if (frame.stack.size() > 0) {
             _ = try frame.stack.pop();
         }
     }
@@ -955,6 +985,9 @@ test "Memory copy opcodes: Memory expansion" {
         .withGas(100)
         .build();
     defer frame.deinit(); // Limited gas
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1019,6 +1052,9 @@ test "BLOCKHASH: Edge cases" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
