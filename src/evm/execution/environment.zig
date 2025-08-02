@@ -9,8 +9,12 @@ const to_u256 = primitives.Address.to_u256;
 const from_u256 = primitives.Address.from_u256;
 const GasConstants = @import("primitives").GasConstants;
 const AccessList = @import("../access_list/access_list.zig").AccessList;
+const tracy = @import("../tracy_support.zig");
 
 pub fn op_address(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_address\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -24,6 +28,9 @@ pub fn op_address(pc: usize, interpreter: Operation.Interpreter, state: Operatio
 }
 
 pub fn op_balance(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_balance\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -44,6 +51,9 @@ pub fn op_balance(pc: usize, interpreter: Operation.Interpreter, state: Operatio
 }
 
 pub fn op_origin(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_origin\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -57,6 +67,9 @@ pub fn op_origin(pc: usize, interpreter: Operation.Interpreter, state: Operation
 }
 
 pub fn op_caller(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_caller\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -70,6 +83,9 @@ pub fn op_caller(pc: usize, interpreter: Operation.Interpreter, state: Operation
 }
 
 pub fn op_callvalue(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_callvalue\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -82,6 +98,9 @@ pub fn op_callvalue(pc: usize, interpreter: Operation.Interpreter, state: Operat
 }
 
 pub fn op_gasprice(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_gasprice\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -94,6 +113,9 @@ pub fn op_gasprice(pc: usize, interpreter: Operation.Interpreter, state: Operati
 }
 
 pub fn op_extcodesize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_extcodesize\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -114,6 +136,9 @@ pub fn op_extcodesize(pc: usize, interpreter: Operation.Interpreter, state: Oper
 }
 
 pub fn op_extcodecopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_extcodecopy\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -163,6 +188,9 @@ pub fn op_extcodecopy(pc: usize, interpreter: Operation.Interpreter, state: Oper
 }
 
 pub fn op_extcodehash(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_extcodehash\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -195,6 +223,9 @@ pub fn op_extcodehash(pc: usize, interpreter: Operation.Interpreter, state: Oper
 }
 
 pub fn op_selfbalance(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_selfbalance\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -209,6 +240,9 @@ pub fn op_selfbalance(pc: usize, interpreter: Operation.Interpreter, state: Oper
 }
 
 pub fn op_chainid(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_chainid\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -221,6 +255,9 @@ pub fn op_chainid(pc: usize, interpreter: Operation.Interpreter, state: Operatio
 }
 
 pub fn op_calldatasize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_calldatasize\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -234,6 +271,9 @@ pub fn op_calldatasize(pc: usize, interpreter: Operation.Interpreter, state: Ope
 }
 
 pub fn op_codesize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_codesize\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -246,6 +286,9 @@ pub fn op_codesize(pc: usize, interpreter: Operation.Interpreter, state: Operati
 }
 
 pub fn op_calldataload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_calldataload\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -282,6 +325,9 @@ pub fn op_calldataload(pc: usize, interpreter: Operation.Interpreter, state: Ope
 }
 
 pub fn op_calldatacopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_calldatacopy\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -323,6 +369,9 @@ pub fn op_calldatacopy(pc: usize, interpreter: Operation.Interpreter, state: Ope
 }
 
 pub fn op_codecopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_codecopy\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -372,6 +421,9 @@ pub fn op_codecopy(pc: usize, interpreter: Operation.Interpreter, state: Operati
 /// RETURNDATALOAD opcode (0xF7): Loads a 32-byte word from return data
 /// This is an EOF opcode that allows reading from the return data buffer
 pub fn op_returndataload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_returndataload\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 

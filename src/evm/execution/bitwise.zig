@@ -4,8 +4,12 @@ const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const primitives = @import("primitives");
+const tracy = @import("../tracy_support.zig");
 
 pub fn op_and(_: usize, _: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_and\x00");
+    defer zone.end();
+    
     const frame = state;
     std.debug.assert(frame.stack.size() >= 2);
     const b = frame.stack.pop_unsafe();
@@ -15,6 +19,9 @@ pub fn op_and(_: usize, _: Operation.Interpreter, state: Operation.State) Execut
 }
 
 pub fn op_or(_: usize, _: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_or\x00");
+    defer zone.end();
+    
     const frame = state;
     std.debug.assert(frame.stack.size() >= 2);
     const b = frame.stack.pop_unsafe();
@@ -24,6 +31,9 @@ pub fn op_or(_: usize, _: Operation.Interpreter, state: Operation.State) Executi
 }
 
 pub fn op_xor(_: usize, _: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_xor\x00");
+    defer zone.end();
+    
     const frame = state;
     std.debug.assert(frame.stack.size() >= 2);
     const b = frame.stack.pop_unsafe();
@@ -33,6 +43,9 @@ pub fn op_xor(_: usize, _: Operation.Interpreter, state: Operation.State) Execut
 }
 
 pub fn op_not(_: usize, _: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_not\x00");
+    defer zone.end();
+    
     const frame = state;
     std.debug.assert(frame.stack.size() >= 1);
     const a = frame.stack.peek_unsafe().*;
@@ -41,6 +54,9 @@ pub fn op_not(_: usize, _: Operation.Interpreter, state: Operation.State) Execut
 }
 
 pub fn op_byte(_: usize, _: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_byte\x00");
+    defer zone.end();
+    
     const frame = state;
     std.debug.assert(frame.stack.size() >= 2);
     const i = frame.stack.pop_unsafe();
@@ -57,6 +73,9 @@ pub fn op_byte(_: usize, _: Operation.Interpreter, state: Operation.State) Execu
 }
 
 pub fn op_shl(_: usize, _: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_shl\x00");
+    defer zone.end();
+    
     const frame = state;
     std.debug.assert(frame.stack.size() >= 2);
     const shift = frame.stack.pop_unsafe();
@@ -69,6 +88,9 @@ pub fn op_shl(_: usize, _: Operation.Interpreter, state: Operation.State) Execut
 }
 
 pub fn op_shr(_: usize, _: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_shr\x00");
+    defer zone.end();
+    
     const frame = state;
     std.debug.assert(frame.stack.size() >= 2);
     const shift = frame.stack.pop_unsafe();
@@ -81,6 +103,9 @@ pub fn op_shr(_: usize, _: Operation.Interpreter, state: Operation.State) Execut
 }
 
 pub fn op_sar(_: usize, _: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_sar\x00");
+    defer zone.end();
+    
     const frame = state;
     std.debug.assert(frame.stack.size() >= 2);
     const shift = frame.stack.pop_unsafe();

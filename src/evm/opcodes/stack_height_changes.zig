@@ -142,15 +142,25 @@ pub fn validate_stack_requirements_fast(
     min_stack: u32,
     max_stack: u32,
 ) !void {
+    const tracy = @import("../tracy_support.zig");
+    const zone = tracy.zone(@src(), "stack_requirements_fast\x00");
+    defer zone.end();
+    
     // Check underflow: same as traditional validation
+    const underflow_zone = tracy.zone(@src(), "stack_underflow_check\x00");
     if (current_height < min_stack) {
+        underflow_zone.end();
         return error.StackUnderflow;
     }
+    underflow_zone.end();
     
     // Check overflow: same as traditional validation
+    const overflow_zone = tracy.zone(@src(), "stack_overflow_check\x00");
     if (current_height > max_stack) {
+        overflow_zone.end();
         return error.StackOverflow;
     }
+    overflow_zone.end();
 }
 
 // Tests

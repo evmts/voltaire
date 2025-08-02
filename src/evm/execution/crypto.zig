@@ -5,6 +5,7 @@ const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
+const tracy = @import("../tracy_support.zig");
 
 // Stack buffer sizes for common hash operations
 const SMALL_BUFFER_SIZE = 64;   // Most common (addresses, small data)
@@ -40,6 +41,9 @@ inline fn hash_with_stack_buffer(data: []const u8) [32]u8 {
 }
 
 pub fn op_sha3(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_sha3\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
