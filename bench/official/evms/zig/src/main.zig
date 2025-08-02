@@ -14,7 +14,12 @@ pub const std_options: std.Options = .{
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
+    const backing_allocator = gpa.allocator();
+    
+    // Use EVMAllocator for all EVM operations
+    var evm_allocator = try evm.EVMAllocator.init(backing_allocator, evm.EVMAllocator.DEFAULT_CAPACITY);
+    defer evm_allocator.deinit();
+    const allocator = evm_allocator.allocator();
 
     // Parse command line arguments
     const args = try std.process.argsAlloc(allocator);
