@@ -29,7 +29,6 @@ pub const EvmBuilder = struct {
     context: ?Context = null,
     depth: u16 = 0,
     read_only: bool = false,
-    tracer: ?std.io.AnyWriter = null,
 
     /// Initialize a new EVM builder.
     pub fn init(allocator: std.mem.Allocator, database: DatabaseInterface) EvmBuilder {
@@ -82,11 +81,6 @@ pub const EvmBuilder = struct {
         return self;
     }
     
-    /// Set a tracer for capturing execution traces.
-    pub fn withTracer(self: *EvmBuilder, writer: std.io.AnyWriter) *EvmBuilder {
-        self.tracer = writer;
-        return self;
-    }
 
     /// Build the EVM instance with all configured options.
     pub fn build(self: *const EvmBuilder) !Evm {
@@ -99,7 +93,6 @@ pub const EvmBuilder = struct {
             self.context,
             self.depth,
             self.read_only,
-            self.tracer,
         );
     }
 };

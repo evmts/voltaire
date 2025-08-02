@@ -52,6 +52,9 @@ test "DUP1 (0x80): Duplicate 1st stack item" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -65,17 +68,17 @@ test "DUP1 (0x80): Duplicate 1st stack item" {
     frame.pc = 4;
 
     // Stack should be [0x42, 0x33] (top is 0x33)
-    try testing.expectEqual(@as(usize, 2), frame.stack.size);
+    try testing.expectEqual(@as(usize, 2), frame.stack.size());
 
     // Execute DUP1
     const result = try evm.table.execute(frame.pc, interpreter, state, 0x80);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Stack should now be [0x42, 0x33, 0x33]
-    try testing.expectEqual(@as(usize, 3), frame.stack.size);
-    try testing.expectEqual(@as(u256, 0x33), frame.stack.data[frame.stack.size - 1]); // Top
-    try testing.expectEqual(@as(u256, 0x33), frame.stack.data[frame.stack.size - 2]); // Second
-    try testing.expectEqual(@as(u256, 0x42), frame.stack.data[frame.stack.size - 3]); // Third
+    try testing.expectEqual(@as(usize, 3), frame.stack.size());
+    try testing.expectEqual(@as(u256, 0x33), try frame.stack.peek_n(1 - 1)); // Top
+    try testing.expectEqual(@as(u256, 0x33), try frame.stack.peek_n(2 - 1)); // Second
+    try testing.expectEqual(@as(u256, 0x42), try frame.stack.peek_n(3 - 1)); // Third
 }
 
 test "DUP2 (0x81): Duplicate 2nd stack item" {
@@ -118,6 +121,9 @@ test "DUP2 (0x81): Duplicate 2nd stack item" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -131,10 +137,10 @@ test "DUP2 (0x81): Duplicate 2nd stack item" {
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
     // Stack should now be [0x42, 0x33, 0x42]
-    try testing.expectEqual(@as(usize, 3), frame.stack.size);
-    try testing.expectEqual(@as(u256, 0x42), frame.stack.data[frame.stack.size - 1]); // Top (duplicated)
-    try testing.expectEqual(@as(u256, 0x33), frame.stack.data[frame.stack.size - 2]); // Second
-    try testing.expectEqual(@as(u256, 0x42), frame.stack.data[frame.stack.size - 3]); // Third (original)
+    try testing.expectEqual(@as(usize, 3), frame.stack.size());
+    try testing.expectEqual(@as(u256, 0x42), try frame.stack.peek_n(1 - 1)); // Top (duplicated)
+    try testing.expectEqual(@as(u256, 0x33), try frame.stack.peek_n(2 - 1)); // Second
+    try testing.expectEqual(@as(u256, 0x42), try frame.stack.peek_n(3 - 1)); // Third (original)
 }
 
 test "DUP3-DUP5: Various duplications" {
@@ -173,6 +179,9 @@ test "DUP3-DUP5: Various duplications" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -187,22 +196,22 @@ test "DUP3-DUP5: Various duplications" {
     frame.pc = 0;
     var result = try evm.table.execute(frame.pc, interpreter, state, 0x82);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
-    try testing.expectEqual(@as(usize, 6), frame.stack.size);
-    try testing.expectEqual(@as(u256, 0x33), frame.stack.data[frame.stack.size - 1]); // Duplicated value on top
+    try testing.expectEqual(@as(usize, 6), frame.stack.size());
+    try testing.expectEqual(@as(u256, 0x33), try frame.stack.peek_n(1 - 1)); // Duplicated value on top
 
     // Execute DUP4 (should duplicate 0x33 again, as it's now 4th from top)
     frame.pc = 1;
     result = try evm.table.execute(frame.pc, interpreter, state, 0x83);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
-    try testing.expectEqual(@as(usize, 7), frame.stack.size);
-    try testing.expectEqual(@as(u256, 0x33), frame.stack.data[frame.stack.size - 1]); // Duplicated value on top
+    try testing.expectEqual(@as(usize, 7), frame.stack.size());
+    try testing.expectEqual(@as(u256, 0x33), try frame.stack.peek_n(1 - 1)); // Duplicated value on top
 
     // Execute DUP5 (should duplicate 0x22)
     frame.pc = 2;
     result = try evm.table.execute(frame.pc, interpreter, state, 0x84);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
-    try testing.expectEqual(@as(usize, 8), frame.stack.size);
-    try testing.expectEqual(@as(u256, 0x33), frame.stack.data[frame.stack.size - 1]); // DUP5 duplicates the 5th element which is 0x33
+    try testing.expectEqual(@as(usize, 8), frame.stack.size());
+    try testing.expectEqual(@as(u256, 0x33), try frame.stack.peek_n(1 - 1)); // DUP5 duplicates the 5th element which is 0x33
 }
 
 test "DUP6-DUP10: Mid-range duplications" {
@@ -241,6 +250,9 @@ test "DUP6-DUP10: Mid-range duplications" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -253,27 +265,27 @@ test "DUP6-DUP10: Mid-range duplications" {
     frame.pc = 0;
     const result = try evm.table.execute(frame.pc, interpreter, state, 0x85);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
-    try testing.expectEqual(@as(u256, 0x50), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 0x50), try frame.stack.peek_n(1 - 1));
 
     // Execute DUP7 (should duplicate 0x50 again, as it's now 7th)
     frame.pc = 1;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x86);
-    try testing.expectEqual(@as(u256, 0x50), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 0x50), try frame.stack.peek_n(1 - 1));
 
     // Execute DUP8 (should duplicate 0x40)
     frame.pc = 2;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x87);
-    try testing.expectEqual(@as(u256, 0x50), frame.stack.data[frame.stack.size - 1]); // DUP8 duplicates position 8 which is 0x50
+    try testing.expectEqual(@as(u256, 0x50), try frame.stack.peek_n(1 - 1)); // DUP8 duplicates position 8 which is 0x50
 
     // Execute DUP9 (should duplicate 0x30)
     frame.pc = 3;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x88);
-    try testing.expectEqual(@as(u256, 0x50), frame.stack.data[frame.stack.size - 1]); // DUP9 duplicates position 9 which is 0x50
+    try testing.expectEqual(@as(u256, 0x50), try frame.stack.peek_n(1 - 1)); // DUP9 duplicates position 9 which is 0x50
 
     // Execute DUP10 (should duplicate 0x20)
     frame.pc = 4;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x89);
-    try testing.expectEqual(@as(u256, 0x50), frame.stack.data[frame.stack.size - 1]); // DUP10 duplicates position 10 which is 0x50
+    try testing.expectEqual(@as(u256, 0x50), try frame.stack.peek_n(1 - 1)); // DUP10 duplicates position 10 which is 0x50
 }
 
 test "DUP11-DUP16: High-range duplications" {
@@ -312,6 +324,9 @@ test "DUP11-DUP16: High-range duplications" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -323,33 +338,33 @@ test "DUP11-DUP16: High-range duplications" {
     // Execute DUP11 (should duplicate 0x600)
     frame.pc = 0;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x8A);
-    try testing.expectEqual(@as(u256, 0x600), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 0x600), try frame.stack.peek_n(1 - 1));
 
     // Execute DUP12 (position 12 contains 0x600)
     frame.pc = 1;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x8B);
-    try testing.expectEqual(@as(u256, 0x600), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 0x600), try frame.stack.peek_n(1 - 1));
 
     // Execute DUP13 (position 13 contains 0x600)
     frame.pc = 2;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x8C);
-    try testing.expectEqual(@as(u256, 0x600), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 0x600), try frame.stack.peek_n(1 - 1));
 
     // Execute DUP14 - position 14 is 0x600
     frame.pc = 3;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x8D);
-    try testing.expectEqual(@as(u256, 0x600), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 0x600), try frame.stack.peek_n(1 - 1));
 
     // Execute DUP15 - position 15 from top
     frame.pc = 4;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x8E);
-    try testing.expectEqual(@as(u256, 0x600), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 0x600), try frame.stack.peek_n(1 - 1));
 
     // Execute DUP16 - position 16 from top
     frame.pc = 5;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x8F);
     // Stack now has 21 items. Position 16 from top should be one of the original values
-    try testing.expectEqual(@as(u256, 0x600), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 0x600), try frame.stack.peek_n(1 - 1));
 }
 
 test "DUP16 (0x8F): Duplicate 16th stack item (maximum)" {
@@ -388,6 +403,9 @@ test "DUP16 (0x8F): Duplicate 16th stack item (maximum)" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -400,9 +418,9 @@ test "DUP16 (0x8F): Duplicate 16th stack item (maximum)" {
     const result = try evm.table.execute(frame.pc, interpreter, state, 0x8F);
     try testing.expectEqual(@as(usize, 1), result.bytes_consumed);
 
-    try testing.expectEqual(@as(usize, 17), frame.stack.size);
-    try testing.expectEqual(@as(u256, 0x1000), frame.stack.data[frame.stack.size - 1]); // Duplicated first item
-    try testing.expectEqual(@as(u256, 0x1000), frame.stack.data[frame.stack.size - 17]); // Original position
+    try testing.expectEqual(@as(usize, 17), frame.stack.size());
+    try testing.expectEqual(@as(u256, 0x1000), try frame.stack.peek_n(1 - 1)); // Duplicated first item
+    try testing.expectEqual(@as(u256, 0x1000), try frame.stack.peek_n(17 - 1)); // Original position
 }
 
 // ============================
@@ -447,6 +465,9 @@ test "DUP1-DUP16: Gas consumption" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -513,6 +534,9 @@ test "DUP operations: Stack underflow" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -532,7 +556,7 @@ test "DUP operations: Stack underflow" {
     frame.pc = 1;
     const result3 = try evm.table.execute(frame.pc, interpreter, state, 0x81);
     try testing.expectEqual(@as(usize, 1), result3.bytes_consumed);
-    try testing.expectEqual(@as(usize, 3), frame.stack.size);
+    try testing.expectEqual(@as(usize, 3), frame.stack.size());
 
     // Push more values
     for (0..4) |i| {
@@ -584,6 +608,9 @@ test "DUP operations: Stack overflow" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -641,6 +668,9 @@ test "DUP operations: Sequential duplications" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -651,29 +681,29 @@ test "DUP operations: Sequential duplications" {
     }
 
     // Stack: [0x01, 0x02, 0x03]
-    try testing.expectEqual(@as(usize, 3), frame.stack.size);
+    try testing.expectEqual(@as(usize, 3), frame.stack.size());
 
     // Execute DUP1
     frame.pc = 6;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x80);
     // Stack: [0x01, 0x02, 0x03, 0x03]
-    try testing.expectEqual(@as(usize, 4), frame.stack.size);
-    try testing.expectEqual(@as(u256, 0x03), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(usize, 4), frame.stack.size());
+    try testing.expectEqual(@as(u256, 0x03), try frame.stack.peek_n(1 - 1));
 
     // Execute DUP2
     frame.pc = 7;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x81);
     // Stack: [0x01, 0x02, 0x03, 0x03, 0x03]
-    try testing.expectEqual(@as(usize, 5), frame.stack.size);
-    try testing.expectEqual(@as(u256, 0x03), frame.stack.data[frame.stack.size - 1]);
-    try testing.expectEqual(@as(u256, 0x03), frame.stack.data[frame.stack.size - 2]);
+    try testing.expectEqual(@as(usize, 5), frame.stack.size());
+    try testing.expectEqual(@as(u256, 0x03), try frame.stack.peek_n(1 - 1));
+    try testing.expectEqual(@as(u256, 0x03), try frame.stack.peek_n(2 - 1));
 
     // Execute DUP5
     frame.pc = 8;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x84);
     // Stack: [0x01, 0x02, 0x03, 0x03, 0x03, 0x01]
-    try testing.expectEqual(@as(usize, 6), frame.stack.size);
-    try testing.expectEqual(@as(u256, 0x01), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(usize, 6), frame.stack.size());
+    try testing.expectEqual(@as(u256, 0x01), try frame.stack.peek_n(1 - 1));
 }
 
 test "DUP operations: Pattern verification" {
@@ -712,6 +742,9 @@ test "DUP operations: Pattern verification" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -723,30 +756,30 @@ test "DUP operations: Pattern verification" {
     // DUP1 should duplicate the top (0x110)
     frame.pc = 0;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x80);
-    try testing.expectEqual(@as(u256, 0x110), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 0x110), try frame.stack.peek_n(1 - 1));
 
     // DUP5 should duplicate 5th from top (now 0xCC)
     frame.pc = 1;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x84);
-    try testing.expectEqual(@as(u256, 0xDD), frame.stack.data[frame.stack.size - 1]); // After DUP1, positions shift
+    try testing.expectEqual(@as(u256, 0xDD), try frame.stack.peek_n(1 - 1)); // After DUP1, positions shift
 
     // DUP9 should duplicate 9th from top (now 0x99)
     frame.pc = 2;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x88);
-    try testing.expectEqual(@as(u256, 0xAA), frame.stack.data[frame.stack.size - 1]); // DUP9 gets 9th from top which is 0xAA
+    try testing.expectEqual(@as(u256, 0xAA), try frame.stack.peek_n(1 - 1)); // DUP9 gets 9th from top which is 0xAA
 
     // DUP13 should duplicate 13th from top (now 0x77 after 3 DUPs)
     frame.pc = 3;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x8C);
-    try testing.expectEqual(@as(u256, 0x77), frame.stack.data[frame.stack.size - 1]); // DUP13 gets 13th from top which is 0x77
+    try testing.expectEqual(@as(u256, 0x77), try frame.stack.peek_n(1 - 1)); // DUP13 gets 13th from top which is 0x77
 
     // DUP16 should duplicate 16th from top (now 0x55 after 4 DUPs)
     frame.pc = 4;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x8F);
-    try testing.expectEqual(@as(u256, 0x55), frame.stack.data[frame.stack.size - 1]); // DUP16 gets 16th from top which is 0x55
+    try testing.expectEqual(@as(u256, 0x55), try frame.stack.peek_n(1 - 1)); // DUP16 gets 16th from top which is 0x55
 
     // Final stack size should be 21 (16 original + 5 duplicated)
-    try testing.expectEqual(@as(usize, 21), frame.stack.size);
+    try testing.expectEqual(@as(usize, 21), frame.stack.size());
 }
 
 test "DUP operations: Boundary test with exact stack size" {
@@ -785,6 +818,9 @@ test "DUP operations: Boundary test with exact stack size" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -792,9 +828,9 @@ test "DUP operations: Boundary test with exact stack size" {
     try frame.stack.append(0xAA);
     frame.pc = 0;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x80);
-    try testing.expectEqual(@as(usize, 2), frame.stack.size);
-    try testing.expectEqual(@as(u256, 0xAA), frame.stack.data[frame.stack.size - 1]);
-    try testing.expectEqual(@as(u256, 0xAA), frame.stack.data[frame.stack.size - 2]);
+    try testing.expectEqual(@as(usize, 2), frame.stack.size());
+    try testing.expectEqual(@as(u256, 0xAA), try frame.stack.peek_n(1 - 1));
+    try testing.expectEqual(@as(u256, 0xAA), try frame.stack.peek_n(2 - 1));
 
     // Clear stack
     frame.stack.clear();
@@ -805,8 +841,8 @@ test "DUP operations: Boundary test with exact stack size" {
     }
     frame.pc = 1;
     _ = try evm.table.execute(frame.pc, interpreter, state, 0x8F);
-    try testing.expectEqual(@as(usize, 17), frame.stack.size);
-    try testing.expectEqual(@as(u256, 1), frame.stack.data[frame.stack.size - 1]); // First pushed item
+    try testing.expectEqual(@as(usize, 17), frame.stack.size());
+    try testing.expectEqual(@as(u256, 1), try frame.stack.peek_n(1 - 1)); // First pushed item
 
     // Test DUP16 with 15 items (should fail)
     frame.stack.clear();

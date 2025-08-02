@@ -41,6 +41,9 @@ test "Bitwise: AND basic operations" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -112,6 +115,9 @@ test "Bitwise: OR basic operations" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -174,6 +180,9 @@ test "Bitwise: XOR basic operations" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -235,6 +244,9 @@ test "Bitwise: NOT basic operations" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -294,6 +306,9 @@ test "Bitwise: BYTE extraction operations" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -364,6 +379,9 @@ test "Bitwise: SHL (shift left) operations" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -434,6 +452,9 @@ test "Bitwise: SHR (logical shift right) operations" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -495,6 +516,9 @@ test "Bitwise: SAR (arithmetic shift right) operations" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -567,6 +591,9 @@ test "Bitwise: Stack underflow errors" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -617,6 +644,9 @@ test "Bitwise: Gas consumption" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

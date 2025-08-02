@@ -42,7 +42,7 @@ const std = @import("std");
 ///
 /// Example:
 /// ```zig
-/// var stack = Stack{};
+/// var stack = Stack.init();
 /// try stack.append(100); // Safe variant (for error_mapping)
 /// stack.append_unsafe(200); // Unsafe variant (for opcodes)
 /// ```
@@ -65,14 +65,38 @@ pub const Error = error{
 /// Architecture-appropriate alignment for optimal access
 data: [CAPACITY]u256 align(@alignOf(u256)) = undefined,
 
-/// Current number of elements on the stack.
-/// Invariant: 0 <= size <= CAPACITY
-size: usize = 0,
+/// Pointer to the next free slot in the stack.
+/// This optimization eliminates the need to track size separately.
+/// Points one element past the last valid element.
+/// Invariant: &data[0] <= top <= &data[CAPACITY]
+top: ?[*]u256 = null,
 
 // Compile-time validations for stack design assumptions
 comptime {
     // Ensure stack capacity matches EVM specification
     std.debug.assert(CAPACITY == 1024);
+}
+
+/// Create a new initialized stack.
+/// This is the proper way to create a Stack instance.
+pub fn init() Stack {
+    return Stack{};
+}
+
+
+/// Ensure top pointer is initialized.
+/// Must be called on any stack operation.
+pub inline fn ensureInitialized(self: *Stack) void {
+    if (self.top == null) {
+        self.top = @as([*]u256, @ptrCast(&self.data[0]));
+    }
+}
+
+/// Get the current number of elements on the stack.
+/// Calculated from pointer offset.
+pub fn size(self: *const Stack) usize {
+    const top = self.top orelse @as([*]const u256, @ptrCast(&self.data[0]));
+    return (@intFromPtr(top) - @intFromPtr(&self.data[0])) / @sizeOf(u256);
 }
 
 /// Push a value onto the stack (safe version).
@@ -86,14 +110,15 @@ comptime {
 /// try stack.append(0x1234);
 /// ```
 pub fn append(self: *Stack, value: u256) Error!void {
-    if (self.size >= CAPACITY) {
+    self.ensureInitialized();
+    if (self.size() >= CAPACITY) {
         @branchHint(.cold);
         // Debug logging removed for fuzz testing compatibility
         return Error.StackOverflow;
     }
     // Debug logging removed for fuzz testing compatibility
-    self.data[self.size] = value;
-    self.size += 1;
+    self.top.?[0] = value;
+    self.top.? += 1;
 }
 
 /// Push a value onto the stack (unsafe version).
@@ -105,8 +130,9 @@ pub fn append(self: *Stack, value: u256) Error!void {
 /// @param value The 256-bit value to push
 pub fn append_unsafe(self: *Stack, value: u256) void {
     @branchHint(.likely);
-    self.data[self.size] = value;
-    self.size += 1;
+    std.debug.assert(self.size() < CAPACITY); // Help compiler know we won't overflow
+    self.top.?[0] = value;
+    self.top.? += 1;
 }
 
 /// Pop a value from the stack (safe version).
@@ -123,14 +149,14 @@ pub fn append_unsafe(self: *Stack, value: u256) void {
 /// const value = try stack.pop();
 /// ```
 pub fn pop(self: *Stack) Error!u256 {
-    if (self.size == 0) {
+    if (self.size() == 0) {
         @branchHint(.cold);
         // Debug logging removed for fuzz testing compatibility
         return Error.StackUnderflow;
     }
-    self.size -= 1;
-    const value = self.data[self.size];
-    self.data[self.size] = 0;
+    self.top.? -= 1;
+    const value = self.top.?[0];
+    self.top.?[0] = 0;
     // Debug logging removed for fuzz testing compatibility
     return value;
 }
@@ -144,9 +170,10 @@ pub fn pop(self: *Stack) Error!u256 {
 /// @return The popped value
 pub fn pop_unsafe(self: *Stack) u256 {
     @branchHint(.likely);
-    self.size -= 1;
-    const value = self.data[self.size];
-    self.data[self.size] = 0;
+    std.debug.assert(self.size() > 0); // Help compiler know we won't underflow
+    self.top.? -= 1;
+    const value = self.top.?[0];
+    self.top.?[0] = 0;
     return value;
 }
 
@@ -158,7 +185,8 @@ pub fn pop_unsafe(self: *Stack) u256 {
 /// @return Pointer to the top value
 pub fn peek_unsafe(self: *const Stack) *const u256 {
     @branchHint(.likely);
-    return &self.data[self.size - 1];
+    std.debug.assert(self.size() > 0); // Help compiler know bounds are valid
+    return &(self.top.? - 1)[0];
 }
 
 /// Duplicate the nth element onto the top of stack (unsafe version).
@@ -170,37 +198,51 @@ pub fn peek_unsafe(self: *const Stack) *const u256 {
 pub fn dup_unsafe(self: *Stack, n: usize) void {
     @branchHint(.likely);
     @setRuntimeSafety(false);
-    self.append_unsafe(self.data[self.size - n]);
+    std.debug.assert(self.size() >= n); // We have enough items to dup from
+    std.debug.assert(self.size() < CAPACITY); // We have space to push
+    self.append_unsafe((self.top.? - @as(usize, @intCast(n)))[0]);
 }
 
+pub const Pop2Result = struct { a: u256, b: u256 };
+
 /// Pop 2 values without pushing (unsafe version)
-pub fn pop2_unsafe(self: *Stack) struct { a: u256, b: u256 } {
+pub fn pop2_unsafe(self: *Stack) Pop2Result {
     @branchHint(.likely); 
     @setRuntimeSafety(false);
-    const new_size = self.size - 2;
-    const a = self.data[new_size];
-    const b = self.data[new_size + 1];
-    self.size = new_size;
+    std.debug.assert(self.size() >= 2); // We have at least 2 items
+    self.top.? -= 2;
+    const a = self.top.?[0];
+    const b = self.top.?[1];
+    self.top.?[0] = 0;
+    self.top.?[1] = 0;
     return .{ .a = a, .b = b };
 }
 
+pub const Pop3Result = struct { a: u256, b: u256, c: u256 };
+
 /// Pop 3 values without pushing (unsafe version)
-pub fn pop3_unsafe(self: *Stack) struct { a: u256, b: u256, c: u256 } {
+pub fn pop3_unsafe(self: *Stack) Pop3Result {
     @branchHint(.likely);
     @setRuntimeSafety(false);
-    self.size -= 3;
-    return .{
-        .a = self.data[self.size],
-        .b = self.data[self.size + 1],
-        .c = self.data[self.size + 2],
+    std.debug.assert(self.size() >= 3); // We have at least 3 items
+    self.top.? -= 3;
+    const result = Pop3Result{
+        .a = self.top.?[0],
+        .b = self.top.?[1],
+        .c = self.top.?[2],
     };
+    self.top.?[0] = 0;
+    self.top.?[1] = 0;
+    self.top.?[2] = 0;
+    return result;
 }
 
 pub fn set_top_unsafe(self: *Stack, value: u256) void {
     @branchHint(.likely);
     // Assumes stack is not empty; this should be guaranteed by jump_table validation
     // for opcodes that use this pattern (e.g., after a pop and peek on a stack with >= 2 items).
-    self.data[self.size - 1] = value;
+    std.debug.assert(self.size() > 0); // Stack must not be empty
+    (self.top.? - 1)[0] = value;
 }
 
 /// Swap the top element with the nth element below it (unsafe version).
@@ -213,39 +255,44 @@ pub fn set_top_unsafe(self: *Stack, value: u256) void {
 /// @param n Position below top to swap with (1-16)
 pub fn swap_unsafe(self: *Stack, n: usize) void {
     @branchHint(.likely);
-    std.mem.swap(u256, &self.data[self.size - 1], &self.data[self.size - 1 - n]);
+    std.debug.assert(self.size() > n); // We have enough items to swap
+    std.mem.swap(u256, &(self.top.? - 1)[0], &(self.top.? - 1 - @as(usize, @intCast(n)))[0]);
 }
 
 /// Peek at the nth element from the top (for test compatibility)
 pub fn peek_n(self: *const Stack, n: usize) Error!u256 {
-    if (n >= self.size) {
+    if (n >= self.size()) {
         @branchHint(.cold);
         return Error.StackUnderflow;
     }
-    return self.data[self.size - 1 - n];
+    return (self.top.? - 1 - @as(usize, @intCast(n)))[0];
 }
 
 /// Clear the stack (for test compatibility)
 pub fn clear(self: *Stack) void {
-    self.size = 0;
-    // Zero out the data for security
-    @memset(self.data[0..CAPACITY], 0);
+    self.ensureInitialized();
+    const current_size = self.size();
+    self.top.? = @as([*]u256, @ptrCast(&self.data[0]));
+    // Zero out the data for security - only clear what was used
+    if (current_size > 0) {
+        @memset(self.data[0..current_size], 0);
+    }
 }
 
 /// Peek at the top value (for test compatibility)
 pub fn peek(self: *const Stack) Error!u256 {
-    if (self.size == 0) {
+    if (self.size() == 0) {
         @branchHint(.cold);
         return Error.StackUnderflow;
     }
-    return self.data[self.size - 1];
+    return (self.top.? - 1)[0];
 }
 
 // Fuzz testing functions
 pub fn fuzz_stack_operations(allocator: std.mem.Allocator, operations: []const FuzzOperation) !void {
     _ = allocator;
-    var stack = Stack{};
-    const testing = std.testing;
+    var stack = Stack.init();
+        const testing = std.testing;
     
     for (operations) |op| {
         switch (op) {
@@ -359,8 +406,8 @@ test "fuzz_stack_lifo_property" {
 //         fn testLifoProperty(input: []const u8) anyerror!void {
 //             if (input.len < 8) return;
 //             
-//             var stack = Stack{};
-//             var reference = std.ArrayList(u256).init(std.testing.allocator);
+//             var stack = Stack.init();
+    //             var reference = std.ArrayList(u256).init(std.testing.allocator);
 //             defer reference.deinit();
 //             
 //             // Generate values from fuzz input
@@ -396,8 +443,8 @@ test "fuzz_stack_random_operations" {
 //         fn testRandomOperations(input: []const u8) anyerror!void {
 //             if (input.len < 9) return;
 //             
-//             var stack = Stack{};
-//             var reference = std.ArrayList(u256).init(std.testing.allocator);
+//             var stack = Stack.init();
+    //             var reference = std.ArrayList(u256).init(std.testing.allocator);
 //             defer reference.deinit();
 //             
 //             // Limit operations to prevent excessive test time
@@ -447,8 +494,9 @@ test "fuzz_stack_random_operations" {
 }
 
 test "fuzz_stack_unsafe_operations" {
-    var stack = Stack{};
-    
+    var stack = Stack.init();
+    stack.ensureInitialized();
+        
     stack.append_unsafe(100);
     stack.append_unsafe(200);
     stack.append_unsafe(300);
@@ -467,8 +515,9 @@ test "fuzz_stack_unsafe_operations" {
 }
 
 test "fuzz_stack_dup_operations" {
-    var stack = Stack{};
-    
+    var stack = Stack.init();
+    stack.ensureInitialized();
+        
     stack.append_unsafe(100);
     stack.append_unsafe(200);
     stack.append_unsafe(300);
@@ -483,8 +532,9 @@ test "fuzz_stack_dup_operations" {
 }
 
 test "fuzz_stack_swap_operations" {
-    var stack = Stack{};
-    
+    var stack = Stack.init();
+    stack.ensureInitialized();
+        
     stack.append_unsafe(100);
     stack.append_unsafe(200);
     stack.append_unsafe(300);
@@ -497,8 +547,9 @@ test "fuzz_stack_swap_operations" {
 }
 
 test "fuzz_stack_multi_pop_operations" {
-    var stack = Stack{};
-    
+    var stack = Stack.init();
+    stack.ensureInitialized();
+        
     stack.append_unsafe(100);
     stack.append_unsafe(200);
     stack.append_unsafe(300);
@@ -518,8 +569,9 @@ test "fuzz_stack_multi_pop_operations" {
 }
 
 test "fuzz_stack_edge_values" {
-    var stack = Stack{};
-    
+    var stack = Stack.init();
+    stack.ensureInitialized();
+        
     const edge_values = [_]u256{
         0,
         1,
@@ -541,8 +593,9 @@ test "fuzz_stack_edge_values" {
 }
 
 test "memory_alignment_verification" {
-    var stack = Stack{};
-    
+    var stack = Stack.init();
+    stack.ensureInitialized();
+        
     // Verify initial alignment of data array
     const data_ptr = @intFromPtr(&stack.data[0]);
     try std.testing.expectEqual(@as(usize, 0), data_ptr % 32);
@@ -573,9 +626,9 @@ test "concurrent_usage_multiple_stacks" {
     const allocator = std.testing.allocator;
     
     // Create multiple stacks to ensure they don't share state
-    var stack1 = Stack{};
-    var stack2 = Stack{};
-    var stack3 = Stack{};
+    var stack1 = Stack.init();
+    stack1.init();    var stack2 = Stack.init();
+    var stack3 = Stack.init();
     
     // Operate on stack1
     try stack1.append(100);
@@ -603,7 +656,7 @@ test "concurrent_usage_multiple_stacks" {
     var stacks: [10]*Stack = undefined;
     for (&stacks) |*s| {
         s.* = try allocator.create(Stack);
-        s.*.* = Stack{};
+        s.*.* = Stack.init();
     }
     defer {
         for (stacks) |s| {
@@ -628,8 +681,8 @@ test "concurrent_usage_multiple_stacks" {
     }
     
     // Test concurrent-like access pattern
-    var stack_a = Stack{};
-    var stack_b = Stack{};
+    var stack_a = Stack.init();
+    var stack_b = Stack.init();
     
     // Interleaved operations
     try stack_a.append(1);
@@ -650,7 +703,7 @@ test "concurrent_usage_multiple_stacks" {
     defer allocator.free(heap_stacks);
     
     for (heap_stacks) |*s| {
-        s.* = Stack{};
+        s.* = Stack.init();
     }
     defer {
         for (heap_stacks) |_| {
@@ -673,8 +726,8 @@ test "extended_fuzzing_unsafe_operations" {
 //         fn testExtendedUnsafeOperations(input: []const u8) anyerror!void {
 //             if (input.len < 16) return;
 //             
-//             var stack = Stack{};
-//             
+//             var stack = Stack.init();
+    //             
 //             // Test specific edge cases first
 //             
 //             // Test pop2_unsafe edge cases
@@ -798,8 +851,9 @@ test "extended_fuzzing_unsafe_operations" {
 }
 
 test "real_evm_patterns" {
-    var stack = Stack{};
-    
+    var stack = Stack.init();
+    stack.ensureInitialized();
+        
     // Test 1: Common arithmetic pattern (ADD, MUL, SUB)
     // Simulates: (a + b) * c - d
     stack.append_unsafe(10); // a
@@ -931,13 +985,13 @@ test "real_evm_patterns" {
         }
         
         // DUP and SWAP operations
-        if (stack.size >= 3) {
+        if (stack.size() >= 3) {
             stack.dup_unsafe(3);
             stack.swap_unsafe(2);
         }
         
         // Pop remaining to prevent overflow
-        while (stack.size > 500) {
+        while (stack.size() > 500) {
             _ = stack.pop_unsafe();
         }
     }
@@ -953,12 +1007,12 @@ test "real_evm_patterns" {
     
     // Pop all CREATE2 arguments
     const salt = stack.pop_unsafe();
-    const size = stack.pop_unsafe();
+    const code_size = stack.pop_unsafe();
     const offset = stack.pop_unsafe();
     const create_value = stack.pop_unsafe();
     
     try std.testing.expectEqual(@as(u256, 0x5A17), salt);
-    try std.testing.expectEqual(@as(u256, 0x100), size);
+    try std.testing.expectEqual(@as(u256, 0x100), code_size);
     try std.testing.expectEqual(@as(u256, 0x20), offset);
     try std.testing.expectEqual(@as(u256, 0), create_value);
 }
@@ -967,16 +1021,17 @@ test "performance_benchmarks" {
     const Timer = std.time.Timer;
     var timer = try Timer.start();
     
-    var stack = Stack{};
-    const iterations = 1_000_000;
+    var stack = Stack.init();
+    stack.ensureInitialized();
+        const iterations = 1_000_000;
     
     // Benchmark 1: append_unsafe vs append
     timer.reset();
     var i: usize = 0;
     while (i < iterations) : (i += 1) {
         stack.append_unsafe(i % 256);
-        if (stack.size >= CAPACITY) {
-            stack.size = 0;
+        if (stack.size() >= CAPACITY) {
+            stack.top = @as([*]u256, @ptrCast(&stack.data[0]));
         }
     }
     const unsafe_append_ns = timer.read();
@@ -1148,8 +1203,8 @@ test "performance_benchmarks" {
 //         fn testBranchHintEffectiveness(input: []const u8) anyerror!void {
 //             if (input.len < 8) return;
 //             
-//             var stack = Stack{};
-//             
+//             var stack = Stack.init();
+    //             
 //             // Test 1: append() - overflow is cold path
 //             // Fill stack almost to capacity
 //             var i: usize = 0;
@@ -1226,8 +1281,9 @@ test "performance_benchmarks" {
 // }
 
 test "security_focused_tests" {
-    var stack = Stack{};
-    
+    var stack = Stack.init();
+    stack.ensureInitialized();
+        
     // Test 1: Data clearing on pop
     const secret_value: u256 = 0xDEADBEEF_CAFEBABE_12345678_9ABCDEF0;
     stack.append_unsafe(secret_value);
@@ -1293,8 +1349,8 @@ test "security_focused_tests" {
     }
     
     // Test 5: Stack isolation
-    var stack_a = Stack{};
-    const stack_b = Stack{};
+    var stack_a = Stack.init();
+    const stack_b = Stack.init();
     
     // Put sensitive data in stack_a
     stack_a.append_unsafe(0x5EC4E7_DA7A_A);

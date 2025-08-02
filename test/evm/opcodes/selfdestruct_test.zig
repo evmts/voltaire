@@ -42,6 +42,8 @@ test "SELFDESTRUCT: Basic functionality" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Set contract balance
     try evm.state.set_balance(contract_address, 1000);
 
@@ -56,7 +58,7 @@ test "SELFDESTRUCT: Basic functionality" {
     try testing.expectError(Evm.ExecutionError.Error.STOP, result);
 
     // Stack should be empty after consuming recipient address
-    try testing.expectEqual(@as(usize, 0), frame.stack.size);
+    try testing.expectEqual(@as(usize, 0), frame.stack.size());
 
     // Contract should be marked for destruction
     try testing.expect(evm.state.is_marked_for_destruction(contract_address));
@@ -106,6 +108,8 @@ test "SELFDESTRUCT: Forbidden in static call" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Push recipient address to stack
     const bob_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{3});
     try frame.stack.push(bob_address.to_u256());
@@ -161,6 +165,8 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
             .build();
         defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
         // Push recipient address to stack
         const bob_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{3});
         try frame.stack.push(bob_address.to_u256());
@@ -216,6 +222,8 @@ test "SELFDESTRUCT: Gas costs by hardfork" {
             .build();
         defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
         // Push recipient address to stack
         const bob_address = Evm.Address.fromBytes([_]u8{0} ** 19 ++ [_]u8{3});
         try frame.stack.push(bob_address.to_u256());
@@ -273,6 +281,8 @@ test "SELFDESTRUCT: Account creation cost (EIP-161)" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Use a fresh address that doesn't exist (no balance, code, or nonce)
     var rng = std.rand.DefaultPrng.init(@intCast(std.time.milliTimestamp()));
     var new_address_bytes: [20]u8 = undefined;

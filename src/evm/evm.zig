@@ -50,8 +50,7 @@ context: Context,
 // Data fields (moderate access frequency)
 /// Return data from the most recent operation
 return_data: []u8 = &[_]u8{},
-/// Optional tracer for capturing execution traces
-tracer: ?std.io.AnyWriter = null,
+// Tracer removed for performance - use EvmWithTracer if you need tracing
 
 // Large state structures (placed last to minimize offset impact)
 /// World state including accounts, storage, and code
@@ -103,7 +102,6 @@ pub fn init(
     context: ?Context,
     depth: u16,
     read_only: bool,
-    tracer: ?std.io.AnyWriter,
 ) !Evm {
     Log.debug("Evm.init: Initializing EVM with configuration", .{});
 
@@ -125,7 +123,6 @@ pub fn init(
         .context = ctx,
         .depth = depth,
         .read_only = read_only,
-        .tracer = tracer,
     };
 }
 
@@ -696,7 +693,7 @@ test "Evm.init_with_state creates EVM with custom settings" {
     defer evm.deinit();
 
     try testing.expectEqualSlices(u8, test_return_data, evm.return_data);
-    try testing.expectEqual(@as(usize, 0), evm.stack.size);
+    try testing.expectEqual(@as(usize, 0), evm.frame.stack.size());
     try testing.expectEqual(@as(u16, 42), evm.depth);
     try testing.expectEqual(true, evm.read_only);
 }
@@ -713,7 +710,7 @@ test "Evm.init_with_state uses defaults for null parameters" {
     defer evm.deinit();
 
     try testing.expectEqual(@as(usize, 0), evm.return_data.len);
-    try testing.expectEqual(@as(usize, 0), evm.stack.size);
+    try testing.expectEqual(@as(usize, 0), evm.frame.stack.size());
     try testing.expectEqual(@as(u16, 0), evm.depth);
     try testing.expectEqual(false, evm.read_only);
 }

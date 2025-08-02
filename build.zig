@@ -1674,20 +1674,21 @@ pub fn build(b: *std.Build) void {
     const jumpi_bug_test_step = b.step("test-jumpi", "Run JUMPI bug test");
     jumpi_bug_test_step.dependOn(&run_jumpi_bug_test.step);
     
-    // Add tracer test
-    const tracer_test = b.addTest(.{
-        .name = "tracer-test",
-        .root_source_file = b.path("test/evm/tracer_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    tracer_test.root_module.addImport("evm", evm_mod);
-    tracer_test.root_module.addImport("Address", primitives_mod);
-    
-    const run_tracer_test = b.addRunArtifact(tracer_test);
-    test_step.dependOn(&run_tracer_test.step);
-    const tracer_test_step = b.step("test-tracer", "Run tracer test");
-    tracer_test_step.dependOn(&run_tracer_test.step);
+    // TRACER REMOVED: Commenting out tracer tests until tracer is reimplemented
+    // See: https://github.com/evmts/guillotine/issues/325
+    // const tracer_test = b.addTest(.{
+    //     .name = "tracer-test",
+    //     .root_source_file = b.path("test/evm/tracer_test.zig"),
+    //     .target = target,
+    //     .optimize = optimize,
+    // });
+    // tracer_test.root_module.addImport("evm", evm_mod);
+    // tracer_test.root_module.addImport("Address", primitives_mod);
+    // 
+    // const run_tracer_test = b.addRunArtifact(tracer_test);
+    // test_step.dependOn(&run_tracer_test.step);
+    // const tracer_test_step = b.step("test-tracer", "Run tracer test");
+    // tracer_test_step.dependOn(&run_tracer_test.step);
     
     // Add compare execution test
     const compare_test = b.addTest(.{

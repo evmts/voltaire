@@ -47,6 +47,9 @@ test "STOP (0x00): Halt execution" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -96,6 +99,8 @@ test "ADD (0x01): Basic addition" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test basic addition: 5 + 10 = 15
     try frame.stack.append(5);
     try frame.stack.append(10);
@@ -144,6 +149,8 @@ test "ADD: Overflow wraps to zero" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test overflow: MAX + 1 = 0
     const max_u256 = std.math.maxInt(u256);
     try frame.stack.append(max_u256);
@@ -192,6 +199,8 @@ test "ADD: Large numbers" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test large number addition
     const large1 = std.math.maxInt(u256) / 2;
     const large2 = std.math.maxInt(u256) / 3;
@@ -246,6 +255,8 @@ test "MUL (0x02): Basic multiplication" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test basic multiplication: 5 * 10 = 50
     try frame.stack.append(5);
     try frame.stack.append(10);
@@ -293,6 +304,8 @@ test "MUL: Multiplication by zero" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test multiplication by zero
     try frame.stack.append(1000);
     try frame.stack.append(0);
@@ -340,6 +353,8 @@ test "MUL: Overflow behavior" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test overflow: (2^128) * (2^128) should wrap
     const half_max = @as(u256, 1) << 128;
     try frame.stack.append(half_max);
@@ -393,6 +408,8 @@ test "SUB (0x03): Basic subtraction" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test basic subtraction: 10 - 5 = 5
     // SUB calculates top - second, so we need [5, 10] with 10 on top
     try frame.stack.append(5);
@@ -441,6 +458,8 @@ test "SUB: Underflow wraps to max" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test underflow: 1 - 2 = MAX (wraps around)
     // SUB calculates top - second, so we need [2, 1] with 1 on top
     try frame.stack.append(2);
@@ -493,6 +512,8 @@ test "DIV (0x04): Basic division" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test basic division: 20 / 5 = 4
     // DIV pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(5); // divisor (bottom)
@@ -541,6 +562,8 @@ test "DIV: Division by zero returns zero" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test division by zero: 100 / 0 = 0
     // DIV pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(0); // divisor (bottom)
@@ -589,6 +612,8 @@ test "DIV: Integer division truncates" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test truncation: 7 / 3 = 2 (not 2.33...)
     // DIV pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(3); // divisor (bottom)
@@ -641,6 +666,8 @@ test "SDIV (0x05): Signed division positive" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test positive division: 20 / 5 = 4
     // SDIV pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(5); // divisor (bottom)
@@ -689,6 +716,8 @@ test "SDIV: Signed division negative" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test negative division: -20 / 5 = -4
     // In two's complement: -20 = MAX - 19
     // SDIV pops dividend first, then divisor, so dividend must be on top
@@ -740,6 +769,8 @@ test "SDIV: Division by zero returns zero" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test division by zero
     // SDIV pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(0); // divisor (bottom)
@@ -788,6 +819,8 @@ test "SDIV: Edge case MIN / -1" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test MIN / -1 = MIN (special case)
     const min_i256 = @as(u256, 1) << 255; // -2^255 in two's complement
     const neg_1 = std.math.maxInt(u256); // -1 in two's complement
@@ -842,6 +875,8 @@ test "MOD (0x06): Basic modulo" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test basic modulo: 17 % 5 = 2
     // MOD pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(5); // divisor (bottom)
@@ -890,6 +925,8 @@ test "MOD: Modulo by zero returns zero" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test modulo by zero: 100 % 0 = 0
     // MOD pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(0); // divisor (bottom)
@@ -942,6 +979,8 @@ test "SMOD (0x07): Signed modulo positive" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test positive modulo: 17 % 5 = 2
     // SMOD pops dividend first, then divisor, so dividend must be on top
     try frame.stack.append(5); // divisor (bottom)
@@ -990,6 +1029,8 @@ test "SMOD: Signed modulo negative" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test negative modulo: -17 % 5 = -2
     const neg_17 = std.math.maxInt(u256) - 16;
     // SMOD pops dividend first, then divisor, so dividend must be on top
@@ -1044,6 +1085,8 @@ test "ADDMOD (0x08): Basic modular addition" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: (10 + 10) % 8 = 4
     // ADDMOD pops modulus first, then second addend, then first addend
     try frame.stack.append(8); // modulus (bottom)
@@ -1093,6 +1136,8 @@ test "ADDMOD: Modulo zero returns zero" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: (10 + 10) % 0 = 0
     // ADDMOD pops modulus first, then second addend, then first addend
     try frame.stack.append(0); // modulus (bottom)
@@ -1142,6 +1187,8 @@ test "ADDMOD: No intermediate overflow" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test with values that would overflow u256
     const max = std.math.maxInt(u256);
     // ADDMOD pops modulus first, then second addend, then first addend
@@ -1199,6 +1246,8 @@ test "MULMOD (0x09): Basic modular multiplication" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: (10 * 10) % 8 = 4
     // MULMOD pops modulus first, then second factor, then first factor
     try frame.stack.append(8); // modulus (bottom)
@@ -1248,6 +1297,8 @@ test "MULMOD: No intermediate overflow" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test with values that would overflow u256
     const large = @as(u256, 1) << 200;
     // MULMOD pops modulus first, then second factor, then first factor
@@ -1303,6 +1354,8 @@ test "EXP (0x0A): Basic exponentiation" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: 2^8 = 256
     // EXP pops base first, then exponent, so base must be on top
     try frame.stack.append(8); // exponent (bottom)
@@ -1351,6 +1404,8 @@ test "EXP: Zero exponent" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: 100^0 = 1
     // EXP pops base first, then exponent, so base must be on top
     try frame.stack.append(0); // exponent (bottom)
@@ -1399,6 +1454,8 @@ test "EXP: Zero base with non-zero exponent" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: 0^10 = 0
     // EXP pops base first, then exponent, so base must be on top
     try frame.stack.append(10); // exponent (bottom)
@@ -1447,6 +1504,8 @@ test "EXP: Gas consumption scales with exponent size" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test with large exponent
     // EXP pops base first, then exponent, so base must be on top
     try frame.stack.append(0x10000); // exponent (bottom)
@@ -1503,6 +1562,8 @@ test "SIGNEXTEND (0x0B): Extend positive byte" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: sign extend 0x7F (positive) from byte 0
     // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
     try frame.stack.append(0x7F); // value (bottom)
@@ -1551,6 +1612,8 @@ test "SIGNEXTEND: Extend negative byte" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: sign extend 0xFF (negative) from byte 0
     // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
     try frame.stack.append(0xFF); // value (bottom)
@@ -1601,6 +1664,8 @@ test "SIGNEXTEND: Extend from higher byte position" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: sign extend 0x00FF from byte 1 (second byte)
     // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
     try frame.stack.append(0x00FF); // value (bottom)
@@ -1650,6 +1715,8 @@ test "SIGNEXTEND: Byte position >= 31 returns value unchanged" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: byte position >= 31 returns original value
     const test_value = 0x123456789ABCDEF;
     // SIGNEXTEND pops byte_index first, then value, so byte_index must be on top
@@ -1743,6 +1810,8 @@ test "Arithmetic opcodes: Gas consumption" {
             .build();
         defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
         try tc.setup(&frame);
 
         const gas_before = frame.gas_remaining;
@@ -1799,6 +1868,9 @@ test "Arithmetic opcodes: Stack underflow" {
             .build();
         defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
 
@@ -1835,6 +1907,9 @@ test "Arithmetic opcodes: Stack underflow" {
             .withGas(1000)
             .build();
         defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;

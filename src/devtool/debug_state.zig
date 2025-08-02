@@ -33,7 +33,7 @@ pub const DebugState = struct {
             .gas_remaining = gas_remaining,
             .depth = depth,
             .is_static = is_static,
-            .stack_size = stack.size,
+            .stack_size = stack.size(),
             .memory_size = memory.size(),
             .has_error = err != null,
             .error_name = if (err) |e| @errorName(e) else null,
@@ -229,7 +229,7 @@ pub fn serializeStack(allocator: std.mem.Allocator, stack: *const Stack) ![][]co
     
     // Get stack items (top to bottom for debugging visibility)
     var i: usize = 0;
-    while (i < stack.size) {
+    while (i < stack.size()) {
         const idx = i; // peek_n(0) is top, peek_n(1) is second from top, etc.
         const value = stack.peek_n(idx) catch break;
         const hex_str = try formatU256Hex(allocator, value);
@@ -308,7 +308,7 @@ test "DebugState.capture works correctly" {
     // const Evm = @import("evm");
     
     // Create minimal stack and memory for testing
-    var stack = Stack{};
+    var stack = Stack.init();
     try stack.append(42);
     try stack.append(100);
     
@@ -379,7 +379,7 @@ test "serializeStack works correctly" {
     const testing = std.testing;
     
     // Test empty stack
-    var empty_stack = Stack{};
+    var empty_stack = Stack.init();
     const empty_result = try serializeStack(testing.allocator, &empty_stack);
     defer {
         for (empty_result) |item| testing.allocator.free(item);
@@ -388,7 +388,7 @@ test "serializeStack works correctly" {
     try testing.expectEqual(@as(usize, 0), empty_result.len);
     
     // Test stack with values
-    var stack = Stack{};
+    var stack = Stack.init();
     try stack.append(42);
     try stack.append(255);
     try stack.append(1000);

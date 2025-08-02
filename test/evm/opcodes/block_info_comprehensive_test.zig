@@ -70,6 +70,9 @@ test "GASLIMIT (0x45): Get block gas limit" {
             .build();
         defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
 
@@ -142,6 +145,9 @@ test "CHAINID (0x46): Get chain ID" {
             .build();
         defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
 
@@ -198,6 +204,9 @@ test "SELFBALANCE (0x47): Get contract's own balance" {
             .withGas(1000)
             .build();
         defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
@@ -269,6 +278,9 @@ test "BASEFEE (0x48): Get block base fee" {
             .build();
         defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
 
@@ -334,6 +346,9 @@ test "BLOBHASH (0x49): Get blob versioned hash" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -428,6 +443,9 @@ test "BLOBBASEFEE (0x4A): Get blob base fee" {
             .build();
         defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
 
@@ -493,6 +511,9 @@ test "Block info opcodes: Gas consumption" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -565,6 +586,9 @@ test "Invalid opcodes 0x4B-0x4E: Should revert" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -622,6 +646,9 @@ test "SELFBALANCE: Balance changes during execution" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -693,6 +720,9 @@ test "BLOBHASH: Empty blob list" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -752,6 +782,9 @@ test "CHAINID: EIP-1344 behavior" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -815,6 +848,9 @@ test "Stack operations: All opcodes push exactly one value" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -838,7 +874,7 @@ test "Stack operations: All opcodes push exactly one value" {
             try frame.stack.append(0); // Input for BLOBHASH
         }
 
-        const initial_stack_len = frame.stack.size;
+        const initial_stack_len = frame.stack.size();
 
         _ = try evm.table.execute(0, interpreter, state, op.opcode);
 
@@ -847,6 +883,6 @@ test "Stack operations: All opcodes push exactly one value" {
             initial_stack_len // BLOBHASH: pop 1, push 1 = net 0
         else
             initial_stack_len + 1; // Others: just push 1 = net +1
-        try testing.expectEqual(expected_len, frame.stack.size);
+        try testing.expectEqual(expected_len, frame.stack.size());
     }
 }

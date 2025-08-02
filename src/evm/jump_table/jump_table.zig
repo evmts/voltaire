@@ -55,8 +55,8 @@ const CACHE_LINE_SIZE = 64;
 
 /// Array of operation handlers indexed by opcode value.
 /// Aligned to cache line boundaries for optimal performance.
-/// Null entries are treated as undefined opcodes.
-table: [256]?*const Operation align(CACHE_LINE_SIZE),
+/// All entries are guaranteed to be non-null (NULL_OPERATION used for undefined opcodes).
+table: [256]*const Operation align(CACHE_LINE_SIZE),
 
 /// CANCUN jump table, pre-generated at compile time.
 /// This is the latest hardfork configuration.
@@ -76,7 +76,7 @@ pub const DEFAULT = CANCUN;
 /// @return An empty jump table
 pub fn init() JumpTable {
     return JumpTable{
-        .table = [_]?*const Operation{null} ** 256,
+        .table = [_]*const Operation{&operation_module.NULL_OPERATION} ** 256,
     };
 }
 
@@ -94,7 +94,7 @@ pub fn init() JumpTable {
 /// const op = table.get_operation(0x01); // Get ADD operation
 /// ```
 pub inline fn get_operation(self: *const JumpTable, opcode: u8) *const Operation {
-    return self.table[opcode] orelse &operation_module.NULL_OPERATION;
+    return self.table[opcode];
 }
 
 /// Execute an opcode using the jump table.
@@ -142,7 +142,7 @@ pub inline fn execute(self: *const JumpTable, pc: usize, interpreter: operation_
     @branchHint(.likely);
     const operation = self.get_operation(opcode);
 
-    Log.debug("JumpTable.execute: Executing opcode 0x{x:0>2} at pc={}, gas={}, stack_size={}", .{ opcode, pc, frame.gas_remaining, frame.stack.size });
+    Log.debug("JumpTable.execute: Executing opcode 0x{x:0>2} at pc={}, gas={}, stack_size={}", .{ opcode, pc, frame.gas_remaining, frame.stack.size() });
 
     // Handle undefined opcodes (cold path)
     if (operation.undefined) {
@@ -156,7 +156,7 @@ pub inline fn execute(self: *const JumpTable, pc: usize, interpreter: operation_
     if (comptime builtin.mode == .ReleaseFast) {
         const stack_height_changes = @import("../opcodes/stack_height_changes.zig");
         try stack_height_changes.validate_stack_requirements_fast(
-            @intCast(frame.stack.size),
+            @intCast(frame.stack.size()),
             opcode,
             operation.min_stack,
             operation.max_stack,
@@ -191,15 +191,8 @@ pub inline fn execute(self: *const JumpTable, pc: usize, interpreter: operation_
 /// @param self The jump table to validate
 pub fn validate(self: *JumpTable) void {
     for (0..256) |i| {
-        // Handle null entries (less common)
-        if (self.table[i] == null) {
-            @branchHint(.cold);
-            self.table[i] = &operation_module.NULL_OPERATION;
-            continue;
-        }
-
         // Check for invalid operation configuration (error path)
-        const operation = self.table[i].?;
+        const operation = self.table[i];
         if (operation.memory_size != null and operation.dynamic_gas == null) {
             @branchHint(.cold);
             // Log error instead of panicking

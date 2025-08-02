@@ -69,6 +69,9 @@ test "Integration: Conditional jump patterns" {
         .build();
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame_ptr.stack.ensureInitialized();
 
     // Test 1: Jump when condition is true
     frame_ptr.pc = 0;
@@ -159,6 +162,9 @@ test "Integration: Loop implementation with JUMP" {
         .build();
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame_ptr.stack.ensureInitialized();
 
     // Initialize counter to 5
     try frame_ptr.stack.append(5);
@@ -239,6 +245,9 @@ test "Integration: Return data handling" {
         .build();
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame_ptr.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &vm;
     const state: Operation.State = frame_ptr;
@@ -305,6 +314,9 @@ test "Integration: Revert with reason" {
         .build();
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame_ptr.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &vm;
     const state: Operation.State = frame_ptr;
@@ -370,6 +382,9 @@ test "Integration: PC tracking through operations" {
         .build();
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame_ptr.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &vm;
     const state: Operation.State = frame_ptr;
@@ -434,6 +449,9 @@ test "Integration: Invalid opcode handling" {
         .build();
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame_ptr.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &vm;
     const state: Operation.State = frame_ptr;
@@ -500,6 +518,9 @@ test "Integration: Nested conditions with jumps" {
         .build();
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame_ptr.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &vm;
     const state: Operation.State = frame_ptr;
@@ -592,6 +613,9 @@ test "Integration: Self-destruct with beneficiary" {
         .build();
     defer frame_ptr.deinit();
     frame_ptr.input = contract.input;
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame_ptr.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &vm;
     const state: Operation.State = frame_ptr;

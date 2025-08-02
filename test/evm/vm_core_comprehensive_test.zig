@@ -400,7 +400,7 @@ test "VMCore: Frame initialization and cleanup" {
     try testing.expectEqual(@as(usize, 0), frame.output.len);
 
     // Stack should be empty
-    try testing.expectEqual(@as(usize, 0), frame.stack.size);
+    try testing.expectEqual(@as(usize, 0), frame.stack.size());
 
     // Memory should be initialized
     try testing.expectEqual(@as(usize, 0), frame.memory.size());
@@ -475,7 +475,7 @@ test "VMCore: Frame state inheritance and context switching" {
     try testing.expectEqual(&child_contract, child_frame.contract);
 
     // Verify independence (separate memory/stack)
-    try testing.expectEqual(@as(usize, 0), child_frame.stack.size);
+    try testing.expectEqual(@as(usize, 0), child_frame.stack.size());
     try testing.expectEqual(@as(usize, 0), child_frame.memory.size());
 }
 
@@ -592,7 +592,7 @@ test "VMCore: Frame stack and memory integration" {
     // Test stack operations
     try frame.stack.append(42);
     try frame.stack.append(100);
-    try testing.expectEqual(@as(usize, 2), frame.stack.size);
+    try testing.expectEqual(@as(usize, 2), frame.stack.size());
     try testing.expectEqual(@as(u256, 100), try frame.stack.peek_n(0));
     try testing.expectEqual(@as(u256, 42), try frame.stack.peek_n(1));
 
@@ -604,7 +604,7 @@ test "VMCore: Frame stack and memory integration" {
     // Verify stack and memory are independent
     const popped = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 100), popped);
-    try testing.expectEqual(@as(usize, 1), frame.stack.size);
+    try testing.expectEqual(@as(usize, 1), frame.stack.size());
 
     // Memory should be unchanged
     try testing.expectEqual(@as(u256, 0x123456789abcdef), try frame.memory.load_word(0));
@@ -731,7 +731,7 @@ test "VMCore: Memory copy operations and data integrity" {
 
 test "VMCore: Stack depth limits and overflow protection" {
     const stack_limit = 1024;
-    var stack = Stack{};
+    var stack = Stack.init();
 
     // Fill stack to capacity
     var i: usize = 0;
@@ -739,11 +739,11 @@ test "VMCore: Stack depth limits and overflow protection" {
         try stack.append(@as(u256, @intCast(i)));
     }
 
-    try testing.expectEqual(@as(usize, stack_limit), stack.size);
+    try testing.expectEqual(@as(usize, stack_limit), stack.size());
 
     // Verify overflow protection
     try testing.expectError(Stack.StackError.StackOverflow, stack.append(9999));
-    try testing.expectEqual(@as(usize, stack_limit), stack.size); // Size unchanged
+    try testing.expectEqual(@as(usize, stack_limit), stack.size()); // Size unchanged
 
     // Verify data integrity
     try testing.expectEqual(@as(u256, stack_limit - 1), try stack.peek_n(0)); // Top
@@ -751,7 +751,7 @@ test "VMCore: Stack depth limits and overflow protection" {
 }
 
 test "VMCore: Stack underflow protection and error handling" {
-    var stack = Stack{};
+    var stack = Stack.init();
 
     // Test underflow on empty stack
     try testing.expectError(Stack.StackError.StackUnderflow, stack.pop());
@@ -759,12 +759,12 @@ test "VMCore: Stack underflow protection and error handling" {
 
     // Add single element
     try stack.append(42);
-    try testing.expectEqual(@as(usize, 1), stack.size);
+    try testing.expectEqual(@as(usize, 1), stack.size());
 
     // Valid operations
     try testing.expectEqual(@as(u256, 42), try stack.peek_n(0));
     try testing.expectEqual(@as(u256, 42), try stack.pop());
-    try testing.expectEqual(@as(usize, 0), stack.size);
+    try testing.expectEqual(@as(usize, 0), stack.size());
 
     // Should underflow again
     try testing.expectError(Stack.StackError.StackUnderflow, stack.pop());
@@ -772,7 +772,7 @@ test "VMCore: Stack underflow protection and error handling" {
 }
 
 test "VMCore: Stack manipulation operations and data integrity" {
-    var stack = Stack{};
+    var stack = Stack.init();
 
     // Test basic push/pop operations
     const test_values = [_]u256{ 0x123, 0x456, 0x789, 0xabc, 0xdef };
@@ -782,32 +782,32 @@ test "VMCore: Stack manipulation operations and data integrity" {
         try stack.append(value);
     }
 
-    try testing.expectEqual(@as(usize, test_values.len), stack.size);
+    try testing.expectEqual(@as(usize, test_values.len), stack.size());
 
     // Test peek operations (should not modify stack)
     for (test_values, 0..) |expected_value, i| {
         const stack_index = test_values.len - 1 - i; // LIFO order
         try testing.expectEqual(expected_value, try stack.peek_n(stack_index));
     }
-    try testing.expectEqual(@as(usize, test_values.len), stack.size); // Unchanged
+    try testing.expectEqual(@as(usize, test_values.len), stack.size()); // Unchanged
 
     // Test pop operations (LIFO order)
     for (0..test_values.len) |i| {
         const expected_value = test_values[test_values.len - 1 - i];
         try testing.expectEqual(expected_value, try stack.pop());
-        try testing.expectEqual(@as(usize, test_values.len - 1 - i), stack.size);
+        try testing.expectEqual(@as(usize, test_values.len - 1 - i), stack.size());
     }
 
-    try testing.expectEqual(@as(usize, 0), stack.size);
+    try testing.expectEqual(@as(usize, 0), stack.size());
 }
 
 test "VMCore: Stack bounds validation and edge cases" {
-    var stack = Stack{};
+    var stack = Stack.init();
 
     // Test edge case: access at exact limit
     try stack.append(1);
     try stack.append(2);
-    try testing.expectEqual(@as(usize, 2), stack.size);
+    try testing.expectEqual(@as(usize, 2), stack.size());
 
     // Valid accesses
     try testing.expectEqual(@as(u256, 2), try stack.peek_n(0)); // Top
@@ -819,12 +819,12 @@ test "VMCore: Stack bounds validation and edge cases" {
 
     // Test clear operation
     stack.clear();
-    try testing.expectEqual(@as(usize, 0), stack.size);
+    try testing.expectEqual(@as(usize, 0), stack.size());
     try testing.expectError(Stack.StackError.StackUnderflow, stack.peek_n(0));
 }
 
 test "VMCore: Stack performance and large data handling" {
-    var stack = Stack{};
+    var stack = Stack.init();
 
     // Test with maximum u256 values
     const large_values = [_]u256{
@@ -847,7 +847,7 @@ test "VMCore: Stack performance and large data handling" {
 
     // Test operations on large values (just verify they don't crash)
     _ = try stack.pop(); // Remove one value
-    try testing.expectEqual(@as(usize, large_values.len - 1), stack.size);
+    try testing.expectEqual(@as(usize, large_values.len - 1), stack.size());
 
     // Push zero to test mixed sizes
     try stack.append(0);

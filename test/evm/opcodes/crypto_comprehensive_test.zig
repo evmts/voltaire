@@ -53,6 +53,9 @@ test "KECCAK256 (0x20): Known test vectors" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -137,6 +140,9 @@ test "KECCAK256: Gas cost calculations" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -240,6 +246,9 @@ test "KECCAK256: Memory operations" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -320,6 +329,9 @@ test "KECCAK256: Variable input sizes" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -381,6 +393,9 @@ test "KECCAK256: Hash consistency" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -449,6 +464,9 @@ test "KECCAK256: Edge cases and limits" {
         .withGas(100000)
         .build();
     defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -530,6 +548,9 @@ test "KECCAK256: Error conditions" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -598,6 +619,9 @@ test "KECCAK256: Stack behavior" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -608,13 +632,13 @@ test "KECCAK256: Stack behavior" {
     try frame.stack.append(0x55); // size [top]
 
     // Stack before: [0x12345678, 0xABCDEF, 0x0, 0x55] (size and offset are on top)
-    try testing.expectEqual(@as(usize, 4), frame.stack.size);
+    try testing.expectEqual(@as(usize, 4), frame.stack.size());
 
     // Execute KECCAK256
     _ = try evm.table.execute(0, interpreter, state, 0x20);
 
     // Stack after: [0x12345678, 0xABCDEF, hash_result] (consumed 2, produced 1)
-    try testing.expectEqual(@as(usize, 3), frame.stack.size);
+    try testing.expectEqual(@as(usize, 3), frame.stack.size());
 
     // Bottom values should remain unchanged
     const bottom1 = try frame.stack.peek_n(2);
@@ -661,6 +685,9 @@ test "KECCAK256: Memory access patterns" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

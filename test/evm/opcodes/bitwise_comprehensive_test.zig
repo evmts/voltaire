@@ -47,6 +47,8 @@ test "AND (0x16): Basic bitwise AND" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: 0xFF00 & 0x0FF0 = 0x0F00
     try frame.stack.append(0xFF00);
     try frame.stack.append(0x0FF0);
@@ -95,6 +97,8 @@ test "AND: All zeros" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: 0xFFFF & 0x0000 = 0x0000
     try frame.stack.append(0xFFFF);
     try frame.stack.append(0x0000);
@@ -142,6 +146,8 @@ test "AND: All ones" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: MAX & MAX = MAX
     const max = std.math.maxInt(u256);
     try frame.stack.append(max);
@@ -190,6 +196,8 @@ test "AND: Masking operations" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: Extract lower byte with mask
     try frame.stack.append(0x123456);
     try frame.stack.append(0xFF);
@@ -241,6 +249,8 @@ test "OR (0x17): Basic bitwise OR" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: 0xF000 | 0x00F0 = 0xF0F0
     try frame.stack.append(0xF000);
     try frame.stack.append(0x00F0);
@@ -288,6 +298,8 @@ test "OR: With zero" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: 0x1234 | 0x0000 = 0x1234
     try frame.stack.append(0x1234);
     try frame.stack.append(0x0000);
@@ -335,6 +347,8 @@ test "OR: Setting bits" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: Set specific bits
     try frame.stack.append(0x1000);
     try frame.stack.append(0x0200);
@@ -386,6 +400,8 @@ test "XOR (0x18): Basic bitwise XOR" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: 0xFF00 ^ 0x0FF0 = 0xF0F0
     try frame.stack.append(0xFF00);
     try frame.stack.append(0x0FF0);
@@ -433,6 +449,8 @@ test "XOR: Self XOR equals zero" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: X ^ X = 0
     try frame.stack.append(0x123456);
     try frame.stack.append(0x123456);
@@ -480,6 +498,8 @@ test "XOR: Toggle bits" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: Toggle specific bits
     try frame.stack.append(0b1010);
     try frame.stack.append(0b1100);
@@ -531,6 +551,8 @@ test "NOT (0x19): Basic bitwise NOT" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: NOT 0 = MAX
     try frame.stack.append(0);
 
@@ -577,6 +599,8 @@ test "NOT: Invert all bits" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: NOT MAX = 0
     try frame.stack.append(std.math.maxInt(u256));
 
@@ -623,6 +647,8 @@ test "NOT: Double NOT returns original" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: NOT(NOT(X)) = X
     const original = 0x123456789ABCDEF;
     try frame.stack.append(original);
@@ -680,6 +706,8 @@ test "BYTE (0x1A): Extract first byte" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: Extract byte 0 (most significant) from 0x123456...
     try frame.stack.append(0x1234567890ABCDEF); // value (pushed first, popped second)
     try frame.stack.append(0); // byte index (pushed last, popped first)
@@ -727,6 +755,8 @@ test "BYTE: Extract last byte" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: Extract byte 31 (least significant) from value
     try frame.stack.append(0x1234567890ABCDEF); // value (pushed first, popped second)
     try frame.stack.append(31); // byte index (pushed last, popped first)
@@ -774,6 +804,8 @@ test "BYTE: Out of bounds returns zero" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test: Byte index >= 32 returns 0
     try frame.stack.append(0xFFFFFFFFFFFFFFFF); // value (pushed first, popped second)
     try frame.stack.append(32); // byte index (out of bounds) (pushed last, popped first)
@@ -821,6 +853,8 @@ test "BYTE: Extract from full u256" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Create a value with known byte pattern
     // Bytes 24-31: 0x0102030405060708
     const test_value = @as(u256, 0x0102030405060708);
@@ -933,6 +967,8 @@ test "Bitwise opcodes: Gas consumption" {
             .build();
         defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
         try tc.setup(&frame);
 
         const gas_before = frame.gas_remaining;
@@ -989,6 +1025,9 @@ test "Bitwise opcodes: Stack underflow" {
             .build();
         defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
+
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
 
@@ -1025,6 +1064,9 @@ test "Bitwise opcodes: Stack underflow" {
             .withGas(1000)
             .build();
         defer frame.deinit();
+
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
@@ -1073,6 +1115,8 @@ test "Bitwise operations: Large values" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Test with maximum values
     const max = std.math.maxInt(u256);
     const half_max = max >> 1;
@@ -1123,6 +1167,8 @@ test "BYTE: Byte extraction patterns" {
         .build();
     defer frame.deinit();
 
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
     // Create a value with distinct byte pattern
     // Each byte has value equal to its position (31-i)
     var test_value: u256 = 0;

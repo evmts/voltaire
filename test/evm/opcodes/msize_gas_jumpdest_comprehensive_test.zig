@@ -45,13 +45,16 @@ test "MSIZE (0x59): Get current memory size" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Initial memory size (should be 0)
     _ = try evm.table.execute(0, interpreter, state, 0x59);
-    try testing.expectEqual(@as(u256, 0), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 0), try frame.stack.peek_n(1 - 1));
     _ = try frame.stack.pop();
 
     // Test 2: After storing 32 bytes
@@ -60,7 +63,7 @@ test "MSIZE (0x59): Get current memory size" {
     _ = try evm.table.execute(0, interpreter, state, 0x52); // MSTORE
 
     _ = try evm.table.execute(0, interpreter, state, 0x59);
-    try testing.expectEqual(@as(u256, 32), frame.stack.data[frame.stack.size - 1]); // One word
+    try testing.expectEqual(@as(u256, 32), try frame.stack.peek_n(1 - 1)); // One word
     _ = try frame.stack.pop();
 
     // Test 3: After storing at offset 32
@@ -69,7 +72,7 @@ test "MSIZE (0x59): Get current memory size" {
     _ = try evm.table.execute(0, interpreter, state, 0x52); // MSTORE
 
     _ = try evm.table.execute(0, interpreter, state, 0x59);
-    try testing.expectEqual(@as(u256, 64), frame.stack.data[frame.stack.size - 1]); // Two words
+    try testing.expectEqual(@as(u256, 64), try frame.stack.peek_n(1 - 1)); // Two words
     _ = try frame.stack.pop();
 
     // Test 4: After storing at offset 100 (should expand to word boundary)
@@ -79,7 +82,7 @@ test "MSIZE (0x59): Get current memory size" {
 
     _ = try evm.table.execute(0, interpreter, state, 0x59);
     // 100 + 32 = 132, rounded up to word boundary = 160 (5 words)
-    try testing.expectEqual(@as(u256, 160), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 160), try frame.stack.peek_n(1 - 1));
     _ = try frame.stack.pop();
 
     // Test 5: After MSTORE8 (single byte)
@@ -89,7 +92,7 @@ test "MSIZE (0x59): Get current memory size" {
 
     _ = try evm.table.execute(0, interpreter, state, 0x59);
     // 200 + 1 = 201, rounded up to word boundary = 224 (7 words)
-    try testing.expectEqual(@as(u256, 224), frame.stack.data[frame.stack.size - 1]);
+    try testing.expectEqual(@as(u256, 224), try frame.stack.peek_n(1 - 1));
 }
 
 test "GAS (0x5A): Get remaining gas" {
@@ -136,6 +139,9 @@ test "GAS (0x5A): Get remaining gas" {
             .withGas(initial_gas)
             .build();
         defer frame.deinit();
+        
+        // Initialize stack for tests that directly use frame.stack
+        frame.stack.ensureInitialized();
 
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
@@ -145,7 +151,7 @@ test "GAS (0x5A): Get remaining gas" {
 
         // The value pushed should be initial_gas minus the gas cost of GAS itself (2)
         const expected_gas = initial_gas - 2;
-        try testing.expectEqual(@as(u256, expected_gas), frame.stack.data[frame.stack.size - 1]);
+        try testing.expectEqual(@as(u256, expected_gas), try frame.stack.peek_n(1 - 1));
         _ = try frame.stack.pop();
 
         // Test 2: After consuming more gas
@@ -162,7 +168,7 @@ test "GAS (0x5A): Get remaining gas" {
 
         // Should have consumed gas for ADD (3) and GAS (2)
         const expected_remaining = gas_before - 3 - 2;
-        try testing.expectEqual(@as(u256, expected_remaining), frame.stack.data[frame.stack.size - 1]);
+        try testing.expectEqual(@as(u256, expected_remaining), try frame.stack.peek_n(1 - 1));
     }
 }
 
@@ -209,17 +215,20 @@ test "JUMPDEST (0x5B): Mark valid jump destination" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Execute JUMPDEST - should be a no-op
-    const stack_size_before = frame.stack.size;
+    const stack_size_before = frame.stack.size();
     const gas_before = frame.gas_remaining;
     _ = try evm.table.execute(0, interpreter, state, 0x5B);
 
     // Stack should be unchanged
-    try testing.expectEqual(stack_size_before, frame.stack.size);
+    try testing.expectEqual(stack_size_before, frame.stack.size());
 
     // Should consume only JUMPDEST gas (1)
     try testing.expectEqual(@as(u64, gas_before - 1), frame.gas_remaining);
@@ -278,6 +287,9 @@ test "MSIZE, GAS, JUMPDEST: Gas consumption" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -341,6 +353,9 @@ test "MSIZE: Memory expansion scenarios" {
         .withGas(100000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -351,7 +366,7 @@ test "MSIZE: Memory expansion scenarios" {
     _ = try frame.stack.pop();
 
     _ = try evm.table.execute(0, interpreter, state, 0x59); // MSIZE
-    try testing.expectEqual(@as(u256, 96), frame.stack.data[frame.stack.size - 1]); // 64 + 32 = 96
+    try testing.expectEqual(@as(u256, 96), try frame.stack.peek_n(1 - 1)); // 64 + 32 = 96
     _ = try frame.stack.pop();
 
     // Test expansion via CALLDATACOPY
@@ -362,7 +377,7 @@ test "MSIZE: Memory expansion scenarios" {
     _ = try evm.table.execute(0, interpreter, state, 0x37); // CALLDATACOPY
 
     _ = try evm.table.execute(0, interpreter, state, 0x59); // MSIZE
-    try testing.expectEqual(@as(u256, 224), frame.stack.data[frame.stack.size - 1]); // 200 + 4 = 204, rounded to 224
+    try testing.expectEqual(@as(u256, 224), try frame.stack.peek_n(1 - 1)); // 200 + 4 = 204, rounded to 224
 }
 
 test "GAS: Low gas scenarios" {
@@ -399,12 +414,15 @@ test "GAS: Low gas scenarios" {
         .withGas(2)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
     _ = try evm.table.execute(0, interpreter, state, 0x5A);
-    try testing.expectEqual(@as(u256, 0), frame.stack.data[frame.stack.size - 1]); // All gas consumed
+    try testing.expectEqual(@as(u256, 0), try frame.stack.peek_n(1 - 1)); // All gas consumed
     _ = try frame.stack.pop();
 
     // Test with not enough gas
@@ -468,6 +486,9 @@ test "JUMPDEST: Code analysis integration" {
         .withGas(1000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -517,6 +538,9 @@ test "Stack operations: MSIZE and GAS push exactly one value" {
         .withGas(10000)
         .build();
     defer frame.deinit();
+    
+    // Initialize stack for tests that directly use frame.stack
+    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -525,11 +549,11 @@ test "Stack operations: MSIZE and GAS push exactly one value" {
 
     for (opcodes) |opcode| {
         frame.stack.clear();
-        const initial_stack_len = frame.stack.size;
+        const initial_stack_len = frame.stack.size();
 
         _ = try evm.table.execute(0, interpreter, state, opcode);
 
         // Check that exactly one value was pushed
-        try testing.expectEqual(initial_stack_len + 1, frame.stack.size);
+        try testing.expectEqual(initial_stack_len + 1, frame.stack.size());
     }
 }
