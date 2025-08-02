@@ -9,55 +9,8 @@ const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
 const opcode = @import("../opcodes/opcode.zig");
+const CodeAnalysis = @import("../frame/code_analysis.zig");
 
-// Pre-computed operation info including stack validation data
-const PcToOpEntry = struct {
-    operation: *const Operation.Operation,
-    opcode_byte: u8,
-    // Pre-computed validation info to avoid re-fetching from operation
-    min_stack: u32,
-    max_stack: u32,
-    constant_gas: u64,
-    undefined: bool,
-};
-
-/// Pre-build a direct PC-to-operation mapping for a contract's bytecode.
-/// This eliminates the double indirection of bytecode[pc] -> opcode -> operation.
-/// 
-/// Returns null if allocation fails. The caller owns the returned memory.
-fn buildPcToOperationTable(allocator: std.mem.Allocator, contract: *const Contract, jump_table: *const @import("../jump_table/jump_table.zig")) ?[]*const Operation.Operation {
-    const table = allocator.alloc(*const Operation.Operation, contract.code_size) catch return null;
-    
-    // Build the direct mapping
-    for (0..contract.code_size) |pc| {
-        const opcode_byte = contract.code[@intCast(pc)];
-        table[pc] = jump_table.table[opcode_byte];
-    }
-    
-    return table;
-}
-
-/// Pre-build a comprehensive PC-to-operation mapping with pre-computed validation data.
-/// This eliminates multiple field accesses during execution.
-fn buildPcToOpEntryTable(allocator: std.mem.Allocator, contract: *const Contract, jump_table: *const @import("../jump_table/jump_table.zig")) ?[]PcToOpEntry {
-    const table = allocator.alloc(PcToOpEntry, contract.code_size) catch return null;
-    
-    // Build the comprehensive mapping with pre-computed data
-    for (0..contract.code_size) |pc| {
-        const opcode_byte = contract.code[@intCast(pc)];
-        const operation = jump_table.table[opcode_byte];
-        table[pc] = PcToOpEntry{
-            .operation = operation,
-            .opcode_byte = opcode_byte,
-            .min_stack = operation.min_stack,
-            .max_stack = operation.max_stack,
-            .constant_gas = operation.constant_gas,
-            .undefined = operation.undefined,
-        };
-    }
-    
-    return table;
-}
 
 /// Execute contract bytecode and return the result.
 ///
@@ -91,11 +44,18 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
     const initial_gas = contract.gas;
     var pc: usize = 0;
 
-    // Pre-build comprehensive PC-to-operation table with validation data if possible
-    const pc_to_op_entry_table = if (contract.code_size > 0) 
-        buildPcToOpEntryTable(self.allocator, contract, &self.table) 
-    else null;
-    defer if (pc_to_op_entry_table) |table| self.allocator.free(table);
+    // Ensure contract analysis is performed with jump table for PC-to-op mapping
+    if (contract.analysis == null and contract.code_size > 0) {
+        if (Contract.analyze_code(self.allocator, contract.code, contract.code_hash, &self.table)) |analysis| {
+            contract.analysis = analysis;
+        } else |err| {
+            Log.debug("Failed to analyze contract code: {}", .{err});
+            // Continue without analysis - will build entries on the fly
+        }
+    }
+    
+    // Get pc_to_op_entries from cached analysis if available
+    const pc_to_op_entry_table = if (contract.analysis) |analysis| analysis.pc_to_op_entries else null;
 
     var builder = Frame.builder(self.allocator); // We should consider making all items mandatory and removing frame builder
     var frame = builder
@@ -133,7 +93,7 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
             // Fallback: build entry on the fly
             const opcode_byte = contract.code[pc_index];
             const operation = self.table.table[opcode_byte];
-            break :blk PcToOpEntry{
+            break :blk CodeAnalysis.PcToOpEntry{
                 .operation = operation,
                 .opcode_byte = opcode_byte,
                 .min_stack = operation.min_stack,

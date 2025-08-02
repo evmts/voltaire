@@ -16,6 +16,7 @@ pub fn main() !void {
         \\--js-internal-runs <NUM>   Number of internal runs for JavaScript (defaults to --internal-runs value)
         \\--export <FORMAT>          Export results (json, markdown)
         \\--compare                  Compare all available EVM implementations
+        \\--all                      Run all benchmarks (default: only core benchmarks)
         \\
     );
 
@@ -47,6 +48,7 @@ pub fn main() !void {
     const js_internal_runs = res.args.@"js-internal-runs" orelse internal_runs;
     const export_format = res.args.@"export";
     const compare_mode = res.args.compare != 0;
+    const run_all = res.args.all != 0;
 
     if (compare_mode) {
         // Compare mode: run benchmarks for all available EVMs
@@ -62,6 +64,9 @@ pub fn main() !void {
             defer orchestrator.deinit();
             
             try orchestrator.discoverTestCases();
+            if (!run_all) {
+                try orchestrator.filterCoreTestCases();
+            }
             try orchestrator.runBenchmarks();
             
             // Collect results
@@ -96,6 +101,10 @@ pub fn main() !void {
 
         // Discover test cases
         try orchestrator.discoverTestCases();
+        
+        if (!run_all) {
+            try orchestrator.filterCoreTestCases();
+        }
         
         std.debug.print("Discovered {} test cases\n", .{orchestrator.test_cases.len});
 
@@ -279,6 +288,7 @@ fn printHelp() !void {
         \\  --internal-runs <NUM>      Number of internal runs per hyperfine execution (default: 100)
         \\  --js-internal-runs <NUM>   Number of internal runs for JavaScript (defaults to --internal-runs)
         \\  --export <FORMAT>          Export results (json, markdown)
+        \\  --all                      Run all benchmarks (default: only core benchmarks)
         \\
         \\Examples:
         \\  orchestrator                    Run benchmarks with Zig EVM

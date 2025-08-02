@@ -1,6 +1,18 @@
 const std = @import("std");
 const bitvec = @import("bitvec.zig");
 const BitVec64 = bitvec.BitVec64;
+const Operation = @import("../opcodes/operation.zig");
+
+/// Pre-computed operation info including stack validation data
+pub const PcToOpEntry = struct {
+    operation: *const Operation.Operation,
+    opcode_byte: u8,
+    // Pre-computed validation info to avoid re-fetching from operation
+    min_stack: u32,
+    max_stack: u32,
+    constant_gas: u64,
+    undefined: bool,
+};
 
 /// Advanced code analysis for EVM bytecode optimization.
 ///
@@ -86,6 +98,13 @@ has_selfdestruct: bool,
 /// gas reservation and state management considerations.
 has_create: bool,
 
+/// Pre-computed PC-to-operation mapping with validation data.
+///
+/// This table eliminates the double indirection of bytecode[pc] -> opcode -> operation
+/// by providing direct operation pointers and pre-cached validation data for each
+/// program counter position. This significantly improves execution performance.
+pc_to_op_entries: ?[]const PcToOpEntry,
+
 /// Releases all memory allocated by this code analysis.
 ///
 /// This method must be called when the analysis is no longer needed to prevent
@@ -114,5 +133,8 @@ pub fn deinit(self: *CodeAnalysis, allocator: std.mem.Allocator) void {
     }
     if (self.block_gas_costs) |costs| {
         allocator.free(costs);
+    }
+    if (self.pc_to_op_entries) |entries| {
+        allocator.free(entries);
     }
 }
