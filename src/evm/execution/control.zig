@@ -9,9 +9,13 @@ const Vm = @import("../evm.zig");
 const GasConstants = @import("primitives").GasConstants;
 const AccessList = @import("../access_list/access_list.zig").AccessList;
 const primitives = @import("primitives");
+const tracy = @import("../tracy_support.zig");
 const from_u256 = primitives.Address.from_u256;
 
 pub fn op_stop(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
+    const zone = tracy.zone(@src(), "op_stop\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
     _ = state;
@@ -20,6 +24,9 @@ pub fn op_stop(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 }
 
 pub fn op_jump(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
+    const zone = tracy.zone(@src(), "op_jump\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -51,6 +58,9 @@ pub fn op_jump(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 }
 
 pub fn op_jumpi(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
+    const zone = tracy.zone(@src(), "op_jumpi\x00");
+    defer zone.end();
+    
     const frame = state;
     const vm = interpreter;
 
@@ -103,6 +113,9 @@ pub fn op_jumpi(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 }
 
 pub fn op_pc(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
+    const zone = tracy.zone(@src(), "op_pc\x00");
+    defer zone.end();
+    
     _ = interpreter;
 
     const frame = state;
@@ -116,6 +129,9 @@ pub fn op_pc(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
 }
 
 pub fn op_jumpdest(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
+    const zone = tracy.zone(@src(), "op_jumpdest\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
     _ = state;
@@ -125,6 +141,9 @@ pub fn op_jumpdest(pc: usize, interpreter: Operation.Interpreter, state: Operati
 }
 
 pub fn op_return(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
+    const zone = tracy.zone(@src(), "op_return\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -183,6 +202,9 @@ pub fn op_return(pc: usize, interpreter: Operation.Interpreter, state: Operation
 }
 
 pub fn op_revert(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
+    const zone = tracy.zone(@src(), "op_revert\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -229,6 +251,9 @@ pub fn op_revert(pc: usize, interpreter: Operation.Interpreter, state: Operation
 }
 
 pub fn op_invalid(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
+    const zone = tracy.zone(@src(), "op_invalid\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -243,6 +268,9 @@ pub fn op_invalid(pc: usize, interpreter: Operation.Interpreter, state: Operatio
 }
 
 pub fn op_selfdestruct(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!ExecutionResult {
+    const zone = tracy.zone(@src(), "op_selfdestruct\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;

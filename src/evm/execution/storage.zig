@@ -9,6 +9,9 @@ const primitives = @import("primitives");
 const storage_costs = @import("../gas/storage_costs.zig");
 
 pub fn op_sload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_sload\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -38,6 +41,9 @@ pub fn op_sload(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 
 /// SSTORE opcode - Store value in persistent storage
 pub fn op_sstore(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_sstore\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -94,6 +100,9 @@ pub fn op_sstore(pc: usize, interpreter: Operation.Interpreter, state: Operation
 }
 
 pub fn op_tload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_tload\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -115,6 +124,9 @@ pub fn op_tload(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 }
 
 pub fn op_tstore(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_tstore\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -145,6 +157,7 @@ pub fn fuzz_storage_operations(allocator: std.mem.Allocator, operations: []const
     const Memory = @import("../memory/memory.zig");
     const MemoryDatabase = @import("../state/memory_database.zig");
     const Contract = @import("../frame/contract.zig");
+const tracy = @import("../tracy_support.zig");
     _ = primitives.Address;
     
     for (operations) |op| {

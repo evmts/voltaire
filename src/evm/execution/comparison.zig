@@ -10,6 +10,9 @@ const Frame = @import("../frame/frame.zig");
 // so these helpers are unused anyway.
 
 pub fn op_lt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_lt\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -33,6 +36,9 @@ pub fn op_lt(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
 }
 
 pub fn op_gt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_gt\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -56,6 +62,9 @@ pub fn op_gt(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
 }
 
 pub fn op_slt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_slt\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -82,6 +91,9 @@ pub fn op_slt(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 }
 
 pub fn op_sgt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_sgt\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -105,6 +117,9 @@ pub fn op_sgt(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 }
 
 pub fn op_eq(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_eq\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -124,6 +139,9 @@ pub fn op_eq(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
 }
 
 pub fn op_iszero(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_iszero\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -160,6 +178,7 @@ pub fn fuzz_comparison_operations(allocator: std.mem.Allocator, operations: []co
         defer contract.deinit(allocator, null);
 
         const primitives = @import("primitives");
+const tracy = @import("../tracy_support.zig");
         var frame = try Frame.init(allocator, &vm, 1000000, contract, primitives.Address.ZERO, &.{});
         defer frame.deinit();
 

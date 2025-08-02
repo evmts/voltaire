@@ -40,6 +40,9 @@ inline fn hash_with_stack_buffer(data: []const u8) [32]u8 {
 }
 
 pub fn op_sha3(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_sha3\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -83,6 +86,7 @@ pub fn op_sha3(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 
     // Check if the end position exceeds reasonable memory limits
     const memory_limits = @import("../constants/memory_limits.zig");
+const tracy = @import("../tracy_support.zig");
     if (end > memory_limits.MAX_MEMORY_SIZE) {
         @branchHint(.unlikely);
         return ExecutionError.Error.OutOfOffset;

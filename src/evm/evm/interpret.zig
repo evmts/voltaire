@@ -12,7 +12,6 @@ const opcode = @import("../opcodes/opcode.zig");
 const CodeAnalysis = @import("../frame/code_analysis.zig");
 const tracy = @import("../root.zig").tracy_support;
 
-
 /// Execute contract bytecode and return the result.
 ///
 /// This is the main execution entry point. The contract must be properly initialized
@@ -32,10 +31,10 @@ const tracy = @import("../root.zig").tracy_support;
 /// ```
 pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: bool) ExecutionError.Error!RunResult {
     @branchHint(.likely);
-    
+
     const zone = tracy.zone(@src(), "VM.interpret\x00");
     defer zone.end();
-    
+
     Log.debug("VM.interpret: Starting execution, depth={}, gas={}, static={}, code_size={}, input_size={}", .{ self.depth, contract.gas, is_static, contract.code_size, input.len });
 
     self.depth += 1;
@@ -52,16 +51,17 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
     // Always use synchronous analysis - required for threaded execution
     if (contract.analysis == null and contract.code_size > 0) {
         const analysis_zone = tracy.zone(@src(), "code_analysis\x00");
-        defer analysis_zone.end();
-        
+
         if (Contract.analyze_code(self.allocator, contract.code, contract.code_hash, &self.table)) |analysis| {
             contract.analysis = analysis;
         } else |err| {
+            // TODO we should likely panic here
             Log.debug("Failed to analyze contract code: {}", .{err});
             // Continue without analysis - will build entries on the fly
         }
+        analysis_zone.end();
     }
-    
+
     // Get pc_to_op_entries from cached analysis if available
     var pc_to_op_entry_table = if (contract.analysis) |analysis| analysis.pc_to_op_entries else null;
 
@@ -90,21 +90,20 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
 
     const interpreter: Operation.Interpreter = self;
     const state: Operation.State = &frame;
-    
+
     // Block-level execution state
     var blocks = if (contract.analysis) |analysis| analysis.blocks else null;
     var pc_to_block_map = if (contract.analysis) |analysis| analysis.pc_to_block else null;
     var current_block_idx: ?u32 = null;
     var block_validated = false;
 
-
     // Main execution loop - the heart of the EVM
     while (pc < contract.code_size) {
         @branchHint(.likely);
-        
+
         const opcode_zone = tracy.zone(@src(), "execute_opcode\x00");
         defer opcode_zone.end();
-        
+
         // Check if analysis was updated by JUMP/JUMPI
         if (contract.analysis != null and pc_to_op_entry_table == null) {
             // Analysis was just applied, update our local variables
@@ -112,10 +111,10 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
             blocks = contract.analysis.?.blocks;
             pc_to_block_map = contract.analysis.?.pc_to_block;
         }
-        
+
         // Use pre-computed entry table if available for maximum performance
         const pc_index: usize = @intCast(pc);
-        
+
         // Try extended entries first (best performance)
         const extended_entry = if (contract.analysis) |analysis| blk: {
             if (analysis.extended_entries) |extended| {
@@ -125,7 +124,7 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
             }
             break :blk null;
         } else null;
-        
+
         const entry = if (extended_entry) |ext_entry|
             // Convert extended to basic format
             CodeAnalysis.PcToOpEntry{
@@ -136,7 +135,7 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 .constant_gas = ext_entry.constant_gas,
                 .undefined = ext_entry.undefined,
             }
-        else if (pc_to_op_entry_table) |table| 
+        else if (pc_to_op_entry_table) |table|
             table[pc_index]
         else blk: {
             // Fallback: build entry on the fly
@@ -151,14 +150,16 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 .undefined = operation.undefined,
             };
         };
-        
+
         const operation = entry.operation;
         const opcode_byte = entry.opcode_byte;
-        
+
         frame.pc = pc;
-        
+
         // Block-level validation and gas consumption
         if (pc_to_block_map) |map| {
+            const block_validation_zone = tracy.zone(@src(), "block_validation\x00");
+            block_validation_zone.end();
             if (pc_index < map.len) {
                 const block_idx = map[pc_index];
                 if (block_idx != std.math.maxInt(u32)) {
@@ -166,16 +167,13 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                     if (current_block_idx == null or current_block_idx.? != block_idx) {
                         current_block_idx = block_idx;
                         block_validated = false;
-                        
+
                         // Validate and consume gas for the entire block
                         if (blocks) |block_array| {
                             if (block_idx < block_array.len) {
-                                const block_validation_zone = tracy.zone(@src(), "block_validation\x00");
-                                defer block_validation_zone.end();
-                                
                                 const block = block_array[block_idx];
                                 Log.debug("Entering block {} at pc={}, gas_cost={}, stack_req={}, stack_max_growth={}, start_pc={}, end_pc={}", .{ block_idx, pc, block.gas_cost, block.stack_req, block.stack_max_growth, block.start_pc, block.end_pc });
-                                
+
                                 // Validate stack requirements for the block
                                 const stack_size = @as(i32, @intCast(frame.stack.size()));
                                 if (stack_size < block.stack_req) {
@@ -184,7 +182,7 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                                     self.return_data = &[_]u8{};
                                     return RunResult.init(initial_gas, frame.gas_remaining, .Invalid, ExecutionError.Error.StackUnderflow, null);
                                 }
-                                
+
                                 const max_stack_after = stack_size + @as(i32, @intCast(block.stack_max_growth));
                                 if (max_stack_after > @import("../stack/stack.zig").CAPACITY) {
                                     Log.debug("Block {} would overflow stack: current={}, max_growth={}", .{ block_idx, stack_size, block.stack_max_growth });
@@ -192,7 +190,7 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                                     self.return_data = &[_]u8{};
                                     return RunResult.init(initial_gas, frame.gas_remaining, .Invalid, ExecutionError.Error.StackOverflow, null);
                                 }
-                                
+
                                 // Consume gas for the entire block
                                 const gas_zone = tracy.zone(@src(), "block_gas_consumption\x00");
                                 frame.consume_gas(block.gas_cost) catch {
@@ -203,7 +201,7 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                                     return RunResult.init(initial_gas, frame.gas_remaining, .OutOfGas, ExecutionError.Error.OutOfGas, null);
                                 };
                                 gas_zone.end();
-                                
+
                                 block_validated = true;
                                 Log.debug("Block {} validated successfully", .{block_idx});
                             }
@@ -212,12 +210,12 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 }
             }
         }
-        
+
         // INLINE: self.table.execute(...)
         // Execute the operation directly
         const exec_result = exec_blk: {
             Log.debug("Executing opcode 0x{x:0>2} at pc={}, gas={}, stack_size={}", .{ opcode_byte, pc, frame.gas_remaining, frame.stack.size() });
-            
+
             // Check if opcode is undefined (cold path) - use pre-computed flag
             if (entry.undefined) {
                 @branchHint(.cold);
@@ -225,12 +223,12 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 frame.gas_remaining = 0;
                 break :exec_blk ExecutionError.Error.InvalidOpcode;
             }
-            
+
             // Skip per-instruction validation if block is validated
             if (!block_validated) {
                 const validation_zone = tracy.zone(@src(), "per_instruction_validation\x00");
                 defer validation_zone.end();
-                
+
                 // Validate stack requirements using pre-computed values
                 if (comptime builtin.mode == .ReleaseFast) {
                     // Fast path for release builds - use pre-computed min/max
@@ -246,7 +244,7 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                     const stack_validation = @import("../stack/stack_validation.zig");
                     stack_validation.validate_stack_requirements(&frame.stack, operation) catch |err| break :exec_blk err;
                 }
-                
+
                 // Consume gas (likely path) - use pre-computed constant_gas
                 if (entry.constant_gas > 0) {
                     @branchHint(.likely);
@@ -259,13 +257,13 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                     gas_zone.end();
                 }
             }
-            
+
             // Execute the operation
             const res = operation.execute(pc, interpreter, state) catch |err| break :exec_blk err;
             Log.debug("Opcode 0x{x:0>2} completed, gas_remaining={}", .{ opcode_byte, frame.gas_remaining });
             break :exec_blk res;
         };
-        
+
         // Handle execution result
         if (exec_result) |result| {
             // Success case - update program counter
@@ -370,7 +368,7 @@ fn interpretThreaded(
     is_static: bool,
 ) ExecutionError.Error!RunResult {
     const threaded_analysis = @import("../frame/threaded_analysis.zig");
-    
+
     // Ensure threaded analysis is available
     if (contract.threaded_analysis == null and contract.code_size > 0) {
         contract.threaded_analysis = try threaded_analysis.analyzeThreaded(
@@ -380,18 +378,18 @@ fn interpretThreaded(
             &self.table,
         );
     }
-    
+
     const analysis = contract.threaded_analysis orelse return ExecutionError.Error.InvalidOpcode;
-    
+
     const initial_gas = contract.gas;
     self.depth += 1;
     defer self.depth -= 1;
-    
+
     const prev_read_only = self.read_only;
     defer self.read_only = prev_read_only;
-    
+
     self.read_only = self.read_only or is_static;
-    
+
     // Create frame with threaded execution context
     var builder = Frame.builder(self.allocator);
     var frame = builder
@@ -408,33 +406,33 @@ fn interpretThreaded(
         error.MissingContract => unreachable,
     };
     defer frame.deinit();
-    
+
     // Set threaded execution fields
     frame.instructions = analysis.instructions;
     frame.push_values = analysis.push_values;
     frame.jumpdest_map = &analysis.jumpdest_map;
     frame.current_block_gas = 0;
     frame.return_reason = .Continue;
-    
+
     // Initialize stack
     frame.stack.ensureInitialized();
-    
+
     // CRITICAL: The threaded execution loop - just 3 lines!
     var instr: ?*const @import("../frame/threaded_instruction.zig").ThreadedInstruction = &analysis.instructions[0];
     while (instr) |current| {
         instr = current.exec_fn(current, &frame);
     }
-    
+
     // Handle results based on return reason
     contract.gas = frame.gas_remaining;
     self.return_data = &[_]u8{};
-    
+
     const output_data = frame.output;
-    const output: ?[]const u8 = if (output_data.len > 0) 
-        try self.allocator.dupe(u8, output_data) 
-    else 
+    const output: ?[]const u8 = if (output_data.len > 0)
+        try self.allocator.dupe(u8, output_data)
+    else
         null;
-    
+
     return RunResult.init(
         initial_gas,
         frame.gas_remaining,

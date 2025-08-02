@@ -133,10 +133,11 @@ pub fn append(self: *Stack, value: u256) Error!void {
 /// @param self The stack to push onto
 /// @param value The 256-bit value to push
 pub fn append_unsafe(self: *Stack, value: u256) void {
+    @branchHint(.likely);
+    
     const zone = tracy.zone(@src(), "stack_append_unsafe\x00");
     defer zone.end();
     
-    @branchHint(.likely);
     std.debug.assert(self.size() < CAPACITY); // Help compiler know we won't overflow
     self.top.?[0] = value;
     self.top.? += 1;
@@ -179,10 +180,11 @@ pub fn pop(self: *Stack) Error!u256 {
 /// @param self The stack to pop from
 /// @return The popped value
 pub fn pop_unsafe(self: *Stack) u256 {
+    @branchHint(.likely);
+    
     const zone = tracy.zone(@src(), "stack_pop_unsafe\x00");
     defer zone.end();
     
-    @branchHint(.likely);
     std.debug.assert(self.size() > 0); // Help compiler know we won't underflow
     self.top.? -= 1;
     const value = self.top.?[0];

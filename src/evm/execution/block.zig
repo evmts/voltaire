@@ -7,6 +7,9 @@ const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
 
 pub fn op_blockhash(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_blockhash\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -36,6 +39,9 @@ pub fn op_blockhash(pc: usize, interpreter: Operation.Interpreter, state: Operat
 }
 
 pub fn op_coinbase(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_coinbase\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -47,6 +53,9 @@ pub fn op_coinbase(pc: usize, interpreter: Operation.Interpreter, state: Operati
 }
 
 pub fn op_timestamp(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_timestamp\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -58,6 +67,9 @@ pub fn op_timestamp(pc: usize, interpreter: Operation.Interpreter, state: Operat
 }
 
 pub fn op_number(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_number\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -69,6 +81,9 @@ pub fn op_number(pc: usize, interpreter: Operation.Interpreter, state: Operation
 }
 
 pub fn op_difficulty(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_difficulty\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -82,11 +97,17 @@ pub fn op_difficulty(pc: usize, interpreter: Operation.Interpreter, state: Opera
 }
 
 pub fn op_prevrandao(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_prevrandao\x00");
+    defer zone.end();
+    
     // Same as difficulty post-merge
     return op_difficulty(pc, interpreter, state);
 }
 
 pub fn op_gaslimit(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_gaslimit\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -98,6 +119,9 @@ pub fn op_gaslimit(pc: usize, interpreter: Operation.Interpreter, state: Operati
 }
 
 pub fn op_basefee(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_basefee\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -111,6 +135,9 @@ pub fn op_basefee(pc: usize, interpreter: Operation.Interpreter, state: Operatio
 }
 
 pub fn op_blobhash(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_blobhash\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -131,6 +158,9 @@ pub fn op_blobhash(pc: usize, interpreter: Operation.Interpreter, state: Operati
 }
 
 pub fn op_blobbasefee(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_blobbasefee\x00");
+    defer zone.end();
+    
     _ = pc;
 
     const frame = state;
@@ -148,6 +178,7 @@ const testing = std.testing;
 const MemoryDatabase = @import("../state/memory_database.zig");
 const Contract = @import("../frame/contract.zig");
 const Context = @import("../access_list/context.zig");
+const tracy = @import("../tracy_support.zig");
 const Address = primitives.Address;
 
 test "BLOCKHASH: Returns hash for valid recent blocks" {

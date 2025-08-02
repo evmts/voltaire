@@ -12,6 +12,9 @@ const Contract = @import("../frame/contract.zig");
 const Address = @import("primitives").Address;
 
 pub fn op_pop(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_pop\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -23,6 +26,9 @@ pub fn op_pop(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 }
 
 pub fn op_push0(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_push0\x00");
+    defer zone.end();
+    
     _ = pc;
     _ = interpreter;
 
@@ -39,6 +45,9 @@ pub fn op_push0(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 
 // Optimized PUSH1 implementation with direct byte access
 pub fn op_push1(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
+    const zone = tracy.zone(@src(), "op_push1\x00");
+    defer zone.end();
+    
     _ = interpreter;
 
     const frame = state;
@@ -1534,6 +1543,7 @@ test "stack operations handle maximum capacity correctly" {
 test "stack operations maintain consistency under stress" {
     const allocator = std.testing.allocator;
     const primitives = @import("primitives");
+const tracy = @import("../tracy_support.zig");
 
     var memory_db = MemoryDatabase.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
