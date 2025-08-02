@@ -1,0 +1,25 @@
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    xz-utils \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Zig 0.14.1
+RUN curl -L https://ziglang.org/download/0.14.1/zig-x86_64-linux-0.14.1.tar.xz | tar -xJ -C /opt
+RUN ln -s /opt/zig-x86_64-linux-0.14.1/zig /usr/local/bin/zig
+
+# Add Zig to PATH
+ENV PATH="/usr/local/bin:${PATH}"
+
+# Set working directory
+WORKDIR /app
+
+# Copy the entire project
+COPY . .
+
+# Run the fuzz tests
+CMD ["zig", "build", "fuzz-compare", "--fuzz"]

@@ -1302,7 +1302,7 @@ pub fn build(b: *std.Build) void {
     // Add BN254 comparison fuzz test (Zig vs Rust)
     const bn254_comparison_fuzz_test = b.addTest(.{
         .name = "bn254-comparison-fuzz-test",
-        .root_source_file = b.path("src/crypto/bn254/fuzz_comparison.zig"),
+        .root_source_file = b.path("test/fuzz/bn254_comparison_fuzz_test.zig"),
         .target = target,
         .optimize = optimize,
     });

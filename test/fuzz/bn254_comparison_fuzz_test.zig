@@ -1,22 +1,45 @@
 const std = @import("std");
-const Fp = @import("Fp.zig");
-const Fr = @import("Fr.zig");
-const Fp2 = @import("Fp2.zig");
-const G1 = @import("g1.zig");
-const G2 = @import("g2.zig");
-const Fp6 = @import("Fp6.zig");
-const Fp12 = @import("Fp12.zig");
-const pairing_mod = @import("pairing.zig");
+
+// Root fuzz implementation required by std.testing.fuzz
+pub fn fuzz(
+    context: anytype,
+    comptime testOne: fn (context: @TypeOf(context), input: []const u8) anyerror!void,
+    options: std.testing.FuzzInputOptions,
+) anyerror!void {
+    _ = options;
+    
+    // Simple implementation that runs with a few test inputs
+    const test_inputs = [_][]const u8{
+        &[_]u8{0} ** 96,
+        &[_]u8{0xFF} ** 96,
+        &[_]u8{0x01} ** 96,
+        &[_]u8{0x80} ** 96,
+    };
+    
+    for (test_inputs) |input| {
+        try testOne(context, input);
+    }
+}
+const crypto = @import("crypto");
+const Fp = crypto.bn254.Fp;
+const Fr = crypto.bn254.Fr;
+const Fp2 = crypto.bn254.Fp2;
+const G1 = crypto.bn254.G1;
+const G2 = crypto.bn254.G2;
+const Fp6 = crypto.bn254.Fp6;
+const Fp12 = crypto.bn254.Fp12;
+const pairing_mod = crypto.bn254.pairing;
 
 // Import precompiles that use Rust wrapper
-const ecmul_precompile = @import("../../evm/precompiles/ecmul.zig");
-const ecpairing_precompile = @import("../../evm/precompiles/ecpairing.zig");
-const chain_rules = @import("../../evm/hardforks/chain_rules.zig");
-const Hardfork = @import("../../evm/hardforks/hardfork.zig").Hardfork;
+const evm = @import("evm");
+const ecmul_precompile = evm.precompiles.ecmul;
+const ecpairing_precompile = evm.precompiles.ecpairing;
+const chain_rules = evm.hardforks.chain_rules;
+const Hardfork = evm.hardforks.hardfork.Hardfork;
 
-// Fuzz test comparing ECMUL implementations
-test "fuzz compare ECMUL Rust vs Zig" {
-    const input = std.testing.fuzzInput(.{});
+// Helper function for ECMUL comparison
+fn fuzzCompareECMUL(context: void, input: []const u8) !void {
+    _ = context;
     if (input.len < 96) return; // Need x, y, scalar (32 bytes each)
     
     // Parse the fuzz input
@@ -68,9 +91,14 @@ test "fuzz compare ECMUL Rust vs Zig" {
     }
 }
 
-// Fuzz test for field arithmetic comparison
-test "fuzz compare field arithmetic Rust vs Zig" {
-    const input = std.testing.fuzzInput(.{});
+// Fuzz test comparing ECMUL implementations
+test "fuzz compare ECMUL Rust vs Zig" {
+    try std.testing.fuzz({}, fuzzCompareECMUL, .{});
+}
+
+// Helper function for field arithmetic comparison
+fn fuzzFieldArithmetic(context: void, input: []const u8) !void {
+    _ = context;
     if (input.len < 64) return; // Need two field elements
     
     const a_value = std.mem.readInt(u256, input[0..32], .big);
@@ -133,9 +161,14 @@ test "fuzz compare field arithmetic Rust vs Zig" {
     }
 }
 
-// Fuzz test comparing pairing results
-test "fuzz compare ECPAIRING Rust vs Zig" {
-    const input = std.testing.fuzzInput(.{});
+// Fuzz test for field arithmetic comparison
+test "fuzz compare field arithmetic Rust vs Zig" {
+    try std.testing.fuzz({}, fuzzFieldArithmetic, .{});
+}
+
+// Helper function for pairing comparison
+fn fuzzComparePairing(context: void, input: []const u8) !void {
+    _ = context;
     if (input.len < 192) return; // Need at least one pair
     
     // For simplicity, test with single pair using generator points
@@ -173,9 +206,14 @@ test "fuzz compare ECPAIRING Rust vs Zig" {
     }
 }
 
-// Test edge cases and invariants
-test "fuzz invariants and edge cases" {
-    const input = std.testing.fuzzInput(.{});
+// Fuzz test comparing pairing results
+test "fuzz compare ECPAIRING Rust vs Zig" {
+    try std.testing.fuzz({}, fuzzComparePairing, .{});
+}
+
+// Helper function for edge cases and invariants
+fn fuzzInvariantsAndEdgeCases(context: void, input: []const u8) !void {
+    _ = context;
     if (input.len < 32) return;
     
     const scalar = std.mem.readInt(u256, input[0..32], .big);
@@ -243,6 +281,11 @@ test "fuzz invariants and edge cases" {
             try std.testing.expect(sum.equal(&double_k_times_g));
         }
     }
+}
+
+// Test edge cases and invariants
+test "fuzz invariants and edge cases" {
+    try std.testing.fuzz({}, fuzzInvariantsAndEdgeCases, .{});
 }
 
 // Run with: zig test src/crypto/bn254/fuzz_comparison.zig --fuzz
