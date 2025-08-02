@@ -1249,6 +1249,94 @@ pub fn build(b: *std.Build) void {
     const delegatecall_test_step = b.step("test-delegatecall", "Run DELEGATECALL tests");
     delegatecall_test_step.dependOn(&run_delegatecall_test.step);
 
+    // Add BN254 individual test targets
+    const bn254_fp_test = b.addTest(.{
+        .name = "bn254-fp-test",
+        .root_source_file = b.path("src/crypto/bn254/Fp.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bn254_fp_test.root_module.addImport("primitives", primitives_mod);
+    const run_bn254_fp_test = b.addRunArtifact(bn254_fp_test);
+    const bn254_fp_test_step = b.step("test-bn254-fp", "Run BN254 Fp tests");
+    bn254_fp_test_step.dependOn(&run_bn254_fp_test.step);
+
+    const bn254_fr_test = b.addTest(.{
+        .name = "bn254-fr-test",
+        .root_source_file = b.path("src/crypto/bn254/Fr.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bn254_fr_test.root_module.addImport("primitives", primitives_mod);
+    const run_bn254_fr_test = b.addRunArtifact(bn254_fr_test);
+    const bn254_fr_test_step = b.step("test-bn254-fr", "Run BN254 Fr tests");
+    bn254_fr_test_step.dependOn(&run_bn254_fr_test.step);
+
+    const bn254_fp2_test = b.addTest(.{
+        .name = "bn254-fp2-test",
+        .root_source_file = b.path("src/crypto/bn254/Fp2.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bn254_fp2_test.root_module.addImport("primitives", primitives_mod);
+    const run_bn254_fp2_test = b.addRunArtifact(bn254_fp2_test);
+    const bn254_fp2_test_step = b.step("test-bn254-fp2", "Run BN254 Fp2 tests");
+    bn254_fp2_test_step.dependOn(&run_bn254_fp2_test.step);
+
+    const bn254_fp6_test = b.addTest(.{
+        .name = "bn254-fp6-test",
+        .root_source_file = b.path("src/crypto/bn254/Fp6.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bn254_fp6_test.root_module.addImport("primitives", primitives_mod);
+    const run_bn254_fp6_test = b.addRunArtifact(bn254_fp6_test);
+    const bn254_fp6_test_step = b.step("test-bn254-fp6", "Run BN254 Fp6 tests");
+    bn254_fp6_test_step.dependOn(&run_bn254_fp6_test.step);
+
+    const bn254_fp12_test = b.addTest(.{
+        .name = "bn254-fp12-test",
+        .root_source_file = b.path("src/crypto/bn254/Fp12.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bn254_fp12_test.root_module.addImport("primitives", primitives_mod);
+    const run_bn254_fp12_test = b.addRunArtifact(bn254_fp12_test);
+    const bn254_fp12_test_step = b.step("test-bn254-fp12", "Run BN254 Fp12 tests");
+    bn254_fp12_test_step.dependOn(&run_bn254_fp12_test.step);
+
+    const bn254_g1_test = b.addTest(.{
+        .name = "bn254-g1-test",
+        .root_source_file = b.path("src/crypto/bn254/g1.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bn254_g1_test.root_module.addImport("primitives", primitives_mod);
+    const run_bn254_g1_test = b.addRunArtifact(bn254_g1_test);
+    const bn254_g1_test_step = b.step("test-bn254-g1", "Run BN254 G1 tests");
+    bn254_g1_test_step.dependOn(&run_bn254_g1_test.step);
+
+    const bn254_g2_test = b.addTest(.{
+        .name = "bn254-g2-test",
+        .root_source_file = b.path("src/crypto/bn254/g2.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bn254_g2_test.root_module.addImport("primitives", primitives_mod);
+    const run_bn254_g2_test = b.addRunArtifact(bn254_g2_test);
+    const bn254_g2_test_step = b.step("test-bn254-g2", "Run BN254 G2 tests");
+    bn254_g2_test_step.dependOn(&run_bn254_g2_test.step);
+
+    const bn254_pairing_test = b.addTest(.{
+        .name = "bn254-pairing-test",
+        .root_source_file = b.path("src/crypto/bn254/pairing.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    bn254_pairing_test.root_module.addImport("primitives", primitives_mod);
+    const run_bn254_pairing_test = b.addRunArtifact(bn254_pairing_test);
+    const bn254_pairing_test_step = b.step("test-bn254-pairing", "Run BN254 pairing tests");
+    bn254_pairing_test_step.dependOn(&run_bn254_pairing_test.step);
 
     // Add combined E2E test step
     const e2e_all_test_step = b.step("test-e2e", "Run all E2E tests");
@@ -1341,6 +1429,15 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_delegatecall_test.step);
     test_step.dependOn(&run_devtool_test.step);
     
+    // Add all BN254 tests to main test step
+    test_step.dependOn(&run_bn254_fp_test.step);
+    test_step.dependOn(&run_bn254_fr_test.step);
+    test_step.dependOn(&run_bn254_fp2_test.step);
+    test_step.dependOn(&run_bn254_fp6_test.step);
+    test_step.dependOn(&run_bn254_fp12_test.step);
+    test_step.dependOn(&run_bn254_g1_test.step);
+    test_step.dependOn(&run_bn254_g2_test.step);
+    test_step.dependOn(&run_bn254_pairing_test.step);
     
     // Add ERC20 mint debug test
     const erc20_mint_debug_test = b.addTest(.{
