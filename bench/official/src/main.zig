@@ -113,17 +113,11 @@ pub fn main() !void {
 }
 
 fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orchestrator.BenchmarkResult, num_runs: u32, js_runs: u32) !void {
-    // Create the file in bench/official/results.md
-    var exe_dir_buf: [std.fs.max_path_bytes]u8 = undefined;
-    const exe_path = try std.fs.selfExeDirPath(&exe_dir_buf);
+    _ = allocator; // unused
+    // Create the file in bench/official/results.md relative to current working directory
+    const results_path = "bench/official/results.md";
     
-    const project_root = try std.fs.path.resolve(allocator, &[_][]const u8{ exe_path, "..", ".." });
-    defer allocator.free(project_root);
-    
-    const results_path = try std.fs.path.join(allocator, &[_][]const u8{ project_root, "bench", "official", "results.md" });
-    defer allocator.free(results_path);
-    
-    const file = try std.fs.createFileAbsolute(results_path, .{});
+    const file = try std.fs.cwd().createFile(results_path, .{});
     defer file.close();
     
     // Get current timestamp

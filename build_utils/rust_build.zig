@@ -22,12 +22,18 @@ pub fn buildRustLibrary(
     optimize: std.builtin.OptimizeMode,
     config: RustBuildConfig,
 ) *std.Build.Step.Compile {
-    const rust_profile = switch (config.profile) {
+    // Override profile based on optimize mode - always use release for non-Debug builds
+    const actual_profile = switch (optimize) {
+        .Debug => config.profile,
+        .ReleaseSafe, .ReleaseFast, .ReleaseSmall => .release,
+    };
+    
+    const rust_profile = switch (actual_profile) {
         .dev => "dev",
         .release => "release",
     };
     
-    const rust_target_dir = switch (config.profile) {
+    const rust_target_dir = switch (actual_profile) {
         .dev => "debug",
         .release => "release",
     };
@@ -51,9 +57,26 @@ pub fn buildRustLibrary(
     // Set environment variables
     if (config.rust_flags) |flags| {
         rust_build.setEnvironmentVariable("RUSTFLAGS", flags);
-    } else if (target.result.os.tag == .macos) {
-        // Default macOS fix
-        rust_build.setEnvironmentVariable("RUSTFLAGS", "-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib");
+    } else {
+        // Build default RUSTFLAGS based on optimization mode
+        var rust_flags = std.ArrayList(u8).init(b.allocator);
+        
+        // Add aggressive optimizations for ReleaseFast
+        if (optimize == .ReleaseFast) {
+            rust_flags.appendSlice("-C opt-level=3 -C target-cpu=native -C codegen-units=1 -C lto=fat") catch @panic("OOM");
+        }
+        
+        // Add macOS library path if needed
+        if (target.result.os.tag == .macos) {
+            if (rust_flags.items.len > 0) {
+                rust_flags.append(' ') catch @panic("OOM");
+            }
+            rust_flags.appendSlice("-L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib") catch @panic("OOM");
+        }
+        
+        if (rust_flags.items.len > 0) {
+            rust_build.setEnvironmentVariable("RUSTFLAGS", rust_flags.items);
+        }
     }
     
     // Create library artifact

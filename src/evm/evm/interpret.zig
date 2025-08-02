@@ -10,6 +10,22 @@ const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
 const opcode = @import("../opcodes/opcode.zig");
 
+/// Pre-build a direct PC-to-operation mapping for a contract's bytecode.
+/// This eliminates the double indirection of bytecode[pc] -> opcode -> operation.
+/// 
+/// Returns null if allocation fails. The caller owns the returned memory.
+fn buildPcToOperationTable(allocator: std.mem.Allocator, contract: *const Contract, jump_table: *const @import("../jump_table/jump_table.zig")) ?[]*const Operation.Operation {
+    const table = allocator.alloc(*const Operation.Operation, contract.code_size) catch return null;
+    
+    // Build the direct mapping
+    for (0..contract.code_size) |pc| {
+        const opcode_byte = contract.code[@intCast(pc)];
+        table[pc] = jump_table.table[opcode_byte];
+    }
+    
+    return table;
+}
+
 /// Execute contract bytecode and return the result.
 ///
 /// This is the main execution entry point. The contract must be properly initialized
@@ -42,6 +58,12 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
     const initial_gas = contract.gas;
     var pc: usize = 0;
 
+    // Pre-build direct PC-to-operation table if possible
+    const pc_to_op_table = if (contract.code_size > 0) 
+        buildPcToOperationTable(self.allocator, contract, &self.table) 
+    else null;
+    defer if (pc_to_op_table) |table| self.allocator.free(table);
+
     var builder = Frame.builder(self.allocator); // We should consider making all items mandatory and removing frame builder
     var frame = builder
         .withVm(self)
@@ -65,41 +87,20 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
     while (pc < contract.code_size) {
         @branchHint(.likely);
         
-        // INLINE: contract.get_op(pc)
-        // Fetch opcode with bounds checking
-        const opcode_byte = if (pc < contract.code_size) contract.code[@intCast(pc)] else @intFromEnum(opcode.Enum.STOP);
+        // Direct PC-to-operation lookup if table is available
+        const operation = if (pc_to_op_table) |table|
+            table[@intCast(pc)]
+        else blk: {
+            // Fallback to double indirection if table allocation failed
+            const opcode_byte = contract.code[@intCast(pc)];
+            break :blk self.table.table[opcode_byte];
+        };
+        
         frame.pc = pc;
-
-        // Log stack state before operation (debug builds)
-        if (frame.stack.size > 0) {
-            Log.debug("Stack before pc={}: size={}, top 5 values:", .{ pc, frame.stack.size });
-            var i: usize = 0;
-            while (i < @min(5, frame.stack.size)) : (i += 1) {
-                Log.debug("  [{}] = {}", .{ frame.stack.size - 1 - i, frame.stack.data[frame.stack.size - 1 - i] });
-            }
-        }
         
-        // INLINE: self.table.get_operation(opcode_byte)
-        // Direct array access to get operation handler
-        const operation = self.table.table[opcode_byte];
         
-        // Trace execution if tracer is available
-        if (self.tracer) |writer| {
-            var tracer = @import("../tracer.zig").Tracer.init(writer);
-            const stack_slice = frame.stack.data[0..frame.stack.size];
-            const gas_cost = operation.constant_gas;
-            tracer.trace(
-                pc,
-                opcode_byte,
-                stack_slice,
-                frame.gas_remaining,
-                gas_cost,
-                frame.memory.size(),
-                @intCast(self.depth)
-            ) catch |trace_err| {
-                Log.debug("Failed to write trace: {}", .{trace_err});
-            };
-        }
+        // Get opcode byte for logging (only when needed)
+        const opcode_byte = contract.code[@intCast(pc)];
         
         // INLINE: self.table.execute(...)
         // Execute the operation directly

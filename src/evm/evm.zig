@@ -50,8 +50,7 @@ context: Context,
 // Data fields (moderate access frequency)
 /// Return data from the most recent operation
 return_data: []u8 = &[_]u8{},
-/// Optional tracer for capturing execution traces
-tracer: ?std.io.AnyWriter = null,
+// Tracer removed for performance - use EvmWithTracer if you need tracing
 
 // Large state structures (placed last to minimize offset impact)
 /// World state including accounts, storage, and code
@@ -103,7 +102,6 @@ pub fn init(
     context: ?Context,
     depth: u16,
     read_only: bool,
-    tracer: ?std.io.AnyWriter,
 ) !Evm {
     Log.debug("Evm.init: Initializing EVM with configuration", .{});
 
@@ -125,7 +123,6 @@ pub fn init(
         .context = ctx,
         .depth = depth,
         .read_only = read_only,
-        .tracer = tracer,
     };
 }
 
