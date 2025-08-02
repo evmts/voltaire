@@ -192,11 +192,11 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
 
     // Parse JSON results
     if (result.stdout.len > 0) {
-        try self.parseHyperfineJson(test_case.name, result.stdout, runs_to_use);
+        try self.parseHyperfineJson(test_case.name, result.stdout, runs_to_use, is_js_snailtracer);
     }
 }
 
-fn parseHyperfineJson(self: *Orchestrator, test_name: []const u8, json_data: []const u8, runs: u32) !void {
+fn parseHyperfineJson(self: *Orchestrator, test_name: []const u8, json_data: []const u8, runs: u32, is_js_snailtracer: bool) !void {
     // Simple JSON parsing - look for the key values we need
     // This is a basic parser that extracts the values we need
     
@@ -258,20 +258,30 @@ fn parseHyperfineJson(self: *Orchestrator, test_name: []const u8, json_data: []c
         }
     }
     
-    // Convert to milliseconds
+    // Convert to milliseconds and normalize for JS snailtracer
+    var normalization_factor: f64 = 1.0;
+    if (is_js_snailtracer) {
+        // Normalize based on the ratio of internal runs
+        // JS does fewer internal runs, so we need to scale the time accordingly
+        normalization_factor = @as(f64, @floatFromInt(self.internal_runs)) / @as(f64, @floatFromInt(self.js_internal_runs));
+    }
+    
     const result = BenchmarkResult{
         .test_case = try self.allocator.dupe(u8, test_name),
-        .mean_ms = mean * 1000.0,
-        .min_ms = min * 1000.0,
-        .max_ms = max * 1000.0,
-        .std_dev_ms = stddev * 1000.0,
-        .median_ms = median * 1000.0,
+        .mean_ms = mean * 1000.0 * normalization_factor,
+        .min_ms = min * 1000.0 * normalization_factor,
+        .max_ms = max * 1000.0 * normalization_factor,
+        .std_dev_ms = stddev * 1000.0 * normalization_factor,
+        .median_ms = median * 1000.0 * normalization_factor,
         .runs = runs,
     };
     
     try self.results.append(result);
     
     print("  Mean: {d:.1} ms, Min: {d:.1} ms, Max: {d:.1} ms\n", .{ result.mean_ms, result.min_ms, result.max_ms });
+    if (is_js_snailtracer) {
+        print("  (Normalized by factor {d:.2} due to reduced internal runs)\n", .{normalization_factor});
+    }
 }
 
 pub fn printSummary(self: *Orchestrator) void {
