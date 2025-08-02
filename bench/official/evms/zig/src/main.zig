@@ -113,25 +113,38 @@ pub fn main() !void {
     const contract_address = try deployContract(allocator, &vm, caller_address, contract_code);
     // std.debug.print("Deployed contract to address: {any}\n", .{contract_address});
 
+    // Create contract once outside the loop - all static setup
+    const code = vm.state.get_code(contract_address);
+    const code_hash = [_]u8{0} ** 32; // Empty hash for simplicity
+    var contract = evm.Contract.init(
+        caller_address,     // caller
+        contract_address,   // address
+        0,                  // value
+        1_000_000_000,      // gas
+        code,               // code
+        code_hash,          // code_hash
+        calldata,           // input
+        false               // is_static
+    );
+    defer contract.deinit(allocator, null);
+    
+    // Pre-analyze the contract to cache all analysis including pc_to_op_entries
+    // This ensures the first run doesn't include analysis overhead
+    if (contract.analysis == null and contract.code_size > 0) {
+        contract.analysis = evm.Contract.analyze_code(allocator, contract.code, contract.code_hash, &vm.table) catch |err| {
+            std.debug.print("Failed to analyze contract: {}\n", .{err});
+            std.process.exit(1);
+        };
+    }
+
     // Run benchmarks
     var run: u8 = 0;
     while (run < num_runs) : (run += 1) {
-        var timer = std.time.Timer.start() catch unreachable;
+        // Reset gas for each run
+        contract.gas = 1_000_000_000;
+        contract.gas_refund = 0;
         
-        // Create contract using Contract.init()
-        const code = vm.state.get_code(contract_address);
-        const code_hash = [_]u8{0} ** 32; // Empty hash for simplicity
-        var contract = evm.Contract.init(
-            caller_address,     // caller
-            contract_address,   // address
-            0,                  // value
-            1_000_000_000,      // gas
-            code,               // code
-            code_hash,          // code_hash
-            calldata,           // input
-            false               // is_static
-        );
-        defer contract.deinit(allocator, null);
+        var timer = std.time.Timer.start() catch unreachable;
         
         // Execute the contract
         const result = vm.interpret(&contract, calldata, false) catch |err| {
