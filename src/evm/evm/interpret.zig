@@ -16,6 +16,17 @@ const OpInfo = struct {
     opcode: u8,
 };
 
+// Pre-computed operation info including stack validation data
+const PcToOpEntry = struct {
+    operation: *const Operation.Operation,
+    opcode_byte: u8,
+    // Pre-computed validation info to avoid re-fetching from operation
+    min_stack: u32,
+    max_stack: u32,
+    constant_gas: u64,
+    undefined: bool,
+};
+
 /// Pre-build a direct PC-to-operation mapping for a contract's bytecode.
 /// This eliminates the double indirection of bytecode[pc] -> opcode -> operation.
 /// 
@@ -27,6 +38,28 @@ fn buildPcToOperationTable(allocator: std.mem.Allocator, contract: *const Contra
     for (0..contract.code_size) |pc| {
         const opcode_byte = contract.code[@intCast(pc)];
         table[pc] = jump_table.table[opcode_byte];
+    }
+    
+    return table;
+}
+
+/// Pre-build a comprehensive PC-to-operation mapping with pre-computed validation data.
+/// This eliminates multiple field accesses during execution.
+fn buildPcToOpEntryTable(allocator: std.mem.Allocator, contract: *const Contract, jump_table: *const @import("../jump_table/jump_table.zig")) ?[]PcToOpEntry {
+    const table = allocator.alloc(PcToOpEntry, contract.code_size) catch return null;
+    
+    // Build the comprehensive mapping with pre-computed data
+    for (0..contract.code_size) |pc| {
+        const opcode_byte = contract.code[@intCast(pc)];
+        const operation = jump_table.table[opcode_byte];
+        table[pc] = PcToOpEntry{
+            .operation = operation,
+            .opcode_byte = opcode_byte,
+            .min_stack = operation.min_stack,
+            .max_stack = operation.max_stack,
+            .constant_gas = operation.constant_gas,
+            .undefined = operation.undefined,
+        };
     }
     
     return table;
@@ -64,11 +97,11 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
     const initial_gas = contract.gas;
     var pc: usize = 0;
 
-    // Pre-build direct PC-to-operation table if possible
-    const pc_to_op_table = if (contract.code_size > 0) 
-        buildPcToOperationTable(self.allocator, contract, &self.table) 
+    // Pre-build comprehensive PC-to-operation table with validation data if possible
+    const pc_to_op_entry_table = if (contract.code_size > 0) 
+        buildPcToOpEntryTable(self.allocator, contract, &self.table) 
     else null;
-    defer if (pc_to_op_table) |table| self.allocator.free(table);
+    defer if (pc_to_op_entry_table) |table| self.allocator.free(table);
 
     var builder = Frame.builder(self.allocator); // We should consider making all items mandatory and removing frame builder
     var frame = builder
@@ -93,24 +126,26 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
     while (pc < contract.code_size) {
         @branchHint(.likely);
         
-        // Direct PC-to-operation lookup if table is available, avoiding redundant opcode fetch
-        const op_info = if (pc_to_op_table) |table| blk: {
-            const opcode_byte = contract.code[@intCast(pc)];
-            break :blk OpInfo{
-                .operation = table[@intCast(pc)],
-                .opcode = opcode_byte,
-            };
-        } else blk: {
-            // Fallback to double indirection if table allocation failed
-            const opcode_byte = contract.code[@intCast(pc)];
-            break :blk OpInfo{
-                .operation = self.table.table[opcode_byte],
-                .opcode = opcode_byte,
+        // Use pre-computed entry table if available for maximum performance
+        const pc_index: usize = @intCast(pc);
+        const entry = if (pc_to_op_entry_table) |table| 
+            table[pc_index]
+        else blk: {
+            // Fallback: build entry on the fly
+            const opcode_byte = contract.code[pc_index];
+            const operation = self.table.table[opcode_byte];
+            break :blk PcToOpEntry{
+                .operation = operation,
+                .opcode_byte = opcode_byte,
+                .min_stack = operation.min_stack,
+                .max_stack = operation.max_stack,
+                .constant_gas = operation.constant_gas,
+                .undefined = operation.undefined,
             };
         };
         
-        const operation = op_info.operation;
-        const opcode_byte = op_info.opcode;
+        const operation = entry.operation;
+        const opcode_byte = entry.opcode_byte;
         
         frame.pc = pc;
         
@@ -119,23 +154,23 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
         const exec_result = blk: {
             Log.debug("Executing opcode 0x{x:0>2} at pc={}, gas={}, stack_size={}", .{ opcode_byte, pc, frame.gas_remaining, frame.stack.size });
             
-            // Check if opcode is undefined (cold path)
-            if (operation.undefined) {
+            // Check if opcode is undefined (cold path) - use pre-computed flag
+            if (entry.undefined) {
                 @branchHint(.cold);
                 Log.debug("Invalid opcode 0x{x:0>2}", .{opcode_byte});
                 frame.gas_remaining = 0;
                 break :blk ExecutionError.Error.InvalidOpcode;
             }
             
-            // Validate stack requirements
+            // Validate stack requirements using pre-computed values
             if (comptime builtin.mode == .ReleaseFast) {
-                // Fast path for release builds
+                // Fast path for release builds - use pre-computed min/max
                 const stack_height_changes = @import("../opcodes/stack_height_changes.zig");
                 stack_height_changes.validate_stack_requirements_fast(
                     @intCast(frame.stack.size),
                     opcode_byte,
-                    operation.min_stack,
-                    operation.max_stack,
+                    entry.min_stack,
+                    entry.max_stack,
                 ) catch |err| break :blk err;
             } else {
                 // Full validation for debug builds
@@ -143,11 +178,11 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 stack_validation.validate_stack_requirements(&frame.stack, operation) catch |err| break :blk err;
             }
             
-            // Consume gas (likely path)
-            if (operation.constant_gas > 0) {
+            // Consume gas (likely path) - use pre-computed constant_gas
+            if (entry.constant_gas > 0) {
                 @branchHint(.likely);
-                Log.debug("Consuming {} gas for opcode 0x{x:0>2}", .{ operation.constant_gas, opcode_byte });
-                frame.consume_gas(operation.constant_gas) catch |err| break :blk err;
+                Log.debug("Consuming {} gas for opcode 0x{x:0>2}", .{ entry.constant_gas, opcode_byte });
+                frame.consume_gas(entry.constant_gas) catch |err| break :blk err;
             }
             
             // Execute the operation
