@@ -267,6 +267,7 @@ pub fn build(b: *std.Build) void {
         .optimize = bench_optimize,
     });
     bench_mod.addImport("primitives", primitives_mod);
+    bench_mod.addImport("crypto", crypto_mod);
     bench_mod.addImport("evm", bench_evm_mod);  // Use the bench-specific EVM module
     bench_mod.addImport("zbench", zbench_dep.module("zbench"));
     if (revm_lib != null) {
@@ -458,6 +459,7 @@ pub fn build(b: *std.Build) void {
     bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
     bench_exe.root_module.addImport("evm", bench_evm_mod);  // Use the bench-specific EVM module
     bench_exe.root_module.addImport("primitives", primitives_mod);
+    bench_exe.root_module.addImport("crypto", crypto_mod);
     if (revm_lib != null) {
         bench_exe.root_module.addImport("revm", revm_mod);
     }
@@ -504,6 +506,72 @@ pub fn build(b: *std.Build) void {
     const revm_bench_step = b.step("bench-revm", "Run revm comparison benchmarks");
     revm_bench_step.dependOn(&run_revm_bench_cmd.step);
     
+    // Add BN254 Rust wrapper benchmark executable
+    const bn254_rust_bench_exe = b.addExecutable(.{
+        .name = "bn254-rust-bench",
+        .root_source_file = b.path("bench/bn254_rust_benchmark.zig"),
+        .target = target,
+        .optimize = bench_optimize,
+    });
+    bn254_rust_bench_exe.root_module.addImport("evm", bench_evm_mod);
+    bn254_rust_bench_exe.root_module.addImport("primitives", primitives_mod);
+    bn254_rust_bench_exe.root_module.addImport("crypto", crypto_mod);
+    bn254_rust_bench_exe.root_module.addAnonymousImport("timing", .{ .root_source_file = b.path("bench/timing.zig") });
+    if (revm_lib != null) {
+        bn254_rust_bench_exe.root_module.addImport("revm", revm_mod);
+    }
+    
+    // Link external libraries
+    if (evm_bench_lib) |evm_bench| {
+        bn254_rust_bench_exe.linkLibrary(evm_bench);
+        bn254_rust_bench_exe.addIncludePath(b.path("src/guillotine-rs"));
+    }
+    if (bn254_lib) |bn254| {
+        bn254_rust_bench_exe.linkLibrary(bn254);
+        bn254_rust_bench_exe.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
+    b.installArtifact(bn254_rust_bench_exe);
+    
+    const run_bn254_rust_bench_cmd = b.addRunArtifact(bn254_rust_bench_exe);
+    run_bn254_rust_bench_cmd.step.dependOn(b.getInstallStep());
+    
+    const bn254_rust_bench_step = b.step("bench-bn254-rust", "Run BN254 Rust wrapper benchmarks");
+    bn254_rust_bench_step.dependOn(&run_bn254_rust_bench_cmd.step);
+    
+    // Add BN254 Zig native benchmark executable
+    const bn254_zig_bench_exe = b.addExecutable(.{
+        .name = "bn254-zig-bench",
+        .root_source_file = b.path("bench/bn254_zig_benchmark.zig"),
+        .target = target,
+        .optimize = bench_optimize,
+    });
+    bn254_zig_bench_exe.root_module.addImport("evm", bench_evm_mod);
+    bn254_zig_bench_exe.root_module.addImport("primitives", primitives_mod);
+    bn254_zig_bench_exe.root_module.addImport("crypto", crypto_mod);
+    bn254_zig_bench_exe.root_module.addAnonymousImport("timing", .{ .root_source_file = b.path("bench/timing.zig") });
+    if (revm_lib != null) {
+        bn254_zig_bench_exe.root_module.addImport("revm", revm_mod);
+    }
+    
+    // Link external libraries
+    if (evm_bench_lib) |evm_bench| {
+        bn254_zig_bench_exe.linkLibrary(evm_bench);
+        bn254_zig_bench_exe.addIncludePath(b.path("src/guillotine-rs"));
+    }
+    if (bn254_lib) |bn254| {
+        bn254_zig_bench_exe.linkLibrary(bn254);
+        bn254_zig_bench_exe.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
+    b.installArtifact(bn254_zig_bench_exe);
+    
+    const run_bn254_zig_bench_cmd = b.addRunArtifact(bn254_zig_bench_exe);
+    run_bn254_zig_bench_cmd.step.dependOn(b.getInstallStep());
+    
+    const bn254_zig_bench_step = b.step("bench-bn254-zig", "Run BN254 Zig native benchmarks");
+    bn254_zig_bench_step.dependOn(&run_bn254_zig_bench_cmd.step);
+    
     // Flamegraph profiling support
     const flamegraph_step = b.step("flamegraph", "Run benchmarks with flamegraph profiling");
     
@@ -518,6 +586,7 @@ pub fn build(b: *std.Build) void {
     profile_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
     profile_bench_exe.root_module.addImport("evm", bench_evm_mod);
     profile_bench_exe.root_module.addImport("primitives", primitives_mod);
+    profile_bench_exe.root_module.addImport("crypto", crypto_mod);
     if (revm_lib != null) {
         profile_bench_exe.root_module.addImport("revm", revm_mod);
     }
