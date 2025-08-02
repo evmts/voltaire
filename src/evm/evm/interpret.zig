@@ -178,11 +178,22 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 stack_validation.validate_stack_requirements(&frame.stack, operation) catch |err| break :blk err;
             }
             
-            // Consume gas (likely path) - use pre-computed constant_gas
-            if (entry.constant_gas > 0) {
-                @branchHint(.likely);
-                Log.debug("Consuming {} gas for opcode 0x{x:0>2}", .{ entry.constant_gas, opcode_byte });
-                frame.consume_gas(entry.constant_gas) catch |err| break :blk err;
+            // Always consume gas (even if 0) to avoid branch
+            // Since most opcodes have gas > 0, removing the branch is faster
+            const gas_before = frame.gas_remaining;
+            frame.gas_remaining -|= entry.constant_gas; // Saturating subtraction
+            
+            // Check for out of gas only if we actually consumed gas
+            if (frame.gas_remaining == 0 and entry.constant_gas > 0) {
+                @branchHint(.cold);
+                Log.debug("Out of gas for opcode 0x{x:0>2}, needed {} but had {}", .{ opcode_byte, entry.constant_gas, gas_before });
+                break :blk ExecutionError.Error.OutOfGas;
+            }
+            
+            if (comptime builtin.mode == .Debug) {
+                if (entry.constant_gas > 0) {
+                    Log.debug("Consumed {} gas for opcode 0x{x:0>2}", .{ entry.constant_gas, opcode_byte });
+                }
             }
             
             // Execute the operation
