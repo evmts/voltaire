@@ -6,11 +6,10 @@
 .zig-cache
 zig-cache
 zig-out
-target
 
-# Docker
-.docker
+# Docker files themselves
 .dockerignore
+Dockerfile*
 
 # IDE
 .vscode
@@ -19,9 +18,9 @@ target
 # OS
 .DS_Store
 
-# Rust target (if any)
+# Rust build artifacts (but keep source)
 target/
-Cargo.lock
+# Don't exclude Cargo.lock as it's needed for reproducible builds
 
 # Node modules (if any)
 node_modules/
@@ -29,3 +28,6 @@ node_modules/
 # Temporary files
 *.tmp
 *.log
+
+# Benchmarks and other large test data
+bench/official/cases/*/

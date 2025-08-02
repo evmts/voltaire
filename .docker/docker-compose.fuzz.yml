@@ -2,9 +2,12 @@ version: '3.8'
 
 services:
   fuzz-test:
+    platform: linux/amd64
     build:
       context: ..
       dockerfile: .docker/Dockerfile.fuzz
+      platforms:
+        - linux/amd64
     volumes:
       - ../:/app
     working_dir: /app

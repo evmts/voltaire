@@ -8,9 +8,9 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Zig 0.14.1
-RUN curl -L https://ziglang.org/download/0.14.1/zig-x86_64-linux-0.14.1.tar.xz | tar -xJ -C /opt
-RUN ln -s /opt/zig-x86_64-linux-0.14.1/zig /usr/local/bin/zig
+# Install Zig 0.14.1 for x86_64
+RUN curl -L https://ziglang.org/download/0.14.1/zig-x86_64-linux-0.14.1.tar.xz | tar -xJ -C /opt && \
+    ln -s /opt/zig-x86_64-linux-0.14.1/zig /usr/local/bin/zig
 
 # Add Zig to PATH
 ENV PATH="/usr/local/bin:${PATH}"
@@ -20,6 +20,13 @@ WORKDIR /app
 
 # Copy the entire project
 COPY . .
+
+# Clean any cached artifacts that might have wrong architecture
+RUN rm -rf .zig-cache zig-out
+
+# Install Rust for the bn254_wrapper dependency
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Run the fuzz tests
 CMD ["zig", "build", "fuzz-compare", "--fuzz"]

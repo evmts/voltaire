@@ -1,25 +1,4 @@
 const std = @import("std");
-
-// Root fuzz implementation required by std.testing.fuzz
-pub fn fuzz(
-    context: anytype,
-    comptime testOne: fn (context: @TypeOf(context), input: []const u8) anyerror!void,
-    options: std.testing.FuzzInputOptions,
-) anyerror!void {
-    _ = options;
-    
-    // Simple implementation that runs with a few test inputs
-    const test_inputs = [_][]const u8{
-        &[_]u8{0} ** 96,
-        &[_]u8{0xFF} ** 96,
-        &[_]u8{0x01} ** 96,
-        &[_]u8{0x80} ** 96,
-    };
-    
-    for (test_inputs) |input| {
-        try testOne(context, input);
-    }
-}
 const crypto = @import("crypto");
 const Fp = crypto.bn254.Fp;
 const Fr = crypto.bn254.Fr;
