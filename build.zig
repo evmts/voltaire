@@ -36,6 +36,7 @@ pub fn build(b: *std.Build) void {
     build_options.addOption(bool, "no_precompiles", no_precompiles);
     build_options.addOption(bool, "no_bn254", no_bn254);
     build_options.addOption(bool, "enable_tracy", tracy_enabled);
+    const build_options_mod = build_options.createModule();
 
     const lib_mod = b.createModule(.{
         .root_source_file = b.path("src/root.zig"),
@@ -43,7 +44,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     lib_mod.addIncludePath(b.path("src/bn254_wrapper"));
-    lib_mod.addImport("build_options", build_options.createModule());
+    lib_mod.addImport("build_options", build_options_mod);
     
     // Add Tracy to lib module if enabled
     if (tracy_enabled) {
@@ -147,7 +148,7 @@ pub fn build(b: *std.Build) void {
     });
     evm_mod.addImport("primitives", primitives_mod);
     evm_mod.addImport("crypto", crypto_mod);
-    evm_mod.addImport("build_options", build_options.createModule());
+    evm_mod.addImport("build_options", build_options_mod);
 
     // Link BN254 Rust library to EVM module (native targets only, if enabled)
     if (bn254_lib) |lib| {
@@ -276,7 +277,7 @@ pub fn build(b: *std.Build) void {
     });
     bench_evm_mod.addImport("primitives", primitives_mod);
     bench_evm_mod.addImport("crypto", crypto_mod);
-    bench_evm_mod.addImport("build_options", build_options.createModule());
+    bench_evm_mod.addImport("build_options", build_options_mod);
     
     // Link BN254 Rust library to bench EVM module (native targets only, if enabled)
     if (bench_bn254_lib) |lib| {
@@ -312,7 +313,6 @@ pub fn build(b: *std.Build) void {
     lib_mod.addImport("provider", provider_mod);
     lib_mod.addImport("compilers", compilers_mod);
     lib_mod.addImport("trie", trie_mod);
-    lib_mod.addImport("bench", bench_mod);
     if (revm_lib != null) {
         lib_mod.addImport("revm", revm_mod);
     }
@@ -390,7 +390,7 @@ pub fn build(b: *std.Build) void {
     const wasm_evm_mod = wasm.createWasmModule(b, "src/evm/root.zig", wasm_target, wasm_optimize);
     wasm_evm_mod.addImport("primitives", wasm_primitives_mod);
     wasm_evm_mod.addImport("crypto", wasm_crypto_mod);
-    wasm_evm_mod.addImport("build_options", build_options.createModule());
+    wasm_evm_mod.addImport("build_options", build_options_mod);
     // Note: WASM build uses pure Zig implementations for BN254 operations
 
     // Main WASM build (includes both primitives and EVM)
@@ -887,7 +887,7 @@ pub fn build(b: *std.Build) void {
     opcode_test_lib.root_module.addImport("evm", evm_mod);
     opcode_test_lib.root_module.addImport("primitives", primitives_mod);
     opcode_test_lib.root_module.addImport("crypto", crypto_mod);
-    opcode_test_lib.root_module.addImport("build_options", build_options.createModule());
+    opcode_test_lib.root_module.addImport("build_options", build_options_mod);
     
     // Link BN254 library if available
     if (bn254_lib) |bn254| {
@@ -1013,7 +1013,7 @@ pub fn build(b: *std.Build) void {
     opcode_comparison_test.root_module.addImport("evm", evm_mod);
     opcode_comparison_test.root_module.addImport("Address", primitives_mod);
     opcode_comparison_test.root_module.addImport("crypto", crypto_mod);
-    opcode_comparison_test.root_module.addImport("build_options", build_options.createModule());
+    opcode_comparison_test.root_module.addImport("build_options", build_options_mod);
 
     const run_opcode_comparison_test = b.addRunArtifact(opcode_comparison_test);
     const opcode_comparison_test_step = b.step("test-opcode-comparison", "Run opcode comparison tests");

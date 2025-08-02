@@ -11,7 +11,7 @@ const ztracy = if (enabled) @import("ztracy") else undefined;
 pub inline fn zone(comptime src: std.builtin.SourceLocation, comptime name: ?[*:0]const u8) Zone {
     if (comptime enabled) {
         const tracy_name = name orelse src.fn_name;
-        return .{ 
+        return .{
             .inner = ztracy.ZoneNC(src, tracy_name, 0x00_00_ff_00),
         };
     } else {
@@ -21,19 +21,19 @@ pub inline fn zone(comptime src: std.builtin.SourceLocation, comptime name: ?[*:
 
 pub const Zone = struct {
     inner: if (enabled) ztracy.ZoneCtx else void,
-    
+
     pub inline fn end(self: Zone) void {
         if (comptime enabled) {
             self.inner.End();
         }
     }
-    
+
     pub inline fn setText(self: Zone, text: []const u8) void {
         if (comptime enabled) {
             self.inner.Text(text);
         }
     }
-    
+
     pub inline fn setName(self: Zone, name: []const u8) void {
         if (comptime enabled) {
             self.inner.Name(name);
@@ -74,11 +74,10 @@ pub fn TrackedAllocator(comptime T: type) type {
     return struct {
         child: T,
         tracy_allocator: if (enabled) ztracy.TrackedAllocator else void,
-        
+
         const Self = @This();
-        
+
         pub fn init(child: T, name: [*:0]const u8) Self {
-            _ = name; // Always mark as used to avoid compiler error
             if (comptime enabled) {
                 return .{
                     .child = child,
@@ -88,7 +87,7 @@ pub fn TrackedAllocator(comptime T: type) type {
                 return .{ .child = child, .tracy_allocator = {} };
             }
         }
-        
+
         pub fn allocator(self: *Self) std.mem.Allocator {
             if (comptime enabled) {
                 return self.tracy_allocator.allocator();
@@ -96,7 +95,7 @@ pub fn TrackedAllocator(comptime T: type) type {
                 return self.child;
             }
         }
-        
+
         pub fn deinit(self: *Self) void {
             if (comptime enabled) {
                 self.tracy_allocator.deinit();
@@ -116,11 +115,11 @@ test "tracy support compiles" {
     // This test ensures tracy_support compiles correctly
     const z = zone(@src(), "test_zone\x00");
     defer z.end();
-    
+
     frameMarker();
     message("Test message");
     plot("test_value", 42.0);
-    
+
     if (enabled) {
         std.debug.print("Tracy is enabled in this build\n", .{});
     } else {
