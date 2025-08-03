@@ -43,6 +43,7 @@ pub const BenchmarkResult = struct {
     std_dev_ms: f64,
     median_ms: f64,
     runs: u32,
+    internal_runs: u32,
 };
 
 pub fn init(allocator: std.mem.Allocator, evm_name: []const u8, num_runs: u32, internal_runs: u32, js_runs: u32, js_internal_runs: u32) !Orchestrator {
@@ -192,11 +193,47 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
 
     // Parse JSON results
     if (result.stdout.len > 0) {
-        try self.parseHyperfineJson(test_case.name, result.stdout, runs_to_use);
+        try self.parseHyperfineJson(test_case.name, result.stdout, runs_to_use, internal_runs_to_use);
     }
 }
 
-fn parseHyperfineJson(self: *Orchestrator, test_name: []const u8, json_data: []const u8, runs: u32) !void {
+const TimeUnit = enum {
+    microseconds,
+    milliseconds,
+    seconds,
+};
+
+const FormattedTime = struct {
+    value: f64,
+    unit: TimeUnit,
+    
+    pub fn format(self: FormattedTime, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
+        const unit_str = switch (self.unit) {
+            .microseconds => "μs",
+            .milliseconds => "ms", 
+            .seconds => "s",
+        };
+        try writer.print("{d:.2} {s}", .{ self.value, unit_str });
+    }
+};
+
+fn selectOptimalUnit(time_ms: f64) FormattedTime {
+    if (time_ms >= 1000.0) {
+        return FormattedTime{ .value = time_ms / 1000.0, .unit = .seconds };
+    } else if (time_ms >= 1.0) {
+        return FormattedTime{ .value = time_ms, .unit = .milliseconds };
+    } else {
+        return FormattedTime{ .value = time_ms * 1000.0, .unit = .microseconds };
+    }
+}
+
+fn formatTimeWithUnit(time_ms: f64) FormattedTime {
+    return selectOptimalUnit(time_ms);
+}
+
+fn parseHyperfineJson(self: *Orchestrator, test_name: []const u8, json_data: []const u8, runs: u32, internal_runs: u32) !void {
     // Simple JSON parsing - look for the key values we need
     // This is a basic parser that extracts the values we need
     
@@ -258,20 +295,24 @@ fn parseHyperfineJson(self: *Orchestrator, test_name: []const u8, json_data: []c
         }
     }
     
-    // Convert to milliseconds
+    // Convert to milliseconds and normalize per internal run
     const result = BenchmarkResult{
         .test_case = try self.allocator.dupe(u8, test_name),
-        .mean_ms = mean * 1000.0,
-        .min_ms = min * 1000.0,
-        .max_ms = max * 1000.0,
-        .std_dev_ms = stddev * 1000.0,
-        .median_ms = median * 1000.0,
+        .mean_ms = (mean * 1000.0) / @as(f64, @floatFromInt(internal_runs)),
+        .min_ms = (min * 1000.0) / @as(f64, @floatFromInt(internal_runs)),
+        .max_ms = (max * 1000.0) / @as(f64, @floatFromInt(internal_runs)),
+        .std_dev_ms = (stddev * 1000.0) / @as(f64, @floatFromInt(internal_runs)),
+        .median_ms = (median * 1000.0) / @as(f64, @floatFromInt(internal_runs)),
         .runs = runs,
+        .internal_runs = internal_runs,
     };
     
     try self.results.append(result);
     
-    print("  Mean: {d:.1} ms, Min: {d:.1} ms, Max: {d:.1} ms\n", .{ result.mean_ms, result.min_ms, result.max_ms });
+    const mean_formatted = formatTimeWithUnit(result.mean_ms);
+    const min_formatted = formatTimeWithUnit(result.min_ms);
+    const max_formatted = formatTimeWithUnit(result.max_ms);
+    print("  Mean: {s}, Min: {s}, Max: {s} (per run, {} internal runs)\n", .{ mean_formatted, min_formatted, max_formatted, result.internal_runs });
 }
 
 pub fn printSummary(self: *Orchestrator) void {
@@ -280,11 +321,14 @@ pub fn printSummary(self: *Orchestrator) void {
     print("Runs per test: {}\n", .{self.num_runs});
     print("Test cases: {}\n\n", .{self.test_cases.len});
 
-    print("{s:<30} {s:>12} {s:>12} {s:>12}\n", .{ "Test Case", "Mean (ms)", "Min (ms)", "Max (ms)" });
-    print("{s:-<70}\n", .{""});
+    print("{s:<30} {s:>15} {s:>15} {s:>15}\n", .{ "Test Case", "Mean (per run)", "Min (per run)", "Max (per run)" });
+    print("{s:-<80}\n", .{""});
     
     for (self.results.items) |result| {
-        print("{s:<30} {d:>12.1} {d:>12.1} {d:>12.1}\n", .{ result.test_case, result.mean_ms, result.min_ms, result.max_ms });
+        const mean_formatted = formatTimeWithUnit(result.mean_ms);
+        const min_formatted = formatTimeWithUnit(result.min_ms);
+        const max_formatted = formatTimeWithUnit(result.max_ms);
+        print("{s:<30} {s:>15} {s:>15} {s:>15}\n", .{ result.test_case, mean_formatted, min_formatted, max_formatted });
     }
 }
 
@@ -344,18 +388,25 @@ fn exportMarkdown(self: *Orchestrator) !void {
     try file.writer().print("**Timestamp**: {} (Unix epoch)\n\n", .{seconds});
     
     // Write performance table
-    try file.writer().print("## Performance Results\n\n", .{});
-    try file.writeAll("| Test Case | Mean (ms) | Median (ms) | Min (ms) | Max (ms) | Std Dev (ms) |\n");
-    try file.writeAll("|-----------|-----------|-------------|----------|----------|-------------|\n");
+    try file.writer().print("## Performance Results (Per Run)\n\n", .{});
+    try file.writeAll("| Test Case | Mean | Median | Min | Max | Std Dev | Internal Runs |\n");
+    try file.writeAll("|-----------|------|--------|-----|-----|---------|---------------|\n");
     
     for (self.results.items) |result| {
-        try file.writer().print("| {s:<25} | {d:>9.2} | {d:>11.2} | {d:>8.2} | {d:>8.2} | {d:>11.2} |\n", .{
+        const mean_formatted = formatTimeWithUnit(result.mean_ms);
+        const median_formatted = formatTimeWithUnit(result.median_ms);  
+        const min_formatted = formatTimeWithUnit(result.min_ms);
+        const max_formatted = formatTimeWithUnit(result.max_ms);
+        const stddev_formatted = formatTimeWithUnit(result.std_dev_ms);
+        
+        try file.writer().print("| {s:<25} | {s:>10} | {s:>10} | {s:>9} | {s:>9} | {s:>11} | {d:>13} |\n", .{
             result.test_case,
-            result.mean_ms,
-            result.median_ms,
-            result.min_ms,
-            result.max_ms,
-            result.std_dev_ms,
+            mean_formatted,
+            median_formatted,
+            min_formatted,
+            max_formatted,
+            stddev_formatted,
+            result.internal_runs,
         });
     }
     
@@ -378,9 +429,11 @@ fn exportMarkdown(self: *Orchestrator) !void {
     
     // Add notes
     try file.writeAll("## Notes\n\n");
-    try file.writeAll("- All times are in milliseconds (ms)\n");
+    try file.writeAll("- **All times are normalized per individual execution run**\n");
+    try file.writeAll("- Times are displayed in the most appropriate unit (μs, ms, or s)\n");
     try file.writeAll("- Lower values indicate better performance\n");
     try file.writeAll("- Standard deviation indicates consistency (lower is more consistent)\n");
+    try file.writeAll("- Each hyperfine run executes the contract multiple times internally (see Internal Runs column)\n");
     try file.writeAll("- These benchmarks measure the full execution time including contract deployment\n\n");
     
     try file.writeAll("---\n\n");

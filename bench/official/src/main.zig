@@ -74,6 +74,7 @@ pub fn main() !void {
                     .std_dev_ms = result.std_dev_ms,
                     .median_ms = result.median_ms,
                     .runs = result.runs,
+                    .internal_runs = result.internal_runs,
                 });
             }
         }
@@ -110,6 +111,42 @@ pub fn main() !void {
             try orchestrator.exportResults(format);
         }
     }
+}
+
+const TimeUnit = enum {
+    microseconds,
+    milliseconds,
+    seconds,
+};
+
+const FormattedTime = struct {
+    value: f64,
+    unit: TimeUnit,
+    
+    pub fn format(self: FormattedTime, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
+        const unit_str = switch (self.unit) {
+            .microseconds => "μs",
+            .milliseconds => "ms", 
+            .seconds => "s",
+        };
+        try writer.print("{d:.2} {s}", .{ self.value, unit_str });
+    }
+};
+
+fn selectOptimalUnit(time_ms: f64) FormattedTime {
+    if (time_ms >= 1000.0) {
+        return FormattedTime{ .value = time_ms / 1000.0, .unit = .seconds };
+    } else if (time_ms >= 1.0) {
+        return FormattedTime{ .value = time_ms, .unit = .milliseconds };
+    } else {
+        return FormattedTime{ .value = time_ms * 1000.0, .unit = .microseconds };
+    }
+}
+
+fn formatTimeWithUnit(time_ms: f64) FormattedTime {
+    return selectOptimalUnit(time_ms);
 }
 
 fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orchestrator.BenchmarkResult, num_runs: u32, js_runs: u32) !void {
@@ -182,8 +219,8 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
     
     for (test_cases) |test_case| {
         try file.writer().print("### {s}\n\n", .{test_case});
-        try file.writeAll("| EVM | Mean (ms) | Median (ms) | Min (ms) | Max (ms) | Std Dev (ms) |\n");
-        try file.writeAll("|-----|-----------|-------------|----------|----------|-------------|\n");
+        try file.writeAll("| EVM | Mean (per run) | Median (per run) | Min (per run) | Max (per run) | Std Dev (per run) | Internal Runs |\n");
+        try file.writeAll("|-----|----------------|------------------|---------------|---------------|-------------------|---------------|\n");
         
         // Find results for this test case
         for (results) |result| {
@@ -198,13 +235,21 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
                     "Geth"
                 else 
                     "evmone";
-                try file.writer().print("| {s:<11} | {d:>9.2} | {d:>11.2} | {d:>8.2} | {d:>8.2} | {d:>11.2} |\n", .{
+                    
+                const mean_formatted = formatTimeWithUnit(result.mean_ms);
+                const median_formatted = formatTimeWithUnit(result.median_ms);
+                const min_formatted = formatTimeWithUnit(result.min_ms);
+                const max_formatted = formatTimeWithUnit(result.max_ms);
+                const stddev_formatted = formatTimeWithUnit(result.std_dev_ms);
+                
+                try file.writer().print("| {s:<11} | {s:>14} | {s:>16} | {s:>13} | {s:>13} | {s:>17} | {d:>13} |\n", .{
                     evm_name,
-                    result.mean_ms,
-                    result.median_ms,
-                    result.min_ms,
-                    result.max_ms,
-                    result.std_dev_ms,
+                    mean_formatted,
+                    median_formatted,
+                    min_formatted,
+                    max_formatted,
+                    stddev_formatted,
+                    result.internal_runs,
                 });
             }
         }
@@ -213,9 +258,9 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
     }
     
     // Add summary statistics
-    try file.writer().print("## Overall Performance Summary\n\n", .{});
-    try file.writeAll("| Test Case | Guillotine (ms) | REVM (ms) | EthereumJS (ms) | Geth (ms) | evmone (ms) |\n");
-    try file.writeAll("|-----------|-----------------|-----------|-----------|-----------|-------------|\n");
+    try file.writer().print("## Overall Performance Summary (Per Run)\n\n", .{});
+    try file.writeAll("| Test Case | Guillotine | REVM | EthereumJS | Geth | evmone |\n");
+    try file.writeAll("|-----------|------------|------|------------|------|--------|\n");
     
     for (test_cases) |test_case| {
         var zig_mean: f64 = 0;
@@ -240,26 +285,34 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
             }
         }
         
-        try file.writer().print("| {s:<25} | {d:>15.2} | {d:>9.2} | {d:>9.2} | {d:>9.2} | {d:>11.2} |\n", .{
+        const zig_formatted = formatTimeWithUnit(zig_mean);
+        const revm_formatted = formatTimeWithUnit(revm_mean);
+        const ethereumjs_formatted = formatTimeWithUnit(ethereumjs_mean);
+        const geth_formatted = formatTimeWithUnit(geth_mean);
+        const evmone_formatted = formatTimeWithUnit(evmone_mean);
+        
+        try file.writer().print("| {s:<25} | {s:>10} | {s:>4} | {s:>10} | {s:>4} | {s:>6} |\n", .{
             test_case,
-            zig_mean,
-            revm_mean,
-            ethereumjs_mean,
-            geth_mean,
-            evmone_mean,
+            zig_formatted,
+            revm_formatted,
+            ethereumjs_formatted,
+            geth_formatted,
+            evmone_formatted,
         });
     }
     
     // Add notes
     try file.writeAll("\n## Notes\n\n");
+    try file.writeAll("- **All times are normalized per individual execution run**\n");
+    try file.writeAll("- Times are displayed in the most appropriate unit (μs, ms, or s)\n");
     try file.writeAll("- All implementations use optimized builds:\n");
     try file.writeAll("  - Zig: ReleaseFast\n");
     try file.writeAll("  - Rust (REVM): --release\n");
     try file.writeAll("  - JavaScript (EthereumJS): Bun runtime\n");
     try file.writeAll("  - Go (geth): -O3 optimizations\n");
     try file.writeAll("  - C++ (evmone): -O3 -march=native\n");
-    try file.writeAll("- All times are in milliseconds (ms)\n");
     try file.writeAll("- Lower values indicate better performance\n");
+    try file.writeAll("- Each hyperfine run executes the contract multiple times internally (see Internal Runs column)\n");
     try file.writeAll("- These benchmarks measure the full execution time including contract deployment\n\n");
     
     try file.writeAll("---\n\n");
