@@ -50,7 +50,12 @@ test "GT opcode comparison bug" {
     
     const db_interface = memory_db.to_database_interface();
     
+    // Run with trace enabled
+    var trace_buffer = std.ArrayList(u8).init(allocator);
+    defer trace_buffer.deinit();
+    
     var builder = evm.EvmBuilder.init(allocator, db_interface);
+    _ = builder.withTracer(trace_buffer.writer().any());
     
     var vm = try builder.build();
     defer vm.deinit();
@@ -76,11 +81,21 @@ test "GT opcode comparison bug" {
     const result = try vm.interpret(&contract, &.{}, false);
     defer if (result.output) |output| allocator.free(output);
     
-    // TRACER REMOVED: Cannot verify execution trace without tracer
-    // Original test verified that last PC was 73 (STOP after PUSH1 0x00, no jump taken)
+    // Print the trace
+    std.debug.print("\nExecution trace:\n{s}\n", .{trace_buffer.items});
     
-    // Verify the execution succeeded (this still works without tracer)
-    try testing.expectEqual(evm.RunResult.Status.Success, result.status);
+    // Check if we jumped correctly
+    // If the bug is present, we'll have STOP at PC 72 instead of PC 77
+    var lines = std.mem.tokenizeScalar(u8, trace_buffer.items, '\n');
+    var last_pc: usize = 0;
+    while (lines.next()) |line| {
+        const parsed = try std.json.parseFromSlice(TraceEntry, allocator, line, .{});
+        defer parsed.deinit();
+        last_pc = parsed.value.pc;
+    }
+    
+    // The last PC should be 73 (STOP after PUSH1 0x00, no jump taken)
+    try testing.expectEqual(@as(usize, 73), last_pc);
 }
 
 const TraceEntry = struct {

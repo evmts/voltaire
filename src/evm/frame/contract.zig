@@ -494,7 +494,7 @@ pub fn valid_jumpdest(self: *Contract, allocator: std.mem.Allocator, dest: u256)
 /// Ensure code analysis is performed
 fn ensure_analysis(self: *Contract, allocator: std.mem.Allocator) void {
     if (self.analysis == null and self.code.len > 0) {
-        self.analysis = analyze_code(allocator, self.code, self.code_hash, null) catch |err| {
+        self.analysis = analyze_code(allocator, self.code, self.code_hash) catch |err| {
             logError("Contract.ensure_analysis: analyze_code failed", err);
             return;
         };
@@ -719,14 +719,12 @@ pub fn deinit(self: *Contract, allocator: std.mem.Allocator, pool: ?*StoragePool
 /// 1. Identifies code vs data segments (for JUMPDEST validation)
 /// 2. Extracts and sorts all JUMPDEST positions
 /// 3. Detects special opcodes (CREATE, SELFDESTRUCT, dynamic jumps)
-/// 4. Builds PC-to-operation mapping for fast execution
-/// 5. Caches results by code hash for reuse
+/// 4. Caches results by code hash for reuse
 ///
 /// ## Parameters
 /// - `allocator`: Memory allocator for analysis structures
 /// - `code`: The bytecode to analyze
 /// - `code_hash`: Hash for cache lookup/storage
-/// - `jump_table`: Optional jump table for building PC-to-op mapping
 ///
 /// ## Returns
 /// Pointer to CodeAnalysis (cached or newly created)
@@ -747,11 +745,10 @@ pub fn deinit(self: *Contract, allocator: std.mem.Allocator, pool: ?*StoragePool
 ///     allocator,
 ///     bytecode,
 ///     bytecode_hash,
-///     &vm.table,
 /// );
 /// // Analysis is now cached for future use
 /// ```
-pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [32]u8, jump_table: ?*const @import("../jump_table/jump_table.zig")) CodeAnalysisError!*const CodeAnalysis {
+pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [32]u8) CodeAnalysisError!*const CodeAnalysis {
     // Temporarily disable SIMD optimization to fix signal 4 errors on ARM64
     // TODO: Re-enable when SIMD implementation is fixed for ARM64
     // if (comptime builtin.target.cpu.arch == .x86_64 and std.Target.x86.featureSetHas(builtin.cpu.features, .avx2)) {
@@ -840,33 +837,6 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
     analysis.has_static_jumps = false;
     analysis.has_selfdestruct = contains_op(code, &[_]u8{@intFromEnum(opcode.Enum.SELFDESTRUCT)});
     analysis.has_create = contains_op(code, &[_]u8{ @intFromEnum(opcode.Enum.CREATE), @intFromEnum(opcode.Enum.CREATE2) });
-    
-    // Build PC-to-operation mapping if jump table is provided
-    if (jump_table) |table| {
-        const entries = allocator.alloc(CodeAnalysis.PcToOpEntry, code.len) catch |err| {
-            Log.debug("Failed to allocate PC-to-op entries: {any}", .{err});
-            return err;
-        };
-        errdefer allocator.free(entries);
-        
-        // Build the comprehensive mapping with pre-computed data
-        for (0..code.len) |pc| {
-            const opcode_byte = code[pc];
-            const operation = table.table[opcode_byte];
-            entries[pc] = CodeAnalysis.PcToOpEntry{
-                .operation = operation,
-                .opcode_byte = opcode_byte,
-                .min_stack = operation.min_stack,
-                .max_stack = operation.max_stack,
-                .constant_gas = operation.constant_gas,
-                .undefined = operation.undefined,
-            };
-        }
-        
-        analysis.pc_to_op_entries = entries;
-    } else {
-        analysis.pc_to_op_entries = null;
-    }
 
     // Cache the analysis in appropriate cache
     if (comptime !AnalysisCacheConfig.ENABLE_CACHE) {
@@ -895,7 +865,7 @@ pub fn analyze_code(allocator: std.mem.Allocator, code: []const u8, code_hash: [
 }
 
 /// Direct bytecode analysis without caching (for size-optimized builds)
-fn analyze_code_direct(allocator: std.mem.Allocator, code: []const u8, jump_table: ?*const @import("../jump_table/jump_table.zig")) CodeAnalysisError!*const CodeAnalysis {
+fn analyze_code_direct(allocator: std.mem.Allocator, code: []const u8) CodeAnalysisError!*const CodeAnalysis {
     // When caching is disabled, we still need to manage memory properly
     // The caller (ensure_analysis) is responsible for cleanup
     const analysis = allocator.create(CodeAnalysis) catch |err| {
@@ -944,42 +914,15 @@ fn analyze_code_direct(allocator: std.mem.Allocator, code: []const u8, jump_tabl
     analysis.has_static_jumps = false;
     analysis.has_selfdestruct = contains_op(code, &[_]u8{@intFromEnum(opcode.Enum.SELFDESTRUCT)});
     analysis.has_create = contains_op(code, &[_]u8{ @intFromEnum(opcode.Enum.CREATE), @intFromEnum(opcode.Enum.CREATE2) });
-    
-    // Build PC-to-operation mapping if jump table is provided
-    if (jump_table) |table| {
-        const entries = allocator.alloc(CodeAnalysis.PcToOpEntry, code.len) catch |err| {
-            Log.debug("Failed to allocate PC-to-op entries: {any}", .{err});
-            return err;
-        };
-        errdefer allocator.free(entries);
-        
-        // Build the comprehensive mapping with pre-computed data
-        for (0..code.len) |pc| {
-            const opcode_byte = code[pc];
-            const operation = table.table[opcode_byte];
-            entries[pc] = CodeAnalysis.PcToOpEntry{
-                .operation = operation,
-                .opcode_byte = opcode_byte,
-                .min_stack = operation.min_stack,
-                .max_stack = operation.max_stack,
-                .constant_gas = operation.constant_gas,
-                .undefined = operation.undefined,
-            };
-        }
-        
-        analysis.pc_to_op_entries = entries;
-    } else {
-        analysis.pc_to_op_entries = null;
-    }
 
     return analysis;
 }
 
 /// SIMD-optimized version of analyze_code for x86_64 with AVX2
-fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: [32]u8, jump_table: ?*const @import("../jump_table/jump_table.zig")) CodeAnalysisError!*const CodeAnalysis {
+fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: [32]u8) CodeAnalysisError!*const CodeAnalysis {
     if (comptime builtin.target.cpu.arch != .x86_64) {
         // Fallback to standard implementation on non-x86_64 architectures
-        return analyze_code(allocator, code, code_hash, jump_table);
+        return analyze_code(allocator, code, code_hash);
     }
     if (comptime !is_wasm) {
         cache_mutex.lock();
@@ -1116,10 +1059,10 @@ fn analyze_code_simd(allocator: std.mem.Allocator, code: []const u8, code_hash: 
 }
 
 /// Direct SIMD analysis without caching (for size-optimized builds)
-fn analyze_code_simd_direct(allocator: std.mem.Allocator, code: []const u8, jump_table: ?*const @import("../jump_table/jump_table.zig")) CodeAnalysisError!*const CodeAnalysis {
+fn analyze_code_simd_direct(allocator: std.mem.Allocator, code: []const u8) CodeAnalysisError!*const CodeAnalysis {
     if (comptime builtin.target.cpu.arch != .x86_64) {
         // Fallback to standard implementation on non-x86_64 architectures
-        return analyze_code_direct(allocator, code, jump_table);
+        return analyze_code_direct(allocator, code);
     }
     const analysis = allocator.create(CodeAnalysis) catch |err| {
         Log.debug("Failed to allocate CodeAnalysis: {any}", .{err});

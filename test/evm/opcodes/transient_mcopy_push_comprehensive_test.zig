@@ -45,9 +45,6 @@ test "TLOAD (0x5C): Load from transient storage" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -123,9 +120,6 @@ test "TSTORE (0x5D): Store to transient storage" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -205,9 +199,6 @@ test "MCOPY (0x5E): Memory to memory copy" {
         .withGas(100000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -309,9 +300,6 @@ test "PUSH0 (0x5F): Push zero onto stack" {
         .withGas(3000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -325,7 +313,7 @@ test "PUSH0 (0x5F): Push zero onto stack" {
     for (0..5) |_| {
         _ = try evm.table.execute(frame.pc, interpreter, state, 0x5F);
     }
-    try testing.expectEqual(@as(usize, 5), frame.stack.size());
+    try testing.expectEqual(@as(usize, 5), frame.stack.size);
 
     // All values should be 0
     for (0..5) |_| {
@@ -387,9 +375,6 @@ test "PUSH1 (0x60): Push 1 byte onto stack" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -450,9 +435,6 @@ test "PUSH2 (0x61): Push 2 bytes onto stack" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -512,9 +494,6 @@ test "PUSH3 (0x62): Push 3 bytes onto stack" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -572,9 +551,6 @@ test "Transient storage and memory opcodes: Gas consumption" {
         .withGas(100000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -671,9 +647,6 @@ test "MCOPY: Edge cases" {
         .withGas(100) // Limited gas
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -799,9 +772,6 @@ test "PUSH operations: Boundary conditions" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

@@ -50,8 +50,6 @@ test "CREATE: create new contract" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set depth to 1024 to trigger depth limit failure (CREATE should return 0)
     frame.depth = 1024;
 
@@ -115,8 +113,6 @@ test "CREATE: empty init code creates empty contract" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push size, offset, value
     try frame.stack.append(0); // size (will be popped 3rd)
     try frame.stack.append(0); // offset (will be popped 2nd)
@@ -171,8 +167,6 @@ test "CREATE: write protection in static call" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push size, offset, value
     try frame.stack.append(0); // size (will be popped 3rd)
     try frame.stack.append(0); // offset (will be popped 2nd)
@@ -223,8 +217,6 @@ test "CREATE: depth limit" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
 
@@ -281,8 +273,6 @@ test "CREATE2: create with deterministic address" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
 
@@ -348,8 +338,6 @@ test "CALL: basic call behavior" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
 
@@ -420,8 +408,6 @@ test "CALL: failed call" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
 
@@ -482,8 +468,6 @@ test "CALL: cold address access costs more gas" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
 
@@ -549,8 +533,6 @@ test "CALL: value transfer in static call fails" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push in reverse order for stack (LIFO) with non-zero value
     try frame.stack.append(0); // ret_size
     try frame.stack.append(0); // ret_offset
@@ -607,8 +589,6 @@ test "DELEGATECALL: execute code in current context" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
 
@@ -672,8 +652,6 @@ test "STATICCALL: read-only call" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
 
@@ -737,8 +715,6 @@ test "CALL: depth limit" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set depth to 1024 to trigger depth limit failure
     frame.depth = 1024;
 
@@ -800,8 +776,6 @@ test "CREATE: gas consumption" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Write init code to memory
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 };
     var i: usize = 0;
@@ -864,8 +838,6 @@ test "CREATE2: additional gas for hashing" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Write init code to memory
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 };
     var i: usize = 0;
@@ -930,8 +902,6 @@ test "CREATE: stack underflow" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push only two values (need three)
     try frame.stack.append(0); // offset
     try frame.stack.append(0); // size
@@ -981,8 +951,6 @@ test "CALL: stack underflow" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push only six values (need seven)
     try frame.stack.append(0); // to
     try frame.stack.append(0); // value
@@ -1037,8 +1005,6 @@ test "CREATE: memory expansion for init code" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set up sufficient balance for contract creation
     try evm.state.set_balance(contract_address, 1000000);
 
@@ -1104,8 +1070,6 @@ test "CREATE: EIP-3860 initcode size limit" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push parameters with size exceeding MaxInitcodeSize (49152)
     try frame.stack.append(49153); // size (one byte over limit)
     try frame.stack.append(0); // offset
@@ -1156,8 +1120,6 @@ test "CREATE: EIP-3860 initcode word gas" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set up sufficient balance for contract creation
     try evm.state.set_balance(contract_address, 1000000);
 
@@ -1222,8 +1184,6 @@ test "CREATE2: EIP-3860 initcode size limit" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push parameters with size exceeding MaxInitcodeSize (49152)
     try frame.stack.append(0x123); // salt (will be popped 4th)
     try frame.stack.append(49153); // size (one byte over limit) (will be popped 3rd)

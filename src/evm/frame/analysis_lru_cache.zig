@@ -259,7 +259,6 @@ test "AnalysisLRUCache basic functionality" {
         .has_static_jumps = true,
         .has_selfdestruct = false,
         .has_create = false,
-        .pc_to_op_entries = null,
     };
     
     // Test put and get
@@ -288,7 +287,6 @@ test "AnalysisLRUCache LRU eviction" {
         .has_static_jumps = false,
         .has_selfdestruct = false,
         .has_create = false,
-        .pc_to_op_entries = null,
     };
     
     const analysis2 = try allocator.create(CodeAnalysis);
@@ -301,7 +299,6 @@ test "AnalysisLRUCache LRU eviction" {
         .has_static_jumps = false,
         .has_selfdestruct = false,
         .has_create = false,
-        .pc_to_op_entries = null,
     };
     
     const analysis3 = try allocator.create(CodeAnalysis);
@@ -314,7 +311,6 @@ test "AnalysisLRUCache LRU eviction" {
         .has_static_jumps = false,
         .has_selfdestruct = false,
         .has_create = false,
-        .pc_to_op_entries = null,
     };
     
     const hash1 = [_]u8{1} ** 32;

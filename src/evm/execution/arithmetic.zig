@@ -65,7 +65,7 @@ pub fn op_add(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     _ = interpreter;
     const frame = state;
 
-    std.debug.assert(frame.stack.size() >= 2);
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -104,7 +104,7 @@ pub fn op_mul(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     _ = interpreter;
     const frame = state;
 
-    std.debug.assert(frame.stack.size() >= 2);
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -144,7 +144,7 @@ pub fn op_sub(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     _ = interpreter;
     const frame = state;
 
-    std.debug.assert(frame.stack.size() >= 2);
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -192,7 +192,7 @@ pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     _ = interpreter;
     const frame = state;
 
-    std.debug.assert(frame.stack.size() >= 2);
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -247,7 +247,7 @@ pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
     _ = interpreter;
     const frame = state;
 
-    std.debug.assert(frame.stack.size() >= 2);
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -311,7 +311,7 @@ pub fn op_mod(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     _ = interpreter;
     const frame = state;
 
-    std.debug.assert(frame.stack.size() >= 2);
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -365,7 +365,7 @@ pub fn op_smod(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
     _ = interpreter;
     const frame = state;
 
-    std.debug.assert(frame.stack.size() >= 2);
+    std.debug.assert(frame.stack.size >= 2);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.peek_unsafe().*;
@@ -425,7 +425,7 @@ pub fn op_addmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
     _ = interpreter;
     const frame = state;
 
-    std.debug.assert(frame.stack.size() >= 3);
+    std.debug.assert(frame.stack.size >= 3);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.pop_unsafe();
@@ -489,7 +489,7 @@ pub fn op_mulmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
     _ = interpreter;
     const frame = state;
 
-    std.debug.assert(frame.stack.size() >= 3);
+    std.debug.assert(frame.stack.size >= 3);
 
     const b = frame.stack.pop_unsafe();
     const a = frame.stack.pop_unsafe();
@@ -576,7 +576,7 @@ pub fn op_exp(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
     const vm = interpreter;
     _ = vm;
 
-    std.debug.assert(frame.stack.size() >= 2);
+    std.debug.assert(frame.stack.size >= 2);
 
     const base = frame.stack.pop_unsafe();
     const exp = frame.stack.peek_unsafe().*;
@@ -679,7 +679,7 @@ pub fn op_signextend(pc: usize, interpreter: Operation.Interpreter, state: Opera
 
     const frame = state;
 
-    std.debug.assert(frame.stack.size() >= 2);
+    std.debug.assert(frame.stack.size >= 2);
 
     const byte_num = frame.stack.pop_unsafe();
     const x = frame.stack.peek_unsafe().*;

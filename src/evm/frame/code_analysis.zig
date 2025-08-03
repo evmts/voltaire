@@ -1,150 +1,118 @@
 const std = @import("std");
 const bitvec = @import("bitvec.zig");
 const BitVec64 = bitvec.BitVec64;
-const Operation = @import("../opcodes/operation.zig");
-
-/// Pre-computed operation info including stack validation data
-pub const PcToOpEntry = struct {
-    operation: *const Operation.Operation,
-    opcode_byte: u8,
-    // Pre-computed validation info to avoid re-fetching from operation
-    min_stack: u32,
-    max_stack: u32,
-    constant_gas: u64,
-    undefined: bool,
-};
 
 /// Advanced code analysis for EVM bytecode optimization.
-pub const AdvancedCodeAnalysis = struct {
-    /// Optional stack costs for each PC
-    stack_costs: ?[]u32 = null,
-    /// Optional operation entries for each PC
-    pc_to_op_entries: ?[]PcToOpEntry = null,
-    /// Optional JUMPDEST analysis
-    jumpdest_analysis: ?BitVec64 = null,
+///
+/// This structure holds pre-computed analysis results for a contract's bytecode,
+/// enabling efficient execution by pre-identifying jump destinations, code segments,
+/// and other properties that would otherwise need to be computed at runtime.
+///
+/// The analysis is performed once when a contract is first loaded and cached for
+/// subsequent executions, significantly improving performance for frequently-used
+/// contracts.
+///
+/// ## Fields
+/// - `code_segments`: Bit vector marking which bytes are executable code vs data
+/// - `jumpdest_positions`: Sorted array of valid JUMPDEST positions for O(log n) validation
+/// - `block_gas_costs`: Optional pre-computed gas costs for basic blocks
+/// - `max_stack_depth`: Maximum stack depth required by the contract
+/// - `has_dynamic_jumps`: Whether the code contains JUMP/JUMPI with dynamic targets
+/// - `has_static_jumps`: Whether the code contains JUMP/JUMPI with static targets
+/// - `has_selfdestruct`: Whether the code contains SELFDESTRUCT opcode
+/// - `has_create`: Whether the code contains CREATE/CREATE2 opcodes
+///
+/// ## Performance
+/// - Jump destination validation: O(log n) using binary search
+/// - Code segment checking: O(1) using bit vector
+/// - Enables dead code elimination and other optimizations
+///
+/// ## Memory Management
+/// The analysis owns its allocated memory and must be properly cleaned up
+/// using the `deinit` method to prevent memory leaks.
+const CodeAnalysis = @This();
 
-    pub fn init() AdvancedCodeAnalysis {
-        return .{};
+/// Bit vector marking which bytes in the bytecode are executable code vs data.
+///
+/// Each bit corresponds to a byte in the contract bytecode:
+/// - 1 = executable code byte
+/// - 0 = data byte (e.g., PUSH arguments)
+///
+/// This is critical for JUMPDEST validation since jump destinations
+/// must point to actual code, not data bytes within PUSH instructions.
+code_segments: BitVec64,
+
+/// Sorted array of all valid JUMPDEST positions in the bytecode.
+///
+/// Pre-sorted to enable O(log n) binary search validation of jump targets.
+/// Only positions marked as code (not data) and containing the JUMPDEST
+/// opcode (0x5B) are included.
+jumpdest_positions: []const u32,
+
+/// Optional pre-computed gas costs for each basic block.
+///
+/// When present, enables advanced gas optimization by pre-calculating
+/// the gas cost of straight-line code sequences between jumps.
+/// This is an optional optimization that may not be computed for all contracts.
+block_gas_costs: ?[]const u32,
+
+/// Maximum stack depth required by any execution path in the contract.
+///
+/// Pre-computed through static analysis to enable early detection of
+/// stack overflow conditions. A value of 0 indicates the depth wasn't analyzed.
+max_stack_depth: u16,
+
+/// Indicates whether the contract contains JUMP/JUMPI opcodes with dynamic targets.
+///
+/// Dynamic jumps (where the target is computed at runtime) prevent certain
+/// optimizations and require full jump destination validation at runtime.
+has_dynamic_jumps: bool,
+
+/// Indicates whether the contract contains JUMP/JUMPI opcodes with static targets.
+///
+/// Static jumps (where the target is a constant) can be pre-validated
+/// and optimized during analysis.
+has_static_jumps: bool,
+
+/// Indicates whether the contract contains the SELFDESTRUCT opcode (0xFF).
+///
+/// Contracts with SELFDESTRUCT require special handling for state management
+/// and cannot be marked as "pure" or side-effect free.
+has_selfdestruct: bool,
+
+/// Indicates whether the contract contains CREATE or CREATE2 opcodes.
+///
+/// Contracts that can deploy other contracts require additional
+/// gas reservation and state management considerations.
+has_create: bool,
+
+/// Releases all memory allocated by this code analysis.
+///
+/// This method must be called when the analysis is no longer needed to prevent
+/// memory leaks. It safely handles all owned resources including:
+/// - The code segments bit vector
+/// - The jumpdest positions array
+/// - The optional block gas costs array
+///
+/// ## Parameters
+/// - `self`: The analysis instance to clean up
+/// - `allocator`: The same allocator used to create the analysis resources
+///
+/// ## Safety
+/// After calling deinit, the analysis instance should not be used again.
+/// All pointers to analysis data become invalid.
+///
+/// ## Example
+/// ```zig
+/// var analysis = try analyze_code(allocator, bytecode);
+/// defer analysis.deinit(allocator);
+/// ```
+pub fn deinit(self: *CodeAnalysis, allocator: std.mem.Allocator) void {
+    self.code_segments.deinit(allocator);
+    if (self.jumpdest_positions.len > 0) {
+        allocator.free(self.jumpdest_positions);
     }
-
-    pub fn toOwnedAllocation(self: *const AdvancedCodeAnalysis, allocator: std.mem.Allocator) !*AdvancedCodeAnalysis {
-        var ptr = try allocator.create(AdvancedCodeAnalysis);
-        ptr.* = self.*;
-        return ptr;
-    }
-
-    pub fn deinit(self: *AdvancedCodeAnalysis, allocator: std.mem.Allocator) void {
-        // Nothing to free as we don't own the data
-        _ = self;
-        _ = allocator;
-    }
-};
-
-/// Complete analysis output including advanced analysis
-pub const CodeAnalysisResult = struct {
-    stack_costs: []u32,
-    extended: ?AdvancedCodeAnalysis = null,
-};
-
-/// Entry point for bytecode analysis with all optimizations.
-pub fn analyze(
-    allocator: std.mem.Allocator,
-    code: []const u8,
-    jump_table: *const @import("../jump_table/jump_table.zig").JumpTable,
-) !CodeAnalysisResult {
-    // Pre-allocate based on code size
-    const stack_costs = try allocator.alloc(u32, code.len);
-    errdefer allocator.free(stack_costs);
-
-    // Pre-allocate PC-to-operation mapping
-    const pc_to_op_entries = try allocator.alloc(PcToOpEntry, code.len);
-    errdefer allocator.free(pc_to_op_entries);
-
-    // Initialize all entries to default/invalid
-    for (0..code.len) |i| {
-        stack_costs[i] = 0;
-        pc_to_op_entries[i] = .{
-            .operation = &jump_table.operations[0xFE], // INVALID
-            .opcode_byte = 0xFE,
-            .min_stack = 0,
-            .max_stack = 0,
-            .constant_gas = 0,
-            .undefined = true,
-        };
-    }
-
-    // Create jumpdest bitvec
-    var jumpdest_bitvec = BitVec64.init(allocator);
-    defer jumpdest_bitvec.deinit(allocator);
-
-    var i: usize = 0;
-    var max_stack_height: u32 = 0;
-
-    while (i < code.len) {
-        const op_byte = code[i];
-        const op = &jump_table.operations[op_byte];
-
-        // Mark valid JUMPDEST
-        if (op.id == .JUMPDEST) {
-            jumpdest_bitvec.set(i);
-        }
-
-        // Update PC-to-operation mapping
-        pc_to_op_entries[i] = .{
-            .operation = op,
-            .opcode_byte = op_byte,
-            .min_stack = op.min_stack,
-            .max_stack = op.max_stack,
-            .constant_gas = op.constant_gas,
-            .undefined = op.undefined,
-        };
-
-        // Calculate stack cost
-        const current_cost = (op.min_stack - op.max_stack);
-        stack_costs[i] = current_cost;
-
-        // Track max stack for validation
-        if (op.min_stack > max_stack_height) {
-            max_stack_height = op.min_stack;
-        }
-
-        // Advance PC based on opcode
-        if (op.isPush()) {
-            const push_size = op.pushSize();
-            // Mark push data bytes as invalid
-            for (1..@min(push_size + 1, code.len - i)) |j| {
-                stack_costs[i + j] = 0;
-                pc_to_op_entries[i + j] = .{
-                    .operation = &jump_table.operations[0xFE], // INVALID
-                    .opcode_byte = 0xFE,
-                    .min_stack = 0,
-                    .max_stack = 0,
-                    .constant_gas = 0,
-                    .undefined = true,
-                };
-            }
-            i += push_size + 1;
-        } else {
-            i += 1;
-        }
-    }
-
-    // Return results
-    return .{
-        .stack_costs = stack_costs,
-        .extended = .{
-            .stack_costs = stack_costs,
-            .pc_to_op_entries = pc_to_op_entries,
-            .jumpdest_analysis = jumpdest_bitvec,
-        },
-    };
-}
-
-pub fn deinit(self: *const AdvancedCodeAnalysis, allocator: std.mem.Allocator) void {
-    if (self.stack_costs) |costs| {
+    if (self.block_gas_costs) |costs| {
         allocator.free(costs);
-    }
-    if (self.pc_to_op_entries) |entries| {
-        allocator.free(entries);
     }
 }

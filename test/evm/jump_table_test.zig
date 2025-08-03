@@ -38,22 +38,20 @@ test "JumpTable initialization and validation" {
     const jt = JumpTable.init();
     try std.testing.expectEqual(@as(usize, 256), jt.table.len);
 
-    // Check that all entries are initially set to NULL_OPERATION
+    // Check that all entries are initially null
     for (0..256) |i| {
-        const entry = jt.table[i];
-        // All entries should point to NULL_OPERATION (which has undefined=true)
-        try std.testing.expectEqual(true, entry.undefined);
+        try std.testing.expectEqual(@as(?*const Operation.Operation, null), jt.table[i]);
     }
 
-    // Validate should check for invalid configurations
+    // Validate should fill all nulls with UNDEFINED
     var mutable_jt = jt;
     mutable_jt.validate();
 
-    // After validation, all entries should still be valid operations
+    // Now check that all entries have been filled
     for (0..256) |i| {
         const entry = mutable_jt.table[i];
-        // Entry is always non-null now
-        try std.testing.expectEqual(true, entry.undefined);
+        try std.testing.expect(entry != null);
+        try std.testing.expectEqual(true, entry.?.undefined);
     }
 }
 
