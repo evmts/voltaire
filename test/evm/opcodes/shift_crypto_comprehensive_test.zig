@@ -46,9 +46,6 @@ test "SHL: Comprehensive shift left edge cases" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -143,9 +140,6 @@ test "SHR: Comprehensive logical shift right edge cases" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -235,9 +229,6 @@ test "SAR: Comprehensive arithmetic shift right edge cases" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -324,9 +315,6 @@ test "KECCAK256: Comprehensive hash edge cases" {
         .withGas(100000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -443,9 +431,6 @@ test "KECCAK256: Gas consumption patterns" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -522,9 +507,6 @@ test "KECCAK256: Memory expansion edge cases" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -596,9 +578,6 @@ test "Shifts: Combined operations and properties" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -709,9 +688,6 @@ test "Shift and Crypto: Stack underflow errors" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -772,9 +748,6 @@ test "Performance: Rapid shift operations" {
         .withGas(100000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -846,9 +819,6 @@ test "KECCAK256: Hash collision resistance" {
         .withGas(100000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

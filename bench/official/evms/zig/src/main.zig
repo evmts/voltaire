@@ -14,12 +14,7 @@ pub const std_options: std.Options = .{
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const backing_allocator = gpa.allocator();
-    
-    // Use EVMAllocator for all EVM operations
-    var evm_allocator = try evm.EVMAllocator.init(backing_allocator, evm.EVMAllocator.DEFAULT_CAPACITY);
-    defer evm_allocator.deinit();
-    const allocator = evm_allocator.allocator();
+    const allocator = gpa.allocator();
 
     // Parse command line arguments
     const args = try std.process.argsAlloc(allocator);
@@ -107,41 +102,31 @@ pub fn main() !void {
     var vm = try evm_builder.build();
     defer vm.deinit();
 
-    // Compute hash of contract code for deployment
-    var code_hash: [32]u8 = undefined;
-    std.crypto.hash.sha3.Keccak256.hash(contract_code, &code_hash);
-
     // Set up caller account with max balance
     try vm.state.set_balance(caller_address, std.math.maxInt(u256));
 
-    // Deploy the contract (while analysis runs in background)
     const contract_address = try deployContract(allocator, &vm, caller_address, contract_code);
     // std.debug.print("Deployed contract to address: {any}\n", .{contract_address});
-
-    // Get deployed contract code
-    const code = vm.state.get_code(contract_address);
-    
-    // Create contract once outside the loop - all static setup
-    var contract = evm.Contract.init(
-        caller_address,     // caller
-        contract_address,   // address
-        0,                  // value
-        1_000_000_000,      // gas
-        code,               // code
-        code_hash,          // code_hash
-        calldata,           // input
-        false               // is_static
-    );
-    defer contract.deinit(allocator, null);
 
     // Run benchmarks
     var run: u8 = 0;
     while (run < num_runs) : (run += 1) {
-        // Reset gas for each run
-        contract.gas = 1_000_000_000;
-        contract.gas_refund = 0;
-        
         var timer = std.time.Timer.start() catch unreachable;
+        
+        // Create contract using Contract.init()
+        const code = vm.state.get_code(contract_address);
+        const code_hash = [_]u8{0} ** 32; // Empty hash for simplicity
+        var contract = evm.Contract.init(
+            caller_address,     // caller
+            contract_address,   // address
+            0,                  // value
+            1_000_000_000,      // gas
+            code,               // code
+            code_hash,          // code_hash
+            calldata,           // input
+            false               // is_static
+        );
+        defer contract.deinit(allocator, null);
         
         // Execute the contract
         const result = vm.interpret(&contract, calldata, false) catch |err| {

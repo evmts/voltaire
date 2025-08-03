@@ -43,8 +43,6 @@ test "Arithmetic: ADD basic operations" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Test 1: Simple addition
     try frame.stack.append(5);
     try frame.stack.append(10);
@@ -53,7 +51,7 @@ test "Arithmetic: ADD basic operations" {
     _ = try evm.table.execute(0, interpreter, state, 0x01);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 15), result);
-    try testing.expectEqual(@as(usize, 0), frame.stack.size());
+    try testing.expectEqual(@as(usize, 0), frame.stack.size);
 
     // Test 2: Addition with overflow
     frame.stack.clear();
@@ -117,9 +115,6 @@ test "Arithmetic: SUB basic operations" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -182,9 +177,6 @@ test "Arithmetic: MUL basic operations" {
         .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -251,9 +243,6 @@ test "Arithmetic: DIV basic operations" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -317,9 +306,6 @@ test "Arithmetic: MOD basic operations" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -382,9 +368,6 @@ test "Arithmetic: ADDMOD complex operations" {
         .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -453,9 +436,6 @@ test "Arithmetic: MULMOD complex operations" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -523,9 +503,6 @@ test "Arithmetic: EXP exponential operations" {
         .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -600,9 +577,6 @@ test "Arithmetic: Stack underflow errors" {
         .withCaller(primitives.Address.ZERO)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

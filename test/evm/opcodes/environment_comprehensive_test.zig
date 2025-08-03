@@ -47,9 +47,6 @@ test "ADDRESS (0x30): Push current contract address" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -95,9 +92,6 @@ test "BALANCE (0x31): Get account balance" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -168,9 +162,6 @@ test "ORIGIN (0x32): Get transaction origin" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -221,9 +212,6 @@ test "CALLER (0x33): Get immediate caller" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -280,9 +268,6 @@ test "CALLVALUE (0x34): Get msg.value" {
             .build();
         defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
 
@@ -336,9 +321,6 @@ test "CALLDATALOAD (0x35): Load 32 bytes from calldata" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -425,9 +407,6 @@ test "CALLDATASIZE (0x36): Get calldata size" {
             .build();
         defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
 
@@ -480,9 +459,6 @@ test "CALLDATACOPY (0x37): Copy calldata to memory" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -577,9 +553,6 @@ test "CODESIZE (0x38): Get code size" {
             .build();
         defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
 
@@ -633,9 +606,6 @@ test "CODECOPY (0x39): Copy code to memory" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -723,9 +693,6 @@ test "GASPRICE (0x3A): Get gas price" {
             .build();
         defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
 
@@ -775,9 +742,6 @@ test "Environmental opcodes: Gas consumption" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -846,9 +810,6 @@ test "Environmental opcodes: Stack underflow" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -903,9 +864,6 @@ test "Environmental opcodes: Memory expansion limits" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -952,9 +910,6 @@ test "BALANCE: EIP-2929 cold/warm account access" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

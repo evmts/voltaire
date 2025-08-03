@@ -4,7 +4,6 @@ const PrecompileError = @import("precompile_result.zig").PrecompileError;
 const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
 const crypto = @import("crypto");
-const tracy = @import("../tracy_support.zig");
 
 /// SHA256 precompile implementation
 ///

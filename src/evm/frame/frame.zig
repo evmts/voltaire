@@ -7,8 +7,6 @@ const ExecutionError = @import("../execution/execution_error.zig");
 const Log = @import("../log.zig");
 const ReturnData = @import("../evm/return_data.zig").ReturnData;
 const Vm = @import("../evm.zig");
-const ThreadedInstruction = @import("threaded_instruction.zig").ThreadedInstruction;
-const tracy = @import("../tracy_support.zig");
 
 /// EVM execution frame representing a single call context.
 ///
@@ -107,22 +105,6 @@ stack: Stack,
 /// Used by RETURNDATASIZE and RETURNDATACOPY opcodes.
 return_data: ReturnData,
 
-// Threaded execution fields (optional, used when threaded analysis is available)
-/// Array of threaded instructions for indirect call threading
-instructions: ?[]const ThreadedInstruction = null,
-
-/// Storage for large PUSH values (PUSH9-PUSH32)
-push_values: ?[]const u256 = null,
-
-/// Jump destination mapping for threaded execution
-jumpdest_map: ?*std.AutoHashMap(u32, u32) = null,
-
-/// Current block gas for GAS opcode correction
-current_block_gas: u32 = 0,
-
-/// Return reason for threaded execution
-return_reason: enum { Continue, Stop, Return, Revert, OutOfGas, Invalid } = .Continue,
-
 /// Create a new execution frame with default settings.
 ///
 /// Initializes a frame with empty stack and memory, ready for execution.
@@ -158,7 +140,7 @@ pub fn init(allocator: std.mem.Allocator, contract: *Contract) !Frame {
         .output = &[_]u8{},
         .op = undefined,
         .memory = memory,
-        .stack = Stack.init(),
+        .stack = Stack{},
         .return_data = ReturnData.init(allocator),
     };
 }
@@ -207,7 +189,7 @@ pub fn init_full(
         .output = &[_]u8{},
         .op = &.{},
         .memory = try Memory.init_default(allocator),
-        .stack = Stack.init(),
+        .stack = Stack{},
         .return_data = ReturnData.init(allocator),
     };
 }
@@ -263,7 +245,7 @@ pub fn init_with_state(
     var memory_to_use = memory orelse try Memory.init_default(allocator);
     errdefer if (memory == null) memory_to_use.deinit();
 
-    const stack_to_use = stack orelse Stack.init();
+    const stack_to_use = stack orelse Stack{};
 
     return Frame{
         .gas_remaining = gas_remaining orelse 0,
@@ -447,7 +429,7 @@ pub const FrameBuilder = struct {
             .output = &[_]u8{},
             .op = &.{},
             .memory = Memory.init_default(self.allocator) catch return BuildError.OutOfMemory,
-            .stack = Stack.init(),
+            .stack = .{},
             .return_data = ReturnData.init(self.allocator),
         };
     }
@@ -488,22 +470,11 @@ pub const ConsumeGasError = error{
 /// try frame.consume_gas(memory_cost);
 /// ```
 pub inline fn consume_gas(self: *Frame, amount: u64) ConsumeGasError!void {
-    const zone = tracy.zone(@src(), "frame_consume_gas\x00");
-    defer zone.end();
-    
-    const overflow_check_zone = tracy.zone(@src(), "gas_overflow_check\x00");
     if (amount > self.gas_remaining) {
         @branchHint(.cold);
-        overflow_check_zone.end();
-        const out_of_gas_zone = tracy.zone(@src(), "gas_out_of_gas\x00");
-        defer out_of_gas_zone.end();
         return ConsumeGasError.OutOfGas;
     }
-    overflow_check_zone.end();
-    
-    const subtract_zone = tracy.zone(@src(), "gas_subtract\x00");
     self.gas_remaining -= amount;
-    subtract_zone.end();
 }
 
 // ============================================================================

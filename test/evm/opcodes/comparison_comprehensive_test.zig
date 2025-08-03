@@ -45,9 +45,6 @@ test "LT: Comprehensive edge cases" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -131,9 +128,6 @@ test "GT: Comprehensive edge cases" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -203,9 +197,6 @@ test "SLT: Comprehensive signed comparison cases" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -299,9 +290,6 @@ test "SGT: Comprehensive signed greater than cases" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -375,9 +363,6 @@ test "EQ: Comprehensive equality cases" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -456,9 +441,6 @@ test "ISZERO: Comprehensive zero detection cases" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -535,9 +517,6 @@ test "AND: Comprehensive bitwise AND cases" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -618,9 +597,6 @@ test "OR: Comprehensive bitwise OR cases" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -698,9 +674,6 @@ test "XOR: Comprehensive bitwise XOR cases" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -800,9 +773,6 @@ test "NOT: Comprehensive bitwise NOT cases" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -887,9 +857,6 @@ test "BYTE: Comprehensive byte extraction cases" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -985,9 +952,6 @@ test "Combined: Complex bitwise and comparison operations" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1085,9 +1049,6 @@ test "Performance: Rapid successive operations" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -1108,7 +1069,7 @@ test "Performance: Rapid successive operations" {
         _ = try evm.table.execute(0, interpreter, state, 0x19); // NOT
 
         // Verify stack has one result
-        try testing.expectEqual(@as(usize, 1), frame.stack.size());
+        try testing.expectEqual(@as(usize, 1), frame.stack.size);
         _ = try frame.stack.pop();
     }
 }

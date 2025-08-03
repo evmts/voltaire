@@ -41,9 +41,6 @@ test "Comparison: EQ edge case - operand order shouldn't matter" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -100,9 +97,6 @@ test "Comparison: Signed comparisons with boundary values" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -158,9 +152,6 @@ test "Comparison: Gas edge case - ensure gas is consumed before operation" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -204,9 +195,6 @@ test "Bitwise: XOR properties verification" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -269,9 +257,6 @@ test "Bitwise: AND/OR De Morgan's laws" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -338,9 +323,6 @@ test "Comparison: Chained comparisons behavior" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -390,9 +372,6 @@ test "ISZERO: Various representations of zero" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -447,9 +426,6 @@ test "Bitwise: Shift operations with large values" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -513,9 +489,6 @@ test "Comparison: Stack behavior with multiple operations" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -527,15 +500,15 @@ test "Comparison: Stack behavior with multiple operations" {
 
     // LT: pops 10, 5, pushes (5 < 10) = 1
     _ = try evm.table.execute(0, interpreter, state, 0x10);
-    try testing.expectEqual(@as(usize, 3), frame.stack.size()); // 100, 200, 1
+    try testing.expectEqual(@as(usize, 3), frame.stack.size); // 100, 200, 1
 
     // GT: pops 1, 200, pushes (200 > 1) = 1
     _ = try evm.table.execute(0, interpreter, state, 0x11);
-    try testing.expectEqual(@as(usize, 2), frame.stack.size()); // 100, 1
+    try testing.expectEqual(@as(usize, 2), frame.stack.size); // 100, 1
 
     // EQ: pops 1, 100, pushes (100 == 1) = 0
     _ = try evm.table.execute(0, interpreter, state, 0x14);
     const result = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 0), result);
-    try testing.expectEqual(@as(usize, 0), frame.stack.size());
+    try testing.expectEqual(@as(usize, 0), frame.stack.size);
 }

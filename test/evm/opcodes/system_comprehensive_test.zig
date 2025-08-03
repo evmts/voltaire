@@ -52,8 +52,6 @@ test "CREATE (0xF0): Basic contract creation with valid init code" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set balance for the contract address in VM state (needed for CREATE)
     try evm.state.set_balance(contract_addr, 1000000);
 
@@ -121,8 +119,6 @@ test "CREATE: Empty init code creates empty contract" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push CREATE parameters for empty init code
     try frame.stack.append(0); // size = 0
     try frame.stack.append(0); // offset = 0
@@ -171,8 +167,6 @@ test "CREATE: Static call protection" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set static mode
     frame.is_static = true;
 
@@ -222,8 +216,6 @@ test "CREATE: Depth limit enforcement" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set depth to maximum
     frame.depth = 1024;
 
@@ -278,8 +270,6 @@ test "CREATE: EIP-3860 initcode size limit (Shanghai+)" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push parameters with oversized init code
     try frame.stack.append(49153); // size > 49152 (MaxInitcodeSize)
     try frame.stack.append(0); // offset
@@ -329,8 +319,6 @@ test "CREATE: EIP-3860 initcode word gas cost" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Write 64 bytes of init code (2 words)
     const init_code: [64]u8 = [_]u8{0x60} ** 64;
     _ = try frame.memory.set_data(0, &init_code);
@@ -384,8 +372,6 @@ test "CREATE: Memory expansion gas cost" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Initialize memory at high offset to test expansion
     const high_offset = 1000;
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }; // Simple RETURN
@@ -442,8 +428,6 @@ test "CREATE: Stack underflow" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push only 2 values (need 3)
     try frame.stack.append(0); // size
     try frame.stack.append(0); // offset
@@ -493,8 +477,6 @@ test "CREATE2 (0xF5): Deterministic address generation" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Write init code to memory
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }; // RETURN empty
     _ = try frame.memory.set_data(0, &init_code);
@@ -637,8 +619,6 @@ test "CREATE2: Additional gas for keccak256 hashing" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Large init code to test hash cost
     const init_code: [96]u8 = [_]u8{0x60} ** 96; // 3 words
     _ = try frame.memory.set_data(0, &init_code);
@@ -696,8 +676,6 @@ test "CALL (0xF1): Basic external call" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Write call data to memory
     const call_data = [_]u8{ 0x11, 0x22, 0x33, 0x44 };
     _ = try frame.memory.set_data(0, &call_data);
@@ -755,8 +733,6 @@ test "CALL: Value transfer in static context fails" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set static mode
     frame.is_static = true;
 
@@ -811,8 +787,6 @@ test "CALL: Cold address access (EIP-2929)" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Clear access list to ensure cold access
     evm.access_list.clear();
 
@@ -869,8 +843,6 @@ test "CALL: Return data handling" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Pre-expand memory for return data
     _ = try frame.memory.ensure_context_capacity(132);
 
@@ -931,8 +903,6 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push CALLCODE parameters (same as CALL)
     try frame.stack.append(32); // ret_size
     try frame.stack.append(0); // ret_offset
@@ -990,8 +960,6 @@ test "DELEGATECALL (0xF4): Execute with current context (no value transfer)" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push DELEGATECALL parameters (no value parameter)
     try frame.stack.append(32); // ret_size
     try frame.stack.append(0); // ret_offset
@@ -1048,8 +1016,6 @@ test "STATICCALL (0xFA): Read-only external call" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push STATICCALL parameters (no value parameter)
     try frame.stack.append(32); // ret_size
     try frame.stack.append(0); // ret_offset
@@ -1106,8 +1072,6 @@ test "RETURN (0xF3): Return data from execution" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Write return data to memory
     const return_data = "Hello World!" ++ ([_]u8{0x11} ** 20);
     _ = try frame.memory.set_data(0, return_data[0..]);
@@ -1160,8 +1124,6 @@ test "RETURN: Empty return data" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push parameters for empty return
     try frame.stack.append(0); // size = 0
     try frame.stack.append(0); // offset = 0
@@ -1209,8 +1171,6 @@ test "RETURN: Memory expansion gas cost" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Return large data requiring memory expansion
     try frame.stack.append(1000); // size
     try frame.stack.append(0); // offset
@@ -1264,8 +1224,6 @@ test "REVERT (0xFD): Revert with error data" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Write revert reason to memory
     const revert_data = "Insufficient balance" ++ ([_]u8{0x11} ** 20);
     _ = try frame.memory.set_data(0, revert_data[0..]);
@@ -1318,8 +1276,6 @@ test "REVERT: Empty revert data" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push parameters for empty revert
     try frame.stack.append(0); // size = 0
     try frame.stack.append(0); // offset = 0
@@ -1371,8 +1327,6 @@ test "INVALID (0xFE): Consume all gas and fail" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     const gas_before = frame.gas_remaining;
 
     // Execute INVALID - should consume all gas and fail
@@ -1420,13 +1374,11 @@ test "INVALID: No stack manipulation" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Put some values on stack
     try frame.stack.append(0x12345678);
     try frame.stack.append(0x87654321);
 
-    const stack_size_before = frame.stack.size();
+    const stack_size_before = frame.stack.size;
 
     // Execute INVALID
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -1435,7 +1387,7 @@ test "INVALID: No stack manipulation" {
     try testing.expectError(ExecutionError.Error.InvalidOpcode, result);
 
     // Stack should remain unchanged
-    try testing.expectEqual(stack_size_before, frame.stack.size());
+    try testing.expectEqual(stack_size_before, frame.stack.size);
 }
 
 // ============================
@@ -1476,8 +1428,6 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push beneficiary address
     const bob_addr: Address.Address = [_]u8{0x22} ** 20;
     try frame.stack.append(primitives.Address.to_u256(bob_addr));
@@ -1523,8 +1473,6 @@ test "SELFDESTRUCT: Static call protection" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set static mode
     frame.is_static = true;
 
@@ -1573,8 +1521,6 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Clear access list to ensure cold access
     evm.access_list.clear();
 
@@ -1844,8 +1790,6 @@ test "System opcodes: CREATE followed by CALL" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // CREATE empty contract
     try frame.stack.append(0); // size
     try frame.stack.append(0); // offset
@@ -1907,8 +1851,6 @@ test "System opcodes: Nested STATICCALL restrictions" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Set static mode (simulating we're already in a static call)
     frame.is_static = true;
 
@@ -2117,8 +2059,6 @@ test "System opcodes: Zero gas scenarios" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Consume almost all gas first
     try frame.consume_gas(90);
 
@@ -2291,8 +2231,6 @@ test "System opcodes: Memory bounds checking" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Try to access memory beyond reasonable limits
     try frame.stack.append(std.math.maxInt(usize)); // size (maximum)
     try frame.stack.append(0); // offset
@@ -2348,8 +2286,6 @@ test "System opcodes: Gas optimization for warm addresses" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
     // Push CALL parameters with warm address
     try frame.stack.append(0); // ret_size
     try frame.stack.append(0); // ret_offset

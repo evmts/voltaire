@@ -52,22 +52,19 @@ test "MLOAD (0x51): Basic memory load operations" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Load from uninitialized memory should return 0
     try frame.stack.append(0); // offset
     _ = try evm.table.execute(0, interpreter, state, 0x51);
-    try testing.expectEqual(@as(u256, 0), try frame.stack.peek_n(1 - 1));
+    try testing.expectEqual(@as(u256, 0), frame.stack.data[frame.stack.size - 1]);
     _ = try frame.stack.pop();
 
     // Test 2: Load from higher uninitialized offset
     try frame.stack.append(1000); // offset
     _ = try evm.table.execute(0, interpreter, state, 0x51);
-    try testing.expectEqual(@as(u256, 0), try frame.stack.peek_n(1 - 1));
+    try testing.expectEqual(@as(u256, 0), frame.stack.data[frame.stack.size - 1]);
     _ = try frame.stack.pop();
 
     // Test 3: Load after storing data
@@ -75,7 +72,7 @@ test "MLOAD (0x51): Basic memory load operations" {
     try frame.memory.set_u256(32, test_value);
     try frame.stack.append(32); // offset
     _ = try evm.table.execute(0, interpreter, state, 0x51);
-    try testing.expectEqual(test_value, try frame.stack.peek_n(1 - 1));
+    try testing.expectEqual(test_value, frame.stack.data[frame.stack.size - 1]);
     _ = try frame.stack.pop();
 }
 
@@ -114,9 +111,6 @@ test "MLOAD: Memory alignment and boundary conditions" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -125,7 +119,7 @@ test "MLOAD: Memory alignment and boundary conditions" {
     for (word_boundary_tests) |offset| {
         try frame.stack.append(offset);
         _ = try evm.table.execute(0, interpreter, state, 0x51);
-        try testing.expectEqual(@as(u256, 0), try frame.stack.peek_n(1 - 1)); // Should be 0 for uninitialized memory
+        try testing.expectEqual(@as(u256, 0), frame.stack.data[frame.stack.size - 1]); // Should be 0 for uninitialized memory
         _ = try frame.stack.pop();
     }
 
@@ -134,7 +128,7 @@ test "MLOAD: Memory alignment and boundary conditions" {
     for (non_aligned_tests) |offset| {
         try frame.stack.append(offset);
         _ = try evm.table.execute(0, interpreter, state, 0x51);
-        try testing.expectEqual(@as(u256, 0), try frame.stack.peek_n(1 - 1)); // Should be 0 for uninitialized memory
+        try testing.expectEqual(@as(u256, 0), frame.stack.data[frame.stack.size - 1]); // Should be 0 for uninitialized memory
         _ = try frame.stack.pop();
     }
 
@@ -187,9 +181,6 @@ test "MLOAD: Large offset handling and gas consumption" {
         .withGas(1000000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -255,9 +246,6 @@ test "MLOAD: Stack underflow protection" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -304,9 +292,6 @@ test "MSTORE (0x52): Basic memory store operations" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -374,9 +359,6 @@ test "MSTORE: Overwrite and partial overlap scenarios" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -455,9 +437,6 @@ test "MSTORE: Memory expansion and gas costs" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -534,9 +513,6 @@ test "MSTORE: Stack underflow protection" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -588,9 +564,6 @@ test "MSTORE8 (0x53): Basic single byte store operations" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -664,9 +637,6 @@ test "MSTORE8: Precision and non-interference" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -769,9 +739,6 @@ test "MSTORE8: Memory expansion and gas costs" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -854,9 +821,6 @@ test "MSTORE8: Stack underflow protection" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
@@ -909,33 +873,30 @@ test "MSIZE (0x59): Basic memory size tracking" {
         .build();
     defer frame.deinit();
 
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
 
     // Test 1: Initial memory size should be 0
     _ = try evm.table.execute(0, interpreter, state, 0x59);
-    try testing.expectEqual(@as(u256, 0), try frame.stack.peek_n(1 - 1));
+    try testing.expectEqual(@as(u256, 0), frame.stack.data[frame.stack.size - 1]);
     _ = try frame.stack.pop();
 
     // Test 2: Memory size after writing to memory
     try frame.memory.set_u256(0, 0x12345);
     _ = try evm.table.execute(0, interpreter, state, 0x59);
-    try testing.expectEqual(@as(u256, 32), try frame.stack.peek_n(1 - 1)); // Word-aligned to 32 bytes
+    try testing.expectEqual(@as(u256, 32), frame.stack.data[frame.stack.size - 1]); // Word-aligned to 32 bytes
     _ = try frame.stack.pop();
 
     // Test 3: Memory size after writing to higher offset
     try frame.memory.set_u256(64, 0x67890);
     _ = try evm.table.execute(0, interpreter, state, 0x59);
-    try testing.expectEqual(@as(u256, 96), try frame.stack.peek_n(1 - 1)); // Word-aligned to 96 bytes
+    try testing.expectEqual(@as(u256, 96), frame.stack.data[frame.stack.size - 1]); // Word-aligned to 96 bytes
     _ = try frame.stack.pop();
 
     // Test 4: Memory size with single byte write (should still be word-aligned)
     try frame.memory.set_data(100, &[_]u8{0xFF});
     _ = try evm.table.execute(0, interpreter, state, 0x59);
-    try testing.expectEqual(@as(u256, 128), try frame.stack.peek_n(1 - 1)); // Word-aligned to 128 bytes (4 words)
+    try testing.expectEqual(@as(u256, 128), frame.stack.data[frame.stack.size - 1]); // Word-aligned to 128 bytes (4 words)
     _ = try frame.stack.pop();
 }
 
@@ -1112,7 +1073,7 @@ test "MSIZE (0x59): Basic memory size tracking" {
 //     defer test_frame.deinit();
 
 //     // Fill the stack to capacity
-//     while (test_frame.frame.stack.size() < helpers.Stack.CAPACITY) {
+//     while (test_frame.frame.stack.size < helpers.Stack.CAPACITY) {
 //         try test_frame.frame.stack.append(42);
 //     }
 

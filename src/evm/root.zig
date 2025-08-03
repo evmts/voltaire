@@ -58,7 +58,6 @@ const std = @import("std");
 // Import external modules
 /// Address utilities for Ethereum addresses
 pub const primitives = @import("primitives");
-pub const tracy_support = @import("tracy_support.zig");
 
 // Import all EVM modules
 
@@ -207,9 +206,6 @@ pub const gas_constants = @import("primitives").GasConstants;
 
 /// Memory size limits and expansion rules
 pub const memory_limits = @import("constants/memory_limits.zig");
-
-/// EVM-specific allocator for transaction lifecycle memory management
-pub const EVMAllocator = @import("allocator/evm_allocator.zig").EVMAllocator;
 
 // EIP-4844 blob exports for convenience
 /// Blob data structure from EIP-4844

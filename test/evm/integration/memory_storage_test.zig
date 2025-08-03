@@ -194,9 +194,6 @@ test "Integration: Memory copy operations" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &evm;
     const state: Operation.State = &frame;
@@ -271,9 +268,6 @@ test "Integration: Transient storage with arithmetic" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &evm;
     const state: Operation.State = &frame;
@@ -349,9 +343,6 @@ test "Integration: MSTORE8 with bitwise operations" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &evm;
     const state: Operation.State = &frame;
@@ -413,9 +404,6 @@ test "Integration: Storage slot calculation" {
         .withGas(30000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &evm;
     const state: Operation.State = &frame;
@@ -487,9 +475,6 @@ test "Integration: Memory expansion tracking" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &evm;
     const state: Operation.State = &frame;
@@ -570,9 +555,6 @@ test "Integration: Cold/warm storage access patterns" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Operation.Interpreter = &evm;
     const state: Operation.State = &frame;

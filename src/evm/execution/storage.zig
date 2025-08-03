@@ -7,18 +7,14 @@ const Vm = @import("../evm.zig");
 const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
 const storage_costs = @import("../gas/storage_costs.zig");
-const tracy = @import("../tracy_support.zig");
 
 pub fn op_sload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_sload\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
     const vm = interpreter;
 
-    std.debug.assert(frame.stack.size() >= 1);
+    if (frame.stack.size < 1) unreachable;
 
     const slot = frame.stack.peek_unsafe().*;
 
@@ -42,9 +38,6 @@ pub fn op_sload(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 
 /// SSTORE opcode - Store value in persistent storage
 pub fn op_sstore(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_sstore\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -62,7 +55,7 @@ pub fn op_sstore(pc: usize, interpreter: Operation.Interpreter, state: Operation
         return ExecutionError.Error.OutOfGas;
     }
 
-    std.debug.assert(frame.stack.size() >= 2);
+    if (frame.stack.size < 2) unreachable;
 
     // Stack order: [..., value, slot] where slot is on top
     const popped = frame.stack.pop2_unsafe();
@@ -101,9 +94,6 @@ pub fn op_sstore(pc: usize, interpreter: Operation.Interpreter, state: Operation
 }
 
 pub fn op_tload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_tload\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -111,7 +101,7 @@ pub fn op_tload(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 
     // Gas is already handled by jump table constant_gas = 100
 
-    std.debug.assert(frame.stack.size() >= 1);
+    if (frame.stack.size < 1) unreachable;
 
     // Get slot from top of stack unsafely - bounds checking is done in jump_table.zig
     const slot = frame.stack.peek_unsafe().*;
@@ -125,9 +115,6 @@ pub fn op_tload(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 }
 
 pub fn op_tstore(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_tstore\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -140,7 +127,7 @@ pub fn op_tstore(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
     // Gas is already handled by jump table constant_gas = 100
 
-    std.debug.assert(frame.stack.size() >= 2);
+    if (frame.stack.size < 2) unreachable;
 
     // Pop two values unsafely using batch operation - bounds checking is done in jump_table.zig
     // Stack order: [..., value, slot] where slot is on top
@@ -276,7 +263,7 @@ fn validate_storage_result(frame: *const Frame, vm: *const Vm, op: FuzzStorageOp
     }
     
     // Verify stack has the expected result for load operations
-    try testing.expectEqual(@as(usize, 1), frame.stack.size());
+    try testing.expectEqual(@as(usize, 1), frame.stack.size);
     
     const stack_result = frame.stack.data[0];
     

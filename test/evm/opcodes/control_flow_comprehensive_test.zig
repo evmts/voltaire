@@ -63,9 +63,6 @@ test "JUMP (0x56): Basic unconditional jump" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     // Push jump destination
     try frame.stack.append(5);
@@ -174,9 +171,6 @@ test "JUMP: Jump to various valid destinations" {
             .build();
         defer test_frame.deinit();
 
-        // Initialize stack for tests that directly use frame.stack
-        test_frame.stack.ensureInitialized();
-
         try test_frame.stack.append(dest);
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &test_frame;
@@ -232,9 +226,6 @@ test "JUMP: Invalid jump destinations" {
             .withGas(1000)
             .build();
         defer test_frame.deinit();
-
-        // Initialize stack for tests that directly use frame.stack
-        test_frame.stack.ensureInitialized();
 
         try test_frame.stack.append(dest);
         const interpreter: Evm.Operation.Interpreter = &evm;
@@ -340,9 +331,6 @@ test "JUMPI (0x57): Conditional jump with true condition" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-
-    // Initialize stack for tests that directly execute opcodes
-    frame.stack.ensureInitialized();
 
     // Execute the PUSH1 instructions in the bytecode
     // PUSH1 1 (condition)
@@ -468,9 +456,6 @@ test "JUMPI: Various condition values" {
             .build();
         defer test_frame.deinit();
 
-
-    // Initialize stack for tests that directly execute opcodes
-    test_frame.stack.ensureInitialized();
         test_frame.pc = 10; // Set to non-zero position
         try test_frame.stack.append(condition); // condition
         try test_frame.stack.append(0); // dest=0
@@ -490,9 +475,6 @@ test "JUMPI: Various condition values" {
             .build();
         defer test_frame.deinit();
 
-
-    // Initialize stack for tests that directly execute opcodes
-    test_frame.stack.ensureInitialized();
         test_frame.pc = 10;
         try test_frame.stack.append(0); // condition=0
         try test_frame.stack.append(0); // dest=0
@@ -645,9 +627,6 @@ test "PC (0x58): Get program counter at various positions" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -773,9 +752,6 @@ test "GAS (0x5A): Get remaining gas" {
             .build();
         defer test_frame.deinit();
 
-
-    // Initialize stack for tests that directly execute opcodes
-    test_frame.stack.ensureInitialized();
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &test_frame;
         _ = try evm.table.execute(0, interpreter, state, 0x5A);
@@ -879,9 +855,6 @@ test "GAS: Low gas scenarios" {
             .build();
         defer test_frame.deinit();
 
-
-    // Initialize stack for tests that directly execute opcodes
-    test_frame.stack.ensureInitialized();
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &test_frame;
         _ = try evm.table.execute(0, interpreter, state, 0x5A);
@@ -899,9 +872,6 @@ test "GAS: Low gas scenarios" {
             .build();
         defer test_frame.deinit();
 
-
-    // Initialize stack for tests that directly execute opcodes
-    test_frame.stack.ensureInitialized();
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &test_frame;
         const result = evm.table.execute(0, interpreter, state, 0x5A);
@@ -1000,7 +970,7 @@ test "JUMPDEST (0x5B): Basic operation" {
     defer frame.deinit();
 
     // JUMPDEST should be a no-op
-    const stack_size_before = frame.stack.size();
+    const stack_size_before = frame.stack.size;
     const gas_before = frame.gas_remaining;
 
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -1008,7 +978,7 @@ test "JUMPDEST (0x5B): Basic operation" {
     _ = try evm.table.execute(0, interpreter, state, 0x5B);
 
     // Stack should be unchanged
-    try testing.expectEqual(stack_size_before, frame.stack.size());
+    try testing.expectEqual(stack_size_before, frame.stack.size);
 
     // Should consume only JUMPDEST gas (1)
     try testing.expectEqual(@as(u64, gas_before - 1), frame.gas_remaining);
@@ -1077,9 +1047,6 @@ test "JUMPDEST: Jump destination validation" {
         .build();
     defer frame.deinit();
 
-
-    // Initialize stack for tests that directly execute opcodes
-    frame.stack.ensureInitialized();
     frame.pc = 5; // Position before JUMP
     try frame.stack.append(9); // Jump to JUMPDEST at position 9
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -1140,9 +1107,6 @@ test "JUMPDEST: Code analysis edge cases" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-
-        // Initialize stack for tests that directly use frame.stack
-            frame.stack.ensureInitialized();
 
     try frame.stack.append(3);
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -1260,9 +1224,6 @@ test "Control Flow: Gas consumption verification" {
             .build();
         defer test_frame.deinit();
 
-        // Initialize stack for tests that directly execute opcodes
-        test_frame.stack.ensureInitialized();
-
         const gas_before = test_frame.gas_remaining;
 
         if (op.setup) |setup_fn| {
@@ -1346,9 +1307,6 @@ test "Control Flow: Complex jump sequences" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1468,9 +1426,6 @@ test "Control Flow: Stack operations validation" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1555,9 +1510,6 @@ test "Control Flow: Program counter tracking" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1695,9 +1647,6 @@ test "Control Flow: Stack operations edge cases" {
         .withGas(10000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1707,12 +1656,12 @@ test "Control Flow: Stack operations edge cases" {
 
     for (stack_ops) |opcode| {
         frame.stack.clear();
-        const initial_size = frame.stack.size();
+        const initial_size = frame.stack.size;
 
         _ = try evm.table.execute(0, interpreter, state, opcode);
 
         // Should push exactly one value
-        try testing.expectEqual(initial_size + 1, frame.stack.size());
+        try testing.expectEqual(initial_size + 1, frame.stack.size);
         _ = try frame.stack.pop(); // Clean up
     }
 
@@ -1720,19 +1669,19 @@ test "Control Flow: Stack operations edge cases" {
     frame.stack.clear();
     try frame.stack.append(0); // Only one value for JUMP
     _ = try evm.table.execute(0, interpreter, state, 0x56); // JUMP
-    try testing.expectEqual(@as(usize, 0), frame.stack.size());
+    try testing.expectEqual(@as(usize, 0), frame.stack.size);
 
     frame.stack.clear();
     try frame.stack.append(0); // condition=0
     try frame.stack.append(0); // dest=0
     _ = try evm.table.execute(0, interpreter, state, 0x57); // JUMPI
-    try testing.expectEqual(@as(usize, 0), frame.stack.size());
+    try testing.expectEqual(@as(usize, 0), frame.stack.size);
 
     // Test JUMPDEST doesn't affect stack
     frame.stack.clear();
     try frame.stack.append(42);
     _ = try evm.table.execute(0, interpreter, state, 0x5B); // JUMPDEST
-    try testing.expectEqual(@as(usize, 1), frame.stack.size());
+    try testing.expectEqual(@as(usize, 1), frame.stack.size);
     const val = try frame.stack.pop();
     try testing.expectEqual(@as(u256, 42), val);
 }

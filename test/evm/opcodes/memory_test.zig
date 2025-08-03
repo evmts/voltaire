@@ -42,9 +42,6 @@ test "MLOAD: load 32 bytes from memory" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -103,9 +100,6 @@ test "MLOAD: load with offset" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -163,9 +157,6 @@ test "MLOAD: load from uninitialized memory returns zeros" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -214,9 +205,6 @@ test "MSTORE: store 32 bytes to memory" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -269,9 +257,6 @@ test "MSTORE: store with offset" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -326,9 +311,6 @@ test "MSTORE8: store single byte to memory" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -383,9 +365,6 @@ test "MSTORE8: store only lowest byte" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -436,9 +415,6 @@ test "MSIZE: get memory size" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -496,9 +472,6 @@ test "MCOPY: copy memory to memory" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -565,9 +538,6 @@ test "MCOPY: overlapping copy forward" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -627,9 +597,6 @@ test "MCOPY: overlapping copy backward" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -689,9 +656,6 @@ test "MCOPY: zero length copy" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -706,7 +670,7 @@ test "MCOPY: zero length copy" {
     _ = try evm.table.execute(0, interpreter, state, 0x5E);
 
     // Should succeed without doing anything
-    try testing.expectEqual(@as(usize, 0), frame.stack.size());
+    try testing.expectEqual(@as(usize, 0), frame.stack.size);
 }
 
 // Test gas consumption
@@ -743,9 +707,6 @@ test "MLOAD: memory expansion gas" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -796,9 +757,6 @@ test "MSTORE: memory expansion gas" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -850,9 +808,6 @@ test "MCOPY: gas consumption" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -909,9 +864,6 @@ test "MLOAD: stack underflow" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -956,9 +908,6 @@ test "MSTORE: stack underflow" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1004,9 +953,6 @@ test "MCOPY: stack underflow" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1055,9 +1001,6 @@ test "MLOAD: offset overflow" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -1103,9 +1046,6 @@ test "MCOPY: source offset overflow" {
         .withGas(1000)
         .build();
     defer frame.deinit();
-    
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
