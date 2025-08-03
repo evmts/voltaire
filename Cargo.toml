@@ -1,11 +1,16 @@
 [workspace]
 resolver = "2"
-members = ["src/compilers", "src/bn254_wrapper", "src/revm_wrapper", "src/guillotine-rs"]
+members = ["src/compilers", "src/bn254_wrapper", "src/revm_wrapper"]
 exclude = ["bench/evm-bench"]
 
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
+
+[workspace.dependencies]
+revm = { version = "14.0", features = ["c-kzg", "blst", "std", "serde", "serde-json", "dev"] }
+revm-primitives = "10.0"
+alloy-primitives = "0.8"
 
 [profile.release]
 # Optimize for size by default (smallest flag)
