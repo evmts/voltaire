@@ -2,7 +2,9 @@
 .vercel
 dist/
 tree/
+
 revm/
+evmone/
 
 .crush/
 
