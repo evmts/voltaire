@@ -31,8 +31,4 @@ pub const FROBENIUS_G2_X_COEFF = Fp2{ .u0 = Fp{ .value = 0x2fb347984f7911f74c0be
 pub const FROBENIUS_G2_Y_COEFF = Fp2{ .u0 = Fp{ .value = 0x63cf305489af5dcdc5ec698b6e2f9b9dbaae0eda9c95998dc54014671a0135a }, .u1 = Fp{ .value = 0x7c03cbcac41049a0704b5a7ec796f2b21807dc98fa25bd282d37f632623b0e3 } };
 
 // Frobenius coefficients for Fp12
-pub const FROBENIUS_COEFF_FP12 = Fp6{
-    .v0 = Fp2{ .u0 = Fp{ .value = 0x1284b71c2865a7dfe8b99fdd76e68b605c521e08292f2176d60b35dadcc9e470 }, .u1 = Fp{ .value = 0x246996f3b4fae7e6a6327cfe12150b8e747992778eeec7e5ca5cf05f80f362ac } },
-    .v1 = Fp2{ .u0 = Fp{ .value = 0 }, .u1 = Fp{ .value = 0 } },
-    .v2 = Fp2{ .u0 = Fp{ .value = 0 }, .u1 = Fp{ .value = 0 } },
-};
+pub const FROBENIUS_COEFF_FP12 = Fp2{ .u0 = Fp{ .value = 0x1284b71c2865a7dfe8b99fdd76e68b605c521e08292f2176d60b35dadcc9e470 }, .u1 = Fp{ .value = 0x246996f3b4fae7e6a6327cfe12150b8e747992778eeec7e5ca5cf05f80f362ac } };
