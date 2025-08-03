@@ -4,6 +4,8 @@ const Fp6 = @import("Fp6.zig");
 const G1 = @import("g1.zig");
 const G2 = @import("g2.zig");
 
+//This file contains parameters and precomputed values for the BN254 curve.
+
 // Field moduli
 pub const FP_MOD = 0x30644E72E131A029B85045B68181585D97816A916871CA8D3C208C16D87CFD47;
 pub const FR_MOD = 0x30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001;
