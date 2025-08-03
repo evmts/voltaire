@@ -1,6 +1,7 @@
 const std = @import("std");
+const curve_parameters = @import("curve_parameters.zig");
 
-pub const FP_MOD = 0x30644E72E131A029B85045B68181585D97816A916871CA8D3C208C16D87CFD47;
+pub const FP_MOD = curve_parameters.FP_MOD;
 
 pub const Fp = @This();
 

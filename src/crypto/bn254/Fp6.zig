@@ -1,5 +1,6 @@
 const Fp2 = @import("Fp2.zig");
 const Fp = @import("Fp.zig");
+const curve_parameters = @import("curve_parameters.zig");
 pub const FP_MOD = Fp2.FP_MOD;
 
 pub const Fp6 = @This();
@@ -10,8 +11,8 @@ v2: Fp2,
 pub const ZERO = Fp6{ .v0 = Fp2.ZERO, .v1 = Fp2.ZERO, .v2 = Fp2.ZERO };
 pub const ONE = Fp6{ .v0 = Fp2.ONE, .v1 = Fp2.ZERO, .v2 = Fp2.ZERO };
 
-pub const FROBENIUS_COEFF_V1 = Fp2.init_from_int(21575463638280843010398324269430826099269044274347216827212613867836435027261, 10307601595873709700152284273816112264069230130616436755625194854815875713954);
-pub const FROBENIUS_COEFF_V2 = Fp2.init_from_int(2581911344467009335267311115468803099551665605076196740867805258568234346338, 19937756971775647987995932169929341994314640652964949448313374472400716661030);
+pub const FROBENIUS_COEFF_V1 = curve_parameters.FROBENIUS_COEFF_FP6_V1;
+pub const FROBENIUS_COEFF_V2 = curve_parameters.FROBENIUS_COEFF_FP6_V2;
 
 pub fn init(val_v0: *const Fp2, val_v1: *const Fp2, val_v2: *const Fp2) Fp6 {
     return Fp6{
@@ -67,7 +68,7 @@ pub fn subAssign(self: *Fp6, other: *const Fp6) void {
 
 pub fn mul(self: *const Fp6, other: *const Fp6) Fp6 {
     // ξ = 9 + u ∈ Fp2
-    const xi = Fp2.init_from_int(9, 1);
+    const xi = curve_parameters.XI;
 
     // s0 = a0 * b0, s1 = a1 * b1, s2 = a2 * b2
     const s0 = self.v0.mul(&other.v0);
@@ -152,7 +153,7 @@ pub fn powAssign(self: *Fp6, exponent: u256) void {
 }
 
 pub fn norm(self: *const Fp6) Fp2 {
-    const xi = Fp2.init_from_int(9, 1);
+    const xi = curve_parameters.XI;
 
     // c0 = v0^2 - ξ * (v1 * v2)
     const c0 = self.v0.mul(&self.v0).sub(&xi.mul(&self.v1.mul(&self.v2)));
@@ -179,8 +180,20 @@ pub fn scalarMulAssign(self: *Fp6, scalar: *const Fp) void {
     self.* = self.scalarMul(scalar);
 }
 
+pub fn mulByFp2(self: *const Fp6, fp2_val: *const Fp2) Fp6 {
+    return Fp6{
+        .v0 = self.v0.mul(fp2_val),
+        .v1 = self.v1.mul(fp2_val),
+        .v2 = self.v2.mul(fp2_val),
+    };
+}
+
+pub fn mulByFp2Assign(self: *Fp6, fp2_val: *const Fp2) void {
+    self.* = self.mulByFp2(fp2_val);
+}
+
 pub fn inv(self: *const Fp6) Fp6 {
-    const xi = Fp2.init_from_int(9, 1);
+    const xi = curve_parameters.XI;
     const three = Fp.init(3);
 
     // Calculate squares and basic products
@@ -241,152 +254,151 @@ pub fn print(self: *const Fp6) void {
     std.debug.print(")\n", .{});
 }
 
-
 const std = @import("std");
 
 // Helper function to check Fp6 equality
 fn expectFp6Equal(expected: Fp6, actual: Fp6) !void {
-try std.testing.expect(expected.equal(&actual));
+    try std.testing.expect(expected.equal(&actual));
 }
 
 test "Fp6.equal basic equality" {
-const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
-const b = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
-try std.testing.expect(a.equal(&b));
+    const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
+    const b = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
+    try std.testing.expect(a.equal(&b));
 }
 
 test "Fp6.add basic addition" {
-const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
-const b = Fp6.init_from_int(7, 8, 9, 10, 11, 12);
-const result = a.add(&b);
-const expected = Fp6.init_from_int(8, 10, 12, 14, 16, 18);
-try expectFp6Equal(expected, result);
+    const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
+    const b = Fp6.init_from_int(7, 8, 9, 10, 11, 12);
+    const result = a.add(&b);
+    const expected = Fp6.init_from_int(8, 10, 12, 14, 16, 18);
+    try expectFp6Equal(expected, result);
 }
 
 test "Fp6.mul distributive property over addition" {
-const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
-const b = Fp6.init_from_int(7, 8, 9, 10, 11, 12);
-const c = Fp6.init_from_int(13, 14, 15, 16, 17, 18);
-const left = a.mul(&b.add(&c));
-const right = a.mul(&b).add(&a.mul(&c));
-try expectFp6Equal(left, right);
+    const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
+    const b = Fp6.init_from_int(7, 8, 9, 10, 11, 12);
+    const c = Fp6.init_from_int(13, 14, 15, 16, 17, 18);
+    const left = a.mul(&b.add(&c));
+    const right = a.mul(&b).add(&a.mul(&c));
+    try expectFp6Equal(left, right);
 }
 
 test "Fp6.mul associative property" {
-const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
-const b = Fp6.init_from_int(7, 8, 9, 10, 11, 12);
-const c = Fp6.init_from_int(2, 3, 4, 5, 6, 7);
-const left = a.mul(&b).mul(&c);
-const right = a.mul(&b.mul(&c));
-try expectFp6Equal(left, right);
+    const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
+    const b = Fp6.init_from_int(7, 8, 9, 10, 11, 12);
+    const c = Fp6.init_from_int(2, 3, 4, 5, 6, 7);
+    const left = a.mul(&b).mul(&c);
+    const right = a.mul(&b.mul(&c));
+    try expectFp6Equal(left, right);
 }
 
 test "Fp6.mul with zero" {
-const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
-const zero = Fp6.init_from_int(0, 0, 0, 0, 0, 0);
-const result = a.mul(&zero);
-try expectFp6Equal(zero, result);
+    const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
+    const zero = Fp6.init_from_int(0, 0, 0, 0, 0, 0);
+    const result = a.mul(&zero);
+    try expectFp6Equal(zero, result);
 }
 
 test "Fp6.mul with one" {
-const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
-const one = Fp6.init_from_int(1, 0, 0, 0, 0, 0);
-const result = a.mul(&one);
-try expectFp6Equal(a, result);
+    const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
+    const one = Fp6.init_from_int(1, 0, 0, 0, 0, 0);
+    const result = a.mul(&one);
+    try expectFp6Equal(a, result);
 }
 
 test "Fp6.pow to power of zero" {
-const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
-const result = a.pow(0);
-const one = Fp6.init_from_int(1, 0, 0, 0, 0, 0);
-try expectFp6Equal(one, result);
+    const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
+    const result = a.pow(0);
+    const one = Fp6.init_from_int(1, 0, 0, 0, 0, 0);
+    try expectFp6Equal(one, result);
 }
 
 test "Fp6.pow to power of one" {
-const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
-const result = a.pow(1);
-try expectFp6Equal(a, result);
+    const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
+    const result = a.pow(1);
+    try expectFp6Equal(a, result);
 }
 
 test "Fp6.pow basic squaring" {
-const a = Fp6.init_from_int(1, 1, 1, 1, 1, 1);
-const result = a.pow(2);
-const manual_square = a.mul(&a);
-try expectFp6Equal(manual_square, result);
+    const a = Fp6.init_from_int(1, 1, 1, 1, 1, 1);
+    const result = a.pow(2);
+    const manual_square = a.mul(&a);
+    try expectFp6Equal(manual_square, result);
 }
 
 test "Fp6.norm multiplicative property" {
-const a = Fp6.init_from_int(2, 3, 4, 5, 6, 7);
-const b = Fp6.init_from_int(8, 9, 10, 11, 12, 13);
-const product = a.mul(&b);
-const norm_product = product.norm();
-const product_norms = a.norm().mul(&b.norm());
-try std.testing.expect(norm_product.equal(&product_norms));
+    const a = Fp6.init_from_int(2, 3, 4, 5, 6, 7);
+    const b = Fp6.init_from_int(8, 9, 10, 11, 12, 13);
+    const product = a.mul(&b);
+    const norm_product = product.norm();
+    const product_norms = a.norm().mul(&b.norm());
+    try std.testing.expect(norm_product.equal(&product_norms));
 }
 
 test "Fp6.neg verification" {
-const a = Fp6.init_from_int(10, 20, 30, 40, 50, 60);
-const neg_a = a.neg();
-const sum = a.add(&neg_a);
-const zero = Fp6.init_from_int(0, 0, 0, 0, 0, 0);
-try expectFp6Equal(zero, sum);
+    const a = Fp6.init_from_int(10, 20, 30, 40, 50, 60);
+    const neg_a = a.neg();
+    const sum = a.add(&neg_a);
+    const zero = Fp6.init_from_int(0, 0, 0, 0, 0, 0);
+    try expectFp6Equal(zero, sum);
 }
 
 // FERMAT'S LITTLE THEOREM TEST
 test "Fp6.mul fermat's little theorem" {
-const test_elements = [_]Fp6{
-    Fp6.init_from_int(0, 0, 0, 0, 0, 0), // zero
-    Fp6.init_from_int(1, 0, 0, 0, 0, 0), // one
-    Fp6.init_from_int(2, 3, 0, 0, 0, 0), // simple element
-    Fp6.init_from_int(1, 1, 1, 1, 1, 1), // all ones
-    Fp6.init_from_int(5, 7, 11, 13, 17, 19), // mixed values
-};
+    const test_elements = [_]Fp6{
+        Fp6.init_from_int(0, 0, 0, 0, 0, 0), // zero
+        Fp6.init_from_int(1, 0, 0, 0, 0, 0), // one
+        Fp6.init_from_int(2, 3, 0, 0, 0, 0), // simple element
+        Fp6.init_from_int(1, 1, 1, 1, 1, 1), // all ones
+        Fp6.init_from_int(5, 7, 11, 13, 17, 19), // mixed values
+    };
 
-for (test_elements) |a| {
-    // Test a^(p^6)==a using pow
-    var pow_result = a.pow(FP_MOD);
-    pow_result = pow_result.pow(FP_MOD);
-    pow_result = pow_result.pow(FP_MOD);
-    pow_result = pow_result.pow(FP_MOD);
-    pow_result = pow_result.pow(FP_MOD);
-    pow_result = pow_result.pow(FP_MOD);
+    for (test_elements) |a| {
+        // Test a^(p^6)==a using pow
+        var pow_result = a.pow(FP_MOD);
+        pow_result = pow_result.pow(FP_MOD);
+        pow_result = pow_result.pow(FP_MOD);
+        pow_result = pow_result.pow(FP_MOD);
+        pow_result = pow_result.pow(FP_MOD);
+        pow_result = pow_result.pow(FP_MOD);
 
-    try expectFp6Equal(pow_result, a);
-}
+        try expectFp6Equal(pow_result, a);
+    }
 }
 
 test "Fp6.inv basic inverse" {
-const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
-const a_inv = a.inv();
-const product = a.mul(&a_inv);
-const one = Fp6.init_from_int(1, 0, 0, 0, 0, 0);
-try expectFp6Equal(one, product);
+    const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
+    const a_inv = a.inv();
+    const product = a.mul(&a_inv);
+    const one = Fp6.init_from_int(1, 0, 0, 0, 0, 0);
+    try expectFp6Equal(one, product);
 }
 
 test "Fp6.inv double inverse" {
-const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
-const a_inv = a.inv();
-const a_double_inv = a_inv.inv();
-try expectFp6Equal(a, a_double_inv);
+    const a = Fp6.init_from_int(1, 2, 3, 4, 5, 6);
+    const a_inv = a.inv();
+    const a_double_inv = a_inv.inv();
+    try expectFp6Equal(a, a_double_inv);
 }
 
 test "Fp6.frobeniusMap" {
-const pts = [_]Fp6{
-    Fp6.init_from_int(3, 5, 7, 11, 13, 17),
-    Fp6.init_from_int(123, 456, 789, 1011, 1213, 1415),
-    Fp6.init_from_int(999, 888, 777, 666, 555, 444),
-    Fp6.init_from_int(31415, 92653, 58979, 32384, 62643, 38327),
-    Fp6.init_from_int(17, 23, 31, 47, 53, 61),
-    Fp6.init_from_int(0, 1, 2, 3, 4, 5),
-    Fp6.init_from_int(1, 0, 0, 1, 1, 1),
-    Fp6.init_from_int(2023, 2024, 2025, 2026, 2027, 2028),
-    Fp6.init_from_int(123456, 654321, 111111, 222222, 333333, 444444),
-    Fp6.init_from_int(7, 6, 5, 4, 3, 2),
-};
+    const pts = [_]Fp6{
+        Fp6.init_from_int(3, 5, 7, 11, 13, 17),
+        Fp6.init_from_int(123, 456, 789, 1011, 1213, 1415),
+        Fp6.init_from_int(999, 888, 777, 666, 555, 444),
+        Fp6.init_from_int(31415, 92653, 58979, 32384, 62643, 38327),
+        Fp6.init_from_int(17, 23, 31, 47, 53, 61),
+        Fp6.init_from_int(0, 1, 2, 3, 4, 5),
+        Fp6.init_from_int(1, 0, 0, 1, 1, 1),
+        Fp6.init_from_int(2023, 2024, 2025, 2026, 2027, 2028),
+        Fp6.init_from_int(123456, 654321, 111111, 222222, 333333, 444444),
+        Fp6.init_from_int(7, 6, 5, 4, 3, 2),
+    };
 
-for (pts) |pt| {
-    const frob_pow = pt.pow(FP_MOD);
-    const frob_map = pt.frobeniusMap();
-    try expectFp6Equal(frob_pow, frob_map);
-}
+    for (pts) |pt| {
+        const frob_pow = pt.pow(FP_MOD);
+        const frob_map = pt.frobeniusMap();
+        try expectFp6Equal(frob_pow, frob_map);
+    }
 }
