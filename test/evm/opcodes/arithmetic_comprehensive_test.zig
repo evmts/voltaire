@@ -7,7 +7,6 @@ const Contract = Evm.Contract;
 const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
 const ExecutionError = Evm.ExecutionError;
-const EVMAllocator = Evm.EVMAllocator;
 
 // ============================
 // 0x00: STOP opcode
@@ -1921,107 +1920,4 @@ test "Arithmetic opcodes: Stack underflow" {
         const result = evm.table.execute(0, interpreter, state, opcode);
         try testing.expectError(ExecutionError.Error.StackUnderflow, result);
     }
-}
-
-// ============================
-// EVMAllocator test
-// ============================
-
-test "ADD with EVMAllocator: Using pre-allocated memory for EVM execution" {
-    const backing_allocator = testing.allocator;
-
-    // Create EVMAllocator with 4MB for testing (smaller than default 16MB)
-    var evm_allocator = try EVMAllocator.init(backing_allocator, 4 * 1024 * 1024);
-    defer evm_allocator.deinit();
-
-    // Get the allocator interface for EVM use
-    const allocator = evm_allocator.allocator();
-
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
-
-    var evm = try builder.build();
-    defer evm.deinit();
-
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    const code = [_]u8{0x01}; // ADD
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &code,
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
-
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    // Initialize stack for tests that directly use frame.stack
-    frame.stack.ensureInitialized();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    // Test basic addition
-    try frame.stack.append(100);
-    try frame.stack.append(200);
-    _ = try evm.table.execute(0, interpreter, state, 0x01);
-    try testing.expectEqual(@as(u256, 300), try frame.stack.pop());
-
-    // Reset allocator and test reuse
-    evm_allocator.reset();
-
-    // Create new instances with reset allocator
-    var memory_db2 = MemoryDatabase.init(allocator);
-    defer memory_db2.deinit();
-
-    const db_interface2 = memory_db2.to_database_interface();
-    var builder2 = Evm.EvmBuilder.init(allocator, db_interface2);
-
-    var evm2 = try builder2.build();
-    defer evm2.deinit();
-
-    var contract2 = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &code,
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract2.deinit(allocator, null);
-
-    var frame_builder2 = Frame.builder(allocator);
-    var frame2 = try frame_builder2
-        .withVm(&evm2)
-        .withContract(&contract2)
-        .withGas(1000)
-        .build();
-    defer frame2.deinit();
-
-    frame2.stack.ensureInitialized();
-
-    const interpreter2: Evm.Operation.Interpreter = &evm2;
-    const state2: Evm.Operation.State = &frame2;
-
-    // Test that reset allocator still works
-    try frame2.stack.append(50);
-    try frame2.stack.append(75);
-    _ = try evm2.table.execute(0, interpreter2, state2, 0x01);
-    try testing.expectEqual(@as(u256, 125), try frame2.stack.pop());
 }
