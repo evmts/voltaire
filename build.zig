@@ -23,9 +23,6 @@ pub fn build(b: *std.Build) void {
 
     // Detect Ubuntu native build (has Rust library linking issues)
     const force_bn254 = b.option(bool, "force_bn254", "Force BN254 even on Ubuntu") orelse false;
-
-    // Tracy profiler support
-    const tracy_enabled = b.option(bool, "tracy", "Build with Tracy profiler support (default: disabled)") orelse false;
     const is_ubuntu_native = target.result.os.tag == .linux and target.result.cpu.arch == .x86_64 and !force_bn254;
 
     // Disable BN254 on Ubuntu native builds to avoid Rust library linking issues
@@ -35,7 +32,6 @@ pub fn build(b: *std.Build) void {
     const build_options = b.addOptions();
     build_options.addOption(bool, "no_precompiles", no_precompiles);
     build_options.addOption(bool, "no_bn254", no_bn254);
-    build_options.addOption(bool, "enable_tracy", tracy_enabled);
     const build_options_mod = build_options.createModule();
 
     const lib_mod = b.createModule(.{
@@ -45,19 +41,6 @@ pub fn build(b: *std.Build) void {
     });
     lib_mod.addIncludePath(b.path("src/bn254_wrapper"));
     lib_mod.addImport("build_options", build_options_mod);
-
-    // Add Tracy to lib module if enabled
-    if (tracy_enabled) {
-        const ztracy = b.lazyDependency("ztracy", .{
-            .target = target,
-            .optimize = optimize,
-            .enable_ztracy = true,
-            .enable_fibers = false,
-        }) orelse return;
-
-        lib_mod.addImport("ztracy", ztracy.module("root"));
-        lib_mod.linkLibrary(ztracy.artifact("tracy"));
-    }
 
     // Create primitives module
     const primitives_mod = b.createModule(.{
@@ -183,19 +166,6 @@ pub fn build(b: *std.Build) void {
 
     // Link c-kzg library to EVM module
     evm_mod.linkLibrary(c_kzg_lib);
-
-    // Add Tracy profiler support if enabled
-    if (tracy_enabled) {
-        const ztracy = b.lazyDependency("ztracy", .{
-            .target = target,
-            .optimize = optimize,
-            .enable_ztracy = true,
-            .enable_fibers = false,
-        }) orelse return;
-
-        evm_mod.addImport("ztracy", ztracy.module("root"));
-        evm_mod.linkLibrary(ztracy.artifact("tracy"));
-    }
 
     // Create REVM library that depends on workspace build
     const revm_lib = if (rust_target != null) blk: {

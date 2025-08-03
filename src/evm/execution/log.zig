@@ -6,7 +6,6 @@ const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
-const tracy = @import("../tracy_support.zig");
 
 // Compile-time verification that this file is being used
 const COMPILE_TIME_LOG_VERSION = "2024_LOG_FIX_V2";
@@ -19,9 +18,6 @@ const Log = Vm.Log;
 pub fn make_log(comptime num_topics: u8) fn (usize, Operation.Interpreter, Operation.State) ExecutionError.Error!Operation.ExecutionResult {
     return struct {
         pub fn log(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-            const zone = tracy.zone(@src(), "log_operation\x00");
-            defer zone.end();
-            
             _ = pc;
 
             const frame = state;
@@ -102,36 +98,26 @@ pub fn make_log(comptime num_topics: u8) fn (usize, Operation.Interpreter, Opera
 // Each LOG operation gets its own function to avoid opcode detection issues
 
 pub fn log_0(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "log_0\x00");
-    defer zone.end();
     _ = pc;
     return log_impl(0, interpreter, state);
 }
 
 pub fn log_1(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "log_1\x00");
-    defer zone.end();
     _ = pc;
     return log_impl(1, interpreter, state);
 }
 
 pub fn log_2(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "log_2\x00");
-    defer zone.end();
     _ = pc;
     return log_impl(2, interpreter, state);
 }
 
 pub fn log_3(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "log_3\x00");
-    defer zone.end();
     _ = pc;
     return log_impl(3, interpreter, state);
 }
 
 pub fn log_4(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "log_4\x00");
-    defer zone.end();
     _ = pc;
     return log_impl(4, interpreter, state);
 }

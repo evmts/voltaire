@@ -504,9 +504,6 @@ pub fn revert_to_snapshot(vm: *Vm, snapshot_id: usize) !void {
 }
 
 pub fn op_create(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_create\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -549,9 +546,6 @@ pub fn op_create(pc: usize, interpreter: Operation.Interpreter, state: Operation
 
 /// CREATE2 opcode - Create contract with deterministic address
 pub fn op_create2(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_create2\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -593,9 +587,6 @@ pub fn op_create2(pc: usize, interpreter: Operation.Interpreter, state: Operatio
 }
 
 pub fn op_call(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_call\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -647,9 +638,6 @@ pub fn op_call(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 }
 
 pub fn op_callcode(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_callcode\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -696,9 +684,6 @@ pub fn op_callcode(pc: usize, interpreter: Operation.Interpreter, state: Operati
 }
 
 pub fn op_delegatecall(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_delegatecall\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -757,9 +742,6 @@ pub fn op_delegatecall(pc: usize, interpreter: Operation.Interpreter, state: Ope
 }
 
 pub fn op_staticcall(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_staticcall\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -827,9 +809,6 @@ pub fn op_staticcall(pc: usize, interpreter: Operation.Interpreter, state: Opera
 /// Memory: No memory access
 /// Storage: Contract marked for destruction
 pub fn op_selfdestruct(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_selfdestruct\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const vm = interpreter;
@@ -895,9 +874,6 @@ pub fn op_selfdestruct(pc: usize, interpreter: Operation.Interpreter, state: Ope
 /// EXTCALL opcode (0xF8): External call with EOF validation
 /// Not implemented - EOF feature
 pub fn op_extcall(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_extcall\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     _ = state;
@@ -909,9 +885,6 @@ pub fn op_extcall(pc: usize, interpreter: Operation.Interpreter, state: Operatio
 /// EXTDELEGATECALL opcode (0xF9): External delegate call with EOF validation
 /// Not implemented - EOF feature
 pub fn op_extdelegatecall(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_extdelegatecall\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     _ = state;
@@ -923,9 +896,6 @@ pub fn op_extdelegatecall(pc: usize, interpreter: Operation.Interpreter, state: 
 /// EXTSTATICCALL opcode (0xFB): External static call with EOF validation
 /// Not implemented - EOF feature
 pub fn op_extstaticcall(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_extstaticcall\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     _ = state;
@@ -938,7 +908,6 @@ pub fn op_extstaticcall(pc: usize, interpreter: Operation.Interpreter, state: Op
 const testing = std.testing;
 const MemoryDatabase = @import("../state/memory_database.zig");
 const ReturnData = @import("../evm/return_data.zig");
-const tracy = @import("../tracy_support.zig");
 const ArrayList = std.ArrayList;
 
 const FuzzSystemOperation = struct {

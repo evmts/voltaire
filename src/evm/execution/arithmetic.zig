@@ -58,13 +58,9 @@ const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
 const Vm = @import("../evm.zig");
 const StackValidation = @import("../stack/stack_validation.zig");
-const tracy = @import("../tracy_support.zig");
 
 /// ADD opcode (0x01) - Addition with wrapping overflow
 pub fn op_add(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_add\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     const frame = state;
@@ -104,9 +100,6 @@ pub fn op_add(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 /// Stack: [10, 20] => [200]
 /// Stack: [2^128, 2^128] => [0] (overflow wraps)
 pub fn op_mul(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_mul\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     const frame = state;
@@ -147,9 +140,6 @@ pub fn op_mul(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 /// Stack: [30, 10] => [20]
 /// Stack: [10, 20] => [2^256 - 10] (underflow wraps)
 pub fn op_sub(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_sub\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     const frame = state;
@@ -198,9 +188,6 @@ pub fn op_sub(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 /// throw an error but returns 0. This is a deliberate design choice
 /// to avoid exceptional halting conditions.
 pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_div\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     const frame = state;
@@ -256,9 +243,6 @@ pub fn op_div(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 /// as the mathematical result (2^255) cannot be represented in i256.
 /// In this case, we return MIN_I256 to match EVM behavior.
 pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_sdiv\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     const frame = state;
@@ -323,9 +307,6 @@ pub fn op_sdiv(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 /// The result is always in range [0, b-1] for b > 0.
 /// Like DIV, modulo by zero returns 0 rather than throwing an error.
 pub fn op_mod(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_mod\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     const frame = state;
@@ -380,9 +361,6 @@ pub fn op_mod(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 /// This follows the Euclidean division convention where:
 /// a = b * q + r, where |r| < |b| and sign(r) = sign(a)
 pub fn op_smod(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_smod\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     const frame = state;
@@ -443,18 +421,14 @@ pub fn op_smod(pc: usize, interpreter: Operation.Interpreter, state: Operation.S
 /// performed as one operation to handle cases where a + b
 /// exceeds 2^256.
 pub fn op_addmod(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_addmod\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     const frame = state;
 
     std.debug.assert(frame.stack.size() >= 3);
 
-    const popped = frame.stack.pop2_unsafe();
-    const a = popped.a;
-    const b = popped.b;
+    const b = frame.stack.pop_unsafe();
+    const a = frame.stack.pop_unsafe();
     const n = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
@@ -511,18 +485,14 @@ pub fn op_addmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
 /// This operation correctly computes (a * b) mod n even when
 /// a * b exceeds 2^256, unlike naive (a *% b) % n approach.
 pub fn op_mulmod(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_mulmod\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
     const frame = state;
 
     std.debug.assert(frame.stack.size() >= 3);
 
-    const popped = frame.stack.pop2_unsafe();
-    const a = popped.a;
-    const b = popped.b;
+    const b = frame.stack.pop_unsafe();
+    const a = frame.stack.pop_unsafe();
     const n = frame.stack.peek_unsafe().*;
 
     var result: u256 = undefined;
@@ -600,9 +570,6 @@ pub fn op_mulmod(pc: usize, interpreter: Operation.Interpreter, state: Operation
 /// - 2^256: 10 + 50*2 = 110 gas (exponent needs 2 bytes)
 /// - 2^(2^255): 10 + 50*32 = 1610 gas (huge exponent)
 pub fn op_exp(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_exp\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -707,9 +674,6 @@ pub fn op_exp(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 /// - Arithmetic on mixed-width signed integers
 /// - Implementing higher-level language semantics
 pub fn op_signextend(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_signextend\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 

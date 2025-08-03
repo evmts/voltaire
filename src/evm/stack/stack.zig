@@ -1,5 +1,4 @@
 const std = @import("std");
-const tracy = @import("../tracy_support.zig");
 
 /// High-performance EVM stack implementation with fixed capacity.
 ///
@@ -111,9 +110,6 @@ pub fn size(self: *const Stack) usize {
 /// try stack.append(0x1234);
 /// ```
 pub fn append(self: *Stack, value: u256) Error!void {
-    const zone = tracy.zone(@src(), "stack_append\x00");
-    defer zone.end();
-    
     self.ensureInitialized();
     if (self.size() >= CAPACITY) {
         @branchHint(.cold);
@@ -134,10 +130,6 @@ pub fn append(self: *Stack, value: u256) Error!void {
 /// @param value The 256-bit value to push
 pub fn append_unsafe(self: *Stack, value: u256) void {
     @branchHint(.likely);
-    
-    const zone = tracy.zone(@src(), "stack_append_unsafe\x00");
-    defer zone.end();
-    
     std.debug.assert(self.size() < CAPACITY); // Help compiler know we won't overflow
     self.top.?[0] = value;
     self.top.? += 1;
@@ -157,9 +149,6 @@ pub fn append_unsafe(self: *Stack, value: u256) void {
 /// const value = try stack.pop();
 /// ```
 pub fn pop(self: *Stack) Error!u256 {
-    const zone = tracy.zone(@src(), "stack_pop\x00");
-    defer zone.end();
-    
     if (self.size() == 0) {
         @branchHint(.cold);
         // Debug logging removed for fuzz testing compatibility
@@ -181,10 +170,6 @@ pub fn pop(self: *Stack) Error!u256 {
 /// @return The popped value
 pub fn pop_unsafe(self: *Stack) u256 {
     @branchHint(.likely);
-    
-    const zone = tracy.zone(@src(), "stack_pop_unsafe\x00");
-    defer zone.end();
-    
     std.debug.assert(self.size() > 0); // Help compiler know we won't underflow
     self.top.? -= 1;
     const value = self.top.?[0];

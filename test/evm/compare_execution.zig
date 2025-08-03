@@ -74,10 +74,7 @@ test "GT opcode comparison bug" {
     );
     
     const result = try vm.interpret(&contract, &.{}, false);
-    defer {
-        contract.deinit(allocator, null);
-        if (result.output) |output| allocator.free(output);
-    }
+    defer if (result.output) |output| allocator.free(output);
     
     // TRACER REMOVED: Cannot verify execution trace without tracer
     // Original test verified that last PC was 73 (STOP after PUSH1 0x00, no jump taken)

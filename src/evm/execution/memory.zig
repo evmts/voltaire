@@ -24,9 +24,6 @@ fn perform_copy_operation(frame: *Frame, mem_offset: usize, size: usize) !void {
 }
 
 pub fn op_mload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_mload\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -64,9 +61,6 @@ pub fn op_mload(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 }
 
 pub fn op_mstore(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_mstore\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -106,9 +100,6 @@ pub fn op_mstore(pc: usize, interpreter: Operation.Interpreter, state: Operation
 }
 
 pub fn op_mstore8(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_mstore8\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -148,9 +139,6 @@ pub fn op_mstore8(pc: usize, interpreter: Operation.Interpreter, state: Operatio
 }
 
 pub fn op_msize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_msize\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -170,9 +158,6 @@ pub fn op_msize(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 }
 
 pub fn op_mcopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_mcopy\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -238,9 +223,6 @@ pub fn op_mcopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 }
 
 pub fn op_calldataload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_calldataload\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -281,9 +263,6 @@ pub fn op_calldataload(pc: usize, interpreter: Operation.Interpreter, state: Ope
 }
 
 pub fn op_calldatasize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_calldatasize\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -298,9 +277,6 @@ pub fn op_calldatasize(pc: usize, interpreter: Operation.Interpreter, state: Ope
 }
 
 pub fn op_calldatacopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_calldatacopy\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -338,9 +314,6 @@ pub fn op_calldatacopy(pc: usize, interpreter: Operation.Interpreter, state: Ope
 }
 
 pub fn op_codesize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_codesize\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -355,9 +328,6 @@ pub fn op_codesize(pc: usize, interpreter: Operation.Interpreter, state: Operati
 }
 
 pub fn op_codecopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_codecopy\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -400,9 +370,6 @@ pub fn op_codecopy(pc: usize, interpreter: Operation.Interpreter, state: Operati
 }
 
 pub fn op_returndatasize(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_returndatasize\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -417,9 +384,6 @@ pub fn op_returndatasize(pc: usize, interpreter: Operation.Interpreter, state: O
 }
 
 pub fn op_returndatacopy(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_returndatacopy\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -469,7 +433,6 @@ const MemoryDatabase = @import("../state/memory_database.zig");
 const primitives = @import("primitives");
 const Vm = @import("../evm.zig");
 const Contract = @import("../frame/contract.zig");
-const tracy = @import("../tracy_support.zig");
 const Address = primitives.Address;
 
 const FuzzMemoryOperation = struct {

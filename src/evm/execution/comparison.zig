@@ -3,7 +3,6 @@ const Operation = @import("../opcodes/operation.zig");
 const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
 const Frame = @import("../frame/frame.zig");
-const tracy = @import("../tracy_support.zig");
 
 // Helper to convert Stack errors to ExecutionError
 // These are redundant and can be removed.
@@ -11,9 +10,6 @@ const tracy = @import("../tracy_support.zig");
 // so these helpers are unused anyway.
 
 pub fn op_lt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_lt\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -37,9 +33,6 @@ pub fn op_lt(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
 }
 
 pub fn op_gt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_gt\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -63,9 +56,6 @@ pub fn op_gt(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
 }
 
 pub fn op_slt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_slt\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -92,9 +82,6 @@ pub fn op_slt(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 }
 
 pub fn op_sgt(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_sgt\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -118,9 +105,6 @@ pub fn op_sgt(pc: usize, interpreter: Operation.Interpreter, state: Operation.St
 }
 
 pub fn op_eq(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_eq\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 
@@ -140,9 +124,6 @@ pub fn op_eq(pc: usize, interpreter: Operation.Interpreter, state: Operation.Sta
 }
 
 pub fn op_iszero(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_iszero\x00");
-    defer zone.end();
-    
     _ = pc;
     _ = interpreter;
 

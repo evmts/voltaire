@@ -7,12 +7,8 @@ const Vm = @import("../evm.zig");
 const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
 const storage_costs = @import("../gas/storage_costs.zig");
-const tracy = @import("../tracy_support.zig");
 
 pub fn op_sload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_sload\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -42,9 +38,6 @@ pub fn op_sload(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 
 /// SSTORE opcode - Store value in persistent storage
 pub fn op_sstore(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_sstore\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -101,9 +94,6 @@ pub fn op_sstore(pc: usize, interpreter: Operation.Interpreter, state: Operation
 }
 
 pub fn op_tload(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_tload\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;
@@ -125,9 +115,6 @@ pub fn op_tload(pc: usize, interpreter: Operation.Interpreter, state: Operation.
 }
 
 pub fn op_tstore(pc: usize, interpreter: Operation.Interpreter, state: Operation.State) ExecutionError.Error!Operation.ExecutionResult {
-    const zone = tracy.zone(@src(), "op_tstore\x00");
-    defer zone.end();
-    
     _ = pc;
 
     const frame = state;

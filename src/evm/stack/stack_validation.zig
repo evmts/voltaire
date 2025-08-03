@@ -49,37 +49,24 @@ pub fn validate_stack_requirements(
     stack: *const Stack,
     operation: *const Operation,
 ) ExecutionError.Error!void {
-    const tracy = @import("../tracy_support.zig");
-    const zone = tracy.zone(@src(), "validate_stack_requirements\x00");
-    defer zone.end();
-    
-    const size_check_zone = tracy.zone(@src(), "stack_size_check\x00");
     const stack_size = stack.size();
-    size_check_zone.end();
-    
     Log.debug("StackValidation.validate_stack_requirements: Validating stack, size={}, min_required={}, max_allowed={}", .{ stack_size, operation.min_stack, operation.max_stack });
 
     // Check minimum stack requirement
-    const min_check_zone = tracy.zone(@src(), "stack_min_check\x00");
     if (stack_size < operation.min_stack) {
         @branchHint(.cold);
-        min_check_zone.end();
         Log.debug("StackValidation.validate_stack_requirements: Stack underflow, size={} < min_stack={}", .{ stack_size, operation.min_stack });
         return ExecutionError.Error.StackUnderflow;
     }
-    min_check_zone.end();
 
     // Check maximum stack requirement
     // max_stack represents the maximum stack size allowed BEFORE the operation
     // to ensure we don't overflow after the operation completes
-    const max_check_zone = tracy.zone(@src(), "stack_max_check\x00");
     if (stack_size > operation.max_stack) {
         @branchHint(.cold);
-        max_check_zone.end();
         Log.debug("StackValidation.validate_stack_requirements: Stack overflow, size={} > max_stack={}", .{ stack_size, operation.max_stack });
         return ExecutionError.Error.StackOverflow;
     }
-    max_check_zone.end();
 
     Log.debug("StackValidation.validate_stack_requirements: Validation passed", .{});
 }

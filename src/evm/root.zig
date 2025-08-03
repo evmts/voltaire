@@ -58,7 +58,6 @@ const std = @import("std");
 // Import external modules
 /// Address utilities for Ethereum addresses
 pub const primitives = @import("primitives");
-pub const tracy_support = @import("tracy_support.zig");
 
 // Import all EVM modules
 
