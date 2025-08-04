@@ -4,6 +4,8 @@ const Contract = @import("../frame/contract.zig");
 const Frame = @import("../frame/frame.zig");
 const Operation = @import("../opcodes/operation.zig");
 const RunResult = @import("run_result.zig").RunResult;
+const Memory = @import("../memory/memory.zig");
+const ReturnData = @import("return_data.zig").ReturnData;
 const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
@@ -38,66 +40,35 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
     self.read_only = self.read_only or is_static;
 
     const initial_gas = contract.gas;
-    var pc: usize = 0;
 
-    var builder = Frame.builder(self.allocator); // We should consider making all items mandatory and removing frame builder
-    var frame = builder
-        .withVm(self)
-        .withContract(contract)
-        .withGas(contract.gas)
-        .withCaller(contract.caller)
-        .withInput(input)
-        .isStatic(self.read_only)
-        .withDepth(@as(u32, @intCast(self.depth)))
-        .build() catch |err| switch (err) {
-        error.OutOfMemory => return ExecutionError.Error.OutOfMemory,
-        error.MissingVm => unreachable, // We pass a VM. TODO zig better here.
-        error.MissingContract => unreachable, // We pass a contract. TODO zig better here.
+    var frame = Frame{
+        .gas_remaining = contract.gas,
+        .pc = 0,
+        .contract = contract,
+        .allocator = self.allocator,
+        .stop = false,
+        .is_static = self.read_only,
+        .depth = @as(u32, @intCast(self.depth)),
+        .cost = 0,
+        .err = null,
+        .input = input,
+        .output = &[_]u8{},
+        .op = &.{},
+        .memory = try Memory.init_default(self.allocator),
+        .stack = .{},
+        .return_data = ReturnData.init(self.allocator),
     };
     defer frame.deinit();
 
     const interpreter: Operation.Interpreter = self;
     const state: Operation.State = &frame;
 
-    while (pc < contract.code_size) {
+    while (frame.pc < contract.code_size) {
         @branchHint(.likely);
-        const opcode = contract.get_op(pc);
-        frame.pc = pc;
+        const opcode = contract.get_op(frame.pc);
 
-        // Log stack state before operation
-        if (frame.stack.size > 0) {
-            Log.debug("Stack before pc={}: size={}, top 5 values:", .{ pc, frame.stack.size });
-            var i: usize = 0;
-            while (i < @min(5, frame.stack.size)) : (i += 1) {
-                Log.debug("  [{}] = {}", .{ frame.stack.size - 1 - i, frame.stack.data[frame.stack.size - 1 - i] });
-            }
-        }
-        
-        // Trace execution if tracer is available
-        if (self.tracer) |writer| {
-            var tracer = @import("../tracer.zig").Tracer.init(writer);
-            // Get stack slice
-            const stack_slice = frame.stack.data[0..frame.stack.size];
-            // Calculate gas cost for this operation
-            const op_meta = self.table.get_operation(opcode);
-            const gas_cost = op_meta.constant_gas;
-            tracer.trace(
-                pc,
-                opcode,
-                stack_slice,
-                frame.gas_remaining,
-                gas_cost,
-                frame.memory.size(),
-                @intCast(self.depth)
-            ) catch |trace_err| {
-                Log.debug("Failed to write trace: {}", .{trace_err});
-            };
-        }
-        
-        const result = self.table.execute(pc, interpreter, state, opcode) catch |err| {
+        const result = self.table.execute(frame.pc, interpreter, state, opcode) catch |err| {
             contract.gas = frame.gas_remaining;
-            // Don't store frame's return data in EVM - it will be freed when frame deinits
-            self.return_data = &[_]u8{};
 
             var output: ?[]const u8 = null;
             // Use frame.output for RETURN/REVERT data
@@ -149,19 +120,16 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
             };
         };
 
-        if (frame.pc != pc) {
-            Log.debug("interpret: PC changed by opcode - old_pc={}, frame.pc={}, jumping to frame.pc", .{ pc, frame.pc });
-            pc = frame.pc;
+        const old_pc = frame.pc;
+        if (frame.pc == old_pc) {
+            Log.debug("interpret: PC unchanged by opcode - pc={}, frame.pc={}, advancing by {} bytes", .{ old_pc, frame.pc, result.bytes_consumed });
+            frame.pc += result.bytes_consumed;
         } else {
-            Log.debug("interpret: PC unchanged by opcode - pc={}, frame.pc={}, advancing by {} bytes", .{ pc, frame.pc, result.bytes_consumed });
-            pc += result.bytes_consumed;
+            Log.debug("interpret: PC changed by opcode - old_pc={}, frame.pc={}, jumping to frame.pc", .{ old_pc, frame.pc });
         }
     }
 
     contract.gas = frame.gas_remaining;
-    // Don't store frame's return data in EVM - it will be freed when frame deinits
-    self.return_data = &[_]u8{};
-
     // Use frame.output for normal completion (no RETURN/REVERT was called)
     const output_data = frame.output;
     Log.debug("VM.interpret_with_context: Normal completion, output_size={}", .{output_data.len});
