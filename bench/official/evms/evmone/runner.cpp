@@ -10,6 +10,13 @@
 #include <cstring>
 #include <iomanip>
 
+using namespace evmc::literals;
+
+constexpr int64_t GAS = 1000000000;
+const auto ZERO_ADDRESS = 0x0000000000000000000000000000000000000000_address;
+const auto CONTRACT_ADDRESS = 0x2000000000000000000000000000000000000002_address;
+const auto CALLER_ADDRESS = 0x1000000000000000000000000000000000000001_address;
+
 // Convert hex string to bytes
 evmc::bytes hex_to_bytes(const std::string& hex) {
     std::string clean_hex = hex;
@@ -20,6 +27,13 @@ evmc::bytes hex_to_bytes(const std::string& hex) {
     evmc::bytes bytes;
     evmc::from_hex(clean_hex.begin(), clean_hex.end(), std::back_inserter(bytes));
     return bytes;
+}
+
+void check_status(evmc_result result) {
+    if (result.status_code != EVMC_SUCCESS) {
+        std::cerr << "Execution failed with status: " << result.status_code << std::endl;
+        exit(1);
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -60,93 +74,74 @@ int main(int argc, char* argv[]) {
     auto contract_code = hex_to_bytes(contract_code_hex);
     
     // Prepare calldata
-    auto calldata = hex_to_bytes(calldata_hex);
+    auto calldata_bytes = hex_to_bytes(calldata_hex);
     
     // Create evmone VM
-    evmc_vm* vm = evmc_create_evmone();
+    const auto vm = evmc_create_evmone();
     if (!vm) {
         std::cerr << "Failed to create evmone VM" << std::endl;
         return 1;
     }
     
-    // Set up addresses
-    evmc::address caller_address{{0x10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x01}};
-    evmc::address contract_address = evmc::from_hex<evmc::address>("5DDDfCe53EE040D9EB21AFbC0aE1BB4Dbb0BA643").value();
-    
-    // Create host and deploy contract once
+    // Create host for deployment
     evmc::MockedHost host;
     
-    // Set up caller account with max balance
-    host.accounts[caller_address].balance = evmc::bytes32{{
-        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
-    }};
+    // Deploy contract using bytecode directly as init code (like Guillotine does)
     
-    // Deploy contract first
+    
+    
+    
+    // Deploy contract using CREATE
     evmc_message create_msg{};
     create_msg.kind = EVMC_CREATE;
-    create_msg.gas = 10000000;
-    create_msg.sender = caller_address;
-    create_msg.input_data = contract_code.data();
-    create_msg.input_size = contract_code.size();
+    create_msg.recipient = CONTRACT_ADDRESS;
+    create_msg.gas = GAS;
     
-    evmc_result create_result = evmc_execute(vm, &host.get_interface(), 
-                                            (evmc_host_context*)&host,
-                                            EVMC_SHANGHAI, &create_msg, 
-                                            nullptr, 0);
+    auto create_result = evmc_execute(vm, &host.get_interface(), 
+                                     (evmc_host_context*)&host,
+                                     EVMC_SHANGHAI, &create_msg, 
+                                     contract_code.data(), contract_code.size());
     
-    if (create_result.status_code != EVMC_SUCCESS) {
-        std::cerr << "Contract creation failed with status: " << create_result.status_code << std::endl;
-        if (create_result.release) create_result.release(&create_result);
-        evmc_destroy(vm);
+    check_status(create_result);
+    
+    // Extract the deployed code from the CREATE result
+    const auto exec_code = evmc::bytes(create_result.output_data, create_result.output_size);
+    
+    if (exec_code.empty()) {
+        std::cerr << "Contract deployment failed: no runtime code returned" << std::endl;
         return 1;
-    }
-    
-    // Get deployed contract address and code
-    evmc::address deployed_address = create_result.create_address;
-    
-    // Store the deployed code in the host
-    if (create_result.output_data && create_result.output_size > 0) {
-        evmc::bytes deployed_code(create_result.output_data, create_result.output_data + create_result.output_size);
-        host.accounts[deployed_address].code = std::move(deployed_code);
     }
     
     // Clean up create result
     if (create_result.release) create_result.release(&create_result);
     
+    // Prepare call message
+    evmc_message call_msg{};
+    call_msg.kind = EVMC_CALL;
+    call_msg.gas = GAS;
+    call_msg.input_data = calldata_bytes.data();
+    call_msg.input_size = calldata_bytes.size();
+    call_msg.recipient = CONTRACT_ADDRESS;
+    call_msg.sender = CALLER_ADDRESS;
+    
     // Run benchmark
     for (int i = 0; i < num_runs; i++) {
+        // Create fresh host for each run
+        evmc::MockedHost run_host;
+        
         auto start = std::chrono::high_resolution_clock::now();
         
-        // Prepare call message
-        evmc_message msg{};
-        msg.kind = EVMC_CALL;
-        msg.gas = 1000000000;
-        msg.recipient = deployed_address;
-        msg.sender = caller_address;
-        msg.input_data = calldata.data();
-        msg.input_size = calldata.size();
-        
-        // Execute call
-        evmc_result result = evmc_execute(vm, &host.get_interface(), 
-                                         (evmc_host_context*)&host,
-                                         EVMC_SHANGHAI, &msg, 
-                                         nullptr, 0);
+        auto call_result = evmc_execute(vm, &run_host.get_interface(), 
+                                       (evmc_host_context*)&run_host,
+                                       EVMC_SHANGHAI, &call_msg, 
+                                       exec_code.data(), exec_code.size());
         
         auto end = std::chrono::high_resolution_clock::now();
         
-        // Check for errors
-        if (result.status_code != EVMC_SUCCESS) {
-            std::cerr << "Execution failed with status: " << result.status_code << std::endl;
-            if (result.release) result.release(&result);
-            evmc_destroy(vm);
-            return 1;
-        }
+        check_status(call_result);
         
-        // Clean up result
-        if (result.release) result.release(&result);
+        // Clean up call result
+        if (call_result.release) call_result.release(&call_result);
         
         // Calculate duration
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();

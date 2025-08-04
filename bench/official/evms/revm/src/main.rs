@@ -53,8 +53,31 @@ fn main() {
     };
     db.insert_account_info(caller_address, caller_info);
     
-    // Deploy the contract first
-    let contract_address = deploy_contract(&mut db, caller_address, &contract_code).unwrap();
+    // Deploy the contract using bytecode directly as init code (like Guillotine does)
+    let contract_address = {
+        let mut evm_deploy = Evm::builder()
+            .with_db(&mut db)
+            .modify_tx_env(|tx| {
+                tx.caller = caller_address;
+                tx.transact_to = TxKind::Create;
+                tx.value = U256::ZERO;
+                tx.data = contract_code.clone(); // Use bytecode directly as init code
+                tx.gas_limit = 10_000_000;
+                tx.gas_price = U256::from(1u64);
+            })
+            .build();
+            
+        let deploy_result = evm_deploy.transact_commit().unwrap();
+        if let ExecutionResult::Success { output, .. } = deploy_result {
+            if let revm::primitives::Output::Create(_, Some(address)) = output {
+                address
+            } else {
+                panic!("Contract creation failed - no address returned");
+            }
+        } else {
+            panic!("Contract deployment failed");
+        }
+    };
     
     // Create EVM instance once - outside the loop (like Zig does)
     let mut evm = Evm::builder()
@@ -84,28 +107,3 @@ fn main() {
     }
 }
 
-fn deploy_contract(
-    db: &mut CacheDB<EmptyDB>,
-    caller: Address,
-    bytecode: &[u8],
-) -> Result<Address, String> {
-    let mut evm = Evm::builder()
-        .with_db(db)
-        .modify_tx_env(|tx| {
-            tx.caller = caller;
-            tx.transact_to = TxKind::Create;
-            tx.value = U256::ZERO;
-            tx.data = Bytes::from(bytecode.to_vec());
-            tx.gas_limit = 10_000_000;
-            tx.gas_price = U256::from(1u64);
-        })
-        .build();
-        
-    // Fast path - assume success
-    if let Ok(ExecutionResult::Success { output, .. }) = evm.transact_commit() {
-        if let revm::primitives::Output::Create(_, Some(address)) = output {
-            return Ok(address);
-        }
-    }
-    Err("Contract creation failed".to_string())
-}

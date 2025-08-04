@@ -3,6 +3,14 @@
 
 zig build build-evm-runner -Doptimize=ReleaseFast \
   && zig build build-orchestrator -Doptimize=ReleaseFast \
-  && ./zig-out/bin/orchestrator --compare --export markdown --num-runs 5 --js-runs 1 --internal-runs 20 --js-internal-runs 3 \
+  && ./zig-out/bin/orchestrator \
+    --compare \
+    --export markdown \
+    --num-runs 20 \
+    --js-runs 3 \
+    --internal-runs 200 \
+    --js-internal-runs 20 \
+    --snailtracer-internal-runs 20 \
+    --js-snailtracer-internal-runs 3\
   && echo "Opening results in browser..." \
-  && npx markserve bench/official/results.md
+  && npx markserv bench/official/results.md

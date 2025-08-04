@@ -66,10 +66,10 @@ async function main() {
     });
     await stateManager.putAccount(CALLER_ADDRESS, callerAccount);
     
-    // Deploy contract
+    // Deploy contract using the bytecode directly as init code (like Guillotine does)
     const deployResult = await evm.runCall({
         caller: CALLER_ADDRESS,
-        data: contractCode,
+        data: contractCode, // Use bytecode directly as deployment code
         gasLimit: BigInt(10_000_000),
         value: BigInt(0)
     });
@@ -84,12 +84,11 @@ async function main() {
     
     const contractAddress = deployResult.createdAddress;
     
-    // Store the deployed code
+    // Store the deployed code (runtime code returned by deployment)
     if (deployResult.execResult.returnValue && deployResult.execResult.returnValue.length > 0) {
         await stateManager.putContractCode(contractAddress, deployResult.execResult.returnValue);
-        // console.error('Deployed bytecode length:', deployResult.execResult.returnValue.length);
     } else {
-        console.error('Warning: No return value from deployment');
+        throw new Error('Contract deployment failed: no runtime code returned');
     }
 
     // Run the benchmark num_runs times
@@ -107,8 +106,6 @@ async function main() {
         
         // Check for errors
         if (result.execResult.exceptionError) {
-            console.error('Exception error:', result.execResult.exceptionError);
-            console.error('Gas used:', result.execResult.executionGasUsed);
             throw new Error(`Call failed: ${result.execResult.exceptionError.error || result.execResult.exceptionError}`);
         }
         
