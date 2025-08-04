@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -116,15 +115,8 @@ func main() {
 			panic(fmt.Sprintf("Contract creation failed in run %d: %v", i, err))
 		}
 		
-		// Start timing
-		start := time.Now()
-		
 		// Call the deployed contract
 		ret, _, err := runtime.Call(freshContractAddr, calldata, &freshCfg)
-
-		// End timing
-		duration := time.Since(start)
-		durationMs := float64(duration.Nanoseconds()) / 1_000_000.0
 
 		// Check for errors
 		if err != nil {
