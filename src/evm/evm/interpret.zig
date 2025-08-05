@@ -9,8 +9,6 @@ const ReturnData = @import("return_data.zig").ReturnData;
 const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
 const primitives = @import("primitives");
-const tracy = @import("../tracy_support.zig");
-const inline_hot_ops = @import("../jump_table/inline_hot_ops.zig");
 
 /// Execute contract bytecode and return the result.
 ///
@@ -31,9 +29,6 @@ const inline_hot_ops = @import("../jump_table/inline_hot_ops.zig");
 /// ```
 pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: bool) ExecutionError.Error!RunResult {
     @branchHint(.likely);
-
-    const zone = tracy.zone(@src(), "evm.handler.run");
-    defer zone.end();
     Log.debug("VM.interpret: Starting execution, depth={}, gas={}, static={}, code_size={}, input_size={}", .{ self.depth, contract.gas, is_static, contract.code_size, input.len });
 
     self.depth += 1;
@@ -46,86 +41,59 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
 
     const initial_gas = contract.gas;
 
-    var frame = Frame{
-        .gas_remaining = contract.gas,
-        .pc = 0,
-        .contract = contract,
-        .allocator = self.allocator,
-        .stop = false,
-        .is_static = self.read_only,
-        .depth = @as(u32, @intCast(self.depth)),
-        .cost = 0,
-        .err = null,
-        .input = input,
-        .output = &[_]u8{},
-        .op = &.{},
-        .memory = try Memory.init_default(self.allocator),
-        .stack = .{},
-        .return_data = ReturnData.init(self.allocator),
+    // Try to acquire a frame from the pool
+    const pooled_frame = self.acquire_frame();
+    var heap_frame_storage: Frame = undefined;
+    var heap_allocated = false;
+    
+    var frame: *Frame = if (pooled_frame) |pf| pf else blk: {
+        // Pool exhausted, allocate on heap
+        heap_allocated = true;
+        heap_frame_storage = Frame{
+            .gas_remaining = contract.gas,
+            .pc = 0,
+            .contract = contract,
+            .allocator = self.allocator,
+            .stop = false,
+            .is_static = self.read_only,
+            .depth = @as(u32, @intCast(self.depth)),
+            .cost = 0,
+            .err = null,
+            .input = input,
+            .output = &[_]u8{},
+            .op = &.{},
+            .memory = undefined,
+            .stack = .{},
+            .return_data = ReturnData.init(self.allocator),
+        };
+        heap_frame_storage.memory = try Memory.init_default(self.allocator);
+        break :blk &heap_frame_storage;
     };
-    defer frame.deinit();
+    
+    // Configure the frame
+    frame.gas_remaining = contract.gas;
+    frame.pc = 0;
+    frame.contract = contract;
+    frame.is_static = self.read_only;
+    frame.depth = @as(u32, @intCast(self.depth));
+    frame.input = input;
+    
+    defer {
+        if (pooled_frame != null) {
+            self.release_frame(frame);
+        } else if (heap_allocated) {
+            heap_frame_storage.deinit();
+        }
+    }
 
     const interpreter: Operation.Interpreter = self;
-    const state: Operation.State = &frame;
-
-    var instruction_count: u64 = 0;
+    const state: Operation.State = frame;
 
     while (frame.pc < contract.code_size) {
         @branchHint(.likely);
-
         const opcode = contract.get_op(frame.pc);
 
-        // Capture the current PC value before it can be modified
-        const current_pc = frame.pc;
-
-        // Create a zone with dynamic name matching REVM's format
-        // REVM's span attributes become part of the zone name: "evm.exec{pc=XXXXX opcode=YY}"
-        var zone_name_buf: [64]u8 = undefined;
-        const zone_name = std.fmt.bufPrintZ(&zone_name_buf, "evm.exec{{opcode={d}}}", .{opcode}) catch "evm.exec{opcode=?}\x00";
-        const opcode_zone = tracy.zoneRuntime(@src(), zone_name);
-        defer opcode_zone.end();
-
-        // Add PC and opcode as zone values (attributes in REVM terms)
-        // This matches REVM's span attributes: pc = pc, opcode = opcode
-        opcode_zone.Value(@as(u64, current_pc) << 32 | @as(u64, opcode));
-
-        // Set zone text to show PC and opcode values for visual inspection
-        var buf: [64]u8 = undefined;
-        const zone_text = std.fmt.bufPrint(&buf, "pc={x:0>4} opcode={x:0>2}", .{ current_pc, opcode }) catch "pc=???? opcode=??";
-        opcode_zone.setText(zone_text);
-
-        // Add sampling to reduce overhead - emit trace event every 100 instructions
-        instruction_count += 1;
-        if (instruction_count % 100 == 0) {
-            // Log message every 100 instructions like REVM
-            var msg_buf: [128]u8 = undefined;
-            const msg = std.fmt.bufPrint(&msg_buf, "pc:{x:0>4} op:{x:0>2}", .{ current_pc, opcode }) catch "";
-            tracy.message(msg);
-        }
-
-        // Log stack state before operation
-        if (frame.stack.size > 0) {
-            Log.debug("Stack before pc={}: size={}, top 5 values:", .{ frame.pc, frame.stack.size });
-            var i: usize = 0;
-            while (i < @min(5, frame.stack.size)) : (i += 1) {
-                Log.debug("  [{}] = {}", .{ frame.stack.size - 1 - i, frame.stack.data[frame.stack.size - 1 - i] });
-            }
-        }
-
-        // Trace execution if tracer is available
-        if (self.tracer) |writer| {
-            var tracer = @import("../tracer.zig").Tracer.init(writer);
-            // Get stack slice
-            const stack_slice = frame.stack.data[0..frame.stack.size];
-            // Calculate gas cost for this operation
-            const op_meta = self.table.get_operation(opcode);
-            const gas_cost = op_meta.constant_gas;
-            tracer.trace(frame.pc, opcode, stack_slice, frame.gas_remaining, gas_cost, frame.memory.size(), @intCast(self.depth)) catch |trace_err| {
-                Log.debug("Failed to write trace: {}", .{trace_err});
-            };
-        }
-
-        const result = inline_hot_ops.execute_with_inline_hot_ops(&self.table, frame.pc, interpreter, state, opcode) catch |err| {
+        const result = self.table.execute(frame.pc, interpreter, state, opcode) catch |err| {
             contract.gas = frame.gas_remaining;
 
             var output: ?[]const u8 = null;
@@ -142,21 +110,41 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 Log.debug("VM.interpret_with_context: Duplicated output, size={}", .{output.?.len});
             }
 
+            // Check most common case first with likely hint
+            if (err == ExecutionError.Error.STOP) {
+                @branchHint(.likely);
+                // Handle normal termination inline
+                // Free memory early since execution is done
+                frame.memory.deinit();
+                // Reinitialize with minimal memory to keep struct valid
+                frame.memory = Memory.init_default(self.allocator) catch {
+                    // If we can't allocate minimal memory, just continue without it
+                    return RunResult.init(initial_gas, frame.gas_remaining, .Success, null, output);
+                };
+
+                Log.debug("VM.interpret_with_context: STOP opcode, output_size={}, creating RunResult", .{if (output) |o| o.len else 0});
+                const result = RunResult.init(initial_gas, frame.gas_remaining, .Success, null, output);
+                Log.debug("VM.interpret_with_context: RunResult created, output={any}", .{result.output});
+                return result;
+            }
+
+            // Then handle rare errors
             return switch (err) {
                 ExecutionError.Error.InvalidOpcode => {
-                    @branchHint(.cold);
                     // INVALID opcode consumes all remaining gas
                     frame.gas_remaining = 0;
                     contract.gas = 0;
                     return RunResult.init(initial_gas, 0, .Invalid, err, output);
                 },
-                ExecutionError.Error.STOP => {
-                    Log.debug("VM.interpret_with_context: STOP opcode, output_size={}, creating RunResult", .{if (output) |o| o.len else 0});
-                    const result = RunResult.init(initial_gas, frame.gas_remaining, .Success, null, output);
-                    Log.debug("VM.interpret_with_context: RunResult created, output={any}", .{result.output});
-                    return result;
-                },
                 ExecutionError.Error.REVERT => {
+                    // Free memory early since execution is done
+                    frame.memory.deinit();
+                    // Reinitialize with minimal memory to keep struct valid
+                    frame.memory = Memory.init_default(self.allocator) catch {
+                        // If we can't allocate minimal memory, just continue without it
+                        return RunResult.init(initial_gas, frame.gas_remaining, .Revert, err, output);
+                    };
+
                     return RunResult.init(initial_gas, frame.gas_remaining, .Revert, err, output);
                 },
                 ExecutionError.Error.OutOfGas => {
@@ -171,7 +159,6 @@ pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: b
                 ExecutionError.Error.MaxCodeSizeExceeded,
                 ExecutionError.Error.OutOfMemory,
                 => {
-                    @branchHint(.cold);
                     return RunResult.init(initial_gas, frame.gas_remaining, .Invalid, err, output);
                 },
                 else => return err, // Unexpected error

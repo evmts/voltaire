@@ -92,6 +92,8 @@ pub const SoaJumpTable = @import("jump_table/soa_jump_table.zig").SoaJumpTable;
 pub const Memory = @import("memory/memory.zig");
 /// Memory module package for additional memory utilities
 pub const memory = @import("memory/package.zig");
+/// EVM-optimized memory allocator
+pub const EvmMemoryAllocator = @import("memory/evm_allocator.zig").EvmMemoryAllocator;
 
 /// Opcode metadata (gas costs, stack effects)
 pub const Operation = @import("opcodes/operation.zig");
@@ -149,9 +151,6 @@ pub const precompiles = struct {
     pub const PrecompileOutput = @import("precompiles/precompile_result.zig").PrecompileOutput;
     pub const PrecompileError = @import("precompiles/precompile_result.zig").PrecompileError;
 };
-
-/// Tracy profiler support
-pub const tracy_support = @import("tracy_support.zig");
 
 /// ECADD precompile (0x06)
 pub const ecadd = @import("precompiles/ecadd.zig");
