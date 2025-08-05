@@ -184,6 +184,7 @@ pub fn deinit(self: *Evm) void {
     // Clean up frame pool memory
     for (&self.frame_pool.frames) |*frame| {
         frame.memory.deinit();
+        frame.return_data.deinit();
     }
 }
 
@@ -217,7 +218,10 @@ pub fn release_frame(self: *Evm, frame: *Frame) void {
     frame.output = &[_]u8{};
     frame.op = &.{};
     frame.stack.clear();
+    // Clear return data and release any allocated memory
     frame.return_data.clear();
+    // Shrink to minimum capacity to free excess memory
+    frame.return_data.data.shrinkAndFree(0);
     // Reset memory to initial state by re-initializing
     frame.memory.deinit();
     frame.memory = Memory.init_default(self.allocator) catch {
