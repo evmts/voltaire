@@ -85,6 +85,9 @@ pub const Hardfork = @import("hardforks/hardfork.zig");
 /// Opcode to implementation mapping
 pub const JumpTable = @import("jump_table/jump_table.zig");
 
+/// Struct-of-arrays jump table for improved cache locality
+pub const SoaJumpTable = @import("jump_table/soa_jump_table.zig").SoaJumpTable;
+
 /// Byte-addressable memory implementation
 pub const Memory = @import("memory/memory.zig");
 /// Memory module package for additional memory utilities
@@ -130,7 +133,7 @@ pub const MemoryDatabase = @import("state/memory_database.zig").MemoryDatabase;
 pub const DatabaseFactory = @import("state/database_factory.zig");
 
 /// Precompiled contracts implementation (IDENTITY, SHA256, etc.)
-pub const Precompiles = @import("precompiles/precompiles.zig");
+pub const Precompiles = @import("precompiles/precompiles_optimized.zig");
 
 /// Precompiles namespace for easier access
 pub const precompiles = struct {
