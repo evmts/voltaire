@@ -21,7 +21,7 @@ test "debug: minimal ERC20 constructor execution" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     var vm = try builder.build();
     defer vm.deinit();
 
@@ -58,7 +58,7 @@ test "debug: minimal storage constructor" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     var vm = try builder.build();
     defer vm.deinit();
 

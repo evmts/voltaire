@@ -34,7 +34,7 @@ test "SUB opcode bug from ERC20 constructor" {
     var trace_buffer = std.ArrayList(u8).init(allocator);
     defer trace_buffer.deinit();
     
-    var builder = evm.EvmBuilder.init(allocator, db_interface);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     _ = builder.withTracer(trace_buffer.writer().any());
     
     var vm = try builder.build();

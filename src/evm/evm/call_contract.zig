@@ -117,10 +117,9 @@ pub inline fn call_contract(self: *Vm, caller: primitives.Address.Address, to: p
     var host = Host.init(self);
     
     // Create temporary AccessList for Frame (different type from EVM's access_list)
-    var frame_access_list = CallFrameAccessList.init(self.allocator) catch |err| {
-        Log.debug("VM.call_contract: Failed to create frame access list: {}", .{err});
-        return CallResult{ .success = false, .gas_left = 0, .output = null };
-    };
+    const Context = @import("../access_list/context.zig");
+    const access_context = Context.init();
+    var frame_access_list = CallFrameAccessList.init(self.allocator, access_context);
     defer frame_access_list.deinit();
     
     // Create execution context for the contract

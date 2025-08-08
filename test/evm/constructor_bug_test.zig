@@ -20,7 +20,7 @@ test "constructor should return runtime code" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     var vm = try builder.build();
     defer vm.deinit();
@@ -82,7 +82,7 @@ test "manual constructor execution to debug" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     var vm = try builder.build();
     defer vm.deinit();
