@@ -12,7 +12,7 @@ test "contract call: empty contract returns success" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller = primitives.Address.from_u256(0x1111);
@@ -44,7 +44,7 @@ test "contract call: value transfer to empty contract" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller = primitives.Address.from_u256(0x1111);
@@ -77,7 +77,7 @@ test "contract call: insufficient balance for value transfer" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller = primitives.Address.from_u256(0x1111);
@@ -110,7 +110,7 @@ test "contract call: static call cannot transfer value" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller = primitives.Address.from_u256(0x1111);
@@ -139,9 +139,7 @@ test "contract call: simple contract execution" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
-
-    var vm = try builder.build();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1111);
@@ -201,9 +199,7 @@ test "contract call: gas consumption tracking" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
-
-    var vm = try builder.build();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1111);
@@ -271,9 +267,7 @@ test "contract call: revert handling" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
-
-    var vm = try builder.build();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1111);
@@ -335,9 +329,7 @@ test "contract call: input data passing" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
-
-    var vm = try builder.build();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1111);
@@ -393,9 +385,7 @@ test "contract call: call depth limit" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
-
-    var vm = try builder.build();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const caller = primitives.Address.from_u256(0x1111);
@@ -430,9 +420,7 @@ test "contract call: value transfer rollback on failure" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
-
-    var vm = try builder.build();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1111);
