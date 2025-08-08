@@ -535,6 +535,36 @@ pub fn build(b: *std.Build) void {
         dmg_step.dependOn(&create_dmg.step);
     }
 
+    // Crash Debug executable
+    const crash_debug_exe = b.addExecutable(.{
+        .name = "crash-debug",
+        .root_source_file = b.path("src/crash-debug.zig"),
+        .target = target,
+        .optimize = .Debug, // Use Debug for better diagnostics
+    });
+    crash_debug_exe.root_module.addImport("evm", evm_mod);
+    crash_debug_exe.root_module.addImport("primitives", primitives_mod);
+    b.installArtifact(crash_debug_exe);
+
+    const run_crash_debug_cmd = b.addRunArtifact(crash_debug_exe);
+    const crash_debug_step = b.step("crash-debug", "Run crash debugging tool");
+    crash_debug_step.dependOn(&run_crash_debug_cmd.step);
+
+    // Simple Crash Test executable
+    const simple_crash_test_exe = b.addExecutable(.{
+        .name = "simple-crash-test",
+        .root_source_file = b.path("src/simple-crash-test.zig"),
+        .target = target,
+        .optimize = .Debug,
+    });
+    simple_crash_test_exe.root_module.addImport("evm", evm_mod);
+    simple_crash_test_exe.root_module.addImport("primitives", primitives_mod);
+    b.installArtifact(simple_crash_test_exe);
+
+    const run_simple_crash_test_cmd = b.addRunArtifact(simple_crash_test_exe);
+    const simple_crash_test_step = b.step("simple-crash-test", "Run simple crash test");
+    simple_crash_test_step.dependOn(&run_simple_crash_test_cmd.step);
+
     // EVM Benchmark Runner executable (always optimized for benchmarks)
     const evm_runner_exe = b.addExecutable(.{
         .name = "evm-runner",
@@ -761,6 +791,70 @@ pub fn build(b: *std.Build) void {
     const run_opcodes_test = b.addRunArtifact(opcodes_test);
     const opcodes_test_step = b.step("test-opcodes", "Run Opcodes tests");
     opcodes_test_step.dependOn(&run_opcodes_test.step);
+
+    // Add Benchmark Runner tests
+    const benchmark_runner_test = b.addTest(.{
+        .name = "benchmark-runner-test",
+        .root_source_file = b.path("test/evm/benchmark_runner_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    benchmark_runner_test.root_module.stack_check = false;
+    benchmark_runner_test.root_module.addImport("primitives", primitives_mod);
+    benchmark_runner_test.root_module.addImport("evm", evm_mod);
+
+    const run_benchmark_runner_test = b.addRunArtifact(benchmark_runner_test);
+    const benchmark_runner_test_step = b.step("test-benchmark-runner", "Run Benchmark Runner tests");
+    benchmark_runner_test_step.dependOn(&run_benchmark_runner_test.step);
+
+    // Add Minimal Call Test
+    const minimal_call_test = b.addTest(.{
+        .name = "minimal-call-test",
+        .root_source_file = b.path("test/evm/minimal_call_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    minimal_call_test.root_module.stack_check = false;
+    minimal_call_test.root_module.addImport("primitives", primitives_mod);
+    minimal_call_test.root_module.addImport("evm", evm_mod);
+
+    const run_minimal_call_test = b.addRunArtifact(minimal_call_test);
+    const minimal_call_test_step = b.step("test-minimal-call", "Run Minimal Call test");
+    minimal_call_test_step.dependOn(&run_minimal_call_test.step);
+
+    // Add Debug Analysis Test
+    const debug_analysis_test = b.addTest(.{
+        .name = "debug-analysis-test",
+        .root_source_file = b.path("test/evm/debug_analysis_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    debug_analysis_test.root_module.stack_check = false;
+    debug_analysis_test.root_module.addImport("primitives", primitives_mod);
+    debug_analysis_test.root_module.addImport("evm", evm_mod);
+
+    const run_debug_analysis_test = b.addRunArtifact(debug_analysis_test);
+    const debug_analysis_test_step = b.step("test-debug-analysis", "Run Debug Analysis test");
+    debug_analysis_test_step.dependOn(&run_debug_analysis_test.step);
+
+    // Add Super Minimal Test
+    const super_minimal_test = b.addTest(.{
+        .name = "super-minimal-test",
+        .root_source_file = b.path("test/evm/super_minimal_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    super_minimal_test.root_module.stack_check = false;
+    super_minimal_test.root_module.addImport("primitives", primitives_mod);
+    super_minimal_test.root_module.addImport("evm", evm_mod);
+
+    const run_super_minimal_test = b.addRunArtifact(super_minimal_test);
+    const super_minimal_test_step = b.step("test-super-minimal", "Run Super Minimal test");
+    super_minimal_test_step.dependOn(&run_super_minimal_test.step);
 
     // Add Generated Opcode Comparison tests
     const opcode_comparison_test = b.addTest(.{
@@ -1297,6 +1391,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_stack_validation_test.step);
     test_step.dependOn(&run_jump_table_test.step);
     test_step.dependOn(&run_opcodes_test.step);
+    test_step.dependOn(&run_benchmark_runner_test.step);
     test_step.dependOn(&run_vm_opcode_test.step);
 
     // Add inline ops test

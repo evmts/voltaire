@@ -9,7 +9,7 @@ const Stack = @import("stack/stack.zig");
 const Memory = @import("memory/memory.zig");
 const ExecutionError = @import("execution/execution_error.zig");
 const CodeAnalysis = @import("analysis.zig");
-const AccessList = @import("call_frame_stack.zig").AccessList;
+const AccessList = @import("access_list/access_list.zig");
 const CallJournal = @import("call_frame_stack.zig").CallJournal;
 const Host = @import("root.zig").Host;
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
@@ -80,7 +80,7 @@ pub const Flags = packed struct {
 /// Layout optimized for actual opcode access patterns and cache performance
 pub const Frame = struct {
     // ULTRA HOT - First cache line priority (accessed by virtually every opcode)
-    stack: Stack, // 33,536 bytes - accessed by every opcode 
+    stack: *Stack, // 8 bytes pointer - accessed by every opcode (now heap-allocated)
     gas_remaining: u64, // 8 bytes - checked/consumed by every opcode
 
     // HOT - Second cache line priority (accessed by major opcode categories)  
@@ -178,8 +178,13 @@ pub const Frame = struct {
         const block_info = host.get_block_info();
 
         return Frame{
-            // Ultra hot data
-            .stack = Stack.init(),
+            // Ultra hot data - allocate Stack on heap
+            .stack = blk: {
+                const stack_ptr = try allocator.create(Stack);
+                errdefer allocator.destroy(stack_ptr);
+                stack_ptr.* = try Stack.init(allocator);
+                break :blk stack_ptr;
+            },
             .gas_remaining = gas_remaining,
 
             // Hot data - allocate Memory on heap
@@ -237,6 +242,8 @@ pub const Frame = struct {
     }
 
     pub fn deinit(self: *Frame) void {
+        self.stack.deinit();
+        self.allocator.destroy(self.stack);
         self.memory.deinit();
         self.allocator.destroy(self.memory);
     }
@@ -298,7 +305,9 @@ pub const Frame = struct {
 
     /// Mark storage slot as warm (EIP-2929) and return true if it was cold
     pub fn mark_storage_slot_warm(self: *Frame, slot: u256) !bool {
-        return self.access_list.access_storage_key(self.contract_address, slot);
+        const gas_cost = try self.access_list.access_storage_slot(self.contract_address, slot);
+        // Return true if it was cold (high gas cost)
+        return gas_cost > 100;
     }
 
     /// Add gas refund for storage operations (e.g., SSTORE refunds).
@@ -486,13 +495,12 @@ comptime {
     if (@sizeOf(@TypeOf(@as(Frame, undefined).hot_flags)) != 2) @compileError("hot_flags must be exactly 2 bytes (16 bits)");
     if (@sizeOf(Hardfork) != 1) @compileError("Hardfork enum must be exactly 1 byte");
 
-    // Assert reasonable struct size (should be dominated by stack)
-    const stack_size = @sizeOf(Stack);
+    // Assert reasonable struct size (stack is now heap-allocated)
     const total_size = @sizeOf(Frame);
 
-    // Frame should be mostly stack + reasonable overhead
-    if (total_size < stack_size) @compileError("Frame size cannot be smaller than stack size");
-    if (total_size > stack_size + 1024) @compileError("Frame overhead exceeds 1KB - struct layout needs optimization");
+    // Frame should be small now that stack is heap-allocated
+    // Expecting Frame to be around 300-500 bytes (mostly pointers and block context)
+    if (total_size > 1024) @compileError("Frame size exceeds 1KB - struct layout needs optimization");
 
     // Assert natural alignment for performance-critical fields
     if (@offsetOf(Frame, "gas_remaining") % @alignOf(u64) != 0) @compileError("gas_remaining must be naturally aligned for performance");
@@ -877,14 +885,13 @@ test "Frame - selfdestruct availability" {
 test "Frame - memory footprint" {
     // Debug: Print component sizes
     std.debug.print("Component sizes:\n", .{});
-    std.debug.print("  Stack: {} bytes\n", .{@sizeOf(Stack)});
-    std.debug.print("  Memory: {} bytes\n", .{@sizeOf(Memory)});
+    std.debug.print("  Stack pointer: {} bytes\n", .{@sizeOf(*Stack)});
+    std.debug.print("  Memory pointer: {} bytes\n", .{@sizeOf(*Memory)});
     std.debug.print("  Frame total: {} bytes\n", .{@sizeOf(Frame)});
 
     // Verify hot data is at the beginning for better cache locality
     try std.testing.expectEqual(@as(usize, 0), @offsetOf(Frame, "stack"));
 
-    // For now, just verify it compiles and has reasonable field layout
-    // TODO: Optimize component sizes in future iteration
-    try std.testing.expect(@sizeOf(Frame) > 0);
+    // Frame should be much smaller now with heap-allocated Stack
+    try std.testing.expect(@sizeOf(Frame) < 1024);
 }

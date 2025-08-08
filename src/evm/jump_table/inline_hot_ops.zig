@@ -276,7 +276,8 @@ test "inline hot ops maintains correctness" {
     
     // Test PUSH1
     {
-        var stack = Stack{};
+        var stack = try Stack.init(testing.allocator);
+        defer stack.deinit();
         var mock_frame = struct {
             stack: *Stack,
             gas_remaining: u64,

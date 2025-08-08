@@ -111,7 +111,7 @@ const Hardfork = @import("../hardforks/hardfork.zig").Hardfork;
 
 test "COINBASE returns block coinbase address" {
     // Create a minimal test context with only required fields
-    var stack = @import("../stack/stack.zig").init();
+    var stack = try @import("../stack/stack.zig").init(testing.allocator);
     defer stack.deinit();
     
     const test_coinbase = Address.from_hex("0x1234567890123456789012345678901234567890") catch unreachable;
@@ -133,7 +133,7 @@ test "COINBASE returns block coinbase address" {
 }
 
 test "TIMESTAMP returns block timestamp" {
-    var stack = @import("../stack/stack.zig").init();
+    var stack = try @import("../stack/stack.zig").init(testing.allocator);
     defer stack.deinit();
     
     const test_timestamp: u64 = 1234567890;
@@ -155,7 +155,7 @@ test "TIMESTAMP returns block timestamp" {
 }
 
 test "NUMBER returns block number" {
-    var stack = @import("../stack/stack.zig").init();
+    var stack = try @import("../stack/stack.zig").init(testing.allocator);
     defer stack.deinit();
     
     const test_block_number: u64 = 15537393;
@@ -177,7 +177,7 @@ test "NUMBER returns block number" {
 }
 
 test "DIFFICULTY returns block difficulty/prevrandao" {
-    var stack = @import("../stack/stack.zig").init();
+    var stack = try @import("../stack/stack.zig").init(testing.allocator);
     defer stack.deinit();
     
     const test_difficulty: primitives.u256 = 0x123456789ABCDEF;
@@ -199,7 +199,7 @@ test "DIFFICULTY returns block difficulty/prevrandao" {
 }
 
 test "GASLIMIT returns block gas limit" {
-    var stack = @import("../stack/stack.zig").init();
+    var stack = try @import("../stack/stack.zig").init(testing.allocator);
     defer stack.deinit();
     
     const test_gas_limit: u64 = 30_000_000;
@@ -221,7 +221,7 @@ test "GASLIMIT returns block gas limit" {
 }
 
 test "BASEFEE returns block base fee" {
-    var stack = @import("../stack/stack.zig").init();
+    var stack = try @import("../stack/stack.zig").init(testing.allocator);
     defer stack.deinit();
     
     const test_base_fee: primitives.u256 = 1_000_000_000; // 1 gwei
@@ -243,7 +243,7 @@ test "BASEFEE returns block base fee" {
 }
 
 test "BLOBBASEFEE returns blob base fee when available" {
-    var stack = @import("../stack/stack.zig").init();
+    var stack = try @import("../stack/stack.zig").init(testing.allocator);
     defer stack.deinit();
     
     const test_blob_base_fee: primitives.u256 = 100_000_000; // 0.1 gwei
@@ -265,7 +265,7 @@ test "BLOBBASEFEE returns blob base fee when available" {
 }
 
 test "BLOBBASEFEE returns 0 when not available (pre-Cancun)" {
-    var stack = @import("../stack/stack.zig").init();
+    var stack = try @import("../stack/stack.zig").init(testing.allocator);
     defer stack.deinit();
     
     var context = struct {
@@ -285,7 +285,7 @@ test "BLOBBASEFEE returns 0 when not available (pre-Cancun)" {
 }
 
 test "BLOCKHASH returns 0 for future blocks" {
-    var stack = @import("../stack/stack.zig").init();
+    var stack = try @import("../stack/stack.zig").init(testing.allocator);
     defer stack.deinit();
     
     var context = struct {
@@ -308,7 +308,7 @@ test "BLOCKHASH returns 0 for future blocks" {
 }
 
 test "BLOCKHASH returns 0 for blocks too far in past" {
-    var stack = @import("../stack/stack.zig").init();
+    var stack = try @import("../stack/stack.zig").init(testing.allocator);
     defer stack.deinit();
     
     var context = struct {

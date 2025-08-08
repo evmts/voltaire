@@ -150,10 +150,9 @@ pub fn stack_operations_benchmark(allocator: Allocator) void {
 }
 
 fn stack_operations_benchmark_impl(allocator: Allocator) !void {
-    _ = allocator;
-    
     // Create EVM stack
-    var stack = Evm.Stack.init();
+    var stack = try Evm.Stack.init(allocator);
+    defer stack.deinit();
     
     // Benchmark stack push operations
     for (0..500) |i| {

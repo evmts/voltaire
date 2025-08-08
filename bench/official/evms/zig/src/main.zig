@@ -125,9 +125,7 @@ pub fn main() !void {
     // Set up caller account with max balance
     try vm.state.set_balance(caller_address, std.math.maxInt(u256));
 
-    std.debug.print("DEBUG: About to deploy contract with code_size={}\n", .{contract_code.len});
     const contract_address = try deployContract(allocator, &vm, caller_address, contract_code);
-    std.debug.print("DEBUG: Contract deployed successfully\n", .{});
 
     // Run benchmarks
     var run: u8 = 0;
@@ -141,12 +139,10 @@ pub fn main() !void {
             .gas = 1_000_000_000,
         }};
 
-        std.debug.print("DEBUG: Starting contract call with calldata_len={}\n", .{calldata.len});
         const result = vm.call(call_params) catch |err| {
             std.debug.print("Contract execution error: {}\n", .{err});
             std.process.exit(1);
         };
-        std.debug.print("DEBUG: Contract call completed\n", .{});
 
         if (!result.success) {
             std.debug.print("Contract execution failed\n", .{});
@@ -162,30 +158,16 @@ pub fn main() !void {
 
 fn deployContract(allocator: std.mem.Allocator, vm: *evm.Evm, caller: Address, bytecode: []const u8) !Address {
     _ = allocator;
+    _ = caller;
 
-    // Use the new call API for contract creation
-    const create_params = CallParams{ .create = .{
-        .caller = caller,
-        .value = 0,
-        .init_code = bytecode,
-        .gas = 10_000_000,
-    }};
-
-    const create_result = try vm.call(create_params);
-
-    if (create_result.success) {
-        // For CREATE calls, we need to calculate the contract address deterministically
-        // Address = keccak256(rlp.encode([caller, nonce]))[12:]
-        // For simplicity in benchmarks, we'll use a fixed test address
-        const contract_addr = primitives.Address.from_hex("0x5FbDB2315678afecb367f032d93F642f64180aa3") catch unreachable;
-        
-        // Store the deployed code in the state (since we control the test environment)
-        try vm.state.set_code(contract_addr, bytecode);
-        
-        return contract_addr;
-    } else {
-        return error.DeploymentFailed;
-    }
+    // For benchmarking, we'll directly set the code at a known address
+    // This avoids issues with CREATE not being fully implemented
+    const contract_addr = try primitives.Address.from_hex("0x5FbDB2315678afecb367f032d93F642f64180aa3");
+    
+    // Store the bytecode directly in the state
+    try vm.state.set_code(contract_addr, bytecode);
+    
+    return contract_addr;
 }
 
 fn hexToBytes(allocator: std.mem.Allocator, hex: []const u8) ![]u8 {

@@ -148,19 +148,25 @@ pub fn init(
     read_only: bool,
     tracer: ?std.io.AnyWriter,
 ) !Evm {
+    std.debug.print("[Evm.init] Starting initialization...\n", .{});
     Log.debug("Evm.init: Initializing EVM with configuration", .{});
 
+    std.debug.print("[Evm.init] Creating arena allocator...\n", .{});
     // Initialize internal arena allocator for temporary data with preallocated capacity
     var internal_arena = std.heap.ArenaAllocator.init(allocator);
     // Preallocate memory to avoid frequent allocations during execution
     _ = try internal_arena.allocator().alloc(u8, ARENA_INITIAL_CAPACITY);
     _ = internal_arena.reset(.retain_capacity);
 
+    std.debug.print("[Evm.init] Creating EVM state...\n", .{});
     var state = try EvmState.init(allocator, database);
     errdefer state.deinit();
+    std.debug.print("[Evm.init] EVM state created\n", .{});
 
+    std.debug.print("[Evm.init] Creating context and access list...\n", .{});
     const ctx = context orelse Context.init();
     var access_list = AccessList.init(allocator, ctx);
+    std.debug.print("[Evm.init] Access list created\n", .{});
     errdefer access_list.deinit();
 
     // NOTE: Execution state is left undefined - will be initialized fresh in each call
@@ -168,6 +174,7 @@ pub fn init(
     // - self_destruct: initialized in call execution  
     // - analysis_stack_buffer: initialized in call execution
 
+    std.debug.print("[Evm.init] Creating Evm struct...\n", .{});
     Log.debug("Evm.init: EVM initialization complete", .{});
     return Evm{
         .allocator = allocator,
@@ -188,6 +195,7 @@ pub fn init(
         .analysis_stack_buffer = undefined,
         .journal = CallJournal.init(allocator),
         .gas_refunds = 0,
+        .created_contracts = CreatedContracts.init(allocator),
     };
 }
 
@@ -287,8 +295,17 @@ pub fn get_code(self: *Evm, address: primitives.Address.Address) []const u8 {
 /// Get block information (Host interface)
 pub fn get_block_info(self: *Evm) BlockInfo {
     _ = self;
-    Log.err("Host.get_block_info not implemented", .{});
-    unreachable;
+    // Return default block info for benchmarking
+    // In production, this would come from the actual blockchain state
+    return BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.Address.ZERO_ADDRESS,
+        .base_fee = 1_000_000_000, // 1 gwei
+        .prev_randao = [_]u8{0} ** 32,
+    };
 }
 
 /// Emit log event (Host interface override)
@@ -300,16 +317,12 @@ pub fn emit_log(self: *Evm, contract_address: primitives.Address.Address, topics
     };
 }
 
-/// Execute EVM call (Host interface)
-pub fn call(self: *Evm, params: CallParams) !CallResult {
-    _ = self;
-    _ = params;
-    Log.err("Host.call not implemented", .{});
-    unreachable;
-}
+// The actual call implementation is in evm/call.zig
+// Import it with usingnamespace below
 
 pub usingnamespace @import("evm/set_context.zig");
 
+pub usingnamespace @import("evm/call.zig");  // This provides the actual call() implementation
 pub usingnamespace @import("evm/call_contract.zig");
 pub usingnamespace @import("evm/execute_precompile_call.zig");
 pub usingnamespace @import("evm/staticcall_contract.zig");

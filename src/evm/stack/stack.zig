@@ -82,12 +82,15 @@ base: [*]u256,
 limit: [*]u256,
 
 // ============================================================================
-// Cold data - large preallocated storage
+// Cold data - allocator for memory management
 // ============================================================================
 
-/// Stack-allocated storage for optimal performance
-/// Architecture-appropriate alignment for optimal access
-data: [CAPACITY]u256 align(@alignOf(u256)) = undefined,
+/// Allocator used for heap allocation
+allocator: std.mem.Allocator,
+
+/// Heap-allocated storage for stack data
+/// This is now a pointer to heap memory instead of inline array
+data: []u256,
 
 // Compile-time validations for stack design assumptions
 comptime {
@@ -95,10 +98,15 @@ comptime {
     std.debug.assert(CAPACITY == 1024);
 }
 
-/// Initialize a new stack with pointer setup
-pub fn init() Stack {
+/// Initialize a new stack with heap allocation
+pub fn init(allocator: std.mem.Allocator) !Stack {
+    // Allocate memory for stack data on heap
+    const data = try allocator.alloc(u256, CAPACITY);
+    errdefer allocator.free(data);
+
     var stack = Stack{
-        .data = undefined,
+        .allocator = allocator,
+        .data = data,
         .current = undefined,
         .base = undefined,
         .limit = undefined,
@@ -109,6 +117,11 @@ pub fn init() Stack {
     stack.limit = stack.base + CAPACITY;
 
     return stack;
+}
+
+/// Deinitialize the stack and free heap memory
+pub fn deinit(self: *Stack) void {
+    self.allocator.free(self.data);
 }
 
 /// Clear the stack without deallocating memory - resets to initial empty state
@@ -308,8 +321,8 @@ pub fn peek(self: *const Stack) Error!u256 {
 
 // Fuzz testing functions
 pub fn fuzz_stack_operations(allocator: std.mem.Allocator, operations: []const FuzzOperation) !void {
-    _ = allocator;
-    var stack = Stack.init();
+    var stack = try Stack.init(allocator);
+    defer stack.deinit();
     const testing = std.testing;
 
     for (operations) |op| {
@@ -415,7 +428,8 @@ test "fuzz_stack_underflow_boundary" {
 }
 
 test "pointer_arithmetic_correctness" {
-    var stack = Stack.init();
+    var stack = try Stack.init(std.testing.allocator);
+    defer stack.deinit();
 
     // Test initial state
     try std.testing.expectEqual(@as(usize, 0), stack.size());
@@ -442,7 +456,8 @@ test "pointer_arithmetic_correctness" {
 }
 
 test "stack_dup_operations" {
-    var stack = Stack.init();
+    var stack = try Stack.init(std.testing.allocator);
+    defer stack.deinit();
 
     stack.append_unsafe(100);
     stack.append_unsafe(200);
@@ -458,7 +473,8 @@ test "stack_dup_operations" {
 }
 
 test "stack_swap_operations" {
-    var stack = Stack.init();
+    var stack = try Stack.init(std.testing.allocator);
+    defer stack.deinit();
 
     stack.append_unsafe(100);
     stack.append_unsafe(200);
@@ -474,7 +490,8 @@ test "stack_swap_operations" {
 }
 
 test "stack_multi_pop_operations" {
-    var stack = Stack.init();
+    var stack = try Stack.init(std.testing.allocator);
+    defer stack.deinit();
 
     stack.append_unsafe(100);
     stack.append_unsafe(200);
@@ -495,7 +512,8 @@ test "stack_multi_pop_operations" {
 }
 
 test "performance_comparison_pointer_vs_indexing" {
-    var stack = Stack.init();
+    var stack = try Stack.init(std.testing.allocator);
+    defer stack.deinit();
 
     // Fill stack for testing
     var i: usize = 0;
@@ -525,7 +543,8 @@ test "performance_comparison_pointer_vs_indexing" {
 }
 
 test "memory_layout_verification" {
-    var stack = Stack.init();
+    var stack = try Stack.init(std.testing.allocator);
+    defer stack.deinit();
 
     // Verify pointer setup
     try std.testing.expectEqual(@intFromPtr(stack.base), @intFromPtr(&stack.data[0]));

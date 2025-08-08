@@ -31,28 +31,43 @@ pub const MAX_INPUT_SIZE: u18 = 128 * 1024; // 128 kb
 pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResult {
     // Extract call info from params - for now just handle the .call case
     // TODO: Handle other call types properly
-    const call_info = switch (params) {
-        .call => |call_data| .{
-            .address = call_data.to,
-            .code = &[_]u8{}, // TODO: Load from state
-            .code_size = 0,
-            .input = call_data.input,
-            .gas = call_data.gas,
-            .is_static = false,
+    // Extract call information based on the call type
+    var call_address: primitives.Address.Address = undefined;
+    var call_code: []const u8 = undefined;
+    var call_input: []const u8 = undefined;
+    var call_gas: u64 = undefined;
+    var call_is_static: bool = undefined;
+    
+    switch (params) {
+        .call => |call_data| {
+            call_address = call_data.to;
+            call_code = self.state.get_code(call_data.to);
+            call_input = call_data.input;
+            call_gas = call_data.gas;
+            call_is_static = false;
         },
-        .staticcall => |call_data| .{
-            .address = call_data.to,
-            .code = &[_]u8{}, // TODO: Load from state
-            .code_size = 0,
-            .input = call_data.input,
-            .gas = call_data.gas,
-            .is_static = true,
+        .staticcall => |call_data| {
+            call_address = call_data.to;
+            call_code = self.state.get_code(call_data.to);
+            call_input = call_data.input;
+            call_gas = call_data.gas;
+            call_is_static = true;
         },
         else => {
             // For now, return error for unhandled call types
             return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
         },
+    }
+    
+    const call_info = .{
+        .address = call_address,
+        .code = call_code,
+        .code_size = call_code.len,
+        .input = call_input,
+        .gas = call_gas,
+        .is_static = call_is_static,
     };
+
 
     // Input validation
     if (call_info.input.len > MAX_INPUT_SIZE) return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
@@ -61,12 +76,11 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     if (call_info.gas == 0) return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
     if (call_info.code_size > 0 and call_info.code.len == 0) return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
 
-    // Do analysis using EVM instance buffer if contract is small
-    const analysis_allocator = if (call_info.code_size <= STACK_ALLOCATION_THRESHOLD)
-        std.heap.FixedBufferAllocator.init(&self.analysis_stack_buffer)
-    else
-        self.allocator;
-    var analysis = try CodeAnalysis.from_code(analysis_allocator, call_info.code[0..call_info.code_size], &self.table);
+
+    // Do analysis using heap allocator
+    var analysis = CodeAnalysis.from_code(self.allocator, call_info.code[0..call_info.code_size], &self.table) catch {
+        return CallResult{ .success = false, .gas_left = call_info.gas, .output = &.{} };
+    };
     defer analysis.deinit();
 
     // Reinitialize if first frame
@@ -130,9 +144,9 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     // Call interpret with the first frame
     interpret(self, &self.frame_stack[0]) catch |err| {
         // Handle error cases and transform to CallResult
-        var output = &[_]u8{};
+        var output: []const u8 = &.{};
         if (self.frame_stack[0].output.len > 0) {
-            output = self.allocator.dupe(u8, self.frame_stack[0].output) catch &[_]u8{};
+            output = self.allocator.dupe(u8, self.frame_stack[0].output) catch &.{};
         }
 
         const success = switch (err) {
@@ -150,7 +164,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     };
 
     // Success case - copy output if needed
-    var output = &[_]u8{};
+    var output: []const u8 = &.{};
     if (self.frame_stack[0].output.len > 0) {
         output = try self.allocator.dupe(u8, self.frame_stack[0].output);
     }

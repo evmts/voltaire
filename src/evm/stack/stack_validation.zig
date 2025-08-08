@@ -255,7 +255,8 @@ pub fn validateStackRequirements(
 const testing = std.testing;
 
 test "validate_stack_requirements" {
-    var stack = Stack.init();
+    var stack = try Stack.init(std.testing.allocator);
+    defer stack.deinit();
 
     // Test underflow
     const op_needs_2 = OperationView{
@@ -296,7 +297,8 @@ test "validate_stack_requirements" {
 }
 
 test "validate_stack_operation" {
-    var stack = Stack.init();
+    var stack = try Stack.init(std.testing.allocator);
+    defer stack.deinit();
 
     // Test underflow
     try testing.expectError(ExecutionError.Error.StackUnderflow, validate_stack_operation(&stack, 2, 1));
@@ -334,7 +336,8 @@ test "calculate_max_stack" {
 }
 
 test "ValidationPatterns" {
-    var stack = Stack.init();
+    var stack = try Stack.init(std.testing.allocator);
+    defer stack.deinit();
 
     // Test binary op validation
     try testing.expectError(ExecutionError.Error.StackUnderflow, ValidationPatterns.validate_binary_op(&stack));
@@ -360,7 +363,8 @@ test "ValidationPatterns" {
 }
 
 test "validateStackRequirements comptime validation" {
-    var stack = Stack.init();
+    var stack = try Stack.init(std.testing.allocator);
+    defer stack.deinit();
     
     // Test valid binary operation (pop 2, push 1)
     try stack.append(10);

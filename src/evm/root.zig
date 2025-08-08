@@ -180,6 +180,19 @@ pub const opcodes = execution;
 
 /// Chain-specific validation rules
 pub const chain_rules = @import("frame.zig").ChainRules;
+pub const ChainRules = @import("frame.zig").ChainRules;
+
+/// Self destruct tracking
+pub const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
+
+/// Created contracts tracking
+pub const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
+
+/// Call journal for revertible operations
+pub const CallJournal = @import("call_frame_stack.zig").CallJournal;
+
+/// Access list for EIP-2929 and EIP-2930
+pub const AccessList = @import("access_list/access_list.zig");
 
 /// Hardforks namespace for easier access
 pub const hardforks = struct {

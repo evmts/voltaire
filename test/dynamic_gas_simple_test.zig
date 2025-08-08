@@ -61,7 +61,8 @@ test "CALL dynamic gas calculates memory expansion" {
     var memory = try evm.Memory.init_default(allocator);
     defer memory.deinit();
     
-    var stack = evm.Stack.init();
+    var stack = try evm.Stack.init(allocator);
+    defer stack.deinit();
     
     // Push values onto stack for CALL
     // Stack layout: gas, to, value, args_offset, args_size, ret_offset, ret_size
@@ -101,7 +102,8 @@ test "CREATE2 dynamic gas includes hashing cost" {
     var memory = try evm.Memory.init_default(allocator);
     defer memory.deinit();
     
-    var stack = evm.Stack.init();
+    var stack = try evm.Stack.init(allocator);
+    defer stack.deinit();
     
     // Stack layout for CREATE2: value, offset, size, salt
     try stack.append(0);  // salt
@@ -131,7 +133,8 @@ test "DELEGATECALL uses correct stack positions" {
     var memory = try evm.Memory.init_default(allocator);
     defer memory.deinit();
     
-    var stack = evm.Stack.init();
+    var stack = try evm.Stack.init(allocator);
+    defer stack.deinit();
     
     // DELEGATECALL has no value, so positions are different
     // Stack: gas, to, args_offset, args_size, ret_offset, ret_size
