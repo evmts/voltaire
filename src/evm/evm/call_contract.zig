@@ -10,7 +10,7 @@ const Frame = @import("../frame.zig").Frame;
 const CodeAnalysis = @import("../analysis.zig");
 const ChainRules = @import("../frame.zig").ChainRules;
 const Host = @import("../host.zig").Host;
-const CallFrameAccessList = @import("../call_frame_stack.zig").AccessList;
+const CallFrameAccessList = @import("../access_list/access_list.zig");
 const evm_limits = @import("../constants/evm_limits.zig");
 
 pub const CallContractError = std.mem.Allocator.Error || ExecutionError.Error || @import("../state/database_interface.zig").DatabaseError;

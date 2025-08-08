@@ -297,6 +297,8 @@ fn createCodeBitmap(allocator: std.mem.Allocator, code: []const u8) !DynamicBitS
 /// 2. Pre-calculating gas and stack requirements for entire blocks
 /// 3. Eliminating per-instruction validation during execution
 fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table: *const JumpTable, jumpdest_bitmap: *const DynamicBitSet) ![]Instruction {
+    Log.debug("[analysis] Converting {} bytes of code to instructions", .{code.len});
+    
     // Allocate instruction array with extra space for BEGINBLOCK instructions
     const instructions = try allocator.alloc(Instruction, instruction_limits.MAX_INSTRUCTIONS + 1);
     errdefer allocator.free(instructions);
@@ -362,6 +364,8 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
             
             // Terminating instructions - end current block
             .JUMP, .STOP, .RETURN, .REVERT, .SELFDESTRUCT => {
+                Log.debug("[analysis] Found terminating instruction {} at pc={}", .{opcode, pc});
+                
                 const operation = jump_table.get_operation(opcode_byte);
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
@@ -383,15 +387,19 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 // Close current block
                 instructions[block.begin_block_index].arg.block_info = block.close();
                 
-                // Skip dead code until next JUMPDEST
-                while (pc < code.len and code[pc] != @intFromEnum(Opcode.Enum.JUMPDEST)) {
-                    if (Opcode.is_push(code[pc])) {
-                        const push_bytes = Opcode.get_push_size(code[pc]);
-                        pc += 1 + push_bytes;
-                    } else {
-                        pc += 1;
-                    }
+                // Skip dead code until next JUMPDEST - but if we've reached the end, stop
+                if (pc >= code.len) {
+                    Log.debug("[analysis] Reached end of code after terminating instruction", .{});
+                    break;
                 }
+                
+                // Start new block for any code after the terminator
+                instructions[instruction_count] = Instruction{
+                    .opcode_fn = BeginBlockHandler,
+                    .arg = .{ .block_info = BlockInfo{} },
+                };
+                block = BlockAnalysis.init(instruction_count);
+                instruction_count += 1;
             },
             
             .JUMPI => {
@@ -520,14 +528,38 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
     // Close final block
     instructions[block.begin_block_index].arg.block_info = block.close();
 
-    // Ensure the last instruction terminates execution
-    if (instruction_count < instruction_limits.MAX_INSTRUCTIONS) {
+    // Only add implicit STOP if the last instruction is not already a terminator
+    // Check if we need to add an implicit STOP
+    var needs_stop = true;
+    if (instruction_count > 1) {
+        // Check if the previous instruction was a terminating instruction
+        // We can't easily check this without tracking state, so for now just check if we ended the loop naturally
+        if (pc >= code.len and code.len > 0) {
+            // Check the last opcode in the bytecode
+            const last_pc = code.len - 1;
+            const last_opcode = code[last_pc];
+            const is_terminator = switch (last_opcode) {
+                0x00, // STOP
+                0xF3, // RETURN
+                0xFD, // REVERT
+                0xFF => true, // SELFDESTRUCT
+                else => false,
+            };
+            if (is_terminator) {
+                needs_stop = false;
+                Log.debug("[analysis] Last opcode is terminator (0x{x}), skipping implicit STOP", .{last_opcode});
+            }
+        }
+    }
+    
+    if (needs_stop and instruction_count < instruction_limits.MAX_INSTRUCTIONS) {
         const stop_operation = jump_table.get_operation(@intFromEnum(Opcode.Enum.STOP));
         instructions[instruction_count] = Instruction{
             .opcode_fn = stop_operation.execute,
             .arg = .none,
         };
         instruction_count += 1;
+        Log.debug("[analysis] Added implicit STOP at end, total instructions: {}", .{instruction_count});
     }
 
     // No terminator needed for slices

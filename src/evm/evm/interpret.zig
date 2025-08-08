@@ -21,6 +21,8 @@ const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
 pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     self.require_one_thread();
 
+    Log.debug("[interpret] Starting with {} instructions, gas={}", .{frame.analysis.instructions.len, frame.gas_remaining});
+    
     // Frame is provided by caller, get the analysis from it
     const instructions = frame.analysis.instructions;
     var current_index: usize = 0;
@@ -82,6 +84,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             },
             .push_value => |value| {
                 current_index += 1;
+                Log.debug("[interpret] PUSH value: {x}", .{value});
                 try frame.stack.append(value);
             },
             .none => {
@@ -91,6 +94,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 current_index += 1;
                 nextInstruction.opcode_fn(@ptrCast(frame)) catch |err| {
                     // Frame already manages its own output, no need to copy
+                    Log.debug("[interpret] Opcode at index {} returned error: {}", .{current_index - 1, err});
 
                     // Handle gas exhaustion for InvalidOpcode specifically
                     if (err == ExecutionError.Error.InvalidOpcode) {
@@ -160,4 +164,6 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             },
         }
     }
+    
+    Log.debug("[interpret] Reached end of instructions without STOP/RETURN, current_index={}, len={}", .{current_index, instructions.len});
 }

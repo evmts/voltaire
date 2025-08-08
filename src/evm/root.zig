@@ -64,13 +64,11 @@ pub const primitives = @import("primitives");
 /// Bytecode analysis for jump destination detection
 pub const CodeAnalysis = @import("analysis.zig");
 
-
 /// Unified error types for EVM execution
 pub const ExecutionError = @import("execution/execution_error.zig");
 
 /// Execution result type
 pub const ExecutionResult = @import("execution/execution_result.zig");
-
 
 /// Execution context providing transaction and block information
 pub const Context = @import("access_list/context.zig");
@@ -101,15 +99,12 @@ pub const Stack = @import("stack/stack.zig");
 /// Stack depth validation utilities
 pub const stack_validation = @import("stack/stack_validation.zig");
 
-
 /// Main virtual machine implementation
 pub const Evm = @import("evm.zig");
 
-
 /// Execution context and frame management
 pub const Frame = @import("frame.zig").Frame;
-pub const ExecutionContext = @import("frame.zig").ExecutionContext;
-
+pub const ExecutionContext = @import("frame.zig").Frame;
 
 /// EVM state management (accounts, storage, logs)
 pub const EvmState = @import("state/state.zig");
@@ -177,7 +172,6 @@ pub const opcodes = execution;
 
 // Import utility modules
 
-
 /// Chain-specific validation rules
 pub const chain_rules = @import("frame.zig").ChainRules;
 pub const ChainRules = @import("frame.zig").ChainRules;
@@ -215,8 +209,6 @@ pub const eip_7702_bytecode = @import("frame/eip_7702_bytecode.zig");
 /// Instruction type for block-based execution
 pub const Instruction = @import("instruction.zig").Instruction;
 const instruction_module = @import("instruction.zig");
-
-
 
 /// Block execution metrics and performance analysis
 pub const block_metrics = @import("block_metrics.zig");
@@ -297,7 +289,6 @@ pub const MemoryError = Memory.MemoryError;
 // Stack error types
 /// Errors from stack operations (overflow, underflow)
 pub const StackError = Stack.Error;
-
 
 // Access List error types (imported via import statement to avoid circular deps)
 /// Access list module for EIP-2929/2930 support
