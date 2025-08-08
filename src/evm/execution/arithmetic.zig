@@ -53,7 +53,7 @@
 /// SIGNEXTEND   | [b, x]      | [y]          | Sign extend x from byte b
 const std = @import("std");
 const ExecutionError = @import("execution_error.zig");
-const ExecutionContext = @import("../frame.zig").ExecutionContext;
+const Frame = @import("../frame.zig").Frame;
 const primitives = @import("primitives");
 const U256 = primitives.Uint(256, 4);
 
@@ -76,10 +76,9 @@ const Vm = @import("../evm.zig");
 const MemoryDatabase = @import("../state/memory_database.zig");
 const Operation = @import("../opcodes/operation.zig");
 
-
 /// ADD opcode (0x01) - Addition with wrapping overflow
 pub fn op_add(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     const b = frame.stack.pop_unsafe();
@@ -113,7 +112,7 @@ pub fn op_add(context: *anyopaque) ExecutionError.Error!void {
 /// Stack: [10, 20] => [200]
 /// Stack: [2^128, 2^128] => [0] (overflow wraps)
 pub fn op_mul(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     const b = frame.stack.pop_unsafe();
@@ -153,7 +152,7 @@ pub fn op_mul(context: *anyopaque) ExecutionError.Error!void {
 /// Stack: [30, 10] => [20]
 /// Stack: [10, 20] => [2^256 - 10] (underflow wraps)
 pub fn op_sub(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     const b = frame.stack.pop_unsafe();
@@ -196,7 +195,7 @@ pub fn op_sub(context: *anyopaque) ExecutionError.Error!void {
 /// throw an error but returns 0. This is a deliberate design choice
 /// to avoid exceptional halting conditions.
 pub fn op_div(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     const b = frame.stack.pop_unsafe();
@@ -248,7 +247,7 @@ pub fn op_div(context: *anyopaque) ExecutionError.Error!void {
 /// as the mathematical result (2^255) cannot be represented in i256.
 /// In this case, we return MIN_I256 to match EVM behavior.
 pub fn op_sdiv(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     const b = frame.stack.pop_unsafe();
@@ -307,7 +306,7 @@ pub fn op_sdiv(context: *anyopaque) ExecutionError.Error!void {
 /// The result is always in range [0, b-1] for b > 0.
 /// Like DIV, modulo by zero returns 0 rather than throwing an error.
 pub fn op_mod(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     const b = frame.stack.pop_unsafe();
@@ -362,7 +361,7 @@ pub fn op_mod(context: *anyopaque) ExecutionError.Error!void {
 /// This follows the Euclidean division convention where:
 /// a = b * q + r, where |r| < |b| and sign(r) = sign(a)
 pub fn op_smod(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     const b = frame.stack.pop_unsafe();
@@ -417,7 +416,7 @@ pub fn op_smod(context: *anyopaque) ExecutionError.Error!void {
 /// a + b exceeds 2^256, using specialized algorithms to avoid
 /// intermediate overflow.
 pub fn op_addmod(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 3);
 
     const b = frame.stack.pop_unsafe();
@@ -479,7 +478,7 @@ pub fn op_addmod(context: *anyopaque) ExecutionError.Error!void {
 /// This operation correctly computes (a * b) mod n even when
 /// a * b exceeds 2^256, unlike naive (a *% b) % n approach.
 pub fn op_mulmod(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 3);
 
     const b = frame.stack.pop_unsafe();
@@ -544,7 +543,7 @@ pub fn op_mulmod(context: *anyopaque) ExecutionError.Error!void {
 /// - 2^256: 10 + 50*2 = 110 gas (exponent needs 2 bytes)
 /// - 2^(2^255): 10 + 50*32 = 1610 gas (huge exponent)
 pub fn op_exp(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     const base = frame.stack.pop_unsafe();
@@ -641,7 +640,7 @@ pub fn op_exp(context: *anyopaque) ExecutionError.Error!void {
 /// - Arithmetic on mixed-width signed integers
 /// - Implementing higher-level language semantics
 pub fn op_signextend(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     const byte_num = frame.stack.pop_unsafe();
@@ -683,7 +682,7 @@ pub fn op_signextend(context: *anyopaque) ExecutionError.Error!void {
 }
 
 // FIXME: Function temporarily disabled due to compilation issues during refactor
-// Simple test-only arithmetic verification - no EVM setup needed  
+// Simple test-only arithmetic verification - no EVM setup needed
 // pub fn test_arithmetic_operation(op_type: ArithmeticOpType, a: u256, b: u256, c: u256) !u256 {
 //     switch (op_type) {
 //         .add => return a +% b,
@@ -725,7 +724,7 @@ pub fn op_signextend(context: *anyopaque) ExecutionError.Error!void {
 //             var result: u256 = 0;
 //             var x = a % c;
 //             var y = b % c;
-// 
+//
 //             while (y > 0) {
 //                 if ((y & 1) == 1) {
 //                     const sum = result +% x;
@@ -741,7 +740,7 @@ pub fn op_signextend(context: *anyopaque) ExecutionError.Error!void {
 //             var result: u256 = 1;
 //             var base = a;
 //             var exp = b;
-// 
+//
 //             while (exp > 0) {
 //                 if ((exp & 1) == 1) {
 //                     result *%= base;
@@ -753,12 +752,12 @@ pub fn op_signextend(context: *anyopaque) ExecutionError.Error!void {
 //         },
 //         .signextend => {
 //             if (a >= 31) return b;
-// 
+//
 //             const byte_index = @as(u8, @intCast(a));
 //             const sign_bit_pos = byte_index * 8 + 7;
 //             const sign_bit = (b >> @intCast(sign_bit_pos)) & 1;
 //             const keep_bits = sign_bit_pos + 1;
-// 
+//
 //             if (sign_bit == 1) {
 //                 if (keep_bits >= 256) {
 //                     return b;
@@ -1238,168 +1237,167 @@ pub fn op_signextend(context: *anyopaque) ExecutionError.Error!void {
 
 // FIXME: Comment out test functions that use Frame/Contract until ExecutionContext migration is complete
 // test "arithmetic_benchmarks" {
-    // const Timer = std.time.Timer;
-    // var timer = try Timer.start();
-    // const allocator = std.testing.allocator;
+// const Timer = std.time.Timer;
+// var timer = try Timer.start();
+// const allocator = std.testing.allocator;
 
-    // FIXME: All test functions that used Frame/Contract have been removed
-    // defer memory_db.deinit();
-    // const db_interface = memory_db.to_database_interface();
-    // var vm = try Vm.init(allocator, db_interface, null, null);
-    // defer vm.deinit();
+// FIXME: All test functions that used Frame/Contract have been removed
+// defer memory_db.deinit();
+// const db_interface = memory_db.to_database_interface();
+// var vm = try Vm.init(allocator, db_interface, null, null);
+// defer vm.deinit();
 
-    // const iterations = 100000;
+// const iterations = 100000;
 
-    // Benchmark 1: Basic arithmetic operations (ADD, SUB, MUL)
-    // timer.reset();
-    // var i: usize = 0;
-    // while (i < iterations) : (i += 1) {
-        // var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x01}, .{ .address = [_]u8{0} ** 20 });
-        // defer contract.deinit(allocator, null);
-        // var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
-        // defer frame.deinit();
+// Benchmark 1: Basic arithmetic operations (ADD, SUB, MUL)
+// timer.reset();
+// var i: usize = 0;
+// while (i < iterations) : (i += 1) {
+// var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x01}, .{ .address = [_]u8{0} ** 20 });
+// defer contract.deinit(allocator, null);
+// var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+// defer frame.deinit();
 
-        // Test ADD operation
-        // try frame.stack.append(@intCast(i));
-        // try frame.stack.append(@intCast(i * 2));
-        // try op_add(&frame);
-    // }
-    // const basic_arithmetic_ns = timer.read();
+// Test ADD operation
+// try frame.stack.append(@intCast(i));
+// try frame.stack.append(@intCast(i * 2));
+// try op_add(&frame);
+// }
+// const basic_arithmetic_ns = timer.read();
 
-    // // Benchmark 2: Division operations (handling edge cases)
-    // timer.reset();
-    // i = 0;
-    // while (i < iterations) : (i += 1) {
-        // var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x04}, .{ .address = [_]u8{0} ** 20 });
-        // // defer contract.deinit(allocator, null);
-        // // var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
-        // // defer frame.deinit();
+// // Benchmark 2: Division operations (handling edge cases)
+// timer.reset();
+// i = 0;
+// while (i < iterations) : (i += 1) {
+// var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x04}, .{ .address = [_]u8{0} ** 20 });
+// // defer contract.deinit(allocator, null);
+// // var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+// // defer frame.deinit();
 
-        // // Test DIV with various values including edge cases
-        // const dividend: u256 = @intCast(if (i == 0) 1 else i);
-        // const divisor: u256 = @intCast(if (i % 100 == 0) 0 else (i % 1000) + 1); // Include div by zero
-        // // try frame.stack.append(dividend);
-        // // try frame.stack.append(divisor);
-        // // try op_div(&frame);
-    // }
-    // const division_ops_ns = timer.read();
+// // Test DIV with various values including edge cases
+// const dividend: u256 = @intCast(if (i == 0) 1 else i);
+// const divisor: u256 = @intCast(if (i % 100 == 0) 0 else (i % 1000) + 1); // Include div by zero
+// // try frame.stack.append(dividend);
+// // try frame.stack.append(divisor);
+// // try op_div(&frame);
+// }
+// const division_ops_ns = timer.read();
 
-    // // Benchmark 3: Modular arithmetic (ADDMOD, MULMOD)
-    // timer.reset();
-    // i = 0;
-    // while (i < iterations / 10) : (i += 1) { // Fewer iterations due to complexity
-        // var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x08}, .{ .address = [_]u8{0} ** 20 });
-        // // defer contract.deinit(allocator, null);
-        // // var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
-        // // defer frame.deinit();
+// // Benchmark 3: Modular arithmetic (ADDMOD, MULMOD)
+// timer.reset();
+// i = 0;
+// while (i < iterations / 10) : (i += 1) { // Fewer iterations due to complexity
+// var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x08}, .{ .address = [_]u8{0} ** 20 });
+// // defer contract.deinit(allocator, null);
+// // var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+// // defer frame.deinit();
 
-        // // Test ADDMOD operation
-        // // try frame.stack.append(@intCast(i * 1000));
-        // // try frame.stack.append(@intCast(i * 2000));
-        // // try frame.stack.append(@intCast(if (i == 0) 1 else i + 1)); // Avoid mod by zero
-        // // try op_addmod(&frame);
-    // }
-    // const modular_arithmetic_ns = timer.read();
+// // Test ADDMOD operation
+// // try frame.stack.append(@intCast(i * 1000));
+// // try frame.stack.append(@intCast(i * 2000));
+// // try frame.stack.append(@intCast(if (i == 0) 1 else i + 1)); // Avoid mod by zero
+// // try op_addmod(&frame);
+// }
+// const modular_arithmetic_ns = timer.read();
 
-    // // Benchmark 4: Exponentiation with various exponent sizes
-    // timer.reset();
-    // const exp_cases = [_]struct { base: u256, exp: u256 }{
-        // .{ .base = 2, .exp = 1 }, // Small exponent
-        // .{ .base = 2, .exp = 8 }, // Medium exponent
-        // .{ .base = 2, .exp = 256 }, // Large exponent
-        // .{ .base = 3, .exp = 100 }, // Different base
-        // .{ .base = 0, .exp = 100 }, // Zero base
-        // .{ .base = 100, .exp = 0 }, // Zero exponent
-    // };
+// // Benchmark 4: Exponentiation with various exponent sizes
+// timer.reset();
+// const exp_cases = [_]struct { base: u256, exp: u256 }{
+// .{ .base = 2, .exp = 1 }, // Small exponent
+// .{ .base = 2, .exp = 8 }, // Medium exponent
+// .{ .base = 2, .exp = 256 }, // Large exponent
+// .{ .base = 3, .exp = 100 }, // Different base
+// .{ .base = 0, .exp = 100 }, // Zero base
+// .{ .base = 100, .exp = 0 }, // Zero exponent
+// };
 
-    // for (exp_cases) |exp_case| {
-        // var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x0a}, .{ .address = [_]u8{0} ** 20 });
-        // // defer contract.deinit(allocator, null);
-        // // var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
-        // // defer frame.deinit();
+// for (exp_cases) |exp_case| {
+// var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x0a}, .{ .address = [_]u8{0} ** 20 });
+// // defer contract.deinit(allocator, null);
+// // var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+// // defer frame.deinit();
 
-        // // try frame.stack.append(exp_case.base);
-        // // try frame.stack.append(exp_case.exp);
-        // // try op_exp(&frame);
-    // }
-    // const exponentiation_ns = timer.read();
+// // try frame.stack.append(exp_case.base);
+// // try frame.stack.append(exp_case.exp);
+// // try op_exp(&frame);
+// }
+// const exponentiation_ns = timer.read();
 
-    // // Benchmark 5: Sign extension with different byte positions
-    // timer.reset();
-    // i = 0;
-    // while (i < iterations) : (i += 1) {
-        // var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x0b}, .{ .address = [_]u8{0} ** 20 });
-        // // defer contract.deinit(allocator, null);
-        // // var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
-        // // defer frame.deinit();
+// // Benchmark 5: Sign extension with different byte positions
+// timer.reset();
+// i = 0;
+// while (i < iterations) : (i += 1) {
+// var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x0b}, .{ .address = [_]u8{0} ** 20 });
+// // defer contract.deinit(allocator, null);
+// // var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+// // defer frame.deinit();
 
-        // // Test SIGNEXTEND with various byte positions
-        // const byte_pos: u256 = i % 32; // Valid byte positions 0-31
-        // const value: u256 = @intCast(i * 0x123456);
-        // // try frame.stack.append(byte_pos);
-        // // try frame.stack.append(value);
-        // // try op_signextend(&frame);
-    // }
-    // const sign_extension_ns = timer.read();
+// // Test SIGNEXTEND with various byte positions
+// const byte_pos: u256 = i % 32; // Valid byte positions 0-31
+// const value: u256 = @intCast(i * 0x123456);
+// // try frame.stack.append(byte_pos);
+// // try frame.stack.append(value);
+// // try op_signextend(&frame);
+// }
+// const sign_extension_ns = timer.read();
 
-    // // Benchmark 6: Signed arithmetic (SDIV, SMOD)
-    // timer.reset();
-    // i = 0;
-    // while (i < iterations) : (i += 1) {
-        // var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x05}, .{ .address = [_]u8{0} ** 20 });
-        // // defer contract.deinit(allocator, null);
-        // // var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
-        // // defer frame.deinit();
+// // Benchmark 6: Signed arithmetic (SDIV, SMOD)
+// timer.reset();
+// i = 0;
+// while (i < iterations) : (i += 1) {
+// var contract = try @import("../frame/contract.zig").Contract.init(allocator, &[_]u8{0x05}, .{ .address = [_]u8{0} ** 20 });
+// // defer contract.deinit(allocator, null);
+// // var frame = try Frame.init(allocator, &vm, 1000000, contract, [_]u8{0} ** 20, &.{});
+// // defer frame.deinit();
 
-        // // Test SDIV with mix of positive and negative values
-        // const a: u256 = if (i % 2 == 0) @intCast(i + 1) else std.math.maxInt(u256) - @as(u256, @intCast(i)); // Simulate negative
-        // const b: u256 = @intCast(if (i % 100 == 0) 1 else (i % 1000) + 1); // Avoid div by zero
-        // // try frame.stack.append(a);
-        // // try frame.stack.append(b);
-        // // try op_sdiv(&frame);
-    // }
-    // const signed_arithmetic_ns = timer.read();
+// // Test SDIV with mix of positive and negative values
+// const a: u256 = if (i % 2 == 0) @intCast(i + 1) else std.math.maxInt(u256) - @as(u256, @intCast(i)); // Simulate negative
+// const b: u256 = @intCast(if (i % 100 == 0) 1 else (i % 1000) + 1); // Avoid div by zero
+// // try frame.stack.append(a);
+// // try frame.stack.append(b);
+// // try op_sdiv(&frame);
+// }
+// const signed_arithmetic_ns = timer.read();
 
-    // // Print benchmark results
-    // std.log.debug("Arithmetic Operation Benchmarks:", .{});
-    // std.log.debug("  Basic arithmetic ({} ops): {} ns", .{ iterations, basic_arithmetic_ns });
-    // std.log.debug("  Division operations ({} ops): {} ns", .{ iterations, division_ops_ns });
-    // std.log.debug("  Modular arithmetic ({} ops): {} ns", .{ iterations / 10, modular_arithmetic_ns });
-    // std.log.debug("  Exponentiation (6 cases): {} ns", .{exponentiation_ns});
-    // std.log.debug("  Sign extension ({} ops): {} ns", .{ iterations, sign_extension_ns });
-    // std.log.debug("  Signed arithmetic ({} ops): {} ns", .{ iterations, signed_arithmetic_ns });
+// // Print benchmark results
+// std.log.debug("Arithmetic Operation Benchmarks:", .{});
+// std.log.debug("  Basic arithmetic ({} ops): {} ns", .{ iterations, basic_arithmetic_ns });
+// std.log.debug("  Division operations ({} ops): {} ns", .{ iterations, division_ops_ns });
+// std.log.debug("  Modular arithmetic ({} ops): {} ns", .{ iterations / 10, modular_arithmetic_ns });
+// std.log.debug("  Exponentiation (6 cases): {} ns", .{exponentiation_ns});
+// std.log.debug("  Sign extension ({} ops): {} ns", .{ iterations, sign_extension_ns });
+// std.log.debug("  Signed arithmetic ({} ops): {} ns", .{ iterations, signed_arithmetic_ns });
 
-    // // Performance analysis
-    // const avg_basic_ns = basic_arithmetic_ns / iterations;
-    // const avg_division_ns = division_ops_ns / iterations;
-    // const avg_signed_ns = signed_arithmetic_ns / iterations;
+// // Performance analysis
+// const avg_basic_ns = basic_arithmetic_ns / iterations;
+// const avg_division_ns = division_ops_ns / iterations;
+// const avg_signed_ns = signed_arithmetic_ns / iterations;
 
-    // std.log.debug("  Average basic arithmetic: {} ns/op", .{avg_basic_ns});
-    // std.log.debug("  Average division: {} ns/op", .{avg_division_ns});
-    // std.log.debug("  Average signed arithmetic: {} ns/op", .{avg_signed_ns});
+// std.log.debug("  Average basic arithmetic: {} ns/op", .{avg_basic_ns});
+// std.log.debug("  Average division: {} ns/op", .{avg_division_ns});
+// std.log.debug("  Average signed arithmetic: {} ns/op", .{avg_signed_ns});
 
-    // // Gas calculation throughput benchmark
-    // timer.reset();
-    // i = 0;
-    // const gas_iterations = 1000000;
-    // while (i < gas_iterations) : (i += 1) {
-        // // Simulate gas cost calculation for EXP with varying exponent sizes
-        // const exp: u256 = @intCast(i % 10000);
-        // var byte_size: u64 = 0;
-        // var exp_copy = exp;
-        // while (exp_copy > 0) : (exp_copy >>= 8) {
-            // byte_size += 1;
-        // }
-        // // Simulate gas calculation: 10 + 50 * byte_size
-        // _ = 10 + 50 * byte_size;
-    // }
-    // const gas_calculation_ns = timer.read();
+// // Gas calculation throughput benchmark
+// timer.reset();
+// i = 0;
+// const gas_iterations = 1000000;
+// while (i < gas_iterations) : (i += 1) {
+// // Simulate gas cost calculation for EXP with varying exponent sizes
+// const exp: u256 = @intCast(i % 10000);
+// var byte_size: u64 = 0;
+// var exp_copy = exp;
+// while (exp_copy > 0) : (exp_copy >>= 8) {
+// byte_size += 1;
+// }
+// // Simulate gas calculation: 10 + 50 * byte_size
+// _ = 10 + 50 * byte_size;
+// }
+// const gas_calculation_ns = timer.read();
 
-    // std.log.debug("  Gas calculation throughput ({} calcs): {} ns", .{ gas_iterations, gas_calculation_ns });
-    // std.log.debug("  Average gas calculation: {} ns/calc", .{gas_calculation_ns / gas_iterations});
+// std.log.debug("  Gas calculation throughput ({} calcs): {} ns", .{ gas_iterations, gas_calculation_ns });
+// std.log.debug("  Average gas calculation: {} ns/calc", .{gas_calculation_ns / gas_iterations});
 // }
 
 // Tests for ADDMOD overflow bug fix (Issue #331)
 // FIXME: All test functions using Frame/Contract have been temporarily disabled
 // They need to be rewritten to use ExecutionContext when the migration is complete
-

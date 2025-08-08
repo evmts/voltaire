@@ -1,6 +1,6 @@
 const std = @import("std");
 const ExecutionError = @import("execution_error.zig");
-const ExecutionContext = @import("../frame.zig").ExecutionContext;
+const Frame = @import("../frame.zig").Frame;
 const primitives = @import("primitives");
 
 // Imports for tests
@@ -14,9 +14,8 @@ const Stack = @import("../stack/stack.zig");
 /// This module implements all comparison opcodes for the EVM, including
 /// unsigned comparisons (LT, GT), signed comparisons (SLT, SGT),
 /// equality checking (EQ), and zero testing (ISZERO).
-
 pub fn op_lt(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     // Pop the top operand (b) unsafely
@@ -35,7 +34,7 @@ pub fn op_lt(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_gt(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     // Pop the top operand (b) unsafely
@@ -54,7 +53,7 @@ pub fn op_gt(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_slt(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     // Pop the top operand (b) unsafely
@@ -76,7 +75,7 @@ pub fn op_slt(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_sgt(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     // Pop the top operand (b) unsafely
@@ -95,7 +94,7 @@ pub fn op_sgt(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_eq(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     // Pop the top operand (b) unsafely
@@ -110,7 +109,7 @@ pub fn op_eq(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_iszero(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 1);
 
     // Peek the operand unsafely
@@ -149,7 +148,7 @@ pub fn fuzz_comparison_operations(allocator: std.mem.Allocator, operations: []co
         defer self_destruct.deinit();
         const chain_rules = ChainRules.DEFAULT;
 
-        var context = try ExecutionContext.init(
+        var context = try Frame.init(
             allocator,
             1000000, // gas
             false, // not static
