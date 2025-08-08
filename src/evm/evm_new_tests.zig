@@ -11,7 +11,7 @@ const CallParams = @import("host.zig").CallParams;
 const Host = @import("host.zig").Host;
 const AccessList = @import("access_list.zig").AccessList;
 const CallJournal = @import("call_frame_stack.zig").CallJournal;
-const CodeAnalysis = @import("frame/code_analysis.zig").CodeAnalysis;
+const CodeAnalysis = @import("analysis.zig");
 const Stack = @import("stack/stack.zig");
 const Memory = @import("memory/memory.zig");
 
