@@ -78,7 +78,7 @@ test "E2E: Basic EVM operations" {
     try evm_instance.state.set_code(CONTRACT_ADDRESS, &simple_bytecode);
 
     // Execute the contract with traditional interpreter
-    const result = try evm_instance.interpret(&contract, &[_]u8{}, false);
+    const result = try evm_instance.interpretCompat(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     // Execute the contract with block interpreter

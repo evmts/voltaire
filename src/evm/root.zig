@@ -54,6 +54,7 @@
 //! 5. **Testability**: Extensive test coverage for all components
 
 const std = @import("std");
+const primitives_internal = @import("primitives");
 
 // Import external modules
 /// Address utilities for Ethereum addresses
@@ -297,6 +298,45 @@ const AccessListModule = @import("access_list/access_list.zig");
 pub const AccessAddressError = AccessListModule.AccessAddressError;
 /// Error accessing storage slots in access list
 pub const AccessStorageSlotError = AccessListModule.AccessStorageSlotError;
+
+/// Legacy Contract struct for test compatibility
+/// This is a temporary compatibility layer for tests that use the old Contract API
+pub const Contract = struct {
+    caller: primitives_internal.Address.Address,
+    address: primitives_internal.Address.Address,
+    value: u256,
+    gas: u64,
+    bytecode: []const u8,
+    input: []const u8,
+    is_static: bool,
+
+    pub fn init_at_address(
+        caller: primitives_internal.Address.Address,
+        address: primitives_internal.Address.Address,
+        value: u256,
+        gas: u64,
+        bytecode: []const u8,
+        input: []const u8,
+        is_static: bool,
+    ) Contract {
+        return .{
+            .caller = caller,
+            .address = address,
+            .value = value,
+            .gas = gas,
+            .bytecode = bytecode,
+            .input = input,
+            .is_static = is_static,
+        };
+    }
+
+    pub fn deinit(self: *Contract, allocator: std.mem.Allocator, result: ?*anyopaque) void {
+        _ = self;
+        _ = allocator;
+        _ = result;
+        // No-op for compatibility
+    }
+};
 /// Error pre-warming addresses
 pub const PreWarmAddressesAccessListError = AccessListModule.PreWarmAddressesError;
 /// Error pre-warming storage slots

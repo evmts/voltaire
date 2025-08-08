@@ -14,7 +14,7 @@ const ecmul = evm.precompiles.ecmul;
 const ecpairing = evm.precompiles.ecpairing;
 const precompiles = evm.precompiles.precompiles;
 const ChainRules = evm.chain_rules;
-const Frame = @import("../../../src/evm/execution_context.zig").Frame;
+const Frame = evm.Frame;
 
 test "BN254 ECMUL basic functionality" {
     const chain_rules = Frame.chainRulesForHardfork(.ISTANBUL);

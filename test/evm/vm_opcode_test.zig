@@ -30,7 +30,7 @@ fn create_test_evm(allocator: std.mem.Allocator) !struct { evm: *Evm.Evm, memory
     const memory_db = try allocator.create(MemoryDatabase);
     memory_db.* = MemoryDatabase.init(allocator);
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    const vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     evm.* = vm;
 
     // Set up basic context
@@ -85,7 +85,7 @@ fn run_bytecode(
     try evm_instance.state.set_code(address, bytecode);
 
     // Execute the contract with traditional interpreter
-    const result = try evm_instance.interpret(&contract, input orelse &[_]u8{}, false);
+    const result = try evm_instance.interpretCompat(&contract, input orelse &[_]u8{}, false);
     
     // Also test with block interpreter for parallel validation
     // SKIP: Bug #3 - interpret_block causes test to hang

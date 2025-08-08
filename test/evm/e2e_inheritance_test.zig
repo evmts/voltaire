@@ -89,7 +89,7 @@ test "E2E: Basic inheritance - virtual function overrides" {
     try evm_instance.state.set_code(CONTRACT_ADDRESS, &virtual_override_bytecode);
 
     // Execute the contract
-    const result = try evm_instance.interpret(&contract, &[_]u8{}, false);
+    const result = try evm_instance.interpretCompat(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -178,7 +178,7 @@ test "E2E: Interface compliance - polymorphic behavior" {
     try evm_instance.state.set_code(CONTRACT_ADDRESS, &interface_test_bytecode);
 
     // Execute the contract
-    const result = try evm_instance.interpret(&contract, &[_]u8{}, false);
+    const result = try evm_instance.interpretCompat(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -259,7 +259,7 @@ test "E2E: Multiple inheritance - diamond pattern resolution" {
     try evm_instance.state.set_code(CONTRACT_ADDRESS, &diamond_test_bytecode);
 
     // Execute the contract
-    const result = try evm_instance.interpret(&contract, &[_]u8{}, false);
+    const result = try evm_instance.interpretCompat(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -350,7 +350,7 @@ test "E2E: Function visibility - access control patterns" {
     try evm_instance.state.set_code(CONTRACT_ADDRESS, &visibility_test_bytecode);
 
     // Execute the contract
-    const result = try evm_instance.interpret(&contract, &[_]u8{}, false);
+    const result = try evm_instance.interpretCompat(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);

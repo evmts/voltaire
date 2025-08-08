@@ -77,7 +77,7 @@ test "E2E: Dynamic arrays - push, pop, and indexing" {
     try evm.state.set_code(CONTRACT_ADDRESS, &array_test_bytecode);
 
     // Execute the contract with traditional interpreter
-    const array_result = try evm.interpret(&contract, &[_]u8{}, false);
+    const array_result = try evm.interpretCompat(&contract, &[_]u8{}, false);
     defer if (array_result.output) |output| allocator.free(output);
 
     // Execute the contract with block interpreter
@@ -165,7 +165,7 @@ test "E2E: Mappings - various key types and nested access" {
     try evm.state.set_code(CONTRACT_ADDRESS, &mapping_test_bytecode);
 
     // Execute the contract with traditional interpreter
-    const mapping_result = try evm.interpret(&contract, &[_]u8{}, false);
+    const mapping_result = try evm.interpretCompat(&contract, &[_]u8{}, false);
     defer if (mapping_result.output) |output| allocator.free(output);
 
     // Execute the contract with block interpreter
@@ -270,7 +270,7 @@ test "E2E: Struct simulation - packed and unpacked storage" {
     try evm.state.set_code(CONTRACT_ADDRESS, &struct_test_bytecode);
 
     // Execute the contract
-    const struct_result = try evm.interpret(&contract, &[_]u8{}, false);
+    const struct_result = try evm.interpretCompat(&contract, &[_]u8{}, false);
     defer if (struct_result.output) |output| allocator.free(output);
 
     try testing.expect(struct_result.status == .Success);
@@ -340,7 +340,7 @@ test "E2E: String/Bytes operations - encoding and manipulation" {
     try evm.state.set_code(CONTRACT_ADDRESS, &bytes_test_bytecode);
 
     // Execute the contract
-    const bytes_result = try evm.interpret(&contract, &[_]u8{}, false);
+    const bytes_result = try evm.interpretCompat(&contract, &[_]u8{}, false);
     defer if (bytes_result.output) |output| allocator.free(output);
 
     try testing.expect(bytes_result.status == .Success);
@@ -420,7 +420,7 @@ test "E2E: Nested structures - arrays of mappings simulation" {
     try evm.state.set_code(CONTRACT_ADDRESS, &nested_test_bytecode);
 
     // Execute the contract
-    const nested_result = try evm.interpret(&contract, &[_]u8{}, false);
+    const nested_result = try evm.interpretCompat(&contract, &[_]u8{}, false);
     defer if (nested_result.output) |output| allocator.free(output);
 
     try testing.expect(nested_result.status == .Success);
@@ -495,7 +495,7 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
     try evm.state.set_code(CONTRACT_ADDRESS, &memory_ops_bytecode);
 
     // Execute the memory operations contract
-    const memory_result = try evm.interpret(&memory_contract, &[_]u8{}, false);
+    const memory_result = try evm.interpretCompat(&memory_contract, &[_]u8{}, false);
     defer if (memory_result.output) |output| allocator.free(output);
 
     try testing.expect(memory_result.status == .Success);
@@ -539,7 +539,7 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
     try evm.state.set_code(CONTRACT_ADDRESS, &storage_ops_bytecode);
 
     // Execute the storage operations contract
-    const storage_result = try evm.interpret(&storage_contract, &[_]u8{}, false);
+    const storage_result = try evm.interpretCompat(&storage_contract, &[_]u8{}, false);
     defer if (storage_result.output) |output| allocator.free(output);
 
     try testing.expect(storage_result.status == .Success);

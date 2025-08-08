@@ -21,8 +21,7 @@ test "constructor REVERT should fail deployment, not deploy revert data" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    var vm = try builder.build();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const caller = Address.from_u256(0x1000000000000000000000000000000000000001);
@@ -57,8 +56,7 @@ test "constructor that returns empty code should deploy empty contract" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    var vm = try builder.build();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const caller = Address.from_u256(0x1000000000000000000000000000000000000001);
@@ -99,8 +97,7 @@ test "constructor that returns runtime code should deploy that code" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    var vm = try builder.build();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const caller = Address.from_u256(0x1000000000000000000000000000000000000001);

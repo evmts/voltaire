@@ -61,6 +61,7 @@ test "Stack: push_unsafe and pop_unsafe" {
 
 test "Stack: peek operations" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3, 4, 5 });
+    defer stack.deinit();
 
     // Test peek_unsafe (top element)
     const top = stack.peek_unsafe();
@@ -78,6 +79,7 @@ test "Stack: peek operations" {
 
 test "Stack: dup_unsafe operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 10, 20, 30 });
+    defer stack.deinit();
 
     // Duplicate top element (n=1)
     stack.dup_unsafe(1);
@@ -92,6 +94,7 @@ test "Stack: dup_unsafe operation" {
 
 test "Stack: swap_unsafe operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3, 4, 5 });
+    defer stack.deinit();
 
     // Swap top with second element (n=1)
     stack.swap_unsafe(1);
@@ -106,6 +109,7 @@ test "Stack: swap_unsafe operation" {
 
 test "Stack: pop2_unsafe operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3, 4, 5 });
+    defer stack.deinit();
 
     const popped = stack.pop2_unsafe();
     try testing.expectEqual(@as(u256, 4), popped.a); // Second from top
@@ -118,6 +122,7 @@ test "Stack: pop2_unsafe operation" {
 
 test "Stack: pop3_unsafe operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3, 4, 5 });
+    defer stack.deinit();
 
     const popped = stack.pop3_unsafe();
     try testing.expectEqual(@as(u256, 3), popped.a); // Third from top
@@ -132,6 +137,7 @@ test "Stack: pop3_unsafe operation" {
 
 test "Stack: set_top_unsafe operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3 });
+    defer stack.deinit();
 
     stack.set_top_unsafe(999);
     try testing.expectEqual(@as(u256, 999), try stack.pop());
@@ -141,6 +147,7 @@ test "Stack: set_top_unsafe operation" {
 
 test "Stack: clear operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3, 4, 5 });
+    defer stack.deinit();
     try testing.expectEqual(@as(usize, 5), stack.size());
 
     stack.clear();
@@ -164,7 +171,7 @@ test "Stack: overflow protection" {
 
     // This should succeed
     try stack.append(999);
-    try testing.expectEqual(@as(usize, Stack.CAPACITY), stack.size()());
+    try testing.expectEqual(@as(usize, Stack.CAPACITY), stack.size());
 
     // This should fail
     try testing.expectError(Stack.Error.StackOverflow, stack.append(1000));
