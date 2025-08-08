@@ -2,10 +2,10 @@ const std = @import("std");
 const execution = @import("../execution/package.zig");
 const adapter = @import("../execution/adapter.zig");
 const ExecutionError = @import("../execution/execution_error.zig");
-const ExecutionContext = @import("../frame.zig").ExecutionContext;
+const Frame = @import("../frame.zig").Frame;
 
 // Anyopaque thunk wrappers for adapter.call_op
-fn wrap_ctx(comptime OpFn: *const fn (*ExecutionContext) ExecutionError.Error!void) operation_module.ExecutionFunc {
+fn wrap_ctx(comptime OpFn: *const fn (*Frame) ExecutionError.Error!void) operation_module.ExecutionFunc {
     return struct {
         pub fn f(ctx: *anyopaque) ExecutionError.Error!void {
             return adapter.call_ctx(OpFn, ctx);

@@ -2,7 +2,7 @@ const std = @import("std");
 const Opcode = @import("opcode.zig");
 const ExecutionError = @import("../execution/execution_error.zig");
 const Stack = @import("../stack/stack.zig");
-const ExecutionContext = @import("../frame.zig").ExecutionContext;
+const Frame = @import("../frame.zig").Frame;
 const Memory = @import("../memory/memory.zig");
 
 /// Operation metadata and execution functions for EVM opcodes.
@@ -47,7 +47,7 @@ pub const Interpreter = *@import("../evm.zig");
 
 /// Direct pointer to the frame context with transaction and execution environment.
 /// Simplified from a single-variant union to a direct pointer type.
-pub const State = *ExecutionContext;
+pub const State = Frame;
 
 /// Function signature for opcode execution.
 ///

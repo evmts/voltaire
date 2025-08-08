@@ -9,7 +9,7 @@ const MemorySizeFunc = operation_module.MemorySizeFunc;
 const Hardfork = @import("../hardforks/hardfork.zig").Hardfork;
 const ExecutionError = @import("../execution/execution_error.zig");
 const Stack = @import("../stack/stack.zig");
-const ExecutionContext = @import("../frame.zig").ExecutionContext;
+const ExecutionContext = @import("../frame.zig").Frame;
 const primitives = @import("primitives");
 const Log = @import("../log.zig");
 
@@ -204,7 +204,7 @@ pub fn copy(self: *const JumpTable, allocator: std.mem.Allocator) !JumpTable {
 pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
     @setEvalBranchQuota(10000);
     var jt = JumpTable.init();
-    
+
     // With ALL_OPERATIONS sorted by hardfork, we can iterate once.
     // Each opcode will be set to the latest active version for the target hardfork.
     inline for (operation_config.ALL_OPERATIONS) |spec| {
@@ -222,7 +222,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             jt.undefined_flags[idx] = op.undefined;
         }
     }
-    
+
     // 0x60s & 0x70s: Push operations
     if (comptime builtin.mode == .ReleaseSmall) {
         // PUSH0 - EIP-3855
@@ -231,14 +231,14 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         jt.min_stack[0x5f] = 0;
         jt.max_stack[0x5f] = Stack.CAPACITY - 1;
         jt.undefined_flags[0x5f] = false;
-        
+
         // PUSH1 - most common
         jt.execute_funcs[0x60] = execution.null_opcode.op_invalid;
         jt.constant_gas[0x60] = execution.GasConstants.GasFastestStep;
         jt.min_stack[0x60] = 0;
         jt.max_stack[0x60] = Stack.CAPACITY - 1;
         jt.undefined_flags[0x60] = false;
-        
+
         // PUSH2-PUSH32 - temporarily disabled during refactor
         for (1..32) |i| {
             jt.execute_funcs[0x60 + i] = execution.null_opcode.op_invalid;
@@ -254,7 +254,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
         jt.min_stack[0x5f] = 0;
         jt.max_stack[0x5f] = Stack.CAPACITY - 1;
         jt.undefined_flags[0x5f] = false;
-        
+
         // PUSH1 - most common, optimized with direct byte access
         jt.execute_funcs[0x60] = execution.null_opcode.op_invalid;
         jt.constant_gas[0x60] = execution.GasConstants.GasFastestStep;
@@ -273,7 +273,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             jt.undefined_flags[opcode_idx] = true; // Mark as undefined until implemented
         }
     }
-    
+
     // 0x80s: Duplication Operations
     if (comptime builtin.mode == .ReleaseSmall) {
         // Use specific functions for each DUP operation to avoid opcode detection issues
@@ -300,7 +300,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             stack_ops.op_dup9,  stack_ops.op_dup10, stack_ops.op_dup11, stack_ops.op_dup12,
             stack_ops.op_dup13, stack_ops.op_dup14, stack_ops.op_dup15, stack_ops.op_dup16,
         };
-        
+
         inline for (1..17) |n| {
             const idx = 0x80 + n - 1;
             jt.execute_funcs[idx] = dup_functions[n - 1];
@@ -310,7 +310,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             jt.undefined_flags[idx] = false;
         }
     }
-    
+
     // 0x90s: Exchange Operations
     if (comptime builtin.mode == .ReleaseSmall) {
         // Use specific functions for each SWAP operation to avoid opcode detection issues
@@ -337,7 +337,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             stack_ops.op_swap9,  stack_ops.op_swap10, stack_ops.op_swap11, stack_ops.op_swap12,
             stack_ops.op_swap13, stack_ops.op_swap14, stack_ops.op_swap15, stack_ops.op_swap16,
         };
-        
+
         inline for (1..17) |n| {
             const idx = 0x90 + n - 1;
             jt.execute_funcs[idx] = swap_functions[n - 1];
@@ -347,7 +347,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             jt.undefined_flags[idx] = false;
         }
     }
-    
+
     // 0xa0s: Logging Operations
     if (comptime builtin.mode == .ReleaseSmall) {
         // Use specific functions for each LOG operation to avoid opcode detection issues
@@ -364,11 +364,11 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             jt.undefined_flags[idx] = false;
         }
     } else {
-        // Use the same static functions for optimized mode  
+        // Use the same static functions for optimized mode
         const log_functions = [_]ExecutionFunc{
             log.log_0, log.log_1, log.log_2, log.log_3, log.log_4,
         };
-        
+
         inline for (0..5) |n| {
             const idx = 0xa0 + n;
             jt.execute_funcs[idx] = log_functions[n];
@@ -378,7 +378,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) JumpTable {
             jt.undefined_flags[idx] = false;
         }
     }
-    
+
     jt.validate();
     return jt;
 }
