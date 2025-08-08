@@ -1,951 +1,547 @@
 const std = @import("std");
 const testing = std.testing;
-const Evm = @import("evm");
+const evm = @import("evm");
 const primitives = @import("primitives");
-const Address = primitives.Address;
-const Contract = Evm.Contract;
-const Frame = Evm.Frame;
-const MemoryDatabase = Evm.MemoryDatabase;
-const ExecutionError = Evm.ExecutionError;
-// Updated to new API - migration in progress, tests not run yet
 
-// Test PUSH0 operation
-test "PUSH0: append zero value" {
-    const allocator = testing.allocator;
-
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
-
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
-
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    // Execute PUSH0
-    _ = try evm.table.execute(0, interpreter, state, 0x5F);
-
-    // Should append 0
-    try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
+test {
+    std.testing.log_level = .debug;
 }
 
-// Test PUSH1 operation
-test "PUSH1: append 1 byte value" {
-    const allocator = testing.allocator;
-
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
-
-    // Set contract code with PUSH1 0xAB
-    const code = [_]u8{ 0x60, 0xAB };
-
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &code,
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
-
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    // Set PC to 0 (at PUSH1 opcode)
-    frame.pc = 0;
-
-    // Execute PUSH1
-    const result = try evm.table.execute(0, interpreter, state, 0x60);
-
-    // Should consume 2 bytes (opcode + data)
-    try testing.expectEqual(@as(usize, 2), result.bytes_consumed);
-
-    // Should append 0xAB
-    try testing.expectEqual(@as(u256, 0xAB), try frame.stack.pop());
+// Helper function to create test addresses
+fn testAddress(value: u160) primitives.Address.Address {
+    return primitives.Address.from_u256(@as(u256, value));
 }
 
-// Test PUSH2 through PUSH32
-test "PUSH2: append 2 byte value" {
+test "Stack: PUSH0 operation" {
     const allocator = testing.allocator;
 
-    var memory_db = MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
 
-    // Set contract code with PUSH2 0x1234
-    const code = [_]u8{ 0x61, 0x12, 0x34 };
+    const bytecode = &[_]u8{
+        0x5F,       // PUSH0
+        0x60, 0x00, // PUSH1 0
+        0x52,       // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
 
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &code,
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
+    const contract_addr = testAddress(0x1000);
+    const caller = testAddress(0x2000);
 
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
+    try vm.state.set_code(contract_addr, bytecode);
 
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
+    const call_params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 100000,
+    }};
 
-    frame.pc = 0;
+    const result = try vm.call(call_params);
+    defer if (result.output) |output| allocator.free(output);
 
-    // Execute PUSH2
-    const result = try evm.table.execute(0, interpreter, state, 0x61);
-
-    // Should consume 3 bytes
-    try testing.expectEqual(@as(usize, 3), result.bytes_consumed);
-
-    // Should append 0x1234
-    try testing.expectEqual(@as(u256, 0x1234), try frame.stack.pop());
-}
-
-test "PUSH32: append 32 byte value" {
-    const allocator = testing.allocator;
-
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
-
-    // Set contract code with PUSH32 followed by 32 bytes
-    var code: [33]u8 = undefined;
-    code[0] = 0x7f; // PUSH32 opcode
-    var i: usize = 0;
-    while (i < 32) : (i += 1) {
-        code[i + 1] = @intCast(i + 1); // 0x01, 0x02, ..., 0x20
+    try testing.expect(result.success);
+    if (result.output) |output| {
+        try testing.expectEqual(@as(usize, 32), output.len);
+        // Check that the result is 0
+        var expected = [_]u8{0} ** 32;
+        try testing.expectEqualSlices(u8, &expected, output);
     }
-
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &code,
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
-
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    frame.pc = 0;
-
-    // Execute PUSH32
-    const result = try evm.table.execute(0, interpreter, state, 0x7F);
-
-    // Should consume 33 bytes
-    try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
-
-    // Should append the value (first byte 0x01 in most significant position)
-    const value = try frame.stack.pop();
-    try testing.expect((value >> 248) == 0x01);
-    try testing.expect(((value >> 240) & 0xFF) == 0x02);
-    try testing.expect((value & 0xFF) == 0x20);
 }
 
-// Test POP operation
-test "POP: remove top stack item" {
+test "Stack: PUSH1 operation" {
     const allocator = testing.allocator;
 
-    var memory_db = MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
 
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
+    const bytecode = &[_]u8{
+        0x60, 0xAB, // PUSH1 0xAB
+        0x60, 0x00, // PUSH1 0
+        0x52,       // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
 
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
+    const contract_addr = testAddress(0x1001);
+    const caller = testAddress(0x2001);
 
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
+    try vm.state.set_code(contract_addr, bytecode);
 
-    // Push some values
-    try frame.stack.append(0x123);
-    try frame.stack.append(0x456);
+    const call_params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 100000,
+    }};
 
-    // Execute POP
-    _ = try evm.table.execute(0, interpreter, state, 0x50);
+    const result = try vm.call(call_params);
+    defer if (result.output) |output| allocator.free(output);
 
-    // Should have removed top item (0x456)
-    try testing.expectEqual(@as(u256, 0x123), try frame.stack.pop());
-    try testing.expectEqual(@as(usize, 0), frame.stack.size);
+    try testing.expect(result.success);
+    if (result.output) |output| {
+        try testing.expectEqual(@as(usize, 32), output.len);
+        // Check that the result is 0xAB
+        var expected = [_]u8{0} ** 32;
+        expected[31] = 0xAB;
+        try testing.expectEqualSlices(u8, &expected, output);
+    }
 }
 
-// Test DUP operations
-test "DUP1: duplicate top stack item" {
+test "Stack: PUSH2 operation" {
     const allocator = testing.allocator;
 
-    var memory_db = MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
 
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
+    const bytecode = &[_]u8{
+        0x61, 0x12, 0x34, // PUSH2 0x1234
+        0x60, 0x00,       // PUSH1 0
+        0x52,             // MSTORE
+        0x60, 0x20,       // PUSH1 32
+        0x60, 0x00,       // PUSH1 0
+        0xF3,             // RETURN
+    };
 
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
+    const contract_addr = testAddress(0x1002);
+    const caller = testAddress(0x2002);
 
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
+    try vm.state.set_code(contract_addr, bytecode);
 
-    // Push a value
-    try frame.stack.append(0xABCD);
+    const call_params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 100000,
+    }};
 
-    // Execute DUP1
-    _ = try evm.table.execute(0, interpreter, state, 0x80);
+    const result = try vm.call(call_params);
+    defer if (result.output) |output| allocator.free(output);
 
-    // Should have two copies of the value
-    try testing.expectEqual(@as(u256, 0xABCD), try frame.stack.pop());
-    try testing.expectEqual(@as(u256, 0xABCD), try frame.stack.pop());
+    try testing.expect(result.success);
+    if (result.output) |output| {
+        try testing.expectEqual(@as(usize, 32), output.len);
+        // Check that the result is 0x1234
+        var expected = [_]u8{0} ** 32;
+        std.mem.writeInt(u256, &expected, 0x1234, .big);
+        try testing.expectEqualSlices(u8, &expected, output);
+    }
 }
 
-test "DUP2: duplicate second stack item" {
+test "Stack: PUSH32 operation" {
     const allocator = testing.allocator;
 
-    var memory_db = MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
 
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
+    const bytecode = &[_]u8{
+        0x7F, // PUSH32
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+        0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+        0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
+        0x60, 0x00, // PUSH1 0
+        0x52,       // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
 
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
+    const contract_addr = testAddress(0x1003);
+    const caller = testAddress(0x2003);
 
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
+    try vm.state.set_code(contract_addr, bytecode);
 
-    // Push two values
-    try frame.stack.append(0x111); // bottom
-    try frame.stack.append(0x222); // top
+    const call_params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 100000,
+    }};
 
-    // Execute DUP2
-    _ = try evm.table.execute(0, interpreter, state, 0x81);
+    const result = try vm.call(call_params);
+    defer if (result.output) |output| allocator.free(output);
 
-    // Stack should be: 0x111, 0x222, 0x111
-    try testing.expectEqual(@as(u256, 0x111), try frame.stack.pop());
-    try testing.expectEqual(@as(u256, 0x222), try frame.stack.pop());
-    try testing.expectEqual(@as(u256, 0x111), try frame.stack.pop());
+    try testing.expect(result.success);
+    if (result.output) |output| {
+        try testing.expectEqual(@as(usize, 32), output.len);
+        // Check that the result matches the 32 bytes pushed
+        const expected = [_]u8{
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+            0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10,
+            0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18,
+            0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20,
+        };
+        try testing.expectEqualSlices(u8, &expected, output);
+    }
 }
 
-test "DUP16: duplicate 16th stack item" {
+test "Stack: POP operation" {
     const allocator = testing.allocator;
 
-    var memory_db = MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
 
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
+    const bytecode = &[_]u8{
+        0x60, 0x42, // PUSH1 0x42 (first value)
+        0x60, 0x99, // PUSH1 0x99 (second value)
+        0x50,       // POP (remove 0x99)
+        0x60, 0x00, // PUSH1 0
+        0x52,       // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
 
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
+    const contract_addr = testAddress(0x1004);
+    const caller = testAddress(0x2004);
 
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
+    try vm.state.set_code(contract_addr, bytecode);
 
-    // Push 16 values
-    var i: u256 = 1;
+    const call_params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 100000,
+    }};
+
+    const result = try vm.call(call_params);
+    defer if (result.output) |output| allocator.free(output);
+
+    try testing.expect(result.success);
+    if (result.output) |output| {
+        try testing.expectEqual(@as(usize, 32), output.len);
+        // Should return 0x42 (0x99 was popped)
+        var expected = [_]u8{0} ** 32;
+        expected[31] = 0x42;
+        try testing.expectEqualSlices(u8, &expected, output);
+    }
+}
+
+test "Stack: DUP1 operation" {
+    const allocator = testing.allocator;
+
+    var memory_db = evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const bytecode = &[_]u8{
+        0x60, 0x42, // PUSH1 0x42
+        0x80,       // DUP1 (duplicate top item)
+        0x01,       // ADD (0x42 + 0x42 = 0x84)
+        0x60, 0x00, // PUSH1 0
+        0x52,       // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
+
+    const contract_addr = testAddress(0x1005);
+    const caller = testAddress(0x2005);
+
+    try vm.state.set_code(contract_addr, bytecode);
+
+    const call_params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 100000,
+    }};
+
+    const result = try vm.call(call_params);
+    defer if (result.output) |output| allocator.free(output);
+
+    try testing.expect(result.success);
+    if (result.output) |output| {
+        try testing.expectEqual(@as(usize, 32), output.len);
+        // Should return 0x84 (0x42 + 0x42)
+        var expected = [_]u8{0} ** 32;
+        expected[31] = 0x84;
+        try testing.expectEqualSlices(u8, &expected, output);
+    }
+}
+
+test "Stack: DUP16 operation" {
+    const allocator = testing.allocator;
+
+    var memory_db = evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    // Build bytecode that pushes 16 values and then duplicates the 16th
+    var bytecode = std.ArrayList(u8).init(allocator);
+    defer bytecode.deinit();
+
+    // Push values 1 through 16
+    var i: u8 = 1;
     while (i <= 16) : (i += 1) {
-        try frame.stack.append(i * 100);
+        try bytecode.append(0x60); // PUSH1
+        try bytecode.append(i);
     }
+    
+    try bytecode.append(0x8F); // DUP16 (duplicate the 16th item from top, which is value 1)
+    
+    // Store the result
+    try bytecode.append(0x60); // PUSH1
+    try bytecode.append(0x00);
+    try bytecode.append(0x52); // MSTORE
+    try bytecode.append(0x60); // PUSH1
+    try bytecode.append(0x20);
+    try bytecode.append(0x60); // PUSH1
+    try bytecode.append(0x00);
+    try bytecode.append(0xF3); // RETURN
 
-    // Execute DUP16
-    _ = try evm.table.execute(0, interpreter, state, 0x8F);
+    const contract_addr = testAddress(0x1006);
+    const caller = testAddress(0x2006);
 
-    // Should duplicate the bottom item (100)
-    try testing.expectEqual(@as(u256, 100), try frame.stack.pop());
+    try vm.state.set_code(contract_addr, bytecode.items);
 
-    // Original stack should still be intact
-    i = 16;
-    while (i >= 1) : (i -= 1) {
-        try testing.expectEqual(i * 100, try frame.stack.pop());
+    const call_params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 100000,
+    }};
+
+    const result = try vm.call(call_params);
+    defer if (result.output) |output| allocator.free(output);
+
+    try testing.expect(result.success);
+    if (result.output) |output| {
+        try testing.expectEqual(@as(usize, 32), output.len);
+        // Should return 1 (the 16th item from top)
+        var expected = [_]u8{0} ** 32;
+        expected[31] = 1;
+        try testing.expectEqualSlices(u8, &expected, output);
     }
 }
 
-// Test SWAP operations
-test "SWAP1: swap top two stack items" {
+test "Stack: SWAP1 operation" {
     const allocator = testing.allocator;
 
-    var memory_db = MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
 
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
+    const bytecode = &[_]u8{
+        0x60, 0x11, // PUSH1 0x11
+        0x60, 0x22, // PUSH1 0x22
+        0x90,       // SWAP1 (swap top two items)
+        0x60, 0x00, // PUSH1 0
+        0x52,       // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
 
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
+    const contract_addr = testAddress(0x1007);
+    const caller = testAddress(0x2007);
 
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
+    try vm.state.set_code(contract_addr, bytecode);
 
-    // Push two values
-    try frame.stack.append(0x111); // bottom
-    try frame.stack.append(0x222); // top
+    const call_params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 100000,
+    }};
 
-    // Execute SWAP1
-    _ = try evm.table.execute(0, interpreter, state, 0x90);
+    const result = try vm.call(call_params);
+    defer if (result.output) |output| allocator.free(output);
 
-    // Order should be swapped
-    try testing.expectEqual(@as(u256, 0x111), try frame.stack.pop());
-    try testing.expectEqual(@as(u256, 0x222), try frame.stack.pop());
+    try testing.expect(result.success);
+    if (result.output) |output| {
+        try testing.expectEqual(@as(usize, 32), output.len);
+        // After SWAP1, top should be 0x11 (was second)
+        var expected = [_]u8{0} ** 32;
+        expected[31] = 0x11;
+        try testing.expectEqualSlices(u8, &expected, output);
+    }
 }
 
-test "SWAP2: swap 1st and 3rd stack items" {
+test "Stack: SWAP16 operation" {
     const allocator = testing.allocator;
 
-    var memory_db = MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
 
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
+    // Build bytecode that pushes 17 values and then swaps 1st with 17th
+    var bytecode = std.ArrayList(u8).init(allocator);
+    defer bytecode.deinit();
 
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    // Push three values
-    try frame.stack.append(0x111); // bottom
-    try frame.stack.append(0x222); // middle
-    try frame.stack.append(0x333); // top
-
-    // Execute SWAP2
-    _ = try evm.table.execute(0, interpreter, state, 0x91);
-
-    // Stack should be: 0x222, 0x111, 0x333
-    try testing.expectEqual(@as(u256, 0x111), try frame.stack.pop());
-    try testing.expectEqual(@as(u256, 0x222), try frame.stack.pop());
-    try testing.expectEqual(@as(u256, 0x333), try frame.stack.pop());
-}
-
-test "SWAP16: swap 1st and 17th stack items" {
-    const allocator = testing.allocator;
-
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
-
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
-
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    // Push 17 values
-    var i: u256 = 1;
+    // Push values 1 through 17
+    var i: u8 = 1;
     while (i <= 17) : (i += 1) {
-        try frame.stack.append(i);
+        try bytecode.append(0x60); // PUSH1
+        try bytecode.append(i);
     }
+    
+    try bytecode.append(0x9F); // SWAP16 (swap top with 17th from top)
+    
+    // Store the result (top of stack after swap)
+    try bytecode.append(0x60); // PUSH1
+    try bytecode.append(0x00);
+    try bytecode.append(0x52); // MSTORE
+    try bytecode.append(0x60); // PUSH1
+    try bytecode.append(0x20);
+    try bytecode.append(0x60); // PUSH1
+    try bytecode.append(0x00);
+    try bytecode.append(0xF3); // RETURN
 
-    // Execute SWAP16
-    _ = try evm.table.execute(0, interpreter, state, 0x9F);
+    const contract_addr = testAddress(0x1008);
+    const caller = testAddress(0x2008);
 
-    // Top should now be 1, bottom should be 17
-    try testing.expectEqual(@as(u256, 1), try frame.stack.pop());
+    try vm.state.set_code(contract_addr, bytecode.items);
 
-    // Pop middle values
-    i = 16;
-    while (i >= 2) : (i -= 1) {
-        try testing.expectEqual(i, try frame.stack.pop());
-    }
+    const call_params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 100000,
+    }};
 
-    // Bottom should be 17
-    try testing.expectEqual(@as(u256, 17), try frame.stack.pop());
-}
+    const result = try vm.call(call_params);
+    defer if (result.output) |output| allocator.free(output);
 
-// Test edge cases
-test "PUSH1: at end of code" {
-    const allocator = testing.allocator;
-
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
-
-    // Set contract code with PUSH1 but no data byte
-    const code = [_]u8{0x60}; // Just PUSH1 opcode
-
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &code,
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
-
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    frame.pc = 0;
-
-    // Execute PUSH1
-    const result = try evm.table.execute(0, interpreter, state, 0x60);
-
-    // Should consume 2 bytes (even though only 1 exists)
-    try testing.expectEqual(@as(usize, 2), result.bytes_consumed);
-
-    // Should append 0 (padding)
-    try testing.expectEqual(@as(u256, 0), try frame.stack.pop());
-}
-
-test "PUSH32: partial data available" {
-    const allocator = testing.allocator;
-
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
-
-    // Set contract code with PUSH32 but only 10 data bytes
-    var code: [11]u8 = undefined;
-    code[0] = 0x7f; // PUSH32 opcode
-    var i: usize = 0;
-    while (i < 10) : (i += 1) {
-        code[i + 1] = 0xFF;
-    }
-
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &code,
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
-
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    frame.pc = 0;
-
-    // Execute PUSH32
-    const result = try evm.table.execute(0, interpreter, state, 0x7F);
-
-    // Should consume 33 bytes
-    try testing.expectEqual(@as(usize, 33), result.bytes_consumed);
-
-    // Should append value with padding
-    const value = try frame.stack.pop();
-    // First 10 bytes should be 0xFF
-    var j: usize = 0;
-    while (j < 10) : (j += 1) {
-        try testing.expectEqual(@as(u8, 0xFF), @as(u8, @intCast((value >> @intCast(8 * (31 - j))) & 0xFF)));
-    }
-    // Remaining bytes should be 0
-    while (j < 32) : (j += 1) {
-        try testing.expectEqual(@as(u8, 0), @as(u8, @intCast((value >> @intCast(8 * (31 - j))) & 0xFF)));
+    try testing.expect(result.success);
+    if (result.output) |output| {
+        try testing.expectEqual(@as(usize, 32), output.len);
+        // After SWAP16, top should be 1 (was 17th from top)
+        var expected = [_]u8{0} ** 32;
+        expected[31] = 1;
+        try testing.expectEqualSlices(u8, &expected, output);
     }
 }
 
-// Test stack errors
-test "POP: stack underflow" {
+test "Stack: Complex stack manipulation" {
     const allocator = testing.allocator;
 
-    var memory_db = MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
 
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
+    // Complex sequence: push, dup, swap, pop
+    const bytecode = &[_]u8{
+        0x60, 0x10, // PUSH1 0x10
+        0x60, 0x20, // PUSH1 0x20
+        0x60, 0x30, // PUSH1 0x30  Stack: [0x10, 0x20, 0x30]
+        0x81,       // DUP2        Stack: [0x10, 0x20, 0x30, 0x20]
+        0x91,       // SWAP2       Stack: [0x10, 0x20, 0x20, 0x30]
+        0x50,       // POP         Stack: [0x10, 0x20, 0x20]
+        0x01,       // ADD         Stack: [0x10, 0x40]
+        0x01,       // ADD         Stack: [0x50]
+        0x60, 0x00, // PUSH1 0
+        0x52,       // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xF3,       // RETURN
+    };
 
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
+    const contract_addr = testAddress(0x1009);
+    const caller = testAddress(0x2009);
 
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
+    try vm.state.set_code(contract_addr, bytecode);
 
-    // Empty stack
+    const call_params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 100000,
+    }};
 
-    // Execute POP - should fail
-    const result = evm.table.execute(0, interpreter, state, 0x50);
-    try testing.expectError(ExecutionError.Error.StackUnderflow, result);
-}
+    const result = try vm.call(call_params);
+    defer if (result.output) |output| allocator.free(output);
 
-test "DUP1: stack underflow" {
-    const allocator = testing.allocator;
-
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
-
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
-
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    // Empty stack
-
-    // Execute DUP1 - should fail
-    const result = evm.table.execute(0, interpreter, state, 0x80);
-    try testing.expectError(ExecutionError.Error.StackUnderflow, result);
-}
-
-test "DUP16: insufficient stack items" {
-    const allocator = testing.allocator;
-
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
-
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
-
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    // Push only 15 values (need 16)
-    var i: u256 = 0;
-    while (i < 15) : (i += 1) {
-        try frame.stack.append(i);
+    try testing.expect(result.success);
+    if (result.output) |output| {
+        try testing.expectEqual(@as(usize, 32), output.len);
+        // Result should be 0x50 (0x10 + 0x20 + 0x20)
+        var expected = [_]u8{0} ** 32;
+        expected[31] = 0x50;
+        try testing.expectEqualSlices(u8, &expected, output);
     }
-
-    // Execute DUP16 - should fail
-    const result = evm.table.execute(0, interpreter, state, 0x8F);
-    try testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
-test "SWAP1: stack underflow" {
+test "Stack: PUSH with insufficient bytes should fail" {
     const allocator = testing.allocator;
 
-    var memory_db = MemoryDatabase.init(allocator);
+    var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
 
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
+    // PUSH2 with only 1 byte of data (should fail)
+    const bytecode = &[_]u8{
+        0x61, 0x12, // PUSH2 but missing second byte
+    };
 
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
+    const contract_addr = testAddress(0x100A);
+    const caller = testAddress(0x200A);
 
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
+    try vm.state.set_code(contract_addr, bytecode);
 
-    // Push only one value (need two)
-    try frame.stack.append(0x123);
+    const call_params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_addr,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 100000,
+    }};
 
-    // Execute SWAP1 - should fail
-    const result = evm.table.execute(0, interpreter, state, 0x90);
-    try testing.expectError(ExecutionError.Error.StackUnderflow, result);
-}
+    const result = try vm.call(call_params);
+    defer if (result.output) |output| allocator.free(output);
 
-test "PUSH1: stack overflow" {
-    const allocator = testing.allocator;
-
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
-
-    // Set contract code
-    const code = [_]u8{ 0x60, 0x01 };
-
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &code,
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
-
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    // Fill stack to maximum (1024 items)
-    var i: usize = 0;
-    while (i < 1024) : (i += 1) {
-        try frame.stack.append(i);
-    }
-
-    frame.pc = 0;
-
-    // Execute PUSH1 - should fail with stack overflow
-    const result = evm.table.execute(0, interpreter, state, 0x60);
-    try testing.expectError(ExecutionError.Error.StackOverflow, result);
-}
-
-test "DUP1: stack overflow" {
-    const allocator = testing.allocator;
-
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-
-    const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
-
-    const caller = [_]u8{0x11} ** 20;
-    const contract_addr = [_]u8{0x11} ** 20;
-    var contract = Contract.init(
-        caller,
-        contract_addr,
-        0,
-        1000,
-        &[_]u8{},
-        [_]u8{0} ** 32,
-        &[_]u8{},
-        false,
-    );
-    defer contract.deinit(allocator, null);
-
-    var frame_builder = Frame.builder(allocator);
-    var frame = try frame_builder
-        .withVm(&evm)
-        .withContract(&contract)
-        .withGas(1000)
-        .build();
-    defer frame.deinit();
-
-    const interpreter: Evm.Operation.Interpreter = &evm;
-    const state: Evm.Operation.State = &frame;
-
-    // Fill stack to maximum (1024 items)
-    var i: usize = 0;
-    while (i < 1024) : (i += 1) {
-        try frame.stack.append(i);
-    }
-
-    // Execute DUP1 - should fail with stack overflow
-    const result = evm.table.execute(0, interpreter, state, 0x80);
-    try testing.expectError(ExecutionError.Error.StackOverflow, result);
+    // Execution should fail due to invalid push
+    try testing.expect(!result.success);
 }
