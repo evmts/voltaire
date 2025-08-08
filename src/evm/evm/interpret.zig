@@ -101,7 +101,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 };
             },
             .gas_cost => |cost| {
-                // Keep for special opcodes that need individual gas tracking (GAS, CALL, etc.)
+                // Legacy path - kept for compatibility
                 current_index += 1;
                 if (frame.gas_remaining < cost) {
                     @branchHint(.cold);
@@ -109,6 +109,54 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                     return ExecutionError.Error.OutOfGas;
                 }
                 frame.gas_remaining -= cost;
+                
+                // Execute the opcode after charging gas
+                nextInstruction.opcode_fn(@ptrCast(frame)) catch |err| {
+                    if (err == ExecutionError.Error.InvalidOpcode) {
+                        frame.gas_remaining = 0;
+                    }
+                    return err;
+                };
+            },
+            .dynamic_gas => |dyn_gas| {
+                // New path for opcodes with dynamic gas
+                current_index += 1;
+                
+                // Charge static gas first
+                if (frame.gas_remaining < dyn_gas.static_cost) {
+                    @branchHint(.cold);
+                    frame.gas_remaining = 0;
+                    return ExecutionError.Error.OutOfGas;
+                }
+                frame.gas_remaining -= dyn_gas.static_cost;
+                
+                // Calculate and charge dynamic gas if function exists
+                if (dyn_gas.gas_fn) |gas_fn| {
+                    const additional_gas = gas_fn(frame) catch |err| {
+                        // If dynamic gas calculation fails, it's usually OutOfOffset
+                        if (err == ExecutionError.Error.OutOfOffset) {
+                            return err;
+                        }
+                        // For other errors, treat as out of gas
+                        frame.gas_remaining = 0;
+                        return ExecutionError.Error.OutOfGas;
+                    };
+                    
+                    if (frame.gas_remaining < additional_gas) {
+                        @branchHint(.cold);
+                        frame.gas_remaining = 0;
+                        return ExecutionError.Error.OutOfGas;
+                    }
+                    frame.gas_remaining -= additional_gas;
+                }
+                
+                // Execute the opcode after all gas is charged
+                nextInstruction.opcode_fn(@ptrCast(frame)) catch |err| {
+                    if (err == ExecutionError.Error.InvalidOpcode) {
+                        frame.gas_remaining = 0;
+                    }
+                    return err;
+                };
             },
         }
     }
