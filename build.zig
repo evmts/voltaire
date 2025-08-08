@@ -871,21 +871,7 @@ pub fn build(b: *std.Build) void {
     const opcodes_test_step = b.step("test-opcodes", "Run Opcodes tests");
     opcodes_test_step.dependOn(&run_opcodes_test.step);
 
-    // Add Benchmark Runner tests
-    const benchmark_runner_test = b.addTest(.{
-        .name = "benchmark-runner-test",
-        .root_source_file = b.path("test/evm/benchmark_runner_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    benchmark_runner_test.root_module.stack_check = false;
-    benchmark_runner_test.root_module.addImport("primitives", primitives_mod);
-    benchmark_runner_test.root_module.addImport("evm", evm_mod);
-
-    const run_benchmark_runner_test = b.addRunArtifact(benchmark_runner_test);
-    const benchmark_runner_test_step = b.step("test-benchmark-runner", "Run Benchmark Runner tests");
-    benchmark_runner_test_step.dependOn(&run_benchmark_runner_test.step);
+    // Benchmark Runner test removed - file no longer exists
 
     // Add Minimal Call Test
     const minimal_call_test = b.addTest(.{
@@ -1471,7 +1457,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_stack_validation_test.step);
     test_step.dependOn(&run_jump_table_test.step);
     test_step.dependOn(&run_opcodes_test.step);
-    test_step.dependOn(&run_benchmark_runner_test.step);
+    // benchmark runner test removed - file no longer exists
     test_step.dependOn(&run_vm_opcode_test.step);
 
     // Add inline ops test
@@ -1494,32 +1480,9 @@ pub fn build(b: *std.Build) void {
     inline_ops_test_step.dependOn(&run_inline_ops_test.step);
     test_step.dependOn(&run_inline_ops_test.step);
 
-    // Add memory optimization tests
-    const block_metadata_heap_test = b.addTest(.{
-        .name = "block-metadata-heap-test",
-        .root_source_file = b.path("src/evm/frame/block_metadata_heap.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    block_metadata_heap_test.root_module.addImport("primitives", primitives_mod);
-    block_metadata_heap_test.root_module.addImport("evm", evm_mod);
-    const run_block_metadata_heap_test = b.addRunArtifact(block_metadata_heap_test);
-    const block_metadata_heap_test_step = b.step("test-block-metadata-heap", "Run block metadata heap tests");
-    block_metadata_heap_test_step.dependOn(&run_block_metadata_heap_test.step);
-    test_step.dependOn(&run_block_metadata_heap_test.step);
+    // Block metadata heap test removed - file no longer exists
 
-    const code_analysis_optimized_test = b.addTest(.{
-        .name = "code-analysis-optimized-test",
-        .root_source_file = b.path("src/evm/frame/code_analysis_optimized.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    code_analysis_optimized_test.root_module.addImport("primitives", primitives_mod);
-    code_analysis_optimized_test.root_module.addImport("evm", evm_mod);
-    const run_code_analysis_optimized_test = b.addRunArtifact(code_analysis_optimized_test);
-    const code_analysis_optimized_test_step = b.step("test-code-analysis-optimized", "Run optimized code analysis tests");
-    code_analysis_optimized_test_step.dependOn(&run_code_analysis_optimized_test.step);
-    test_step.dependOn(&run_code_analysis_optimized_test.step);
+    // Code analysis optimized test removed - file no longer exists
 
     const analysis_test = b.addTest(.{
         .name = "analysis-test",
@@ -1534,18 +1497,7 @@ pub fn build(b: *std.Build) void {
     analysis_test_step.dependOn(&run_analysis_test.step);
     test_step.dependOn(&run_analysis_test.step);
 
-    const analyze_compact_test = b.addTest(.{
-        .name = "analyze-compact-test",
-        .root_source_file = b.path("src/evm/frame/analyze_and_compact.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    analyze_compact_test.root_module.addImport("primitives", primitives_mod);
-    analyze_compact_test.root_module.addImport("evm", evm_mod);
-    const run_analyze_compact_test = b.addRunArtifact(analyze_compact_test);
-    const analyze_compact_test_step = b.step("test-analyze-compact", "Run analyze and compact tests");
-    analyze_compact_test_step.dependOn(&run_analyze_compact_test.step);
-    test_step.dependOn(&run_analyze_compact_test.step);
+    // Analyze and compact test removed - file no longer exists
 
     test_step.dependOn(&run_integration_test.step);
     test_step.dependOn(&run_gas_test.step);
