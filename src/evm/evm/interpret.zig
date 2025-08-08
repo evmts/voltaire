@@ -8,7 +8,6 @@ const builtin = @import("builtin");
 const SAFE = builtin.mode == .Debug or builtin.mode == .ReleaseSafe;
 const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
 
-
 /// Execute contract bytecode using block-based execution.
 ///
 /// This version translates bytecode to an instruction stream before execution,
@@ -21,8 +20,8 @@ const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
 pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     self.require_one_thread();
 
-    Log.debug("[interpret] Starting with {} instructions, gas={}", .{frame.analysis.instructions.len, frame.gas_remaining});
-    
+    Log.debug("[interpret] Starting with {} instructions, gas={}", .{ frame.analysis.instructions.len, frame.gas_remaining });
+
     // Frame is provided by caller, get the analysis from it
     const instructions = frame.analysis.instructions;
     var current_index: usize = 0;
@@ -45,11 +44,29 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         switch (nextInstruction.arg) {
             // BEGINBLOCK instructions - validate entire basic block upfront
             // This eliminates per-instruction gas and stack validation for the entire block
-            .block_info => {
+            .block_info => |block| {
+                // Validate gas for the entire block up-front
+                if (frame.gas_remaining < block.gas_cost) {
+                    @branchHint(.cold);
+                    frame.gas_remaining = 0;
+                    return ExecutionError.Error.OutOfGas;
+                }
+                frame.gas_remaining -= block.gas_cost;
+
+                // Validate stack requirements for this block
+                const current_stack_size: u16 = @intCast(frame.stack.size());
+                if (current_stack_size < block.stack_req) {
+                    return ExecutionError.Error.StackUnderflow;
+                }
+                // EVM stack limit is 1024
+                if (current_stack_size + block.stack_max_growth > 1024) {
+                    return ExecutionError.Error.StackOverflow;
+                }
+
+                // Advance to the next instruction in the block
                 current_index += 1;
-                nextInstruction.opcode_fn(@ptrCast(frame)) catch |err| {
-                    return err;
-                };
+                // Note: The opcode_fn for BEGINBLOCK is a no-op; validation is handled here
+                _ = nextInstruction.opcode_fn; // keep reference to avoid warnings
             },
             // For jumps we handle them inline as they are preprocessed by analysis
             // 1. Handle dynamic jumps validating it is a valid jumpdest
@@ -94,7 +111,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 current_index += 1;
                 nextInstruction.opcode_fn(@ptrCast(frame)) catch |err| {
                     // Frame already manages its own output, no need to copy
-                    Log.debug("[interpret] Opcode at index {} returned error: {}", .{current_index - 1, err});
+                    Log.debug("[interpret] Opcode at index {} returned error: {}", .{ current_index - 1, err });
 
                     // Handle gas exhaustion for InvalidOpcode specifically
                     if (err == ExecutionError.Error.InvalidOpcode) {
@@ -113,7 +130,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                     return ExecutionError.Error.OutOfGas;
                 }
                 frame.gas_remaining -= cost;
-                
+
                 // Execute the opcode after charging gas
                 nextInstruction.opcode_fn(@ptrCast(frame)) catch |err| {
                     if (err == ExecutionError.Error.InvalidOpcode) {
@@ -125,7 +142,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             .dynamic_gas => |dyn_gas| {
                 // New path for opcodes with dynamic gas
                 current_index += 1;
-                
+
                 // Charge static gas first
                 if (frame.gas_remaining < dyn_gas.static_cost) {
                     @branchHint(.cold);
@@ -133,7 +150,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                     return ExecutionError.Error.OutOfGas;
                 }
                 frame.gas_remaining -= dyn_gas.static_cost;
-                
+
                 // Calculate and charge dynamic gas if function exists
                 if (dyn_gas.gas_fn) |gas_fn| {
                     const additional_gas = gas_fn(frame) catch |err| {
@@ -145,7 +162,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                         frame.gas_remaining = 0;
                         return ExecutionError.Error.OutOfGas;
                     };
-                    
+
                     if (frame.gas_remaining < additional_gas) {
                         @branchHint(.cold);
                         frame.gas_remaining = 0;
@@ -153,7 +170,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                     }
                     frame.gas_remaining -= additional_gas;
                 }
-                
+
                 // Execute the opcode after all gas is charged
                 nextInstruction.opcode_fn(@ptrCast(frame)) catch |err| {
                     if (err == ExecutionError.Error.InvalidOpcode) {
@@ -164,6 +181,6 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             },
         }
     }
-    
-    Log.debug("[interpret] Reached end of instructions without STOP/RETURN, current_index={}, len={}", .{current_index, instructions.len});
+
+    Log.debug("[interpret] Reached end of instructions without STOP/RETURN, current_index={}, len={}", .{ current_index, instructions.len });
 }

@@ -1648,6 +1648,10 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_bn254_g2_test.step);
     test_step.dependOn(&run_bn254_pairing_test.step);
 
+    // Add comprehensive test packages to main test step
+    test_step.dependOn(&run_evm_package_test.step);
+    test_step.dependOn(&run_differential_test.step);
+
     // Add ERC20 deployment hang test
     const erc20_deployment_test = b.addTest(.{
         .name = "erc20-deployment-test",

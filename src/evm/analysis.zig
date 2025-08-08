@@ -45,7 +45,7 @@ pub fn UnreachableHandler(frame: *anyopaque) ExecutionError.Error!void {
 /// Handler for BEGINBLOCK instructions that validates an entire basic block upfront.
 /// This performs gas and stack validation for all instructions in the block in one operation,
 /// eliminating the need for per-instruction validation during execution.
-/// 
+///
 /// The block information (gas cost, stack requirements) is stored in the instruction's arg.block_info.
 /// This handler must be called before executing any instructions in the basic block.
 pub fn BeginBlockHandler(frame: *anyopaque) ExecutionError.Error!void {
@@ -55,13 +55,13 @@ pub fn BeginBlockHandler(frame: *anyopaque) ExecutionError.Error!void {
     // const current_instruction = @as(*const Instruction, @ptrCast(actual_frame.current_instruction));
     // const block = current_instruction.arg.block_info;
     const placeholder_gas = 1; // Placeholder gas cost
-    
+
     // Single gas check for entire block - eliminates per-opcode gas validation
     if (actual_frame.gas_remaining < placeholder_gas) {
         return ExecutionError.Error.OutOfGas;
     }
     actual_frame.gas_remaining -= placeholder_gas;
-    
+
     // TODO: Stack validation also needs the block info
     // Single stack validation for entire block - eliminates per-opcode stack checks
     // const stack_size = @as(u16, @intCast(actual_frame.stack.len()));
@@ -71,7 +71,7 @@ pub fn BeginBlockHandler(frame: *anyopaque) ExecutionError.Error!void {
     // if (stack_size + block.stack_max_growth > 1024) {
     //     return ExecutionError.Error.StackOverflow;
     // }
-    
+
     // Log.debug("BeginBlock: gas_cost={}, stack_req={}, stack_max_growth={}, current_stack={}", .{
     //     block.gas_cost, block.stack_req, block.stack_max_growth, stack_size
     // });
@@ -91,14 +91,14 @@ const BlockAnalysis = struct {
     stack_change: i16 = 0,
     /// Index of the BEGINBLOCK instruction that starts this block
     begin_block_index: usize,
-    
+
     /// Initialize a new block analysis at the given instruction index
     fn init(begin_index: usize) BlockAnalysis {
         return BlockAnalysis{
             .begin_block_index = begin_index,
         };
     }
-    
+
     /// Close the current block by producing compressed information about the block
     fn close(self: *const BlockAnalysis) BlockInfo {
         return BlockInfo{
@@ -107,19 +107,19 @@ const BlockAnalysis = struct {
             .stack_max_growth = @intCast(@max(0, self.stack_max_growth)),
         };
     }
-    
+
     /// Update stack tracking for an operation
     fn updateStackTracking(self: *BlockAnalysis, opcode: u8, min_stack: u32) void {
         // Get the precise net stack change from the lookup table
         const net_change = stack_height_changes.get_stack_height_change(opcode);
-        
+
         // min_stack tells us how many items the operation pops
         const stack_inputs = @as(i16, @intCast(min_stack));
-        
+
         // Calculate requirement relative to block start
         const current_stack_req = stack_inputs - self.stack_change;
         self.stack_req = @max(self.stack_req, current_stack_req);
-        
+
         // Update stack change using the precise net change
         self.stack_change += net_change;
         self.stack_max_growth = @max(self.stack_max_growth, self.stack_change);
@@ -213,7 +213,7 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
 
         // Get precise stack height change from lookup table
         const net_change = stack_height_changes.get_stack_height_change(op);
-        
+
         // Update stack depth
         stack_depth = stack_depth + net_change;
 
@@ -298,7 +298,7 @@ fn createCodeBitmap(allocator: std.mem.Allocator, code: []const u8) !DynamicBitS
 /// 3. Eliminating per-instruction validation during execution
 fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table: *const JumpTable, jumpdest_bitmap: *const DynamicBitSet) ![]Instruction {
     Log.debug("[analysis] Converting {} bytes of code to instructions", .{code.len});
-    
+
     // Allocate instruction array with extra space for BEGINBLOCK instructions
     const instructions = try allocator.alloc(Instruction, instruction_limits.MAX_INSTRUCTIONS + 1);
     errdefer allocator.free(instructions);
@@ -325,7 +325,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
             const operation = jump_table.get_operation(opcode_byte);
             block.gas_cost += @intCast(operation.constant_gas);
             block.updateStackTracking(opcode_byte, operation.min_stack);
-            
+
             instructions[instruction_count] = Instruction{
                 .opcode_fn = operation.execute,
                 .arg = .none, // No individual gas cost - handled by BEGINBLOCK
@@ -340,7 +340,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
             .JUMPDEST => {
                 // Close current block and start new one
                 instructions[block.begin_block_index].arg.block_info = block.close();
-                
+
                 // Start new block with BEGINBLOCK
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = BeginBlockHandler,
@@ -348,12 +348,12 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 };
                 block = BlockAnalysis.init(instruction_count);
                 instruction_count += 1;
-                
+
                 // Add the JUMPDEST instruction to the new block
                 const operation = jump_table.get_operation(opcode_byte);
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
-                
+
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = operation.execute,
                     .arg = .none,
@@ -361,15 +361,15 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 instruction_count += 1;
                 pc += 1;
             },
-            
+
             // Terminating instructions - end current block
             .JUMP, .STOP, .RETURN, .REVERT, .SELFDESTRUCT => {
-                Log.debug("[analysis] Found terminating instruction {} at pc={}", .{opcode, pc});
-                
+                Log.debug("[analysis] Found terminating instruction {} at pc={}", .{ opcode, pc });
+
                 const operation = jump_table.get_operation(opcode_byte);
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
-                
+
                 if (opcode == .JUMP) {
                     instructions[instruction_count] = Instruction{
                         .opcode_fn = UnreachableHandler, // Handled inline by interpreter
@@ -383,16 +383,16 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 }
                 instruction_count += 1;
                 pc += 1;
-                
+
                 // Close current block
                 instructions[block.begin_block_index].arg.block_info = block.close();
-                
+
                 // Skip dead code until next JUMPDEST - but if we've reached the end, stop
                 if (pc >= code.len) {
                     Log.debug("[analysis] Reached end of code after terminating instruction", .{});
                     break;
                 }
-                
+
                 // Start new block for any code after the terminator
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = BeginBlockHandler,
@@ -401,19 +401,19 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 block = BlockAnalysis.init(instruction_count);
                 instruction_count += 1;
             },
-            
+
             .JUMPI => {
                 const operation = jump_table.get_operation(opcode_byte);
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
-                
+
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = UnreachableHandler, // Handled inline by interpreter
                     .arg = .none, // Will be filled with .jump_target during resolveJumpTargets
                 };
                 instruction_count += 1;
                 pc += 1;
-                
+
                 // Close current block and start new one (for fall-through path)
                 instructions[block.begin_block_index].arg.block_info = block.close();
                 instructions[instruction_count] = Instruction{
@@ -423,13 +423,13 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 block = BlockAnalysis.init(instruction_count);
                 instruction_count += 1;
             },
-            
+
             // PUSH operations - handled inline by interpreter
             .PUSH0 => {
                 const operation = jump_table.get_operation(opcode_byte);
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
-                
+
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = UnreachableHandler,
                     .arg = .{ .push_value = 0 },
@@ -437,15 +437,15 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 instruction_count += 1;
                 pc += 1;
             },
-            
+
             .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
                 const operation = jump_table.get_operation(opcode_byte);
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
-                
+
                 const push_size = Opcode.get_push_size(opcode_byte);
                 var value: u256 = 0;
-                
+
                 // Read push value with bounds checking
                 if (pc + 1 + push_size <= code.len) {
                     var i: usize = 0;
@@ -469,23 +469,23 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                     }
                     pc = code.len; // End of code
                 }
-                
+
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = UnreachableHandler,
                     .arg = .{ .push_value = value },
                 };
                 instruction_count += 1;
             },
-            
+
             // Special opcodes that need individual gas tracking for dynamic calculations
             .GAS, .CALL, .CALLCODE, .DELEGATECALL, .STATICCALL, .CREATE, .CREATE2, .SSTORE => {
                 const operation = jump_table.get_operation(opcode_byte);
                 // Don't accumulate static gas in block - it will be handled individually
                 block.updateStackTracking(opcode_byte, operation.min_stack);
-                
+
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = operation.execute,
-                    .arg = .{ 
+                    .arg = .{
                         .dynamic_gas = DynamicGas{
                             .static_cost = @intCast(operation.constant_gas),
                             .gas_fn = getDynamicGasFunction(opcode),
@@ -495,17 +495,17 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 instruction_count += 1;
                 pc += 1;
             },
-            
+
             // Regular opcodes - accumulate in block
             else => {
                 const operation = jump_table.get_operation(opcode_byte);
-                
+
                 if (operation.undefined) {
                     // Treat undefined opcodes as INVALID
                     const invalid_operation = jump_table.get_operation(@intFromEnum(Opcode.Enum.INVALID));
                     block.gas_cost += @intCast(invalid_operation.constant_gas);
                     block.updateStackTracking(@intFromEnum(Opcode.Enum.INVALID), invalid_operation.min_stack);
-                    
+
                     instructions[instruction_count] = Instruction{
                         .opcode_fn = invalid_operation.execute,
                         .arg = .none,
@@ -513,7 +513,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 } else {
                     block.gas_cost += @intCast(operation.constant_gas);
                     block.updateStackTracking(opcode_byte, operation.min_stack);
-                    
+
                     instructions[instruction_count] = Instruction{
                         .opcode_fn = operation.execute,
                         .arg = .none, // No individual gas cost - handled by BEGINBLOCK
@@ -542,7 +542,8 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 0x00, // STOP
                 0xF3, // RETURN
                 0xFD, // REVERT
-                0xFF => true, // SELFDESTRUCT
+                0xFF,
+                => true, // SELFDESTRUCT
                 else => false,
             };
             if (is_terminator) {
@@ -551,7 +552,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
             }
         }
     }
-    
+
     if (needs_stop and instruction_count < instruction_limits.MAX_INSTRUCTIONS) {
         const stop_operation = jump_table.get_operation(@intFromEnum(Opcode.Enum.STOP));
         instructions[instruction_count] = Instruction{
@@ -575,71 +576,65 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 }
 
 /// Resolve jump targets in the instruction stream.
-/// This creates direct pointers from JUMP/JUMPI instructions to their target instructions.
+/// This creates direct pointers from JUMP/JUMPI instructions to their target block BEGINBLOCK.
 fn resolveJumpTargets(allocator: std.mem.Allocator, code: []const u8, instructions: []Instruction, jumpdest_bitmap: *const DynamicBitSet) !void {
-    // Build a map from PC to instruction index using dynamic allocation
-    // Initialize with sentinel value (MAX_INSTRUCTIONS means "not mapped")
-    var pc_to_instruction = try allocator.alloc(u16, code.len);
-    defer allocator.free(pc_to_instruction);
-    @memset(pc_to_instruction, std.math.maxInt(u16));
+    // Build a mapping from bytecode PC -> instruction index corresponding to the start of the block
+    // We do this by simulating the code PC while walking the instructions and remembering the most
+    // recent BEGINBLOCK instruction index for the current PC window.
+
+    var pc_to_block_start = try allocator.alloc(u16, code.len);
+    defer allocator.free(pc_to_block_start);
+    @memset(pc_to_block_start, std.math.maxInt(u16));
 
     var pc: usize = 0;
     var inst_idx: usize = 0;
+    var current_block_begin_idx: ?u16 = null;
 
-    // First pass: map PC to instruction indices
     while (inst_idx < instructions.len) : (inst_idx += 1) {
-        if (pc < pc_to_instruction.len) {
-            pc_to_instruction[pc] = @intCast(inst_idx);
-        }
-
-        // Calculate PC advancement based on the original bytecode
-        if (pc >= code.len) break;
-
-        const opcode_byte = code[pc];
-        if (opcode_byte >= 0x60 and opcode_byte <= 0x7F) {
-            // PUSH instruction
-            const push_size = opcode_byte - 0x5F;
-            pc += 1 + push_size;
+        const inst = &instructions[inst_idx];
+        if (inst.arg == .block_info) {
+            current_block_begin_idx = @intCast(inst_idx);
         } else {
-            pc += 1;
+            // Map this PC to the most recent block begin if available
+            if (pc < pc_to_block_start.len and current_block_begin_idx != null) {
+                pc_to_block_start[pc] = current_block_begin_idx.?;
+            }
+            // Advance PC according to original bytecode
+            if (pc < code.len) {
+                const opcode_byte = code[pc];
+                if (opcode_byte >= 0x60 and opcode_byte <= 0x7F) {
+                    const push_size = opcode_byte - 0x5F;
+                    pc += 1 + push_size;
+                } else {
+                    pc += 1;
+                }
+            }
         }
     }
 
     // Second pass: update JUMP and JUMPI instructions
     pc = 0;
     inst_idx = 0;
-
     while (inst_idx < instructions.len) : (inst_idx += 1) {
         if (pc >= code.len) break;
-
         const opcode_byte = code[pc];
 
         if (opcode_byte == 0x56 or opcode_byte == 0x57) { // JUMP or JUMPI
-            // Look for the target address in the previous PUSH instruction
             if (inst_idx > 0 and instructions[inst_idx - 1].arg == .push_value) {
                 const target_pc = instructions[inst_idx - 1].arg.push_value;
-
-                // Check if it's within bounds and is a valid jumpdest
                 if (target_pc < code.len and jumpdest_bitmap.isSet(@intCast(target_pc))) {
-                    // Find the instruction index for this PC
-                    if (target_pc < pc_to_instruction.len) {
-                        const target_idx = pc_to_instruction[@intCast(target_pc)];
-                        if (target_idx != std.math.maxInt(u16) and target_idx < instructions.len) {
-                            // Determine jump type based on opcode
-                            const jump_type: JumpType = if (opcode_byte == 0x56) .jump else .jumpi;
-                            
-                            // Update the JUMP/JUMPI with the target pointer and type
-                            instructions[inst_idx].arg = .{ .jump_target = JumpTarget{
-                                .instruction = &instructions[target_idx],
-                                .jump_type = jump_type,
-                            }};
-                        }
+                    const mapped = pc_to_block_start[@intCast(target_pc)];
+                    if (mapped != std.math.maxInt(u16) and mapped < instructions.len) {
+                        const jump_type: JumpType = if (opcode_byte == 0x56) .jump else .jumpi;
+                        instructions[inst_idx].arg = .{ .jump_target = JumpTarget{
+                            .instruction = &instructions[mapped],
+                            .jump_type = jump_type,
+                        } };
                     }
                 }
             }
         }
 
-        // Calculate PC advancement
         if (opcode_byte >= 0x60 and opcode_byte <= 0x7F) {
             const push_size = opcode_byte - 0x5F;
             pc += 1 + push_size;

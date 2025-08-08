@@ -31,7 +31,7 @@ pub const MAX_INPUT_SIZE: u18 = 128 * 1024; // 128 kb
 pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResult {
     const Log = @import("../log.zig");
     Log.debug("[call] Starting call execution", .{});
-    
+
     // Extract call info from params - for now just handle the .call case
     // TODO: Handle other call types properly
     // Extract call information based on the call type
@@ -40,10 +40,10 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     var call_input: []const u8 = undefined;
     var call_gas: u64 = undefined;
     var call_is_static: bool = undefined;
-    
+
     var call_caller: primitives.Address.Address = undefined;
     var call_value: u256 = undefined;
-    
+
     switch (params) {
         .call => |call_data| {
             call_address = call_data.to;
@@ -53,7 +53,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
             call_is_static = false;
             call_caller = call_data.caller;
             call_value = call_data.value;
-            Log.debug("[call] Call params: to={any}, input_len={}, gas={}, static={}", .{call_data.to, call_data.input.len, call_data.gas, false});
+            Log.debug("[call] Call params: to={any}, input_len={}, gas={}, static={}", .{ call_data.to, call_data.input.len, call_data.gas, false });
         },
         .staticcall => |call_data| {
             call_address = call_data.to;
@@ -63,7 +63,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
             call_is_static = true;
             call_caller = call_data.caller;
             call_value = 0; // Static calls have no value transfer
-            Log.debug("[call] Staticcall params: to={any}, input_len={}, gas={}, static={}", .{call_data.to, call_data.input.len, call_data.gas, true});
+            Log.debug("[call] Staticcall params: to={any}, input_len={}, gas={}, static={}", .{ call_data.to, call_data.input.len, call_data.gas, true });
         },
         else => {
             // For now, return error for unhandled call types
@@ -71,7 +71,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
             return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
         },
     }
-    
+
     const call_info = .{
         .address = call_address,
         .code = call_code,
@@ -81,7 +81,6 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         .is_static = call_is_static,
     };
 
-
     // Input validation
     if (call_info.input.len > MAX_INPUT_SIZE) return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
     if (call_info.code_size > MAX_CODE_SIZE) return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
@@ -89,16 +88,15 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     if (call_info.gas == 0) return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
     if (call_info.code_size > 0 and call_info.code.len == 0) return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
 
+    Log.debug("[call] Code size: {}, code_len: {}", .{ call_info.code_size, call_info.code.len });
 
-    Log.debug("[call] Code size: {}, code_len: {}", .{call_info.code_size, call_info.code.len});
-    
     // Do analysis using heap allocator
     var analysis = CodeAnalysis.from_code(self.allocator, call_info.code[0..call_info.code_size], &self.table) catch |err| {
         Log.err("[call] Code analysis failed: {}", .{err});
         return CallResult{ .success = false, .gas_left = call_info.gas, .output = &.{} };
     };
     defer analysis.deinit();
-    
+
     Log.debug("[call] Code analysis complete: {} instructions", .{analysis.instructions.len});
 
     // Reinitialize if first frame
@@ -111,45 +109,36 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         self.access_list.clear(); // Reset access list for fresh per-call state
         self.self_destruct = SelfDestruct.init(self.allocator); // Fresh self-destruct tracker
         self.created_contracts = CreatedContracts.init(self.allocator); // Fresh created contracts tracker for EIP-6780
-        
+
         // Create host interface from self
         var host = Host.init(self);
-        
-        for (0..MAX_CALL_DEPTH) |i| {
-            const next_frame = if (i + 1 < MAX_CALL_DEPTH) &self.frame_stack[i + 1] else null;
-            // Initialize placeholder frames - actual values set later when frame is used
-            self.frame_stack[i] = try Frame.init(
-                0, // gas_remaining
-                false, // static_call
-                @intCast(i), // call_depth
-                primitives.Address.ZERO_ADDRESS, // contract_address
-                primitives.Address.ZERO_ADDRESS, // caller
-                0, // value
-                &analysis, // analysis
-                &self.access_list,
-                &self.journal,
-                &host,
-                0, // snapshot_id
-                self.state.database,
-                ChainRules{},
-                &self.self_destruct,
-                &self.created_contracts,
-                &[_]u8{}, // input
-                self.internal_arena.allocator(),
-                next_frame,
-                false, // is_create_call
-                false, // is_delegate_call
-            );
-        }
-        // Set up the first frame properly for execution
-        self.frame_stack[0].gas_remaining = call_info.gas;
-        self.frame_stack[0].hot_flags.is_static = call_info.is_static;
-        self.frame_stack[0].hot_flags.depth = @intCast(self.depth);
-        self.frame_stack[0].contract_address = call_info.address;
-        self.frame_stack[0].input = call_info.input;
-        self.frame_stack[0].caller = call_caller;
-        self.frame_stack[0].value = call_value;
-        
+
+        // Initialize only the first frame now. Nested frames will be initialized on demand
+        const first_next_frame: ?*Frame = null; // no nested calls pre-allocated
+        self.frame_stack[0] = try Frame.init(
+            call_info.gas, // gas_remaining
+            call_info.is_static, // static_call
+            @intCast(self.depth), // call_depth
+            call_info.address, // contract_address
+            call_caller, // caller
+            call_value, // value
+            &analysis, // analysis
+            &self.access_list,
+            &self.journal,
+            &host,
+            0, // snapshot_id
+            self.state.database,
+            ChainRules{},
+            &self.self_destruct,
+            &self.created_contracts,
+            call_info.input, // input
+            self.allocator, // use general allocator for frame-owned allocations
+            first_next_frame,
+            false, // is_create_call
+            false, // is_delegate_call
+        );
+        // Frame resources will be released after execution completes
+
         // Set block context from VM's context
         self.frame_stack[0].block_number = self.context.block_number;
         self.frame_stack[0].block_timestamp = self.context.block_timestamp;
@@ -171,48 +160,38 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     }
 
     Log.debug("[call] Starting interpret, gas={}", .{self.frame_stack[0].gas_remaining});
-    
-    // Call interpret with the first frame
+
+    // Execute and normalize result handling so we can always clean up the frame
+    var exec_err: ?ExecutionError.Error = null;
     interpret(self, &self.frame_stack[0]) catch |err| {
         Log.debug("[call] Interpret ended with error: {}", .{err});
-        
-        // Handle error cases and transform to CallResult
-        var output: []const u8 = &.{};
-        if (self.frame_stack[0].output.len > 0) {
-            output = self.allocator.dupe(u8, self.frame_stack[0].output) catch &.{};
-            Log.debug("[call] Output length: {}", .{output.len});
-        }
+        exec_err = err;
+    };
 
-        const success = switch (err) {
+    // Copy output before frame cleanup
+    var output: []const u8 = &.{};
+    if (self.frame_stack[0].output.len > 0) {
+        output = self.allocator.dupe(u8, self.frame_stack[0].output) catch &.{};
+        Log.debug("[call] Output length: {}", .{output.len});
+    }
+
+    // Release frame resources
+    self.frame_stack[0].deinit();
+
+    // Map error to success status
+    const success: bool = switch (exec_err) {
+        null => true,
+        else => switch (exec_err.?) {
             ExecutionError.Error.STOP => true,
             ExecutionError.Error.REVERT => false,
             ExecutionError.Error.OutOfGas => false,
             else => false,
-        };
-
-        Log.debug("[call] Returning with success={}, gas_left={}, output_len={}", .{success, self.frame_stack[0].gas_remaining, output.len});
-        return CallResult{
-            .success = success,
-            .gas_left = self.frame_stack[0].gas_remaining,
-            .output = output,
-        };
+        },
     };
 
-    // Success case - copy output if needed
-    Log.debug("[call] Interpret completed successfully", .{});
-    
-    var output: []const u8 = &.{};
-    if (self.frame_stack[0].output.len > 0) {
-        output = try self.allocator.dupe(u8, self.frame_stack[0].output);
-        Log.debug("[call] Output length: {}", .{output.len});
-    }
-
-    // Apply destructions before returning
-    // TODO: Apply destructions to state
-    
-    Log.debug("[call] Returning success with gas_left={}, output_len={}", .{self.frame_stack[0].gas_remaining, output.len});
+    Log.debug("[call] Returning with success={}, gas_left={}, output_len={}", .{ success, self.frame_stack[0].gas_remaining, output.len });
     return CallResult{
-        .success = true,
+        .success = success,
         .gas_left = self.frame_stack[0].gas_remaining,
         .output = output,
     };

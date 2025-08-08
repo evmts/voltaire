@@ -408,6 +408,10 @@ pub const ConsumeGasError = ExecutionError.Error;
 const testing = std.testing;
 const MemoryDatabase = @import("state/memory_database.zig").MemoryDatabase;
 
+// Tests have been moved to evm_new_tests.zig to focus on Frame-based execution
+// The old tests below are kept temporarily for reference but should be removed
+// once the new Frame-based API is fully validated
+
 test "Evm.init default configuration" {
     const allocator = testing.allocator;
 
