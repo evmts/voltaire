@@ -745,6 +745,85 @@ pub fn build(b: *std.Build) void {
     const stack_test_step = b.step("test-stack", "Run Stack tests");
     stack_test_step.dependOn(&run_stack_test.step);
 
+    // Add new EVM tests
+    const newevm_test = b.addTest(.{
+        .name = "newevm-test",
+        .root_source_file = b.path("src/evm/newevm_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    newevm_test.root_module.addImport("evm", evm_mod);
+    newevm_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_newevm_test = b.addRunArtifact(newevm_test);
+    const newevm_test_step = b.step("test-newevm", "Run new EVM tests");
+    newevm_test_step.dependOn(&run_newevm_test.step);
+
+    // Add arithmetic opcode tests for new EVM
+    const newevm_arithmetic_test = b.addTest(.{
+        .name = "newevm-arithmetic-test",
+        .root_source_file = b.path("test/evm/opcodes/arithmetic_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    newevm_arithmetic_test.root_module.addImport("evm", evm_mod);
+    newevm_arithmetic_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_newevm_arithmetic_test = b.addRunArtifact(newevm_arithmetic_test);
+    newevm_test_step.dependOn(&run_newevm_arithmetic_test.step);
+
+    // Add bitwise opcode tests for new EVM
+    const newevm_bitwise_test = b.addTest(.{
+        .name = "newevm-bitwise-test",
+        .root_source_file = b.path("test/evm/opcodes/bitwise_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    newevm_bitwise_test.root_module.addImport("evm", evm_mod);
+    newevm_bitwise_test.root_module.addImport("primitives", primitives_mod);
+    
+    const run_newevm_bitwise_test = b.addRunArtifact(newevm_bitwise_test);
+    newevm_test_step.dependOn(&run_newevm_bitwise_test.step);
+
+    // Add comparison opcode tests for new EVM
+    const newevm_comparison_test = b.addTest(.{
+        .name = "newevm-comparison-test",
+        .root_source_file = b.path("test/evm/opcodes/comparison_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    newevm_comparison_test.root_module.addImport("evm", evm_mod);
+    newevm_comparison_test.root_module.addImport("primitives", primitives_mod);
+    
+    const run_newevm_comparison_test = b.addRunArtifact(newevm_comparison_test);
+    newevm_test_step.dependOn(&run_newevm_comparison_test.step);
+
+    // Add block opcode tests for new EVM
+    const newevm_block_test = b.addTest(.{
+        .name = "newevm-block-test",
+        .root_source_file = b.path("test/evm/opcodes/block_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    newevm_block_test.root_module.addImport("evm", evm_mod);
+    newevm_block_test.root_module.addImport("primitives", primitives_mod);
+    
+    const run_newevm_block_test = b.addRunArtifact(newevm_block_test);
+    newevm_test_step.dependOn(&run_newevm_block_test.step);
+
+    // Add stack opcode tests for new EVM
+    const newevm_stack_test = b.addTest(.{
+        .name = "newevm-stack-test",
+        .root_source_file = b.path("test/evm/opcodes/stack_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    newevm_stack_test.root_module.addImport("evm", evm_mod);
+    newevm_stack_test.root_module.addImport("primitives", primitives_mod);
+    
+    const run_newevm_stack_test = b.addRunArtifact(newevm_stack_test);
+    newevm_test_step.dependOn(&run_newevm_stack_test.step);
+
     // Add Stack validation tests
     const stack_validation_test = b.addTest(.{
         .name = "stack-validation-test",
@@ -1388,6 +1467,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_exe_unit_tests.step);
     test_step.dependOn(&run_memory_test.step);
     test_step.dependOn(&run_stack_test.step);
+    test_step.dependOn(&run_newevm_test.step);
     test_step.dependOn(&run_stack_validation_test.step);
     test_step.dependOn(&run_jump_table_test.step);
     test_step.dependOn(&run_opcodes_test.step);
