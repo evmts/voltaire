@@ -595,6 +595,14 @@ pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
                 for (address_bytes, 0..) |byte, i| {
                     address_u256 |= @as(u256, byte) << @intCast((19 - i) * 8);
                 }
+                
+                // EIP-6780: Track created contract for SELFDESTRUCT restriction
+                if (frame.created_contracts) |created| {
+                    var contract_address: primitives.Address.Address = undefined;
+                    @memcpy(&contract_address, address_bytes);
+                    created.mark_created(contract_address) catch {};
+                }
+                
                 try frame.stack.append(address_u256);
             } else {
                 try frame.stack.append(0);
@@ -708,6 +716,14 @@ pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
                 for (address_bytes, 0..) |byte, i| {
                     address_u256 |= @as(u256, byte) << @intCast((19 - i) * 8);
                 }
+                
+                // EIP-6780: Track created contract for SELFDESTRUCT restriction
+                if (frame.created_contracts) |created| {
+                    var contract_address: primitives.Address.Address = undefined;
+                    @memcpy(&contract_address, address_bytes);
+                    created.mark_created(contract_address) catch {};
+                }
+                
                 try frame.stack.append(address_u256);
             } else {
                 try frame.stack.append(0);
