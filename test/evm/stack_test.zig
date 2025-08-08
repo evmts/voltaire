@@ -14,7 +14,7 @@ fn setup_stack(allocator: std.mem.Allocator, items: []const u256) !Stack {
 test "Stack: initialization" {
     var stack = try Stack.init(testing.allocator);
     defer stack.deinit();
-    try testing.expectEqual(@as(usize, 0), stack.size()());
+    try testing.expectEqual(@as(usize, 0), stack.size());
     try testing.expectEqual(@as(usize, Stack.CAPACITY), Stack.CAPACITY);
 }
 
@@ -28,7 +28,7 @@ test "Stack: basic push and pop operations" {
     try stack.append(3);
 
     // Check state
-    try testing.expectEqual(@as(usize, 3), stack.size()());
+    try testing.expectEqual(@as(usize, 3), stack.size());
 
     // Pop values and verify LIFO order
     try testing.expectEqual(@as(u256, 3), try stack.pop());
@@ -36,7 +36,7 @@ test "Stack: basic push and pop operations" {
     try testing.expectEqual(@as(u256, 1), try stack.pop());
 
     // Stack should be empty
-    try testing.expectEqual(@as(usize, 0), stack.size()());
+    try testing.expectEqual(@as(usize, 0), stack.size());
 
     // Pop from empty stack should error
     try testing.expectError(Stack.Error.StackUnderflow, stack.pop());
@@ -148,7 +148,7 @@ test "Stack: clear operation" {
 
     // Should be able to use stack normally after clear
     try stack.append(100);
-    try testing.expectEqual(@as(usize, 1), stack.size()());
+    try testing.expectEqual(@as(usize, 1), stack.size());
     try testing.expectEqual(@as(u256, 100), try stack.pop());
 }
 
@@ -160,7 +160,7 @@ test "Stack: overflow protection" {
     for (0..Stack.CAPACITY - 1) |i| {
         try stack.append(@intCast(i));
     }
-    try testing.expectEqual(@as(usize, Stack.CAPACITY - 1), stack.size()());
+    try testing.expectEqual(@as(usize, Stack.CAPACITY - 1), stack.size());
 
     // This should succeed
     try stack.append(999);
