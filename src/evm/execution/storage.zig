@@ -1,12 +1,12 @@
 const std = @import("std");
 const ExecutionError = @import("execution_error.zig");
-const ExecutionContext = @import("../frame.zig").ExecutionContext;
+const Frame = @import("../frame.zig").Frame;
 const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
 const storage_costs = @import("../gas/storage_costs.zig");
 
 pub fn op_sload(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 1);
 
     const slot = frame.stack.peek_unsafe().*;
@@ -29,7 +29,7 @@ pub fn op_sload(context: *anyopaque) ExecutionError.Error!void {
 
 /// SSTORE opcode - Store value in persistent storage
 pub fn op_sstore(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (frame.is_static()) {
         @branchHint(.unlikely);
         return ExecutionError.Error.WriteProtection;
@@ -71,7 +71,7 @@ pub fn op_sstore(context: *anyopaque) ExecutionError.Error!void {
     try frame.consume_gas(total_gas);
 
     try frame.set_storage(slot, value);
-    
+
     // Apply refund if any
     if (cost.refund > 0) {
         frame.add_gas_refund(cost.refund);
@@ -79,12 +79,12 @@ pub fn op_sstore(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_tload(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     // TODO: Add hardfork validation for EIP-1153 (Cancun)
     // if (!frame.flags.is_eip1153) {
     //     return ExecutionError.Error.InvalidOpcode;
     // }
-    
+
     // Gas is already handled by jump table constant_gas = 100
 
     std.debug.assert(frame.stack.size() >= 1);
@@ -99,12 +99,12 @@ pub fn op_tload(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_tstore(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     // TODO: Add hardfork validation for EIP-1153 (Cancun)
     // if (!frame.flags.is_eip1153) {
     //     return ExecutionError.Error.InvalidOpcode;
     // }
-    
+
     if (frame.is_static()) {
         @branchHint(.unlikely);
         return ExecutionError.Error.WriteProtection;
@@ -151,7 +151,7 @@ const StorageOpType = enum {
     tstore,
 };
 
-fn validate_storage_result_DISABLED(frame: *const ExecutionContext, vm: *const ExecutionContext, op: FuzzStorageOperation, result: anyerror!void) !void {
+fn validate_storage_result_DISABLED(frame: *const Frame, vm: *const Frame, op: FuzzStorageOperation, result: anyerror!void) !void {
     _ = frame;
     _ = vm;
     _ = op;
@@ -161,7 +161,7 @@ fn validate_storage_result_DISABLED(frame: *const ExecutionContext, vm: *const E
 
 test "fuzz_storage_basic_operations" {
     const allocator = std.testing.allocator;
-    
+
     const operations = [_]FuzzStorageOperation{
         .{
             .op_type = .sload,
@@ -195,7 +195,7 @@ test "fuzz_storage_basic_operations" {
             .value = 100,
         },
     };
-    
+
     _ = allocator;
     _ = operations;
     // TODO: Re-enable when fuzz functions are updated for ExecutionContext
@@ -204,7 +204,7 @@ test "fuzz_storage_basic_operations" {
 
 test "fuzz_storage_static_context" {
     const allocator = std.testing.allocator;
-    
+
     const operations = [_]FuzzStorageOperation{
         .{
             .op_type = .sstore,
@@ -235,7 +235,7 @@ test "fuzz_storage_static_context" {
             .is_static = true,
         },
     };
-    
+
     _ = allocator;
     _ = operations;
     // TODO: Re-enable when fuzz functions are updated for ExecutionContext
@@ -244,7 +244,7 @@ test "fuzz_storage_static_context" {
 
 test "fuzz_storage_edge_cases" {
     const allocator = std.testing.allocator;
-    
+
     const operations = [_]FuzzStorageOperation{
         .{
             .op_type = .sload,
@@ -277,7 +277,7 @@ test "fuzz_storage_edge_cases" {
             .value = std.math.maxInt(u256),
         },
     };
-    
+
     _ = allocator;
     _ = operations;
     // TODO: Re-enable when fuzz functions are updated for ExecutionContext

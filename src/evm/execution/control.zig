@@ -1,7 +1,7 @@
 const std = @import("std");
 const Log = @import("../log.zig");
 const ExecutionError = @import("execution_error.zig");
-const ExecutionContext = @import("../frame.zig").ExecutionContext;
+const Frame = @import("../frame.zig").Frame;
 const AccessList = @import("../access_list/access_list.zig");
 const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
@@ -43,7 +43,7 @@ pub fn op_jumpdest(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_return(context: *anyopaque) ExecutionError.Error!void {
-    const ctx = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const ctx = @as(*Frame, @ptrCast(@alignCast(context)));
     const frame = ctx;
 
     std.debug.assert(frame.stack.size() >= 2);
@@ -99,7 +99,7 @@ pub fn op_return(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_revert(context: *anyopaque) ExecutionError.Error!void {
-    const ctx = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const ctx = @as(*Frame, @ptrCast(@alignCast(context)));
     const frame = ctx;
 
     std.debug.assert(frame.stack.size() >= 2);
@@ -143,7 +143,7 @@ pub fn op_revert(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_invalid(context: *anyopaque) ExecutionError.Error!void {
-    const ctx = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const ctx = @as(*Frame, @ptrCast(@alignCast(context)));
     const frame = ctx;
 
     // Debug: op_invalid entered
@@ -155,7 +155,7 @@ pub fn op_invalid(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_selfdestruct(context: *anyopaque) ExecutionError.Error!void {
-    const ctx = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const ctx = @as(*Frame, @ptrCast(@alignCast(context)));
     const frame = ctx;
 
     // Check if we're in a static call
@@ -236,7 +236,7 @@ pub fn op_selfdestruct(context: *anyopaque) ExecutionError.Error!void {
 // };
 
 // TODO_DELETE: This function is broken and needs to be updated for ExecutionContext
-// fn execute_control_operation(op_type: ControlOpType, context: *ExecutionContext) ExecutionError.Error!void {
+// fn execute_control_operation(op_type: ControlOpType, context: Frame) ExecutionError.Error!void {
 //     // TODO: Update to use ExecutionContext pattern
 // }
 

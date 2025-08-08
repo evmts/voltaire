@@ -1,8 +1,7 @@
 const std = @import("std");
-const ExecutionContext = @import("../frame.zig").ExecutionContext;
+const Frame = @import("../frame.zig").Frame;
 const ExecutionError = @import("execution_error.zig");
 const Stack = @import("../stack/stack.zig");
-const Frame = @import("../frame.zig").Frame;
 const Vm = @import("../evm.zig");
 const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
@@ -16,9 +15,9 @@ const Log = Vm.Log;
 
 // Import helper functions from error_mapping
 
-pub fn make_log(comptime num_topics: u8) fn (*ExecutionContext) ExecutionError.Error!void {
+pub fn make_log(comptime num_topics: u8) fn (*Frame) ExecutionError.Error!void {
     return struct {
-        pub fn log(context: *ExecutionContext) ExecutionError.Error!void {
+        pub fn log(context: *Frame) ExecutionError.Error!void {
 
             // Check if we're in a static call
             if (context.is_static()) {
@@ -91,32 +90,32 @@ pub fn make_log(comptime num_topics: u8) fn (*ExecutionContext) ExecutionError.E
 // Each LOG operation gets its own function to avoid opcode detection issues
 
 pub fn log_0(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     return log_impl(0, frame);
 }
 
 pub fn log_1(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     return log_impl(1, frame);
 }
 
 pub fn log_2(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     return log_impl(2, frame);
 }
 
 pub fn log_3(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     return log_impl(3, frame);
 }
 
 pub fn log_4(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     return log_impl(4, frame);
 }
 
 // Common implementation for all LOG operations
-fn log_impl(num_topics: u8, context: *ExecutionContext) ExecutionError.Error!void {
+fn log_impl(num_topics: u8, context: *Frame) ExecutionError.Error!void {
     // Check if we're in a static call
     if (context.is_static()) {
         @branchHint(.unlikely);
@@ -173,4 +172,3 @@ fn log_impl(num_topics: u8, context: *ExecutionContext) ExecutionError.Error!voi
 
 // NOTE: Tests temporarily disabled while ExecutionContext integration is completed
 // The tests need to be updated to use ExecutionContext instead of the old Frame/VM pattern
-

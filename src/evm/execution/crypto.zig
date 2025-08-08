@@ -1,6 +1,6 @@
 const std = @import("std");
 const ExecutionError = @import("execution_error.zig");
-const ExecutionContext = @import("../frame.zig").ExecutionContext;
+const Frame = @import("../frame.zig").Frame;
 const primitives = @import("primitives");
 
 // Imports for tests
@@ -9,7 +9,7 @@ const Operation = @import("../opcodes/operation.zig");
 const MemoryDatabase = @import("../state/memory_database.zig");
 
 // Stack buffer sizes for common hash operations
-const SMALL_BUFFER_SIZE = 64;   // Most common (addresses, small data)
+const SMALL_BUFFER_SIZE = 64; // Most common (addresses, small data)
 const MEDIUM_BUFFER_SIZE = 256; // Common for event data
 const LARGE_BUFFER_SIZE = 1024; // Reasonable max for stack allocation
 
@@ -17,7 +17,7 @@ const LARGE_BUFFER_SIZE = 1024; // Reasonable max for stack allocation
 /// Falls back to memory system for larger inputs.
 inline fn hash_with_stack_buffer(data: []const u8) [32]u8 {
     var hash: [32]u8 = undefined;
-    
+
     if (data.len <= SMALL_BUFFER_SIZE) {
         @branchHint(.likely); // Most common case - addresses and small data
         var buffer: [SMALL_BUFFER_SIZE]u8 = undefined;
@@ -37,12 +37,12 @@ inline fn hash_with_stack_buffer(data: []const u8) [32]u8 {
         @branchHint(.cold); // Very large data - hash directly from memory
         std.crypto.hash.sha3.Keccak256.hash(data, &hash, .{});
     }
-    
+
     return hash;
 }
 
 pub fn op_sha3(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     const offset = frame.stack.pop_unsafe();
@@ -110,7 +110,6 @@ pub fn op_sha3(context: *anyopaque) ExecutionError.Error!void {
 
 // Alias for backwards compatibility
 pub const op_keccak256 = op_sha3;
-
 
 // FIXME: All test functions that used Frame/Contract have been removed
 // They need to be rewritten to use ExecutionContext when the migration is complete

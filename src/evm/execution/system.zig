@@ -1,6 +1,6 @@
 const std = @import("std");
 const ExecutionError = @import("execution_error.zig");
-const ExecutionContext = @import("../frame.zig").ExecutionContext;
+const Frame = @import("../frame.zig").Frame;
 const Evm = @import("../evm.zig");
 const Vm = Evm; // Alias for compatibility
 const primitives = @import("primitives");
@@ -179,13 +179,13 @@ pub const CallResult = struct {
 
 /// Check call depth limit shared by all call operations
 /// Returns true if depth limit is exceeded, false otherwise
-fn validate_call_depth(frame: *ExecutionContext) bool {
+fn validate_call_depth(frame: *Frame) bool {
     return frame.hot_flags.depth >= 1024;
 }
 
 /// Handle memory expansion for call arguments
 /// Returns the arguments slice or empty slice if size is 0
-fn get_call_args(frame: *ExecutionContext, args_offset: u256, args_size: u256) ExecutionError.Error![]const u8 {
+fn get_call_args(frame: *Frame, args_offset: u256, args_size: u256) ExecutionError.Error![]const u8 {
     if (args_size == 0) return &[_]u8{};
 
     try check_offset_bounds(args_offset);
@@ -204,7 +204,7 @@ fn get_call_args(frame: *ExecutionContext, args_offset: u256, args_size: u256) E
 }
 
 /// Ensure return memory is available for writing results
-fn ensure_return_memory(frame: *ExecutionContext, ret_offset: u256, ret_size: u256) ExecutionError.Error!void {
+fn ensure_return_memory(frame: *Frame, ret_offset: u256, ret_size: u256) ExecutionError.Error!void {
     if (ret_size == 0) return;
 
     try check_offset_bounds(ret_offset);
@@ -223,7 +223,7 @@ fn ensure_return_memory(frame: *ExecutionContext, ret_offset: u256, ret_size: u2
 
 /// Handle address conversion and EIP-2929 access cost
 /// Returns the target address
-fn handle_address_access(vm: *Vm, frame: *ExecutionContext, to: u256) ExecutionError.Error!primitives.Address.Address {
+fn handle_address_access(vm: *Vm, frame: Frame, to: u256) ExecutionError.Error!primitives.Address.Address {
     const to_address = from_u256(to);
 
     // EIP-2929: Check if address is cold and consume appropriate gas
@@ -239,7 +239,7 @@ fn handle_address_access(vm: *Vm, frame: *ExecutionContext, to: u256) ExecutionE
 }
 
 /// Calculate gas for call operations using 63/64 rule and value stipend
-fn calculate_call_gas_amount(frame: *ExecutionContext, gas: u256, value: u256) u64 {
+fn calculate_call_gas_amount(frame: *Frame, gas: u256, value: u256) u64 {
     var gas_for_call = if (gas > std.math.maxInt(u64)) std.math.maxInt(u64) else @as(u64, @intCast(gas));
     gas_for_call = @min(gas_for_call, frame.gas_remaining - (frame.gas_remaining / GasConstants.CALL_GAS_RETENTION_DIVISOR));
 
@@ -251,7 +251,7 @@ fn calculate_call_gas_amount(frame: *ExecutionContext, gas: u256, value: u256) u
 }
 
 /// Write return data to memory if requested and update gas
-fn handle_call_result(frame: *ExecutionContext, result: anytype, ret_offset: u256, ret_size: u256, gas_for_call: u64) ExecutionError.Error!void {
+fn handle_call_result(frame: Frame, result: anytype, ret_offset: u256, ret_size: u256, gas_for_call: u64) ExecutionError.Error!void {
     // Update gas remaining
     frame.gas_remaining = frame.gas_remaining - gas_for_call + result.gas_left;
 
@@ -284,7 +284,7 @@ fn handle_call_result(frame: *ExecutionContext, result: anytype, ret_offset: u25
 // ============================================================================
 
 /// Check static call restrictions for CREATE operations
-fn validate_create_static_context(frame: *ExecutionContext) ExecutionError.Error!void {
+fn validate_create_static_context(frame: Frame) ExecutionError.Error!void {
     if (frame.is_static) {
         @branchHint(.unlikely);
         return ExecutionError.Error.WriteProtection;
@@ -292,7 +292,7 @@ fn validate_create_static_context(frame: *ExecutionContext) ExecutionError.Error
 }
 
 /// Extract initcode from memory with bounds checking and gas accounting
-fn get_initcode_from_memory(frame: *ExecutionContext, vm: *Vm, offset: u256, size: u256) ExecutionError.Error![]const u8 {
+fn get_initcode_from_memory(frame: Frame, vm: *Vm, offset: u256, size: u256) ExecutionError.Error![]const u8 {
     // Check initcode size bounds
     try check_offset_bounds(size);
     const size_usize = @as(usize, @intCast(size));
@@ -319,7 +319,7 @@ fn get_initcode_from_memory(frame: *ExecutionContext, vm: *Vm, offset: u256, siz
 }
 
 /// Calculate and consume gas for CREATE operations
-fn consume_create_gas(frame: *ExecutionContext, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
+fn consume_create_gas(frame: Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
     const init_code_cost = @as(u64, @intCast(init_code.len)) * GasConstants.CreateDataGas;
 
     // EIP-3860: Add gas cost for initcode word size (2 gas per 32-byte word) - Shanghai and later
@@ -332,7 +332,7 @@ fn consume_create_gas(frame: *ExecutionContext, vm: *Vm, init_code: []const u8) 
 }
 
 /// Calculate and consume gas for CREATE2 operations (includes hash cost)
-fn consume_create2_gas(frame: *ExecutionContext, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
+fn consume_create2_gas(frame: Frame, vm: *Vm, init_code: []const u8) ExecutionError.Error!void {
     const init_code_cost = @as(u64, @intCast(init_code.len)) * GasConstants.CreateDataGas;
     const hash_cost = @as(u64, @intCast(GasConstants.wordCount(init_code.len))) * GasConstants.Keccak256WordGas;
 
@@ -346,7 +346,7 @@ fn consume_create2_gas(frame: *ExecutionContext, vm: *Vm, init_code: []const u8)
 }
 
 /// Handle CREATE result with gas updates and return data
-fn handle_create_result(frame: *ExecutionContext, vm: *Vm, result: anytype, gas_for_call: u64) ExecutionError.Error!void {
+fn handle_create_result(frame: Frame, vm: *Vm, result: anytype, gas_for_call: u64) ExecutionError.Error!void {
     _ = gas_for_call;
     // Update gas remaining
     frame.gas_remaining = frame.gas_remaining / GasConstants.CALL_GAS_RETENTION_DIVISOR + result.gas_left;
@@ -440,7 +440,7 @@ pub fn calculate_call_gas(
 // ============================================================================
 
 // Gas opcode handler
-pub fn gas_op(context: *ExecutionContext) ExecutionError.Error!void {
+pub fn gas_op(context: *Frame) ExecutionError.Error!void {
     try context.stack.append(@as(u256, @intCast(context.gas_remaining)));
 }
 
@@ -501,7 +501,7 @@ pub fn revert_to_snapshot(vm: *Vm, snapshot_id: usize) !void {
 }
 
 pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // Pop parameters from stack
     const value = try frame.stack.pop();
@@ -536,11 +536,11 @@ pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
 
     // Base gas cost for CREATE (32000 gas)
     const base_gas = GasConstants.CreateGas;
-    
+
     // EIP-3860: Charge for init code size (2 gas per 32-byte word)
     const init_code_words = (init_size + 31) / 32;
     const init_code_cost = init_code_words * 2;
-    
+
     const total_gas_cost = base_gas + memory_expansion_cost + @as(u64, @intCast(init_code_cost));
 
     // Consume gas before proceeding
@@ -595,14 +595,14 @@ pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
                 for (address_bytes, 0..) |byte, i| {
                     address_u256 |= @as(u256, byte) << @intCast((19 - i) * 8);
                 }
-                
+
                 // EIP-6780: Track created contract for SELFDESTRUCT restriction
                 if (frame.created_contracts) |created| {
                     var contract_address: primitives.Address.Address = undefined;
                     @memcpy(&contract_address, address_bytes);
                     created.mark_created(contract_address) catch {};
                 }
-                
+
                 try frame.stack.append(address_u256);
             } else {
                 try frame.stack.append(0);
@@ -617,7 +617,7 @@ pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
 
 /// CREATE2 opcode - Create contract with deterministic address
 pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // Pop parameters from stack
     const value = try frame.stack.pop();
@@ -653,14 +653,14 @@ pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
 
     // Base gas cost for CREATE2 (32000 gas)
     const base_gas = GasConstants.CreateGas;
-    
+
     // EIP-3860: Charge for init code size (2 gas per 32-byte word)
     const init_code_words = (init_size + 31) / 32;
     const init_code_cost = init_code_words * 2;
-    
+
     // CREATE2 has additional cost for hashing (6 gas per 32-byte word)
     const hash_cost = init_code_words * 6;
-    
+
     const total_gas_cost = base_gas + memory_expansion_cost + @as(u64, @intCast(init_code_cost)) + @as(u64, @intCast(hash_cost));
 
     // Consume gas before proceeding
@@ -716,14 +716,14 @@ pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
                 for (address_bytes, 0..) |byte, i| {
                     address_u256 |= @as(u256, byte) << @intCast((19 - i) * 8);
                 }
-                
+
                 // EIP-6780: Track created contract for SELFDESTRUCT restriction
                 if (frame.created_contracts) |created| {
                     var contract_address: primitives.Address.Address = undefined;
                     @memcpy(&contract_address, address_bytes);
                     created.mark_created(contract_address) catch {};
                 }
-                
+
                 try frame.stack.append(address_u256);
             } else {
                 try frame.stack.append(0);
@@ -737,7 +737,7 @@ pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // Pop parameters from stack
     const gas = try frame.stack.pop();
@@ -790,7 +790,7 @@ pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
 
     // Find the maximum memory size needed
     const max_memory_size = @max(args_end, ret_end);
-    
+
     // Calculate memory expansion cost
     const memory_expansion_cost = if (max_memory_size > 0) blk: {
         const expansion_cost = frame.memory.get_expansion_cost(max_memory_size);
@@ -799,10 +799,10 @@ pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
 
     // Base gas cost for CALL opcode
     const base_gas = GasConstants.CALL_BASE_COST;
-    
+
     // Additional gas costs
     var total_gas_cost = base_gas + memory_expansion_cost;
-    
+
     // Add value transfer cost if applicable
     if (value > 0) {
         total_gas_cost += GasConstants.CALL_VALUE_TRANSFER_COST;
@@ -825,7 +825,7 @@ pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
 
     // Access the VM through the host interface
     const host = frame.host;
-    
+
     // Create call parameters
     const call_params = CallParams{ .call = .{
         .caller = frame.contract_address,
@@ -833,8 +833,8 @@ pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
         .value = value,
         .input = args,
         .gas = gas_limit,
-    }};
-    
+    } };
+
     // Perform the call using the host's call method
     const call_result = host.call(call_params) catch {
         // On error, push 0 (failure) and return
@@ -851,7 +851,7 @@ pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
         const ret_offset_usize = @as(usize, @intCast(ret_offset));
         const ret_size_usize = @as(usize, @intCast(ret_size));
         const copy_size = @min(output.len, ret_size_usize);
-        
+
         // Copy output to return memory area
         if (copy_size > 0) {
             try frame.memory.set_data_bounded(ret_offset_usize, output, 0, copy_size);
@@ -863,7 +863,7 @@ pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_callcode(context: *anyopaque) ExecutionError.Error!void {
-    const ctx = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const ctx = @as(*Frame, @ptrCast(@alignCast(context)));
     _ = ctx;
 
     // TODO: Implementation requires:
@@ -875,7 +875,7 @@ pub fn op_callcode(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_delegatecall(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // Pop parameters from stack (DELEGATECALL has no value parameter)
     const gas = try frame.stack.pop();
@@ -965,7 +965,7 @@ pub fn op_delegatecall(context: *anyopaque) ExecutionError.Error!void {
 }
 
 pub fn op_staticcall(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // Pop parameters from stack (STATICCALL has no value parameter)
     const gas = try frame.stack.pop();
@@ -1070,7 +1070,7 @@ pub fn op_staticcall(context: *anyopaque) ExecutionError.Error!void {
 /// Memory: No memory access
 /// Storage: Contract marked for destruction
 pub fn op_selfdestruct(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*ExecutionContext, @ptrCast(@alignCast(context)));
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // Check static call restriction
     if (frame.is_static()) {
@@ -1173,7 +1173,7 @@ fn fuzz_system_operations(allocator: std.mem.Allocator, operations: []const Fuzz
 }
 
 // TODO: Validation functionality disabled until ExecutionContext integration is complete
-fn validate_system_result(frame: *const ExecutionContext, op: FuzzSystemOperation, result: anyerror!void) !void {
+fn validate_system_result(frame: *const Frame, op: FuzzSystemOperation, result: anyerror!void) !void {
     _ = frame;
     _ = op;
     _ = result;
@@ -1541,26 +1541,26 @@ test "CALL with value guarantees minimum 2300 gas stipend to callee" {
     }{
         .gas_remaining = 1000, // Low gas remaining
     };
-    
+
     // Test 1: With value transfer, should guarantee minimum 2300 gas
     {
         const gas_requested: primitives.u256 = 50; // Request only 50 gas
         const value: primitives.u256 = 1; // Non-zero value triggers stipend
-        
+
         const gas_for_call = calculate_call_gas_amount(&frame, gas_requested, value);
-        
+
         // Should receive at least 2300 gas (the stipend), not 50
         try testing.expectEqual(@as(u64, GasConstants.GAS_STIPEND_VALUE_TRANSFER), gas_for_call);
     }
-    
+
     // Test 2: With value transfer and high gas request, should use requested amount if higher than stipend
     {
         frame.gas_remaining = 10000; // Plenty of gas available
         const gas_requested: primitives.u256 = 5000; // Request more than stipend
         const value: primitives.u256 = 1; // Non-zero value
-        
+
         const gas_for_call = calculate_call_gas_amount(&frame, gas_requested, value);
-        
+
         // Should receive the requested amount (after 63/64 rule), which is higher than stipend
         const max_allowed = frame.gas_remaining - (frame.gas_remaining / 64);
         const expected = @min(5000, max_allowed);
@@ -1576,14 +1576,14 @@ test "CALL without value respects gas limit without stipend" {
     }{
         .gas_remaining = 1000,
     };
-    
+
     // Test: Without value transfer, no stipend should be applied
     {
         const gas_requested: primitives.u256 = 50; // Request only 50 gas
         const value: primitives.u256 = 0; // Zero value - no stipend
-        
+
         const gas_for_call = calculate_call_gas_amount(&frame, gas_requested, value);
-        
+
         // Should receive only what was requested (50 gas), no stipend boost
         try testing.expectEqual(@as(u64, 50), gas_for_call);
         try testing.expect(gas_for_call < GasConstants.GAS_STIPEND_VALUE_TRANSFER);
