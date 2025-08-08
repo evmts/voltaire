@@ -972,6 +972,73 @@ pub fn build(b: *std.Build) void {
     const integration_test_step = b.step("test-integration", "Run Integration tests");
     integration_test_step.dependOn(&run_integration_test.step);
 
+    // Add comprehensive EVM tests package
+    const evm_package_test = b.addTest(.{
+        .name = "evm-package-test",
+        .root_source_file = b.path("test/evm/package.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    evm_package_test.root_module.stack_check = false;
+    evm_package_test.root_module.addImport("primitives", primitives_mod);
+    evm_package_test.root_module.addImport("evm", evm_mod);
+    evm_package_test.root_module.addImport("Address", primitives_mod);
+
+    const run_evm_package_test = b.addRunArtifact(evm_package_test);
+    const evm_package_test_step = b.step("test-evm-all", "Run all EVM tests via package");
+    evm_package_test_step.dependOn(&run_evm_package_test.step);
+
+    // Add comprehensive opcodes tests package
+    const opcodes_package_test = b.addTest(.{
+        .name = "opcodes-package-test",
+        .root_source_file = b.path("test/evm/opcodes/package.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    opcodes_package_test.root_module.stack_check = false;
+    opcodes_package_test.root_module.addImport("primitives", primitives_mod);
+    opcodes_package_test.root_module.addImport("evm", evm_mod);
+
+    const run_opcodes_package_test = b.addRunArtifact(opcodes_package_test);
+    const opcodes_package_test_step = b.step("test-opcodes-all", "Run all opcode tests via package");
+    opcodes_package_test_step.dependOn(&run_opcodes_package_test.step);
+
+    // Add differential tests package
+    const differential_test = b.addTest(.{
+        .name = "differential-test",
+        .root_source_file = b.path("test/differential/package.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    differential_test.root_module.stack_check = false;
+    differential_test.root_module.addImport("primitives", primitives_mod);
+    differential_test.root_module.addImport("evm", evm_mod);
+
+    const run_differential_test = b.addRunArtifact(differential_test);
+    const differential_test_step = b.step("test-differential", "Run differential tests");
+    differential_test_step.dependOn(&run_differential_test.step);
+
+    // Add comprehensive ALL tests package
+    const all_tests_package = b.addTest(.{
+        .name = "all-tests-package",
+        .root_source_file = b.path("test/package.zig"),
+        .target = target,
+        .optimize = optimize,
+        .single_threaded = true,
+    });
+    all_tests_package.root_module.stack_check = false;
+    all_tests_package.root_module.addImport("primitives", primitives_mod);
+    all_tests_package.root_module.addImport("evm", evm_mod);
+    all_tests_package.root_module.addImport("Address", primitives_mod);
+    all_tests_package.root_module.addImport("revm", revm_mod);
+
+    const run_all_tests_package = b.addRunArtifact(all_tests_package);
+    const all_tests_package_step = b.step("test-all-comprehensive", "Run ALL tests via package system");
+    all_tests_package_step.dependOn(&run_all_tests_package.step);
+
     // Add Gas Accounting tests
     const gas_test = b.addTest(.{
         .name = "gas-test",

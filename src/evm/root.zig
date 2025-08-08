@@ -310,6 +310,23 @@ pub const Contract = struct {
     input: []const u8,
     is_static: bool,
 
+    pub fn init(
+        caller: primitives_internal.Address.Address,
+        value: u256,
+        bytecode: []const u8,
+        gas: u64,
+    ) Contract {
+        return .{
+            .caller = caller,
+            .address = primitives_internal.Address.ZERO,
+            .value = value,
+            .gas = gas,
+            .bytecode = bytecode,
+            .input = &[_]u8{},
+            .is_static = false,
+        };
+    }
+
     pub fn init_at_address(
         caller: primitives_internal.Address.Address,
         address: primitives_internal.Address.Address,
@@ -330,6 +347,23 @@ pub const Contract = struct {
         };
     }
 
+    pub fn init_deployment(
+        caller: primitives_internal.Address.Address,
+        value: u256,
+        bytecode: []const u8,
+        gas: u64,
+    ) Contract {
+        return .{
+            .caller = caller,
+            .address = primitives_internal.Address.ZERO,
+            .value = value,
+            .gas = gas,
+            .bytecode = bytecode,
+            .input = &[_]u8{},
+            .is_static = false,
+        };
+    }
+    
     pub fn deinit(self: *Contract, allocator: std.mem.Allocator, result: ?*anyopaque) void {
         _ = self;
         _ = allocator;
