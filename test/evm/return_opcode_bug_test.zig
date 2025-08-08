@@ -2,6 +2,7 @@ const std = @import("std");
 const Evm = @import("evm");
 const primitives = @import("primitives");
 const Address = primitives.Address;
+const CallParams = @import("evm").CallParams;
 
 test "minimal repro - RETURN opcode returns 0 bytes during contract deployment" {
     // std.testing.log_level = .debug;
@@ -43,33 +44,42 @@ test "minimal repro - RETURN opcode returns 0 bytes during contract deployment" 
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
-
-    var vm = try builder.build();
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
-    // Deploy the contract
+    // Deploy the contract by setting the deployment bytecode directly
     const caller = Address.from_u256(0x1000);
-    const deploy_result = try vm.create_contract(
-        caller,
-        0, // value
-        &deployment_bytecode,
-        1_000_000, // gas
-    );
+    const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
+    
+    // Set the deployment bytecode for the contract address
+    try vm.state.set_code(contract_address, &deployment_bytecode);
+    
+    // Execute the deployment bytecode to see what gets returned
+    const call_params = CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_address,
+        .value = 0,
+        .input = &[_]u8{},
+        .gas = 1_000_000,
+    }};
+
+    const deploy_result = try vm.call(call_params);
     defer if (deploy_result.output) |output| allocator.free(output);
 
-    std.log.debug("Deploy result: success={}, gas_left={}, address={any}", .{
+    std.log.debug("Deploy result: success={}, gas_left={}", .{
         deploy_result.success,
         deploy_result.gas_left,
-        deploy_result.address,
     });
 
-    // Check if the contract was deployed with code
-    const deployed_code = vm.state.get_code(deploy_result.address);
-    std.log.debug("Deployed code length: {}", .{deployed_code.len});
-
-    // This should fail - we expect 1 byte of runtime code, not 0
-    try std.testing.expect(deployed_code.len > 0);
-    try std.testing.expectEqual(@as(usize, 1), deployed_code.len);
-    try std.testing.expectEqual(@as(u8, 0x00), deployed_code[0]);
+    if (deploy_result.output) |output| {
+        std.log.debug("Deployment output length: {}", .{output.len});
+        
+        // This should fail - we expect 1 byte of runtime code, not 0
+        try std.testing.expect(output.len > 0);
+        try std.testing.expectEqual(@as(usize, 1), output.len);
+        try std.testing.expectEqual(@as(u8, 0x00), output[0]);
+    } else {
+        // If no output, that's also a problem for this test
+        try std.testing.expect(false);
+    }
 }
