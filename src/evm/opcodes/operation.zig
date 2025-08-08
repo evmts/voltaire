@@ -2,7 +2,7 @@ const std = @import("std");
 const Opcode = @import("opcode.zig");
 const ExecutionError = @import("../execution/execution_error.zig");
 const Stack = @import("../stack/stack.zig");
-const Frame = @import("../frame/frame.zig");
+const ExecutionContext = @import("../frame.zig").ExecutionContext;
 const Memory = @import("../memory/memory.zig");
 
 /// Operation metadata and execution functions for EVM opcodes.
@@ -47,7 +47,7 @@ pub const Interpreter = *@import("../evm.zig");
 
 /// Direct pointer to the frame context with transaction and execution environment.
 /// Simplified from a single-variant union to a direct pointer type.
-pub const State = *@import("../frame/frame.zig");
+pub const State = *ExecutionContext;
 
 /// Function signature for opcode execution.
 ///
@@ -61,7 +61,7 @@ pub const State = *@import("../frame/frame.zig");
 /// @param interpreter VM interpreter context
 /// @param state Execution state and environment
 /// @return Execution result indicating success/failure and gas consumption
-pub const ExecutionFunc = *const fn (pc: usize, interpreter: Interpreter, state: State) ExecutionError.Error!ExecutionResult;
+pub const ExecutionFunc = @import("../execution_func.zig").ExecutionFunc;
 
 /// Function signature for dynamic gas calculation.
 ///
@@ -162,9 +162,7 @@ pub const NULL_OPERATION = Operation{
 ///
 /// Consumes all remaining gas and returns InvalidOpcode error.
 /// This ensures undefined opcodes cannot be used for computation.
-fn undefined_execute(pc: usize, interpreter: Interpreter, state: State) ExecutionError.Error!ExecutionResult {
-    _ = pc;
-    _ = interpreter;
-    _ = state;
+fn undefined_execute(context: *anyopaque) ExecutionError.Error!void {
+    _ = context;
     return ExecutionError.Error.InvalidOpcode;
 }

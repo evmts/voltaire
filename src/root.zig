@@ -139,8 +139,13 @@ export fn guillotine_init() c_int {
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_MEMORY);
     };
 
-    var builder = evm_root.EvmBuilder.init(allocator, db_interface);
-    vm.* = builder.build() catch |err| {
+    vm.* = evm_root.Evm.init(allocator, db_interface, null, // table
+        null, // chain_rules
+        null, // context
+        0, // depth
+        false, // read_only
+        null // tracer
+    ) catch |err| {
         log(.err, .guillotine_c, "Failed to initialize VM: {}", .{err});
         allocator.destroy(vm);
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_MEMORY);
@@ -195,29 +200,20 @@ export fn guillotine_execute(
     const bytecode = bytecode_ptr[0..bytecode_len];
     const caller_bytes = caller_ptr[0..20];
     const caller_address: primitives.Address.Address = caller_bytes.*;
+    _ = vm;
+    _ = bytecode;
+    _ = caller_address;
+    _ = value;
 
-    // Create contract for execution
-    const target_address = primitives.Address.ZERO_ADDRESS; // Use zero address for contract execution
-    var contract = evm_root.Contract.init_at_address(caller_address, target_address, @as(u256, value), gas_limit, bytecode, &[_]u8{}, // empty input for now
-        false // not static
-    );
-    defer contract.deinit(allocator, null);
+    // TODO: Contract API has changed - temporarily disable execution until new API is implemented
+    log(.warn, .guillotine_c, "Contract execution temporarily disabled due to API changes", .{});
 
-    // Set bytecode in state
-    vm.state.set_code(target_address, bytecode) catch |err| {
-        log(.err, .guillotine_c, "Failed to set bytecode: {}", .{err});
-        result_ptr.success = 0;
-        result_ptr.error_code = @intFromEnum(GuillotineError.GUILLOTINE_ERROR_EXECUTION_FAILED);
-        return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_EXECUTION_FAILED);
-    };
-
-    // Execute bytecode
-    const run_result = vm.interpret(&contract, &[_]u8{}, false) catch |err| {
-        log(.err, .guillotine_c, "Execution failed: {}", .{err});
-        result_ptr.success = 0;
-        result_ptr.error_code = @intFromEnum(GuillotineError.GUILLOTINE_ERROR_EXECUTION_FAILED);
-        return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_EXECUTION_FAILED);
-    };
+    // Return placeholder result for now
+    const run_result = struct {
+        status: enum { Success, Failure } = .Failure,
+        gas_used: u64 = 0,
+        output: ?[]const u8 = null,
+    }{};
 
     // Fill result structure
     result_ptr.success = if (run_result.status == .Success) 1 else 0;
@@ -279,16 +275,16 @@ const VmState = struct {
 // VM creation and destruction
 export fn guillotine_vm_create() ?*GuillotineVm {
     const alloc = allocator;
-    
+
     const state = alloc.create(VmState) catch return null;
-    
+
     state.allocator = alloc;
     state.memory_db = alloc.create(MemoryDatabase) catch {
         alloc.destroy(state);
         return null;
     };
     state.memory_db.* = MemoryDatabase.init(alloc);
-    
+
     const db_interface = state.memory_db.to_database_interface();
     state.vm = alloc.create(evm_root.Evm) catch {
         state.memory_db.deinit();
@@ -296,16 +292,21 @@ export fn guillotine_vm_create() ?*GuillotineVm {
         alloc.destroy(state);
         return null;
     };
-    
-    var builder = evm_root.EvmBuilder.init(alloc, db_interface);
-    state.vm.* = builder.build() catch {
+
+    state.vm.* = evm_root.Evm.init(alloc, db_interface, null, // table
+        null, // chain_rules
+        null, // context
+        0, // depth
+        false, // read_only
+        null // tracer
+    ) catch {
         state.memory_db.deinit();
         alloc.destroy(state.memory_db);
         alloc.destroy(state.vm);
         alloc.destroy(state);
         return null;
     };
-    
+
     return @ptrCast(state);
 }
 
@@ -323,21 +324,21 @@ export fn guillotine_vm_destroy(vm: ?*GuillotineVm) void {
 // State management
 export fn guillotine_set_balance(vm: ?*GuillotineVm, address: ?*const GuillotineAddress, balance: ?*const GuillotineU256) bool {
     if (vm == null or address == null or balance == null) return false;
-    
+
     const state: *VmState = @ptrCast(@alignCast(vm.?));
     const addr: Address = address.?.bytes;
     const value = u256_from_bytes(&balance.?.bytes);
-    
+
     state.vm.state.set_balance(addr, value) catch return false;
     return true;
 }
 
 export fn guillotine_set_code(vm: ?*GuillotineVm, address: ?*const GuillotineAddress, code: ?[*]const u8, code_len: usize) bool {
     if (vm == null or address == null) return false;
-    
+
     const state: *VmState = @ptrCast(@alignCast(vm.?));
     const addr: Address = address.?.bytes;
-    
+
     const code_slice = if (code) |c| c[0..code_len] else &[_]u8{};
     state.vm.state.set_code(addr, code_slice) catch return false;
     return true;
@@ -360,35 +361,33 @@ export fn guillotine_vm_execute(
         .output_len = 0,
         .error_message = null,
     };
-    
+
     if (vm == null or from == null) return result;
-    
+
     const state: *VmState = @ptrCast(@alignCast(vm.?));
     const from_addr: Address = from.?.bytes;
     const to_addr = if (to) |t| t.bytes else primitives.Address.ZERO_ADDRESS;
     const value_u256 = if (value) |v| u256_from_bytes(&v.bytes) else 0;
     const input_slice = if (input) |i| i[0..input_len] else &[_]u8{};
-    
-    // Create contract for execution
-    const code_hash = [_]u8{0} ** 32; // Empty code hash for now
-    var contract = evm_root.Contract.init(from_addr, to_addr, value_u256, gas_limit, &[_]u8{}, code_hash, input_slice, false);
-    defer contract.deinit(state.allocator, null);
-    
-    // Create frame
-    var frame = evm_root.Frame.init(state.allocator, &contract) catch return result;
-    defer frame.deinit();
-    
-    // Execute
-    const exec_result = state.vm.interpret(&contract, input_slice, false) catch |err| {
-        const err_msg = @errorName(err);
-        const err_c_str = state.allocator.dupeZ(u8, err_msg) catch return result;
-        result.error_message = err_c_str.ptr;
-        return result;
-    };
-    
+    _ = from_addr;
+    _ = to_addr;
+    _ = value_u256;
+    _ = input_slice;
+    _ = gas_limit;
+
+    // TODO: Contract and Frame APIs have changed - temporarily disable execution
+    // Note: using warn level since debug function may not work in all contexts
+
+    // Return placeholder result for now
+    const exec_result = struct {
+        status: enum { Success, Failure } = .Failure,
+        gas_used: u64 = 0,
+        output: ?[]const u8 = null,
+    }{};
+
     result.success = exec_result.status == .Success;
     result.gas_used = exec_result.gas_used;
-    
+
     // Copy output if any
     if (exec_result.output) |output| {
         if (output.len > 0) {
@@ -398,7 +397,7 @@ export fn guillotine_vm_execute(
             result.output_len = output_copy.len;
         }
     }
-    
+
     return result;
 }
 

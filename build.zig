@@ -226,50 +226,9 @@ pub fn build(b: *std.Build) void {
     compilers_mod.addImport("primitives", primitives_mod);
     compilers_mod.addImport("evm", evm_mod);
 
-    // Create bench module - always use ReleaseFast for benchmarks
-    const bench_optimize = if (optimize == .Debug) .ReleaseFast else optimize;
 
-    // Use the same BN254 library for benchmarks (no separate build needed)
-    const bench_bn254_lib = if (!no_bn254) blk: {
-        break :blk bn254_lib;
-    } else null;
 
-    // Create a separate EVM module for benchmarks with release-mode Rust dependencies
-    const bench_evm_mod = b.createModule(.{
-        .root_source_file = b.path("src/evm/root.zig"),
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    bench_evm_mod.addImport("primitives", primitives_mod);
-    bench_evm_mod.addImport("crypto", crypto_mod);
-    bench_evm_mod.addImport("build_options", build_options_mod);
 
-    // Link BN254 Rust library to bench EVM module (native targets only, if enabled)
-    if (bench_bn254_lib) |lib| {
-        bench_evm_mod.linkLibrary(lib);
-        bench_evm_mod.addIncludePath(b.path("src/bn254_wrapper"));
-    }
-
-    // Link c-kzg library to bench EVM module
-    bench_evm_mod.linkLibrary(c_kzg_lib);
-
-    const zbench_dep = b.dependency("zbench", .{
-        .target = target,
-        .optimize = bench_optimize,
-    });
-
-    const bench_mod = b.createModule(.{
-        .root_source_file = b.path("bench/root.zig"),
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    bench_mod.addImport("primitives", primitives_mod);
-    bench_mod.addImport("crypto", crypto_mod);
-    bench_mod.addImport("evm", bench_evm_mod); // Use the bench-specific EVM module
-    bench_mod.addImport("zbench", zbench_dep.module("zbench"));
-    if (revm_lib != null) {
-        bench_mod.addImport("revm", revm_mod);
-    }
 
     // Add modules to lib_mod so tests can access them
     lib_mod.addImport("primitives", primitives_mod);
@@ -444,274 +403,6 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
 
-    // Benchmark executable
-    const bench_exe = b.addExecutable(.{
-        .name = "guillotine-bench",
-        .root_source_file = b.path("bench/main.zig"),
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    bench_exe.root_module.addImport("bench", bench_mod);
-    bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    bench_exe.root_module.addImport("evm", bench_evm_mod); // Use the bench-specific EVM module
-    bench_exe.root_module.addImport("primitives", primitives_mod);
-    bench_exe.root_module.addImport("crypto", crypto_mod);
-    if (revm_lib != null) {
-        bench_exe.root_module.addImport("revm", revm_mod);
-    }
-
-    const run_bench_cmd = b.addRunArtifact(bench_exe);
-    run_bench_cmd.step.dependOn(b.getInstallStep());
-
-    const bench_step = b.step("bench", "Run benchmarks");
-    bench_step.dependOn(&run_bench_cmd.step);
-
-    // Add revm comparison benchmark executable
-    const revm_bench_exe = b.addExecutable(.{
-        .name = "revm-comparison",
-        .root_source_file = b.path("bench/run_revm_comparison.zig"),
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    revm_bench_exe.root_module.addImport("evm", bench_evm_mod);
-    revm_bench_exe.root_module.addImport("primitives", primitives_mod);
-    if (revm_lib != null) {
-        revm_bench_exe.root_module.addImport("revm", revm_mod);
-    }
-
-    // Link the EVM benchmark Rust library if available
-    b.installArtifact(revm_bench_exe);
-
-    const run_revm_bench_cmd = b.addRunArtifact(revm_bench_exe);
-    run_revm_bench_cmd.step.dependOn(b.getInstallStep());
-
-    const revm_bench_step = b.step("bench-revm", "Run revm comparison benchmarks");
-    revm_bench_step.dependOn(&run_revm_bench_cmd.step);
-
-    // Add uint library benchmark executable
-    const uint_bench_exe = b.addExecutable(.{
-        .name = "uint-benchmark",
-        .root_source_file = b.path("bench/uint_benchmark_runner.zig"),
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    uint_bench_exe.root_module.addImport("primitives", primitives_mod);
-    uint_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-
-    b.installArtifact(uint_bench_exe);
-
-    const run_uint_bench_cmd = b.addRunArtifact(uint_bench_exe);
-    run_uint_bench_cmd.step.dependOn(b.getInstallStep());
-
-    const uint_bench_step = b.step("bench-uint", "Run uint library vs native u256 benchmarks");
-    uint_bench_step.dependOn(&run_uint_bench_cmd.step);
-
-    // Add BN254 Rust wrapper benchmark executable
-    const bn254_rust_bench_exe = b.addExecutable(.{
-        .name = "bn254-rust-bench",
-        .root_source_file = b.path("bench/bn254_rust_benchmark.zig"),
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    bn254_rust_bench_exe.root_module.addImport("evm", bench_evm_mod);
-    bn254_rust_bench_exe.root_module.addImport("primitives", primitives_mod);
-    bn254_rust_bench_exe.root_module.addImport("crypto", crypto_mod);
-    bn254_rust_bench_exe.root_module.addAnonymousImport("timing", .{ .root_source_file = b.path("bench/timing.zig") });
-    if (revm_lib != null) {
-        bn254_rust_bench_exe.root_module.addImport("revm", revm_mod);
-    }
-
-    if (bn254_lib) |bn254| {
-        bn254_rust_bench_exe.linkLibrary(bn254);
-        bn254_rust_bench_exe.addIncludePath(b.path("src/bn254_wrapper"));
-    }
-
-    b.installArtifact(bn254_rust_bench_exe);
-
-    const run_bn254_rust_bench_cmd = b.addRunArtifact(bn254_rust_bench_exe);
-    run_bn254_rust_bench_cmd.step.dependOn(b.getInstallStep());
-
-    const bn254_rust_bench_step = b.step("bench-bn254-rust", "Run BN254 Rust wrapper benchmarks");
-    bn254_rust_bench_step.dependOn(&run_bn254_rust_bench_cmd.step);
-
-    // Add BN254 Zig native benchmark executable
-    const bn254_zig_bench_exe = b.addExecutable(.{
-        .name = "bn254-zig-bench",
-        .root_source_file = b.path("bench/bn254_zig_benchmark.zig"),
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    bn254_zig_bench_exe.root_module.addImport("evm", bench_evm_mod);
-    bn254_zig_bench_exe.root_module.addImport("primitives", primitives_mod);
-    bn254_zig_bench_exe.root_module.addImport("crypto", crypto_mod);
-    bn254_zig_bench_exe.root_module.addAnonymousImport("timing", .{ .root_source_file = b.path("bench/timing.zig") });
-    if (revm_lib != null) {
-        bn254_zig_bench_exe.root_module.addImport("revm", revm_mod);
-    }
-
-    if (bn254_lib) |bn254| {
-        bn254_zig_bench_exe.linkLibrary(bn254);
-        bn254_zig_bench_exe.addIncludePath(b.path("src/bn254_wrapper"));
-    }
-
-    b.installArtifact(bn254_zig_bench_exe);
-
-    const run_bn254_zig_bench_cmd = b.addRunArtifact(bn254_zig_bench_exe);
-    run_bn254_zig_bench_cmd.step.dependOn(b.getInstallStep());
-
-    const bn254_zig_bench_step = b.step("bench-bn254-zig", "Run BN254 Zig native benchmarks");
-    bn254_zig_bench_step.dependOn(&run_bn254_zig_bench_cmd.step);
-
-    // Add inline ops benchmark executable
-    const inline_ops_bench_exe = b.addExecutable(.{
-        .name = "inline-ops-bench",
-        .root_source_file = b.path("bench/inline_ops_benchmark.zig"),
-        .target = target,
-        .optimize = .ReleaseFast,
-    });
-    inline_ops_bench_exe.root_module.addImport("evm", evm_mod);
-    inline_ops_bench_exe.root_module.addImport("primitives", primitives_mod);
-    b.installArtifact(inline_ops_bench_exe);
-
-    const run_inline_ops_bench_cmd = b.addRunArtifact(inline_ops_bench_exe);
-    run_inline_ops_bench_cmd.step.dependOn(b.getInstallStep());
-    const inline_ops_bench_step = b.step("bench-inline-ops", "Run inline hot operations benchmarks");
-    inline_ops_bench_step.dependOn(&run_inline_ops_bench_cmd.step);
-
-    // Add minimal jump table benchmark executable
-    // Create a minimal EVM module without Rust dependencies for jump table benchmark
-    const minimal_evm_mod = b.createModule(.{
-        .root_source_file = b.path("src/evm/root.zig"),
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    minimal_evm_mod.addImport("primitives", primitives_mod);
-    minimal_evm_mod.addImport("crypto", crypto_mod);
-
-    // Create build options with no_bn254 set to avoid missing header
-    const minimal_build_options = b.addOptions();
-    minimal_build_options.addOption(bool, "no_bn254", true);
-    minimal_build_options.addOption(bool, "tests_enabled", false);
-    minimal_build_options.addOption(bool, "enable_tracy", false);
-    const minimal_build_options_mod = minimal_build_options.createModule();
-
-    minimal_evm_mod.addImport("build_options", minimal_build_options_mod);
-    // Note: NOT linking bn254_lib or adding c_kzg to avoid conflicts
-
-    const jump_table_bench_exe = b.addExecutable(.{
-        .name = "jump-table-bench",
-        .root_source_file = b.path("bench/minimal_jump_table_bench.zig"),
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    jump_table_bench_exe.root_module.addImport("evm", minimal_evm_mod);
-    jump_table_bench_exe.root_module.addImport("primitives", primitives_mod);
-    jump_table_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    b.installArtifact(jump_table_bench_exe);
-
-    const run_jump_table_bench_cmd = b.addRunArtifact(jump_table_bench_exe);
-    run_jump_table_bench_cmd.step.dependOn(b.getInstallStep());
-    const jump_table_bench_step = b.step("bench-jump-table", "Run jump table AoS vs SoA benchmarks");
-    jump_table_bench_step.dependOn(&run_jump_table_bench_cmd.step);
-
-    // Add block metadata benchmark executable
-    const block_metadata_bench_exe = b.addExecutable(.{
-        .name = "block-metadata-bench",
-        .root_source_file = b.path("bench/block_metadata_benchmark.zig"),
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    block_metadata_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    b.installArtifact(block_metadata_bench_exe);
-
-    const run_block_metadata_bench_cmd = b.addRunArtifact(block_metadata_bench_exe);
-    run_block_metadata_bench_cmd.step.dependOn(b.getInstallStep());
-    const block_metadata_bench_step = b.step("bench-block-metadata", "Run block metadata AoS vs SoA benchmarks");
-    block_metadata_bench_step.dependOn(&run_block_metadata_bench_cmd.step);
-
-    // Add precompile optimization benchmark executable
-    const precompile_opt_bench_exe = b.addExecutable(.{
-        .name = "precompile-opt-bench",
-        .root_source_file = b.path("bench/precompile_optimized_benchmark.zig"),
-        .target = target,
-        .optimize = bench_optimize,
-    });
-    // Use minimal EVM module to avoid Rust conflicts
-    const precompile_opt_build_options = b.addOptions();
-    precompile_opt_build_options.addOption(bool, "no_precompiles", false);
-    precompile_opt_build_options.addOption(bool, "no_bn254", true); // Disable BN254 to avoid conflicts
-    precompile_opt_build_options.addOption(bool, "enable_tracy", false);
-    const precompile_opt_build_options_mod = precompile_opt_build_options.createModule();
-
-    const precompile_opt_evm_mod = b.createModule(.{
-        .root_source_file = b.path("src/evm/root.zig"),
-        .imports = &.{
-            .{ .name = "primitives", .module = primitives_mod },
-            .{ .name = "crypto", .module = crypto_mod },
-            .{ .name = "build_options", .module = precompile_opt_build_options_mod },
-        },
-    });
-    precompile_opt_bench_exe.root_module.addImport("evm", precompile_opt_evm_mod);
-    precompile_opt_bench_exe.root_module.addImport("primitives", primitives_mod);
-    b.installArtifact(precompile_opt_bench_exe);
-
-    const run_precompile_opt_bench_cmd = b.addRunArtifact(precompile_opt_bench_exe);
-    run_precompile_opt_bench_cmd.step.dependOn(b.getInstallStep());
-    const precompile_opt_bench_step = b.step("bench-precompile-opt", "Run precompile optimization benchmarks");
-    precompile_opt_bench_step.dependOn(&run_precompile_opt_bench_cmd.step);
-
-    // Flamegraph profiling support
-    const flamegraph_step = b.step("flamegraph", "Run benchmarks with flamegraph profiling");
-
-    // Build bench executable with debug symbols for profiling
-    const profile_bench_exe = b.addExecutable(.{
-        .name = "guillotine-bench-profile",
-        .root_source_file = b.path("bench/main.zig"),
-        .target = target,
-        .optimize = .ReleaseFast, // Always use optimized build for profiling
-    });
-    profile_bench_exe.root_module.addImport("bench", bench_mod);
-    profile_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
-    profile_bench_exe.root_module.addImport("evm", bench_evm_mod);
-    profile_bench_exe.root_module.addImport("primitives", primitives_mod);
-    profile_bench_exe.root_module.addImport("crypto", crypto_mod);
-    if (revm_lib != null) {
-        profile_bench_exe.root_module.addImport("revm", revm_mod);
-    }
-
-    // CRITICAL: Include debug symbols for profiling
-    profile_bench_exe.root_module.strip = false; // Keep symbols
-    profile_bench_exe.root_module.omit_frame_pointer = false; // Keep frame pointers
-
-    // Platform-specific profiling commands
-    if (target.result.os.tag == .linux) {
-        const perf_cmd = b.addSystemCommand(&[_][]const u8{
-            "perf", "record",    "-F", "997", "-g", "--call-graph", "dwarf",
-            "-o",   "perf.data",
-        });
-        perf_cmd.addArtifactArg(profile_bench_exe);
-        perf_cmd.addArg("--profile");
-
-        const flamegraph_cmd = b.addSystemCommand(&[_][]const u8{
-            "flamegraph", "--perfdata", "perf.data", "-o", "guillotine-bench.svg",
-        });
-        flamegraph_cmd.step.dependOn(&perf_cmd.step);
-        flamegraph_step.dependOn(&flamegraph_cmd.step);
-    } else if (target.result.os.tag == .macos) {
-        // Use cargo-flamegraph which handles xctrace internally
-        const flamegraph_cmd = b.addSystemCommand(&[_][]const u8{
-            "flamegraph", "-o", "guillotine-bench.svg", "--",
-        });
-        flamegraph_cmd.addArtifactArg(profile_bench_exe);
-        flamegraph_cmd.addArg("--profile");
-        flamegraph_step.dependOn(&flamegraph_cmd.step);
-    } else {
-        // For other platforms, inform the user
-        const warn_cmd = b.addSystemCommand(&[_][]const u8{
-            "echo", "Flamegraph profiling is only supported on Linux and macOS",
-        });
-        flamegraph_step.dependOn(&warn_cmd.step);
-    }
 
     // Devtool executable
     // Add webui dependency
@@ -1620,9 +1311,66 @@ pub fn build(b: *std.Build) void {
     inline_ops_test.root_module.addImport("primitives", primitives_mod);
     inline_ops_test.root_module.addImport("evm", evm_mod);
     const run_inline_ops_test = b.addRunArtifact(inline_ops_test);
+    
+    // Instruction tests moved to test/evm/instruction_test.zig to avoid circular dependencies
+    // The tests are included via the regular test/evm test suite
+    
     const inline_ops_test_step = b.step("test-inline-ops", "Run inline ops performance tests");
     inline_ops_test_step.dependOn(&run_inline_ops_test.step);
     test_step.dependOn(&run_inline_ops_test.step);
+
+    // Add memory optimization tests
+    const block_metadata_heap_test = b.addTest(.{
+        .name = "block-metadata-heap-test",
+        .root_source_file = b.path("src/evm/frame/block_metadata_heap.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    block_metadata_heap_test.root_module.addImport("primitives", primitives_mod);
+    block_metadata_heap_test.root_module.addImport("evm", evm_mod);
+    const run_block_metadata_heap_test = b.addRunArtifact(block_metadata_heap_test);
+    const block_metadata_heap_test_step = b.step("test-block-metadata-heap", "Run block metadata heap tests");
+    block_metadata_heap_test_step.dependOn(&run_block_metadata_heap_test.step);
+    test_step.dependOn(&run_block_metadata_heap_test.step);
+
+    const code_analysis_optimized_test = b.addTest(.{
+        .name = "code-analysis-optimized-test",
+        .root_source_file = b.path("src/evm/frame/code_analysis_optimized.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    code_analysis_optimized_test.root_module.addImport("primitives", primitives_mod);
+    code_analysis_optimized_test.root_module.addImport("evm", evm_mod);
+    const run_code_analysis_optimized_test = b.addRunArtifact(code_analysis_optimized_test);
+    const code_analysis_optimized_test_step = b.step("test-code-analysis-optimized", "Run optimized code analysis tests");
+    code_analysis_optimized_test_step.dependOn(&run_code_analysis_optimized_test.step);
+    test_step.dependOn(&run_code_analysis_optimized_test.step);
+
+    const analysis_test = b.addTest(.{
+        .name = "analysis-test",
+        .root_source_file = b.path("src/evm/analysis.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    analysis_test.root_module.addImport("primitives", primitives_mod);
+    analysis_test.root_module.addImport("evm", evm_mod);
+    const run_analysis_test = b.addRunArtifact(analysis_test);
+    const analysis_test_step = b.step("test-analysis", "Run analysis tests");
+    analysis_test_step.dependOn(&run_analysis_test.step);
+    test_step.dependOn(&run_analysis_test.step);
+
+    const analyze_compact_test = b.addTest(.{
+        .name = "analyze-compact-test",
+        .root_source_file = b.path("src/evm/frame/analyze_and_compact.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    analyze_compact_test.root_module.addImport("primitives", primitives_mod);
+    analyze_compact_test.root_module.addImport("evm", evm_mod);
+    const run_analyze_compact_test = b.addRunArtifact(analyze_compact_test);
+    const analyze_compact_test_step = b.step("test-analyze-compact", "Run analyze and compact tests");
+    analyze_compact_test_step.dependOn(&run_analyze_compact_test.step);
+    test_step.dependOn(&run_analyze_compact_test.step);
 
     test_step.dependOn(&run_integration_test.step);
     test_step.dependOn(&run_gas_test.step);
@@ -1706,6 +1454,18 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_bn254_g2_test.step);
     test_step.dependOn(&run_bn254_pairing_test.step);
 
+    // Add ERC20 deployment hang test
+    const erc20_deployment_test = b.addTest(.{
+        .name = "erc20-deployment-test",
+        .root_source_file = b.path("test/evm/erc20_deployment_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    erc20_deployment_test.root_module.addImport("evm", evm_mod);
+    erc20_deployment_test.root_module.addImport("primitives", primitives_mod);
+    const run_erc20_deployment_test = b.addRunArtifact(erc20_deployment_test);
+    test_step.dependOn(&run_erc20_deployment_test.step);
+    
     // Add ERC20 mint debug test
     const erc20_mint_debug_test = b.addTest(.{
         .name = "erc20-mint-debug-test",
@@ -1791,6 +1551,36 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_jumpi_bug_test.step);
     const jumpi_bug_test_step = b.step("test-jumpi", "Run JUMPI bug test");
     jumpi_bug_test_step.dependOn(&run_jumpi_bug_test.step);
+
+    // Add block execution ERC20 test
+    const block_execution_erc20_test = b.addTest(.{
+        .name = "block-execution-erc20-test",
+        .root_source_file = b.path("test/evm/block_execution_erc20_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    block_execution_erc20_test.root_module.addImport("evm", evm_mod);
+    block_execution_erc20_test.root_module.addImport("primitives", primitives_mod);
+    
+    const run_block_execution_erc20_test = b.addRunArtifact(block_execution_erc20_test);
+    test_step.dependOn(&run_block_execution_erc20_test.step);
+    const block_execution_erc20_test_step = b.step("test-block-execution-erc20", "Run block execution ERC20 test");
+    block_execution_erc20_test_step.dependOn(&run_block_execution_erc20_test.step);
+    
+    // Add simple block execution test
+    const block_execution_simple_test = b.addTest(.{
+        .name = "block-execution-simple-test",
+        .root_source_file = b.path("test/evm/block_execution_simple.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    block_execution_simple_test.root_module.addImport("evm", evm_mod);
+    block_execution_simple_test.root_module.addImport("primitives", primitives_mod);
+    
+    const run_block_execution_simple_test = b.addRunArtifact(block_execution_simple_test);
+    test_step.dependOn(&run_block_execution_simple_test.step);
+    const block_execution_simple_test_step = b.step("test-block-execution-simple", "Run simple block execution test");
+    block_execution_simple_test_step.dependOn(&run_block_execution_simple_test.step);
 
     // TRACER REMOVED: Commenting out tracer tests until tracer is reimplemented
     // See: https://github.com/evmts/guillotine/issues/325

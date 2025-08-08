@@ -43,8 +43,16 @@ pub fn init(allocator: std.mem.Allocator) !DevtoolEvm {
     errdefer database.deinit();
     
     const db_interface = database.to_database_interface();
-    var builder = Evm.EvmBuilder.init(allocator, db_interface);
-    var evm = try builder.build();
+    var evm = try Evm.Evm.init(
+        allocator,
+        db_interface,
+        null, // table
+        null, // chain_rules
+        null, // context
+        0, // depth
+        false, // read_only
+        null, // tracer
+    );
     errdefer evm.deinit();
     
     var storage_changes = std.AutoHashMap(StorageKey, u256).init(allocator);
@@ -178,7 +186,9 @@ pub fn resetExecution(self: *DevtoolEvm) !void {
     const frame = try self.allocator.create(Evm.Frame);
     errdefer self.allocator.destroy(frame);
     
-    frame.* = try Evm.Frame.init(self.allocator, contract);
+    // Frame.init now requires vm parameter
+    var dummy_vm: Evm.Evm = undefined;
+    frame.* = try Evm.Frame.init(self.allocator, &dummy_vm, contract);
     frame.gas_remaining = 1000000; // Set gas after init
     
     self.current_frame = frame;

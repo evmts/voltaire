@@ -47,13 +47,22 @@ pub fn init(
     initial_capacity: usize,
     memory_limit: u64,
 ) !Memory {
+    std.log.debug("Memory.init: Starting, initial_capacity={}, memory_limit={}", .{initial_capacity, memory_limit});
+    
+    std.log.debug("Memory.init: About to create shared_buffer", .{});
     const shared_buffer = try allocator.create(std.ArrayList(u8));
     errdefer allocator.destroy(shared_buffer);
+    std.log.debug("Memory.init: Created shared_buffer ptr={*}", .{shared_buffer});
     
+    std.log.debug("Memory.init: Initializing ArrayList", .{});
     shared_buffer.* = std.ArrayList(u8).init(allocator);
     errdefer shared_buffer.deinit();
+    
+    std.log.debug("Memory.init: About to ensureTotalCapacity({})", .{initial_capacity});
     try shared_buffer.ensureTotalCapacity(initial_capacity);
+    std.log.debug("Memory.init: ensureTotalCapacity complete", .{});
 
+    std.log.debug("Memory.init: Returning Memory struct", .{});
     return Memory{
         .my_checkpoint = 0,
         .memory_limit = memory_limit,
@@ -76,7 +85,10 @@ pub fn init_child_memory(self: *Memory, checkpoint: usize) !Memory {
 }
 
 pub fn init_default(allocator: std.mem.Allocator) !Memory {
-    return try init(allocator, INITIAL_CAPACITY, DEFAULT_MEMORY_LIMIT);
+    std.log.debug("Memory.init_default: Called with allocator={*}", .{allocator.ptr});
+    const result = try init(allocator, INITIAL_CAPACITY, DEFAULT_MEMORY_LIMIT);
+    std.log.debug("Memory.init_default: Returning", .{});
+    return result;
 }
 
 /// Deinitializes the Memory. Only root Memory instances clean up the shared buffer.
@@ -100,6 +112,24 @@ pub const ensure_context_capacity_slow = context_ops.ensure_context_capacity_slo
 pub const resize_context = context_ops.resize_context;
 pub const size = context_ops.size;
 pub const total_size = context_ops.total_size;
+
+/// Clear the memory by resetting size to 0 (for call frame reuse)
+pub fn clear(self: *Memory) void {
+    // For shared buffer memory, we can't actually clear the buffer
+    // since other contexts might be using it. Instead we reset our checkpoint
+    // to the current buffer end, effectively giving us a "fresh" view
+    if (self.owns_buffer) {
+        // If we own the buffer, we can actually clear it
+        self.shared_buffer_ref.items.len = 0;
+    } else {
+        // If we don't own the buffer, reset our checkpoint to current end
+        // This effectively gives us a clean slate from this point forward
+        self.my_checkpoint = self.shared_buffer_ref.items.len;
+    }
+    
+    // Reset cached expansion calculations
+    self.cached_expansion = .{ .last_size = 0, .last_cost = 0 };
+}
 
 // Read operations
 pub const get_u256 = read_ops.get_u256;

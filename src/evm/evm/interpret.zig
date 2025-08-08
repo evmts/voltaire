@@ -1,189 +1,115 @@
 const std = @import("std");
 const ExecutionError = @import("../execution/execution_error.zig");
-const Contract = @import("../frame/contract.zig");
-const Frame = @import("../frame/frame.zig");
-const Operation = @import("../opcodes/operation.zig");
-const RunResult = @import("run_result.zig").RunResult;
-const Memory = @import("../memory/memory.zig");
-const ReturnData = @import("return_data.zig").ReturnData;
+const Frame = @import("../frame.zig").Frame;
 const Log = @import("../log.zig");
-const Vm = @import("../evm.zig");
-const primitives = @import("primitives");
+const Evm = @import("../evm.zig");
+const builtin = @import("builtin");
 
-/// Execute contract bytecode and return the result.
+const SAFE = builtin.mode == .Debug or builtin.mode == .ReleaseSafe;
+const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
+
+
+/// Execute contract bytecode using block-based execution.
 ///
-/// This is the main execution entry point. The contract must be properly initialized
-/// with bytecode, gas limit, and input data. The VM executes opcodes sequentially
-/// until completion, error, or gas exhaustion.
+/// This version translates bytecode to an instruction stream before execution,
+/// enabling better branch prediction and cache locality.
 ///
 /// Time complexity: O(n) where n is the number of opcodes executed.
-/// Memory: May allocate for return data if contract returns output.
+/// Memory: Uses provided Frame, no internal allocations.
 ///
-/// Example:
-/// ```zig
-/// var contract = Contract.init_at_address(caller, addr, 0, 100000, code, input, false);
-/// defer contract.deinit(vm.allocator, null);
-/// try vm.state.set_code(addr, code);
-/// const result = try vm.interpret(&contract, input, false);
-/// defer if (result.output) |output| vm.allocator.free(output);
-/// ```
-pub fn interpret(self: *Vm, contract: *Contract, input: []const u8, is_static: bool) ExecutionError.Error!RunResult {
-    @branchHint(.likely);
-    Log.debug("VM.interpret: Starting execution, depth={}, gas={}, static={}, code_size={}, input_size={}", .{ self.depth, contract.gas, is_static, contract.code_size, input.len });
+/// The caller is responsible for creating and managing the Frame and its components.
+pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
+    self.require_one_thread();
 
-    self.depth += 1;
-    defer self.depth -= 1;
+    // Frame is provided by caller, get the analysis from it
+    const instructions = frame.analysis.instructions;
+    var current_index: usize = 0;
+    var loop_iterations: usize = 0;
 
-    const prev_read_only = self.read_only;
-    defer self.read_only = prev_read_only;
-
-    self.read_only = self.read_only or is_static;
-
-    const initial_gas = contract.gas;
-
-    // Try to acquire a frame from the pool
-    const pooled_frame = self.acquire_frame();
-    var heap_frame_storage: Frame = undefined;
-    var heap_allocated = false;
-    
-    var frame: *Frame = if (pooled_frame) |pf| pf else blk: {
-        // Pool exhausted, allocate on heap
-        heap_allocated = true;
-        heap_frame_storage = Frame{
-            .gas_remaining = contract.gas,
-            .pc = 0,
-            .contract = contract,
-            .allocator = self.allocator,
-            .stop = false,
-            .is_static = self.read_only,
-            .depth = @as(u32, @intCast(self.depth)),
-            .cost = 0,
-            .err = null,
-            .input = input,
-            .output = &[_]u8{},
-            .op = &.{},
-            .memory = undefined,
-            .stack = .{},
-            .return_data = ReturnData.init(self.allocator),
-        };
-        heap_frame_storage.memory = try Memory.init_default(self.allocator);
-        break :blk &heap_frame_storage;
-    };
-    
-    // Configure the frame
-    frame.gas_remaining = contract.gas;
-    frame.pc = 0;
-    frame.contract = contract;
-    frame.is_static = self.read_only;
-    frame.depth = @as(u32, @intCast(self.depth));
-    frame.input = input;
-    
-    defer {
-        if (pooled_frame != null) {
-            self.release_frame(frame);
-        } else if (heap_allocated) {
-            heap_frame_storage.deinit();
-        }
-    }
-
-    const interpreter: Operation.Interpreter = self;
-    const state: Operation.State = frame;
-
-    while (frame.pc < contract.code_size) {
+    while (current_index < instructions.len) {
         @branchHint(.likely);
-        const opcode = contract.get_op(frame.pc);
+        const nextInstruction = instructions[current_index];
 
-        const inline_hot_ops = @import("../jump_table/jump_table.zig").execute_with_inline_hot_ops;
-        const result = inline_hot_ops(&self.table, frame.pc, interpreter, state, opcode) catch |err| {
-            contract.gas = frame.gas_remaining;
+        // In safe mode we make sure we don't loop too much. If this happens
+        if (comptime SAFE) {
+            loop_iterations += 1;
+            if (loop_iterations > MAX_ITERATIONS) {
+                Log.err("interpret: Infinite loop detected after {} iterations at pc={}, depth={}, gas={}. This should never happen and indicates either the limit was set too low or a high severity bug has been found in EVM", .{ loop_iterations, current_index, self.depth, frame.gas_remaining });
+                unreachable;
+            }
+        }
 
-            var output: ?[]const u8 = null;
-            // Use frame.output for RETURN/REVERT data
-            const return_data = frame.output;
-            Log.debug("VM.interpret_with_context: Error occurred: {}, output_size={}", .{ err, return_data.len });
-            if (return_data.len > 0) {
-                output = self.allocator.dupe(u8, return_data) catch {
-                    // We are out of memory, which is a critical failure. The safest way to
-                    // handle this is to treat it as an OutOfGas error, which consumes
-                    // all gas and stops execution.
-                    return RunResult.init(initial_gas, 0, .OutOfGas, ExecutionError.Error.OutOfMemory, null);
+        // Handle instruction
+        switch (nextInstruction.arg) {
+            // BEGINBLOCK instructions - validate entire basic block upfront
+            // This eliminates per-instruction gas and stack validation for the entire block
+            .block_info => {
+                current_index += 1;
+                nextInstruction.opcode_fn(@ptrCast(frame)) catch |err| {
+                    return err;
                 };
-                Log.debug("VM.interpret_with_context: Duplicated output, size={}", .{output.?.len});
-            }
-
-            // Check most common case first with likely hint
-            if (err == ExecutionError.Error.STOP) {
+            },
+            // For jumps we handle them inline as they are preprocessed by analysis
+            // 1. Handle dynamic jumps validating it is a valid jumpdest
+            // 2. Handle optional jump
+            // 3. Handle normal jump
+            .jump_target => |jump_target| {
+                switch (jump_target.jump_type) {
+                    .jump => {
+                        const dest = frame.stack.pop_unsafe();
+                        if (!frame.valid_jumpdest(dest)) {
+                            return ExecutionError.Error.InvalidJump;
+                        }
+                        current_index = @intFromPtr(jump_target.instruction) - @intFromPtr(instructions.ptr);
+                    },
+                    .jumpi => {
+                        const pops = frame.stack.pop2_unsafe();
+                        const dest = pops.a;
+                        const condition = pops.b;
+                        if (condition != 0) {
+                            if (!frame.valid_jumpdest(dest)) {
+                                return ExecutionError.Error.InvalidJump;
+                            }
+                            current_index = @intFromPtr(jump_target.instruction) - @intFromPtr(instructions.ptr);
+                        } else {
+                            current_index += 1;
+                        }
+                    },
+                    .other => {
+                        current_index = @intFromPtr(jump_target.instruction) - @intFromPtr(instructions.ptr);
+                    },
+                }
+            },
+            .push_value => |value| {
+                current_index += 1;
+                try frame.stack.append(value);
+            },
+            .none => {
                 @branchHint(.likely);
-                // Handle normal termination inline
-                // No need to reinit memory since frame is about to be destroyed
-                Log.debug("VM.interpret_with_context: STOP opcode, output_size={}, creating RunResult", .{if (output) |o| o.len else 0});
-                const result = RunResult.init(initial_gas, frame.gas_remaining, .Success, null, output);
-                Log.debug("VM.interpret_with_context: RunResult created, output={any}", .{result.output});
-                return result;
-            }
+                // Most opcodes now have .none - no individual gas/stack validation needed
+                // Gas and stack validation is handled by BEGINBLOCK instructions
+                current_index += 1;
+                nextInstruction.opcode_fn(@ptrCast(frame)) catch |err| {
+                    // Frame already manages its own output, no need to copy
 
-            // Then handle rare errors
-            return switch (err) {
-                ExecutionError.Error.InvalidOpcode => {
-                    // INVALID opcode consumes all remaining gas
+                    // Handle gas exhaustion for InvalidOpcode specifically
+                    if (err == ExecutionError.Error.InvalidOpcode) {
+                        frame.gas_remaining = 0;
+                    }
+
+                    return err;
+                };
+            },
+            .gas_cost => |cost| {
+                // Keep for special opcodes that need individual gas tracking (GAS, CALL, etc.)
+                current_index += 1;
+                if (frame.gas_remaining < cost) {
+                    @branchHint(.cold);
                     frame.gas_remaining = 0;
-                    contract.gas = 0;
-                    return RunResult.init(initial_gas, 0, .Invalid, err, output);
-                },
-                ExecutionError.Error.REVERT => {
-                    // No need to reinit memory since frame is about to be destroyed
-                    return RunResult.init(initial_gas, frame.gas_remaining, .Revert, err, output);
-                },
-                ExecutionError.Error.OutOfGas => {
-                    return RunResult.init(initial_gas, frame.gas_remaining, .OutOfGas, err, output);
-                },
-                ExecutionError.Error.InvalidJump,
-                ExecutionError.Error.StackUnderflow,
-                ExecutionError.Error.StackOverflow,
-                ExecutionError.Error.StaticStateChange,
-                ExecutionError.Error.WriteProtection,
-                ExecutionError.Error.DepthLimit,
-                ExecutionError.Error.MaxCodeSizeExceeded,
-                ExecutionError.Error.OutOfMemory,
-                => {
-                    return RunResult.init(initial_gas, frame.gas_remaining, .Invalid, err, output);
-                },
-                else => return err, // Unexpected error
-            };
-        };
-
-        // Optimize for common case where PC advances normally
-        // Only JUMP/JUMPI/CALL family opcodes modify PC directly
-        const old_pc = frame.pc;
-        if (frame.pc == old_pc) {
-            @branchHint(.likely);
-            // Normal case - PC unchanged by opcode, advance by bytes consumed
-            frame.pc += result.bytes_consumed;
-            Log.debug("interpret: PC advanced by {} bytes to {}", .{ result.bytes_consumed, frame.pc });
-        } else {
-            @branchHint(.cold);
-            // PC was modified by a jump instruction
-            Log.debug("interpret: PC jumped from {} to {}", .{ old_pc, frame.pc });
+                    return ExecutionError.Error.OutOfGas;
+                }
+                frame.gas_remaining -= cost;
+            },
         }
     }
-
-    contract.gas = frame.gas_remaining;
-    // Use frame.output for normal completion (no RETURN/REVERT was called)
-    const output_data = frame.output;
-    Log.debug("VM.interpret_with_context: Normal completion, output_size={}", .{output_data.len});
-    const output: ?[]const u8 = if (output_data.len > 0) try self.allocator.dupe(u8, output_data) else null;
-
-    Log.debug("VM.interpret_with_context: Execution completed, gas_used={}, output_size={}, output_ptr={any}", .{
-        initial_gas - frame.gas_remaining,
-        if (output) |o| o.len else 0,
-        output,
-    });
-
-    return RunResult.init(
-        initial_gas,
-        frame.gas_remaining,
-        .Success,
-        null,
-        output,
-    );
 }

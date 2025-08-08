@@ -62,10 +62,8 @@ pub const primitives = @import("primitives");
 // Import all EVM modules
 
 /// Bytecode analysis for jump destination detection
-pub const CodeAnalysis = @import("frame/code_analysis.zig");
+pub const CodeAnalysis = @import("analysis.zig");
 
-/// Contract code and storage management
-pub const Contract = @import("frame/contract.zig");
 
 /// Unified error types for EVM execution
 pub const ExecutionError = @import("execution/execution_error.zig");
@@ -73,8 +71,6 @@ pub const ExecutionError = @import("execution/execution_error.zig");
 /// Execution result type
 pub const ExecutionResult = @import("execution/execution_result.zig");
 
-/// Execution frame/context management
-pub const Frame = @import("frame/frame.zig");
 
 /// Execution context providing transaction and block information
 pub const Context = @import("access_list/context.zig");
@@ -107,14 +103,15 @@ pub const Stack = @import("stack/stack.zig");
 /// Stack depth validation utilities
 pub const stack_validation = @import("stack/stack_validation.zig");
 
-/// Storage slot pooling for gas optimization
-pub const StoragePool = @import("frame/storage_pool.zig");
 
 /// Main virtual machine implementation
 pub const Evm = @import("evm.zig");
 
-/// Builder pattern for constructing EVM instances
-pub const EvmBuilder = @import("evm_builder.zig").EvmBuilder;
+
+/// Execution context and frame management
+pub const Frame = @import("frame.zig").Frame;
+pub const ExecutionContext = @import("frame.zig").ExecutionContext;
+
 
 /// EVM state management (accounts, storage, logs)
 pub const EvmState = @import("state/state.zig");
@@ -133,6 +130,12 @@ pub const MemoryDatabase = @import("state/memory_database.zig").MemoryDatabase;
 
 /// Database factory for creating different implementations
 pub const DatabaseFactory = @import("state/database_factory.zig");
+
+/// Host interface for external EVM operations (CALL, BALANCE, etc.)
+pub const Host = @import("host.zig").Host;
+pub const CallParams = @import("host.zig").CallParams;
+pub const BlockInfo = @import("host.zig").BlockInfo;
+pub const MockHost = @import("host.zig").MockHost;
 
 /// Precompiled contracts implementation (IDENTITY, SHA256, etc.)
 pub const Precompiles = @import("precompiles/precompiles_optimized.zig");
@@ -176,15 +179,13 @@ pub const opcodes = execution;
 
 // Import utility modules
 
-/// Bit vector utilities for jump destination tracking
-pub const bitvec = @import("frame/bitvec.zig");
 
 /// Chain-specific validation rules
-pub const chain_rules = @import("hardforks/chain_rules.zig");
+pub const chain_rules = @import("frame.zig").ChainRules;
 
 /// Hardforks namespace for easier access
 pub const hardforks = struct {
-    pub const chain_rules = @import("hardforks/chain_rules.zig");
+    pub const chain_rules = @import("frame.zig").ChainRules;
     pub const hardfork = @import("hardforks/hardfork.zig");
 };
 
@@ -199,6 +200,17 @@ pub const Tracer = @import("tracer.zig").Tracer;
 
 /// EIP-7702 EOA delegation bytecode format
 pub const eip_7702_bytecode = @import("frame/eip_7702_bytecode.zig");
+
+/// Instruction type for block-based execution
+pub const Instruction = @import("instruction.zig").Instruction;
+const instruction_module = @import("instruction.zig");
+
+
+
+/// Block execution metrics and performance analysis
+pub const block_metrics = @import("block_metrics.zig");
+pub const BlockExecutionMetrics = block_metrics.BlockExecutionMetrics;
+pub const BlockCache = block_metrics.BlockCache;
 
 /// Fee market calculations (EIP-1559)
 pub const fee_market = @import("primitives").FeeMarket;
@@ -275,15 +287,6 @@ pub const MemoryError = Memory.MemoryError;
 /// Errors from stack operations (overflow, underflow)
 pub const StackError = Stack.Error;
 
-// Contract error types
-/// General contract operation errors
-pub const ContractError = Contract.ContractError;
-/// Storage access errors
-pub const StorageOperationError = Contract.StorageOperationError;
-/// Bytecode analysis errors
-pub const CodeAnalysisError = Contract.CodeAnalysisError;
-/// Storage warming errors (EIP-2929)
-pub const MarkStorageSlotWarmError = Contract.MarkStorageSlotWarmError;
 
 // Access List error types (imported via import statement to avoid circular deps)
 /// Access list module for EIP-2929/2930 support
@@ -314,9 +317,6 @@ pub const ExecutionErrorEnum = ExecutionError.Error;
 test "Evm module" {
     std.testing.refAllDecls(Evm);
 }
-test "Frame module" {
-    std.testing.refAllDecls(Frame);
-}
 test "Stack module" {
     std.testing.refAllDecls(Stack);
 }
@@ -326,12 +326,12 @@ test "Memory module" {
 test "ExecutionError module" {
     std.testing.refAllDecls(ExecutionError);
 }
-test "Contract module" {
-    std.testing.refAllDecls(Contract);
-}
 test "JumpTable module" {
     std.testing.refAllDecls(JumpTable);
 }
 test "Execution module" {
     std.testing.refAllDecls(execution);
+}
+test "Instruction module" {
+    std.testing.refAllDecls(instruction_module);
 }
