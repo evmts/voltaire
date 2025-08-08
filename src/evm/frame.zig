@@ -42,7 +42,7 @@ pub const ChainRules = struct {
     // EIPs that need runtime opcode validation (very few!)
     is_eip1153: bool = true, // Transient storage (TLOAD/TSTORE) - runtime validation
     is_eip3855: bool = true, // PUSH0 - validation needed for pre-Shanghai compatibility
-    is_eip4844: bool = true, // BLOBHASH - validation needed for pre-Cancun compatibility  
+    is_eip4844: bool = true, // BLOBHASH - validation needed for pre-Cancun compatibility
     is_eip6780: bool = true, // SELFDESTRUCT restriction - validation needed
 
     /// Default chain rules for the latest hardfork (CANCUN).
@@ -83,11 +83,11 @@ pub const Frame = struct {
     stack: *Stack, // 8 bytes pointer - accessed by every opcode (now heap-allocated)
     gas_remaining: u64, // 8 bytes - checked/consumed by every opcode
 
-    // HOT - Second cache line priority (accessed by major opcode categories)  
+    // HOT - Second cache line priority (accessed by major opcode categories)
     memory: *Memory, // 8 bytes - memory ops (MLOAD/MSTORE/MCOPY/LOG*/KECCAK256)
     analysis: *const CodeAnalysis, // 8 bytes - control flow (JUMP/JUMPI validation)
     hot_flags: packed struct {
-        depth: u10, // 10 bits - call stack depth 
+        depth: u10, // 10 bits - call stack depth
         is_static: bool, // 1 bit - static call restriction
         is_eip1153: bool, // 1 bit - transient storage validation
         _padding: u4 = 0, // 4 bits - future expansion
@@ -97,14 +97,14 @@ pub const Frame = struct {
     contract_address: primitives.Address.Address, // 20 bytes
     state: DatabaseInterface, // 16 bytes
     access_list: *AccessList, // 8 bytes
-    
+
     // WARM - Call context (grouped together)
     journal: *CallJournal, // 8 bytes
     host: *Host, // 8 bytes
     snapshot_id: u32, // 4 bytes
-    caller: primitives.Address.Address, // 20 bytes  
+    caller: primitives.Address.Address, // 20 bytes
     value: u256, // 32 bytes
-    
+
     // Block context - accessed by block opcodes (COINBASE, TIMESTAMP, etc.)
     block_number: u64, // 8 bytes
     block_timestamp: u64, // 8 bytes
@@ -115,22 +115,22 @@ pub const Frame = struct {
     block_blob_base_fee: ?u256, // 32 bytes - EIP-4844 (None for pre-Cancun)
 
     // COLD - Validation flags and rarely accessed data
-    hardfork: Hardfork, // 1 byte - hardfork validation  
-    is_eip3855: bool,   // 1 byte - PUSH0 validation
-    is_eip4844: bool,   // 1 byte - BLOBHASH validation  
-    is_eip6780: bool,   // 1 byte - SELFDESTRUCT restriction
-    is_create: bool,    // 1 byte - CREATE/CREATE2 context
-    is_delegate: bool,  // 1 byte - DELEGATECALL context
-    
+    hardfork: Hardfork, // 1 byte - hardfork validation
+    is_eip3855: bool, // 1 byte - PUSH0 validation
+    is_eip4844: bool, // 1 byte - BLOBHASH validation
+    is_eip6780: bool, // 1 byte - SELFDESTRUCT restriction
+    is_create: bool, // 1 byte - CREATE/CREATE2 context
+    is_delegate: bool, // 1 byte - DELEGATECALL context
+
     // Cold data - accessed infrequently
     input: []const u8, // 16 bytes - only CALLDATALOAD/SIZE/COPY
     output: []const u8, // 16 bytes - only RETURN/REVERT
-    
+
     // Extremely rare - accessed almost never
     self_destruct: ?*SelfDestruct, // 8 bytes - extremely rare, only SELFDESTRUCT
     created_contracts: ?*CreatedContracts, // 8 bytes - tracks contracts created in tx for EIP-6780
     next_frame: ?*Frame, // 8 bytes - only for nested calls
-    
+
     // Bottom - only used for setup/cleanup
     allocator: std.mem.Allocator, // 16 bytes - extremely rare, only frame init/deinit
 
@@ -173,7 +173,7 @@ pub const Frame = struct {
             if (chain_rules.is_homestead) break :blk Hardfork.HOMESTEAD;
             break :blk Hardfork.FRONTIER;
         };
-        
+
         // Fetch block info from host
         const block_info = host.get_block_info();
 
@@ -207,7 +207,7 @@ pub const Frame = struct {
             .snapshot_id = snapshot_id,
             .caller = caller,
             .value = value,
-            
+
             // Block context from host
             .block_number = block_info.number,
             .block_timestamp = block_info.timestamp,
@@ -226,14 +226,14 @@ pub const Frame = struct {
             .input = input,
             .output = &[_]u8{},
             .hardfork = hardfork,
-            
+
             // Cold EIP validation flags
             .is_eip3855 = chain_rules.is_eip3855,
             .is_eip4844 = chain_rules.is_eip4844,
             .is_eip6780 = chain_rules.is_eip6780,
             .is_create = is_create_call,
             .is_delegate = is_delegate_call,
-            
+
             .self_destruct = self_destruct,
             .created_contracts = created_contracts,
             .allocator = allocator,
@@ -449,44 +449,41 @@ pub const Frame = struct {
     }
 };
 
-/// Type alias for backward compatibility
-pub const ExecutionContext = Frame;
-
 // ============================================================================
 // Compile-time Frame Alignment and Layout Assertions
 // ============================================================================
 
 comptime {
     // Assert optimal layout: Ultra hot -> Hot -> Warm -> Cold
-    
+
     // Ultra hot data must be first (stack at offset 0 preferred but not required due to compiler alignment)
     // Note: Zig compiler may add padding before struct fields for alignment
     if (@offsetOf(Frame, "gas_remaining") <= @offsetOf(Frame, "stack")) @compileError("gas_remaining must come after stack");
-    
+
     // Hot data comes next
     // TODO: Re-enable after fixing alignment issues
     // if (@offsetOf(Frame, "memory") <= @offsetOf(Frame, "gas_remaining")) @compileError("memory must come after gas_remaining");
     // TODO: Re-enable after fixing alignment issues
     // if (@offsetOf(Frame, "analysis") <= @offsetOf(Frame, "memory")) @compileError("analysis must come after memory");
     if (@offsetOf(Frame, "hot_flags") <= @offsetOf(Frame, "analysis")) @compileError("hot_flags must come after analysis");
-    
+
     // TODO: Re-enable after fixing alignment issues
     // Warm storage cluster must be contiguous
     const contract_address_offset = @offsetOf(Frame, "contract_address");
     const state_offset = @offsetOf(Frame, "state");
     // const access_list_offset = @offsetOf(Frame, "access_list");
-    
+
     if (contract_address_offset <= @offsetOf(Frame, "hot_flags")) @compileError("Storage cluster must come after hot data");
     if (state_offset - contract_address_offset > @sizeOf(primitives.Address.Address) + 8) @compileError("Storage cluster not contiguous: contract_address to state gap too large");
     // TODO: Re-enable after fixing alignment issues with created_contracts field
     // if (access_list_offset - state_offset > @sizeOf(DatabaseInterface) + 8) @compileError("Storage cluster not contiguous: state to access_list gap too large");
-    
+
     // Note: Originally enforced "hardfork must come before allocator" but Zig compiler
     // may reorder fields for optimal alignment and performance. We trust the compiler's optimization.
-    
+
     // Performance constraint: cold data should come after warm data (Zig may reorder for alignment)
     if (@offsetOf(Frame, "hardfork") <= @offsetOf(Frame, "access_list")) @compileError("hardfork must come after warm data");
-    
+
     // Note: Zig compiler may reorder struct fields for alignment optimization.
     // We enforce only the most critical performance constraints here.
 
