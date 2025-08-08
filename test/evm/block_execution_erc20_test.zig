@@ -223,8 +223,7 @@ test "Simple bytecode works with block execution" {
     
     // Create EVM instance
     const db_interface = memory_db.to_database_interface();
-    var evm_builder = evm.EvmBuilder.init(allocator, db_interface);
-    var vm = try evm_builder.build();
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Set up caller account
