@@ -563,6 +563,12 @@ This will enable all debug logging statements in the code being tested, which is
 - **Avoid explaining what the code does** - explain why when needed
 - **No redundant comments** - if removing code, don't add comments about what was removed
 
+### Code Removal Policy
+- **NEVER comment out code** - always delete unused or obsolete code completely
+- **Do not leave commented-out code blocks** - remove them entirely
+- **Version control tracks history** - there's no need to preserve old code as comments
+- **Clean codebase only** - the codebase should only contain active, working code
+
 ## Essential Documentation References
 
 ### Zig Programming Language Documentation
