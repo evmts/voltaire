@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const constants = @import("constants.zig");
 
 /// Memory implementation for EVM execution contexts.
@@ -50,6 +51,10 @@ pub fn init(
     std.log.debug("Memory.init: Starting, initial_capacity={}, memory_limit={}", .{initial_capacity, memory_limit});
     
     std.log.debug("Memory.init: About to create shared_buffer", .{});
+    // MEMORY ALLOCATION: ArrayList structure for shared buffer
+    // Expected size: sizeof(ArrayList) ≈ 24 bytes
+    // Lifetime: Per root Memory instance
+    // Frequency: Once per frame
     const shared_buffer = try allocator.create(std.ArrayList(u8));
     errdefer allocator.destroy(shared_buffer);
     std.log.debug("Memory.init: Created shared_buffer ptr={*}", .{shared_buffer});
@@ -59,8 +64,29 @@ pub fn init(
     errdefer shared_buffer.deinit();
     
     std.log.debug("Memory.init: About to ensureTotalCapacity({})", .{initial_capacity});
+    // MEMORY ALLOCATION: Shared buffer data
+    // Expected initial size: initial_capacity (typically 4KB)
+    // Lifetime: Per root Memory instance
+    // Frequency: Once per frame (shared among child memories)
+    // Growth: Doubles when capacity exceeded, up to memory_limit
     try shared_buffer.ensureTotalCapacity(initial_capacity);
     std.log.debug("Memory.init: ensureTotalCapacity complete", .{});
+    
+    if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+        // Verify initial allocation is reasonable
+        std.debug.assert(shared_buffer.capacity >= initial_capacity);
+        // Note: We allow initial_capacity > memory_limit for test compatibility
+        // The memory_limit will be enforced on actual memory operations
+        
+        // Default initial capacity should be 4KB
+        if (initial_capacity == INITIAL_CAPACITY) {
+            std.debug.assert(INITIAL_CAPACITY == 4096); // 4KB default
+        }
+        // Default memory limit should be 32MB
+        if (memory_limit == DEFAULT_MEMORY_LIMIT) {
+            std.debug.assert(DEFAULT_MEMORY_LIMIT == 32 * 1024 * 1024); // 32MB default
+        }
+    }
 
     std.log.debug("Memory.init: Returning Memory struct", .{});
     return Memory{

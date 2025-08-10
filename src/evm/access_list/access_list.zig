@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const primitives = @import("primitives");
 const AccessListStorageKey = @import("access_list_storage_key.zig");
 const AccessListStorageKeyContext = @import("access_list_storage_key_context.zig");
@@ -45,12 +46,24 @@ storage_slots: std.HashMap(AccessListStorageKey, void, AccessListStorageKeyConte
 context: Context,
 
 pub fn init(allocator: std.mem.Allocator, context: Context) AccessList {
-    return .{
+    const access_list = AccessList{
         .allocator = allocator,
+        // MEMORY ALLOCATION: Addresses HashMap
+        // Expected size: HashMap overhead + warm addresses * 20 bytes
+        // Lifetime: Per transaction
+        // Frequency: Once per EVM instance
+        // Growth: On address access, typically 5-50KB
         .addresses = std.AutoHashMap(primitives.Address.Address, void).init(allocator),
+        // MEMORY ALLOCATION: Storage slots HashMap
+        // Expected size: HashMap overhead + warm slots * (52 bytes per entry)
+        // Lifetime: Per transaction
+        // Frequency: Once per EVM instance
+        // Growth: On storage slot access, typically 5-50KB
         .storage_slots = std.HashMap(AccessListStorageKey, void, AccessListStorageKeyContext, 80).init(allocator),
         .context = context,
     };
+    
+    return access_list;
 }
 
 pub fn deinit(self: *AccessList) void {

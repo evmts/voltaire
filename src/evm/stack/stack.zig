@@ -1,6 +1,6 @@
 const std = @import("std");
-const stack_constants = @import("../constants/stack_constants.zig");
 const builtin = @import("builtin");
+const stack_constants = @import("../constants/stack_constants.zig");
 
 const CLEAR_ON_POP = builtin.mode == .Debug or builtin.mode == .ReleaseSafe;
 
@@ -100,9 +100,20 @@ comptime {
 
 /// Initialize a new stack with heap allocation
 pub fn init(allocator: std.mem.Allocator) !Stack {
-    // Allocate memory for stack data on heap
+    // MEMORY ALLOCATION: Stack data array
+    // Expected size: 1024 * 32 bytes = 32KB exactly
+    // Lifetime: Per Stack instance (freed on deinit)
+    // Frequency: Once per frame
     const data = try allocator.alloc(u256, CAPACITY);
     errdefer allocator.free(data);
+    
+    if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+        // Stack must be exactly 32KB (1024 * 32 bytes) per EVM spec
+        std.debug.assert(data.len == CAPACITY);
+        std.debug.assert(CAPACITY == 1024); // EVM specification
+        const stack_size = data.len * @sizeOf(u256);
+        std.debug.assert(stack_size == 32768); // Exactly 32KB
+    }
 
     var stack = Stack{
         .allocator = allocator,

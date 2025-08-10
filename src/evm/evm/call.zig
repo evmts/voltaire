@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const ExecutionError = @import("../execution/execution_error.zig");
 const InterpretResult = @import("interpret_result.zig").InterpretResult;
 const RunResult = @import("run_result.zig").RunResult;
@@ -132,13 +133,26 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         self.self_destruct = SelfDestruct.init(self.allocator); // Fresh self-destruct tracker
         self.created_contracts = CreatedContracts.init(self.allocator); // Fresh created contracts tracker for EIP-6780
 
-        // Allocate frame stack lazily - start with just space for the first frame
-        // We'll grow this on-demand when nested calls happen
+        // MEMORY ALLOCATION: Frame stack array (lazy allocation)
+        // Expected size: 16 * sizeof(Frame) ≈ 16 * ~500 bytes = ~8KB initial
+        // Lifetime: Per call execution (freed after call completes)
+        // Frequency: Once per top-level call, grows on demand for nested calls
+        // Growth: Doubles up to MAX_CALL_DEPTH (1024)
         if (self.frame_stack == null) {
             // Allocate initial frame stack with reasonable initial capacity
             // Most contracts don't go very deep, so start small
             const initial_capacity = 16; // Start with space for 16 frames
             self.frame_stack = try self.allocator.alloc(Frame, initial_capacity);
+            
+            if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+                // Verify initial allocation is within expected bounds
+                const frame_size = @sizeOf(Frame);
+                const allocated_size = self.frame_stack.?.len * frame_size;
+                // Frame is a large struct, likely 200-500 bytes
+                // 16 frames * 500 bytes = 8KB, allow up to 32KB for safety
+                std.debug.assert(allocated_size <= 32 * 1024); // 32KB max
+                std.debug.assert(self.frame_stack.?.len == initial_capacity);
+            }
         }
 
         // Create host interface from self

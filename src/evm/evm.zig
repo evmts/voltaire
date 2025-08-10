@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const OpcodeMetadata = @import("opcode_metadata/opcode_metadata.zig");
 const Operation = @import("opcodes/operation.zig");
 const primitives = @import("primitives");
@@ -29,7 +30,6 @@ pub const CallResult = @import("evm/call_result.zig").CallResult;
 pub const RunResult = @import("evm/run_result.zig").RunResult;
 const Hardfork = @import("hardforks/hardfork.zig").Hardfork;
 const precompiles = @import("precompiles/precompiles.zig");
-const builtin = @import("builtin");
 const AnalysisCache = @import("analysis_cache.zig");
 
 /// Virtual Machine for executing Ethereum bytecode.
@@ -162,10 +162,20 @@ pub fn init(
     Log.debug("Evm.init: Initializing EVM with configuration", .{});
 
     std.debug.print("[Evm.init] Creating arena allocator...\n", .{});
-    // Initialize internal arena allocator for temporary data with preallocated capacity
+    // MEMORY ALLOCATION: Arena allocator for temporary data
+    // Expected size: 256KB (ARENA_INITIAL_CAPACITY)
+    // Lifetime: Per EVM instance (freed on deinit)
+    // Frequency: Once per EVM creation
     var internal_arena = std.heap.ArenaAllocator.init(allocator);
     // Preallocate memory to avoid frequent allocations during execution
-    _ = try internal_arena.allocator().alloc(u8, ARENA_INITIAL_CAPACITY);
+    const arena_buffer = try internal_arena.allocator().alloc(u8, ARENA_INITIAL_CAPACITY);
+    
+    if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+        // Verify arena allocation is exactly what we expect
+        std.debug.assert(arena_buffer.len == ARENA_INITIAL_CAPACITY);
+        std.debug.assert(ARENA_INITIAL_CAPACITY == 256 * 1024); // 256KB
+    }
+    
     _ = internal_arena.reset(.retain_capacity);
 
     std.debug.print("[Evm.init] Creating EVM state...\n", .{});
@@ -207,6 +217,10 @@ pub fn init(
         .journal = CallJournal.init(allocator),
         .gas_refunds = 0,
         .created_contracts = CreatedContracts.init(allocator),
+        // MEMORY ALLOCATION: Analysis cache for bytecode analysis results
+        // Expected size: 50-100KB (128 cache entries * analysis data)
+        // Lifetime: Per EVM instance
+        // Frequency: Once per EVM creation
         .analysis_cache = AnalysisCache.init(allocator, AnalysisCache.DEFAULT_CACHE_SIZE),
     };
 }

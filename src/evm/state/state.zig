@@ -30,6 +30,7 @@
 //! for concurrent access.
 
 const std = @import("std");
+const builtin = @import("builtin");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const EvmLog = @import("evm_log.zig");
@@ -94,8 +95,23 @@ pub fn init(allocator: std.mem.Allocator, database: DatabaseInterface) std.mem.A
     var state = EvmState{
         .allocator = allocator,
         .database = database,
+        // MEMORY ALLOCATION: Transient storage HashMap
+        // Expected size: HashMap overhead + entries * (52 bytes per entry)
+        // Lifetime: Per EVM instance
+        // Frequency: Once per EVM instance
+        // Growth: Dynamic based on TSTORE usage, typically 1-5KB
         .transient_storage = std.AutoHashMap(StorageKey, u256).init(allocator),
+        // MEMORY ALLOCATION: Logs ArrayList
+        // Expected size: ArrayList overhead + log entries (variable)
+        // Lifetime: Per transaction
+        // Frequency: Once per EVM instance
+        // Growth: Append on LOG opcodes, typically 1-10KB
         .logs = std.ArrayList(EvmLog).init(allocator),
+        // MEMORY ALLOCATION: Selfdestructs HashMap
+        // Expected size: HashMap overhead + entries * (40 bytes per entry)
+        // Lifetime: Per transaction
+        // Frequency: Once per EVM instance
+        // Growth: Rare, typically 0-1KB
         .selfdestructs = std.AutoHashMap(Address, Address).init(allocator),
     };
     errdefer {

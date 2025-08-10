@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const limits = @import("constants/code_analysis_limits.zig");
 const StaticBitSet = std.bit_set.StaticBitSet;
 const DynamicBitSet = std.DynamicBitSet;
@@ -131,11 +132,27 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
         return error.CodeTooLarge;
     }
 
-    // Create temporary analysis data that will be discarded
+    // MEMORY ALLOCATION: Temporary code bitmap (freed after analysis)
+    // Expected size: code_len bits (rounded up)
+    // Lifetime: During analysis only (freed immediately)
+    // Frequency: Once per analysis
     var code_segments = try createCodeBitmap(allocator, code);
     defer code_segments.deinit();
+    
+    // MEMORY ALLOCATION: Jumpdest bitmap
+    // Expected size: code_len bits (rounded up)
+    // Lifetime: Per analysis
+    // Frequency: Once per unique contract bytecode
     var jumpdest_bitmap = try DynamicBitSet.initEmpty(allocator, code.len);
     errdefer jumpdest_bitmap.deinit();
+    
+    if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+        // Bitmap sizes should be proportional to code length
+        // Each bit represents one byte of code
+        const bitmap_bytes = (code.len + 7) / 8; // Round up to nearest byte
+        // Max contract is 24KB, so bitmaps should be max 3KB each
+        std.debug.assert(bitmap_bytes <= 3072); // 3KB max
+    }
 
     if (code.len == 0) {
         // For empty code, just create empty instruction array
@@ -276,6 +293,10 @@ fn getDynamicGasFunction(opcode: Opcode.Enum) ?DynamicGasFunc {
 fn createCodeBitmap(allocator: std.mem.Allocator, code: []const u8) !DynamicBitSet {
     std.debug.assert(code.len <= limits.MAX_CONTRACT_SIZE);
 
+    // MEMORY ALLOCATION: Temporary code bitmap
+    // Expected size: code_len bits
+    // Lifetime: During analysis only (freed by caller)
+    // Frequency: Once per analysis
     var bitmap = try DynamicBitSet.initFull(allocator, code.len);
     errdefer bitmap.deinit();
 
@@ -313,18 +334,50 @@ const CodeGenResult = struct {
 fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table: *const OpcodeMetadata, jumpdest_bitmap: *const DynamicBitSet) !CodeGenResult {
     Log.debug("[analysis] Converting {} bytes of code to instructions", .{code.len});
 
-    // Allocate instruction array with extra space for BEGINBLOCK instructions
+    // MEMORY ALLOCATION: Instructions array
+    // Expected size: MAX_INSTRUCTIONS * sizeof(Instruction) ≈ 3-5MB max
+    // Lifetime: Per analysis (cached or per-call)
+    // Frequency: Once per unique contract bytecode
+    // Note: MAX_INSTRUCTIONS=65536, Instruction contains fn ptr + u256 union (~48 bytes)
     const instructions = try allocator.alloc(Instruction, instruction_limits.MAX_INSTRUCTIONS + 1);
     errdefer allocator.free(instructions);
+    
+    if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+        // Verify instruction allocation is within expected bounds
+        const inst_size = instructions.len * @sizeOf(Instruction);
+        // MAX_INSTRUCTIONS is 65536, Instruction is ~48 bytes (8 byte ptr + 32 byte u256 + padding)
+        // Total: 65537 * 48 = ~3.1MB, allow up to 5MB for safety
+        std.debug.assert(inst_size <= 5 * 1024 * 1024); // 5MB max
+    }
 
-    // Allocate PC to instruction index mapping - tracks which instruction index corresponds to each PC
+    // MEMORY ALLOCATION: PC to instruction mapping (temporary)
+    // Expected size: code_len * 2 bytes
+    // Lifetime: During analysis only (freed immediately)
+    // Frequency: Once per analysis
     const pc_to_instruction = try allocator.alloc(u16, code.len);
     defer allocator.free(pc_to_instruction);
     @memset(pc_to_instruction, std.math.maxInt(u16)); // Initialize with invalid values
+    
+    if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+        // PC mapping should be proportional to code size
+        const pc_map_size = pc_to_instruction.len * @sizeOf(u16);
+        // Max contract size is 24KB, so mapping should be max 48KB
+        std.debug.assert(pc_map_size <= 49152); // 48KB max
+    }
 
-    // Allocate per-instruction jump type tracker (will shrink later)
+    // MEMORY ALLOCATION: Jump type array
+    // Expected size: instruction_count * 1 byte (shrunk later)
+    // Lifetime: Per analysis
+    // Frequency: Once per unique contract bytecode
     var inst_jump_type = try allocator.alloc(JumpType, instruction_limits.MAX_INSTRUCTIONS + 1);
     errdefer allocator.free(inst_jump_type);
+    
+    if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+        // Jump type array should be MAX_INSTRUCTIONS * 1 byte
+        const jump_type_size = inst_jump_type.len * @sizeOf(JumpType);
+        // Should be ~65KB for max instructions
+        std.debug.assert(jump_type_size <= 128 * 1024); // 128KB max (generous for enum size)
+    }
     // Initialize to .other
     var t: usize = 0;
     while (t < inst_jump_type.len) : (t += 1) inst_jump_type[t] = .other;
@@ -624,9 +677,19 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
         // If we can't resolve jumps, it's still OK - runtime will handle it
     };
 
-    // Build pc_to_block_start mapping for runtime resolution
+    // MEMORY ALLOCATION: PC to block start mapping
+    // Expected size: code_len * 2 bytes
+    // Lifetime: Per analysis
+    // Frequency: Once per unique contract bytecode
     var pc_to_block_start = try allocator.alloc(u16, code.len);
     errdefer allocator.free(pc_to_block_start);
+    
+    if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+        // PC to block mapping should be proportional to code size
+        const block_map_size = pc_to_block_start.len * @sizeOf(u16);
+        // Max contract size is 24KB, so mapping should be max 48KB
+        std.debug.assert(block_map_size <= 49152); // 48KB max
+    }
     @memset(pc_to_block_start, std.math.maxInt(u16));
     // For each mapped PC, find the BEGINBLOCK for its instruction by searching backwards
     var pc_it: usize = 0;

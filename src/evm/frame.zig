@@ -4,6 +4,7 @@
 /// following data-oriented design principles for better cache performance and
 /// eliminating circular dependencies.
 const std = @import("std");
+const builtin = @import("builtin");
 const primitives = @import("primitives");
 const Stack = @import("stack/stack.zig");
 const Memory = @import("memory/memory.zig");
@@ -179,20 +180,45 @@ pub const Frame = struct {
         const block_info = host.get_block_info();
 
         return Frame{
-            // Ultra hot data - allocate Stack on heap
+            // MEMORY ALLOCATION: Stack for EVM execution
+            // Expected size: 32KB (1024 * 32 bytes)
+            // Lifetime: Per frame (freed on frame.deinit)
+            // Frequency: Once per call frame
             .stack = blk: {
                 const stack_ptr = try allocator.create(Stack);
                 errdefer allocator.destroy(stack_ptr);
                 stack_ptr.* = try Stack.init(allocator);
+                
+                if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+                    // Stack should allocate exactly 32KB for data
+                    std.debug.assert(stack_ptr.data.len == Stack.CAPACITY);
+                    std.debug.assert(Stack.CAPACITY == 1024); // EVM spec
+                    const stack_size = stack_ptr.data.len * @sizeOf(u256);
+                    std.debug.assert(stack_size == 32 * 1024); // Exactly 32KB
+                }
+                
                 break :blk stack_ptr;
             },
             .gas_remaining = gas_remaining,
 
-            // Hot data - allocate Memory on heap
+            // MEMORY ALLOCATION: EVM memory for MLOAD/MSTORE
+            // Expected initial size: 4KB (INITIAL_CAPACITY)
+            // Lifetime: Per frame (freed on frame.deinit)
+            // Frequency: Once per call frame
+            // Growth: Doubles on demand, gas limited
             .memory = blk: {
                 const memory_ptr = try allocator.create(Memory);
                 errdefer allocator.destroy(memory_ptr);
                 memory_ptr.* = try Memory.init_default(allocator);
+                
+                if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
+                    // Memory should start with reasonable initial capacity
+                    std.debug.assert(memory_ptr.memory_limit > 0);
+                    std.debug.assert(memory_ptr.memory_limit == Memory.DEFAULT_MEMORY_LIMIT);
+                    // Initial capacity should be 4KB
+                    std.debug.assert(Memory.INITIAL_CAPACITY == 4 * 1024);
+                }
+                
                 break :blk memory_ptr;
             },
             .analysis = analysis,
