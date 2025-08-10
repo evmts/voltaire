@@ -1,6 +1,9 @@
 const std = @import("std");
 const testing = std.testing;
 const evm = @import("evm");
+const EvmConfig = evm.EvmConfig;
+
+// Stack is now a plain struct, not a generic function
 const Stack = evm.Stack;
 
 fn setup_stack(allocator: std.mem.Allocator, items: []const u256) !Stack {
@@ -15,7 +18,7 @@ test "Stack: initialization" {
     var stack = try Stack.init(testing.allocator);
     defer stack.deinit();
     try testing.expectEqual(@as(usize, 0), stack.size());
-    try testing.expectEqual(@as(usize, Stack.CAPACITY), Stack.CAPACITY);
+    try testing.expectEqual(@as(usize, 1024), 1024);
 }
 
 test "Stack: basic push and pop operations" {
@@ -164,14 +167,14 @@ test "Stack: overflow protection" {
     defer stack.deinit();
 
     // Fill stack to capacity - 1
-    for (0..Stack.CAPACITY - 1) |i| {
+    for (0..1024 - 1) |i| {
         try stack.append(@intCast(i));
     }
-    try testing.expectEqual(@as(usize, Stack.CAPACITY - 1), stack.size());
+    try testing.expectEqual(@as(usize, 1024 - 1), stack.size());
 
     // This should succeed
     try stack.append(999);
-    try testing.expectEqual(@as(usize, Stack.CAPACITY), stack.size());
+    try testing.expectEqual(@as(usize, 1024), stack.size());
 
     // This should fail
     try testing.expectError(Stack.Error.StackOverflow, stack.append(1000));

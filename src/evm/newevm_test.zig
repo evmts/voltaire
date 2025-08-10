@@ -19,8 +19,11 @@ test "EVM can be initialized successfully" {
     const db_interface = memory_db.to_database_interface();
 
     // Initialize EVM with defaults
-    var vm = try evm.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
+    const config = comptime evm.EvmConfig.init(.CANCUN);
+    const EvmType = evm.configureEvm(config);
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
         null, // context
         0, // depth
         false, // read_only
@@ -46,8 +49,11 @@ test "EVM state can read and write balances" {
     const db_interface = memory_db.to_database_interface();
 
     // Initialize EVM
-    var vm = try evm.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
+    const config = comptime evm.EvmConfig.init(.CANCUN);
+    const EvmType = evm.configureEvm(config);
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
         null, // context
         0, // depth
         false, // read_only
@@ -88,8 +94,11 @@ test "EVM state can read and write storage" {
     const db_interface = memory_db.to_database_interface();
 
     // Initialize EVM
-    var vm = try evm.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
+    const config = comptime evm.EvmConfig.init(.CANCUN);
+    const EvmType = evm.configureEvm(config);
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
         null, // context
         0, // depth
         false, // read_only
@@ -129,8 +138,11 @@ test "EVM state can read and write code" {
     const db_interface = memory_db.to_database_interface();
 
     // Initialize EVM
-    var vm = try evm.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
+    const config = comptime evm.EvmConfig.init(.CANCUN);
+    const EvmType = evm.configureEvm(config);
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
         null, // context
         0, // depth
         false, // read_only
@@ -170,8 +182,11 @@ test "EVM state can read and write nonces" {
     const db_interface = memory_db.to_database_interface();
 
     // Initialize EVM
-    var vm = try evm.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
+    const config = comptime evm.EvmConfig.init(.CANCUN);
+    const EvmType = evm.configureEvm(config);
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
         null, // context
         0, // depth
         false, // read_only
@@ -210,8 +225,11 @@ test "EVM state can handle transient storage" {
     const db_interface = memory_db.to_database_interface();
 
     // Initialize EVM
-    var vm = try evm.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
+    const config = comptime evm.EvmConfig.init(.CANCUN);
+    const EvmType = evm.configureEvm(config);
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
         null, // context
         0, // depth
         false, // read_only
@@ -256,8 +274,11 @@ test "EVM state can emit and track logs" {
     const db_interface = memory_db.to_database_interface();
 
     // Initialize EVM
-    var vm = try evm.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
+    const config = comptime evm.EvmConfig.init(.CANCUN);
+    const EvmType = evm.configureEvm(config);
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
         null, // context
         0, // depth
         false, // read_only
@@ -305,8 +326,11 @@ test "EVM state persistence across operations" {
     const db_interface = memory_db.to_database_interface();
 
     // Initialize EVM
-    var vm = try evm.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
+    const config = comptime evm.EvmConfig.init(.CANCUN);
+    const EvmType = evm.configureEvm(config);
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
         null, // context
         0, // depth
         false, // read_only
@@ -371,8 +395,11 @@ test "Simple contract execution with PUSH and POP operations" {
     const db_interface = memory_db.to_database_interface();
 
     // Initialize EVM
-    var vm = try evm.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
+    const config = comptime evm.EvmConfig.init(.CANCUN);
+    const EvmType = evm.configureEvm(config);
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
         null, // context
         0, // depth
         false, // read_only
@@ -428,8 +455,11 @@ test "Contract with basic stack operations" {
     const db_interface = memory_db.to_database_interface();
 
     // Initialize EVM
-    var vm = try evm.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
+    const config = comptime evm.EvmConfig.init(.CANCUN);
+    const EvmType = evm.configureEvm(config);
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
         null, // context
         0, // depth
         false, // read_only
@@ -494,8 +524,11 @@ test "Contract execution with PUSH0 operation" {
     const db_interface = memory_db.to_database_interface();
 
     // Initialize EVM
-    var vm = try evm.Evm.init(allocator, db_interface, null, // table
-        null, // chain_rules
+    const config = comptime evm.EvmConfig.init(.CANCUN);
+    const EvmType = evm.configureEvm(config);
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
         null, // context
         0, // depth
         false, // read_only

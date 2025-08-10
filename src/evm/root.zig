@@ -38,7 +38,9 @@
 //! const evm = @import("evm");
 //!
 //! // Create a VM instance
-//! var vm = try evm.Evm.init(allocator, config);
+//! const config = EvmConfig.DEFAULT;
+//! const EvmType = evm.configureEvm(config);
+//! var vm = try EvmType.init(allocator, db_interface, null, 0, false, null);
 //! defer vm.deinit();
 //!
 //! // Execute bytecode
@@ -107,7 +109,8 @@ pub const Stack = @import("stack/stack.zig");
 pub const stack_validation = @import("stack/stack_validation.zig");
 
 /// Main virtual machine implementation
-pub const Evm = @import("evm.zig");
+pub const configureEvm = @import("evm.zig").configureEvm;
+pub const Evm = @import("evm.zig").configureEvm; // Backward compatibility alias
 
 /// Execution context and frame management
 pub const Frame = @import("frame.zig").Frame;
@@ -199,6 +202,7 @@ pub const AccessList = @import("access_list/access_list.zig");
 pub const hardforks = struct {
     pub const chain_rules = @import("frame.zig").ChainRules;
     pub const hardfork = @import("hardforks/hardfork.zig");
+    pub const HardforkChainRules = @import("hardforks/chain_rules.zig").ChainRules;
 };
 
 /// EVM opcode definitions and utilities

@@ -1,5 +1,6 @@
 const std = @import("std");
 const evm = @import("evm");
+const EvmConfig = evm.EvmConfig;
 const Memory = evm.Memory;
 const testing = std.testing;
 
