@@ -769,7 +769,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
     // No terminator needed for slices
 
     // Resolve jump targets after initial translation, passing the PC to instruction mapping
-    resolveJumpTargets(code, instructions[0..instruction_count], &jumpdest_bitmap, pc_to_instruction) catch {
+    resolveJumpTargets(code, instructions[0..instruction_count], jumpdest_bitmap, pc_to_instruction) catch {
         // If we can't resolve jumps, it's still OK - runtime will handle it
     };
 
