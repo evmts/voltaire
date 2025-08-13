@@ -1,3 +1,19 @@
+//! Memory operations for the Ethereum Virtual Machine
+//!
+//! This module implements memory-related opcodes including MLOAD, MSTORE,
+//! MSTORE8, MSIZE, MCOPY, CALLDATACOPY, CODECOPY, EXTCODECOPY, and RETURNDATACOPY.
+//!
+//! ## Memory Model
+//! - Memory is byte-addressable and expands on demand
+//! - Memory expansion costs gas quadratically
+//! - All memory is initialized to zero
+//! - Memory is local to each execution context
+//!
+//! ## Gas Costs
+//! - MLOAD, MSTORE, MSTORE8: 3 gas + memory expansion
+//! - MSIZE: 2 gas
+//! - Copy operations: 3 gas + 3 per word + memory expansion
+
 const std = @import("std");
 const builtin = @import("builtin");
 const Operation = @import("../opcodes/operation.zig");
@@ -12,6 +28,10 @@ const GasConstants = @import("primitives").GasConstants;
 const SAFE_STACK_CHECKS = builtin.mode != .ReleaseFast and builtin.mode != .ReleaseSmall;
 const SAFE_MEMORY_EXPANSION = builtin.mode != .ReleaseFast and builtin.mode != .ReleaseSmall;
 
+/// MLOAD opcode (0x51) - Load word from memory
+///
+/// Loads 32 bytes from memory starting at the given offset.
+/// Stack: [offset] → [value]
 pub fn op_mload(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
@@ -48,6 +68,10 @@ pub fn op_mload(context: *anyopaque) ExecutionError.Error!void {
     frame.stack.set_top_unsafe(value);
 }
 
+/// MSTORE opcode (0x52) - Store word to memory
+///
+/// Stores 32 bytes to memory starting at the given offset.
+/// Stack: [offset, value] → []
 pub fn op_mstore(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
@@ -90,6 +114,10 @@ pub fn op_mstore(context: *anyopaque) ExecutionError.Error!void {
     }
 }
 
+/// MSTORE8 opcode (0x53) - Store byte to memory
+///
+/// Stores a single byte (LSB of the value) to memory at the given offset.
+/// Stack: [offset, value] → []
 pub fn op_mstore8(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
@@ -127,6 +155,10 @@ pub fn op_mstore8(context: *anyopaque) ExecutionError.Error!void {
     }
 }
 
+/// MSIZE opcode (0x59) - Get size of active memory
+///
+/// Returns the size of active memory in bytes, rounded up to the nearest word (32 bytes).
+/// Stack: [] → [size]
 pub fn op_msize(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
@@ -145,10 +177,13 @@ pub fn op_msize(context: *anyopaque) ExecutionError.Error!void {
     frame.stack.append_unsafe(@as(u256, @intCast(aligned_size)));
 }
 
+/// MCOPY opcode (0x5E) - Copy memory areas
+///
+/// Copies data within memory from source to destination (EIP-5656, Cancun).
+/// Handles overlapping regions correctly.
+/// Stack: [dest, src, length] → []
 pub fn op_mcopy(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
-    // EIP-5656 validation should be handled during bytecode analysis phase,
-    // not at runtime. Invalid MCOPY opcodes should be rejected during code analysis.
 
     if (SAFE_STACK_CHECKS) {
         if (frame.stack.size() < 3) {

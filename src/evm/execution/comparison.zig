@@ -1,3 +1,19 @@
+//! Comparison operations for the Ethereum Virtual Machine
+//!
+//! This module implements all comparison opcodes for the EVM, including
+//! unsigned comparisons (LT, GT), signed comparisons (SLT, SGT),
+//! equality checking (EQ), and zero testing (ISZERO).
+//!
+//! ## Gas Costs
+//! All comparison operations cost 3 gas.
+//!
+//! ## Stack Effects
+//! - Binary comparisons (LT, GT, SLT, SGT, EQ): pop 2, push 1
+//! - Unary comparison (ISZERO): pop 1, push 1
+//!
+//! ## Return Values
+//! All comparison opcodes return 1 for true and 0 for false.
+
 const std = @import("std");
 const ExecutionError = @import("execution_error.zig");
 const Frame = @import("../frame.zig").Frame;
@@ -10,11 +26,10 @@ const Operation = @import("../opcodes/operation.zig");
 const MemoryDatabase = @import("../state/memory_database.zig");
 const Stack = @import("../stack/stack.zig");
 
-/// Comparison operations for the Ethereum Virtual Machine
+/// LT opcode (0x10) - Less than comparison
 ///
-/// This module implements all comparison opcodes for the EVM, including
-/// unsigned comparisons (LT, GT), signed comparisons (SLT, SGT),
-/// equality checking (EQ), and zero testing (ISZERO).
+/// Pops two values and pushes 1 if the first is less than the second, 0 otherwise.
+/// Stack: [a, b] → [a < b]
 pub fn op_lt(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
@@ -36,6 +51,10 @@ pub fn op_lt(context: *anyopaque) ExecutionError.Error!void {
     Log.debug("LT: top(b)={} second(a)={} -> {} (b < a)", .{ top, second_from_top, result });
 }
 
+/// GT opcode (0x11) - Greater than comparison
+///
+/// Pops two values and pushes 1 if the first is greater than the second, 0 otherwise.
+/// Stack: [a, b] → [a > b]
 pub fn op_gt(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
@@ -57,6 +76,11 @@ pub fn op_gt(context: *anyopaque) ExecutionError.Error!void {
     frame.stack.set_top_unsafe(result);
 }
 
+/// SLT opcode (0x12) - Signed less than comparison
+///
+/// Pops two values, interprets them as signed integers, and pushes 1 if the
+/// first is less than the second, 0 otherwise.
+/// Stack: [a, b] → [a < b] (signed)
 pub fn op_slt(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
@@ -81,6 +105,11 @@ pub fn op_slt(context: *anyopaque) ExecutionError.Error!void {
     Log.debug("SLT: top(b)={} second(a)={} -> {} (b < a signed)", .{ top_i256, second_from_top_i256, result });
 }
 
+/// SGT opcode (0x13) - Signed greater than comparison
+///
+/// Pops two values, interprets them as signed integers, and pushes 1 if the
+/// first is greater than the second, 0 otherwise.
+/// Stack: [a, b] → [a > b] (signed)
 pub fn op_sgt(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
@@ -102,6 +131,10 @@ pub fn op_sgt(context: *anyopaque) ExecutionError.Error!void {
     frame.stack.set_top_unsafe(result);
 }
 
+/// EQ opcode (0x14) - Equality comparison
+///
+/// Pops two values and pushes 1 if they are equal, 0 otherwise.
+/// Stack: [a, b] → [a == b]
 pub fn op_eq(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
@@ -117,6 +150,10 @@ pub fn op_eq(context: *anyopaque) ExecutionError.Error!void {
     frame.stack.set_top_unsafe(result);
 }
 
+/// ISZERO opcode (0x15) - Check if zero
+///
+/// Pops one value and pushes 1 if it is zero, 0 otherwise.
+/// Stack: [a] → [a == 0]
 pub fn op_iszero(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 1);
