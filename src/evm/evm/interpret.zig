@@ -93,15 +93,6 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                     return ExecutionError.Error.StackOverflow;
                 }
             },
-            .gas_cost => |cost| {
-                if (frame.gas_remaining < cost) {
-                    @branchHint(.cold);
-                    frame.gas_remaining = 0;
-                    return ExecutionError.Error.OutOfGas;
-                }
-                frame.gas_remaining -= cost;
-                // Fall through to call opcode function outside the switch
-            },
             .dynamic_gas => |dyn_gas| {
                 if (frame.gas_remaining < dyn_gas.static_cost) {
                     @branchHint(.cold);

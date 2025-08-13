@@ -18,7 +18,6 @@ pub const AnalysisArg = union(enum) {
     none,
     word: u256,
     conditional_jump: *const Instruction,
-    gas_cost: u32,
     block_info: BlockInfo,
     dynamic_gas: DynamicGas,
     keccak: struct {
