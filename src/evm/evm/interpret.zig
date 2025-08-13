@@ -25,7 +25,7 @@ const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
 /// Memory: Uses provided Frame, no internal allocations.
 ///
 /// The caller is responsible for creating and managing the Frame and its components.
-pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
+pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     {
         // The interpreter currently depends on frame.host which is a pointer back
         // to self. Because of this state on self should only ever be modified
@@ -288,7 +288,7 @@ test "BEGINBLOCK: upfront OutOfGas when gas < block base cost" {
         false,
         false,
     );
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const result = interpret(&vm, &frame);
     try std.testing.expectError(ExecutionError.Error.OutOfGas, result);
@@ -350,7 +350,7 @@ test "BEGINBLOCK: stack underflow detected at block entry" {
         false,
         false,
     );
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Stack is empty -> should fail at BEGINBLOCK
     const result = interpret(&vm, &frame);
@@ -414,7 +414,7 @@ test "BEGINBLOCK: stack overflow detected from max growth" {
         false,
         false,
     );
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Fill stack to capacity
     var i: usize = 0;
@@ -503,7 +503,7 @@ test "dynamic jump returns 32-byte true" {
         false,
         false,
     );
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     try interpret(&vm, &frame);
     const output = host.get_output();
