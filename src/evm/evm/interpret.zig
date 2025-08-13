@@ -30,7 +30,6 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
 
     const analysis = frame.analysis;
     const instructions = analysis.instructions;
-    const frame_opaque: *anyopaque = @ptrCast(frame);
 
     frame.instruction = &instructions[0];
     var loop_iterations: usize = 0;
@@ -173,7 +172,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             },
         }
 
-        try op_fn(frame_opaque);
+        try op_fn(frame);
         frame.instruction = next_instruction;
     }
 }
