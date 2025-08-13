@@ -15,7 +15,8 @@ const U256 = @import("primitives").Uint(256, 4);
 const SAFE = builtin.mode == .Debug or builtin.mode == .ReleaseSafe;
 const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
 
-/// Execute contract bytecode using block-based execution.
+/// Internal method to execute contract bytecode using block-based execution.
+/// This loop is highly optimized for performance.
 ///
 /// This version translates bytecode to an instruction stream before execution,
 /// enabling better branch prediction and cache locality.
@@ -26,49 +27,53 @@ const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
 /// The caller is responsible for creating and managing the Frame and its components.
 pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     {
+        // The interpreter currently depends on frame.host which is a pointer back
+        // to self. Because of this state on self should only ever be modified
+        // by a single evm run at a time
         self.require_one_thread();
     }
 
+    // This interpreter follows a common practice of interpreters is to use a while true loop and throw errors
+    // to exit from the loop including an expected stop.
     var instruction: *const Instruction = &frame.analysis.instructions[0];
-    var next_instruction: *const Instruction = instruction.next_instruction;
     var loop_iterations: usize = 0;
     while (true) {
-        {
-            if (comptime SAFE) {
-                loop_iterations += 1;
-                if (loop_iterations > MAX_ITERATIONS) {
-                    unreachable;
-                }
+        // In Debug and OptimizeSafe we count and limit iterations
+        if (comptime SAFE) {
+            loop_iterations += 1;
+            if (loop_iterations > MAX_ITERATIONS) {
+                unreachable;
             }
         }
 
-        const arg = instruction.arg;
-        const op_fn = instruction.opcode_fn;
+        const inst: *const Instruction = instruction;
+        const next_inst = inst.next_instruction;
+        const op_fn = inst.opcode_fn;
 
-        {
-            if (comptime build_options.enable_tracing) {
-                if (self.tracer) |writer| {
-                    // Derive index of current instruction for tracing
-                    const base: [*]const @TypeOf(instruction.*) = frame.analysis.instructions.ptr;
-                    const idx = (@intFromPtr(instruction) - @intFromPtr(base)) / @sizeOf(@TypeOf(instruction.*));
-                    if (idx < frame.analysis.inst_to_pc.len) {
-                        const pc_u16 = frame.analysis.inst_to_pc[idx];
-                        if (pc_u16 != std.math.maxInt(u16)) {
-                            const pc: usize = pc_u16;
-                            const opcode: u8 = if (pc < frame.analysis.code_len) frame.analysis.code[pc] else 0x00;
-                            const stack_len: usize = frame.stack.size();
-                            const stack_view: []const u256 = frame.stack.data[0..stack_len];
-                            const gas_cost: u64 = 0; // Block-based validation; per-op gas not tracked here
-                            const mem_size: usize = frame.memory.size();
-                            var tr = Tracer.init(writer);
-                            _ = tr.trace(pc, opcode, stack_view, frame.gas_remaining, gas_cost, mem_size, @intCast(frame.depth)) catch {};
-                        }
+        if (comptime build_options.enable_tracing) {
+            if (self.tracer) |writer| {
+                // Derive index of current instruction for tracing
+                const base: [*]const @TypeOf(inst.*) = frame.analysis.instructions.ptr;
+                const idx = (@intFromPtr(inst) - @intFromPtr(base)) / @sizeOf(@TypeOf(inst.*));
+                if (idx < frame.analysis.inst_to_pc.len) {
+                    const pc_u16 = frame.analysis.inst_to_pc[idx];
+                    if (pc_u16 != std.math.maxInt(u16)) {
+                        const pc: usize = pc_u16;
+                        const opcode: u8 = if (pc < frame.analysis.code_len) frame.analysis.code[pc] else 0x00;
+                        const stack_len: usize = frame.stack.size();
+                        const stack_view: []const u256 = frame.stack.data[0..stack_len];
+                        const gas_cost: u64 = 0; // Block-based validation; per-op gas not tracked here
+                        const mem_size: usize = frame.memory.size();
+                        var tr = Tracer.init(writer);
+                        _ = tr.trace(pc, opcode, stack_view, frame.gas_remaining, gas_cost, mem_size, @intCast(frame.depth)) catch {};
                     }
                 }
             }
         }
 
-        switch (arg) {
+        // Analysis puts any metadata we need to process on Inst.arg
+        switch (inst.arg) {
+            // Most instructions
             .none => {
                 @branchHint(.likely);
             },
@@ -115,12 +120,32 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                     frame.gas_remaining -= additional_gas;
                 }
             },
+            .jump_pc => |pc| {
+                // Fused PUSH+JUMP (PUSH removed). No pops required.
+                if (!frame.valid_jumpdest(pc)) return ExecutionError.Error.InvalidJump;
+                const dest_usize: usize = @intCast(pc);
+                const idx = frame.analysis.pc_to_block_start[dest_usize];
+                if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) return ExecutionError.Error.InvalidJump;
+                instruction = &frame.analysis.instructions[idx];
+                continue;
+            },
+            .conditional_jump_pc => |pc| {
+                // Fused PUSH+JUMPI (PUSH removed). Pop only condition.
+                const condition = frame.stack.pop_unsafe();
+                if (condition != 0) {
+                    if (!frame.valid_jumpdest(pc)) return ExecutionError.Error.InvalidJump;
+                    const dest_usize: usize = @intCast(pc);
+                    const idx = frame.analysis.pc_to_block_start[dest_usize];
+                    if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) return ExecutionError.Error.InvalidJump;
+                    instruction = &frame.analysis.instructions[idx];
+                    continue;
+                }
+            },
             .conditional_jump => |true_target| {
                 const condition = frame.stack.pop_unsafe();
                 if (condition != 0) {
                     @branchHint(.unlikely);
                     instruction = true_target;
-                    next_instruction = instruction.next_instruction;
                     continue;
                 }
             },
@@ -128,8 +153,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 // Analysis resolved the target by wiring next_instruction to the block start.
                 // Pop destination to maintain correct stack behavior (already validated by block checks).
                 _ = frame.stack.pop_unsafe();
-                instruction = next_instruction;
-                next_instruction = instruction.next_instruction;
+                instruction = next_inst;
                 continue;
             },
             // This is a jump that is not known until compile time because
@@ -149,7 +173,6 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                     return ExecutionError.Error.InvalidJump;
                 }
                 instruction = &frame.analysis.instructions[idx];
-                next_instruction = instruction.next_instruction;
                 continue;
             },
             .conditional_jump_unresolved => {
@@ -166,7 +189,6 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                         return ExecutionError.Error.InvalidJump;
                     }
                     instruction = &frame.analysis.instructions[idx];
-                    next_instruction = instruction.next_instruction;
                     continue;
                 }
             },
@@ -202,8 +224,7 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         }
 
         try op_fn(frame);
-        instruction = next_instruction;
-        next_instruction = instruction.next_instruction;
+        instruction = next_inst;
     }
 }
 

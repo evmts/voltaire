@@ -593,13 +593,27 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 pc_to_instruction[pc] = @intCast(instruction_count);
 
                 if (opcode == .JUMP) {
-                    // Tag unresolved initially; resolveJumpTargets will wire next_instruction
-                    instructions[instruction_count] = Instruction{
-                        .opcode_fn = NoopHandler,
-                        .arg = .jump_unresolved,
-                        .next_instruction = undefined, // set later
-                    };
-                    inst_jump_type[instruction_count] = .jump;
+                    // If previous instruction is a PUSH with immediate value, fuse and remove it
+                    if (instruction_count > 0 and instructions[instruction_count - 1].arg == .word) {
+                        const target_pc = instructions[instruction_count - 1].arg.word;
+                        // Remove the PUSH from stream by overwriting it with the JUMP entry
+                        instruction_count -= 1;
+                        pc_to_instruction[pc] = @intCast(instruction_count);
+                        instructions[instruction_count] = Instruction{
+                            .opcode_fn = NoopHandler,
+                            .arg = .{ .jump_pc = target_pc },
+                            .next_instruction = undefined, // set later in resolve
+                        };
+                        inst_jump_type[instruction_count] = .jump;
+                    } else {
+                        // Tag unresolved; resolveJumpTargets will wire next_instruction
+                        instructions[instruction_count] = Instruction{
+                            .opcode_fn = NoopHandler,
+                            .arg = .jump_unresolved,
+                            .next_instruction = undefined, // set later
+                        };
+                        inst_jump_type[instruction_count] = .jump;
+                    }
                 } else {
                     instructions[instruction_count] = Instruction{
                         .opcode_fn = operation.execute,
@@ -639,15 +653,31 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 // Record PC to instruction mapping for JUMPI
                 pc_to_instruction[pc] = @intCast(instruction_count);
 
-                // Tag unresolved initially; resolveJumpTargets will fill conditional_jump target
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = NoopHandler,
-                    .arg = .conditional_jump_unresolved,
-                    .next_instruction = undefined, // set later
-                };
-                inst_jump_type[instruction_count] = .jumpi;
-                instruction_count += 1;
-                pc += 1;
+                // If previous instruction is a PUSH with immediate value, fuse and remove it
+                if (instruction_count > 0 and instructions[instruction_count - 1].arg == .word) {
+                    const target_pc = instructions[instruction_count - 1].arg.word;
+                    // Remove the PUSH from stream and emit fused conditional
+                    instruction_count -= 1;
+                    pc_to_instruction[pc] = @intCast(instruction_count);
+                    instructions[instruction_count] = Instruction{
+                        .opcode_fn = NoopHandler,
+                        .arg = .{ .conditional_jump_pc = target_pc },
+                        .next_instruction = undefined, // set later
+                    };
+                    inst_jump_type[instruction_count] = .jumpi;
+                    instruction_count += 1;
+                    pc += 1;
+                } else {
+                    // Tag unresolved; resolveJumpTargets will set conditional true target
+                    instructions[instruction_count] = Instruction{
+                        .opcode_fn = NoopHandler,
+                        .arg = .conditional_jump_unresolved,
+                        .next_instruction = undefined, // set later
+                    };
+                    inst_jump_type[instruction_count] = .jumpi;
+                    instruction_count += 1;
+                    pc += 1;
+                }
 
                 // Close current block and start new one (for fall-through path)
                 instructions[block.begin_block_index].arg.block_info = block.close();
@@ -1403,7 +1433,7 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
         }
     }
 
-    // Now resolve JUMP and JUMPI targets
+    // Now resolve JUMP and JUMPI targets (including fused immediate variants)
     for (instructions, 0..) |*inst, idx| {
         // Determine original bytecode opcode for this instruction index
         var original_pc: ?usize = null;
@@ -1417,20 +1447,26 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
         if (original_pc) |pc| {
             const opcode_byte = code[pc];
             if (opcode_byte == 0x56 or opcode_byte == 0x57) { // JUMP or JUMPI
-                // Look at the previous instruction for a PUSH value
-                if (idx > 0 and instructions[idx - 1].arg == .word) {
-                    const target_pc = instructions[idx - 1].arg.word;
+                var target_pc_opt: ?u256 = null;
+                // If this instruction is a fused variant, pull target directly
+                switch (inst.arg) {
+                    .jump_pc => |pcimm| target_pc_opt = pcimm,
+                    .conditional_jump_pc => |pcimm| target_pc_opt = pcimm,
+                    else => {
+                        // Otherwise check if previous instruction carried a PUSH immediate
+                        if (idx > 0 and instructions[idx - 1].arg == .word) {
+                            target_pc_opt = instructions[idx - 1].arg.word;
+                        }
+                    },
+                }
 
-                    // Validate the jump target is a valid JUMPDEST
+                if (target_pc_opt) |target_pc| {
                     if (target_pc < code.len and jumpdest_bitmap.isSet(@intCast(target_pc))) {
-                        // Find the BEGINBLOCK for this target PC
                         const block_idx = pc_to_block_start[@intCast(target_pc)];
                         if (block_idx != std.math.maxInt(u16) and block_idx < instructions.len) {
                             if (opcode_byte == 0x57) {
-                                // Conditional: store true target in arg; false is next_instruction (already set)
                                 inst.arg = .{ .conditional_jump = &instructions[block_idx] };
                             } else {
-                                // Unconditional jump is just a noop with next_instruction set
                                 inst.arg = .jump;
                                 inst.next_instruction = &instructions[block_idx];
                             }

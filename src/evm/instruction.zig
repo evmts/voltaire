@@ -20,9 +20,13 @@ pub const AnalysisArg = union(enum) {
     // Unconditional jump variants
     jump, // resolved: pop 1; jump to next_instruction (pre-wired)
     jump_unresolved, // unresolved: pop 1; compute target at runtime
+    // Fused immediate jump variants (PUSH removed)
+    jump_pc: u256, // known target PC; will be resolved to .jump in resolve phase
     // Conditional jump variants
     conditional_jump: *const Instruction, // resolved true branch target
     conditional_jump_unresolved, // unresolved: compute target at runtime when condition true
+    // Fused conditional jump (PUSH removed)
+    conditional_jump_pc: u256, // known target PC; will be resolved to .conditional_jump in resolve phase
     block_info: BlockInfo,
     dynamic_gas: DynamicGas,
     keccak: struct {
