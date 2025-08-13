@@ -21,7 +21,10 @@ test "EVM can be initialized successfully" {
     // Initialize EVM with defaults
     const config = comptime evm.EvmConfig.init(.CANCUN);
     const EvmType = evm.configureEvm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, // context
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -48,7 +51,10 @@ test "EVM state can read and write balances" {
     // Initialize EVM
     const config = comptime evm.EvmConfig.init(.CANCUN);
     const EvmType = evm.configureEvm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, // context
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -90,7 +96,10 @@ test "EVM state can read and write storage" {
     // Initialize EVM
     const config = comptime evm.EvmConfig.init(.CANCUN);
     const EvmType = evm.configureEvm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, // context
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -131,7 +140,10 @@ test "EVM state can read and write code" {
     // Initialize EVM
     const config = comptime evm.EvmConfig.init(.CANCUN);
     const EvmType = evm.configureEvm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, // context
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -172,7 +184,10 @@ test "EVM state can read and write nonces" {
     // Initialize EVM
     const config = comptime evm.EvmConfig.init(.CANCUN);
     const EvmType = evm.configureEvm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, // context
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -212,7 +227,10 @@ test "EVM state can handle transient storage" {
     // Initialize EVM
     const config = comptime evm.EvmConfig.init(.CANCUN);
     const EvmType = evm.configureEvm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, // context
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -258,7 +276,10 @@ test "EVM state can emit and track logs" {
     // Initialize EVM
     const config = comptime evm.EvmConfig.init(.CANCUN);
     const EvmType = evm.configureEvm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, // context
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -307,7 +328,10 @@ test "EVM state persistence across operations" {
     // Initialize EVM
     const config = comptime evm.EvmConfig.init(.CANCUN);
     const EvmType = evm.configureEvm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, // context
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -373,7 +397,10 @@ test "Simple contract execution with PUSH and POP operations" {
     // Initialize EVM
     const config = comptime evm.EvmConfig.init(.CANCUN);
     const EvmType = evm.configureEvm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, // context
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -430,7 +457,10 @@ test "Contract with basic stack operations" {
     // Initialize EVM
     const config = comptime evm.EvmConfig.init(.CANCUN);
     const EvmType = evm.configureEvm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, // context
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -496,7 +526,10 @@ test "Contract execution with PUSH0 operation" {
     // Initialize EVM
     const config = comptime evm.EvmConfig.init(.CANCUN);
     const EvmType = evm.configureEvm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, // context
+    var vm = try EvmType.init(
+        allocator,
+        db_interface,
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
