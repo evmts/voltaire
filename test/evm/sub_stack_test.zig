@@ -20,9 +20,8 @@ test "trace SUB operation step by step" {
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    const config = evm.EvmConfig.init(.CANCUN);
-    const EvmType = evm.Evm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try builder.build();
     defer vm.deinit();
     
     const caller = evm.primitives.Address.from_u256(0x1000000000000000000000000000000000000001);

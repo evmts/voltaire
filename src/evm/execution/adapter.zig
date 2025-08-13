@@ -1,8 +1,15 @@
 const ExecutionError = @import("execution_error.zig");
 const Frame = @import("../frame.zig").Frame;
 const Operation = @import("../opcodes/operation.zig");
+const Stack = @import("../stack/stack.zig");
 const GasConstants = @import("primitives").GasConstants;
 const std = @import("std");
+
+/// Wrapper for opcode handlers that accept Frame
+pub fn call_ctx(comptime OpFn: *const fn (*Frame) ExecutionError.Error!void, context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
+    return OpFn(frame);
+}
 
 /// Wrapper for opcode handlers that accept *anyopaque
 pub fn call_any(comptime OpFn: *const fn (*anyopaque) ExecutionError.Error!void, context: *anyopaque) ExecutionError.Error!void {
@@ -13,7 +20,7 @@ pub fn call_any(comptime OpFn: *const fn (*anyopaque) ExecutionError.Error!void,
 pub fn op_returndatasize_adapter(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     
-    if (frame.stack.size() >= 1024) {
+    if (frame.stack.size() >= Stack.CAPACITY) {
         @branchHint(.cold);
         unreachable;
     }

@@ -2,8 +2,7 @@ const std = @import("std");
 const ExecutionError = @import("../execution/execution_error.zig");
 const Frame = @import("../frame.zig").Frame;
 const Log = @import("../log.zig");
-const EvmModule = @import("../evm.zig");
-const EvmConfig = @import("../config.zig").EvmConfig;
+const Evm = @import("../evm.zig");
 const builtin = @import("builtin");
 
 const SAFE = builtin.mode == .Debug or builtin.mode == .ReleaseSafe;
@@ -18,9 +17,7 @@ const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
 /// Memory: Uses provided Frame, no internal allocations.
 ///
 /// The caller is responsible for creating and managing the Frame and its components.
-pub fn interpret(comptime config: EvmConfig) type {
-    return struct {
-        pub inline fn interpretImpl(self: *EvmModule.configureEvm(config), frame: *Frame) ExecutionError.Error!void {
+pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     self.require_one_thread();
 
     Log.debug("[interpret] Starting with {} instructions, gas={}", .{ frame.analysis.instructions.len, frame.gas_remaining });
@@ -224,8 +221,6 @@ pub fn interpret(comptime config: EvmConfig) type {
     }
 
     Log.debug("[interpret] Reached end of instructions without STOP/RETURN, current_index={}, len={}", .{ current_index, instructions.len });
-        }
-    };
 }
 
 test "BEGINBLOCK: upfront OutOfGas when gas < block base cost" {
@@ -250,9 +245,7 @@ test "BEGINBLOCK: upfront OutOfGas when gas < block base cost" {
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
 
-    const DefaultConfig = EvmConfig.init(.CANCUN);
-    const DefaultEvm = EvmModule.configureEvm(DefaultConfig);
-    var vm = try DefaultEvm.init(allocator, db_interface, null, 0, false, null);
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     var access_list = AccessList.init(allocator, @import("../access_list/context.zig").Context.init());
@@ -292,7 +285,7 @@ test "BEGINBLOCK: upfront OutOfGas when gas < block base cost" {
     );
     defer frame.deinit();
 
-    const result = vm.interpret(&frame);
+    const result = interpret(&vm, &frame);
     try std.testing.expectError(ExecutionError.Error.OutOfGas, result);
 }
 
@@ -316,9 +309,7 @@ test "BEGINBLOCK: stack underflow detected at block entry" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
-    const DefaultConfig = EvmConfig.init(.CANCUN);
-    const DefaultEvm = EvmModule.configureEvm(DefaultConfig);
-    var vm = try DefaultEvm.init(allocator, db_interface, null, 0, false, null);
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     var access_list = AccessList.init(allocator, @import("../access_list/context.zig").Context.init());
@@ -358,7 +349,7 @@ test "BEGINBLOCK: stack underflow detected at block entry" {
     defer frame.deinit();
 
     // Stack is empty -> should fail at BEGINBLOCK
-    const result = vm.interpret(&frame);
+    const result = interpret(&vm, &frame);
     try std.testing.expectError(ExecutionError.Error.StackUnderflow, result);
 }
 
@@ -383,9 +374,7 @@ test "BEGINBLOCK: stack overflow detected from max growth" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
-    const DefaultConfig = EvmConfig.init(.CANCUN);
-    const DefaultEvm = EvmModule.configureEvm(DefaultConfig);
-    var vm = try DefaultEvm.init(allocator, db_interface, null, 0, false, null);
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     var access_list = AccessList.init(allocator, @import("../access_list/context.zig").Context.init());
@@ -430,6 +419,6 @@ test "BEGINBLOCK: stack overflow detected from max growth" {
         frame.stack.append_unsafe(0);
     }
 
-    const result = vm.interpret(&frame);
+    const result = interpret(&vm, &frame);
     try std.testing.expectError(ExecutionError.Error.StackOverflow, result);
 }

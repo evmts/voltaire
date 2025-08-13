@@ -41,9 +41,8 @@ test "Security: Stack overflow protection across all operation types" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test cases that trigger stack overflow with various operation patterns
@@ -103,9 +102,8 @@ test "Security: Stack underflow protection across all operation types" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test cases that require specific stack items but receive fewer
@@ -191,9 +189,8 @@ test "Security: SWAP operations at stack capacity should succeed" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -238,9 +235,8 @@ test "Security: Stack boundary conditions at exactly 1024 elements" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -293,9 +289,8 @@ test "Security: Memory bounds checking with invalid offsets" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const memory_test_cases = [_]struct {
@@ -379,9 +374,8 @@ test "Security: Memory expansion limit enforcement (32MB default)" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -426,9 +420,8 @@ test "Security: Memory gas cost grows quadratically" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const memory_sizes = [_]usize{ 32, 64, 128, 256 }; // Small safe sizes
@@ -485,9 +478,8 @@ test "Security: Gas limit enforcement across operation categories" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const gas_test_cases = [_]struct {
@@ -548,9 +540,8 @@ test "Security: Gas exhaustion in complex operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test CALL with insufficient gas for value transfer
@@ -606,9 +597,8 @@ test "Security: Gas refund limits and calculations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test SSTORE gas refund behavior
@@ -669,9 +659,8 @@ test "Security: Call depth limit enforcement at 1024 levels" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const call_opcodes = [_]struct {
@@ -767,9 +756,8 @@ test "Security: Depth tracking in nested calls" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test depth increases correctly in nested calls
@@ -838,9 +826,8 @@ test "Security: Arithmetic operations handle integer overflow correctly" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const overflow_test_cases = [_]struct {
@@ -903,9 +890,8 @@ test "Security: Division by zero handling" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const division_test_cases = [_]struct {
@@ -967,9 +953,8 @@ test "Security: Modular arithmetic overflow protection" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test ADDMOD and MULMOD with large values
@@ -1045,9 +1030,8 @@ test "Security: Zero-value transfer handling" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test CALL with zero value
@@ -1104,9 +1088,8 @@ test "Security: Zero-value CREATE operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -1157,9 +1140,8 @@ test "Security: Empty contract code execution" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Create contract with empty code
@@ -1198,9 +1180,8 @@ test "Security: CALL to empty contract" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -1257,9 +1238,8 @@ test "Security: Self-call detection and handling" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -1310,9 +1290,8 @@ test "Security: Reentrancy with depth tracking" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -1370,9 +1349,8 @@ test "Security: Invalid jump destination handling" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const invalid_jump_tests = [_]struct {
@@ -1436,9 +1414,8 @@ test "Security: Valid jump destination validation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Create bytecode with valid JUMPDEST
@@ -1519,9 +1496,8 @@ test "Security: Static call protection for state modification" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     const state_modifying_opcodes = [_]struct {
@@ -1587,9 +1563,8 @@ test "Security: Combined boundary conditions stress test" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Test multiple security boundaries simultaneously:
@@ -1651,9 +1626,8 @@ test "Security: Attack vector simulation - DoS via resource exhaustion" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try builder.build();
     defer evm.deinit();
 
     // Simulate potential DoS attack: create many contracts to exhaust resources

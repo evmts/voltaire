@@ -1,7 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
-const EvmConfig = Evm.EvmConfig;
 const Stack = Evm.Stack;
 const OpcodeMetadata = Evm.OpcodeMetadata;
 const ExecutionError = Evm.ExecutionError;
@@ -48,7 +47,7 @@ test "Stack validation: PUSH operations" {
 
     // Fill stack to capacity
     var i: usize = 0;
-    while (i < 1024) : (i += 1) {
+    while (i < Stack.CAPACITY) : (i += 1) {
         stack.append_unsafe(i);
     }
 
@@ -75,7 +74,7 @@ test "Stack validation: DUP operations" {
     try stack_validation.validate_stack_requirements(&stack, dup1_op);
 
     // Test overflow - fill stack to capacity
-    while (stack.size() < 1024) {
+    while (stack.size() < Stack.CAPACITY) {
         stack.append_unsafe(1);
     }
     try testing.expectError(ExecutionError.Error.StackOverflow, stack_validation.validate_stack_requirements(&stack, dup1_op));
@@ -93,42 +92,40 @@ test "Stack validation: SWAP operations" {
     defer stack.deinit();
 
     // Test validation patterns
-    // TODO: Fix this - ValidationPatterns expects stack module, not Stack type
-    // try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.ValidationPatterns.validate_swap(&stack, 1));
+    try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.ValidationPatterns.validate_swap(&stack, 1));
 
     // Add items
     try stack.append(10);
     try stack.append(20);
 
     // Should pass now
-    // TODO: Fix this - ValidationPatterns expects stack module, not Stack type
-    // try stack_validation.ValidationPatterns.validate_swap(&stack, 1);
+    try stack_validation.ValidationPatterns.validate_swap(&stack, 1);
 }
 
 test "Stack validation: max_stack calculations" {
     // Test correct max_stack values for different operation types
 
     // Binary operations (pop 2, push 1) - net effect -1
-    try testing.expectEqual(@as(u32, 1024), stack_validation.calculate_max_stack(2, 1));
+    try testing.expectEqual(@as(u32, Stack.CAPACITY), stack_validation.calculate_max_stack(2, 1));
 
     // PUSH operations (pop 0, push 1) - net effect +1
-    try testing.expectEqual(@as(u32, 1024 - 1), stack_validation.calculate_max_stack(0, 1));
+    try testing.expectEqual(@as(u32, Stack.CAPACITY - 1), stack_validation.calculate_max_stack(0, 1));
 
     // DUP operations (pop 0, push 1) - net effect +1
-    try testing.expectEqual(@as(u32, 1024 - 1), stack_validation.calculate_max_stack(0, 1));
+    try testing.expectEqual(@as(u32, Stack.CAPACITY - 1), stack_validation.calculate_max_stack(0, 1));
 
     // POP operation (pop 1, push 0) - net effect -1
-    try testing.expectEqual(@as(u32, 1024), stack_validation.calculate_max_stack(1, 0));
+    try testing.expectEqual(@as(u32, Stack.CAPACITY), stack_validation.calculate_max_stack(1, 0));
 
     // SWAP/Comparison operations (pop n, push n) - net effect 0
-    try testing.expectEqual(@as(u32, 1024), stack_validation.calculate_max_stack(2, 2));
+    try testing.expectEqual(@as(u32, Stack.CAPACITY), stack_validation.calculate_max_stack(2, 2));
 
     // Complex operations
     // ADDMOD (pop 3, push 1) - net effect -2
-    try testing.expectEqual(@as(u32, 1024), stack_validation.calculate_max_stack(3, 1));
+    try testing.expectEqual(@as(u32, Stack.CAPACITY), stack_validation.calculate_max_stack(3, 1));
 
     // CALL-like operations that pop 7 and push 1 - net effect -6
-    try testing.expectEqual(@as(u32, 1024), stack_validation.calculate_max_stack(7, 1));
+    try testing.expectEqual(@as(u32, Stack.CAPACITY), stack_validation.calculate_max_stack(7, 1));
 }
 
 test "Stack validation: opcode metadata stack requirements verification" {
@@ -140,7 +137,7 @@ test "Stack validation: opcode metadata stack requirements verification" {
     // Test ADD operation requirements
     const add_op = table.get_operation(0x01);
     try testing.expectEqual(@as(u32, 2), add_op.min_stack);
-    try testing.expectEqual(@as(u32, 1024), add_op.max_stack);
+    try testing.expectEqual(@as(u32, Stack.CAPACITY), add_op.max_stack);
 
     // Test with a simple stack
     var stack = try Stack.init(testing.allocator);
@@ -160,10 +157,10 @@ test "Stack validation: opcode metadata stack requirements verification" {
     // Test PUSH1 operation
     const push1_op = table.get_operation(0x60);
     try testing.expectEqual(@as(u32, 0), push1_op.min_stack);
-    try testing.expectEqual(@as(u32, 1024 - 1), push1_op.max_stack);
+    try testing.expectEqual(@as(u32, Stack.CAPACITY - 1), push1_op.max_stack);
 
     // Test at capacity
-    stack.set_size_unsafe(1024);
+    stack.set_size_unsafe(Stack.CAPACITY);
     try testing.expectError(ExecutionError.Error.StackOverflow, stack_validation.validate_stack_requirements(&stack, push1_op));
 }
 

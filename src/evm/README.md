@@ -131,9 +131,7 @@ defer memory_db.deinit();
 
 // Create VM
 const db_interface = memory_db.to_database_interface();
-const config = EvmConfig.DEFAULT;
-const EvmType = evm.configureEvm(config);
-var vm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+var vm = try Evm.Evm.init(allocator, db_interface);
 defer vm.deinit();
 
 // Deploy contract

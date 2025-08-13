@@ -5,8 +5,6 @@ const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const CallParams = Evm.Host.CallParams;
 const CallResult = Evm.CallResult;
-const Contract = Evm.Contract;
-const Frame = Evm.Frame;
 const MemoryDatabase = Evm.MemoryDatabase;
 const ExecutionError = Evm.ExecutionError;
 
@@ -23,9 +21,7 @@ test "AND (0x16): Basic bitwise AND" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -72,9 +68,7 @@ test "AND: All zeros" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -119,9 +113,7 @@ test "AND: All ones" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -167,9 +159,7 @@ test "AND: Masking operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -218,9 +208,7 @@ test "OR (0x17): Basic bitwise OR" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -265,9 +253,7 @@ test "OR: With zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -312,9 +298,7 @@ test "OR: Setting bits" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -363,9 +347,7 @@ test "XOR (0x18): Basic bitwise XOR" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -410,9 +392,7 @@ test "XOR: Self XOR equals zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -457,9 +437,7 @@ test "XOR: Toggle bits" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -508,9 +486,7 @@ test "NOT (0x19): Basic bitwise NOT" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -554,9 +530,7 @@ test "NOT: Invert all bits" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -600,9 +574,7 @@ test "NOT: Double NOT returns original" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -657,9 +629,7 @@ test "BYTE (0x1A): Extract first byte" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -704,9 +674,7 @@ test "BYTE: Extract last byte" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -751,9 +719,7 @@ test "BYTE: Out of bounds returns zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -798,9 +764,7 @@ test "BYTE: Extract from full u256" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -853,9 +817,7 @@ test "Bitwise opcodes: Gas consumption" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const test_cases = [_]struct {
@@ -961,9 +923,7 @@ test "Bitwise opcodes: Stack underflow" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const binary_ops = [_]u8{ 0x16, 0x17, 0x18, 0x1A }; // AND, OR, XOR, BYTE
@@ -1050,9 +1010,7 @@ test "Bitwise operations: Large values" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;
@@ -1100,9 +1058,7 @@ test "BYTE: Byte extraction patterns" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller: Address.Address = [_]u8{0x11} ** 20;

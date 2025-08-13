@@ -2,7 +2,6 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm");
 const Address = @import("Address").Address;
-const configureEvm = Evm.configureEvm;
 const MemoryDatabase = @import("evm").MemoryDatabase;
 const CallParams = @import("evm").CallParams;
 
@@ -16,9 +15,7 @@ test "JUMPI should take jump when condition is non-zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = comptime Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller = Address.from_u256(0x1000000000000000000000000000000000000001);
@@ -75,9 +72,7 @@ test "JUMPI should NOT jump when condition is zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = comptime Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const caller = Address.from_u256(0x1000000000000000000000000000000000000001);

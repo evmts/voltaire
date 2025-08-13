@@ -10,36 +10,13 @@ const SelfDestruct = @import("../self_destruct.zig").SelfDestruct;
 const CreatedContracts = @import("../created_contracts.zig").CreatedContracts;
 const Host = @import("../host.zig").Host;
 const CodeAnalysis = @import("../analysis.zig");
-const EvmModule = @import("../evm.zig");
-const EvmConfig = @import("../config.zig").EvmConfig;
-const interpret_module = @import("interpret.zig");
+const Evm = @import("../evm.zig");
+const interpret = @import("interpret.zig").interpret;
 const MAX_CODE_SIZE = @import("../opcodes/opcode.zig").MAX_CODE_SIZE;
 const MAX_CALL_DEPTH = @import("../constants/evm_limits.zig").MAX_CALL_DEPTH;
 const primitives = @import("primitives");
 const precompiles = @import("../precompiles/precompiles.zig");
 const precompile_addresses = @import("../precompiles/precompile_addresses.zig");
-const HardforkChainRules = @import("../hardforks/chain_rules.zig").ChainRules;
-
-/// Convert hardforks.ChainRules to frame.ChainRules
-fn convertChainRules(hardfork_rules: HardforkChainRules) ChainRules {
-    return ChainRules{
-        .is_homestead = hardfork_rules.is_homestead,
-        .is_byzantium = hardfork_rules.is_byzantium,
-        .is_constantinople = hardfork_rules.is_constantinople,
-        .is_petersburg = hardfork_rules.is_petersburg,
-        .is_istanbul = hardfork_rules.is_istanbul,
-        .is_berlin = hardfork_rules.is_berlin,
-        .is_london = hardfork_rules.is_london,
-        .is_merge = hardfork_rules.is_merge,
-        .is_shanghai = hardfork_rules.is_shanghai,
-        .is_cancun = hardfork_rules.is_cancun,
-        .is_prague = hardfork_rules.is_prague,
-        .is_eip1153 = hardfork_rules.is_eip1153,
-        .is_eip3855 = hardfork_rules.is_eip3855,
-        .is_eip4844 = hardfork_rules.is_eip4844,
-        .is_eip6780 = hardfork_rules.is_cancun, // EIP-6780 is part of Cancun
-    };
-}
 const CallResult = @import("call_result.zig").CallResult;
 const CallParams = @import("../host.zig").CallParams;
 const CallJournal = @import("../call_frame_stack.zig").CallJournal;
@@ -53,9 +30,7 @@ const MAX_STACK_BUFFER_SIZE = 43008; // 42KB with alignment padding
 // 128 KB is about the limit most rpc providers limit call data to so we use it as the default
 pub const MAX_INPUT_SIZE: u18 = 128 * 1024; // 128 kb
 
-pub fn call(comptime config: EvmConfig) type {
-    return struct {
-        pub fn callImpl(self: *EvmModule.configureEvm(config), params: CallParams) ExecutionError.Error!CallResult {
+pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResult {
     const Log = @import("../log.zig");
     Log.debug("[call] Starting call execution", .{});
 
@@ -121,14 +96,14 @@ pub fn call(comptime config: EvmConfig) type {
     var analysis_owned = false;
     var analysis_ptr: *CodeAnalysis = if (self.analysis_cache) |*cache| blk: {
         Log.debug("[call] Using analysis cache for code analysis", .{});
-        break :blk cache.getOrAnalyze(call_info.code[0..call_info.code_size], &config.opcodes) catch |err| {
+        break :blk cache.getOrAnalyze(call_info.code[0..call_info.code_size], &self.table) catch |err| {
             Log.err("[call] Cached code analysis failed: {}", .{err});
             return CallResult{ .success = false, .gas_left = call_info.gas, .output = &.{} };
         };
     } else blk: {
         Log.debug("[call] No cache available, analyzing code directly", .{});
         // Fallback to direct analysis if no cache
-        var analysis_val = CodeAnalysis.from_code(self.allocator, call_info.code[0..call_info.code_size], &config.opcodes) catch |err| {
+        var analysis_val = CodeAnalysis.from_code(self.allocator, call_info.code[0..call_info.code_size], &self.table) catch |err| {
             Log.err("[call] Code analysis failed: {}", .{err});
             return CallResult{ .success = false, .gas_left = call_info.gas, .output = &.{} };
         };
@@ -198,7 +173,7 @@ pub fn call(comptime config: EvmConfig) type {
             &host,
             0, // snapshot_id
             self.state.database,
-            convertChainRules(self.chain_rules),
+            ChainRules{},
             &self.self_destruct,
             &self.created_contracts,
             call_info.input, // input
@@ -226,7 +201,7 @@ pub fn call(comptime config: EvmConfig) type {
         const new_depth = self.current_frame_depth + 1;
 
         // Check call depth limit
-        if (new_depth >= config.max_call_depth) {
+        if (new_depth >= MAX_CALL_DEPTH) {
             return CallResult{ .success = false, .gas_left = call_info.gas, .output = &.{} };
         }
 
@@ -234,7 +209,7 @@ pub fn call(comptime config: EvmConfig) type {
         if (self.frame_stack) |frames| {
             if (new_depth >= frames.len) {
                 // Need to grow the frame stack
-                const new_capacity = @min(frames.len * 2, config.max_call_depth);
+                const new_capacity = @min(frames.len * 2, MAX_CALL_DEPTH);
                 const new_frames = try self.allocator.realloc(frames, new_capacity);
                 self.frame_stack = new_frames;
             }
@@ -261,7 +236,7 @@ pub fn call(comptime config: EvmConfig) type {
             &host,
             self.journal.create_snapshot(), // new snapshot for revertibility
             self.state.database,
-            convertChainRules(self.chain_rules),
+            ChainRules{},
             &self.self_destruct,
             &self.created_contracts,
             call_info.input, // input
@@ -302,8 +277,7 @@ pub fn call(comptime config: EvmConfig) type {
 
     // Execute and normalize result handling so we can always clean up the frame
     var exec_err: ?ExecutionError.Error = null;
-    const interpretImpl = interpret_module.interpret(config).interpretImpl;
-    interpretImpl(self, current_frame) catch |err| {
+    interpret(self, current_frame) catch |err| {
         Log.debug("[call] Interpret ended with error: {}", .{err});
         exec_err = err;
     };
@@ -346,7 +320,5 @@ pub fn call(comptime config: EvmConfig) type {
         .success = success,
         .gas_left = gas_remaining,
         .output = output,
-    };
-        }
     };
 }

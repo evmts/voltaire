@@ -23,11 +23,11 @@ test "STOP (0x00): Halt execution" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(
+    var evm = try Evm.Evm.init(
         allocator,
         db_interface,
+        null, // table
+        null, // chain_rules
         null, // context
         0, // depth
         false, // read_only
@@ -74,11 +74,11 @@ test "ADD (0x01): Basic addition" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(
+    var evm = try Evm.Evm.init(
         allocator,
         db_interface,
+        null, // table
+        null, // chain_rules
         null, // context
         0, // depth
         false, // read_only
@@ -122,11 +122,11 @@ test "ADD: Overflow wraps to zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(
+    var evm = try Evm.Evm.init(
         allocator,
         db_interface,
+        null, // table
+        null, // chain_rules
         null, // context
         0, // depth
         false, // read_only
@@ -187,9 +187,7 @@ test "ADD: Large numbers" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -242,9 +240,7 @@ test "MUL (0x02): Basic multiplication" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -290,9 +286,7 @@ test "MUL: Multiplication by zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -338,9 +332,7 @@ test "MUL: Overflow behavior" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -392,9 +384,7 @@ test "SUB (0x03): Basic subtraction" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -441,9 +431,7 @@ test "SUB: Underflow wraps to max" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -494,9 +482,7 @@ test "DIV (0x04): Basic division" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -543,9 +529,7 @@ test "DIV: Division by zero returns zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -592,9 +576,7 @@ test "DIV: Integer division truncates" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -645,9 +627,7 @@ test "SDIV (0x05): Signed division positive" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -694,9 +674,7 @@ test "SDIV: Signed division negative" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -746,9 +724,7 @@ test "SDIV: Division by zero returns zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -795,9 +771,7 @@ test "SDIV: Edge case MIN / -1" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -850,9 +824,7 @@ test "MOD (0x06): Basic modulo" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -899,9 +871,7 @@ test "MOD: Modulo by zero returns zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -952,9 +922,7 @@ test "SMOD (0x07): Signed modulo positive" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1001,9 +969,7 @@ test "SMOD: Signed modulo negative" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1056,9 +1022,7 @@ test "ADDMOD (0x08): Basic modular addition" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1106,9 +1070,7 @@ test "ADDMOD: Modulo zero returns zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1156,9 +1118,7 @@ test "ADDMOD: No intermediate overflow" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1215,9 +1175,7 @@ test "MULMOD (0x09): Basic modular multiplication" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1265,9 +1223,7 @@ test "MULMOD: No intermediate overflow" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1321,9 +1277,7 @@ test "EXP (0x0A): Basic exponentiation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1370,9 +1324,7 @@ test "EXP: Zero exponent" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1419,9 +1371,7 @@ test "EXP: Zero base with non-zero exponent" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1468,9 +1418,7 @@ test "EXP: Gas consumption scales with exponent size" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1525,9 +1473,7 @@ test "SIGNEXTEND (0x0B): Extend positive byte" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1574,9 +1520,7 @@ test "SIGNEXTEND: Extend negative byte" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1625,9 +1569,7 @@ test "SIGNEXTEND: Extend from higher byte position" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1675,9 +1617,7 @@ test "SIGNEXTEND: Byte position >= 31 returns value unchanged" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1729,9 +1669,7 @@ test "Arithmetic opcodes: Gas consumption" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -1821,9 +1759,7 @@ test "Arithmetic opcodes: Stack underflow" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 

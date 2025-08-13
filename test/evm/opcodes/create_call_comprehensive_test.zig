@@ -24,9 +24,7 @@ test "CREATE (0xF0): Basic contract creation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -97,9 +95,7 @@ test "CREATE: Static call protection" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -150,9 +146,7 @@ test "CREATE: EIP-3860 initcode size limit" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -203,9 +197,7 @@ test "CREATE: Depth limit" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -264,9 +256,7 @@ test "CREATE2 (0xF5): Deterministic contract creation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -337,9 +327,7 @@ test "CALL (0xF1): Basic external call" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -396,9 +384,7 @@ test "CALL: Value transfer in static context" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -453,9 +439,7 @@ test "CALL: Cold address access (EIP-2929)" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -518,9 +502,7 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -580,9 +562,7 @@ test "DELEGATECALL (0xF4): Execute with current context" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -646,9 +626,7 @@ test "STATICCALL (0xFA): Read-only external call" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -707,9 +685,7 @@ test "System opcodes: Gas consumption" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -772,9 +748,7 @@ test "CALL operations: Depth limit" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -846,9 +820,7 @@ test "CREATE/CREATE2: Failed creation scenarios" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 

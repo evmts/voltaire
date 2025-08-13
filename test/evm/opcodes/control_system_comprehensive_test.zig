@@ -22,9 +22,7 @@ test "RETURN (0xF3): Return data from execution" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -86,9 +84,7 @@ test "RETURN: Empty return data" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -148,9 +144,7 @@ test "REVERT (0xFD): Revert with data" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -212,9 +206,7 @@ test "REVERT: Empty revert data" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -276,9 +268,7 @@ test "INVALID (0xFE): Consume all gas and fail" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -332,9 +322,7 @@ test "SELFDESTRUCT (0xFF): Schedule contract destruction" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -408,9 +396,7 @@ test "SELFDESTRUCT: Static call protection" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -459,9 +445,7 @@ test "SELFDESTRUCT: Cold beneficiary address (EIP-2929)" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -519,9 +503,7 @@ test "Control opcodes: Gas consumption" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -576,9 +558,7 @@ test "RETURN/REVERT: Large memory offset" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -635,9 +615,7 @@ test "RETURN/REVERT: Stack underflow" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -686,9 +664,7 @@ test "Control flow interaction: Call with REVERT" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    const config = Evm.EvmConfig.init(.CANCUN);
-    const EvmType = Evm.Evm(config);
-    var evm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 

@@ -9,9 +9,7 @@ test "fuzz_environment_address_operations" {
     var db = evm.MemoryDatabase.init(allocator);
     defer db.deinit();
     
-    const config = evm.EvmConfig.init(.CANCUN);
-    const EvmType = evm.Evm(config);
-    var vm = try EvmType.init(allocator, db.to_database_interface(), null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db.to_database_interface());
     defer vm.deinit();
     
     const contract_address = primitives.Address.from_u256(0x1234567890ABCDEF);
@@ -52,9 +50,7 @@ test "fuzz_environment_caller_operations" {
     var db = evm.MemoryDatabase.init(allocator);
     defer db.deinit();
     
-    const config = evm.EvmConfig.init(.CANCUN);
-    const EvmType = evm.Evm(config);
-    var vm = try EvmType.init(allocator, db.to_database_interface(), null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db.to_database_interface());
     defer vm.deinit();
     
     const caller_address = primitives.Address.from_u256(0xABCDEF1234567890);
@@ -95,9 +91,7 @@ test "fuzz_environment_callvalue_operations" {
     var db = evm.MemoryDatabase.init(allocator);
     defer db.deinit();
     
-    const config = evm.EvmConfig.init(.CANCUN);
-    const EvmType = evm.Evm(config);
-    var vm = try EvmType.init(allocator, db.to_database_interface(), null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db.to_database_interface());
     defer vm.deinit();
     
     const call_value: u256 = 1000000000000000000; // 1 ETH in wei
@@ -138,9 +132,7 @@ test "fuzz_environment_codesize_operations" {
     var db = evm.MemoryDatabase.init(allocator);
     defer db.deinit();
     
-    const config = evm.EvmConfig.init(.CANCUN);
-    const EvmType = evm.Evm(config);
-    var vm = try EvmType.init(allocator, db.to_database_interface(), null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db.to_database_interface());
     defer vm.deinit();
     
     const test_code = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01 }; // Simple bytecode

@@ -23,9 +23,7 @@ fn create_evm_context_with_env(allocator: std.mem.Allocator, env_config: struct 
     frame: evm.Frame,
 } {
     var db = evm.MemoryDatabase.init(allocator);
-    const config = evm.EvmConfig.init(.CANCUN);
-    const EvmType = evm.Evm(config);
-    var vm = try EvmType.init(allocator, db.to_database_interface(), null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db.to_database_interface(), null, null);
     
     const test_code = [_]u8{0x01}; // Simple ADD opcode
     

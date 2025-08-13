@@ -99,10 +99,7 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = if (builtin.target.cpu.arch == .wasm32) std.heap.wasm_allocator else gpa.allocator();
 
 // Global VM instance
-// Use CANCUN hardfork as default for C API
-const DefaultEvmConfig = evm_root.EvmConfig.init(.CANCUN);
-const DefaultEvm = evm_root.Evm(DefaultEvmConfig);
-var vm_instance: ?*DefaultEvm = null;
+var vm_instance: ?*evm_root.Evm = null;
 
 // C-compatible error codes
 const GuillotineError = enum(c_int) {
@@ -137,12 +134,14 @@ export fn guillotine_init() c_int {
     var memory_db = MemoryDatabase.init(allocator);
     const db_interface = memory_db.to_database_interface();
 
-    const vm = allocator.create(DefaultEvm) catch {
+    const vm = allocator.create(evm_root.Evm) catch {
         log(.err, .guillotine_c, "Failed to allocate memory for VM", .{});
         return @intFromEnum(GuillotineError.GUILLOTINE_ERROR_MEMORY);
     };
 
-    vm.* = DefaultEvm.init(allocator, db_interface, null, // context
+    vm.* = evm_root.Evm.init(allocator, db_interface, null, // table
+        null, // chain_rules
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -268,7 +267,7 @@ pub const GuillotineExecutionResult = extern struct {
 
 // Internal VM structure
 const VmState = struct {
-    vm: *DefaultEvm,
+    vm: *evm_root.Evm,
     memory_db: *MemoryDatabase,
     allocator: std.mem.Allocator,
 };
@@ -287,14 +286,16 @@ export fn guillotine_vm_create() ?*GuillotineVm {
     state.memory_db.* = MemoryDatabase.init(alloc);
 
     const db_interface = state.memory_db.to_database_interface();
-    state.vm = alloc.create(DefaultEvm) catch {
+    state.vm = alloc.create(evm_root.Evm) catch {
         state.memory_db.deinit();
         alloc.destroy(state.memory_db);
         alloc.destroy(state);
         return null;
     };
 
-    state.vm.* = DefaultEvm.init(alloc, db_interface, null, // context
+    state.vm.* = evm_root.Evm.init(alloc, db_interface, null, // table
+        null, // chain_rules
+        null, // context
         0, // depth
         false, // read_only
         null // tracer
@@ -416,11 +417,10 @@ test "C interface compilation" {
 }
 
 // Re-export modules
-pub const configureEvm = evm_root.configureEvm;
-pub const EvmConfig = evm_root.EvmConfig;
+pub const Evm = evm_root.Evm;
 pub const Primitives = primitives;
 pub const Provider = provider;
 
-// test "Evm module" {
-//     std.testing.refAllDecls(Evm);
-// }
+test "Evm module" {
+    std.testing.refAllDecls(Evm);
+}

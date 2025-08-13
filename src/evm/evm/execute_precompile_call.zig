@@ -3,8 +3,7 @@ const primitives = @import("primitives");
 const CallResult = @import("call_result.zig").CallResult;
 const precompiles = @import("../precompiles/precompiles.zig");
 const Log = @import("../log.zig");
-const EvmModule = @import("../evm.zig");
-const EvmConfig = @import("../config.zig").EvmConfig;
+const Vm = @import("../evm.zig");
 
 const CallContractError = std.mem.Allocator.Error;
 
@@ -23,9 +22,7 @@ const CallContractError = std.mem.Allocator.Error;
 /// @param gas Gas limit available for execution
 /// @param is_static Whether this is a static call (doesn't affect precompiles)
 /// @return CallResult with success/failure, gas usage, and output data
-pub fn execute_precompile_call(comptime config: EvmConfig) type {
-    return struct {
-        pub fn executePrecompileCallImpl(self: *EvmModule.Evm(config), address: primitives.Address.Address, input: []const u8, gas: u64, is_static: bool) CallContractError!CallResult {
+pub fn execute_precompile_call(self: *Vm, address: primitives.Address.Address, input: []const u8, gas: u64, is_static: bool) CallContractError!CallResult {
     _ = is_static; // Precompiles are inherently stateless, so static flag doesn't matter
 
     Log.debug("VM.execute_precompile_call: Executing precompile at {any}, input_size={}, gas={}", .{ address, input.len, gas });
@@ -77,7 +74,7 @@ pub fn execute_precompile_call(comptime config: EvmConfig) type {
 
         return CallResult{ .success = false, .gas_left = gas, .output = null };
     }
-        }
+}
 
 /// Execute a precompile call with a known precompile ID
 /// This variant avoids redundant address checks
@@ -87,7 +84,7 @@ pub fn execute_precompile_call(comptime config: EvmConfig) type {
 /// @param gas Gas limit available for execution
 /// @param is_static Whether this is a static call (doesn't affect precompiles)
 /// @return CallResult with success/failure, gas usage, and output data
-        pub fn executePrecompileCallByIdImpl(self: *EvmModule.configureEvm(config), precompile_id: u8, input: []const u8, gas: u64, is_static: bool) CallContractError!CallResult {
+pub fn execute_precompile_call_by_id(self: *Vm, precompile_id: u8, input: []const u8, gas: u64, is_static: bool) CallContractError!CallResult {
     _ = is_static; // Precompiles are inherently stateless, so static flag doesn't matter
 
     Log.debug("VM.execute_precompile_call_by_id: Executing precompile ID {}, input_size={}, gas={}", .{ precompile_id, input.len, gas });
@@ -165,6 +162,4 @@ pub fn execute_precompile_call(comptime config: EvmConfig) type {
 
         return CallResult{ .success = false, .gas_left = gas, .output = null };
     }
-        }
-    };
 }

@@ -44,9 +44,7 @@ test "ERC20 contract deployment hangs - minimal reproduction" {
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    const config = comptime evm.EvmConfig.init(.CANCUN);
-    const EvmType = evm.Evm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Set up deployer account
@@ -95,9 +93,7 @@ test "Simple contract deployment works" {
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    const config = comptime evm.EvmConfig.init(.CANCUN);
-    const EvmType = evm.Evm(config);
-    var vm = try EvmType.init(allocator, db_interface, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Set up deployer account
