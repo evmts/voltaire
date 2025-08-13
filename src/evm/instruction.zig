@@ -17,7 +17,12 @@ pub const JumpTarget = struct {
 pub const AnalysisArg = union(enum) {
     none,
     word: u256,
-    conditional_jump: *const Instruction,
+    // Unconditional jump variants
+    jump, // resolved: pop 1; jump to next_instruction (pre-wired)
+    jump_unresolved, // unresolved: pop 1; compute target at runtime
+    // Conditional jump variants
+    conditional_jump: *const Instruction, // resolved true branch target
+    conditional_jump_unresolved, // unresolved: compute target at runtime when condition true
     block_info: BlockInfo,
     dynamic_gas: DynamicGas,
     keccak: struct {

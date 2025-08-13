@@ -593,9 +593,10 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 pc_to_instruction[pc] = @intCast(instruction_count);
 
                 if (opcode == .JUMP) {
+                    // Tag unresolved initially; resolveJumpTargets will wire next_instruction
                     instructions[instruction_count] = Instruction{
                         .opcode_fn = NoopHandler,
-                        .arg = .none,
+                        .arg = .jump_unresolved,
                         .next_instruction = undefined, // set later
                     };
                     inst_jump_type[instruction_count] = .jump;
@@ -638,9 +639,10 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 // Record PC to instruction mapping for JUMPI
                 pc_to_instruction[pc] = @intCast(instruction_count);
 
+                // Tag unresolved initially; resolveJumpTargets will fill conditional_jump target
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = NoopHandler,
-                    .arg = .none,
+                    .arg = .conditional_jump_unresolved,
                     .next_instruction = undefined, // set later
                 };
                 inst_jump_type[instruction_count] = .jumpi;
@@ -1429,7 +1431,7 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
                                 inst.arg = .{ .conditional_jump = &instructions[block_idx] };
                             } else {
                                 // Unconditional jump is just a noop with next_instruction set
-                                inst.arg = .none;
+                                inst.arg = .jump;
                                 inst.next_instruction = &instructions[block_idx];
                             }
                         }

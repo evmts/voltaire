@@ -7,6 +7,7 @@ const Log = @import("../log.zig");
 const Evm = @import("../evm.zig");
 const builtin = @import("builtin");
 const UnreachableHandler = @import("../analysis.zig").UnreachableHandler;
+const Instruction = @import("../instruction.zig").Instruction;
 
 // Hoist U256 type alias used by fused arithmetic ops
 const U256 = @import("primitives").Uint(256, 4);
@@ -28,10 +29,8 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         self.require_one_thread();
     }
 
-    const analysis = frame.analysis;
-    const instructions = analysis.instructions;
-
-    frame.instruction = &instructions[0];
+    var instruction: *const Instruction = &frame.analysis.instructions[0];
+    var next_instruction: *const Instruction = instruction.next_instruction;
     var loop_iterations: usize = 0;
     while (true) {
         {
@@ -43,22 +42,20 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             }
         }
 
-        const inst = frame.instruction;
-        const next_instruction = inst.next_instruction;
-        const arg = inst.arg;
-        const op_fn = inst.opcode_fn;
+        const arg = instruction.arg;
+        const op_fn = instruction.opcode_fn;
 
         {
             if (comptime build_options.enable_tracing) {
                 if (self.tracer) |writer| {
                     // Derive index of current instruction for tracing
-                    const base: [*]const @TypeOf((frame.instruction).*) = instructions.ptr;
-                    const idx = (@intFromPtr(frame.instruction) - @intFromPtr(base)) / @sizeOf(@TypeOf((frame.instruction).*));
-                    if (idx < analysis.inst_to_pc.len) {
-                        const pc_u16 = analysis.inst_to_pc[idx];
+                    const base: [*]const @TypeOf(instruction.*) = frame.analysis.instructions.ptr;
+                    const idx = (@intFromPtr(instruction) - @intFromPtr(base)) / @sizeOf(@TypeOf(instruction.*));
+                    if (idx < frame.analysis.inst_to_pc.len) {
+                        const pc_u16 = frame.analysis.inst_to_pc[idx];
                         if (pc_u16 != std.math.maxInt(u16)) {
                             const pc: usize = pc_u16;
-                            const opcode: u8 = if (pc < analysis.code_len) analysis.code[pc] else 0x00;
+                            const opcode: u8 = if (pc < frame.analysis.code_len) frame.analysis.code[pc] else 0x00;
                             const stack_len: usize = frame.stack.size();
                             const stack_view: []const u256 = frame.stack.data[0..stack_len];
                             const gas_cost: u64 = 0; // Block-based validation; per-op gas not tracked here
@@ -119,10 +116,57 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 }
             },
             .conditional_jump => |true_target| {
-                @branchHint(.unlikely);
                 const condition = frame.stack.pop_unsafe();
                 if (condition != 0) {
-                    frame.instruction = true_target;
+                    @branchHint(.unlikely);
+                    instruction = true_target;
+                    next_instruction = instruction.next_instruction;
+                    continue;
+                }
+            },
+            .jump => {
+                // Analysis resolved the target by wiring next_instruction to the block start.
+                // Pop destination to maintain correct stack behavior (already validated by block checks).
+                _ = frame.stack.pop_unsafe();
+                instruction = next_instruction;
+                next_instruction = instruction.next_instruction;
+                continue;
+            },
+            // This is a jump that is not known until compile time because
+            // it is pushed to stack dynamically
+            .jump_unresolved => {
+                @branchHint(.unlikely);
+                // Compute target from popped PC and validate jumpdest on the fly
+                const dest = frame.stack.pop_unsafe();
+                if (!frame.valid_jumpdest(dest)) {
+                    @branchHint(.cold);
+                    return ExecutionError.Error.InvalidJump;
+                }
+                const dest_usize: usize = @intCast(dest);
+                const idx = frame.analysis.pc_to_block_start[dest_usize];
+                if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) {
+                    @branchHint(.cold);
+                    return ExecutionError.Error.InvalidJump;
+                }
+                instruction = &frame.analysis.instructions[idx];
+                next_instruction = instruction.next_instruction;
+                continue;
+            },
+            .conditional_jump_unresolved => {
+                // Pop condition and destination; jump only if condition != 0
+                const dest = frame.stack.pop_unsafe();
+                const condition = frame.stack.pop_unsafe();
+                if (condition != 0) {
+                    if (!frame.valid_jumpdest(dest)) {
+                        return ExecutionError.Error.InvalidJump;
+                    }
+                    const dest_usize: usize = @intCast(dest);
+                    const idx = frame.analysis.pc_to_block_start[dest_usize];
+                    if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) {
+                        return ExecutionError.Error.InvalidJump;
+                    }
+                    instruction = &frame.analysis.instructions[idx];
+                    next_instruction = instruction.next_instruction;
                     continue;
                 }
             },
@@ -147,24 +191,19 @@ pub inline fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 const offset_usize = @as(usize, @intCast(offset));
                 const size_usize = @as(usize, @intCast(size));
 
-                if (size == 0) {
-                    const empty_hash: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
-                    frame.stack.append_unsafe(empty_hash);
-                } else {
-                    @branchHint(.likely);
-                    const data = try frame.memory.get_slice(offset_usize, size_usize);
+                const data = try frame.memory.get_slice(offset_usize, size_usize);
 
-                    var hash: [32]u8 = undefined;
-                    std.crypto.hash.sha3.Keccak256.hash(data, &hash, .{});
+                var hash: [32]u8 = undefined;
+                std.crypto.hash.sha3.Keccak256.hash(data, &hash, .{});
 
-                    const result = std.mem.readInt(u256, &hash, .big);
-                    frame.stack.append_unsafe(result);
-                }
+                const result = std.mem.readInt(u256, &hash, .big);
+                frame.stack.append_unsafe(result);
             },
         }
 
         try op_fn(frame);
-        frame.instruction = next_instruction;
+        instruction = next_instruction;
+        next_instruction = instruction.next_instruction;
     }
 }
 

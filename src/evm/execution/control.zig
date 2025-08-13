@@ -4,8 +4,9 @@
 //! PC, JUMPDEST, RETURN, REVERT, and INVALID.
 //!
 //! ## Architecture Note
-//! JUMP and JUMPI are handled directly by the interpreter for performance.
-//! The functions here are stubs that should never be called.
+//! All jumps are handled inline by the interpreter with targets resolved at
+//! analysis time. Both JUMP and JUMPI are encoded as no-op instructions with
+//! their control-flow baked into the instruction stream.
 //!
 //! ## Gas Costs
 //! - STOP, JUMPDEST: 0 gas
@@ -33,50 +34,7 @@ pub fn op_stop(context: *anyopaque) ExecutionError.Error!void {
     return ExecutionError.Error.STOP;
 }
 
-pub fn op_jump(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
-    const analysis = frame.analysis;
-
-    // Pop destination from stack
-    const dest = frame.stack.pop_unsafe();
-    if (!frame.valid_jumpdest(dest)) {
-        return ExecutionError.Error.InvalidJump;
-    }
-
-    const dest_usize: usize = @intCast(dest);
-    const idx = analysis.pc_to_block_start[dest_usize];
-    if (idx == std.math.maxInt(u16) or idx >= analysis.instructions.len) {
-        return ExecutionError.Error.InvalidJump;
-    }
-    frame.instruction = &analysis.instructions[idx];
-}
-
-pub fn op_jumpi(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
-    const analysis = frame.analysis;
-
-    // pop2_unsafe returns { a = second-from-top, b = top }
-    const pops = frame.stack.pop2_unsafe();
-    const dest = pops.b;
-    const condition = pops.a;
-
-    if (condition != 0) {
-        if (!frame.valid_jumpdest(dest)) {
-            return ExecutionError.Error.InvalidJump;
-        }
-        const dest_usize: usize = @intCast(dest);
-        const idx = analysis.pc_to_block_start[dest_usize];
-        if (idx == std.math.maxInt(u16) or idx >= analysis.instructions.len) {
-            return ExecutionError.Error.InvalidJump;
-        }
-        frame.instruction = &analysis.instructions[idx];
-    } else {
-        // Fallthrough to next instruction
-        const base: [*]const @TypeOf((frame.instruction).*) = analysis.instructions.ptr;
-        const idx = (@intFromPtr(frame.instruction) - @intFromPtr(base)) / @sizeOf(@TypeOf((frame.instruction).*));
-        frame.instruction = if (idx + 1 < analysis.instructions.len) &analysis.instructions[idx + 1] else frame.instruction;
-    }
-}
+// JUMP and JUMPI are removed; see interpreter for inlined handling.
 
 pub fn op_pc(context: *anyopaque) ExecutionError.Error!void {
     _ = context;

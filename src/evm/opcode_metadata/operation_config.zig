@@ -133,8 +133,10 @@ pub const ALL_OPERATIONS = [_]OpSpec{
     .{ .name = "SLOAD_ISTANBUL", .opcode = 0x54, .execute = wrap_any(execution.storage.op_sload), .gas = 800, .min_stack = 1, .max_stack = Stack.CAPACITY, .variant = .ISTANBUL },
     .{ .name = "SLOAD", .opcode = 0x54, .execute = wrap_any(execution.storage.op_sload), .gas = 0, .min_stack = 1, .max_stack = Stack.CAPACITY, .variant = .BERLIN },
     .{ .name = "SSTORE", .opcode = 0x55, .execute = wrap_any(execution.storage.op_sstore), .gas = 0, .min_stack = 2, .max_stack = Stack.CAPACITY },
-    .{ .name = "JUMP", .opcode = 0x56, .execute = wrap_any(execution.control.op_jump), .gas = GasConstants.GasMidStep, .min_stack = 1, .max_stack = Stack.CAPACITY },
-    .{ .name = "JUMPI", .opcode = 0x57, .execute = wrap_any(execution.control.op_jumpi), .gas = GasConstants.GasSlowStep, .min_stack = 2, .max_stack = Stack.CAPACITY },
+    // JUMP and JUMPI execute functions are not used; interpreter handles them inline.
+    // Use a Noop to carry metadata; gas and stack requirements remain for block validation.
+    .{ .name = "JUMP", .opcode = 0x56, .execute = wrap_any(execution.null_opcode.op_invalid), .gas = GasConstants.GasMidStep, .min_stack = 1, .max_stack = Stack.CAPACITY },
+    .{ .name = "JUMPI", .opcode = 0x57, .execute = wrap_any(execution.null_opcode.op_invalid), .gas = GasConstants.GasSlowStep, .min_stack = 2, .max_stack = Stack.CAPACITY },
     .{ .name = "PC", .opcode = 0x58, .execute = wrap_any(execution.control.op_pc), .gas = GasConstants.GasQuickStep, .min_stack = 0, .max_stack = Stack.CAPACITY - 1 },
     .{ .name = "MSIZE", .opcode = 0x59, .execute = wrap_any(execution.memory.op_msize), .gas = GasConstants.GasQuickStep, .min_stack = 0, .max_stack = Stack.CAPACITY - 1 },
     .{ .name = "GAS", .opcode = 0x5a, .execute = wrap_ctx(execution.system.gas_op), .gas = GasConstants.GasQuickStep, .min_stack = 0, .max_stack = Stack.CAPACITY - 1 },
