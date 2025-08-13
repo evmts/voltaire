@@ -57,13 +57,18 @@ pub fn op_returndatacopy_adapter(context: *anyopaque) ExecutionError.Error!void 
         return ExecutionError.Error.ReturnDataOutOfBounds;
     }
 
-    // Charge gas and ensure memory is available
+    // Calculate memory expansion gas cost
     const new_size = mem_offset_usize + size_usize;
-    try frame.memory.charge_and_ensure(frame, @as(u64, @intCast(new_size)));
+    const new_size_u64 = @as(u64, @intCast(new_size));
+    const gas_cost = frame.memory.get_expansion_cost(new_size_u64);
+    try frame.consume_gas(gas_cost);
 
     // Dynamic gas for copy operation
     const word_size = (size_usize + 31) / 32;
     try frame.consume_gas(GasConstants.CopyGas * word_size);
+
+    // Ensure memory is available
+    _ = try frame.memory.ensure_context_capacity(new_size);
 
     // Copy return data to memory
     try frame.memory.set_data(mem_offset_usize, frame.output[data_offset_usize .. data_offset_usize + size_usize]);
