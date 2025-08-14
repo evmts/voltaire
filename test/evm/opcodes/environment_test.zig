@@ -42,7 +42,7 @@ test "Environment: ADDRESS opcode" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -94,7 +94,7 @@ test "Environment: BALANCE opcode" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -166,7 +166,7 @@ test "Environment: ORIGIN and CALLER opcodes" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -216,7 +216,7 @@ test "Environment: CALLVALUE opcode" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -277,7 +277,7 @@ test "Environment: GASPRICE opcode" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -325,7 +325,7 @@ test "Environment: EXTCODESIZE opcode" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -392,7 +392,7 @@ test "Environment: EXTCODECOPY opcode" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -482,7 +482,7 @@ test "Environment: EXTCODEHASH opcode" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -540,7 +540,7 @@ test "Environment: SELFBALANCE opcode (Istanbul)" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -604,7 +604,7 @@ test "Environment: CHAINID opcode (Istanbul)" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -650,7 +650,7 @@ test "Environment: Cold/Warm address access (EIP-2929)" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -702,7 +702,7 @@ test "Environment: Stack underflow errors" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

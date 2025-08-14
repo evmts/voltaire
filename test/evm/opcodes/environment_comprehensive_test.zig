@@ -47,7 +47,7 @@ test "ADDRESS (0x30): Push current contract address" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -92,7 +92,7 @@ test "BALANCE (0x31): Get account balance" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -160,7 +160,7 @@ test "ORIGIN (0x32): Get transaction origin" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -264,7 +264,7 @@ test "CALLVALUE (0x34): Get msg.value" {
             .withContract(&contract)
             .withGas(1000)
             .build();
-        defer frame.deinit();
+        defer frame.deinit(allocator);
 
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
@@ -317,7 +317,7 @@ test "CALLDATALOAD (0x35): Load 32 bytes from calldata" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -401,7 +401,7 @@ test "CALLDATASIZE (0x36): Get calldata size" {
             .withContract(&contract)
             .withGas(1000)
             .build();
-        defer frame.deinit();
+        defer frame.deinit(allocator);
 
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
@@ -453,7 +453,7 @@ test "CALLDATACOPY (0x37): Copy calldata to memory" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -545,7 +545,7 @@ test "CODESIZE (0x38): Get code size" {
             .withContract(&contract)
             .withGas(1000)
             .build();
-        defer frame.deinit();
+        defer frame.deinit(allocator);
 
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &frame;
@@ -598,7 +598,7 @@ test "CODECOPY (0x39): Copy code to memory" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -732,7 +732,7 @@ test "Environmental opcodes: Gas consumption" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -798,7 +798,7 @@ test "Environmental opcodes: Stack underflow" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -851,7 +851,7 @@ test "Environmental opcodes: Memory expansion limits" {
         .withContract(&contract)
         .withGas(100)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

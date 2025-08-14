@@ -42,7 +42,7 @@ test "Control: STOP halts execution" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -89,7 +89,7 @@ test "Control: JUMP basic operations" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -153,7 +153,7 @@ test "Control: JUMPI conditional jump" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -220,7 +220,7 @@ test "Control: PC returns program counter" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -275,7 +275,7 @@ test "Control: JUMPDEST is a no-op" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -328,7 +328,7 @@ test "Control: RETURN with data" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -336,7 +336,7 @@ test "Control: RETURN with data" {
     // Test 1: Return with data
     const test_data = [_]u8{ 0xde, 0xad, 0xbe, 0xef };
     try frame.memory.set_data(10, &test_data);
-    try frame.stack.append(4);  // size (first)
+    try frame.stack.append(4); // size (first)
     try frame.stack.append(10); // offset (second, on top)
 
     const result = evm.table.execute(0, interpreter, state, 0xF3);
@@ -398,7 +398,7 @@ test "Control: REVERT with data" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -463,7 +463,7 @@ test "Control: INVALID always fails" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -509,7 +509,7 @@ test "Control: SELFDESTRUCT basic operation" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

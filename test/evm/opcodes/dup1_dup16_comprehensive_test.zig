@@ -52,7 +52,7 @@ test "DUP1 (0x80): Duplicate 1st stack item" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -116,7 +116,7 @@ test "DUP2 (0x81): Duplicate 2nd stack item" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -169,7 +169,7 @@ test "DUP3-DUP5: Various duplications" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -235,7 +235,7 @@ test "DUP6-DUP10: Mid-range duplications" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -304,7 +304,7 @@ test "DUP11-DUP16: High-range duplications" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -378,7 +378,7 @@ test "DUP16 (0x8F): Duplicate 16th stack item (maximum)" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -436,7 +436,7 @@ test "DUP1-DUP16: Gas consumption" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -499,7 +499,7 @@ test "DUP operations: Stack underflow" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -569,7 +569,7 @@ test "DUP operations: Stack overflow" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -623,7 +623,7 @@ test "DUP operations: Sequential duplications" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -692,7 +692,7 @@ test "DUP operations: Pattern verification" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -763,7 +763,7 @@ test "DUP operations: Boundary test with exact stack size" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

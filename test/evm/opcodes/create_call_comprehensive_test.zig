@@ -55,7 +55,7 @@ test "CREATE (0xF0): Basic contract creation" {
         .withContract(&contract)
         .withGas(100000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Write init code to memory (simple bytecode that returns empty)
     const init_code = [_]u8{
@@ -121,7 +121,7 @@ test "CREATE: Static call protection" {
         .withContract(&contract)
         .withGas(100000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Set static mode
     frame.is_static = true;
@@ -172,7 +172,7 @@ test "CREATE: EIP-3860 initcode size limit" {
         .withContract(&contract)
         .withGas(100000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Enable EIP-3860 (Shanghai)
     evm.chain_rules.is_eip3860 = true;
@@ -223,7 +223,7 @@ test "CREATE: Depth limit" {
         .withContract(&contract)
         .withGas(100000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Set depth to maximum
     frame.depth = 1024;
@@ -288,7 +288,7 @@ test "CREATE2 (0xF5): Deterministic contract creation" {
         .withContract(&contract)
         .withGas(100000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Write init code to memory
     const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 } ++ ([_]u8{0x11} ** 20);
@@ -353,7 +353,7 @@ test "CALL (0xF1): Basic external call" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Push CALL parameters in reverse order (stack is LIFO)
     // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size
@@ -410,7 +410,7 @@ test "CALL: Value transfer in static context" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Set static mode
     frame.is_static = true;
@@ -465,7 +465,7 @@ test "CALL: Cold address access (EIP-2929)" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Ensure address is cold
     evm.access_list.clear();
@@ -528,7 +528,7 @@ test "CALLCODE (0xF2): Execute external code with current storage" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Push CALLCODE parameters in reverse order (stack is LIFO)
     // EVM pops: gas, to, value, args_offset, args_size, ret_offset, ret_size
@@ -588,7 +588,7 @@ test "DELEGATECALL (0xF4): Execute with current context" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Push DELEGATECALL parameters in reverse order (stack is LIFO, no value parameter)
     // EVM pops: gas, to, args_offset, args_size, ret_offset, ret_size
@@ -652,7 +652,7 @@ test "STATICCALL (0xFA): Read-only external call" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Push STATICCALL parameters in reverse order (stack is LIFO, no value parameter)
     // EVM pops: gas, to, args_offset, args_size, ret_offset, ret_size
@@ -775,7 +775,7 @@ test "CALL operations: Depth limit" {
             .withContract(&contract)
             .withGas(10000)
             .build();
-        defer frame.deinit();
+        defer frame.deinit(allocator);
 
         // Set depth to maximum
         frame.depth = 1024;
@@ -846,7 +846,7 @@ test "CREATE/CREATE2: Failed creation scenarios" {
         .withContract(&contract)
         .withGas(100000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Test failed creation - push parameters in reverse order (stack is LIFO)
     // CREATE pops: value, offset, size

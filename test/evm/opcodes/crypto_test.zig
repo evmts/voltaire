@@ -42,7 +42,7 @@ test "Crypto: KECCAK256 (SHA3) basic operations" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -132,7 +132,7 @@ test "Crypto: KECCAK256 memory expansion and gas" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -193,7 +193,7 @@ test "Crypto: KECCAK256 edge cases" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -247,7 +247,7 @@ test "Crypto: Stack underflow errors" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;

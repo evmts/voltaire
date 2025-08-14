@@ -63,7 +63,7 @@ test "JUMP (0x56): Basic unconditional jump" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Push jump destination
     try frame.stack.append(5);
@@ -167,7 +167,7 @@ test "JUMP: Jump to various valid destinations" {
             .withContract(&contract)
             .withGas(1000)
             .build();
-        defer test_frame.deinit();
+        defer test_frame.deinit(allocator);
 
         try test_frame.stack.append(dest);
         const interpreter: Evm.Operation.Interpreter = &evm;
@@ -221,7 +221,7 @@ test "JUMP: Invalid jump destinations" {
             .withContract(&contract)
             .withGas(1000)
             .build();
-        defer test_frame.deinit();
+        defer test_frame.deinit(allocator);
 
         try test_frame.stack.append(dest);
         const interpreter: Evm.Operation.Interpreter = &evm;
@@ -265,7 +265,7 @@ test "JUMP: Stack underflow" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Don't push anything to stack - should cause stack underflow
     const interpreter: Evm.Operation.Interpreter = &evm;
@@ -322,7 +322,7 @@ test "JUMPI (0x57): Conditional jump with true condition" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Execute the PUSH1 instructions in the bytecode
     // PUSH1 1 (condition)
@@ -387,7 +387,7 @@ test "JUMPI: Conditional jump with false condition" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Set PC to start of JUMPI instruction
     frame.pc = 4; // Position of JUMPI
@@ -444,7 +444,7 @@ test "JUMPI: Various condition values" {
             .withContract(&contract)
             .withGas(1000)
             .build();
-        defer test_frame.deinit();
+        defer test_frame.deinit(allocator);
 
         test_frame.pc = 10; // Set to non-zero position
         try test_frame.stack.append(condition); // condition
@@ -463,7 +463,7 @@ test "JUMPI: Various condition values" {
             .withContract(&contract)
             .withGas(1000)
             .build();
-        defer test_frame.deinit();
+        defer test_frame.deinit(allocator);
 
         test_frame.pc = 10;
         try test_frame.stack.append(0); // condition=0
@@ -507,7 +507,7 @@ test "JUMPI: Invalid destination with true condition" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Try to jump to invalid destination with true condition
     try frame.stack.append(1); // condition=1 (true)
@@ -550,7 +550,7 @@ test "JUMPI: Stack underflow" {
         .withContract(&contract)
         .withGas(1000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Test with empty stack
     {
@@ -613,7 +613,7 @@ test "PC (0x58): Get program counter at various positions" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const interpreter: Evm.Operation.Interpreter = &evm;
     const state: Evm.Operation.State = &frame;
@@ -735,7 +735,7 @@ test "GAS (0x5A): Get remaining gas" {
             .withContract(&contract)
             .withGas(initial_gas)
             .build();
-        defer test_frame.deinit();
+        defer test_frame.deinit(allocator);
 
         const interpreter: Evm.Operation.Interpreter = &evm;
         const state: Evm.Operation.State = &test_frame;
@@ -778,7 +778,7 @@ test "GAS: After consuming gas with operations" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const initial_gas = frame.gas_remaining;
 

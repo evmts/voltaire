@@ -41,7 +41,7 @@ test "Integration: Complete ERC20 transfer simulation" {
     try vm.set_storage(contract_address, 1, bob_balance);
 
     // Calculate code hash for empty code
-    var code_hash: [32]u8 = [_]u8{0} ** 32;
+    const code_hash: [32]u8 = [_]u8{0} ** 32;
 
     var contract = Contract.init(
         alice_address, // Alice is calling
@@ -62,7 +62,7 @@ test "Integration: Complete ERC20 transfer simulation" {
         .withContract(&contract)
         .withGas(100000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Transfer amount
     const transfer_amount: u256 = 100;
@@ -164,7 +164,7 @@ test "Integration: Smart contract deployment flow" {
     const bob_address = Address.from_u256(0x2222222222222222222222222222222222222222);
 
     // Calculate code hash for empty code
-    var code_hash: [32]u8 = [_]u8{0} ** 32;
+    const code_hash: [32]u8 = [_]u8{0} ** 32;
 
     var deployer_contract = Contract.init(
         alice_address,
@@ -185,7 +185,7 @@ test "Integration: Smart contract deployment flow" {
         .withContract(&deployer_contract)
         .withGas(200000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Build constructor arguments
     const initial_supply: u256 = 1_000_000;
@@ -360,7 +360,7 @@ test "Integration: Complex control flow with nested conditions" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Execute the contract logic step by step
     // We'll test with value = 150, which should result in 300 (150 * 2)
@@ -520,7 +520,7 @@ test "Integration: Gas metering across operations" {
         .withContract(&contract)
         .withGas(100000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     const initial_gas = frame.gas_remaining;
     var total_gas_used: u64 = 0;
@@ -621,7 +621,7 @@ test "Integration: Error propagation and recovery" {
         .withContract(&contract)
         .withGas(10000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // Test 1: Stack underflow recovery
     const div_result = opcodes.arithmetic.op_div(0, &vm, &frame);
