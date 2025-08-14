@@ -1241,21 +1241,22 @@ pub fn op_staticcall(context: *anyopaque) ExecutionError.Error!void {
         std.debug.assert(stack_size_before >= 6);
     }
 
-    const params1 = try frame.stack.pop2();
-    const gas = params1.b; // gas was on top of stack
-    const to = params1.a; // address was second from top
-    Log.debug("[STATICCALL] Popped params1: gas={x}, to={x}", .{ gas, to });
-    const params2 = try frame.stack.pop2();
-    // Spec order: gas, to, in_offset, in_size, out_offset, out_size
-    // pop2 returns a=second-from-top (in_offset), b=top (in_size)
-    const args_offset = params2.a;
-    const args_size = params2.b;
-    Log.debug("[STATICCALL] Popped params2: args_offset={x}, args_size={x}", .{ args_offset, args_size });
-    const params3 = try frame.stack.pop2();
-    // pop2 returns a=second-from-top (out_offset), b=top (out_size)
-    const ret_offset = params3.a;
-    const ret_size = params3.b;
-    Log.debug("[STATICCALL] Popped params3: ret_offset={x}, ret_size={x}", .{ ret_offset, ret_size });
+    // Stack layout at execution (top -> bottom): gas, to, in_size, in_offset, out_size, out_offset
+    // Pop in this order: (to, gas), (in_offset, in_size), (out_offset, out_size)
+    const to_gas = try frame.stack.pop2();
+    const to = to_gas.a; // second-from-top
+    const gas = to_gas.b; // top
+    Log.debug("[STATICCALL] Popped to_gas: to={x}, gas={x}", .{ to, gas });
+
+    const in_pair = try frame.stack.pop2();
+    const args_offset = in_pair.a; // second-from-top
+    const args_size = in_pair.b; // top
+    Log.debug("[STATICCALL] Popped in_pair: args_offset={x}, args_size={x}", .{ args_offset, args_size });
+
+    const out_pair = try frame.stack.pop2();
+    const ret_offset = out_pair.a; // second-from-top
+    const ret_size = out_pair.b; // top
+    Log.debug("[STATICCALL] Popped out_pair: ret_offset={x}, ret_size={x}", .{ ret_offset, ret_size });
 
     // CRITICAL FIX: Calculate memory expansion costs BEFORE expanding memory
     const args_end = if (args_size > 0) blk: {
