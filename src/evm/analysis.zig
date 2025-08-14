@@ -110,37 +110,41 @@ pub const JumpdestArray = struct {
 
 /// Optimized code analysis for EVM bytecode execution.
 /// Contains only the essential data needed during execution.
+/// Fields are organized by access frequency for optimal cache performance.
 pub const CodeAnalysis = @This();
 
+// === FIRST CACHE LINE - ULTRA HOT (accessed on every instruction) ===
 /// Heap-allocated instruction stream for execution.
 /// Regular slice; analysis appends a STOP instruction as the final element.
 /// Must be freed by caller using deinit().
-instructions: []Instruction,
+instructions: []Instruction,                    // 16 bytes - accessed on EVERY instruction
 
-/// Original contract bytecode for this analysis (used by CODECOPY).
-code: []const u8,
+/// Mapping from bytecode PC to the BEGINBLOCK instruction index that contains that PC.
+/// Size = code_len. Value = maxInt(u16) if unmapped.
+pc_to_block_start: []u16,                      // 16 bytes - accessed on EVERY jump
 
 /// Packed array of valid JUMPDEST positions in the bytecode.
 /// Required for JUMP/JUMPI validation during execution.
 /// Uses cache-efficient linear search on packed u15 array.
-jumpdest_array: JumpdestArray,
+jumpdest_array: JumpdestArray,                 // 24 bytes - accessed on jump validation
 
-/// Mapping from bytecode PC to the BEGINBLOCK instruction index that contains that PC.
-/// Size = code_len. Value = maxInt(u16) if unmapped.
-pc_to_block_start: []u16,
+// === SECOND CACHE LINE - WARM (accessed during specific operations) ===
+/// Original contract bytecode for this analysis (used by CODECOPY).
+code: []const u8,                              // 16 bytes - accessed by CODECOPY/CODESIZE
+
+/// Original code length (used for bounds checks)
+code_len: usize,                               // 8 bytes - accessed with code operations
 
 /// For each instruction index, indicates if it is a JUMP or JUMPI (or other).
 /// Size = instructions.len
-inst_jump_type: []JumpType,
+inst_jump_type: []JumpType,                    // 16 bytes - accessed during control flow
 
+// === THIRD CACHE LINE - COLD (rarely accessed) ===
 /// Mapping from instruction index to original bytecode PC (for debugging/tracing)
-inst_to_pc: []u16,
-
-/// Original code length (used for bounds checks)
-code_len: usize,
+inst_to_pc: []u16,                             // 16 bytes - only for debugging/tracing
 
 /// Allocator used for the instruction array (needed for cleanup)
-allocator: std.mem.Allocator,
+allocator: std.mem.Allocator,                  // 16 bytes - only accessed on deinit
 
 /// Handler for opcodes that should never be executed directly.
 /// Used for JUMP, JUMPI, and PUSH opcodes that are handled inline by the interpreter.
@@ -253,13 +257,16 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
         const empty_pc_map = try allocator.alloc(u16, 0);
         const empty_inst_to_pc = try allocator.alloc(u16, 0);
         return CodeAnalysis{
+            // First cache line - hot
             .instructions = empty_instructions,
-            .code = &[_]u8{},
-            .jumpdest_array = jumpdest_array,
             .pc_to_block_start = empty_pc_map,
-            .inst_jump_type = empty_jump_types,
-            .inst_to_pc = empty_inst_to_pc,
+            .jumpdest_array = jumpdest_array,
+            // Second cache line - warm
+            .code = &[_]u8{},
             .code_len = 0,
+            .inst_jump_type = empty_jump_types,
+            // Third cache line - cold
+            .inst_to_pc = empty_inst_to_pc,
             .allocator = allocator,
         };
     }
@@ -351,14 +358,17 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
     jumpdest_bitmap.deinit(); // Free the temporary bitmap
 
     return CodeAnalysis{
+        // === FIRST CACHE LINE - ULTRA HOT ===
         .instructions = gen.instructions,
-        .code = code,
-        .jumpdest_array = jumpdest_array,
         .pc_to_block_start = gen.pc_to_block_start,
-        .inst_jump_type = gen.inst_jump_type,
+        .jumpdest_array = jumpdest_array,
+        // === SECOND CACHE LINE - WARM ===
         .inst_to_pc = gen.inst_to_pc,
         .code_len = code.len,
         .allocator = allocator,
+        // === THIRD CACHE LINE - COLD ===
+        .code = code,
+        .inst_jump_type = gen.inst_jump_type,
     };
 }
 
