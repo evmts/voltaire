@@ -23,11 +23,8 @@ const Stack = @import("stack/stack.zig");
 const Memory = @import("memory/memory.zig");
 const ExecutionError = @import("execution/execution_error.zig");
 const CodeAnalysis = @import("analysis.zig").CodeAnalysis;
-const AccessList = @import("access_list/access_list.zig");
 const Host = @import("root.zig").Host;
-const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const DatabaseInterface = @import("state/database_interface.zig").DatabaseInterface;
-const Hardfork = @import("hardforks/hardfork.zig").Hardfork;
 
 // Safety check constants - only enabled in Debug and ReleaseSafe modes
 // These checks are redundant after analysis.zig validates blocks
@@ -37,9 +34,6 @@ const SAFE_JUMP_VALIDATION = builtin.mode != .ReleaseFast and builtin.mode != .R
 /// Error types for Frame operations
 pub const AccessError = error{OutOfMemory};
 pub const StateError = error{OutOfMemory};
-
-// Import ChainRules from the hardforks module where it's properly maintained
-pub const ChainRules = @import("hardforks/chain_rules.zig").ChainRules;
 
 /// Frame represents the entire execution state of the EVM as it executes opcodes
 /// Layout optimized for actual opcode access patterns and cache performance
@@ -64,17 +58,7 @@ pub const Frame = struct {
     value: u256, // 32 bytes
 
     // COLD - Validation flags and rarely accessed data
-    hardfork: Hardfork, // 1 byte - hardfork validation
     // All EIP validation now done at compile-time via jump tables
-
-    // Cold data - accessed infrequently
-    input: []const u8, // 16 bytes - only CALLDATALOAD/SIZE/COPY
-    code: []const u8, // 16 bytes - current contract bytecode for CODECOPY/CODESIZE
-
-    // Extremely rare - accessed almost never
-    self_destruct: ?*SelfDestruct, // 8 bytes - extremely rare, only SELFDESTRUCT
-    // Bottom - only used for setup/cleanup
-    allocator: std.mem.Allocator, // 16 bytes - extremely rare, only frame init/deinit
 
     /// Initialize a Frame with required parameters
     pub fn init(
@@ -87,14 +71,8 @@ pub const Frame = struct {
         analysis: *const CodeAnalysis,
         host: Host,
         state: DatabaseInterface,
-        chain_rules: ChainRules,
-        self_destruct: ?*SelfDestruct,
-        input: []const u8,
         allocator: std.mem.Allocator,
     ) !Frame {
-        // Determine hardfork from chain rules
-        const hardfork = chain_rules.getHardfork();
-
         return Frame{
             .gas_remaining = gas_remaining,
             // MEMORY ALLOCATION: Stack for EVM execution
@@ -141,21 +119,11 @@ pub const Frame = struct {
             // Storage cluster
             .contract_address = contract_address,
             .state = state,
-
-            // Cold data
-            .input = input,
-            .code = &[_]u8{},
-            .hardfork = hardfork,
-
-            // All EIP validation done at compile time
-
-            .self_destruct = self_destruct,
-            .allocator = allocator,
         };
     }
 
-    pub fn deinit(self: *Frame) void {
-        self.stack.deinit();
+    pub fn deinit(self: *Frame, allocator: std.mem.Allocator) void {
+        self.stack.deinit(allocator);
         self.memory.deinit();
     }
 
@@ -222,15 +190,6 @@ pub const Frame = struct {
         return self.host.access_address(addr) catch return ExecutionError.Error.OutOfMemory;
     }
 
-    /// Mark contract for destruction - uses direct self destruct pointer
-    pub fn mark_for_destruction(self: *Frame, recipient: primitives.Address.Address) !void {
-        if (self.self_destruct) |sd| {
-            @branchHint(.likely);
-            return sd.mark_for_destruction(self.contract_address, recipient);
-        }
-        return ExecutionError.Error.SelfDestructNotAvailable;
-    }
-
     /// Set output data for RETURN/REVERT operations - delegates to Host
     pub fn set_output(self: *Frame, data: []const u8) ExecutionError.Error!void {
         self.host.set_output(data) catch return ExecutionError.Error.OutOfMemory;
@@ -292,52 +251,6 @@ pub const Frame = struct {
     pub fn set_is_static(self: *Frame, static: bool) void {
         self.is_static = static;
     }
-
-    /// Create ChainRules for a specific hardfork
-    pub fn chainRulesForHardfork(hardfork: Hardfork) ChainRules {
-        return ChainRules.for_hardfork(hardfork);
-    }
-
-    /// Get the hardfork for this frame
-    pub fn getHardfork(self: *const Frame) Hardfork {
-        return self.hardfork;
-    }
-
-    /// Check if this frame's hardfork is greater than or equal to the specified hardfork
-    pub fn is_at_least(self: *const Frame, target_hardfork: Hardfork) bool {
-        return @intFromEnum(self.hardfork) >= @intFromEnum(target_hardfork);
-    }
-
-    /// Check if this frame's hardfork is greater than the specified hardfork
-    pub fn is_greater_than(self: *const Frame, target_hardfork: Hardfork) bool {
-        return @intFromEnum(self.hardfork) > @intFromEnum(target_hardfork);
-    }
-
-    /// Check if this frame's hardfork exactly matches the specified hardfork
-    pub fn is_exactly(self: *const Frame, target_hardfork: Hardfork) bool {
-        return self.hardfork == target_hardfork;
-    }
-
-    /// Check if a specific hardfork or EIP feature is enabled
-    pub fn hasHardforkFeature(self: *const Frame, comptime field_name: []const u8) bool {
-        // EIP-1153 (transient storage) was introduced in Cancun
-        if (std.mem.eql(u8, field_name, "is_eip1153")) return self.is_at_least(.CANCUN);
-
-        // Handle hardfork checks using the enum comparison
-        if (std.mem.eql(u8, field_name, "is_prague")) return self.is_at_least(.PRAGUE);
-        if (std.mem.eql(u8, field_name, "is_cancun")) return self.is_at_least(.CANCUN);
-        if (std.mem.eql(u8, field_name, "is_shanghai")) return self.is_at_least(.SHANGHAI);
-        if (std.mem.eql(u8, field_name, "is_merge")) return self.is_at_least(.MERGE);
-        if (std.mem.eql(u8, field_name, "is_london")) return self.is_at_least(.LONDON);
-        if (std.mem.eql(u8, field_name, "is_berlin")) return self.is_at_least(.BERLIN);
-        if (std.mem.eql(u8, field_name, "is_istanbul")) return self.is_at_least(.ISTANBUL);
-        if (std.mem.eql(u8, field_name, "is_petersburg")) return self.is_at_least(.PETERSBURG);
-        if (std.mem.eql(u8, field_name, "is_constantinople")) return self.is_at_least(.CONSTANTINOPLE);
-        if (std.mem.eql(u8, field_name, "is_byzantium")) return self.is_at_least(.BYZANTIUM);
-        if (std.mem.eql(u8, field_name, "is_homestead")) return self.is_at_least(.HOMESTEAD);
-
-        @compileError("Unknown hardfork feature: " ++ field_name);
-    }
 };
 
 // ============================================================================
@@ -353,14 +266,6 @@ const TestHelpers = struct {
         const code = &[_]u8{0x00}; // STOP
         const table = OpcodeMetadata.DEFAULT;
         return CodeAnalysis.from_code(allocator, code, &table);
-    }
-
-    fn createMockAccessList(allocator: std.mem.Allocator) !AccessList {
-        return AccessList.init(allocator);
-    }
-
-    fn createMockSelfDestruct(allocator: std.mem.Allocator) !SelfDestruct {
-        return SelfDestruct.init(allocator);
     }
 
     fn createMockDatabase(allocator: std.mem.Allocator) !MemoryDatabase {
@@ -383,11 +288,8 @@ test "Frame - basic initialization" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
 
-    var self_destruct = try TestHelpers.createMockSelfDestruct(allocator);
-    defer self_destruct.deinit();
     var db = try TestHelpers.createMockDatabase(allocator);
     defer db.deinit();
-    const chain_rules = ChainRules.for_hardfork(.CANCUN);
 
     var ctx = try Frame.init(
         1000000, // gas
@@ -399,14 +301,9 @@ test "Frame - basic initialization" {
         &analysis,
         host,
         db.to_database_interface(),
-        chain_rules,
-        &self_destruct,
-        &[_]u8{}, // input
         allocator,
-        false, // is_create
-        false, // is_delegate
     );
-    defer ctx.deinit();
+    defer ctx.deinit(allocator);
 
     // Test initial state
     try std.testing.expectEqual(@as(u64, 1000000), ctx.gas_remaining);
@@ -429,27 +326,25 @@ test "Frame - gas consumption" {
     defer analysis.deinit();
 
     // Create mock components
-    var access_list = try TestHelpers.createMockAccessList(allocator);
-    defer access_list.deinit();
-    var self_destruct = try TestHelpers.createMockSelfDestruct(allocator);
-    defer self_destruct.deinit();
     var db = try TestHelpers.createMockDatabase(allocator);
     defer db.deinit();
+    var mock_host = @import("host.zig").MockHost.init(allocator);
+    defer mock_host.deinit();
+    const host = mock_host.to_host();
 
     var ctx = try Frame.init(
         1000,
         false,
         0,
         primitives.Address.ZERO_ADDRESS,
+        primitives.Address.ZERO_ADDRESS,
+        0,
         &analysis,
-        &access_list,
+        host,
         db.to_database_interface(),
-        ChainRules.for_hardfork(.CANCUN),
-        &self_destruct,
-        &[_]u8{}, // input
         allocator,
     );
-    defer ctx.deinit();
+    defer ctx.deinit(allocator);
 
     // Test successful gas consumption
     try ctx.consume_gas(300);
@@ -474,27 +369,25 @@ test "Frame - jumpdest validation" {
     defer analysis.deinit();
 
     // Create mock components
-    var access_list = try TestHelpers.createMockAccessList(allocator);
-    defer access_list.deinit();
-    var self_destruct = try TestHelpers.createMockSelfDestruct(allocator);
-    defer self_destruct.deinit();
     var db = try TestHelpers.createMockDatabase(allocator);
     defer db.deinit();
+    var mock_host2 = @import("host.zig").MockHost.init(allocator);
+    defer mock_host2.deinit();
+    const host2 = mock_host2.to_host();
 
     var ctx = try Frame.init(
         1000,
         false,
         0,
         primitives.Address.ZERO_ADDRESS,
+        primitives.Address.ZERO_ADDRESS,
+        0,
         &analysis,
-        &access_list,
+        host2,
         db.to_database_interface(),
-        ChainRules.for_hardfork(.CANCUN),
-        &self_destruct,
-        &[_]u8{}, // input
         allocator,
     );
-    defer ctx.deinit();
+    defer ctx.deinit(allocator);
 
     // Test valid jump destinations (positions 2 and 4 have JUMPDEST)
     try std.testing.expect(ctx.valid_jumpdest(2));
@@ -524,9 +417,6 @@ test "Frame - address access tracking" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
 
-    var self_destruct = try TestHelpers.createMockSelfDestruct(allocator);
-    defer self_destruct.deinit();
-
     var db = try TestHelpers.createMockDatabase(allocator);
     defer db.deinit();
 
@@ -540,14 +430,9 @@ test "Frame - address access tracking" {
         &analysis,
         host,
         db.to_database_interface(),
-        ChainRules.for_hardfork(.CANCUN),
-        &self_destruct,
-        &[_]u8{}, // input
         allocator,
-        false, // is_create_call
-        false, // is_delegate_call
     );
-    defer ctx.deinit();
+    defer ctx.deinit(allocator);
 
     // Test address access (MockHost always returns cold cost)
     const cost1 = try ctx.access_address(primitives.Address.ZERO_ADDRESS);
@@ -564,15 +449,13 @@ test "Frame - static call restrictions" {
     var analysis = try TestHelpers.createEmptyAnalysis(allocator);
     defer analysis.deinit();
 
-    var access_list = try TestHelpers.createMockAccessList(allocator);
-    defer access_list.deinit();
-    var self_destruct = try TestHelpers.createMockSelfDestruct(allocator);
-    defer self_destruct.deinit();
-
     var db1 = try TestHelpers.createMockDatabase(allocator);
     defer db1.deinit();
     var db2 = try TestHelpers.createMockDatabase(allocator);
     defer db2.deinit();
+    var mock_host3 = @import("host.zig").MockHost.init(allocator);
+    defer mock_host3.deinit();
+    const host3 = mock_host3.to_host();
 
     // Create static context
     var static_ctx = try Frame.init(
@@ -580,15 +463,14 @@ test "Frame - static call restrictions" {
         true,
         0,
         primitives.Address.ZERO_ADDRESS,
+        primitives.Address.ZERO_ADDRESS,
+        0,
         &analysis,
-        &access_list,
+        host3,
         db1.to_database_interface(),
-        ChainRules.for_hardfork(.CANCUN),
-        &self_destruct,
-        &[_]u8{}, // input
         allocator,
     );
-    defer static_ctx.deinit();
+    defer static_ctx.deinit(allocator);
 
     // Create non-static context
     var normal_ctx = try Frame.init(
@@ -596,77 +478,21 @@ test "Frame - static call restrictions" {
         false,
         0,
         primitives.Address.ZERO_ADDRESS,
+        primitives.Address.ZERO_ADDRESS,
+        0,
         &analysis,
-        &access_list,
+        host3,
         db2.to_database_interface(),
-        ChainRules.for_hardfork(.CANCUN),
-        &self_destruct,
-        &[_]u8{}, // input
         allocator,
     );
-    defer normal_ctx.deinit();
+    defer normal_ctx.deinit(allocator);
 
     // Test static flag
     try std.testing.expect(static_ctx.is_static);
     try std.testing.expect(!normal_ctx.is_static);
 }
 
-test "Frame - selfdestruct availability" {
-    const allocator = std.testing.allocator;
-
-    var analysis = try TestHelpers.createEmptyAnalysis(allocator);
-    defer analysis.deinit();
-
-    var access_list = try TestHelpers.createMockAccessList(allocator);
-    defer access_list.deinit();
-
-    // Test with SelfDestruct available
-    var self_destruct = try TestHelpers.createMockSelfDestruct(allocator);
-    defer self_destruct.deinit();
-
-    var db3 = try TestHelpers.createMockDatabase(allocator);
-    defer db3.deinit();
-    var db4 = try TestHelpers.createMockDatabase(allocator);
-    defer db4.deinit();
-
-    var ctx_with_selfdestruct = try Frame.init(
-        1000,
-        false,
-        0,
-        primitives.Address.ZERO_ADDRESS,
-        &analysis,
-        &access_list,
-        db3.to_database_interface(),
-        ChainRules.for_hardfork(.CANCUN),
-        &self_destruct,
-        &[_]u8{}, // input
-        allocator,
-    );
-    defer ctx_with_selfdestruct.deinit();
-
-    // Should succeed
-    const recipient = [_]u8{0x01} ++ [_]u8{0} ** 19;
-    try ctx_with_selfdestruct.mark_for_destruction(recipient);
-
-    // Test without SelfDestruct (null)
-    var ctx_without_selfdestruct = try Frame.init(
-        1000,
-        false,
-        0,
-        primitives.Address.ZERO_ADDRESS,
-        &analysis,
-        &access_list,
-        db4.to_database_interface(),
-        ChainRules.for_hardfork(.CANCUN),
-        null,
-        &[_]u8{}, // input
-        allocator,
-    );
-    defer ctx_without_selfdestruct.deinit();
-
-    // Should return error
-    try std.testing.expectError(ExecutionError.Error.SelfDestructNotAvailable, ctx_without_selfdestruct.mark_for_destruction(recipient));
-}
+// Removed selfdestruct availability test since selfdestruct is now provided via Host
 
 test "Frame - memory footprint" {
     // Debug: Print component sizes

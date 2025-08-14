@@ -8,7 +8,7 @@ const Vm = @import("../evm.zig");
 const ExecutionError = @import("../execution/execution_error.zig");
 const Frame = @import("../frame.zig").Frame;
 const CodeAnalysis = @import("../analysis.zig");
-const ChainRules = @import("../frame.zig").ChainRules;
+const ChainRules = @import("../hardforks/chain_rules.zig").ChainRules;
 const Host = @import("../host.zig").Host;
 const evm_limits = @import("../constants/evm_limits.zig");
 
@@ -130,15 +130,12 @@ pub inline fn call_contract(self: *Vm, caller: primitives.Address.Address, to: p
         &analysis, // code analysis
         host, // host interface from self
         self.state.database, // database interface
-        self.chain_rules, // chain rules
-        null, // self_destruct (not supported in this context)
-        input, // input data
         self.allocator // allocator
     ) catch |err| {
         Log.debug("VM.call_contract: Frame creation failed with error: {}", .{err});
         return CallResult{ .success = false, .gas_left = 0, .output = null };
     };
-    defer context.deinit();
+    defer context.deinit(self.allocator);
 
     // TODO: Execute the contract using the Frame
     // This would require implementing a new execution method that works with Frame

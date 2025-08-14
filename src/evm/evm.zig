@@ -7,7 +7,8 @@ const primitives_internal = primitives;
 const AccessList = @import("access_list/access_list.zig");
 const ExecutionError = @import("execution/execution_error.zig");
 const Keccak256 = std.crypto.hash.sha3.Keccak256;
-const ChainRules = @import("frame.zig").ChainRules;
+const hardforks_chain_rules = @import("hardforks/chain_rules.zig");
+const ChainRules = hardforks_chain_rules.ChainRules;
 const GasConstants = @import("primitives").GasConstants;
 const CallJournal = @import("call_frame_stack.zig").CallJournal;
 const Host = @import("host.zig").Host;
@@ -114,6 +115,8 @@ current_snapshot_id: u32 = 0,
 
 /// Output buffer for the current frame (set via Host.set_output)
 current_output: []const u8 = &.{},
+/// Input buffer for the current frame (exposed via Host.get_input)
+current_input: []const u8 = &.{},
 
 /// Transaction-level gas refund accumulator for SSTORE and SELFDESTRUCT
 /// Signed accumulator: EIP-2200 allows negative deltas during execution.
@@ -154,7 +157,7 @@ comptime {
 ///
 /// // With custom hardfork and configuration
 /// const table = OpcodeMetadata.init_from_hardfork(.LONDON);
-/// const rules = Frame.chainRulesForHardfork(.LONDON);
+/// const rules = ChainRules.for_hardfork(.LONDON);
 /// var evm = try Evm.init(allocator, database, table, rules, null, 0, false, null);
 /// defer evm.deinit();
 /// ```
@@ -460,6 +463,11 @@ pub fn get_output(self: *Evm) []const u8 {
     return self.current_output;
 }
 
+/// Get the input buffer for the current frame (Host interface)
+pub fn get_input(self: *Evm) []const u8 {
+    return self.current_input;
+}
+
 /// Access an address and return the gas cost (Host interface)
 pub fn access_address(self: *Evm, address: primitives.Address.Address) !u64 {
     return self.access_list.access_address(address);
@@ -468,6 +476,20 @@ pub fn access_address(self: *Evm, address: primitives.Address.Address) !u64 {
 /// Access a storage slot and return the gas cost (Host interface)
 pub fn access_storage_slot(self: *Evm, contract_address: primitives.Address.Address, slot: u256) !u64 {
     return self.access_list.access_storage_slot(contract_address, slot);
+}
+
+/// Mark a contract for destruction (Host interface)
+pub fn mark_for_destruction(self: *Evm, contract_address: primitives.Address.Address, recipient: primitives.Address.Address) !void {
+    return self.self_destruct.mark_for_destruction(contract_address, recipient);
+}
+
+/// Hardfork helpers (Host interface)
+pub fn is_hardfork_at_least(self: *Evm, target: Hardfork) bool {
+    return @intFromEnum(self.chain_rules.getHardfork()) >= @intFromEnum(target);
+}
+
+pub fn get_hardfork(self: *Evm) Hardfork {
+    return self.chain_rules.getHardfork();
 }
 
 // The actual call implementation is in evm/call.zig
@@ -524,13 +546,13 @@ pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, 
     // Simple constructor execution: run initcode and deploy returned runtime code
     // Compute a deterministic test address (tests only assert code at returned address)
     const new_address: primitives_internal.Address.Address = [_]u8{0x22} ** 20;
-    
+
     // Check if this is a top-level call and charge base transaction cost
     const is_top_level = !self.is_executing;
     var remaining_gas = gas;
     if (is_top_level) {
         const base_cost = GasConstants.TxGas;
-        
+
         if (remaining_gas < base_cost) {
             return InterprResult{
                 .status = .OutOfGas,
@@ -541,7 +563,7 @@ pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, 
                 .success = false,
             };
         }
-        
+
         remaining_gas -= base_cost;
     }
 
@@ -618,7 +640,7 @@ pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, 
                     out = try self.allocator.dupe(u8, output);
                 }
                 const gas_left = frame.gas_remaining;
-                frame.deinit();
+                frame.deinit(self.allocator);
                 return InterprResult{
                     .status = .Revert,
                     .output = out,
@@ -631,7 +653,7 @@ pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, 
             ExecutionError.Error.OutOfGas => {
                 std.debug.print("[create_contract] OutOfGas during constructor\n", .{});
                 host.revert_to_snapshot(snapshot_id);
-                frame.deinit();
+                frame.deinit(self.allocator);
                 return InterprResult{
                     .status = .OutOfGas,
                     .output = null,
@@ -645,7 +667,7 @@ pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, 
                 std.debug.print("[create_contract] Failure during constructor: {}\n", .{e});
                 // Treat other errors as failure
                 host.revert_to_snapshot(snapshot_id);
-                frame.deinit();
+                frame.deinit(self.allocator);
                 return InterprResult{
                     .status = .Failure,
                     .output = null,
@@ -669,7 +691,7 @@ pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, 
     }
     // Add back the unspent frame gas to the caller, but exclude the precharged overhead
     const gas_left = frame.gas_remaining;
-    frame.deinit();
+    frame.deinit(self.allocator);
     return InterprResult{
         .status = .Success,
         .output = null,
@@ -729,7 +751,7 @@ test "Evm.init with custom opcode metadata and chain rules" {
 
     const db_interface = memory_db.to_database_interface();
     const custom_table = OpcodeMetadata.init_from_hardfork(.BERLIN);
-    const custom_rules = @import("frame.zig").Frame.chainRulesForHardfork(.BERLIN);
+    const custom_rules = hardforks_chain_rules.for_hardfork(.BERLIN);
 
     var evm = try Evm.init(allocator, db_interface, custom_table, custom_rules, null, 0, false, null);
     defer evm.deinit();
@@ -748,7 +770,7 @@ test "Evm.init with hardfork" {
 
     const db_interface = memory_db.to_database_interface();
     const jump_table = OpcodeMetadata.init_from_hardfork(Hardfork.LONDON);
-    const chain_rules = @import("frame.zig").Frame.chainRulesForHardfork(Hardfork.LONDON);
+    const chain_rules = hardforks_chain_rules.for_hardfork(Hardfork.LONDON);
     var evm = try Evm.init(allocator, db_interface, jump_table, chain_rules, null, 0, false, null);
     defer evm.deinit();
 
@@ -851,7 +873,7 @@ test "Evm initialization with different hardforks" {
 
     for (hardforks) |hardfork| {
         const jump_table = OpcodeMetadata.init_from_hardfork(hardfork);
-        const chain_rules = @import("frame.zig").Frame.chainRulesForHardfork(hardfork);
+        const chain_rules = hardforks_chain_rules.for_hardfork(hardfork);
         var evm = try Evm.init(allocator, db_interface, jump_table, chain_rules, null, 0, false, null);
         defer evm.deinit();
 
@@ -1052,7 +1074,7 @@ test "Evm fuzz: initialization with random hardforks" {
     while (i < 50) : (i += 1) {
         const hardfork = hardforks[random.intRangeAtMost(usize, 0, hardforks.len - 1)];
         const jump_table = OpcodeMetadata.init_from_hardfork(hardfork);
-        const chain_rules = @import("frame.zig").Frame.chainRulesForHardfork(hardfork);
+        const chain_rules = hardforks_chain_rules.for_hardfork(hardfork);
         var evm = try Evm.init(allocator, db_interface, jump_table, chain_rules, null, 0, false, null);
         defer evm.deinit();
 
@@ -1222,7 +1244,7 @@ test "Evm.init creates EVM with custom settings" {
 
     const db_interface = memory_db.to_database_interface();
     const custom_table = OpcodeMetadata.init_from_hardfork(.BERLIN);
-    const custom_rules = @import("frame.zig").Frame.chainRulesForHardfork(.BERLIN);
+    const custom_rules = hardforks_chain_rules.for_hardfork(.BERLIN);
 
     var evm = try Evm.init(allocator, db_interface, custom_table, custom_rules, null, 42, true, null);
     defer evm.deinit();
@@ -1326,7 +1348,7 @@ test "Evm initialization with different hardforks using builder" {
 
     for (hardforks) |hardfork| {
         const table = OpcodeMetadata.init_from_hardfork(hardfork);
-        const rules = @import("frame.zig").Frame.chainRulesForHardfork(hardfork);
+        const rules = hardforks_chain_rules.for_hardfork(hardfork);
 
         var evm = try Evm.init(allocator, db_interface, table, rules, null, 0, false, null);
         defer evm.deinit();
@@ -1377,7 +1399,7 @@ test "fuzz_evm_initialization_states" {
 
             // Test initialization with various state combinations
             const jump_table = OpcodeMetadata.init_from_hardfork(hardfork);
-            const chain_rules = @import("frame.zig").Frame.chainRulesForHardfork(hardfork);
+            const chain_rules = hardforks_chain_rules.for_hardfork(hardfork);
             var evm = try Evm.init(allocator, db_interface, jump_table, chain_rules, null, 0, false, null);
             defer evm.deinit();
 
@@ -1565,7 +1587,7 @@ test "fuzz_evm_hardfork_configurations" {
             const hardfork = hardforks[hardfork_idx];
 
             const jump_table = OpcodeMetadata.init_from_hardfork(hardfork);
-            const chain_rules = @import("frame.zig").Frame.chainRulesForHardfork(hardfork);
+            const chain_rules = hardforks_chain_rules.for_hardfork(hardfork);
             var evm = try Evm.init(allocator, db_interface, jump_table, chain_rules, null, 0, false, null);
             defer evm.deinit();
 

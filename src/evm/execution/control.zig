@@ -202,7 +202,9 @@ pub fn op_selfdestruct_legacy(context: *anyopaque) ExecutionError.Error!void {
     }
 
     // Mark contract for destruction at end of transaction
-    try frame.mark_for_destruction(recipient);
+    frame.host.mark_for_destruction(frame.contract_address, recipient) catch {
+        return ExecutionError.Error.OutOfMemory;
+    };
 
     // Halt execution
     return ExecutionError.Error.STOP;
@@ -244,7 +246,9 @@ pub fn op_selfdestruct(context: *anyopaque) ExecutionError.Error!void {
     }
 
     // Mark contract for destruction at end of transaction
-    try frame.mark_for_destruction(recipient);
+    frame.host.mark_for_destruction(frame.contract_address, recipient) catch {
+        return ExecutionError.Error.OutOfMemory;
+    };
 
     // Halt execution
     return ExecutionError.Error.STOP;

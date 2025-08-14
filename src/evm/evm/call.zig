@@ -4,7 +4,7 @@ const ExecutionError = @import("../execution/execution_error.zig");
 const InterpretResult = @import("interpret_result.zig").InterpretResult;
 const RunResult = @import("run_result.zig").RunResult;
 const Frame = @import("../frame.zig").Frame;
-const ChainRules = @import("../frame.zig").ChainRules;
+const ChainRules = @import("../hardforks/chain_rules.zig").ChainRules;
 const AccessList = @import("../access_list.zig").AccessList;
 const SelfDestruct = @import("../self_destruct.zig").SelfDestruct;
 const CreatedContracts = @import("../created_contracts.zig").CreatedContracts;
@@ -224,12 +224,9 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
             analysis_ptr, // analysis
             host,
             self.state.database,
-            ChainRules{},
-            &self.self_destruct,
-            call_info.input, // input
             self.allocator, // use general allocator for frame-owned allocations
         );
-        self.frame_stack.?[0].code = call_info.code;
+        // Code is already handled through the CodeAnalysis passed to Frame.init
         // Frame resources will be released after execution completes
 
         // Mark that we've allocated the first frame
@@ -277,16 +274,13 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
             analysis_ptr, // analysis
             host,
             self.state.database,
-            ChainRules{},
-            &self.self_destruct,
-            call_info.input, // input
             self.allocator, // use general allocator for frame-owned allocations
         ) catch {
             // Frame initialization failed, revert snapshot
             if (self.current_frame_depth > 0) host.revert_to_snapshot(snapshot_id);
             return CallResult{ .success = false, .gas_left = call_info.gas, .output = &.{} };
         };
-        self.frame_stack.?[new_depth].code = call_info.code;
+        // Code is already handled through the CodeAnalysis passed to Frame.init
 
         // Update tracking
         self.current_frame_depth = new_depth;
@@ -325,6 +319,8 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     }
 
     const current_frame = &self.frame_stack.?[self.current_frame_depth];
+    // Expose input to Host via EVM field for opcodes like CALLDATALOAD/COPY
+    self.current_input = call_info.input;
     Log.debug("[call] Starting interpret at depth {}, gas={}", .{ self.current_frame_depth, current_frame.gas_remaining });
 
     // For nested calls, capture parent pointers before interpret
@@ -421,7 +417,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     }
 
     // Release frame resources
-    current_frame.deinit();
+    current_frame.deinit(self.allocator);
 
     // For nested calls, verify parent pointers after deinit
     if (self.current_frame_depth > 0) {

@@ -24,7 +24,7 @@ pub const CallParams = union(enum) {
     },
     /// DELEGATECALL operation (preserves caller context)
     delegatecall: struct {
-        caller: Address,  // Original caller, not current contract
+        caller: Address, // Original caller, not current contract
         to: Address,
         input: []const u8,
         gas: u64,
@@ -32,7 +32,7 @@ pub const CallParams = union(enum) {
     /// STATICCALL operation (read-only)
     staticcall: struct {
         caller: Address,
-        to: Address, 
+        to: Address,
         input: []const u8,
         gas: u64,
     },
@@ -113,6 +113,13 @@ pub const Host = struct {
         access_address: *const fn (ptr: *anyopaque, address: Address) anyerror!u64,
         /// Access a storage slot and return the gas cost (EIP-2929)
         access_storage_slot: *const fn (ptr: *anyopaque, contract_address: Address, slot: u256) anyerror!u64,
+        /// Mark a contract for destruction (SELFDESTRUCT tracking)
+        mark_for_destruction: *const fn (ptr: *anyopaque, contract_address: Address, recipient: Address) anyerror!void,
+        /// Get current call input/calldata
+        get_input: *const fn (ptr: *anyopaque) []const u8,
+        /// Hardfork helpers
+        is_hardfork_at_least: *const fn (ptr: *anyopaque, target: @import("hardforks/hardfork.zig").Hardfork) bool,
+        get_hardfork: *const fn (ptr: *anyopaque) @import("hardforks/hardfork.zig").Hardfork,
     };
 
     /// Initialize a Host interface from any implementation
@@ -205,6 +212,26 @@ pub const Host = struct {
                 return self.access_storage_slot(contract_address, slot);
             }
 
+            fn vtable_mark_for_destruction(ptr: *anyopaque, contract_address: Address, recipient: Address) anyerror!void {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.mark_for_destruction(contract_address, recipient);
+            }
+
+            fn vtable_get_input(ptr: *anyopaque) []const u8 {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_input();
+            }
+
+            fn vtable_is_hardfork_at_least(ptr: *anyopaque, target: @import("hardforks/hardfork.zig").Hardfork) bool {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.is_hardfork_at_least(target);
+            }
+
+            fn vtable_get_hardfork(ptr: *anyopaque) @import("hardforks/hardfork.zig").Hardfork {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_hardfork();
+            }
+
             const vtable = VTable{
                 .get_balance = vtable_get_balance,
                 .account_exists = vtable_account_exists,
@@ -222,6 +249,10 @@ pub const Host = struct {
                 .get_output = vtable_get_output,
                 .access_address = vtable_access_address,
                 .access_storage_slot = vtable_access_storage_slot,
+                .mark_for_destruction = vtable_mark_for_destruction,
+                .get_input = vtable_get_input,
+                .is_hardfork_at_least = vtable_is_hardfork_at_least,
+                .get_hardfork = vtable_get_hardfork,
             };
         };
 
@@ -310,26 +341,45 @@ pub const Host = struct {
     pub fn access_storage_slot(self: Host, contract_address: Address, slot: u256) !u64 {
         return self.vtable.access_storage_slot(self.ptr, contract_address, slot);
     }
+
+    /// Mark a contract for destruction (Host interface)
+    pub fn mark_for_destruction(self: Host, contract_address: Address, recipient: Address) !void {
+        return self.vtable.mark_for_destruction(self.ptr, contract_address, recipient);
+    }
+
+    /// Get current call input/calldata (Host interface)
+    pub fn get_input(self: Host) []const u8 {
+        return self.vtable.get_input(self.ptr);
+    }
+
+    /// Hardfork helpers
+    pub fn is_hardfork_at_least(self: Host, target: @import("hardforks/hardfork.zig").Hardfork) bool {
+        return self.vtable.is_hardfork_at_least(self.ptr, target);
+    }
+
+    pub fn get_hardfork(self: Host) @import("hardforks/hardfork.zig").Hardfork {
+        return self.vtable.get_hardfork(self.ptr);
+    }
 };
 
 /// Mock host implementation for testing
 pub const MockHost = struct {
     allocator: std.mem.Allocator,
     logs: std.ArrayList(LogEntry),
-    
+
     pub const LogEntry = struct {
         contract_address: Address,
         topics: []const u256,
         data: []const u8,
     };
-    
+
     pub fn init(allocator: std.mem.Allocator) MockHost {
         return MockHost{
             .allocator = allocator,
             .logs = std.ArrayList(LogEntry).init(allocator),
         };
     }
-    
+
     pub fn deinit(self: *MockHost) void {
         // Clean up stored log data
         for (self.logs.items) |log| {
@@ -338,25 +388,25 @@ pub const MockHost = struct {
         }
         self.logs.deinit();
     }
-    
+
     pub fn get_balance(self: *MockHost, address: Address) u256 {
         _ = self;
         _ = address;
         return 1000; // Mock balance
     }
-    
+
     pub fn account_exists(self: *MockHost, address: Address) bool {
         _ = self;
         _ = address;
         return true; // Mock exists
     }
-    
+
     pub fn get_code(self: *MockHost, address: Address) []const u8 {
         _ = self;
         _ = address;
         return &.{}; // Mock empty code
     }
-    
+
     pub fn get_block_info(self: *MockHost) BlockInfo {
         _ = self;
         return BlockInfo{
@@ -369,7 +419,7 @@ pub const MockHost = struct {
             .prev_randao = [_]u8{0} ** 32,
         };
     }
-    
+
     pub fn emit_log(self: *MockHost, contract_address: Address, topics: []const u256, data: []const u8) void {
         // Store a copy of the log for testing
         const topics_copy = self.allocator.dupe(u256, topics) catch return;
@@ -377,7 +427,7 @@ pub const MockHost = struct {
             self.allocator.free(topics_copy);
             return;
         };
-        
+
         self.logs.append(LogEntry{
             .contract_address = contract_address,
             .topics = topics_copy,
@@ -387,7 +437,7 @@ pub const MockHost = struct {
             self.allocator.free(data_copy);
         };
     }
-    
+
     pub fn call(self: *MockHost, params: CallParams) CallResult {
         _ = self;
         _ = params;
@@ -398,32 +448,32 @@ pub const MockHost = struct {
             .output = &.{},
         };
     }
-    
+
     pub fn register_created_contract(self: *MockHost, address: Address) !void {
         _ = self;
         _ = address;
         // Mock implementation - do nothing
     }
-    
+
     pub fn was_created_in_tx(self: *MockHost, address: Address) bool {
         _ = self;
         _ = address;
         // Mock implementation - always return false
         return false;
     }
-    
+
     pub fn create_snapshot(self: *MockHost) u32 {
         _ = self;
         // Mock implementation - return dummy snapshot id
         return 0;
     }
-    
+
     pub fn revert_to_snapshot(self: *MockHost, snapshot_id: u32) void {
         _ = self;
         _ = snapshot_id;
         // Mock implementation - do nothing
     }
-    
+
     pub fn record_storage_change(self: *MockHost, address: Address, slot: u256, original_value: u256) !void {
         _ = self;
         _ = address;
@@ -431,7 +481,7 @@ pub const MockHost = struct {
         _ = original_value;
         // Mock implementation - do nothing
     }
-    
+
     pub fn get_original_storage(self: *MockHost, address: Address, slot: u256) ?u256 {
         _ = self;
         _ = address;
@@ -439,26 +489,26 @@ pub const MockHost = struct {
         // Mock implementation - return null
         return null;
     }
-    
+
     pub fn set_output(self: *MockHost, output: []const u8) !void {
         _ = self;
         _ = output;
         // Mock implementation - do nothing
     }
-    
+
     pub fn get_output(self: *MockHost) []const u8 {
         _ = self;
         // Mock implementation - return empty
         return &.{};
     }
-    
+
     pub fn access_address(self: *MockHost, address: Address) !u64 {
         _ = self;
         _ = address;
         // Mock implementation - return cold access cost
         return 2600;
     }
-    
+
     pub fn access_storage_slot(self: *MockHost, contract_address: Address, slot: u256) !u64 {
         _ = self;
         _ = contract_address;
@@ -466,7 +516,7 @@ pub const MockHost = struct {
         // Mock implementation - return cold storage access cost
         return 2100;
     }
-    
+
     pub fn to_host(self: *MockHost) Host {
         return Host.init(self);
     }
@@ -474,33 +524,33 @@ pub const MockHost = struct {
 
 test "Host interface with MockHost" {
     const allocator = std.testing.allocator;
-    
+
     var mock_host = MockHost.init(allocator);
     defer mock_host.deinit();
-    
+
     const host = mock_host.to_host();
-    
+
     // Test balance
     const balance = host.get_balance(Address.ZERO);
     try std.testing.expectEqual(@as(u256, 1000), balance);
-    
+
     // Test account exists
     try std.testing.expect(host.account_exists(Address.ZERO));
-    
+
     // Test code
     const code = host.get_code(Address.ZERO);
     try std.testing.expectEqual(@as(usize, 0), code.len);
-    
+
     // Test block info
     const block_info = host.get_block_info();
     try std.testing.expectEqual(@as(u64, 1), block_info.number);
     try std.testing.expectEqual(@as(u64, 1000), block_info.timestamp);
-    
+
     // Test log emission
     const topics = [_]u256{ 0x1234, 0x5678 };
     const data = "test log data";
     host.emit_log(Address.ZERO, &topics, data);
-    
+
     // Verify log was stored
     try std.testing.expectEqual(@as(usize, 1), mock_host.logs.items.len);
     const stored_log = mock_host.logs.items[0];

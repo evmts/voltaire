@@ -886,7 +886,7 @@ pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
     var total_gas_cost = base_gas + memory_expansion_cost;
 
     // EIP-2929: Check if address is cold and add extra gas cost
-    if (frame.is_at_least(.BERLIN)) {
+    if (frame.host.is_hardfork_at_least(.BERLIN)) {
         const access_cost = try frame.access_address(to_address);
         total_gas_cost += access_cost;
     }
@@ -1040,7 +1040,7 @@ pub fn op_callcode(context: *anyopaque) ExecutionError.Error!void {
     var total_gas_cost: u64 = GasConstants.CALL_BASE_COST + memory_expansion_cost;
 
     // EIP-2929 cold/warm account access cost
-    if (frame.is_at_least(.BERLIN)) {
+    if (frame.host.is_hardfork_at_least(.BERLIN)) {
         const access_cost = try frame.access_address(to_address);
         if (access_cost > GasConstants.WarmStorageReadCost) {
             total_gas_cost += GasConstants.ColdAccountAccessCost - GasConstants.WarmStorageReadCost;
@@ -1150,7 +1150,7 @@ pub fn op_delegatecall(context: *anyopaque) ExecutionError.Error!void {
 
     const to_address = from_u256(to);
 
-    if (frame.is_at_least(.BERLIN)) {
+    if (frame.host.is_hardfork_at_least(.BERLIN)) {
         const access_cost = try frame.access_address(to_address);
         total_gas_cost += access_cost;
     }
@@ -1286,7 +1286,7 @@ pub fn op_staticcall(context: *anyopaque) ExecutionError.Error!void {
     Log.debug("[STATICCALL] Converted address: {any}", .{to_address});
 
     // EIP-2929: Check if address is cold and add extra gas cost
-    if (frame.is_at_least(.BERLIN)) {
+    if (frame.host.is_hardfork_at_least(.BERLIN)) {
         const access_cost = try frame.access_address(to_address);
         total_gas_cost += access_cost;
     }
@@ -1445,7 +1445,7 @@ pub fn op_selfdestruct(context: *anyopaque) ExecutionError.Error!void {
     var gas_cost = GasConstants.SelfDestructCost;
 
     // EIP-2929: Check if recipient is cold and add extra gas cost
-    if (frame.is_at_least(.BERLIN)) {
+    if (frame.host.is_hardfork_at_least(.BERLIN)) {
         const access_cost = try frame.access_list.get_call_cost(recipient_address);
         gas_cost += access_cost;
     }
@@ -1459,21 +1459,21 @@ pub fn op_selfdestruct(context: *anyopaque) ExecutionError.Error!void {
     // try frame.journal.record_selfdestruct(frame.snapshot_id, frame.contract_address, recipient_address);
 
     // EIP-6780: Check if contract was created in this transaction
-    const should_destroy = if (frame.is_at_least(.CANCUN)) blk: {
+    const should_destroy = if (frame.host.is_hardfork_at_least(.CANCUN)) blk: {
         // Only destroy if contract was created in this transaction
         break :blk frame.host.was_created_in_tx(frame.contract_address);
     } else true; // Pre-Cancun: always destroy
 
-    // Mark for destruction or just transfer balance based on EIP-6780
-    if (frame.self_destruct) |sd| {
-        if (should_destroy) {
-            // Full destruction: mark for end-of-transaction cleanup
-            try sd.mark_for_destruction(frame.contract_address, recipient_address);
-        } else {
-            // EIP-6780: Only transfer balance, don't destroy
-            // This will be handled in apply_destructions by checking created_contracts
-            try sd.mark_for_destruction(frame.contract_address, recipient_address);
-        }
+    // Mark for destruction or just transfer balance based on EIP-6780 via Host
+    if (should_destroy) {
+        frame.host.mark_for_destruction(frame.contract_address, recipient_address) catch {
+            return ExecutionError.Error.OutOfMemory;
+        };
+    } else {
+        // Cancun+: Only transfer balance, no deletion
+        frame.host.mark_for_destruction(frame.contract_address, recipient_address) catch {
+            return ExecutionError.Error.OutOfMemory;
+        };
     }
 
     // SELFDESTRUCT terminates execution immediately - we would signal this

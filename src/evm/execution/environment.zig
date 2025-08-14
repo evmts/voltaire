@@ -245,7 +245,7 @@ pub fn op_chainid(context: *anyopaque) ExecutionError.Error!void {
 /// Stack: [] → [size]
 pub fn op_calldatasize(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
-    frame.stack.append_unsafe(@as(u256, @intCast(frame.input.len)));
+    frame.stack.append_unsafe(@as(u256, @intCast(frame.host.get_input().len)));
 }
 
 /// CODESIZE opcode (0x38) - Get size of code
@@ -272,7 +272,7 @@ pub fn op_calldataload(context: *anyopaque) ExecutionError.Error!void {
         return;
     }
     const offset_usize: usize = @intCast(offset);
-    const calldata = frame.input;
+    const calldata = frame.host.get_input();
     if (offset_usize >= calldata.len) {
         frame.stack.append_unsafe(0);
         return;
@@ -318,7 +318,7 @@ pub fn op_calldatacopy(context: *anyopaque) ExecutionError.Error!void {
     try frame.consume_gas(GasConstants.CopyGas * word_size);
 
     // Copy from calldata to memory with zero-fill as needed
-    try frame.memory.set_data_bounded(mem_offset_usize, frame.input, data_offset_usize, size_usize);
+    try frame.memory.set_data_bounded(mem_offset_usize, frame.host.get_input(), data_offset_usize, size_usize);
 }
 
 /// CODECOPY opcode (0x39) - Copy code to memory

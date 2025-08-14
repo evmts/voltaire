@@ -20,7 +20,7 @@ pub fn op_sload(context: *anyopaque) ExecutionError.Error!void {
 
     const slot = try frame.stack.peek_unsafe();
 
-    if (frame.is_at_least(.BERLIN)) {
+    if (frame.host.is_hardfork_at_least(.BERLIN)) {
         const is_cold = frame.mark_storage_slot_warm(slot) catch {
             return ExecutionError.Error.OutOfMemory;
         };
@@ -46,7 +46,7 @@ pub fn op_sstore(context: *anyopaque) ExecutionError.Error!void {
 
     // EIP-1706: Disable SSTORE with gasleft lower than call stipend (2300)
     // This prevents reentrancy attacks by ensuring enough gas remains for exception handling
-    if (frame.is_at_least(.ISTANBUL) and frame.gas_remaining <= GasConstants.SstoreSentryGas) {
+    if (frame.host.is_hardfork_at_least(.ISTANBUL) and frame.gas_remaining <= GasConstants.SstoreSentryGas) {
         @branchHint(.unlikely);
         return ExecutionError.Error.OutOfGas;
     }
@@ -69,7 +69,7 @@ pub fn op_sstore(context: *anyopaque) ExecutionError.Error!void {
 
     var total_gas: u64 = 0;
     // Compute full EIP-2200/EIP-3529 cost using original/current/new
-    const hardfork = frame.getHardfork();
+    const hardfork = frame.host.get_hardfork();
     const cost = storage_costs.calculateSstoreCost(hardfork, original_value, current_value, value, is_cold);
     total_gas += cost.gas;
 

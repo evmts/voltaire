@@ -175,7 +175,7 @@ pub fn fuzz_comparison_operations(allocator: std.mem.Allocator, operations: []co
     const CodeAnalysis = @import("../analysis.zig");
     const AccessList = @import("../access_list.zig").AccessList;
     const SelfDestruct = @import("../self_destruct.zig").SelfDestruct;
-    const ChainRules = @import("../frame.zig").ChainRules;
+    const ChainRules = @import("../hardforks/chain_rules.zig").ChainRules;
 
     for (operations) |op| {
         var memory_db = MemoryDatabase.init(allocator);
