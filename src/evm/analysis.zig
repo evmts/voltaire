@@ -1266,6 +1266,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                             const block_idx: usize = block_idx_u16;
                             if (block_idx < final_instructions.len) {
                                 final_instructions[ji].next_instruction = &final_instructions[block_idx];
+                                // Neutralize preceding PUSH so it does not push the dest at runtime
+                                final_instructions[ji - 1].opcode_fn = UnreachableHandler;
+                                final_instructions[ji - 1].arg = .none;
                             }
                         }
                     }
@@ -1281,6 +1284,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                             const block_idx: usize = block_idx_u16;
                             if (block_idx < final_instructions.len) {
                                 final_instructions[ji].arg = .{ .conditional_jump = &final_instructions[block_idx] };
+                                // Neutralize preceding PUSH so it does not push the dest at runtime
+                                final_instructions[ji - 1].opcode_fn = UnreachableHandler;
+                                final_instructions[ji - 1].arg = .none;
                             }
                         }
                     }
