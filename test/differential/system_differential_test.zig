@@ -6,7 +6,7 @@ const Address = primitives.Address;
 const Log = @import("evm").Log;
 
 // Import REVM wrapper from module
-const revm_wrapper = @import("revm_wrapper");
+const revm_wrapper = @import("revm");
 
 test "RETURN opcode returns data from memory" {
     const allocator = testing.allocator;
@@ -719,10 +719,12 @@ test "DELEGATECALL opcode executes code in caller's context" {
     // Contract B bytecode: uses DELEGATECALL to execute contract A's code
     const contract_b_bytecode = [_]u8{
         // Setup DELEGATECALL to contract A
+        // Stack order for DELEGATECALL: [gas, to, args_offset, args_size, ret_offset, ret_size]
+        // Push in reverse order (first pushed = bottom of stack)
+        0x60, 0x00, // PUSH1 0 (retSize)
         0x60, 0x00, // PUSH1 0 (retOffset)
-        0x60, 0x00, // PUSH1 0 (retSize) - 0 means return all data
-        0x60, 0x00, // PUSH1 0 (argsOffset)
         0x60, 0x00, // PUSH1 0 (argsSize)
+        0x60, 0x00, // PUSH1 0 (argsOffset)
         0x73, // PUSH20 (address of contract A)
         0x33,
         0x33,
@@ -814,6 +816,7 @@ test "DELEGATECALL opcode executes code in caller's context" {
     const revm_succeeded = revm_result.success;
     const guillotine_succeeded = guillotine_result.success;
 
+    std.debug.print("DELEGATECALL test: REVM success={}, Guillotine success={}\n", .{ revm_succeeded, guillotine_succeeded });
     try testing.expect(revm_succeeded == guillotine_succeeded);
 
     if (revm_succeeded and guillotine_succeeded) {
@@ -1061,6 +1064,7 @@ test "CREATE opcode with subsequent CALL to deployed contract" {
     const revm_succeeded = revm_result.success;
     const guillotine_succeeded = guillotine_result.success;
 
+    std.debug.print("CREATE test: REVM success={}, Guillotine success={}\n", .{ revm_succeeded, guillotine_succeeded });
     try testing.expect(revm_succeeded == guillotine_succeeded);
 
     if (revm_succeeded and guillotine_succeeded) {

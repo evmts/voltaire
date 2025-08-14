@@ -162,6 +162,10 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         .jump_unresolved => {
             @branchHint(.unlikely);
             pre_step(self, frame, instruction, &loop_iterations);
+            // Check stack has at least 1 element for the jump destination
+            if (frame.stack.size() < 1) {
+                return ExecutionError.Error.StackUnderflow;
+            }
             // Compute target from popped PC and validate jumpdest on the fly
             const dest = frame.stack.pop_unsafe();
             if (!frame.valid_jumpdest(dest)) {
@@ -180,6 +184,10 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         // Some conditional jumps are not known until runtime because the value is a dynamic value
         .conditional_jump_unresolved => {
             pre_step(self, frame, instruction, &loop_iterations);
+            // Check stack has at least 2 elements for condition and destination
+            if (frame.stack.size() < 2) {
+                return ExecutionError.Error.StackUnderflow;
+            }
             // EVM stack order: [dest, cond] with cond on top. Pop condition first, then destination.
             const condition = frame.stack.pop_unsafe();
             const dest = frame.stack.pop_unsafe();

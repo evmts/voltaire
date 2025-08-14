@@ -231,7 +231,7 @@ pub fn init_from_hardfork(hardfork: Hardfork) OpcodeMetadata {
             jt.constant_gas[idx] = op.constant_gas;
             jt.min_stack[idx] = op.min_stack;
             jt.max_stack[idx] = op.max_stack;
-            jt.undefined_flags[idx] = op.undefined;
+            jt.undefined_flags[idx] = false;
         }
     }
 
