@@ -32,7 +32,7 @@ test "fuzz_arithmetic_basic_operations" {
         .withGas(1000000)
         .withCaller([_]u8{0x11} ** 20)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test ADD operation
     try frame.stack.append(5);
@@ -75,7 +75,7 @@ test "fuzz_arithmetic_overflow_cases" {
         .withGas(1000000)
         .withCaller([_]u8{0x11} ** 20)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test ADD with max values (should wrap around)
     try frame.stack.append(std.math.maxInt(u256));
@@ -118,7 +118,7 @@ test "fuzz_arithmetic_division_by_zero" {
         .withGas(1000000)
         .withCaller([_]u8{0x11} ** 20)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test DIV by zero
     try frame.stack.append(0);  // divisor
@@ -161,7 +161,7 @@ test "fuzz_arithmetic_modulo_operations" {
         .withGas(1000000)
         .withCaller([_]u8{0x11} ** 20)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test MOD operation: 10 % 3 = 1
     try frame.stack.append(10); // dividend (a)

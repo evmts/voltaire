@@ -31,7 +31,7 @@ test "fuzz_storage_sload_operations" {
         .withContract(&contract)
         .withGas(1000000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     const slot: u256 = 0x123456789ABCDEF;
     
@@ -74,7 +74,7 @@ test "fuzz_storage_sstore_sload_roundtrip" {
         .withContract(&contract)
         .withGas(1000000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     const slot: u256 = 0x123456789ABCDEF;
     const value: u256 = 0xFEDCBA9876543210;
@@ -123,7 +123,7 @@ test "fuzz_storage_tload_operations" {
         .withContract(&contract)
         .withGas(1000000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     const slot: u256 = 0x123456789ABCDEF;
     
@@ -166,7 +166,7 @@ test "fuzz_storage_tstore_tload_roundtrip" {
         .withContract(&contract)
         .withGas(1000000)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     const slot: u256 = 0x123456789ABCDEF;
     const value: u256 = 0xFEDCBA9876543210;

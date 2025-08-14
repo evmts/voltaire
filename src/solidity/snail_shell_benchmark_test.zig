@@ -87,7 +87,7 @@ test "SnailShellBenchmark EVM execution" {
 
     std.debug.print("Step 7: Initializing frame (THIS IS WHERE SEGFAULT LIKELY OCCURS)...\n", .{});
     var frame = try evm.Frame.init(allocator, &contract_obj_mut);
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     std.debug.print("Step 7: ✓ Frame initialized\n", .{});
 
     // Check frame.stack pointer before accessing it

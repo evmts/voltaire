@@ -33,7 +33,7 @@ test "fuzz_environment_address_operations" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test ADDRESS operation
     var interpreter = evm.Operation.Interpreter = &vm;
@@ -74,7 +74,7 @@ test "fuzz_environment_caller_operations" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test CALLER operation
     var interpreter = evm.Operation.Interpreter = &vm;
@@ -115,7 +115,7 @@ test "fuzz_environment_callvalue_operations" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test CALLVALUE operation
     var interpreter = evm.Operation.Interpreter = &vm;
@@ -155,7 +155,7 @@ test "fuzz_environment_codesize_operations" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test CODESIZE operation
     var interpreter = evm.Operation.Interpreter = &vm;

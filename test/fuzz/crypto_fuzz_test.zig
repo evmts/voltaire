@@ -37,7 +37,7 @@ test "fuzz_crypto_keccak256_empty" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test KECCAK256 of empty data: stack order [size, offset] where offset is on top
     try frame.stack.append(0); // size
@@ -82,7 +82,7 @@ test "fuzz_crypto_keccak256_basic" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Set up test data in memory
     const test_data = "Hello, World!";
@@ -135,7 +135,7 @@ test "fuzz_crypto_keccak256_edge_cases" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test with single byte
     try frame.memory.set_data(0, &[_]u8{0x42});

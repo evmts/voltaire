@@ -32,7 +32,7 @@ test "fuzz_control_pc_operations" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test PC operation
     var interpreter = evm.Operation.Interpreter = &vm;
@@ -72,7 +72,7 @@ test "fuzz_control_gas_operations" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     const initial_gas = frame.gas_remaining;
     
@@ -114,7 +114,7 @@ test "fuzz_control_jumpdest_operations" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test JUMPDEST operation (should be a no-op)
     const initial_stack_size = frame.stack.size;

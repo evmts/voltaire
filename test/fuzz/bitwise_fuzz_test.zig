@@ -32,7 +32,7 @@ test "fuzz_bitwise_and_operations" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test AND operation
     try frame.stack.append(0xF0F0F0F0F0F0F0F0);
@@ -75,7 +75,7 @@ test "fuzz_bitwise_or_operations" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test OR operation
     try frame.stack.append(0xF0F0F0F0F0F0F0F0);
@@ -118,7 +118,7 @@ test "fuzz_bitwise_xor_operations" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test XOR operation
     try frame.stack.append(0xAAAAAAAAAAAAAAAA);
@@ -161,7 +161,7 @@ test "fuzz_bitwise_not_operations" {
         .withGas(1000000)
         .withCaller(primitives.Address.ZERO)
         .build();
-    defer frame.deinit();
+    defer frame.deinit(allocator);
     
     // Test NOT operation
     try frame.stack.append(0);

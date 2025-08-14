@@ -55,7 +55,7 @@ test "TenThousandHashes benchmark test" {
 
     // Initialize frame
     var frame = try evm.Frame.init(allocator, &contract_obj_mut);
-    defer frame.deinit();
+    defer frame.deinit(allocator);
 
     // TODO: Once the compilers package is integrated, we would:
     // 1. Compile TenThousandHashesBenchmark.sol at runtime
