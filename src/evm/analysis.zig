@@ -682,7 +682,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = UnreachableHandler,
-                    .arg = .{ .word = &[_]u8{} },
+                    .arg = .{ .word = .{ .start_pc = 0, .len = 0 } },
                 };
                 instruction_count += 1;
                 pc += 1;
@@ -704,7 +704,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 pc_to_instruction[original_pc] = @intCast(instruction_count);
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = UnreachableHandler,
-                    .arg = .{ .word = code[start..end] },
+                    .arg = .{ .word = .{ .start_pc = @intCast(start), .len = @intCast(end - start) } },
                 };
                 Log.debug("[analysis] PUSH at pc={} size={} instruction_count={}", .{ original_pc, push_size, instruction_count });
                 instruction_count += 1;
@@ -1062,7 +1062,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
             .jump => {
                 // Case A: PUSH-immediate destination directly before JUMP
                 if (ji > 0 and final_instructions[ji - 1].arg == .word) {
-                    const target_pc = @import("instruction.zig").word_as_256(final_instructions[ji - 1].arg);
+                    const target_pc = @import("instruction.zig").word_as_256(final_instructions[ji - 1].arg, code);
                     if (target_pc < code.len) {
                         const block_idx_u16 = pc_to_block_start[@intCast(target_pc)];
                         if (block_idx_u16 != std.math.maxInt(u16)) {
@@ -1080,7 +1080,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
             .jumpi => {
                 // Case A: PUSH-immediate destination directly before JUMPI
                 if (ji > 0 and final_instructions[ji - 1].arg == .word) {
-                    const target_pc = @import("instruction.zig").word_as_256(final_instructions[ji - 1].arg);
+                    const target_pc = @import("instruction.zig").word_as_256(final_instructions[ji - 1].arg, code);
                     if (target_pc < code.len) {
                         const block_idx_u16 = pc_to_block_start[@intCast(target_pc)];
                         if (block_idx_u16 != std.math.maxInt(u16)) {
@@ -1227,7 +1227,7 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
                     else => {
                         // Otherwise check if previous instruction carried a PUSH immediate
                         if (idx > 0 and instructions[idx - 1].arg == .word) {
-                            target_pc_opt = @import("instruction.zig").word_as_256(instructions[idx - 1].arg);
+                            target_pc_opt = @import("instruction.zig").word_as_256(instructions[idx - 1].arg, code);
                         }
                     },
                 }

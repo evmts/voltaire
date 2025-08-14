@@ -16,10 +16,10 @@ pub const JumpTarget = struct {
 /// This drives optimized execution without per-opcode decoding.
 pub const AnalysisArg = union(enum) {
     none,
-    /// Slice of the immediate bytes for PUSH-immediates and fused immediates.
-    /// We store a slice instead of a full u256 to minimize the memory footprint
-    /// of AnalysisArg which helps reduce cache evictions during interpretation.
-    word: []const u8,
+    /// Compact reference to PUSH-immediate bytes within original `code`.
+    /// Using a packed reference avoids a 16-byte slice and shrinks AnalysisArg
+    /// to fit within 16 bytes on 64-bit targets.
+    word: WordRef,
     // Unconditional jump variants
     jump, // resolved: pop 1; jump to next_instruction (pre-wired)
     jump_unresolved, // unresolved: pop 1; compute target at runtime
@@ -34,13 +34,24 @@ pub const AnalysisArg = union(enum) {
     dynamic_gas: DynamicGas,
 };
 
-/// Convert the `.word` byte slice (big-endian) into a u256 value.
-pub fn word_as_256(self: AnalysisArg) u256 {
+/// Compact reference to bytes in analyzed contract `code`.
+/// - `start_pc` is the byte offset within `code`
+/// - `len` is the number of immediate bytes (0..32)
+pub const WordRef = struct {
+    start_pc: u16,
+    len: u8,
+    _pad: u8 = 0,
+};
+
+/// Convert the `.word` reference (big-endian) into a u256 value using `code`.
+pub fn word_as_256(self: AnalysisArg, code: []const u8) u256 {
     switch (self) {
-        .word => |bytes| {
+        .word => |wr| {
             var v: u256 = 0;
             var i: usize = 0;
-            while (i < bytes.len) : (i += 1) v = (v << 8) | bytes[i];
+            const start: usize = wr.start_pc;
+            const end: usize = @min(start + wr.len, code.len);
+            while (i < (end - start)) : (i += 1) v = (v << 8) | code[start + i];
             return v;
         },
         else => return 0,

@@ -203,11 +203,13 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         },
         // A common pattern is to push a constant value to the stack and then execute
         // An instruction. So we combine the push and the instruction into a single instruction.
-        .word => |bytes| {
+        .word => |wr| {
             pre_step(self, frame, instruction, &loop_iterations);
             var v: u256 = 0;
             var i: usize = 0;
-            while (i < bytes.len) : (i += 1) v = (v << 8) | bytes[i];
+            const start: usize = wr.start_pc;
+            const end: usize = @min(start + wr.len, frame.analysis.code_len);
+            while (i < (end - start)) : (i += 1) v = (v << 8) | frame.analysis.code[start + i];
             frame.stack.append_unsafe(v);
             instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
