@@ -819,17 +819,19 @@ pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
 pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
-    // Pop parameters from stack using optimized methods
-    const params1 = frame.stack.pop3_unsafe();
-    const gas = params1.a;
-    const to = params1.b;
-    const value = params1.c;
-    const params2 = frame.stack.pop2_unsafe();
-    const args_offset = params2.a;
-    const args_size = params2.b;
-    const params3 = frame.stack.pop2_unsafe();
-    const ret_offset = params3.a;
-    const ret_size = params3.b;
+    // Correct EVM stack order (top -> bottom):
+    // out_size, out_offset, in_size, in_offset, value, to, gas
+    // Pop in reverse: out, in, value, then (to, gas)
+    const out_pair = frame.stack.pop2_unsafe();
+    const ret_offset = out_pair.a; // second-from-top
+    const ret_size = out_pair.b; // top
+    const in_pair = frame.stack.pop2_unsafe();
+    const args_offset = in_pair.a;
+    const args_size = in_pair.b;
+    const value = frame.stack.pop_unsafe();
+    const to_gas = frame.stack.pop2_unsafe();
+    const to = to_gas.a;
+    const gas = to_gas.b;
 
     // Validate static context for value transfers
     if (frame.is_static and value != 0) {
@@ -1244,10 +1246,13 @@ pub fn op_staticcall(context: *anyopaque) ExecutionError.Error!void {
     const to = params1.a; // address was second from top
     Log.debug("[STATICCALL] Popped params1: gas={x}, to={x}", .{ gas, to });
     const params2 = try frame.stack.pop2();
+    // Spec order: gas, to, in_offset, in_size, out_offset, out_size
+    // pop2 returns a=second-from-top (in_offset), b=top (in_size)
     const args_offset = params2.a;
     const args_size = params2.b;
     Log.debug("[STATICCALL] Popped params2: args_offset={x}, args_size={x}", .{ args_offset, args_size });
     const params3 = try frame.stack.pop2();
+    // pop2 returns a=second-from-top (out_offset), b=top (out_size)
     const ret_offset = params3.a;
     const ret_size = params3.b;
     Log.debug("[STATICCALL] Popped params3: ret_offset={x}, ret_size={x}", .{ ret_offset, ret_size });
