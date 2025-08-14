@@ -681,3 +681,68 @@ test "interpret: minimal dispatcher executes selected branch and returns 32 byte
     const err2 = interpret(&vm, &frame2);
     try std.testing.expectError(ExecutionError.Error.REVERT, err2);
 }
+
+test "interpret: dispatcher using AND 0xffffffff extracts selector and returns 32 bytes" {
+	const allocator = std.testing.allocator;
+	const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+	const Analysis = @import("../analysis.zig");
+	const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+	const Host = @import("../host.zig").Host;
+	const Address = @import("primitives").Address.Address;
+
+	// Bytecode that masks selector with AND 0xffffffff instead of SHR
+	const code = &[_]u8{
+		0x60, 0x00, // PUSH1 0
+		0x35,       // CALLDATALOAD
+		0x63, 0xff, 0xff, 0xff, 0xff, // PUSH4 0xffffffff
+		0x16,       // AND
+		0x63, 0x30, 0x62, 0x7b, 0x7c, // PUSH4 0x30627b7c
+		0x14,       // EQ
+		0x60, 0x16, // PUSH1 0x16
+		0x57,       // JUMPI
+		0x60, 0x00, // PUSH1 0
+		0x60, 0x00, // PUSH1 0
+		0xfd,       // REVERT
+		0x5b,       // JUMPDEST @ 0x16
+		0x60, 0x01, // PUSH1 1
+		0x60, 0x1f, // PUSH1 31
+		0x52,       // MSTORE
+		0x60, 0x20, // PUSH1 32
+		0x60, 0x00, // PUSH1 0
+		0xf3,       // RETURN
+	};
+
+	var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+	defer analysis.deinit();
+
+	var memory_db = MemoryDatabase.init(allocator);
+	defer memory_db.deinit();
+	const db_interface = memory_db.to_database_interface();
+
+	var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+	defer vm.deinit();
+
+	const host = Host.init(&vm);
+
+	var frame = try Frame.init(
+		1_000_000,
+		false,
+		0,
+		Address.ZERO,
+		Address.ZERO,
+		0,
+		&analysis,
+		host,
+		db_interface,
+		allocator,
+	);
+	defer frame.deinit(allocator);
+
+	const selector = [_]u8{ 0x30, 0x62, 0x7b, 0x7c };
+	vm.current_input = &selector;
+
+	try interpret(&vm, &frame);
+	const out = host.get_output();
+	try std.testing.expect(out.len == 32);
+	try std.testing.expect(out[31] == 1);
+}
