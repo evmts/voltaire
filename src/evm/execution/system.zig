@@ -262,7 +262,9 @@ fn calculate_call_gas_amount(frame: *Frame, gas: u256, value: u256, already_cons
 
     // EIP-150: All but one 64th rule
     // Caller must retain at least 1/64 of remaining gas
-    const gas_available = frame.gas_remaining - already_consumed;
+    _ = already_consumed; // Costs have already been deducted prior to this call
+    // Note: frame.gas_remaining at this point has already had operation costs deducted.
+    const gas_available = frame.gas_remaining;
     const one_64th = gas_available / GasConstants.CALL_GAS_RETENTION_DIVISOR;
     const max_gas_to_forward = gas_available - one_64th;
 

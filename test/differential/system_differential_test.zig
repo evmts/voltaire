@@ -962,16 +962,24 @@ test "CREATE opcode with subsequent CALL to deployed contract" {
     // 2. Calls the newly deployed contract
     // 3. Returns the result from the call
     const creator_with_call_bytecode = [_]u8{
-        // First, store the new contract bytecode in memory
-        // We'll use a simpler approach - push the entire bytecode as a constant
-        0x6a, // PUSH11 (11 bytes for the contract bytecode)
-        0x60, 0x42, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3, // The actual bytecode
+        // First, store the new contract bytecode in memory (10 bytes)
+        0x69, // PUSH10
+        0x60,
+        0x42,
+        0x60,
+        0x00,
+        0x52,
+        0x60,
+        0x20,
+        0x60,
+        0x00,
+        0xf3,
         0x60, 0x00, // PUSH1 0 (memory offset)
-        0x52, // MSTORE (store first 32 bytes, but only 11 are used)
+        0x52, // MSTORE
 
         // Now CREATE the contract
-        0x60, 0x0b, // PUSH1 11 (size of new contract bytecode)
-        0x60, 0x15, // PUSH1 21 (offset in memory where bytecode starts - skip the padding)
+        0x60, 0x0a, // PUSH1 10 (size of new contract bytecode)
+        0x60, 0x16, // PUSH1 22 (offset in memory where bytecode starts)
         0x60, 0x00, // PUSH1 0 (value to send)
         0xf0, // CREATE
 
@@ -980,12 +988,12 @@ test "CREATE opcode with subsequent CALL to deployed contract" {
         0x80, // DUP1
 
         // Setup CALL to the newly created contract
-        0x60, 0x20, // PUSH1 32 (retSize - we want 32 bytes back)
-        0x60, 0x00, // PUSH1 0 (retOffset - store at memory offset 0)
-        0x60, 0x00, // PUSH1 0 (argsSize - no input data)
+        0x60, 0x20, // PUSH1 32 (retSize)
+        0x60, 0x00, // PUSH1 0 (retOffset)
+        0x60, 0x00, // PUSH1 0 (argsSize)
         0x60, 0x00, // PUSH1 0 (argsOffset)
         0x60, 0x00, // PUSH1 0 (value)
-        0x83, // DUP4 (duplicate the contract address)
+        0x86, // DUP7 (duplicate the contract address)
         0x61, 0xff, 0xff, // PUSH2 65535 (gas for the call)
         0xf1, // CALL
 
@@ -1076,9 +1084,8 @@ test "CREATE2 opcode creates contract at deterministic address" {
     // Deployer contract bytecode that uses CREATE2
     // The deployed contract simply returns 0x42
     const deployer_bytecode = [_]u8{
-        // First, store the deployed contract bytecode in memory
-        // The deployed contract bytecode: PUSH1 0x42, PUSH1 0, MSTORE, PUSH1 32, PUSH1 0, RETURN
-        0x7f, // PUSH32 (the bytecode as a single word, padded with zeros)
+        // First, store the deployed contract bytecode in memory (10 bytes)
+        0x69, // PUSH10
         0x60,
         0x42,
         0x60,
@@ -1089,34 +1096,13 @@ test "CREATE2 opcode creates contract at deterministic address" {
         0x60,
         0x00,
         0xf3,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
         0x60, 0x00, // PUSH1 0 (offset in memory)
         0x52, // MSTORE
 
         // CREATE2 parameters
         0x63, 0xde, 0xad, 0xbe, 0xef, // PUSH4 0xdeadbeef (salt)
-        0x60, 0x0b, // PUSH1 11 (size of bytecode to deploy)
-        0x60, 0x00, // PUSH1 0 (offset of bytecode in memory)
+        0x60, 0x0a, // PUSH1 10 (size of bytecode to deploy)
+        0x60, 0x16, // PUSH1 22 (offset of bytecode in memory)
         0x60, 0x00, // PUSH1 0 (value to send)
         0xf5, // CREATE2
 

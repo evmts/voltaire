@@ -53,6 +53,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     var is_delegatecall: bool = false;
     var is_create: bool = false;
     var is_create2: bool = false;
+    var create2_salt: u256 = 0;
 
     var call_caller: primitives.Address.Address = undefined;
     var call_value: u256 = undefined;
@@ -105,7 +106,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
             call_caller = cr2.caller;
             call_value = cr2.value;
             call_input = cr2.init_code; // reuse variable for initcode
-            _ = cr2.salt; // TODO: incorporate salt into address derivation
+            create2_salt = cr2.salt;
         },
         else => {
             // For now, return error for unhandled call types
@@ -117,7 +118,14 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     // Fast-path: CREATE/CREATE2 handled through create_contract()
     if (is_create or is_create2) {
         // Execute constructor and deploy runtime code
-        const create_res = try self.create_contract(call_caller, call_value, call_input, call_gas);
+        const create_res = blk: {
+            if (is_create2) {
+                const new_addr = self.compute_create2_address(call_caller, create2_salt, call_input);
+                break :blk try self.create_contract_at(call_caller, call_value, call_input, call_gas, new_addr);
+            } else {
+                break :blk try self.create_contract(call_caller, call_value, call_input, call_gas);
+            }
+        };
 
         // On success, return address bytes as output (20 bytes)
         if (create_res.success) {
