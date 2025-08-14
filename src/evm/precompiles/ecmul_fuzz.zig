@@ -9,7 +9,7 @@ test "fuzz ecmul precompile input parsing" {
     // ECMUL expects exactly 96 bytes: x (32), y (32), scalar (32)
     // Test various input lengths
     var output: [64]u8 = undefined;
-    const rules = ExecutionContext.Frame.chainRulesForHardfork(Hardfork.ISTANBUL);
+    const rules = @import("../hardforks/chain_rules.zig").for_hardfork(Hardfork.ISTANBUL);
     
     const result = ecmul.execute(input, &output, 1000000, rules);
     
@@ -44,7 +44,7 @@ test "fuzz ecmul scalar edge cases" {
     @memcpy(ecmul_input[64..96], input[0..32]);
     
     var output: [64]u8 = undefined;
-    const rules = ExecutionContext.Frame.chainRulesForHardfork(Hardfork.ISTANBUL);
+    const rules = @import("../hardforks/chain_rules.zig").for_hardfork(Hardfork.ISTANBUL);
     
     const result = ecmul.execute(&ecmul_input, &output, 1000000, rules);
     
@@ -70,7 +70,7 @@ test "fuzz ecmul invalid point handling" {
     std.mem.writeInt(u256, ecmul_input[64..96], 1, .big);
     
     var output: [64]u8 = undefined;
-    const rules = ExecutionContext.Frame.chainRulesForHardfork(Hardfork.ISTANBUL);
+    const rules = @import("../hardforks/chain_rules.zig").for_hardfork(Hardfork.ISTANBUL);
     
     const result = ecmul.execute(&ecmul_input, &output, 1000000, rules);
     
@@ -93,7 +93,7 @@ test "fuzz ecmul gas limits" {
     const gas_limit = std.mem.readInt(u64, input[0..8], .little);
     
     var output: [64]u8 = undefined;
-    const rules = ExecutionContext.Frame.chainRulesForHardfork(Hardfork.ISTANBUL);
+    const rules = @import("../hardforks/chain_rules.zig").for_hardfork(Hardfork.ISTANBUL);
     
     const result = ecmul.execute(&ecmul_input, &output, gas_limit, rules);
     
@@ -116,7 +116,7 @@ test "fuzz ecmul output buffer sizes" {
     
     // Test with various output buffer sizes
     // The implementation should handle this correctly
-    const rules = ExecutionContext.Frame.chainRulesForHardfork(Hardfork.ISTANBUL);
+    const rules = @import("../hardforks/chain_rules.zig").for_hardfork(Hardfork.ISTANBUL);
     
     // Normal case - 64 byte output
     var output64: [64]u8 = undefined;

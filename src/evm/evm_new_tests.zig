@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const Evm = @import("evm.zig");
 const Frame = @import("frame.zig").Frame;
-const ChainRules = @import("frame.zig").ChainRules;
+const ChainRules = @import("../hardforks/chain_rules.zig").ChainRules;
 const OpcodeMetadata = @import("opcode_metadata/opcode_metadata.zig");
 const MemoryDatabase = @import("state/memory_database.zig").MemoryDatabase;
 const primitives = @import("primitives");
@@ -58,7 +58,7 @@ test "Evm.init with custom hardfork configuration" {
 
     for (hardforks) |hardfork| {
         const jump_table = OpcodeMetadata.init_from_hardfork(hardfork);
-        const chain_rules = Frame.chainRulesForHardfork(hardfork);
+        const chain_rules = @import("hardforks/chain_rules.zig").for_hardfork(hardfork);
 
         var evm = try Evm.Evm.init(allocator, db_interface, jump_table, chain_rules, null, 0, false, null);
         defer evm.deinit();
@@ -76,7 +76,7 @@ test "Frame initialization with minimal parameters" {
 
     // Create required components
     var stack = try Stack.init(allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     var memory = try Memory.init(allocator);
     defer memory.deinit();
@@ -108,7 +108,7 @@ test "Frame initialization with minimal parameters" {
         testAddress(0x2000), // caller
         0, // value
         &analysis, &access_list, &journal, host, 0, // snapshot id
-        memory_db.to_database_interface(), Frame.chainRulesForHardfork(.LONDON), null, // self destruct
+        memory_db.to_database_interface(), @import("hardforks/chain_rules.zig").for_hardfork(.LONDON), null, // self destruct
         null, // created contracts
         &[_]u8{}, // input
         allocator, null, // next frame
@@ -151,7 +151,7 @@ test "Frame execution with simple bytecode" {
 
     // Create frame for execution
     var stack = try Stack.init(allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     var memory = try Memory.init(allocator);
     defer memory.deinit();
@@ -170,7 +170,7 @@ test "Frame execution with simple bytecode" {
         contract_addr, testAddress(0x4000), // caller
         0, // value
         &analysis, &evm.access_list, &evm.journal, host, 0, // snapshot id
-        db_interface, Frame.chainRulesForHardfork(.LONDON), null, // self destruct
+        db_interface, @import("hardforks/chain_rules.zig").for_hardfork(.LONDON), null, // self destruct
         null, // created contracts
         &[_]u8{}, // input
         allocator, null, // next frame
