@@ -57,5 +57,3 @@ test "dispatcher no-match should revert identically in REVM and Guillotine" {
     try testing.expectEqual(@as(usize, 0), r.output.len);
     try testing.expect(z.output == null or z.output.?.len == 0);
 }
-
-

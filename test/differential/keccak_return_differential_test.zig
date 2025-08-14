@@ -45,5 +45,3 @@ test "KECCAK256 32 bytes at 0 should return same digest in REVM and Guillotine" 
     try testing.expectEqual(@as(usize, 32), z.output.?.len);
     try testing.expectEqualSlices(u8, r.output, z.output.?);
 }
-
-

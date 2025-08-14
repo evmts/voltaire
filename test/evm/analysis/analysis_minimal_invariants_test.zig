@@ -27,5 +27,3 @@ test "analysis: fused PUSH+JUMP removes PUSH and leaves no trailing .word before
     }
     try std.testing.expect(!found_word_before_jump);
 }
-
-
