@@ -15,6 +15,7 @@ pub fn call_dynamic_gas(frame: *Frame) ExecutionError.Error!u64 {
     const stack_base = frame.stack.base;
 
     const to = stack_base[stack_size - 2];
+    const value = stack_base[stack_size - 3];
     const args_offset = stack_base[stack_size - 4];
     const args_size = stack_base[stack_size - 5];
     const ret_offset = stack_base[stack_size - 6];
@@ -49,6 +50,15 @@ pub fn call_dynamic_gas(frame: *Frame) ExecutionError.Error!u64 {
         const to_address = primitives.Address.from_u256(to);
         const access_cost = try frame.access_address(to_address);
         total_gas += access_cost;
+
+        // Value transfer and potential account creation cost
+        if (value != 0) {
+            total_gas += GasConstants.CallValueTransferGas;
+            const exists = frame.host.account_exists(to_address);
+            if (!exists) {
+                total_gas += GasConstants.NewAccountCost;
+            }
+        }
     }
 
     return total_gas;

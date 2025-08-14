@@ -46,8 +46,16 @@ inline fn pre_step(self: *Evm, frame: *Frame, inst: *const Instruction, loop_ite
 }
 
 inline fn exec_and_advance(frame: *Frame, inst: *const Instruction) ExecutionError.Error!*const Instruction {
-    try inst.opcode_fn(frame);
-    return inst.next_instruction;
+    // Execute current instruction (handler returns a pointer but we compute next safely here)
+    _ = try inst.opcode_fn(frame, inst);
+    const base: [*]const @TypeOf(inst.*) = frame.analysis.instructions.ptr;
+    const len = frame.analysis.instructions.len;
+    const idx = (@intFromPtr(inst) - @intFromPtr(base)) / @sizeOf(@TypeOf(inst.*));
+    if (idx + 1 < len) {
+        return &base[idx + 1];
+    } else {
+        return inst; // stay on last instruction
+    }
 }
 
 /// Internal method to execute contract bytecode using block-based execution.
@@ -72,6 +80,11 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     var loop_iterations: usize = 0;
 
     dispatch: switch (instruction.arg) {
+        .exec => {
+            pre_step(self, frame, instruction, &loop_iterations);
+            instruction = try exec_and_advance(frame, instruction);
+            continue :dispatch instruction.arg;
+        },
         .none => {
             @branchHint(.likely);
             pre_step(self, frame, instruction, &loop_iterations);
@@ -141,14 +154,28 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },
-        // Many jumps have a known jump destination and we handle that here.
-        .jump => {
+        .conditional_jump_pc => |pc_val| {
             pre_step(self, frame, instruction, &loop_iterations);
-            // Analysis resolved the target by wiring next_instruction to the block start.
-            // In fused immediate JUMP, analysis removed the PUSH entirely,
-            // so there is no destination on the stack to pop here.
-            const next_inst = instruction.next_instruction;
-            instruction = next_inst;
+            const condition = frame.stack.pop_unsafe();
+            if (condition != 0) {
+                const idx = frame.analysis.pc_to_block_start[pc_val];
+                if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) {
+                    return ExecutionError.Error.InvalidJump;
+                }
+                instruction = &frame.analysis.instructions[idx];
+                continue :dispatch instruction.arg;
+            }
+            instruction = try exec_and_advance(frame, instruction);
+            continue :dispatch instruction.arg;
+        },
+        // Many jumps have a known jump destination and we handle that here.
+        .jump_pc => |pc_val| {
+            pre_step(self, frame, instruction, &loop_iterations);
+            const idx = frame.analysis.pc_to_block_start[pc_val];
+            if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) {
+                return ExecutionError.Error.InvalidJump;
+            }
+            instruction = &frame.analysis.instructions[idx];
             continue :dispatch instruction.arg;
         },
         // This is a jump that is not known until compile time because

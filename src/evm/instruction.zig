@@ -21,17 +21,20 @@ pub const AnalysisArg = union(enum) {
     /// to fit within 16 bytes on 64-bit targets.
     word: WordRef,
     // Unconditional jump variants
-    jump, // resolved: pop 1; jump to next_instruction (pre-wired)
+    jump_pc: u16, // resolved unconditional jump target pc (to be mapped at runtime)
     jump_unresolved, // unresolved: pop 1; compute target at runtime
     // Fused immediate jump variants are resolved during analysis; no PC stored at runtime
     // Conditional jump variants
-    conditional_jump: *const Instruction, // resolved true branch target
+    conditional_jump: *const Instruction, // resolved true branch target (legacy pointer form)
+    conditional_jump_pc: u16, // resolved true branch target pc (to be mapped at runtime)
     conditional_jump_unresolved, // unresolved: compute target at runtime when condition true
     conditional_jump_invalid, // analysis-validated invalid JUMPDEST; interpreter errors if condition true
     /// PC immediate value (program counter) for the PC opcode
     pc: u32,
     block_info: BlockInfo,
     dynamic_gas: DynamicGas,
+    /// Execution function pointer for non-special opcodes
+    exec: ExecutionFunc,
 };
 
 /// Compact reference to bytes in analyzed contract `code`.
@@ -78,22 +81,45 @@ pub const DynamicGasFunc = *const fn (frame: *anyopaque) ExecutionError.Error!u6
 pub const DynamicGas = struct {
     /// Function to calculate additional dynamic gas
     gas_fn: ?DynamicGasFunc,
+    /// Legacy execution function to run after charging dynamic gas
+    exec_fn: ExecutionFunc,
 };
 
 pub const Instruction = struct {
     arg: AnalysisArg,
-    opcode_fn: ExecutionFunc,
-    next_instruction: *const Instruction = undefined,
+    /// Linked execution function that returns the next instruction to execute
+    opcode_fn: LinkedExecutionFunc,
 
-    pub const STOP: Instruction = .{ .opcode_fn = StopHandler, .arg = .none };
+    pub const STOP: Instruction = .{ .opcode_fn = StopLinkedHandler, .arg = .none };
 };
 
-fn StopHandler(context: *anyopaque) ExecutionError.Error!void {
+/// New function type that returns a pointer to the next instruction
+pub const LinkedExecutionFunc = *const fn (context: *anyopaque, inst: *const Instruction) ExecutionError.Error!*const Instruction;
+
+fn StopLinkedHandler(context: *anyopaque, inst: *const Instruction) ExecutionError.Error!*const Instruction {
     _ = context;
+    _ = inst;
     return ExecutionError.Error.STOP;
 }
 
 pub fn NoopHandler(context: *anyopaque) ExecutionError.Error!void {
     _ = context;
     return;
+}
+
+/// Generic linked handler that simply advances to the next instruction
+pub fn always_advance(_: *anyopaque, inst: *const Instruction) ExecutionError.Error!*const Instruction {
+    const next_ptr: *const Instruction = @ptrFromInt(@intFromPtr(inst) + @sizeOf(Instruction));
+    return next_ptr;
+}
+
+/// Linked dispatcher that calls the stored execution function (either exec or dynamic_gas.exec_fn) and advances
+pub fn dispatch_execute(context: *anyopaque, inst: *const Instruction) ExecutionError.Error!*const Instruction {
+    switch (inst.arg) {
+        .exec => |f| try f(context),
+        .dynamic_gas => |dg| try dg.exec_fn(context),
+        else => {},
+    }
+    const next_ptr: *const Instruction = @ptrFromInt(@intFromPtr(inst) + @sizeOf(Instruction));
+    return next_ptr;
 }

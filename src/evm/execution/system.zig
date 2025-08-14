@@ -858,7 +858,7 @@ pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
     // Convert to address
     const to_address = from_u256(to);
 
-    // Calculate memory expansion costs BEFORE expanding memory
+    // Calculate memory bounds (no charging here; dynamic gas handled it)
     const args_end = if (args_size == 0) 0 else blk: {
         if (args_offset > std.math.maxInt(u64) or args_size > std.math.maxInt(u64)) {
             return ExecutionError.Error.InvalidOffset;
@@ -883,58 +883,32 @@ pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
         break :blk offset + size;
     };
 
-    // Find the maximum memory size needed
+    // Expand memory without charging (dynamic gas already charged it)
     const max_memory_size = @max(args_end, ret_end);
-
-    // Calculate memory expansion cost
-    const memory_expansion_cost = if (max_memory_size > 0) blk: {
-        const expansion_cost = frame.memory.get_expansion_cost(max_memory_size);
-        break :blk expansion_cost;
-    } else 0;
-
-    // Base gas cost for CALL opcode
-    const base_gas = GasConstants.CallGas;
-    // Additional gas costs
-    var total_gas_cost = base_gas + memory_expansion_cost;
-
-    // EIP-2929: Check if address is cold and add extra gas cost
-    if (frame.host.is_hardfork_at_least(.BERLIN)) {
-        const access_cost = try frame.access_address(to_address);
-        total_gas_cost += access_cost;
+    if (max_memory_size > 0) {
+        _ = try frame.memory.ensure_context_capacity(@intCast(max_memory_size));
     }
 
-    // Add value transfer cost if applicable
-    if (value > 0) {
-        total_gas_cost += GasConstants.CallValueTransferGas;
+    // Load call arguments slice without charging again
+    const args = if (args_size == 0) &[_]u8{} else blk_args: {
+        const o: usize = @intCast(args_offset);
+        const s: usize = @intCast(args_size);
+        break :blk_args try frame.memory.get_slice(o, s);
+    };
 
-        // EIP-150: Check if account is new (doesn't exist) and add creation cost
-        // Account creation only happens with value transfer to non-existent account
-        // We need to query the host to check if account exists
-        const account_exists = frame.host.account_exists(to_address);
-        if (!account_exists) {
-            total_gas_cost += GasConstants.NewAccountCost;
-        }
+    // Ensure return memory without charging again
+    if (ret_size > 0) {
+        const ro: usize = @intCast(ret_offset);
+        const rs: usize = @intCast(ret_size);
+        _ = try frame.memory.ensure_context_capacity(ro + rs);
     }
-
-    // Consume the gas for the CALL operation itself
-    try frame.consume_gas(total_gas_cost);
-
-    // Get call arguments from memory (this expands memory if needed)
-    const args = try get_call_args(frame, args_offset, args_size);
-
-    // Ensure return memory is available (this expands memory if needed)
-    try ensure_return_memory(frame, ret_offset, ret_size);
 
     // Calculate gas limit for the called contract
     // Pass the gas already consumed for memory expansion and base costs
-    const gas_limit = calculate_call_gas_amount(frame, gas, value, total_gas_cost);
+    const gas_limit = calculate_call_gas_amount(frame, gas, value, 0);
 
     // Deduct the forwarded gas from remaining (but not the stipend)
-    // The stipend is added "for free" and not deducted from caller
-    const gas_to_deduct = if (value != 0)
-        gas_limit - GasConstants.CallStipend
-    else
-        gas_limit;
+    const gas_to_deduct = if (value != 0) gas_limit - GasConstants.CallStipend else gas_limit;
     try frame.consume_gas(gas_to_deduct);
 
     // Create a journal snapshot before entering child frame
@@ -1134,6 +1108,7 @@ pub fn op_delegatecall(context: *anyopaque) ExecutionError.Error!void {
     const ret_offset = params3.a;
     const ret_size = params3.b;
 
+    // Bounds only; dynamic gas handler already charged memory/access
     const args_end = if (args_size > 0) blk: {
         try check_offset_bounds(args_offset);
         try check_offset_bounds(args_size);
@@ -1143,7 +1118,6 @@ pub fn op_delegatecall(context: *anyopaque) ExecutionError.Error!void {
         if (end < args_offset_usize) return ExecutionError.Error.GasUintOverflow;
         break :blk end;
     } else 0;
-
     const ret_end = if (ret_size > 0) blk: {
         try check_offset_bounds(ret_offset);
         try check_offset_bounds(ret_size);
@@ -1153,21 +1127,9 @@ pub fn op_delegatecall(context: *anyopaque) ExecutionError.Error!void {
         if (end < ret_offset_usize) return ExecutionError.Error.GasUintOverflow;
         break :blk end;
     } else 0;
-
     const max_memory_size = @max(args_end, ret_end);
-    const memory_expansion_cost = frame.memory.get_expansion_cost(max_memory_size);
-
-    const base_gas = GasConstants.CALL_BASE_COST; // Same as CALL
-    var total_gas_cost = base_gas + memory_expansion_cost;
-
+    if (max_memory_size > 0) _ = try frame.memory.ensure_context_capacity(@intCast(max_memory_size));
     const to_address = from_u256(to);
-
-    if (frame.host.is_hardfork_at_least(.BERLIN)) {
-        const access_cost = try frame.access_address(to_address);
-        total_gas_cost += access_cost;
-    }
-
-    try frame.consume_gas(total_gas_cost);
 
     if (frame.depth >= 1024) {
         @branchHint(.unlikely);
@@ -1175,14 +1137,20 @@ pub fn op_delegatecall(context: *anyopaque) ExecutionError.Error!void {
         return;
     }
 
-    const args = try get_call_args(frame, args_offset, args_size);
-    try ensure_return_memory(frame, ret_offset, ret_size);
+    const args = if (args_size == 0) &[_]u8{} else blk_args: {
+        const o: usize = @intCast(args_offset);
+        const s: usize = @intCast(args_size);
+        break :blk_args try frame.memory.get_slice(o, s);
+    };
+    if (ret_size > 0) {
+        const ro: usize = @intCast(ret_offset);
+        const rs: usize = @intCast(ret_size);
+        _ = try frame.memory.ensure_context_capacity(ro + rs);
+    }
 
     // Calculate gas to forward (63/64 rule)
     // DELEGATECALL never transfers value, so no stipend
-    const gas_limit = calculate_call_gas_amount(frame, gas, 0, total_gas_cost);
-
-    // Deduct the forwarded gas from remaining
+    const gas_limit = calculate_call_gas_amount(frame, gas, 0, 0);
     try frame.consume_gas(gas_limit);
 
     // Create a journal snapshot before entering child frame
@@ -1290,25 +1258,15 @@ pub fn op_staticcall(context: *anyopaque) ExecutionError.Error!void {
     } else 0;
 
     const max_memory_size = @max(args_end, ret_end);
-    const memory_expansion_cost = frame.memory.get_expansion_cost(max_memory_size);
+    // Expand memory without charging (dynamic gas already charged it)
+    if (max_memory_size > 0) {
+        _ = try frame.memory.ensure_context_capacity(@intCast(max_memory_size));
+    }
 
-    // Base gas cost for STATICCALL (700 gas)
-    const base_gas = GasConstants.CALL_BASE_COST; // Same as CALL/DELEGATECALL
-    var total_gas_cost = base_gas + memory_expansion_cost;
-
-    // Convert to address for warm/cold check
+    // Convert address (no charging here; dynamic gas already accounted access)
     Log.debug("[STATICCALL] Converting u256 to address: to={x}", .{to});
     const to_address = from_u256(to);
     Log.debug("[STATICCALL] Converted address: {any}", .{to_address});
-
-    // EIP-2929: Check if address is cold and add extra gas cost
-    if (frame.host.is_hardfork_at_least(.BERLIN)) {
-        const access_cost = try frame.access_address(to_address);
-        total_gas_cost += access_cost;
-    }
-
-    // Consume gas before proceeding
-    try frame.consume_gas(total_gas_cost);
 
     // Check call depth limit
     if (frame.depth >= 1024) {
@@ -1318,14 +1276,20 @@ pub fn op_staticcall(context: *anyopaque) ExecutionError.Error!void {
     }
 
     // Now expand memory after charging for it
-    const args = try get_call_args(frame, args_offset, args_size);
-    try ensure_return_memory(frame, ret_offset, ret_size);
+    const args = if (args_size == 0) &[_]u8{} else blk_args: {
+        const o: usize = @intCast(args_offset);
+        const s: usize = @intCast(args_size);
+        break :blk_args try frame.memory.get_slice(o, s);
+    };
+    if (ret_size > 0) {
+        const ro: usize = @intCast(ret_offset);
+        const rs: usize = @intCast(ret_size);
+        _ = try frame.memory.ensure_context_capacity(ro + rs);
+    }
 
     // Calculate gas to forward (63/64 rule)
     // STATICCALL never transfers value, so no stipend
-    const gas_limit = calculate_call_gas_amount(frame, gas, 0, total_gas_cost);
-
-    // Deduct the forwarded gas from remaining
+    const gas_limit = calculate_call_gas_amount(frame, gas, 0, 0);
     try frame.consume_gas(gas_limit);
 
     // Create a journal snapshot before entering child frame
