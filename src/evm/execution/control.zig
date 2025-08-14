@@ -109,8 +109,8 @@ pub fn op_return(context: *anyopaque) ExecutionError.Error!void {
         Log.debug("RETURN data set to host output, size: {}", .{data.len});
     }
 
-    Log.debug("RETURN opcode complete, about to return STOP error", .{});
-    return ExecutionError.Error.STOP; // RETURN ends execution normally
+    Log.debug("RETURN opcode complete, about to return RETURN error", .{});
+    return ExecutionError.Error.RETURN; // RETURN ends execution normally with data
 }
 
 /// REVERT opcode (0xFD) - Halt execution and revert state changes

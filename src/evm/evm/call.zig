@@ -357,6 +357,8 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         // CRITICAL DEBUG: Log specific errors that should stop execution
         if (err == ExecutionError.Error.STOP) {
             Log.warn("[call] STOP signaled (normal termination)", .{});
+        } else if (err == ExecutionError.Error.RETURN) {
+            Log.warn("[call] RETURN signaled (normal termination with data)", .{});
         } else if (err == ExecutionError.Error.REVERT) {
             Log.warn("[call] REVERT signaled", .{});
         } else if (err == ExecutionError.Error.OutOfGas) {
@@ -383,6 +385,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     if (!is_top_level_call and exec_err != null) {
         const should_revert = switch (exec_err.?) {
             ExecutionError.Error.STOP => false,
+            ExecutionError.Error.RETURN => false,
             else => true,
         };
         if (should_revert) {
@@ -450,6 +453,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     // Map error to success status
     const success: bool = if (exec_err) |e| switch (e) {
         ExecutionError.Error.STOP => true,
+        ExecutionError.Error.RETURN => true,
         ExecutionError.Error.REVERT => false,
         ExecutionError.Error.OutOfGas => false,
         else => false,

@@ -35,6 +35,10 @@ pub const Error = error{
     /// Returns data and reverts all state changes in the current context
     REVERT,
 
+    /// Normal termination via RETURN opcode (0xF3)
+    /// Returns data and ends execution successfully
+    RETURN,
+
     /// Execution of INVALID opcode (0xFE)
     /// Consumes all remaining gas and reverts state
     INVALID,
