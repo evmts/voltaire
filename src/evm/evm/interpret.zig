@@ -294,7 +294,7 @@ test "BEGINBLOCK: upfront OutOfGas when gas < block base cost" {
     try std.testing.expectError(ExecutionError.Error.OutOfGas, result);
 }
 
-test "interpret: keccak+pop+JUMPDEST+STOP fragment executes without error" {
+test "interpret: keccak+pop+JUMPDEST+STOP fragment halts with STOP" {
     const allocator = std.testing.allocator;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
     const Analysis = @import("../analysis.zig");
@@ -337,7 +337,44 @@ test "interpret: keccak+pop+JUMPDEST+STOP fragment executes without error" {
     );
     defer frame.deinit(allocator);
 
-    try interpret(&vm, &frame);
+    try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
+}
+
+test "interpret: fused PUSH+JUMP to forward JUMPDEST halts with STOP" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const Analysis = @import("../analysis.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    const code = &[_]u8{ 0x60, 0x03, 0x56, 0x5b, 0x00 }; // PUSH1 3; JUMP; JUMPDEST; STOP
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
 }
 
 test "BEGINBLOCK: stack underflow detected at block entry" {
@@ -555,4 +592,94 @@ test "dynamic jump returns 32-byte true" {
     const output = host.get_output();
     try std.testing.expect(output.len == 32);
     try std.testing.expect(output[31] == 1);
+}
+
+test "interpret: minimal dispatcher executes selected branch and returns 32 bytes" {
+	const allocator = std.testing.allocator;
+	const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+	const Analysis = @import("../analysis.zig");
+	const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+	const Host = @import("../host.zig").Host;
+	const Address = @import("primitives").Address.Address;
+
+	// Build minimal dispatcher that checks for selector 0x11223344 and returns 32-byte 0x01 on match
+	// Layout:
+	// 00: PUSH1 0x00; 02: CALLDATALOAD; 03: PUSH1 0xe0; 05: SHR; 06: PUSH4 0x11223344; 0b: EQ
+	// 0c: PUSH1 0x16; 0e: JUMPI; fallback: 0f: PUSH1 0x00; 11: PUSH1 0x00; 13: REVERT
+	// 14: JUMPDEST; 15: PUSH1 0x01; 17: PUSH1 0x1f; 19: MSTORE; 1a: PUSH1 0x20; 1c: PUSH1 0x00; 1e: RETURN
+	const code = &[_]u8{
+		0x60, 0x00,
+		0x35,
+		0x60, 0xe0,
+		0x1c,
+		0x63, 0x11, 0x22, 0x33, 0x44,
+		0x14,
+		0x60, 0x16,
+		0x57,
+		0x60, 0x00,
+		0x60, 0x00,
+		0xfd,
+		0x5b,
+		0x60, 0x01,
+		0x60, 0x1f,
+		0x52,
+		0x60, 0x20,
+		0x60, 0x00,
+		0xf3,
+	};
+
+	var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+	defer analysis.deinit();
+
+	var memory_db = MemoryDatabase.init(allocator);
+	defer memory_db.deinit();
+	const db_interface = memory_db.to_database_interface();
+
+	var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+	defer vm.deinit();
+
+	const host = Host.init(&vm);
+
+	// Case 1: matching selector 0x11223344
+	var frame1 = try Frame.init(
+		1_000_000,
+		false,
+		0,
+		Address.ZERO,
+		Address.ZERO,
+		0,
+		&analysis,
+		host,
+		db_interface,
+		allocator,
+	);
+	defer frame1.deinit(allocator);
+
+	const calldata_match = [_]u8{ 0x11, 0x22, 0x33, 0x44 };
+	vm.current_input = &calldata_match;
+
+	try interpret(&vm, &frame1);
+	const out1 = host.get_output();
+	try std.testing.expect(out1.len == 32);
+	try std.testing.expect(out1[31] == 1);
+
+	// Case 2: non-matching selector -> fallback REVERT with empty output
+	var frame2 = try Frame.init(
+		1_000_000,
+		false,
+		0,
+		Address.ZERO,
+		Address.ZERO,
+		0,
+		&analysis,
+		host,
+		db_interface,
+		allocator,
+	);
+	defer frame2.deinit(allocator);
+
+	const calldata_nomatch = [_]u8{ 0xaa, 0xbb, 0xcc, 0xdd };
+	vm.current_input = &calldata_nomatch;
+	const err2 = interpret(&vm, &frame2);
+	try std.testing.expectError(ExecutionError.Error.REVERT, err2);
 }
