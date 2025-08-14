@@ -691,10 +691,13 @@ pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, 
 
     // Success (STOP or fell off end): deploy runtime code if any
     const output = host.get_output();
+    var out: ?[]u8 = null;
     if (output.len > 0) {
         std.debug.print("[create_contract] Success STOP, deploying runtime code len={}\n", .{output.len});
         // Store code at the new address (MemoryDatabase copies the slice)
         self.state.set_code(new_address, output) catch {};
+        // Also return a duplicated copy of the runtime code for callers/tests to compare and free
+        out = try self.allocator.dupe(u8, output);
     } else {
         std.debug.print("[create_contract] Success STOP, empty runtime code\n", .{});
     }
@@ -703,7 +706,7 @@ pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, 
     frame.deinit(self.allocator);
     return InterprResult{
         .status = .Success,
-        .output = null,
+        .output = out,
         .gas_left = gas_left,
         .gas_used = 0,
         .address = new_address,

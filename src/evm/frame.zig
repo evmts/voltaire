@@ -40,10 +40,10 @@ pub const StateError = error{OutOfMemory};
 pub const Frame = struct {
     // ULTRA HOT - First cache line priority (accessed by virtually every opcode)
     gas_remaining: u64, // 8 bytes - checked/consumed by every opcode
-    stack: Stack, // value - accessed by every opcode (heap-backed storage inside)
+    stack: Stack, // 32 bytes - accessed by every opcode (heap-backed storage inside)
 
     // HOT - Second cache line priority (accessed by major opcode categories)
-    memory: Memory, // value - memory ops (MLOAD/MSTORE/MCOPY/LOG*/KECCAK256)
+    memory: Memory, // 72 bytes - memory ops (MLOAD/MSTORE/MCOPY/LOG*/KECCAK256)
     analysis: *const CodeAnalysis, // 8 bytes - control flow (JUMP/JUMPI validation)
     depth: u10, // 10 bits - call stack depth
     is_static: bool, // 1 bit - static call restriction
