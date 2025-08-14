@@ -2,7 +2,7 @@ use revm::{
     Database,
     db::{CacheDB, EmptyDB},
     primitives::{
-        Address, Bytecode, Bytes, ExecutionResult as RevmExecutionResult, U256,
+        Address, Bytecode, Bytes, ExecutionResult as RevmExecutionResult, U256, SpecId,
     },
     Evm,
 };
@@ -417,7 +417,9 @@ pub unsafe extern "C" fn revm_execute(
         })
         .modify_cfg_env(|cfg| {
             cfg.chain_id = vm.settings.chain_id;
+            // spec_id is now set via with_spec_id method instead
         })
+        .with_spec_id(SpecId::LATEST)
         .modify_tx_env(|tx| {
             tx.caller = from_addr;
             tx.transact_to = if let Some(to) = to_addr {
@@ -632,7 +634,9 @@ pub unsafe extern "C" fn revm_execute_with_trace(
         })
         .modify_cfg_env(|cfg| {
             cfg.chain_id = vm.settings.chain_id;
+            // spec_id is now set via with_spec_id method instead
         })
+        .with_spec_id(SpecId::LATEST)
         .modify_tx_env(|tx| {
             tx.caller = from_addr;
             tx.transact_to = if let Some(to) = to_addr {
