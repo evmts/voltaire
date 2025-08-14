@@ -31,7 +31,11 @@ pub fn op_and(context: *anyopaque) ExecutionError.Error!void {
     std.debug.assert(frame.stack.size() >= 2);
     const b = frame.stack.pop_unsafe();
     const a = try frame.stack.peek_unsafe();
-    frame.stack.set_top_unsafe(a & b);
+    const r = a & b;
+    if (b == 0xffffffff) {
+        @import("../log.zig").warn("[AND] a=0x{x:0>64}, mask=0xffffffff, res=0x{x:0>64}", .{ a, r });
+    }
+    frame.stack.set_top_unsafe(r);
 }
 
 /// OR opcode (0x17) - Bitwise OR operation
@@ -121,6 +125,9 @@ pub fn op_shr(context: *anyopaque) ExecutionError.Error!void {
     const value = try frame.stack.peek_unsafe();
 
     const result = if (shift >= 256) 0 else value >> @intCast(shift);
+    if (shift == 224) {
+        @import("../log.zig").warn("[SHR] value=0x{x:0>64} >> 224 = 0x{x:0>64}", .{ value, result });
+    }
 
     frame.stack.set_top_unsafe(result);
 }
