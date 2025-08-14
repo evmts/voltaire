@@ -16,6 +16,7 @@ pub const storage_differential_test = @import("storage_differential_test.zig");
 pub const fusion_differential_test = @import("fusion_differential_test.zig");
 pub const call_differential_test = @import("call_differential_test.zig");
 pub const jumps_differential_test = @import("jumps_differential_test.zig");
+pub const staticcall_min_differential_test = @import("staticcall_min_differential_test.zig");
 // TODO: Re-enable system_differential_test once STATICCALL issue is fixed
 // pub const system_differential_test = @import("system_differential_test.zig");
 
@@ -36,6 +37,7 @@ test {
     _ = fusion_differential_test;
     _ = call_differential_test;
     _ = jumps_differential_test;
+    _ = staticcall_min_differential_test;
     // TODO: Re-enable once STATICCALL issue is fixed
     // _ = system_differential_test;
 }
