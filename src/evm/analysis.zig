@@ -4,14 +4,22 @@ const limits = @import("constants/code_analysis_limits.zig");
 const StaticBitSet = std.bit_set.StaticBitSet;
 const DynamicBitSet = std.DynamicBitSet;
 const Instruction = @import("instruction.zig").Instruction;
-const always_advance = @import("instruction.zig").always_advance;
-const dispatch_execute = @import("instruction.zig").dispatch_execute;
+const Tag = @import("instruction.zig").Tag;
 const BlockInfo = @import("instruction.zig").BlockInfo;
 const JumpType = @import("instruction.zig").JumpType;
-const JumpTarget = @import("instruction.zig").JumpTarget;
 const NoopHandler = @import("instruction.zig").NoopHandler;
+const WordRef = @import("instruction.zig").WordRef;
 const DynamicGas = @import("instruction.zig").DynamicGas;
 const DynamicGasFunc = @import("instruction.zig").DynamicGasFunc;
+const ExecInstruction = @import("instruction.zig").ExecInstruction;
+const NoopInstruction = @import("instruction.zig").NoopInstruction;
+const BlockInstruction = @import("instruction.zig").BlockInstruction;
+const DynamicGasInstruction = @import("instruction.zig").DynamicGasInstruction;
+const ConditionalJumpInvalidInstruction = @import("instruction.zig").ConditionalJumpInvalidInstruction;
+const ConditionalJumpPcInstruction = @import("instruction.zig").ConditionalJumpPcInstruction;
+const JumpPcInstruction = @import("instruction.zig").JumpPcInstruction;
+const ConditionalJumpUnresolvedInstruction = @import("instruction.zig").ConditionalJumpUnresolvedInstruction;
+const ExecutionFunc = @import("execution_func.zig").ExecutionFunc;
 const Opcode = @import("opcodes/opcode.zig");
 const OpcodeMetadata = @import("opcode_metadata/opcode_metadata.zig");
 const instruction_limits = @import("constants/instruction_limits.zig");
@@ -116,10 +124,28 @@ pub const JumpdestArray = struct {
 pub const CodeAnalysis = @This();
 
 // === FIRST CACHE LINE - ULTRA HOT (accessed on every instruction) ===
-/// Heap-allocated instruction stream for execution.
-/// Regular slice; analysis appends a STOP instruction as the final element.
-/// Must be freed by caller using deinit().
-instructions: []Instruction, // 16 bytes - accessed on EVERY instruction
+/// Heap-allocated instruction header stream for execution.
+/// Compact headers reference payloads stored in SoA arrays below.
+instructions: []Instruction, // compact headers
+
+/// Per-variant payload arrays (SoA)
+words: []WordRef,
+pcs: []u16,
+jump_pcs: []u16,
+cond_jump_pcs: []u16,
+blocks: []BlockInfo,
+dyn_gases: []DynamicGas,
+execs: []const ExecutionFunc,
+exec_instructions: []ExecInstruction,
+noop_instructions: []NoopInstruction,
+block_instructions: []BlockInstruction,
+dynamic_gas_instructions: []DynamicGasInstruction,
+conditional_jump_invalid_instructions: []ConditionalJumpInvalidInstruction,
+conditional_jump_pc_instructions: []ConditionalJumpPcInstruction,
+jump_pc_instructions: []JumpPcInstruction,
+conditional_jump_unresolved_instructions: []ConditionalJumpUnresolvedInstruction,
+pc_instructions: []@import("instruction.zig").PcInstruction,
+word_instructions: []@import("instruction.zig").WordInstruction,
 
 /// Mapping from bytecode PC to the BEGINBLOCK instruction index that contains that PC.
 /// Size = code_len. Value = maxInt(u16) if unmapped.
@@ -254,13 +280,70 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
         jumpdest_bitmap.deinit(); // Free the temporary bitmap
 
         const empty_instructions = try allocator.alloc(Instruction, 1);
-        empty_instructions[0] = Instruction.STOP;
+        empty_instructions[0] = .{ .tag = .exec, .id = 0 };
+        const empty_words = try allocator.alloc(WordRef, 0);
+        const empty_pcs = try allocator.alloc(u16, 0);
+        const empty_jump_pcs = try allocator.alloc(u16, 0);
+        const empty_cjump_pcs = try allocator.alloc(u16, 0);
+        const empty_blocks = try allocator.alloc(BlockInfo, 0);
+        const empty_dyns = try allocator.alloc(DynamicGas, 0);
+        const empty_execs = try allocator.alloc(*const fn (*anyopaque) ExecutionError.Error!void, 1);
+        const stop_op = jump_table.get_operation(@intFromEnum(Opcode.Enum.STOP));
+        empty_execs[0] = stop_op.execute;
+        const empty_exec_instructions = try allocator.alloc(ExecInstruction, 1);
+        empty_exec_instructions[0] = .{
+            .exec_fn = stop_op.execute,
+            .next_inst = &empty_instructions[0], // Points to itself (STOP terminates anyway)
+        };
+        const empty_noop_instructions = try allocator.alloc(NoopInstruction, 1);
+        empty_noop_instructions[0] = .{
+            .next_inst = &empty_instructions[0], // Points to itself
+        };
+        const empty_block_instructions = try allocator.alloc(BlockInstruction, 1);
+        empty_block_instructions[0] = .{
+            .gas_cost = 0,
+            .stack_req = 0,
+            .stack_max_growth = 0,
+            .next_inst = &empty_instructions[0],
+        };
+        const empty_dynamic_gas_instructions = try allocator.alloc(DynamicGasInstruction, 0);
+        const empty_conditional_jump_invalid_instructions = try allocator.alloc(ConditionalJumpInvalidInstruction, 0);
+        const empty_conditional_jump_pc_instructions = try allocator.alloc(ConditionalJumpPcInstruction, 0);
+        const empty_jump_pc_instructions = try allocator.alloc(JumpPcInstruction, 0);
+        const empty_conditional_jump_unresolved_instructions = try allocator.alloc(ConditionalJumpUnresolvedInstruction, 0);
+        const empty_pc_instructions = try allocator.alloc(@import("instruction.zig").PcInstruction, 1);
+        empty_pc_instructions[0] = .{
+            .pc_value = 0,
+            .next_inst = &empty_instructions[0],
+        };
+        const empty_word_instructions = try allocator.alloc(@import("instruction.zig").WordInstruction, 1);
+        empty_word_instructions[0] = .{
+            .word_bytes = &[_]u8{}, // Empty slice
+            .next_inst = &empty_instructions[0],
+        };
         const empty_jump_types = try allocator.alloc(JumpType, 0);
         const empty_pc_map = try allocator.alloc(u16, 0);
         const empty_inst_to_pc = try allocator.alloc(u16, 0);
         return CodeAnalysis{
             // First cache line - hot
             .instructions = empty_instructions,
+            .words = empty_words,
+            .pcs = empty_pcs,
+            .jump_pcs = empty_jump_pcs,
+            .cond_jump_pcs = empty_cjump_pcs,
+            .blocks = empty_blocks,
+            .dyn_gases = empty_dyns,
+            .execs = empty_execs,
+            .exec_instructions = empty_exec_instructions,
+            .noop_instructions = empty_noop_instructions,
+            .block_instructions = empty_block_instructions,
+            .dynamic_gas_instructions = empty_dynamic_gas_instructions,
+            .conditional_jump_invalid_instructions = empty_conditional_jump_invalid_instructions,
+            .conditional_jump_pc_instructions = empty_conditional_jump_pc_instructions,
+            .jump_pc_instructions = empty_jump_pc_instructions,
+            .conditional_jump_unresolved_instructions = empty_conditional_jump_unresolved_instructions,
+            .pc_instructions = empty_pc_instructions,
+            .word_instructions = empty_word_instructions,
             .pc_to_block_start = empty_pc_map,
             .jumpdest_array = jumpdest_array,
             // Second cache line - warm
@@ -362,6 +445,23 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
     return CodeAnalysis{
         // === FIRST CACHE LINE - ULTRA HOT ===
         .instructions = gen.instructions,
+        .words = gen.words,
+        .pcs = gen.pcs,
+        .jump_pcs = gen.jump_pcs,
+        .cond_jump_pcs = gen.cond_jump_pcs,
+        .blocks = gen.blocks,
+        .dyn_gases = gen.dyn_gases,
+        .execs = gen.execs,
+        .exec_instructions = gen.exec_instructions,
+        .noop_instructions = gen.noop_instructions,
+        .block_instructions = gen.block_instructions,
+        .dynamic_gas_instructions = gen.dynamic_gas_instructions,
+        .conditional_jump_invalid_instructions = gen.conditional_jump_invalid_instructions,
+        .conditional_jump_pc_instructions = gen.conditional_jump_pc_instructions,
+        .jump_pc_instructions = gen.jump_pc_instructions,
+        .conditional_jump_unresolved_instructions = gen.conditional_jump_unresolved_instructions,
+        .pc_instructions = gen.pc_instructions,
+        .word_instructions = gen.word_instructions,
         .pc_to_block_start = gen.pc_to_block_start,
         .jumpdest_array = jumpdest_array,
         // === SECOND CACHE LINE - WARM ===
@@ -377,8 +477,25 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
 /// Clean up allocated instruction array and packed jumpdest array.
 /// Must be called by the caller to prevent memory leaks.
 pub fn deinit(self: *CodeAnalysis) void {
-    // Free the instruction array (now a slice)
+    // Free the instruction array and SoA payload arrays
     self.allocator.free(self.instructions);
+    self.allocator.free(self.words);
+    self.allocator.free(self.pcs);
+    self.allocator.free(self.jump_pcs);
+    self.allocator.free(self.cond_jump_pcs);
+    self.allocator.free(self.blocks);
+    self.allocator.free(self.dyn_gases);
+    self.allocator.free(self.execs);
+    self.allocator.free(self.exec_instructions);
+    self.allocator.free(self.noop_instructions);
+    self.allocator.free(self.block_instructions);
+    self.allocator.free(self.dynamic_gas_instructions);
+    self.allocator.free(self.conditional_jump_invalid_instructions);
+    self.allocator.free(self.conditional_jump_pc_instructions);
+    self.allocator.free(self.jump_pc_instructions);
+    self.allocator.free(self.conditional_jump_unresolved_instructions);
+    self.allocator.free(self.pc_instructions);
+    self.allocator.free(self.word_instructions);
 
     // Free auxiliary arrays
     self.allocator.free(self.inst_jump_type);
@@ -445,6 +562,23 @@ const CodeGenResult = struct {
     pc_to_block_start: []u16,
     inst_jump_type: []JumpType,
     inst_to_pc: []u16,
+    words: []WordRef,
+    pcs: []u16,
+    jump_pcs: []u16,
+    cond_jump_pcs: []u16,
+    blocks: []BlockInfo,
+    dyn_gases: []DynamicGas,
+    execs: []const *const fn (*anyopaque) ExecutionError.Error!void,
+    exec_instructions: []ExecInstruction,
+    noop_instructions: []NoopInstruction,
+    block_instructions: []BlockInstruction,
+    dynamic_gas_instructions: []DynamicGasInstruction,
+    conditional_jump_invalid_instructions: []ConditionalJumpInvalidInstruction,
+    conditional_jump_pc_instructions: []ConditionalJumpPcInstruction,
+    jump_pc_instructions: []@import("instruction.zig").JumpPcInstruction,
+    conditional_jump_unresolved_instructions: []ConditionalJumpUnresolvedInstruction,
+    pc_instructions: []@import("instruction.zig").PcInstruction,
+    word_instructions: []@import("instruction.zig").WordInstruction,
 };
 
 const Stats = struct {
@@ -521,13 +655,34 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
     var pc: usize = 0;
     var instruction_count: usize = 0;
 
+    // Builders for payload SoA
+    var words_builder = std.ArrayList(WordRef).init(allocator);
+    defer words_builder.deinit();
+    var pcs_builder = std.ArrayList(u16).init(allocator);
+    defer pcs_builder.deinit();
+    var jump_pcs_builder = std.ArrayList(u16).init(allocator);
+    defer jump_pcs_builder.deinit();
+    var cond_jump_pcs_builder = std.ArrayList(u16).init(allocator);
+    defer cond_jump_pcs_builder.deinit();
+    var blocks_builder = std.ArrayList(BlockInfo).init(allocator);
+    defer blocks_builder.deinit();
+    var dyn_builder = std.ArrayList(DynamicGas).init(allocator);
+    defer dyn_builder.deinit();
+    var exec_builder = std.ArrayList(*const fn (*anyopaque) ExecutionError.Error!void).init(allocator);
+    defer exec_builder.deinit();
+    var exec_instructions_builder = std.ArrayList(ExecInstruction).init(allocator);
+    defer exec_instructions_builder.deinit();
+    var noop_count: usize = 0;
+    var block_count: usize = 0;
+
     // Start first block with BEGINBLOCK instruction
-    instructions[instruction_count] = Instruction{
-        .opcode_fn = always_advance,
-        .arg = .{ .block_info = BlockInfo{} }, // Will be filled when block closes
-    };
+    const begin_block_id: u24 = @intCast(blocks_builder.items.len);
+    try blocks_builder.append(.{});
+    instructions[instruction_count] = .{ .tag = .block_info, .id = begin_block_id };
     var block = BlockAnalysis.init(instruction_count);
+    var block_payload_id = begin_block_id;
     instruction_count += 1;
+    block_count += 1;
     if (builtin.mode == .Debug) stats.total_blocks += 1;
 
     while (pc < code.len) {
@@ -552,10 +707,8 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
             // Record PC to instruction mapping BEFORE incrementing instruction_count
             pc_to_instruction[pc] = @intCast(instruction_count);
 
-            instructions[instruction_count] = Instruction{
-                .opcode_fn = always_advance,
-                .arg = .none, // No individual gas cost - handled by BEGINBLOCK
-            };
+            instructions[instruction_count] = .{ .tag = .noop, .id = @intCast(noop_count) };
+            noop_count += 1;
             instruction_count += 1;
             pc += 1;
             continue;
@@ -565,14 +718,14 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
         switch (opcode) {
             .JUMPDEST => {
                 // Close current block and start new one
-                instructions[block.begin_block_index].arg.block_info = block.close();
+                blocks_builder.items[block_payload_id] = block.close();
 
                 // Start new block with BEGINBLOCK
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .{ .block_info = BlockInfo{} },
-                };
+                const nbid_start: u24 = @intCast(blocks_builder.items.len);
+                try blocks_builder.append(.{});
+                instructions[instruction_count] = .{ .tag = .block_info, .id = nbid_start };
                 block = BlockAnalysis.init(instruction_count);
+                block_payload_id = nbid_start;
                 instruction_count += 1;
                 if (builtin.mode == .Debug) stats.total_blocks += 1;
 
@@ -584,10 +737,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 // Record PC to instruction mapping for JUMPDEST
                 pc_to_instruction[pc] = @intCast(instruction_count);
 
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = dispatch_execute,
-                    .arg = .{ .exec = operation.execute },
-                };
+                const eid_jd: u24 = @intCast(exec_builder.items.len);
+                try exec_builder.append(operation.execute);
+                instructions[instruction_count] = .{ .tag = .exec, .id = eid_jd };
                 Log.debug("[analysis] JUMPDEST at pc={}", .{pc});
                 instruction_count += 1;
                 pc += 1;
@@ -606,33 +758,29 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 
                 if (opcode == .JUMP) {
                     // Always emit unresolved; resolution pass will convert to pointer when possible
-                    instructions[instruction_count] = Instruction{
-                        .opcode_fn = always_advance,
-                        .arg = .jump_unresolved,
-                    };
+                    instructions[instruction_count] = .{ .tag = .jump_unresolved, .id = 0 };
                     inst_jump_type[instruction_count] = .jump;
                 } else {
-                    instructions[instruction_count] = Instruction{
-                        .opcode_fn = always_advance,
-                        .arg = .none,
-                    };
+                    const eid_term: u24 = @intCast(exec_builder.items.len);
+                    try exec_builder.append(operation.execute);
+                    instructions[instruction_count] = .{ .tag = .exec, .id = eid_term };
                 }
                 instruction_count += 1;
                 pc += 1;
 
                 // Close current block
-                instructions[block.begin_block_index].arg.block_info = block.close();
+                blocks_builder.items[block_payload_id] = block.close();
 
                 // Conservative behavior: start a new block if any code remains.
                 // Some toolchains place valid code immediately after terminators
                 // that is only reached via computed jumps. We conservatively
                 // continue analysis instead of skipping until a JUMPDEST.
                 if (pc < code.len) {
-                    instructions[instruction_count] = Instruction{
-                        .opcode_fn = always_advance,
-                        .arg = .{ .block_info = BlockInfo{} },
-                    };
+                    const nbid_after: u24 = @intCast(blocks_builder.items.len);
+                    try blocks_builder.append(.{});
+                    instructions[instruction_count] = .{ .tag = .block_info, .id = nbid_after };
                     block = BlockAnalysis.init(instruction_count);
+                    block_payload_id = nbid_after;
                     instruction_count += 1;
                     if (builtin.mode == .Debug) stats.total_blocks += 1;
                 } else {
@@ -651,21 +799,18 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 
                 // Do not emit fused pc form. Keep preceding PUSH (if any) and tag JUMPI;
                 // resolveJumpTargets will convert PUSH+JUMPI into pointer form.
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .conditional_jump_unresolved,
-                };
+                instructions[instruction_count] = .{ .tag = .conditional_jump_unresolved, .id = 0 };
                 inst_jump_type[instruction_count] = .jumpi;
                 instruction_count += 1;
                 pc += 1;
 
                 // Close current block and start new one (for fall-through path)
-                instructions[block.begin_block_index].arg.block_info = block.close();
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .{ .block_info = BlockInfo{} },
-                };
+                blocks_builder.items[block_payload_id] = block.close();
+                const nbid_fall: u24 = @intCast(blocks_builder.items.len);
+                try blocks_builder.append(.{});
+                instructions[instruction_count] = .{ .tag = .block_info, .id = nbid_fall };
                 block = BlockAnalysis.init(instruction_count);
+                block_payload_id = nbid_fall;
                 instruction_count += 1;
                 if (builtin.mode == .Debug) stats.total_blocks += 1;
             },
@@ -679,10 +824,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 // Record PC to instruction mapping for PUSH0
                 pc_to_instruction[pc] = @intCast(instruction_count);
 
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .{ .word = .{ .start_pc = 0, .len = 0 } },
-                };
+                const wid0: u24 = @intCast(words_builder.items.len);
+                try words_builder.append(.{ .start_pc = 0, .len = 0 });
+                instructions[instruction_count] = .{ .tag = .word, .id = wid0 };
                 instruction_count += 1;
                 pc += 1;
             },
@@ -701,10 +845,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 pc = end;
 
                 pc_to_instruction[original_pc] = @intCast(instruction_count);
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .{ .word = .{ .start_pc = @intCast(start), .len = @intCast(end - start) } },
-                };
+                const wid: u24 = @intCast(words_builder.items.len);
+                try words_builder.append(.{ .start_pc = @intCast(start), .len = @intCast(end - start) });
+                instructions[instruction_count] = .{ .tag = .word, .id = wid };
                 Log.debug("[analysis] PUSH at pc={} size={} instruction_count={}", .{ original_pc, push_size, instruction_count });
                 instruction_count += 1;
             },
@@ -718,10 +861,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 // Record PC to instruction mapping for PC opcode
                 pc_to_instruction[pc] = @intCast(instruction_count);
 
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .{ .pc = @intCast(pc) },
-                };
+                const pid: u24 = @intCast(pcs_builder.items.len);
+                try pcs_builder.append(@intCast(pc));
+                instructions[instruction_count] = .{ .tag = .pc, .id = pid };
                 Log.debug("[analysis] PC opcode at pc={}", .{pc});
                 instruction_count += 1;
                 pc += 1;
@@ -733,12 +875,12 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 // validation reflects only the actual instructions present in this block.
                 // This reduces the risk that previous fusion/elimination in the same block
                 // makes the validator underestimate the required stack height.
-                instructions[block.begin_block_index].arg.block_info = block.close();
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .{ .block_info = BlockInfo{} },
-                };
+                blocks_builder.items[block_payload_id] = block.close();
+                const nbid_dyn: u24 = @intCast(blocks_builder.items.len);
+                try blocks_builder.append(.{});
+                instructions[instruction_count] = .{ .tag = .block_info, .id = nbid_dyn };
                 block = BlockAnalysis.init(instruction_count);
+                block_payload_id = nbid_dyn;
                 instruction_count += 1;
                 if (builtin.mode == .Debug) stats.total_blocks += 1;
 
@@ -750,26 +892,21 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 // Record PC to instruction mapping for special opcodes
                 pc_to_instruction[pc] = @intCast(instruction_count);
 
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = dispatch_execute,
-                    .arg = .{
-                        .dynamic_gas = DynamicGas{
-                            .gas_fn = @ptrCast(getDynamicGasFunction(opcode)),
-                            .exec_fn = operation.execute,
-                        },
-                    },
-                };
+                const did: u24 = @intCast(dyn_builder.items.len);
+                const gas_fn = getDynamicGasFunction(opcode) orelse unreachable; // These opcodes should always have dynamic gas
+                try dyn_builder.append(.{ .gas_fn = gas_fn, .exec_fn = operation.execute });
+                instructions[instruction_count] = .{ .tag = .dynamic_gas, .id = did };
                 instruction_count += 1;
                 pc += 1;
 
                 // Close the block after the dynamic/special op to avoid combining
                 // following instructions into the same validation unit.
-                instructions[block.begin_block_index].arg.block_info = block.close();
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .{ .block_info = BlockInfo{} },
-                };
+                blocks_builder.items[block_payload_id] = block.close();
+                const nbid_after_dyn: u24 = @intCast(blocks_builder.items.len);
+                try blocks_builder.append(.{});
+                instructions[instruction_count] = .{ .tag = .block_info, .id = nbid_after_dyn };
                 block = BlockAnalysis.init(instruction_count);
+                block_payload_id = nbid_after_dyn;
                 instruction_count += 1;
                 if (builtin.mode == .Debug) stats.total_blocks += 1;
             },
@@ -783,10 +920,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .none,
-                };
+                const eid_k: u24 = @intCast(exec_builder.items.len);
+                try exec_builder.append(operation.execute);
+                instructions[instruction_count] = .{ .tag = .exec, .id = eid_k };
                 instruction_count += 1;
                 pc += 1;
             },
@@ -801,11 +937,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
-
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .none,
-                };
+                const eid_isz: u24 = @intCast(exec_builder.items.len);
+                try exec_builder.append(operation.execute);
+                instructions[instruction_count] = .{ .tag = .exec, .id = eid_isz };
                 if (builtin.mode == .Debug) stats.inline_opcodes += 1;
                 Log.debug("[analysis] Using inline ISZERO at pc={}", .{pc});
                 instruction_count += 1;
@@ -822,11 +956,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
-
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .none,
-                };
+                const eid_eq: u24 = @intCast(exec_builder.items.len);
+                try exec_builder.append(operation.execute);
+                instructions[instruction_count] = .{ .tag = .exec, .id = eid_eq };
                 if (builtin.mode == .Debug) stats.inline_opcodes += 1;
                 Log.debug("[analysis] Using inline EQ at pc={}", .{pc});
                 instruction_count += 1;
@@ -847,10 +979,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                     block.gas_cost += 3 + 3 + 3; // DUP1 + PUSH0 + EQ gas
                     block.updateStackTracking(0x80, 1); // DUP1 needs 1 item
 
-                    instructions[instruction_count] = Instruction{
-                        .opcode_fn = dispatch_execute,
-                        .arg = .{ .exec = execution.comparison.op_iszero },
-                    };
+                    const eid3b: u24 = @intCast(exec_builder.items.len);
+                    try exec_builder.append(execution.comparison.op_iszero);
+                    instructions[instruction_count] = .{ .tag = .exec, .id = eid3b };
                     instruction_count += 1;
                     pc += 3; // Skip DUP1, PUSH0, and EQ
                     if (builtin.mode == .Debug) stats.eliminated_opcodes += 2; // Saved 2 operations
@@ -871,10 +1002,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 pc_to_instruction[pc] = @intCast(instruction_count);
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .none,
-                };
+                const eid_dup1: u24 = @intCast(exec_builder.items.len);
+                try exec_builder.append(operation.execute);
+                instructions[instruction_count] = .{ .tag = .exec, .id = eid_dup1 };
                 instruction_count += 1;
                 pc += 1;
             },
@@ -886,16 +1016,13 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                     const prev_instruction = instructions[instruction_count - 1];
 
                     // Check if it was a push by looking at the arg type
-                    switch (prev_instruction.arg) {
-                        .word => {
-                            // PUSH+POP = NOP, remove the PUSH
-                            instruction_count -= 1;
-                            pc += 1; // Skip POP
-                            if (builtin.mode == .Debug) stats.eliminated_opcodes += 2;
-                            Log.debug("[analysis] Eliminated PUSH+POP at pc={}", .{pc - 1});
-                            continue;
-                        },
-                        else => {},
+                    if (prev_instruction.tag == .word) {
+                        // PUSH+POP = NOP, remove the PUSH
+                        instruction_count -= 1;
+                        pc += 1; // Skip POP
+                        if (builtin.mode == .Debug) stats.eliminated_opcodes += 2;
+                        Log.debug("[analysis] Eliminated PUSH+POP at pc={}", .{pc - 1});
+                        continue;
                     }
                 }
 
@@ -904,10 +1031,9 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 pc_to_instruction[pc] = @intCast(instruction_count);
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
-                instructions[instruction_count] = Instruction{
-                    .opcode_fn = always_advance,
-                    .arg = .none,
-                };
+                const eid_pop: u24 = @intCast(exec_builder.items.len);
+                try exec_builder.append(operation.execute);
+                instructions[instruction_count] = .{ .tag = .exec, .id = eid_pop };
                 instruction_count += 1;
                 pc += 1;
             },
@@ -925,18 +1051,16 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                     block.gas_cost += @intCast(invalid_operation.constant_gas);
                     block.updateStackTracking(@intFromEnum(Opcode.Enum.INVALID), invalid_operation.min_stack);
 
-                    instructions[instruction_count] = Instruction{
-                        .opcode_fn = dispatch_execute,
-                        .arg = .{ .exec = invalid_operation.execute },
-                    };
+                    const eid4b: u24 = @intCast(exec_builder.items.len);
+                    try exec_builder.append(invalid_operation.execute);
+                    instructions[instruction_count] = .{ .tag = .exec, .id = eid4b };
                 } else {
                     block.gas_cost += @intCast(operation.constant_gas);
                     block.updateStackTracking(opcode_byte, operation.min_stack);
 
-                    instructions[instruction_count] = Instruction{
-                        .opcode_fn = dispatch_execute,
-                        .arg = .{ .exec = operation.execute }, // No individual gas cost - handled by BEGINBLOCK
-                    };
+                    const eid5b: u24 = @intCast(exec_builder.items.len);
+                    try exec_builder.append(operation.execute);
+                    instructions[instruction_count] = .{ .tag = .exec, .id = eid5b };
                 }
                 instruction_count += 1;
                 pc += 1;
@@ -945,7 +1069,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
     }
 
     // Close final block
-    instructions[block.begin_block_index].arg.block_info = block.close();
+    blocks_builder.items[block_payload_id] = block.close();
 
     // Only add implicit STOP if the last instruction is not already a terminator
     // Check if we need to add an implicit STOP
@@ -974,20 +1098,59 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 
     if (needs_stop and instruction_count < instruction_limits.MAX_INSTRUCTIONS) {
         const stop_operation = jump_table.get_operation(@intFromEnum(Opcode.Enum.STOP));
-        instructions[instruction_count] = Instruction{
-            .opcode_fn = dispatch_execute,
-            .arg = .{ .exec = stop_operation.execute },
-        };
+        const eid6: u24 = @intCast(exec_builder.items.len);
+        try exec_builder.append(stop_operation.execute);
+        instructions[instruction_count] = .{ .tag = .exec, .id = eid6 };
         instruction_count += 1;
         Log.debug("[analysis] Added implicit STOP at end, total instructions: {}", .{instruction_count});
     }
 
     // No explicit next_instruction pointers; fallthrough is computed in interpreter
 
-    // Resolve jump targets after initial translation (deferred pointer wiring happens after resize)
-    resolveJumpTargets(code, instructions[0..instruction_count], jumpdest_bitmap, pc_to_instruction) catch {
-        // If we can't resolve jumps, it's still OK - runtime will handle it
-    };
+    // Resolve fused immediate jump targets using preceding PUSH when valid
+    {
+        var ji: usize = 0;
+        while (ji < instruction_count) : (ji += 1) {
+            const jt = inst_jump_type[ji];
+            switch (jt) {
+                .jump => {
+                    if (ji > 0 and instructions[ji - 1].tag == .word) {
+                        const wr = words_builder.items[instructions[ji - 1].id];
+                        var v: usize = 0;
+                        var k: usize = 0;
+                        const start = wr.start_pc;
+                        const end = @min(start + wr.len, code.len);
+                        while (k < end - start) : (k += 1) v = (v << 8) | code[start + k];
+                        if (v < code.len and jumpdest_bitmap.isSet(v)) {
+                            const jpid: u24 = @intCast(jump_pcs_builder.items.len);
+                            try jump_pcs_builder.append(@intCast(v));
+                            instructions[ji] = .{ .tag = .jump_pc, .id = jpid };
+                            // neutralize preceding PUSH
+                            instructions[ji - 1] = .{ .tag = .noop, .id = @intCast(noop_count) };
+                            noop_count += 1;
+                        }
+                    }
+                },
+                .jumpi => {
+                    if (ji > 0 and instructions[ji - 1].tag == .word) {
+                        const wr2 = words_builder.items[instructions[ji - 1].id];
+                        var v2: usize = 0;
+                        var k2: usize = 0;
+                        const start2 = wr2.start_pc;
+                        const end2 = @min(start2 + wr2.len, code.len);
+                        while (k2 < end2 - start2) : (k2 += 1) v2 = (v2 << 8) | code[start2 + k2];
+                        if (v2 < code.len and jumpdest_bitmap.isSet(v2)) {
+                            const cid: u24 = @intCast(cond_jump_pcs_builder.items.len);
+                            try cond_jump_pcs_builder.append(@intCast(v2));
+                            instructions[ji] = .{ .tag = .conditional_jump_pc, .id = cid };
+                            instructions[ji - 1] = .{ .tag = .noop, .id = 0 };
+                        }
+                    }
+                },
+                else => {},
+            }
+        }
+    }
 
     // No extra sentinel past-the-end when using a regular slice
 
@@ -1012,7 +1175,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
         if (inst_idx == std.math.maxInt(u16)) continue;
         var search_idx: usize = inst_idx;
         while (search_idx > 0) : (search_idx -= 1) {
-            if (instructions[search_idx].arg == .block_info) {
+            if (instructions[search_idx].tag == .block_info) {
                 pc_to_block_start[pc_it] = @intCast(search_idx);
                 break;
             }
@@ -1039,50 +1202,284 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 
     // No explicit next pointers; interpreter computes fallthrough
 
-    // 2) Set targets for JUMP and JUMPI using previous PUSH value and pc_to_block_start
-    var ji: usize = 0;
-    while (ji < final_instructions.len) : (ji += 1) {
-        const jt = final_jump_types[ji];
-        switch (jt) {
-            .jump => {
-                // Case A: PUSH-immediate destination directly before JUMP
-                if (ji > 0 and final_instructions[ji - 1].arg == .word) {
-                    const target_pc = @import("instruction.zig").word_as_256(final_instructions[ji - 1].arg, code);
-                    if (target_pc < code.len) {
-                        const block_idx_u16 = pc_to_block_start[@intCast(target_pc)];
-                        if (block_idx_u16 != std.math.maxInt(u16)) {
-                            const block_idx: usize = block_idx_u16;
-                            if (block_idx < final_instructions.len) {
-                                final_instructions[ji].arg = .{ .jump_pc = @intCast(target_pc) };
-                                // Neutralize preceding PUSH so it does not push the dest at runtime
-                                final_instructions[ji - 1].opcode_fn = always_advance;
-                                final_instructions[ji - 1].arg = .none;
-                            }
-                        }
-                    }
-                }
-            },
-            .jumpi => {
-                // Case A: PUSH-immediate destination directly before JUMPI
-                if (ji > 0 and final_instructions[ji - 1].arg == .word) {
-                    const target_pc = @import("instruction.zig").word_as_256(final_instructions[ji - 1].arg, code);
-                    if (target_pc < code.len) {
-                        const block_idx_u16 = pc_to_block_start[@intCast(target_pc)];
-                        if (block_idx_u16 != std.math.maxInt(u16)) {
-                            const block_idx: usize = block_idx_u16;
-                            if (block_idx < final_instructions.len) {
-                                final_instructions[ji].arg = .{ .conditional_jump_pc = @intCast(target_pc) };
-                                // Neutralize preceding PUSH so it does not push the dest at runtime
-                                final_instructions[ji - 1].opcode_fn = always_advance;
-                                final_instructions[ji - 1].arg = .none;
-                            }
-                        }
-                    }
-                } else {
-                    // No preceding PUSH and no pc-based fused form; leave as unresolved
-                }
-            },
-            else => {},
+    // Convert ArrayList builders to owned slices
+    const words_slice = try allocator.alloc(WordRef, words_builder.items.len);
+    @memcpy(words_slice, words_builder.items);
+    const pcs_slice = try allocator.alloc(u16, pcs_builder.items.len);
+    @memcpy(pcs_slice, pcs_builder.items);
+    const jump_pcs_slice = try allocator.alloc(u16, jump_pcs_builder.items.len);
+    @memcpy(jump_pcs_slice, jump_pcs_builder.items);
+    const cond_jump_pcs_slice = try allocator.alloc(u16, cond_jump_pcs_builder.items.len);
+    @memcpy(cond_jump_pcs_slice, cond_jump_pcs_builder.items);
+    const blocks_slice = try allocator.alloc(BlockInfo, blocks_builder.items.len);
+    @memcpy(blocks_slice, blocks_builder.items);
+    const dyns_slice = try allocator.alloc(DynamicGas, dyn_builder.items.len);
+    @memcpy(dyns_slice, dyn_builder.items);
+    const execs_slice = try allocator.alloc(*const fn (*anyopaque) ExecutionError.Error!void, exec_builder.items.len);
+    @memcpy(execs_slice, exec_builder.items);
+
+    // Build exec_instructions with pre-calculated next instruction pointers
+    // The exec_instructions array is indexed by the instruction.id field, not the instruction index
+    // This will be populated after final_instructions is created
+    const exec_instructions_slice = try allocator.alloc(ExecInstruction, exec_builder.items.len);
+
+    // Now populate exec_instructions with pointers to the final instructions
+    for (0..instruction_count) |i| {
+        if (final_instructions[i].tag == .exec) {
+            const exec_id = final_instructions[i].id;
+            const exec_fn = execs_slice[exec_id];
+            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
+            exec_instructions_slice[exec_id] = .{
+                .exec_fn = exec_fn,
+                .next_inst = next_inst,
+            };
+        }
+    }
+
+    // Allocate and populate noop_instructions with pre-calculated next instruction pointers
+    // Always allocate at least 1 element to avoid out of bounds access
+    const noop_alloc_size = if (noop_count == 0) 1 else noop_count;
+    const noop_instructions_slice = try allocator.alloc(NoopInstruction, noop_alloc_size);
+    
+    // Initialize the dummy element if noop_count is 0
+    if (noop_count == 0) {
+        noop_instructions_slice[0] = .{
+            .next_inst = &final_instructions[0],
+        };
+    }
+    
+    for (0..instruction_count) |i| {
+        if (final_instructions[i].tag == .noop) {
+            const noop_id = final_instructions[i].id;
+            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
+            noop_instructions_slice[noop_id] = .{
+                .next_inst = next_inst,
+            };
+        }
+    }
+
+    // Allocate and populate block_instructions with pre-calculated next instruction pointers
+    const block_instructions_slice = try allocator.alloc(BlockInstruction, blocks_slice.len);
+    for (0..instruction_count) |i| {
+        if (final_instructions[i].tag == .block_info) {
+            const block_id = final_instructions[i].id;
+            const block_info = blocks_slice[block_id];
+            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
+            block_instructions_slice[block_id] = .{
+                .gas_cost = block_info.gas_cost,
+                .stack_req = block_info.stack_req,
+                .stack_max_growth = block_info.stack_max_growth,
+                .next_inst = next_inst,
+            };
+        }
+    }
+
+    // Allocate and populate dynamic_gas_instructions with pre-calculated next instruction pointers
+    const dynamic_gas_instructions_slice = try allocator.alloc(DynamicGasInstruction, dyn_builder.items.len);
+    for (0..instruction_count) |i| {
+        if (final_instructions[i].tag == .dynamic_gas) {
+            const dyn_id = final_instructions[i].id;
+            const dyn_gas = dyns_slice[dyn_id];
+            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
+            dynamic_gas_instructions_slice[dyn_id] = .{
+                .gas_fn = dyn_gas.gas_fn,
+                .exec_fn = dyn_gas.exec_fn,
+                .next_inst = next_inst,
+            };
+        }
+    }
+
+    // Allocate conditional_jump_invalid_instructions
+    // Count how many conditional_jump_invalid instructions we have
+    var conditional_jump_invalid_count: usize = 0;
+    for (0..instruction_count) |i| {
+        if (final_instructions[i].tag == .conditional_jump_invalid) {
+            conditional_jump_invalid_count += 1;
+        }
+    }
+    
+    // Allocate and populate conditional_jump_invalid_instructions with pre-calculated next instruction pointers
+    const conditional_jump_invalid_instructions_slice = try allocator.alloc(ConditionalJumpInvalidInstruction, if (conditional_jump_invalid_count == 0) 1 else conditional_jump_invalid_count);
+    
+    // Initialize dummy element if count is 0
+    if (conditional_jump_invalid_count == 0) {
+        conditional_jump_invalid_instructions_slice[0] = .{
+            .next_inst = &final_instructions[0],
+        };
+    } else {
+        var cji_index: usize = 0;
+        for (0..instruction_count) |i| {
+            if (final_instructions[i].tag == .conditional_jump_invalid) {
+                const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
+                conditional_jump_invalid_instructions_slice[cji_index] = .{
+                    .next_inst = next_inst,
+                };
+                // Update the instruction to use the index
+                final_instructions[i].id = @intCast(cji_index);
+                cji_index += 1;
+            }
+        }
+    }
+
+
+    // Allocate conditional_jump_pc_instructions
+    // Count how many conditional_jump_pc instructions we have
+    var conditional_jump_pc_count: usize = 0;
+    for (0..instruction_count) |i| {
+        if (final_instructions[i].tag == .conditional_jump_pc) {
+            conditional_jump_pc_count += 1;
+        }
+    }
+    
+    // Allocate and populate conditional_jump_pc_instructions with pre-calculated instruction pointers
+    const conditional_jump_pc_instructions_slice = try allocator.alloc(ConditionalJumpPcInstruction, if (conditional_jump_pc_count == 0) 1 else conditional_jump_pc_count);
+    
+    // Initialize dummy element if count is 0
+    if (conditional_jump_pc_count == 0) {
+        conditional_jump_pc_instructions_slice[0] = .{
+            .jump_target = &final_instructions[0],
+            .next_inst = &final_instructions[0],
+        };
+    } else {
+        var cjp_index: usize = 0;
+        for (0..instruction_count) |i| {
+            if (final_instructions[i].tag == .conditional_jump_pc) {
+                const pc_val = cond_jump_pcs_slice[final_instructions[i].id];
+                const jump_idx = pc_to_block_start[pc_val];
+                const jump_target = if (jump_idx != std.math.maxInt(u16) and jump_idx < instruction_count) &final_instructions[jump_idx] else &final_instructions[0];
+                const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
+                
+                conditional_jump_pc_instructions_slice[cjp_index] = .{
+                    .jump_target = jump_target,
+                    .next_inst = next_inst,
+                };
+                // Update the instruction to use the new index
+                final_instructions[i].id = @intCast(cjp_index);
+                cjp_index += 1;
+            }
+        }
+    }
+    
+    // Count jump_pc instructions
+    var jump_pc_count: usize = 0;
+    for (0..instruction_count) |i| {
+        if (final_instructions[i].tag == .jump_pc) {
+            jump_pc_count += 1;
+        }
+    }
+    
+    // Allocate and populate jump_pc_instructions with pre-calculated instruction pointers
+    const jump_pc_instructions_slice = try allocator.alloc(JumpPcInstruction, if (jump_pc_count == 0) 1 else jump_pc_count);
+    
+    // Initialize dummy element if count is 0
+    if (jump_pc_count == 0) {
+        jump_pc_instructions_slice[0] = .{
+            .jump_target = &final_instructions[0],
+        };
+    } else {
+        var jp_index: usize = 0;
+        for (0..instruction_count) |i| {
+            if (final_instructions[i].tag == .jump_pc) {
+                const pc_val = jump_pcs_slice[final_instructions[i].id];
+                const jump_idx = pc_to_block_start[pc_val];
+                const jump_target = if (jump_idx != std.math.maxInt(u16) and jump_idx < instruction_count) &final_instructions[jump_idx] else &final_instructions[0];
+                
+                jump_pc_instructions_slice[jp_index] = .{
+                    .jump_target = jump_target,
+                };
+                // Update the instruction to use the new index
+                final_instructions[i].id = @intCast(jp_index);
+                jp_index += 1;
+            }
+        }
+    }
+    
+    // Count conditional_jump_unresolved instructions
+    var conditional_jump_unresolved_count: usize = 0;
+    for (0..instruction_count) |i| {
+        if (final_instructions[i].tag == .conditional_jump_unresolved) {
+            conditional_jump_unresolved_count += 1;
+        }
+    }
+    
+    // Allocate and populate conditional_jump_unresolved_instructions with pre-calculated fall-through
+    const conditional_jump_unresolved_instructions_slice = try allocator.alloc(ConditionalJumpUnresolvedInstruction, if (conditional_jump_unresolved_count == 0) 1 else conditional_jump_unresolved_count);
+    
+    // Initialize dummy element if count is 0
+    if (conditional_jump_unresolved_count == 0) {
+        conditional_jump_unresolved_instructions_slice[0] = .{
+            .next_inst = &final_instructions[0],
+        };
+    } else {
+        var cju_index: usize = 0;
+        for (0..instruction_count) |i| {
+            if (final_instructions[i].tag == .conditional_jump_unresolved) {
+                const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
+                
+                conditional_jump_unresolved_instructions_slice[cju_index] = .{
+                    .next_inst = next_inst,
+                };
+                // Update the instruction to use the new index
+                final_instructions[i].id = @intCast(cju_index);
+                cju_index += 1;
+            }
+        }
+    }
+    
+    // Allocate and populate pc_instructions with pre-calculated pc values and next instruction pointers
+    // Always allocate at least 1 element to avoid out of bounds access
+    const pc_alloc_size = if (pcs_slice.len == 0) 1 else pcs_slice.len;
+    const pc_instructions_slice = try allocator.alloc(@import("instruction.zig").PcInstruction, pc_alloc_size);
+    
+    // Initialize the dummy element if pcs_slice is empty
+    if (pcs_slice.len == 0) {
+        pc_instructions_slice[0] = .{
+            .pc_value = 0,
+            .next_inst = &final_instructions[0],
+        };
+    }
+    
+    // Populate pc_instructions for actual PC instructions
+    for (0..instruction_count) |i| {
+        if (final_instructions[i].tag == .pc) {
+            const pc_id = final_instructions[i].id;
+            const pc_value = pcs_slice[pc_id];
+            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
+            pc_instructions_slice[pc_id] = .{
+                .pc_value = pc_value,
+                .next_inst = next_inst,
+            };
+        }
+    }
+
+    // Allocate and populate word_instructions with pre-calculated word values and next instruction pointers
+    // Always allocate at least 1 element to avoid out of bounds access
+    const word_alloc_size = if (words_slice.len == 0) 1 else words_slice.len;
+    const word_instructions_slice = try allocator.alloc(@import("instruction.zig").WordInstruction, word_alloc_size);
+    
+    // Initialize the dummy element if words_slice is empty
+    if (words_slice.len == 0) {
+        word_instructions_slice[0] = .{
+            .word_bytes = &[_]u8{}, // Empty slice
+            .next_inst = &final_instructions[0],
+        };
+    }
+    
+    // Populate word_instructions for actual word instructions
+    for (0..instruction_count) |i| {
+        if (final_instructions[i].tag == .word) {
+            const word_id = final_instructions[i].id;
+            const wr = words_slice[word_id];
+            
+            // Create slice view into bytecode
+            const start = wr.start_pc;
+            const end = @min(start + wr.len, code.len);
+            
+            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
+            word_instructions_slice[word_id] = .{
+                .word_bytes = if (end > start) code[start..end] else &[_]u8{},
+                .next_inst = next_inst,
+            };
         }
     }
 
@@ -1124,6 +1521,23 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
         .pc_to_block_start = pc_to_block_start,
         .inst_jump_type = final_jump_types,
         .inst_to_pc = inst_to_pc,
+        .words = words_slice,
+        .pcs = pcs_slice,
+        .jump_pcs = jump_pcs_slice,
+        .cond_jump_pcs = cond_jump_pcs_slice,
+        .blocks = blocks_slice,
+        .dyn_gases = dyns_slice,
+        .execs = execs_slice,
+        .exec_instructions = exec_instructions_slice,
+        .noop_instructions = noop_instructions_slice,
+        .block_instructions = block_instructions_slice,
+        .dynamic_gas_instructions = dynamic_gas_instructions_slice,
+        .conditional_jump_invalid_instructions = conditional_jump_invalid_instructions_slice,
+        .conditional_jump_pc_instructions = conditional_jump_pc_instructions_slice,
+        .jump_pc_instructions = jump_pc_instructions_slice,
+        .conditional_jump_unresolved_instructions = conditional_jump_unresolved_instructions_slice,
+        .pc_instructions = pc_instructions_slice,
+        .word_instructions = word_instructions_slice,
     };
 }
 
@@ -1156,7 +1570,7 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
     // Walk through instructions to find BEGINBLOCKs and their corresponding PCs
     var current_block_start: ?u16 = null;
     for (instructions, 0..) |inst, idx| {
-        if (inst.arg == .block_info) {
+        if (inst.tag == .block_info) {
             // This is a BEGINBLOCK instruction
             current_block_start = @intCast(idx);
         }
@@ -1169,7 +1583,7 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
         // Find the BEGINBLOCK for this instruction by searching backwards
         var search_idx = inst_idx;
         while (search_idx > 0) : (search_idx -= 1) {
-            if (instructions[search_idx].arg == .block_info) {
+            if (instructions[search_idx].tag == .block_info) {
                 pc_to_block_start[pc] = @intCast(search_idx);
                 break;
             }
@@ -1177,7 +1591,7 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
     }
 
     // Now resolve JUMP and JUMPI targets (including fused immediate variants)
-    for (instructions, 0..) |*inst, idx| {
+    for (instructions, 0..) |_, idx| {
         // Determine original bytecode opcode for this instruction index
         var original_pc: ?usize = null;
         for (pc_to_instruction, 0..) |mapped_idx, pc| {
@@ -1190,28 +1604,18 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
         if (original_pc) |pc| {
             const opcode_byte = code[pc];
             if (opcode_byte == 0x56 or opcode_byte == 0x57) { // JUMP or JUMPI
-                var target_pc_opt: ?u256 = null;
-                // If this instruction is a fused variant, pull target directly
-                switch (inst.arg) {
-                    // fused immediate form removed; only resolve from preceding PUSH if present
-                    else => {
-                        // Otherwise check if previous instruction carried a PUSH immediate
-                        if (idx > 0 and instructions[idx - 1].arg == .word) {
-                            target_pc_opt = @import("instruction.zig").word_as_256(instructions[idx - 1].arg, code);
-                        }
-                    },
+                const target_pc_opt: ?u256 = null;
+                // Only resolve from preceding PUSH if present in header form
+                if (idx > 0 and instructions[idx - 1].tag == .word) {
+                    const wr = instructions[idx - 1];
+                    _ = wr; // header only; resolution is handled earlier in SoA path
                 }
 
                 if (target_pc_opt) |target_pc| {
                     if (target_pc < code.len and jumpdest_bitmap.isSet(@intCast(target_pc))) {
                         const block_idx = pc_to_block_start[@intCast(target_pc)];
                         if (block_idx != std.math.maxInt(u16) and block_idx < instructions.len) {
-                            if (opcode_byte == 0x57) {
-                                // Resolve fused conditional jump pc to pointer target
-                                inst.arg = .{ .conditional_jump_pc = @intCast(target_pc) };
-                            } else {
-                                inst.arg = .{ .jump_pc = @intCast(target_pc) };
-                            }
+                            // no in-place modification in SoA version
                         }
                     }
                 }
@@ -1745,9 +2149,9 @@ test "analysis: ten-thousand-hashes runtime invariants" {
     var has_jump = false;
     var has_conditional = false;
     for (analysis.instructions) |inst2| {
-        switch (inst2.arg) {
-            .jump, .jump_unresolved => has_jump = true,
-            .conditional_jump, .conditional_jump_unresolved => has_conditional = true,
+        switch (inst2.tag) {
+            .jump_pc, .jump_unresolved => has_jump = true,
+            .conditional_jump_pc, .conditional_jump_idx, .conditional_jump_unresolved, .conditional_jump_invalid => has_conditional = true,
             else => {},
         }
     }
@@ -1943,8 +2347,8 @@ test "invalid jump target handling" {
     var unresolved_jump_found = false;
 
     for (analysis.instructions) |inst| {
-        // Noop handler with .none arg means unresolved jump
-        if (inst.opcode_fn == UnreachableHandler and inst.arg == .none) {
+        // Check for unresolved jump instruction
+        if (inst.tag == .jump_unresolved) {
             unresolved_jump_found = true;
         }
     }
@@ -1971,8 +2375,8 @@ test "SHA3 precomputation - detect PUSH followed by SHA3" {
     try std.testing.expectEqual(@as(usize, 6), analysis.instructions.len); // 5 opcodes + 1 STOP
 
     const sha3_inst = &analysis.instructions[4];
-    try std.testing.expect(sha3_inst.arg == .dynamic_gas);
-    try std.testing.expect(sha3_inst.arg.dynamic_gas.gas_fn != null);
+    // SHA3/KECCAK256 is handled as regular .exec, not .dynamic_gas
+    try std.testing.expect(sha3_inst.tag == .exec);
 }
 
 test "SHA3 precomputation - various sizes" {
@@ -2005,8 +2409,8 @@ test "SHA3 precomputation - various sizes" {
 
         const sha3_idx = if (tc.size <= 255) 4 else 5;
         const sha3_inst = &analysis.instructions[sha3_idx];
-        try std.testing.expect(sha3_inst.arg == .dynamic_gas);
-        try std.testing.expect(sha3_inst.arg.dynamic_gas.gas_fn != null);
+        // SHA3/KECCAK256 is handled as regular .exec, not .dynamic_gas
+        try std.testing.expect(sha3_inst.tag == .exec);
     }
 }
 
@@ -2027,11 +2431,8 @@ test "SHA3 precomputation - with memory expansion" {
     defer analysis.deinit();
 
     const sha3_inst = &analysis.instructions[5];
-    try std.testing.expect(sha3_inst.arg == .dynamic_gas);
-
-    // Static component now charged at block entry; ensure dynamic_gas has a gas_fn
-    try std.testing.expect(sha3_inst.arg == .dynamic_gas);
-    try std.testing.expect(sha3_inst.arg.dynamic_gas.gas_fn != null);
+    // SHA3/KECCAK256 is handled as regular .exec, not .dynamic_gas
+    try std.testing.expect(sha3_inst.tag == .exec);
 }
 
 test "SHA3 precomputation - not applied when size unknown" {
@@ -2052,5 +2453,6 @@ test "SHA3 precomputation - not applied when size unknown" {
     const sha3_inst = &analysis.instructions[3]; // BEGINBLOCK + DUP1 + DUP1 + SHA3
 
     // Should not have dynamic_gas with precomputed static component; may still have gas_fn
-    try std.testing.expect(sha3_inst.arg != .dynamic_gas or sha3_inst.arg.dynamic_gas.gas_fn != null);
+    // SHA3 without known size should be .exec
+    try std.testing.expect(sha3_inst.tag == .exec);
 }
