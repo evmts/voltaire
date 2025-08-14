@@ -27,11 +27,6 @@ pub const AnalysisArg = union(enum) {
     conditional_jump_invalid, // analysis-validated invalid JUMPDEST; interpreter errors if condition true
     block_info: BlockInfo,
     dynamic_gas: DynamicGas,
-    keccak: struct {
-        word_count: u32,
-        gas_cost: u32,
-        size: ?u32 = null,
-    },
 };
 
 /// Block information for BEGINBLOCK instructions.

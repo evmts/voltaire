@@ -215,41 +215,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },
-        // Generically Kekkak just runs as a .none instruction but when possible
-        // we can run it as a .keccak instruction to avoid the extra stack pop/push
-        .keccak => |params| {
-            pre_step(self, frame, instruction, &loop_iterations);
-            if (frame.gas_remaining < params.gas_cost) {
-                @branchHint(.cold);
-                frame.gas_remaining = 0;
-                return ExecutionError.Error.OutOfGas;
-            }
-            frame.gas_remaining -= params.gas_cost;
-            // Safely downsize operands to host usize; fail if they don't fit
-            const size_usize: usize = if (params.size) |imm| @intCast(imm) else blk: {
-                const s = frame.stack.pop_unsafe();
-                if (s > std.math.maxInt(usize)) {
-                    @branchHint(.unlikely);
-                    return ExecutionError.Error.OutOfOffset;
-                }
-                break :blk @as(usize, @intCast(s));
-            };
-            const offset_usize: usize = blk2: {
-                const off = frame.stack.pop_unsafe();
-                if (off > std.math.maxInt(usize)) {
-                    @branchHint(.unlikely);
-                    return ExecutionError.Error.OutOfOffset;
-                }
-                break :blk2 @as(usize, @intCast(off));
-            };
-            const data = try frame.memory.get_slice(offset_usize, size_usize);
-            var hash: [32]u8 = undefined;
-            std.crypto.hash.sha3.Keccak256.hash(data, &hash, .{});
-            const result = std.mem.readInt(u256, &hash, .big);
-            frame.stack.append_unsafe(result);
-            instruction = try exec_and_advance(frame, instruction);
-            continue :dispatch instruction.arg;
-        },
+        // no dedicated .keccak handling; KECCAK256 runs via opcode handler under .none
     }
 }
 
