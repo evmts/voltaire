@@ -59,8 +59,8 @@ pub const DynamicGas = struct {
 };
 
 pub const Instruction = struct {
-    opcode_fn: ExecutionFunc,
     arg: AnalysisArg,
+    opcode_fn: ExecutionFunc,
     next_instruction: *const Instruction = undefined,
 
     pub const STOP: Instruction = .{ .opcode_fn = StopHandler, .arg = .none };
