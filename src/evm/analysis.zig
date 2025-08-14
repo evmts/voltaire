@@ -19,6 +19,10 @@ const ConditionalJumpInvalidInstruction = @import("instruction.zig").Conditional
 const ConditionalJumpPcInstruction = @import("instruction.zig").ConditionalJumpPcInstruction;
 const JumpPcInstruction = @import("instruction.zig").JumpPcInstruction;
 const ConditionalJumpUnresolvedInstruction = @import("instruction.zig").ConditionalJumpUnresolvedInstruction;
+const PcInstruction = @import("instruction.zig").PcInstruction;
+const WordInstruction = @import("instruction.zig").WordInstruction;
+const InstructionType = @import("instruction.zig").InstructionType;
+const getInstructionSize = @import("instruction.zig").getInstructionSize;
 const ExecutionFunc = @import("execution_func.zig").ExecutionFunc;
 const Opcode = @import("opcodes/opcode.zig");
 const OpcodeMetadata = @import("opcode_metadata/opcode_metadata.zig");
@@ -123,29 +127,46 @@ pub const JumpdestArray = struct {
 /// Fields are organized by access frequency for optimal cache performance.
 pub const CodeAnalysis = @This();
 
+// Aligned bucket element types for size-based instruction storage
+const Bucket8 = extern struct { bytes: [8]u8 align(8) };
+const Bucket16 = extern struct { bytes: [16]u8 align(8) };
+const Bucket24 = extern struct { bytes: [24]u8 align(8) };
+
+// Shared count types to keep struct identity stable
+const Size8Counts = struct {
+	noop: u24 = 0,
+	jump_pc: u24 = 0,
+	conditional_jump_unresolved: u24 = 0,
+	conditional_jump_invalid: u24 = 0,
+};
+const Size16Counts = struct {
+	exec: u24 = 0,
+	conditional_jump_pc: u24 = 0,
+	pc: u24 = 0,
+	block_info: u24 = 0,
+};
+const Size24Counts = struct {
+	word: u24 = 0,
+	dynamic_gas: u24 = 0,
+};
+
 // === FIRST CACHE LINE - ULTRA HOT (accessed on every instruction) ===
 /// Heap-allocated instruction header stream for execution.
 /// Compact headers reference payloads stored in SoA arrays below.
 instructions: []Instruction, // compact headers
 
-/// Per-variant payload arrays (SoA)
-words: []WordRef,
-pcs: []u16,
-jump_pcs: []u16,
-cond_jump_pcs: []u16,
-blocks: []BlockInfo,
-dyn_gases: []DynamicGas,
-execs: []const ExecutionFunc,
-exec_instructions: []ExecInstruction,
-noop_instructions: []NoopInstruction,
-block_instructions: []BlockInstruction,
-dynamic_gas_instructions: []DynamicGasInstruction,
-conditional_jump_invalid_instructions: []ConditionalJumpInvalidInstruction,
-conditional_jump_pc_instructions: []ConditionalJumpPcInstruction,
-jump_pc_instructions: []JumpPcInstruction,
-conditional_jump_unresolved_instructions: []ConditionalJumpUnresolvedInstruction,
-pc_instructions: []@import("instruction.zig").PcInstruction,
-word_instructions: []@import("instruction.zig").WordInstruction,
+/// Size-based arrays for better cache efficiency
+/// 8-byte structs (NoopInstruction, JumpPcInstruction, ConditionalJumpUnresolvedInstruction, ConditionalJumpInvalidInstruction)
+size8_instructions: []Bucket8,
+/// 16-byte structs (ExecInstruction, ConditionalJumpPcInstruction, WordInstruction, PcInstruction)
+size16_instructions: []Bucket16,
+/// 24-byte structs (BlockInstruction, DynamicGasInstruction)
+size24_instructions: []Bucket24,
+
+/// Tracking counters for each struct type within size categories
+size8_counts: Size8Counts,
+size16_counts: Size16Counts,
+size24_counts: Size24Counts,
 
 /// Mapping from bytecode PC to the BEGINBLOCK instruction index that contains that PC.
 /// Size = code_len. Value = maxInt(u16) if unmapped.
@@ -174,14 +195,35 @@ inst_to_pc: []u16, // 16 bytes - only for debugging/tracing
 /// Allocator used for the instruction array (needed for cleanup)
 allocator: std.mem.Allocator, // 16 bytes - only accessed on deinit
 
+/// Generic function to get instruction parameters from size-based arrays
+pub fn getInstructionParams(self: *const CodeAnalysis, comptime tag: Tag, id: u24) InstructionType(tag) {
+	const InstType = InstructionType(tag);
+	const size = comptime @sizeOf(InstType);
+	return switch (size) {
+		8 => blk: {
+			const base_ptr: *const u8 = &self.size8_instructions[id].bytes[0];
+			break :blk (@as(*const InstType, @ptrCast(@alignCast(base_ptr)))).*;
+		},
+		16 => blk: {
+			const base_ptr: *const u8 = &self.size16_instructions[id].bytes[0];
+			break :blk (@as(*const InstType, @ptrCast(@alignCast(base_ptr)))).*;
+		},
+		24 => blk: {
+			const base_ptr: *const u8 = &self.size24_instructions[id].bytes[0];
+			break :blk (@as(*const InstType, @ptrCast(@alignCast(base_ptr)))).*;
+		},
+		else => unreachable,
+	};
+}
+
 /// Handler for opcodes that should never be executed directly.
 /// Used for JUMP, JUMPI, and PUSH opcodes that are handled inline by the interpreter.
 /// This function should never be called - if it is, there's a bug in the analysis or interpreter.
 pub fn UnreachableHandler(frame: *anyopaque) ExecutionError.Error!void {
-    _ = frame;
-    // Noop by design: instructions that should be handled inline (e.g., PUSH/PC) or via control-flow
-    // metadata (.next_instruction / .conditional_jump) will never need their execute fn invoked.
-    return;
+	_ = frame;
+	// Noop by design: instructions that should be handled inline (e.g., PUSH/PC) or via control-flow
+	// metadata (.next_instruction / .conditional_jump) will never need their execute fn invoked.
+	return;
 }
 
 /// Handler for BEGINBLOCK instructions that validates an entire basic block upfront.
@@ -281,69 +323,32 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
 
         const empty_instructions = try allocator.alloc(Instruction, 1);
         empty_instructions[0] = .{ .tag = .exec, .id = 0 };
-        const empty_words = try allocator.alloc(WordRef, 0);
-        const empty_pcs = try allocator.alloc(u16, 0);
-        const empty_jump_pcs = try allocator.alloc(u16, 0);
-        const empty_cjump_pcs = try allocator.alloc(u16, 0);
-        const empty_blocks = try allocator.alloc(BlockInfo, 0);
-        const empty_dyns = try allocator.alloc(DynamicGas, 0);
-        const empty_execs = try allocator.alloc(*const fn (*anyopaque) ExecutionError.Error!void, 1);
+        
+        // Allocate size-based arrays
+        const empty_size8 = try allocator.alloc(Bucket8, 0);
+        const empty_size16 = try allocator.alloc(Bucket16, 1); // Need 1 exec instruction for STOP
+        const empty_size24 = try allocator.alloc(Bucket24, 0);
+        
+        // Create and copy the STOP exec instruction to size16 array
         const stop_op = jump_table.get_operation(@intFromEnum(Opcode.Enum.STOP));
-        empty_execs[0] = stop_op.execute;
-        const empty_exec_instructions = try allocator.alloc(ExecInstruction, 1);
-        empty_exec_instructions[0] = .{
+        const exec_inst = ExecInstruction{
             .exec_fn = stop_op.execute,
             .next_inst = &empty_instructions[0], // Points to itself (STOP terminates anyway)
         };
-        const empty_noop_instructions = try allocator.alloc(NoopInstruction, 1);
-        empty_noop_instructions[0] = .{
-            .next_inst = &empty_instructions[0], // Points to itself
-        };
-        const empty_block_instructions = try allocator.alloc(BlockInstruction, 1);
-        empty_block_instructions[0] = .{
-            .gas_cost = 0,
-            .stack_req = 0,
-            .stack_max_growth = 0,
-            .next_inst = &empty_instructions[0],
-        };
-        const empty_dynamic_gas_instructions = try allocator.alloc(DynamicGasInstruction, 0);
-        const empty_conditional_jump_invalid_instructions = try allocator.alloc(ConditionalJumpInvalidInstruction, 0);
-        const empty_conditional_jump_pc_instructions = try allocator.alloc(ConditionalJumpPcInstruction, 0);
-        const empty_jump_pc_instructions = try allocator.alloc(JumpPcInstruction, 0);
-        const empty_conditional_jump_unresolved_instructions = try allocator.alloc(ConditionalJumpUnresolvedInstruction, 0);
-        const empty_pc_instructions = try allocator.alloc(@import("instruction.zig").PcInstruction, 1);
-        empty_pc_instructions[0] = .{
-            .pc_value = 0,
-            .next_inst = &empty_instructions[0],
-        };
-        const empty_word_instructions = try allocator.alloc(@import("instruction.zig").WordInstruction, 1);
-        empty_word_instructions[0] = .{
-            .word_bytes = &[_]u8{}, // Empty slice
-            .next_inst = &empty_instructions[0],
-        };
+        @memcpy(empty_size16[0].bytes[0..@sizeOf(ExecInstruction)], std.mem.asBytes(&exec_inst));
+        
         const empty_jump_types = try allocator.alloc(JumpType, 0);
         const empty_pc_map = try allocator.alloc(u16, 0);
         const empty_inst_to_pc = try allocator.alloc(u16, 0);
         return CodeAnalysis{
             // First cache line - hot
             .instructions = empty_instructions,
-            .words = empty_words,
-            .pcs = empty_pcs,
-            .jump_pcs = empty_jump_pcs,
-            .cond_jump_pcs = empty_cjump_pcs,
-            .blocks = empty_blocks,
-            .dyn_gases = empty_dyns,
-            .execs = empty_execs,
-            .exec_instructions = empty_exec_instructions,
-            .noop_instructions = empty_noop_instructions,
-            .block_instructions = empty_block_instructions,
-            .dynamic_gas_instructions = empty_dynamic_gas_instructions,
-            .conditional_jump_invalid_instructions = empty_conditional_jump_invalid_instructions,
-            .conditional_jump_pc_instructions = empty_conditional_jump_pc_instructions,
-            .jump_pc_instructions = empty_jump_pc_instructions,
-            .conditional_jump_unresolved_instructions = empty_conditional_jump_unresolved_instructions,
-            .pc_instructions = empty_pc_instructions,
-            .word_instructions = empty_word_instructions,
+            .size8_instructions = empty_size8,
+            .size16_instructions = empty_size16,
+            .size24_instructions = empty_size24,
+            .size8_counts = .{},
+            .size16_counts = .{ .exec = 1 },
+            .size24_counts = .{},
             .pc_to_block_start = empty_pc_map,
             .jumpdest_array = jumpdest_array,
             // Second cache line - warm
@@ -445,57 +450,32 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
     return CodeAnalysis{
         // === FIRST CACHE LINE - ULTRA HOT ===
         .instructions = gen.instructions,
-        .words = gen.words,
-        .pcs = gen.pcs,
-        .jump_pcs = gen.jump_pcs,
-        .cond_jump_pcs = gen.cond_jump_pcs,
-        .blocks = gen.blocks,
-        .dyn_gases = gen.dyn_gases,
-        .execs = gen.execs,
-        .exec_instructions = gen.exec_instructions,
-        .noop_instructions = gen.noop_instructions,
-        .block_instructions = gen.block_instructions,
-        .dynamic_gas_instructions = gen.dynamic_gas_instructions,
-        .conditional_jump_invalid_instructions = gen.conditional_jump_invalid_instructions,
-        .conditional_jump_pc_instructions = gen.conditional_jump_pc_instructions,
-        .jump_pc_instructions = gen.jump_pc_instructions,
-        .conditional_jump_unresolved_instructions = gen.conditional_jump_unresolved_instructions,
-        .pc_instructions = gen.pc_instructions,
-        .word_instructions = gen.word_instructions,
+        .size8_instructions = gen.size8_instructions,
+        .size16_instructions = gen.size16_instructions,
+        .size24_instructions = gen.size24_instructions,
+        .size8_counts = gen.size8_counts,
+        .size16_counts = gen.size16_counts,
+        .size24_counts = gen.size24_counts,
         .pc_to_block_start = gen.pc_to_block_start,
         .jumpdest_array = jumpdest_array,
         // === SECOND CACHE LINE - WARM ===
-        .inst_to_pc = gen.inst_to_pc,
-        .code_len = code.len,
-        .allocator = allocator,
-        // === THIRD CACHE LINE - COLD ===
         .code = code,
+        .code_len = code.len,
         .inst_jump_type = gen.inst_jump_type,
+        // === THIRD CACHE LINE - COLD ===
+        .inst_to_pc = gen.inst_to_pc,
+        .allocator = allocator,
     };
 }
 
 /// Clean up allocated instruction array and packed jumpdest array.
 /// Must be called by the caller to prevent memory leaks.
 pub fn deinit(self: *CodeAnalysis) void {
-    // Free the instruction array and SoA payload arrays
+    // Free the instruction array and size-based arrays
     self.allocator.free(self.instructions);
-    self.allocator.free(self.words);
-    self.allocator.free(self.pcs);
-    self.allocator.free(self.jump_pcs);
-    self.allocator.free(self.cond_jump_pcs);
-    self.allocator.free(self.blocks);
-    self.allocator.free(self.dyn_gases);
-    self.allocator.free(self.execs);
-    self.allocator.free(self.exec_instructions);
-    self.allocator.free(self.noop_instructions);
-    self.allocator.free(self.block_instructions);
-    self.allocator.free(self.dynamic_gas_instructions);
-    self.allocator.free(self.conditional_jump_invalid_instructions);
-    self.allocator.free(self.conditional_jump_pc_instructions);
-    self.allocator.free(self.jump_pc_instructions);
-    self.allocator.free(self.conditional_jump_unresolved_instructions);
-    self.allocator.free(self.pc_instructions);
-    self.allocator.free(self.word_instructions);
+    self.allocator.free(self.size8_instructions);
+    self.allocator.free(self.size16_instructions);
+    self.allocator.free(self.size24_instructions);
 
     // Free auxiliary arrays
     self.allocator.free(self.inst_jump_type);
@@ -562,23 +542,12 @@ const CodeGenResult = struct {
     pc_to_block_start: []u16,
     inst_jump_type: []JumpType,
     inst_to_pc: []u16,
-    words: []WordRef,
-    pcs: []u16,
-    jump_pcs: []u16,
-    cond_jump_pcs: []u16,
-    blocks: []BlockInfo,
-    dyn_gases: []DynamicGas,
-    execs: []const *const fn (*anyopaque) ExecutionError.Error!void,
-    exec_instructions: []ExecInstruction,
-    noop_instructions: []NoopInstruction,
-    block_instructions: []BlockInstruction,
-    dynamic_gas_instructions: []DynamicGasInstruction,
-    conditional_jump_invalid_instructions: []ConditionalJumpInvalidInstruction,
-    conditional_jump_pc_instructions: []ConditionalJumpPcInstruction,
-    jump_pc_instructions: []@import("instruction.zig").JumpPcInstruction,
-    conditional_jump_unresolved_instructions: []ConditionalJumpUnresolvedInstruction,
-    pc_instructions: []@import("instruction.zig").PcInstruction,
-    word_instructions: []@import("instruction.zig").WordInstruction,
+    size8_instructions: []Bucket8,
+    size16_instructions: []Bucket16,
+    size24_instructions: []Bucket24,
+    size8_counts: Size8Counts,
+    size16_counts: Size16Counts,
+    size24_counts: Size24Counts,
 };
 
 const Stats = struct {
@@ -1202,284 +1171,168 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 
     // No explicit next pointers; interpreter computes fallthrough
 
-    // Convert ArrayList builders to owned slices
-    const words_slice = try allocator.alloc(WordRef, words_builder.items.len);
-    @memcpy(words_slice, words_builder.items);
-    const pcs_slice = try allocator.alloc(u16, pcs_builder.items.len);
-    @memcpy(pcs_slice, pcs_builder.items);
-    const jump_pcs_slice = try allocator.alloc(u16, jump_pcs_builder.items.len);
-    @memcpy(jump_pcs_slice, jump_pcs_builder.items);
-    const cond_jump_pcs_slice = try allocator.alloc(u16, cond_jump_pcs_builder.items.len);
-    @memcpy(cond_jump_pcs_slice, cond_jump_pcs_builder.items);
-    const blocks_slice = try allocator.alloc(BlockInfo, blocks_builder.items.len);
-    @memcpy(blocks_slice, blocks_builder.items);
-    const dyns_slice = try allocator.alloc(DynamicGas, dyn_builder.items.len);
-    @memcpy(dyns_slice, dyn_builder.items);
-    const execs_slice = try allocator.alloc(*const fn (*anyopaque) ExecutionError.Error!void, exec_builder.items.len);
-    @memcpy(execs_slice, exec_builder.items);
+    // Count per-tag to size buckets
+    var c_noop: u24 = 0;
+    var c_jump_pc: u24 = 0;
+    var c_cju: u24 = 0; // conditional_jump_unresolved
+    var c_cji: u24 = 0; // conditional_jump_invalid
+    var c_exec: u24 = 0;
+    var c_cjp: u24 = 0; // conditional_jump_pc
+    var c_pc: u24 = 0;
+    var c_block: u24 = 0;
+    var c_dyn: u24 = 0;
+    var c_word: u24 = 0;
 
-    // Build exec_instructions with pre-calculated next instruction pointers
-    // The exec_instructions array is indexed by the instruction.id field, not the instruction index
-    // This will be populated after final_instructions is created
-    const exec_instructions_slice = try allocator.alloc(ExecInstruction, exec_builder.items.len);
-
-    // Now populate exec_instructions with pointers to the final instructions
-    for (0..instruction_count) |i| {
-        if (final_instructions[i].tag == .exec) {
-            const exec_id = final_instructions[i].id;
-            const exec_fn = execs_slice[exec_id];
-            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
-            exec_instructions_slice[exec_id] = .{
-                .exec_fn = exec_fn,
-                .next_inst = next_inst,
-            };
+    for (final_instructions) |hdr| {
+        switch (hdr.tag) {
+            .noop => c_noop += 1,
+            .jump_pc => c_jump_pc += 1,
+            .conditional_jump_unresolved => c_cju += 1,
+            .conditional_jump_invalid => c_cji += 1,
+            .exec => c_exec += 1,
+            .conditional_jump_pc => c_cjp += 1,
+            .pc => c_pc += 1,
+            .block_info => c_block += 1,
+            .dynamic_gas => c_dyn += 1,
+            .word => c_word += 1,
+            .jump_unresolved, .conditional_jump_idx => {},
         }
     }
 
-    // Allocate and populate noop_instructions with pre-calculated next instruction pointers
-    // Always allocate at least 1 element to avoid out of bounds access
-    const noop_alloc_size = if (noop_count == 0) 1 else noop_count;
-    const noop_instructions_slice = try allocator.alloc(NoopInstruction, noop_alloc_size);
-    
-    // Initialize the dummy element if noop_count is 0
-    if (noop_count == 0) {
-        noop_instructions_slice[0] = .{
-            .next_inst = &final_instructions[0],
-        };
-    }
-    
-    for (0..instruction_count) |i| {
-        if (final_instructions[i].tag == .noop) {
-            const noop_id = final_instructions[i].id;
-            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
-            noop_instructions_slice[noop_id] = .{
-                .next_inst = next_inst,
-            };
-        }
-    }
+    const total8: usize = @intCast(c_noop + c_jump_pc + c_cju + c_cji);
+    const total16: usize = @intCast(c_exec + c_cjp + c_pc + c_block);
+    const total24: usize = @intCast(c_dyn + c_word);
 
-    // Allocate and populate block_instructions with pre-calculated next instruction pointers
-    const block_instructions_slice = try allocator.alloc(BlockInstruction, blocks_slice.len);
-    for (0..instruction_count) |i| {
-        if (final_instructions[i].tag == .block_info) {
-            const block_id = final_instructions[i].id;
-            const block_info = blocks_slice[block_id];
-            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
-            block_instructions_slice[block_id] = .{
-                .gas_cost = block_info.gas_cost,
-                .stack_req = block_info.stack_req,
-                .stack_max_growth = block_info.stack_max_growth,
-                .next_inst = next_inst,
-            };
-        }
-    }
+    var size8_instructions = try allocator.alloc(Bucket8, total8);
+    var size16_instructions = try allocator.alloc(Bucket16, total16);
+    var size24_instructions = try allocator.alloc(Bucket24, total24);
 
-    // Allocate and populate dynamic_gas_instructions with pre-calculated next instruction pointers
-    const dynamic_gas_instructions_slice = try allocator.alloc(DynamicGasInstruction, dyn_builder.items.len);
-    for (0..instruction_count) |i| {
-        if (final_instructions[i].tag == .dynamic_gas) {
-            const dyn_id = final_instructions[i].id;
-            const dyn_gas = dyns_slice[dyn_id];
-            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
-            dynamic_gas_instructions_slice[dyn_id] = .{
-                .gas_fn = dyn_gas.gas_fn,
-                .exec_fn = dyn_gas.exec_fn,
-                .next_inst = next_inst,
-            };
-        }
-    }
+    var idx8: u24 = 0;
+    var idx16: u24 = 0;
+    var idx24: u24 = 0;
 
-    // Allocate conditional_jump_invalid_instructions
-    // Count how many conditional_jump_invalid instructions we have
-    var conditional_jump_invalid_count: usize = 0;
-    for (0..instruction_count) |i| {
-        if (final_instructions[i].tag == .conditional_jump_invalid) {
-            conditional_jump_invalid_count += 1;
-        }
-    }
-    
-    // Allocate and populate conditional_jump_invalid_instructions with pre-calculated next instruction pointers
-    const conditional_jump_invalid_instructions_slice = try allocator.alloc(ConditionalJumpInvalidInstruction, if (conditional_jump_invalid_count == 0) 1 else conditional_jump_invalid_count);
-    
-    // Initialize dummy element if count is 0
-    if (conditional_jump_invalid_count == 0) {
-        conditional_jump_invalid_instructions_slice[0] = .{
-            .next_inst = &final_instructions[0],
-        };
-    } else {
-        var cji_index: usize = 0;
-        for (0..instruction_count) |i| {
-            if (final_instructions[i].tag == .conditional_jump_invalid) {
-                const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
-                conditional_jump_invalid_instructions_slice[cji_index] = .{
-                    .next_inst = next_inst,
-                };
-                // Update the instruction to use the index
-                final_instructions[i].id = @intCast(cji_index);
-                cji_index += 1;
-            }
-        }
-    }
+    var it_exec: usize = 0;
+    var it_cjp_pc: usize = 0;
+    var it_jump_pc: usize = 0;
+    var it_pc: usize = 0;
+    var it_block: usize = 0;
+    var it_dyn: usize = 0;
+    var it_word: usize = 0;
 
-
-    // Allocate conditional_jump_pc_instructions
-    // Count how many conditional_jump_pc instructions we have
-    var conditional_jump_pc_count: usize = 0;
-    for (0..instruction_count) |i| {
-        if (final_instructions[i].tag == .conditional_jump_pc) {
-            conditional_jump_pc_count += 1;
-        }
-    }
-    
-    // Allocate and populate conditional_jump_pc_instructions with pre-calculated instruction pointers
-    const conditional_jump_pc_instructions_slice = try allocator.alloc(ConditionalJumpPcInstruction, if (conditional_jump_pc_count == 0) 1 else conditional_jump_pc_count);
-    
-    // Initialize dummy element if count is 0
-    if (conditional_jump_pc_count == 0) {
-        conditional_jump_pc_instructions_slice[0] = .{
-            .jump_target = &final_instructions[0],
-            .next_inst = &final_instructions[0],
-        };
-    } else {
-        var cjp_index: usize = 0;
-        for (0..instruction_count) |i| {
-            if (final_instructions[i].tag == .conditional_jump_pc) {
-                const pc_val = cond_jump_pcs_slice[final_instructions[i].id];
+    for (final_instructions, 0..) |hdr, i| {
+        const next_inst = if (i + 1 < final_instructions.len) &final_instructions[i + 1] else &final_instructions[final_instructions.len - 1];
+        switch (hdr.tag) {
+            .noop => {
+                const payload: NoopInstruction = .{ .next_inst = next_inst };
+                final_instructions[i].id = idx8;
+                {
+                    const bytes = std.mem.asBytes(&payload);
+                    @memcpy(size8_instructions[@intCast(idx8)].bytes[0..bytes.len], bytes);
+                }
+                idx8 += 1;
+            },
+            .jump_pc => {
+                const pc_val = jump_pcs_builder.items[it_jump_pc];
+                it_jump_pc += 1;
                 const jump_idx = pc_to_block_start[pc_val];
-                const jump_target = if (jump_idx != std.math.maxInt(u16) and jump_idx < instruction_count) &final_instructions[jump_idx] else &final_instructions[0];
-                const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
-                
-                conditional_jump_pc_instructions_slice[cjp_index] = .{
-                    .jump_target = jump_target,
-                    .next_inst = next_inst,
-                };
-                // Update the instruction to use the new index
-                final_instructions[i].id = @intCast(cjp_index);
-                cjp_index += 1;
-            }
-        }
-    }
-    
-    // Count jump_pc instructions
-    var jump_pc_count: usize = 0;
-    for (0..instruction_count) |i| {
-        if (final_instructions[i].tag == .jump_pc) {
-            jump_pc_count += 1;
-        }
-    }
-    
-    // Allocate and populate jump_pc_instructions with pre-calculated instruction pointers
-    const jump_pc_instructions_slice = try allocator.alloc(JumpPcInstruction, if (jump_pc_count == 0) 1 else jump_pc_count);
-    
-    // Initialize dummy element if count is 0
-    if (jump_pc_count == 0) {
-        jump_pc_instructions_slice[0] = .{
-            .jump_target = &final_instructions[0],
-        };
-    } else {
-        var jp_index: usize = 0;
-        for (0..instruction_count) |i| {
-            if (final_instructions[i].tag == .jump_pc) {
-                const pc_val = jump_pcs_slice[final_instructions[i].id];
+                const jump_target = if (jump_idx != std.math.maxInt(u16) and jump_idx < final_instructions.len) &final_instructions[jump_idx] else &final_instructions[0];
+                const payload: JumpPcInstruction = .{ .jump_target = jump_target };
+                final_instructions[i].id = idx8;
+                {
+                    const bytes = std.mem.asBytes(&payload);
+                    @memcpy(size8_instructions[@intCast(idx8)].bytes[0..bytes.len], bytes);
+                }
+                idx8 += 1;
+            },
+            .conditional_jump_unresolved => {
+                const payload: ConditionalJumpUnresolvedInstruction = .{ .next_inst = next_inst };
+                final_instructions[i].id = idx8;
+                {
+                    const bytes = std.mem.asBytes(&payload);
+                    @memcpy(size8_instructions[@intCast(idx8)].bytes[0..bytes.len], bytes);
+                }
+                idx8 += 1;
+            },
+            .conditional_jump_invalid => {
+                const payload: ConditionalJumpInvalidInstruction = .{ .next_inst = next_inst };
+                final_instructions[i].id = idx8;
+                {
+                    const bytes = std.mem.asBytes(&payload);
+                    @memcpy(size8_instructions[@intCast(idx8)].bytes[0..bytes.len], bytes);
+                }
+                idx8 += 1;
+            },
+            .exec => {
+                const exec_fn = exec_builder.items[it_exec];
+                it_exec += 1;
+                const payload: ExecInstruction = .{ .exec_fn = exec_fn, .next_inst = next_inst };
+                final_instructions[i].id = idx16;
+                {
+                    const bytes = std.mem.asBytes(&payload);
+                    @memcpy(size16_instructions[@intCast(idx16)].bytes[0..bytes.len], bytes);
+                }
+                idx16 += 1;
+            },
+            .conditional_jump_pc => {
+                const pc_val = cond_jump_pcs_builder.items[it_cjp_pc];
+                it_cjp_pc += 1;
                 const jump_idx = pc_to_block_start[pc_val];
-                const jump_target = if (jump_idx != std.math.maxInt(u16) and jump_idx < instruction_count) &final_instructions[jump_idx] else &final_instructions[0];
-                
-                jump_pc_instructions_slice[jp_index] = .{
-                    .jump_target = jump_target,
-                };
-                // Update the instruction to use the new index
-                final_instructions[i].id = @intCast(jp_index);
-                jp_index += 1;
-            }
-        }
-    }
-    
-    // Count conditional_jump_unresolved instructions
-    var conditional_jump_unresolved_count: usize = 0;
-    for (0..instruction_count) |i| {
-        if (final_instructions[i].tag == .conditional_jump_unresolved) {
-            conditional_jump_unresolved_count += 1;
-        }
-    }
-    
-    // Allocate and populate conditional_jump_unresolved_instructions with pre-calculated fall-through
-    const conditional_jump_unresolved_instructions_slice = try allocator.alloc(ConditionalJumpUnresolvedInstruction, if (conditional_jump_unresolved_count == 0) 1 else conditional_jump_unresolved_count);
-    
-    // Initialize dummy element if count is 0
-    if (conditional_jump_unresolved_count == 0) {
-        conditional_jump_unresolved_instructions_slice[0] = .{
-            .next_inst = &final_instructions[0],
-        };
-    } else {
-        var cju_index: usize = 0;
-        for (0..instruction_count) |i| {
-            if (final_instructions[i].tag == .conditional_jump_unresolved) {
-                const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
-                
-                conditional_jump_unresolved_instructions_slice[cju_index] = .{
-                    .next_inst = next_inst,
-                };
-                // Update the instruction to use the new index
-                final_instructions[i].id = @intCast(cju_index);
-                cju_index += 1;
-            }
-        }
-    }
-    
-    // Allocate and populate pc_instructions with pre-calculated pc values and next instruction pointers
-    // Always allocate at least 1 element to avoid out of bounds access
-    const pc_alloc_size = if (pcs_slice.len == 0) 1 else pcs_slice.len;
-    const pc_instructions_slice = try allocator.alloc(@import("instruction.zig").PcInstruction, pc_alloc_size);
-    
-    // Initialize the dummy element if pcs_slice is empty
-    if (pcs_slice.len == 0) {
-        pc_instructions_slice[0] = .{
-            .pc_value = 0,
-            .next_inst = &final_instructions[0],
-        };
-    }
-    
-    // Populate pc_instructions for actual PC instructions
-    for (0..instruction_count) |i| {
-        if (final_instructions[i].tag == .pc) {
-            const pc_id = final_instructions[i].id;
-            const pc_value = pcs_slice[pc_id];
-            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
-            pc_instructions_slice[pc_id] = .{
-                .pc_value = pc_value,
-                .next_inst = next_inst,
-            };
-        }
-    }
-
-    // Allocate and populate word_instructions with pre-calculated word values and next instruction pointers
-    // Always allocate at least 1 element to avoid out of bounds access
-    const word_alloc_size = if (words_slice.len == 0) 1 else words_slice.len;
-    const word_instructions_slice = try allocator.alloc(@import("instruction.zig").WordInstruction, word_alloc_size);
-    
-    // Initialize the dummy element if words_slice is empty
-    if (words_slice.len == 0) {
-        word_instructions_slice[0] = .{
-            .word_bytes = &[_]u8{}, // Empty slice
-            .next_inst = &final_instructions[0],
-        };
-    }
-    
-    // Populate word_instructions for actual word instructions
-    for (0..instruction_count) |i| {
-        if (final_instructions[i].tag == .word) {
-            const word_id = final_instructions[i].id;
-            const wr = words_slice[word_id];
-            
-            // Create slice view into bytecode
-            const start = wr.start_pc;
-            const end = @min(start + wr.len, code.len);
-            
-            const next_inst = if (i + 1 < instruction_count) &final_instructions[i + 1] else &final_instructions[instruction_count - 1];
-            word_instructions_slice[word_id] = .{
-                .word_bytes = if (end > start) code[start..end] else &[_]u8{},
-                .next_inst = next_inst,
-            };
+                const jump_target = if (jump_idx != std.math.maxInt(u16) and jump_idx < final_instructions.len) &final_instructions[jump_idx] else &final_instructions[0];
+                const payload: ConditionalJumpPcInstruction = .{ .jump_target = jump_target, .next_inst = next_inst };
+                final_instructions[i].id = idx16;
+                {
+                    const bytes = std.mem.asBytes(&payload);
+                    @memcpy(size16_instructions[@intCast(idx16)].bytes[0..bytes.len], bytes);
+                }
+                idx16 += 1;
+            },
+            .pc => {
+                const pc_value = pcs_builder.items[it_pc];
+                it_pc += 1;
+                const payload: PcInstruction = .{ .pc_value = @intCast(pc_value), .next_inst = next_inst };
+                final_instructions[i].id = idx16;
+                {
+                    const bytes = std.mem.asBytes(&payload);
+                    @memcpy(size16_instructions[@intCast(idx16)].bytes[0..bytes.len], bytes);
+                }
+                idx16 += 1;
+            },
+            .block_info => {
+                const bi = blocks_builder.items[it_block];
+                it_block += 1;
+                const payload: BlockInstruction = .{ .gas_cost = bi.gas_cost, .stack_req = bi.stack_req, .stack_max_growth = bi.stack_max_growth, .next_inst = next_inst };
+                final_instructions[i].id = idx16;
+                {
+                    const bytes = std.mem.asBytes(&payload);
+                    @memcpy(size16_instructions[@intCast(idx16)].bytes[0..bytes.len], bytes);
+                }
+                idx16 += 1;
+            },
+            .dynamic_gas => {
+                const dg = dyn_builder.items[it_dyn];
+                it_dyn += 1;
+                const payload: DynamicGasInstruction = .{ .gas_fn = dg.gas_fn, .exec_fn = dg.exec_fn, .next_inst = next_inst };
+                final_instructions[i].id = idx24;
+                {
+                    const bytes = std.mem.asBytes(&payload);
+                    @memcpy(size24_instructions[@intCast(idx24)].bytes[0..bytes.len], bytes);
+                }
+                idx24 += 1;
+            },
+            .word => {
+                const wr = words_builder.items[it_word];
+                it_word += 1;
+                const start = wr.start_pc;
+                const end = @min(start + wr.len, code.len);
+                const payload: WordInstruction = .{ .word_bytes = if (end > start) code[start..end] else &[_]u8{}, .next_inst = next_inst };
+                final_instructions[i].id = idx24;
+                {
+                    const bytes = std.mem.asBytes(&payload);
+                    @memcpy(size24_instructions[@intCast(idx24)].bytes[0..bytes.len], bytes);
+                }
+                idx24 += 1;
+            },
+            .jump_unresolved, .conditional_jump_idx => {},
         }
     }
 
@@ -1521,23 +1374,12 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
         .pc_to_block_start = pc_to_block_start,
         .inst_jump_type = final_jump_types,
         .inst_to_pc = inst_to_pc,
-        .words = words_slice,
-        .pcs = pcs_slice,
-        .jump_pcs = jump_pcs_slice,
-        .cond_jump_pcs = cond_jump_pcs_slice,
-        .blocks = blocks_slice,
-        .dyn_gases = dyns_slice,
-        .execs = execs_slice,
-        .exec_instructions = exec_instructions_slice,
-        .noop_instructions = noop_instructions_slice,
-        .block_instructions = block_instructions_slice,
-        .dynamic_gas_instructions = dynamic_gas_instructions_slice,
-        .conditional_jump_invalid_instructions = conditional_jump_invalid_instructions_slice,
-        .conditional_jump_pc_instructions = conditional_jump_pc_instructions_slice,
-        .jump_pc_instructions = jump_pc_instructions_slice,
-        .conditional_jump_unresolved_instructions = conditional_jump_unresolved_instructions_slice,
-        .pc_instructions = pc_instructions_slice,
-        .word_instructions = word_instructions_slice,
+        .size8_instructions = size8_instructions,
+        .size16_instructions = size16_instructions,
+        .size24_instructions = size24_instructions,
+        .size8_counts = .{ .noop = c_noop, .jump_pc = c_jump_pc, .conditional_jump_unresolved = c_cju, .conditional_jump_invalid = c_cji },
+        .size16_counts = .{ .exec = c_exec, .conditional_jump_pc = c_cjp, .pc = c_pc, .block_info = c_block },
+        .size24_counts = .{ .word = c_word, .dynamic_gas = c_dyn },
     };
 }
 
