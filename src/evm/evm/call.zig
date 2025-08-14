@@ -351,12 +351,16 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     const was_executing = self.is_executing;
     self.is_executing = true;
     interpret(self, current_frame) catch |err| {
-        Log.debug("[call] Interpret ended with error: {}", .{err});
+        Log.warn("[call] Interpret ended with error: {}", .{err});
         exec_err = err;
 
         // CRITICAL DEBUG: Log specific errors that should stop execution
         if (err == ExecutionError.Error.STOP) {
-            Log.debug("[call] CRITICAL: Received STOP error from interpret, execution should halt", .{});
+            Log.warn("[call] STOP signaled (normal termination)", .{});
+        } else if (err == ExecutionError.Error.REVERT) {
+            Log.warn("[call] REVERT signaled", .{});
+        } else if (err == ExecutionError.Error.OutOfGas) {
+            Log.warn("[call] OutOfGas signaled", .{});
         }
     };
     // Restore executing flag
@@ -684,4 +688,62 @@ test "no address prewarming for pre-Berlin hardfork" {
     // Verify addresses were NOT warmed (pre-Berlin behavior)
     try std.testing.expect(!evm.access_list.is_address_warm(contract_addr));
     try std.testing.expect(!evm.access_list.is_address_warm(caller_addr));
+}
+
+test "top-level call: minimal selector dispatcher returns 32-byte value" {
+    const allocator = std.testing.allocator;
+    const MemoryDatabase = @import("../state/memory_database.zig");
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+
+    // Setup database and EVM
+    var memory_db = try MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    const jump_table = OpcodeMetadata.DEFAULT;
+    const chain_rules = ChainRules{ .is_berlin = true };
+    var evm = try Evm.init(allocator, db_interface, jump_table, chain_rules, null, 0, false, null);
+    defer evm.deinit();
+
+    // Minimal dispatcher runtime:
+    // selector 0x11223344 -> returns 32-byte 0x01; else REVERT
+    const runtime = [_]u8{
+        0x60, 0x00, // PUSH1 0
+        0x35, // CALLDATALOAD
+        0x60, 0xe0, // PUSH1 0xe0
+        0x1c, // SHR
+        0x63, 0x11, 0x22, 0x33, 0x44, // PUSH4 0x11223344
+        0x14, // EQ
+        0x60, 0x16, // PUSH1 0x16 (dest)
+        0x57, // JUMPI
+        0x60, 0x00, // PUSH1 0x00 (fallback: revert)
+        0x60, 0x00, // PUSH1 0x00
+        0xfd, // REVERT
+        0x5b, // JUMPDEST (0x16)
+        0x60, 0x01, // PUSH1 0x01
+        0x60, 0x1f, // PUSH1 0x1f (offset 31)
+        0x52, // MSTORE
+        0x60, 0x00, // PUSH1 0x00 (ret offset)
+        0x60, 0x20, // PUSH1 0x20 (length 32)
+        0xf3, // RETURN
+    };
+
+    const addr = [_]u8{0xaa} ** 20;
+    try memory_db.set_code(addr, &runtime);
+
+    const caller = [_]u8{0xbb} ** 20;
+    const input = [_]u8{ 0x11, 0x22, 0x33, 0x44 };
+
+    const params = CallParams{ .call = .{
+        .to = addr,
+        .caller = caller,
+        .input = &input,
+        .value = 0,
+        .gas = 200000,
+    } };
+
+    const res = try evm.call(params);
+    try std.testing.expect(res.success);
+    try std.testing.expectEqual(@as(usize, 32), res.output.len);
+    try std.testing.expectEqual(@as(u8, 1), res.output[31]);
 }
