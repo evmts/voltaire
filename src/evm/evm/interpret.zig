@@ -15,6 +15,41 @@ const U256 = @import("primitives").Uint(256, 4);
 const SAFE = builtin.mode == .Debug or builtin.mode == .ReleaseSafe;
 const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
 
+inline fn pre_step(self: *Evm, frame: *Frame, inst: *const Instruction, loop_iterations: *usize) void {
+    if (comptime SAFE) {
+        loop_iterations.* += 1;
+        if (loop_iterations.* > MAX_ITERATIONS) {
+            unreachable;
+        }
+    }
+
+    if (comptime build_options.enable_tracing) {
+        if (self.tracer) |writer| {
+            // Derive index of current instruction for tracing
+            const base: [*]const @TypeOf(inst.*) = frame.analysis.instructions.ptr;
+            const idx = (@intFromPtr(inst) - @intFromPtr(base)) / @sizeOf(@TypeOf(inst.*));
+            if (idx < frame.analysis.inst_to_pc.len) {
+                const pc_u16 = frame.analysis.inst_to_pc[idx];
+                if (pc_u16 != std.math.maxInt(u16)) {
+                    const pc: usize = pc_u16;
+                    const opcode: u8 = if (pc < frame.analysis.code_len) frame.analysis.code[pc] else 0x00;
+                    const stack_len: usize = frame.stack.size();
+                    const stack_view: []const u256 = frame.stack.data[0..stack_len];
+                    const gas_cost: u64 = 0; // Block-based validation; per-op gas not tracked here
+                    const mem_size: usize = frame.memory.size();
+                    var tr = Tracer.init(writer);
+                    _ = tr.trace(pc, opcode, stack_view, frame.gas_remaining, gas_cost, mem_size, @intCast(frame.depth)) catch {};
+                }
+            }
+        }
+    }
+}
+
+inline fn exec_and_advance(frame: *Frame, inst: *const Instruction) ExecutionError.Error!*const Instruction {
+    try inst.opcode_fn(frame);
+    return inst.next_instruction;
+}
+
 /// Internal method to execute contract bytecode using block-based execution.
 /// This loop is highly optimized for performance.
 ///
@@ -33,198 +68,189 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         self.require_one_thread();
     }
 
-    // This interpreter follows a common practice of interpreters is to use a while true loop and throw errors
-    // to exit from the loop including an expected stop.
     var instruction: *const Instruction = &frame.analysis.instructions[0];
     var loop_iterations: usize = 0;
-    while (true) {
-        // In Debug and OptimizeSafe we count and limit iterations
-        if (comptime SAFE) {
-            loop_iterations += 1;
-            if (loop_iterations > MAX_ITERATIONS) {
-                unreachable;
+
+    dispatch: switch (instruction.arg) {
+        // Most instructions
+        .none => {
+            @branchHint(.likely);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            instruction = try exec_and_advance(frame, inst);
+            continue :dispatch instruction.arg;
+        },
+        // Analysis will batch calculate stack requirements and gas requirements for series of bytecode
+        .block_info => |block| {
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            const current_stack_size: u16 = @intCast(frame.stack.size());
+            if (frame.gas_remaining < block.gas_cost) {
+                @branchHint(.unlikely);
+                frame.gas_remaining = 0;
+                return ExecutionError.Error.OutOfGas;
             }
-        }
-
-        const inst: *const Instruction = instruction;
-        const next_inst = inst.next_instruction;
-        const op_fn = inst.opcode_fn;
-
-        if (comptime build_options.enable_tracing) {
-            if (self.tracer) |writer| {
-                // Derive index of current instruction for tracing
-                const base: [*]const @TypeOf(inst.*) = frame.analysis.instructions.ptr;
-                const idx = (@intFromPtr(inst) - @intFromPtr(base)) / @sizeOf(@TypeOf(inst.*));
-                if (idx < frame.analysis.inst_to_pc.len) {
-                    const pc_u16 = frame.analysis.inst_to_pc[idx];
-                    if (pc_u16 != std.math.maxInt(u16)) {
-                        const pc: usize = pc_u16;
-                        const opcode: u8 = if (pc < frame.analysis.code_len) frame.analysis.code[pc] else 0x00;
-                        const stack_len: usize = frame.stack.size();
-                        const stack_view: []const u256 = frame.stack.data[0..stack_len];
-                        const gas_cost: u64 = 0; // Block-based validation; per-op gas not tracked here
-                        const mem_size: usize = frame.memory.size();
-                        var tr = Tracer.init(writer);
-                        _ = tr.trace(pc, opcode, stack_view, frame.gas_remaining, gas_cost, mem_size, @intCast(frame.depth)) catch {};
+            frame.gas_remaining -= block.gas_cost;
+            if (current_stack_size < block.stack_req) {
+                @branchHint(.cold);
+                return ExecutionError.Error.StackUnderflow;
+            }
+            if (current_stack_size + block.stack_max_growth > 1024) {
+                @branchHint(.cold);
+                return ExecutionError.Error.StackOverflow;
+            }
+            instruction = try exec_and_advance(frame, inst);
+            continue :dispatch instruction.arg;
+        },
+        .dynamic_gas => |dyn_gas| {
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            if (frame.gas_remaining < dyn_gas.static_cost) {
+                @branchHint(.cold);
+                frame.gas_remaining = 0;
+                return ExecutionError.Error.OutOfGas;
+            }
+            frame.gas_remaining -= dyn_gas.static_cost;
+            if (dyn_gas.gas_fn) |gas_fn| {
+                const additional_gas = gas_fn(frame) catch |err| {
+                    if (err == ExecutionError.Error.OutOfOffset) {
+                        return err;
                     }
-                }
-            }
-        }
-
-        // Analysis puts any metadata we need to process on Inst.arg
-        switch (inst.arg) {
-            // Most instructions
-            .none => {
-                @branchHint(.likely);
-            },
-            // Analysis will batch calculate stack requirements and gas requirements for series of bytecode
-            .block_info => |block| {
-                const current_stack_size: u16 = @intCast(frame.stack.size());
-                if (frame.gas_remaining < block.gas_cost) {
-                    @branchHint(.unlikely);
                     frame.gas_remaining = 0;
                     return ExecutionError.Error.OutOfGas;
-                }
-                frame.gas_remaining -= block.gas_cost;
-                if (current_stack_size < block.stack_req) {
-                    @branchHint(.cold);
-                    return ExecutionError.Error.StackUnderflow;
-                }
-                if (current_stack_size + block.stack_max_growth > 1024) {
-                    @branchHint(.cold);
-                    return ExecutionError.Error.StackOverflow;
-                }
-            },
-            .dynamic_gas => |dyn_gas| {
-                if (frame.gas_remaining < dyn_gas.static_cost) {
+                };
+                if (frame.gas_remaining < additional_gas) {
                     @branchHint(.cold);
                     frame.gas_remaining = 0;
                     return ExecutionError.Error.OutOfGas;
                 }
-                frame.gas_remaining -= dyn_gas.static_cost;
-
-                if (dyn_gas.gas_fn) |gas_fn| {
-                    const additional_gas = gas_fn(frame) catch |err| {
-                        if (err == ExecutionError.Error.OutOfOffset) {
-                            return err;
-                        }
-                        frame.gas_remaining = 0;
-                        return ExecutionError.Error.OutOfGas;
-                    };
-
-                    if (frame.gas_remaining < additional_gas) {
-                        @branchHint(.cold);
-                        frame.gas_remaining = 0;
-                        return ExecutionError.Error.OutOfGas;
-                    }
-                    frame.gas_remaining -= additional_gas;
-                }
-            },
-            .jump_pc => |pc| {
-                // Fused PUSH+JUMP (PUSH removed). No pops required.
+                frame.gas_remaining -= additional_gas;
+            }
+            instruction = try exec_and_advance(frame, inst);
+            continue :dispatch instruction.arg;
+        },
+        .jump_pc => |pc| {
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            // Fused PUSH+JUMP (PUSH removed). No pops required.
+            if (!frame.valid_jumpdest(pc)) return ExecutionError.Error.InvalidJump;
+            const dest_usize: usize = @intCast(pc);
+            const idx = frame.analysis.pc_to_block_start[dest_usize];
+            if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) return ExecutionError.Error.InvalidJump;
+            instruction = &frame.analysis.instructions[idx];
+            continue :dispatch instruction.arg;
+        },
+        .conditional_jump_pc => |pc| {
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            // Fused PUSH+JUMPI (PUSH removed). Pop only condition.
+            const condition = frame.stack.pop_unsafe();
+            if (condition != 0) {
                 if (!frame.valid_jumpdest(pc)) return ExecutionError.Error.InvalidJump;
                 const dest_usize: usize = @intCast(pc);
                 const idx = frame.analysis.pc_to_block_start[dest_usize];
                 if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) return ExecutionError.Error.InvalidJump;
                 instruction = &frame.analysis.instructions[idx];
-                continue;
-            },
-            .conditional_jump_pc => |pc| {
-                // Fused PUSH+JUMPI (PUSH removed). Pop only condition.
-                const condition = frame.stack.pop_unsafe();
-                if (condition != 0) {
-                    if (!frame.valid_jumpdest(pc)) return ExecutionError.Error.InvalidJump;
-                    const dest_usize: usize = @intCast(pc);
-                    const idx = frame.analysis.pc_to_block_start[dest_usize];
-                    if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) return ExecutionError.Error.InvalidJump;
-                    instruction = &frame.analysis.instructions[idx];
-                    continue;
-                }
-            },
-            .conditional_jump => |true_target| {
-                const condition = frame.stack.pop_unsafe();
-                if (condition != 0) {
-                    @branchHint(.unlikely);
-                    instruction = true_target;
-                    continue;
-                }
-            },
-            .jump => {
-                // Analysis resolved the target by wiring next_instruction to the block start.
-                // Pop destination to maintain correct stack behavior (already validated by block checks).
-                _ = frame.stack.pop_unsafe();
-                instruction = next_inst;
-                continue;
-            },
-            // This is a jump that is not known until compile time because
-            // it is pushed to stack dynamically
-            .jump_unresolved => {
+                continue :dispatch instruction.arg;
+            }
+            instruction = try exec_and_advance(frame, inst);
+            continue :dispatch instruction.arg;
+        },
+        .conditional_jump => |true_target| {
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            const condition = frame.stack.pop_unsafe();
+            if (condition != 0) {
                 @branchHint(.unlikely);
-                // Compute target from popped PC and validate jumpdest on the fly
-                const dest = frame.stack.pop_unsafe();
+                instruction = true_target;
+                continue :dispatch instruction.arg;
+            }
+            instruction = try exec_and_advance(frame, inst);
+            continue :dispatch instruction.arg;
+        },
+        .jump => {
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            // Analysis resolved the target by wiring next_instruction to the block start.
+            // Pop destination to maintain correct stack behavior (already validated by block checks).
+            _ = frame.stack.pop_unsafe();
+            instruction = inst.next_instruction;
+            continue :dispatch instruction.arg;
+        },
+        // This is a jump that is not known until compile time because
+        // it is pushed to stack dynamically
+        .jump_unresolved => {
+            @branchHint(.unlikely);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            // Compute target from popped PC and validate jumpdest on the fly
+            const dest = frame.stack.pop_unsafe();
+            if (!frame.valid_jumpdest(dest)) {
+                @branchHint(.cold);
+                return ExecutionError.Error.InvalidJump;
+            }
+            const dest_usize: usize = @intCast(dest);
+            const idx = frame.analysis.pc_to_block_start[dest_usize];
+            if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) {
+                @branchHint(.cold);
+                return ExecutionError.Error.InvalidJump;
+            }
+            instruction = &frame.analysis.instructions[idx];
+            continue :dispatch instruction.arg;
+        },
+        .conditional_jump_unresolved => {
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            // EVM stack order: [dest, cond] with cond on top. Pop condition first, then destination.
+            const condition = frame.stack.pop_unsafe();
+            const dest = frame.stack.pop_unsafe();
+            if (condition != 0) {
                 if (!frame.valid_jumpdest(dest)) {
-                    @branchHint(.cold);
                     return ExecutionError.Error.InvalidJump;
                 }
                 const dest_usize: usize = @intCast(dest);
                 const idx = frame.analysis.pc_to_block_start[dest_usize];
                 if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) {
-                    @branchHint(.cold);
                     return ExecutionError.Error.InvalidJump;
                 }
                 instruction = &frame.analysis.instructions[idx];
-                continue;
-            },
-            .conditional_jump_unresolved => {
-                // EVM stack order: [dest, cond] with cond on top. Pop condition first, then destination.
-                const condition = frame.stack.pop_unsafe();
-                const dest = frame.stack.pop_unsafe();
-                if (condition != 0) {
-                    if (!frame.valid_jumpdest(dest)) {
-                        return ExecutionError.Error.InvalidJump;
-                    }
-                    const dest_usize: usize = @intCast(dest);
-                    const idx = frame.analysis.pc_to_block_start[dest_usize];
-                    if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) {
-                        return ExecutionError.Error.InvalidJump;
-                    }
-                    instruction = &frame.analysis.instructions[idx];
-                    continue;
-                }
-            },
-            .word => |value| {
-                frame.stack.append_unsafe(value);
-            },
-            .keccak => |params| {
-                if (frame.gas_remaining < params.gas_cost) {
-                    @branchHint(.cold);
-                    frame.gas_remaining = 0;
-                    return ExecutionError.Error.OutOfGas;
-                }
-                frame.gas_remaining -= params.gas_cost;
-                const size = if (params.size) |imm| @as(u256, @intCast(imm)) else frame.stack.pop_unsafe();
-                const offset = frame.stack.pop_unsafe();
-
-                if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
-                    @branchHint(.unlikely);
-                    return ExecutionError.Error.OutOfOffset;
-                }
-
-                const offset_usize = @as(usize, @intCast(offset));
-                const size_usize = @as(usize, @intCast(size));
-
-                const data = try frame.memory.get_slice(offset_usize, size_usize);
-
-                var hash: [32]u8 = undefined;
-                std.crypto.hash.sha3.Keccak256.hash(data, &hash, .{});
-
-                const result = std.mem.readInt(u256, &hash, .big);
-                frame.stack.append_unsafe(result);
-            },
-        }
-
-        try op_fn(frame);
-        instruction = next_inst;
+                continue :dispatch instruction.arg;
+            }
+            instruction = try exec_and_advance(frame, inst);
+            continue :dispatch instruction.arg;
+        },
+        .word => |value| {
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            frame.stack.append_unsafe(value);
+            instruction = try exec_and_advance(frame, inst);
+            continue :dispatch instruction.arg;
+        },
+        .keccak => |params| {
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            if (frame.gas_remaining < params.gas_cost) {
+                @branchHint(.cold);
+                frame.gas_remaining = 0;
+                return ExecutionError.Error.OutOfGas;
+            }
+            frame.gas_remaining -= params.gas_cost;
+            const size = if (params.size) |imm| @as(u256, @intCast(imm)) else frame.stack.pop_unsafe();
+            const offset = frame.stack.pop_unsafe();
+            if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
+                @branchHint(.unlikely);
+                return ExecutionError.Error.OutOfOffset;
+            }
+            const offset_usize = @as(usize, @intCast(offset));
+            const size_usize = @as(usize, @intCast(size));
+            const data = try frame.memory.get_slice(offset_usize, size_usize);
+            var hash: [32]u8 = undefined;
+            std.crypto.hash.sha3.Keccak256.hash(data, &hash, .{});
+            const result = std.mem.readInt(u256, &hash, .big);
+            frame.stack.append_unsafe(result);
+            instruction = try exec_and_advance(frame, inst);
+            continue :dispatch instruction.arg;
+        },
     }
 }
 
@@ -683,66 +709,66 @@ test "interpret: minimal dispatcher executes selected branch and returns 32 byte
 }
 
 test "interpret: dispatcher using AND 0xffffffff extracts selector and returns 32 bytes" {
-	const allocator = std.testing.allocator;
-	const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-	const Analysis = @import("../analysis.zig");
-	const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
-	const Host = @import("../host.zig").Host;
-	const Address = @import("primitives").Address.Address;
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const Analysis = @import("../analysis.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
 
-	// Bytecode that masks selector with AND 0xffffffff instead of SHR
-	const code = &[_]u8{
-		0x60, 0x00, // PUSH1 0
-		0x35,       // CALLDATALOAD
-		0x63, 0xff, 0xff, 0xff, 0xff, // PUSH4 0xffffffff
-		0x16,       // AND
-		0x63, 0x30, 0x62, 0x7b, 0x7c, // PUSH4 0x30627b7c
-		0x14,       // EQ
-		0x60, 0x16, // PUSH1 0x16
-		0x57,       // JUMPI
-		0x60, 0x00, // PUSH1 0
-		0x60, 0x00, // PUSH1 0
-		0xfd,       // REVERT
-		0x5b,       // JUMPDEST @ 0x16
-		0x60, 0x01, // PUSH1 1
-		0x60, 0x1f, // PUSH1 31
-		0x52,       // MSTORE
-		0x60, 0x20, // PUSH1 32
-		0x60, 0x00, // PUSH1 0
-		0xf3,       // RETURN
-	};
+    // Bytecode that masks selector with AND 0xffffffff instead of SHR
+    const code = &[_]u8{
+        0x60, 0x00, // PUSH1 0
+        0x35, // CALLDATALOAD
+        0x63, 0xff, 0xff, 0xff, 0xff, // PUSH4 0xffffffff
+        0x16, // AND
+        0x63, 0x30, 0x62, 0x7b, 0x7c, // PUSH4 0x30627b7c
+        0x14, // EQ
+        0x60, 0x16, // PUSH1 0x16
+        0x57, // JUMPI
+        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0
+        0xfd, // REVERT
+        0x5b, // JUMPDEST @ 0x16
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x1f, // PUSH1 31
+        0x52, // MSTORE
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0xf3, // RETURN
+    };
 
-	var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
-	defer analysis.deinit();
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
 
-	var memory_db = MemoryDatabase.init(allocator);
-	defer memory_db.deinit();
-	const db_interface = memory_db.to_database_interface();
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
 
-	var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-	defer vm.deinit();
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
 
-	const host = Host.init(&vm);
+    const host = Host.init(&vm);
 
-	var frame = try Frame.init(
-		1_000_000,
-		false,
-		0,
-		Address.ZERO,
-		Address.ZERO,
-		0,
-		&analysis,
-		host,
-		db_interface,
-		allocator,
-	);
-	defer frame.deinit(allocator);
+    var frame = try Frame.init(
+        1_000_000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
 
-	const selector = [_]u8{ 0x30, 0x62, 0x7b, 0x7c };
-	vm.current_input = &selector;
+    const selector = [_]u8{ 0x30, 0x62, 0x7b, 0x7c };
+    vm.current_input = &selector;
 
-	try interpret(&vm, &frame);
-	const out = host.get_output();
-	try std.testing.expect(out.len == 32);
-	try std.testing.expect(out[31] == 1);
+    try interpret(&vm, &frame);
+    const out = host.get_output();
+    try std.testing.expect(out.len == 32);
+    try std.testing.expect(out[31] == 1);
 }
