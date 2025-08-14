@@ -176,9 +176,9 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 continue;
             },
             .conditional_jump_unresolved => {
-                // Pop condition and destination; jump only if condition != 0
-                const dest = frame.stack.pop_unsafe();
+                // Pop condition then destination; jump only if condition != 0
                 const condition = frame.stack.pop_unsafe();
+                const dest = frame.stack.pop_unsafe();
                 if (condition != 0) {
                     if (!frame.valid_jumpdest(dest)) {
                         return ExecutionError.Error.InvalidJump;
@@ -292,6 +292,52 @@ test "BEGINBLOCK: upfront OutOfGas when gas < block base cost" {
 
     const result = interpret(&vm, &frame);
     try std.testing.expectError(ExecutionError.Error.OutOfGas, result);
+}
+
+test "interpret: keccak+pop+JUMPDEST+STOP fragment executes without error" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const Analysis = @import("../analysis.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    const code = &[_]u8{
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0x20, // KECCAK256
+        0x50, // POP
+        0x5b, // JUMPDEST
+        0x00, // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000, // gas_remaining
+        false, // static
+        0, // depth
+        Address.ZERO, // contract
+        Address.ZERO, // caller
+        0, // value
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    try interpret(&vm, &frame);
 }
 
 test "BEGINBLOCK: stack underflow detected at block entry" {
