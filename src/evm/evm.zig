@@ -614,10 +614,18 @@ pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, 
     // Prepare a standalone frame for constructor execution
     const host = @import("host.zig").Host.init(self);
     const snapshot_id: u32 = host.create_snapshot();
-    var frame = try Frame.init(frame_gas, false, // not static
-        @intCast(self.depth), new_address, // contract address being created
-        caller, value, analysis_ptr, host, self.state.database, ChainRules.DEFAULT, &self.self_destruct, &[_]u8{}, // constructor input (none for tests)
-        self.allocator);
+    var frame = try Frame.init(
+        frame_gas,
+        false, // not static
+        @intCast(self.depth),
+        new_address, // contract address being created
+        caller,
+        value,
+        analysis_ptr,
+        host,
+        self.state.database,
+        self.allocator,
+    );
 
     var exec_err: ?ExecutionError.Error = null;
     @import("evm/interpret.zig").interpret(self, &frame) catch |err| {
