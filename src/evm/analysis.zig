@@ -1478,6 +1478,101 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
     }
 }
 
+test "analysis: minimal dispatcher (SHR) resolves conditional jump target" {
+    const allocator = std.testing.allocator;
+    const code = &[_]u8{
+        0x60, 0x00, // PUSH1 0
+        0x35, // CALLDATALOAD
+        0x60, 0xe0, // PUSH1 0xe0
+        0x1c, // SHR
+        0x63, 0x11, 0x22, 0x33, 0x44, // PUSH4 0x11223344
+        0x14, // EQ
+        0x60, 0x16, // PUSH1 0x16
+        0x57, // JUMPI
+        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0
+        0xfd, // REVERT
+        0x5b, // JUMPDEST (0x16)
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x1f, // PUSH1 31
+        0x52, // MSTORE
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x20, // PUSH1 32 (size)
+        0xf3, // RETURN
+    };
+
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    // Ensure JUMPI is present and its target block is mapped
+    var has_jumpi = false;
+    for (analysis.inst_jump_type) |jt| {
+        if (jt == .jumpi) has_jumpi = true;
+    }
+    try std.testing.expect(has_jumpi);
+
+    // No unresolved fused immediates should remain for this small case
+    for (analysis.instructions) |inst| {
+        switch (inst.arg) {
+            .conditional_jump_pc, .jump_pc => return error.TestUnexpectedResult,
+            else => {},
+        }
+    }
+
+    // Destination 0x16 must map to a BEGINBLOCK entry
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(0x16));
+    const bb_idx = analysis.pc_to_block_start[0x16];
+    try std.testing.expect(bb_idx != std.math.maxInt(u16));
+    try std.testing.expect(bb_idx < analysis.instructions.len);
+    try std.testing.expect(@as(bool, analysis.instructions[bb_idx].arg == .block_info));
+}
+
+test "analysis: minimal dispatcher (AND-mask) resolves conditional jump target" {
+    const allocator = std.testing.allocator;
+    const code = &[_]u8{
+        0x60, 0x00, // PUSH1 0
+        0x35, // CALLDATALOAD
+        0x63, 0xff, 0xff, 0xff, 0xff, // PUSH4 0xffffffff
+        0x16, // AND
+        0x63, 0x30, 0x62, 0x7b, 0x7c, // PUSH4 0x30627b7c
+        0x14, // EQ
+        0x60, 0x16, // PUSH1 0x16
+        0x57, // JUMPI
+        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0
+        0xfd, // REVERT
+        0x5b, // JUMPDEST (0x16)
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x1f, // PUSH1 31
+        0x52, // MSTORE
+        0x60, 0x00, // PUSH1 0
+        0x60, 0x20, // PUSH1 32
+        0xf3, // RETURN
+    };
+
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var has_jumpi = false;
+    for (analysis.inst_jump_type) |jt| {
+        if (jt == .jumpi) has_jumpi = true;
+    }
+    try std.testing.expect(has_jumpi);
+
+    for (analysis.instructions) |inst| {
+        switch (inst.arg) {
+            .conditional_jump_pc, .jump_pc => return error.TestUnexpectedResult,
+            else => {},
+        }
+    }
+
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(0x16));
+    const bb_idx = analysis.pc_to_block_start[0x16];
+    try std.testing.expect(bb_idx != std.math.maxInt(u16));
+    try std.testing.expect(bb_idx < analysis.instructions.len);
+    try std.testing.expect(@as(bool, analysis.instructions[bb_idx].arg == .block_info));
+}
+
 test "from_code basic functionality" {
     const allocator = std.testing.allocator;
 
