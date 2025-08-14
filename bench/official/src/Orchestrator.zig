@@ -866,7 +866,7 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
     var argv = std.ArrayList([]const u8).init(self.allocator);
     defer argv.deinit();
     try argv.append("hyperfine");
-    try argv.appendSlice(&[_][]const u8{ "--runs", num_runs_str, "--warmup", "3", "--ignore-failure", "--style", "basic" });
+    try argv.appendSlice(&[_][]const u8{ "--runs", num_runs_str, "--warmup", "3", "--style", "basic" });
     if (self.show_output) try argv.append("--show-output");
     try argv.appendSlice(&[_][]const u8{ "--export-json", export_file, hyperfine_cmd });
 
@@ -874,8 +874,13 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
     defer self.allocator.free(result.stdout);
     defer self.allocator.free(result.stderr);
 
-    if (result.stderr.len > 0) {
-        print("Errors:\n{s}", .{result.stderr});
+    // If hyperfine (or the benchmarked command) failed, do not report timings
+    if (result.term.Exited != 0) {
+        if (result.stderr.len > 0) {
+            print("Errors:\n{s}", .{result.stderr});
+        }
+        print("Skipping results for {s} due to non-zero exit code.\n", .{test_case.name});
+        return;
     }
 
     // Read and parse export JSON
