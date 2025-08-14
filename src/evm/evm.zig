@@ -49,73 +49,73 @@ const ARENA_INITIAL_CAPACITY = 256 * 1024;
 // === FIRST CACHE LINE (64 bytes) - ULTRA HOT ===
 // These are accessed by nearly every operation
 /// Normal allocator for data that outlives EVM execution (passed by user)
-allocator: std.mem.Allocator,                      // 16 bytes - accessed by CALL/CREATE for frame allocation
+allocator: std.mem.Allocator, // 16 bytes - accessed by CALL/CREATE for frame allocation
 /// Transaction-level gas refund accumulator for SSTORE and SELFDESTRUCT
 /// Signed accumulator: EIP-2200 allows negative deltas during execution.
 /// Applied at transaction end with EIP-3529 cap.
-gas_refunds: i64,                                  // 8 bytes - accessed by SSTORE/SELFDESTRUCT
+gas_refunds: i64, // 8 bytes - accessed by SSTORE/SELFDESTRUCT
 /// Warm/cold access tracking for EIP-2929 gas costs
-access_list: AccessList,                           // 24 bytes - accessed by all address/storage operations
+access_list: AccessList, // 24 bytes - accessed by all address/storage operations
 /// Call journal for transaction revertibility
-journal: CallJournal,                              // 24 bytes - accessed by state-changing operations
+journal: CallJournal, // 24 bytes - accessed by state-changing operations
 // Total first cache line: ~72 bytes (slight overflow, but keeps hot data together)
 
 // === SECOND CACHE LINE - STATE MANAGEMENT ===
 // Accessed together during state operations
 /// World state including accounts, storage, and code
-state: EvmState,                                   // 16 bytes - SLOAD/SSTORE/BALANCE
+state: EvmState, // 16 bytes - SLOAD/SSTORE/BALANCE
 /// Tracks contracts created in current transaction for EIP-6780
-created_contracts: CreatedContracts,               // 24 bytes - CREATE/CREATE2
+created_contracts: CreatedContracts, // 24 bytes - CREATE/CREATE2
 /// Self-destruct tracking for the current execution
-self_destruct: SelfDestruct,                       // 24 bytes - SELFDESTRUCT
+self_destruct: SelfDestruct, // 24 bytes - SELFDESTRUCT
 
 // === THIRD CACHE LINE - EXECUTION CONTROL ===
 /// Internal arena allocator for temporary data that's reset between executions
-internal_arena: std.heap.ArenaAllocator,           // 16 bytes - execution management
+internal_arena: std.heap.ArenaAllocator, // 16 bytes - execution management
 /// Opcode dispatch table for the configured hardfork
-table: OpcodeMetadata,                             // Large struct - opcode execution
+table: OpcodeMetadata, // Large struct - opcode execution
 /// Current call depth for overflow protection
-depth: u11 = 0,                                    // 2 bytes - call depth tracking
+depth: u11 = 0, // 2 bytes - call depth tracking
 /// Whether the current context is read-only (STATICCALL)
-read_only: bool = false,                           // 1 byte - STATICCALL check
+read_only: bool = false, // 1 byte - STATICCALL check
 /// Whether the VM is currently executing a call (used to detect nested calls)
-is_executing: bool = false,                        // 1 byte - execution state
+is_executing: bool = false, // 1 byte - execution state
 /// Current active frame depth in the frame stack
-current_frame_depth: u11 = 0,                      // 2 bytes - frame management
+current_frame_depth: u11 = 0, // 2 bytes - frame management
 /// Maximum frame depth allocated so far (for efficient cleanup)
-max_allocated_depth: u11 = 0,                      // 2 bytes - frame management
+max_allocated_depth: u11 = 0, // 2 bytes - frame management
 /// Current snapshot ID for the frame being executed
-current_snapshot_id: u32 = 0,                      // 4 bytes - snapshot tracking
+current_snapshot_id: u32 = 0, // 4 bytes - snapshot tracking
 
 // === FOURTH CACHE LINE - CONFIGURATION (COLD) ===
 // Only accessed during initialization or specific opcodes
 /// Protocol rules for the current hardfork
-chain_rules: ChainRules,                           // Configuration, accessed during init
+chain_rules: ChainRules, // Configuration, accessed during init
 /// Execution context providing transaction and block information
-context: Context,                                  // Transaction context - rarely accessed
+context: Context, // Transaction context - rarely accessed
 
 // === FIFTH CACHE LINE - OUTPUT BUFFERS (COLD) ===
 // Only accessed by RETURN/REVERT
 /// Output buffer for the current frame (set via Host.set_output)
-current_output: []const u8 = &.{},                 // 16 bytes - only for RETURN/REVERT
+current_output: []const u8 = &.{}, // 16 bytes - only for RETURN/REVERT
 /// Input buffer for the current frame (exposed via Host.get_input)
-current_input: []const u8 = &.{},                  // 16 bytes - only for CALLDATALOAD/CALLDATACOPY
+current_input: []const u8 = &.{}, // 16 bytes - only for CALLDATALOAD/CALLDATACOPY
 
 // === REMAINING COLD DATA ===
 /// Lazily allocated frame stack for nested calls - only allocates what's needed
 /// Frame at index 0 is allocated when top-level call begins,
 /// additional frames are allocated on-demand during CALL/CREATE operations
-frame_stack: ?[]Frame = null,                      // 8 bytes - frame storage pointer
+frame_stack: ?[]Frame = null, // 8 bytes - frame storage pointer
 /// LRU cache for code analysis to avoid redundant analysis during nested calls
-analysis_cache: ?AnalysisCache = null,             // 8 bytes - analysis cache pointer
+analysis_cache: ?AnalysisCache = null, // 8 bytes - analysis cache pointer
 /// Optional tracer for capturing execution traces
-tracer: ?std.io.AnyWriter = null,                  // 16 bytes - debugging only
+tracer: ?std.io.AnyWriter = null, // 16 bytes - debugging only
 /// Open file handle used by tracer when tracing to file
-trace_file: ?std.fs.File = null,                   // 8 bytes - debugging only
+trace_file: ?std.fs.File = null, // 8 bytes - debugging only
 /// As of now the EVM assumes we are only running on a single thread
 /// All places in code that make this assumption are commented and must be handled
 /// Before we can remove this restriction
-initial_thread_id: std.Thread.Id,                   // Thread tracking
+initial_thread_id: std.Thread.Id, // Thread tracking
 
 // Compile-time validation and optimizations
 comptime {
@@ -576,7 +576,7 @@ pub fn compute_create2_address(self: *Evm, caller: primitives_internal.Address.A
 pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Address, value: u256, bytecode: []const u8, gas: u64, new_address: primitives_internal.Address.Address) !InterprResult {
 
     // Check if this is a top-level call and charge base transaction cost
-    const is_top_level = !self.is_executing;
+    const is_top_level = self.current_frame_depth == 0;
     var remaining_gas = gas;
     if (is_top_level) {
         const base_cost = GasConstants.TxGas;
@@ -1648,8 +1648,8 @@ test "fuzz_evm_hardfork_configurations" {
                 const second_hardfork = hardforks[second_hardfork_idx];
 
                 const second_jump_table = OpcodeMetadata.init_from_hardfork(second_hardfork);
-            const second_chain_rules = hardforks_chain_rules.for_hardfork(second_hardfork);
-            var evm2 = try Evm.init(allocator, db_interface, second_jump_table, second_chain_rules, null, 0, false, null);
+                const second_chain_rules = hardforks_chain_rules.for_hardfork(second_hardfork);
+                var evm2 = try Evm.init(allocator, db_interface, second_jump_table, second_chain_rules, null, 0, false, null);
                 defer evm2.deinit();
 
                 try testing.expect(evm2.chain_rules.getHardfork() == second_hardfork);
@@ -1705,8 +1705,8 @@ test "gas refund application with EIP-3529 cap" {
     // Test London hardfork (gas_used / 5 cap)
     {
         const london_table = OpcodeMetadata.init_from_hardfork(.LONDON);
-    const london_rules = hardforks_chain_rules.for_hardfork(.LONDON);
-    var evm = try Evm.init(allocator, db_interface, london_table, london_rules, null, 0, false, null);
+        const london_rules = hardforks_chain_rules.for_hardfork(.LONDON);
+        var evm = try Evm.init(allocator, db_interface, london_table, london_rules, null, 0, false, null);
         defer evm.deinit();
 
         // Set up refunds
