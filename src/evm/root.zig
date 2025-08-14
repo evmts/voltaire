@@ -193,8 +193,8 @@ pub const opcodes = execution;
 // Import utility modules
 
 /// Chain-specific validation rules
-pub const chain_rules = @import("frame.zig").ChainRules;
-pub const ChainRules = @import("frame.zig").ChainRules;
+pub const chain_rules = @import("hardforks/chain_rules.zig").ChainRules;
+pub const ChainRules = @import("hardforks/chain_rules.zig").ChainRules;
 
 /// Self destruct tracking
 pub const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
@@ -210,7 +210,7 @@ pub const AccessList = @import("access_list/access_list.zig");
 
 /// Hardforks namespace for easier access
 pub const hardforks = struct {
-    pub const chain_rules = @import("frame.zig").ChainRules;
+    pub const chain_rules = @import("hardforks/chain_rules.zig").ChainRules;
     pub const hardfork = @import("hardforks/hardfork.zig");
 };
 
