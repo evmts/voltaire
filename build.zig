@@ -2095,6 +2095,22 @@ pub fn build(b: *std.Build) void {
     const block_execution_erc20_test_step = b.step("test-block-execution-erc20", "Run block execution ERC20 test");
     block_execution_erc20_test_step.dependOn(&run_block_execution_erc20_test.step);
 
+    // Add CREATE/CREATE2 differential test
+    const create_test = b.addTest(.{
+        .name = "create-test",
+        .root_source_file = b.path("test/differential/system_differential_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .filters = &[_][]const u8{ "CREATE", "CREATE2" },
+    });
+    create_test.root_module.addImport("evm", evm_mod);
+    create_test.root_module.addImport("primitives", primitives_mod);
+    create_test.root_module.addImport("Address", primitives_mod);
+    create_test.root_module.addImport("revm_wrapper", revm_mod);
+    const run_create_test = b.addRunArtifact(create_test);
+    const create_test_step = b.step("test-create", "Run CREATE/CREATE2 differential test");
+    create_test_step.dependOn(&run_create_test.step);
+
     // Add simple block execution test
     const block_execution_simple_test = b.addTest(.{
         .name = "block-execution-simple-test",

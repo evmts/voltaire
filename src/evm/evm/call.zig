@@ -121,6 +121,8 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         const create_res = blk: {
             if (is_create2) {
                 const new_addr = self.compute_create2_address(call_caller, create2_salt, call_input);
+                // CREATE2 also needs to increment the nonce of the creator
+                _ = try self.state.increment_nonce(call_caller);
                 break :blk try self.create_contract_at(call_caller, call_value, call_input, call_gas, new_addr);
             } else {
                 break :blk try self.create_contract(call_caller, call_value, call_input, call_gas);
@@ -252,8 +254,15 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         // CRITICAL: Clear all state at beginning of top-level call
         self.current_frame_depth = 0;
         self.access_list.clear(); // Reset access list for fresh per-call state
-        self.self_destruct = SelfDestruct.init(self.allocator); // Fresh self-destruct tracker
-        self.created_contracts = CreatedContracts.init(self.allocator); // Fresh created contracts tracker for EIP-6780
+        
+        // Clean up old self-destruct tracker and create new one
+        self.self_destruct.deinit();
+        self.self_destruct = SelfDestruct.init(self.allocator);
+        
+        // Clean up old created contracts tracker and create new one
+        self.created_contracts.deinit();
+        self.created_contracts = CreatedContracts.init(self.allocator);
+        
         self.current_output = &.{}; // Clear output buffer from previous calls
 
         // MEMORY ALLOCATION: Frame stack array (preallocated to max)

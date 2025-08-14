@@ -6,7 +6,7 @@ const Address = primitives.Address;
 const Log = @import("evm").Log;
 
 // Import REVM wrapper from module
-const revm_wrapper = @import("revm");
+const revm_wrapper = @import("revm_wrapper");
 
 test "RETURN opcode returns data from memory" {
     const allocator = testing.allocator;
@@ -1079,6 +1079,7 @@ test "CREATE opcode with subsequent CALL to deployed contract" {
 }
 
 test "CREATE2 opcode creates contract at deterministic address" {
+    std.testing.log_level = .debug;
     const allocator = testing.allocator;
 
     // Deployer contract bytecode that uses CREATE2

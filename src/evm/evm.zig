@@ -421,6 +421,10 @@ pub fn emit_log(self: *Evm, contract_address: primitives.Address.Address, topics
 
 /// Register a contract as created in the current transaction (Host interface)
 pub fn register_created_contract(self: *Evm, address: primitives.Address.Address) !void {
+    std.log.debug("[EVM] register_created_contract: address={any}, allocator={any}", .{ 
+        std.fmt.fmtSliceHexLower(&address),
+        @intFromPtr(self.created_contracts.allocator.vtable)
+    });
     return self.created_contracts.mark_created(address);
 }
 
@@ -558,9 +562,22 @@ pub fn interpretCompat(self: *Evm, contract: *const anyopaque, input: []const u8
 
 // Contract creation: execute initcode and deploy returned runtime code
 pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, value: u256, bytecode: []const u8, gas: u64) !InterprResult {
-    // Backwards-compatible CREATE that uses a fixed address for tests that don't
-    // assert the specific CREATE address value.
-    const new_address: primitives_internal.Address.Address = [_]u8{0x22} ** 20;
+    // CREATE uses sender address + nonce to calculate contract address
+    // Get the nonce before incrementing it
+    const nonce = self.state.get_nonce(caller);
+    
+    // Calculate the CREATE address based on creator and nonce
+    const new_address = primitives_internal.Address.get_contract_address(caller, nonce);
+    
+    // Increment the nonce for the creator account
+    _ = try self.state.increment_nonce(caller);
+    
+    std.log.debug("[CREATE] caller={any}, nonce={}, new_address={any}", .{ 
+        std.fmt.fmtSliceHexLower(&caller),
+        nonce,
+        std.fmt.fmtSliceHexLower(&new_address) 
+    });
+    
     return self.create_contract_at(caller, value, bytecode, gas, new_address);
 }
 
@@ -580,12 +597,24 @@ pub fn compute_create2_address(self: *Evm, caller: primitives_internal.Address.A
     Keccak256.hash(init_code, &code_hash, .{});
     @memcpy(preimage[53..85], &code_hash);
 
+    // Debug logging
+    std.log.debug("[CREATE2] caller={any}, salt={x}, init_code_len={}, code_hash={any}", .{ 
+        std.fmt.fmtSliceHexLower(&caller),
+        salt,
+        init_code.len, 
+        std.fmt.fmtSliceHexLower(&code_hash) 
+    });
+    std.log.debug("[CREATE2] preimage={any}", .{ std.fmt.fmtSliceHexLower(&preimage) });
+
     var out_hash: [32]u8 = undefined;
     Keccak256.hash(&preimage, &out_hash, .{});
 
     var addr: primitives_internal.Address.Address = undefined;
     // Take the last 20 bytes of the hash
     @memcpy(&addr, out_hash[12..32]);
+    
+    std.log.debug("[CREATE2] computed address={any}", .{ std.fmt.fmtSliceHexLower(&addr) });
+    
     return addr;
 }
 

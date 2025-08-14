@@ -45,6 +45,11 @@ pub const CreatedContracts = struct {
 
     /// Mark a contract as created in this transaction
     pub fn mark_created(self: *CreatedContracts, contract_addr: Address) StateError!void {
+        std.log.debug("[CreatedContracts] mark_created: addr={any}, allocator={any}, contracts_allocator={any}", .{ 
+            std.fmt.fmtSliceHexLower(&contract_addr),
+            @intFromPtr(self.allocator.vtable),
+            @intFromPtr(self.contracts.allocator.vtable)
+        });
         try self.contracts.put(contract_addr, {});
     }
 

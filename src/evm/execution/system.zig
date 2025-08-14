@@ -679,14 +679,16 @@ pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
 pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
-    // Pop parameters from stack using optimized pop3 + pop
-    // Stack order: [value, offset, size, salt] with salt on top
-    const salt = frame.stack.pop_unsafe(); // Pop salt first (top)
-    // Now pop3 for [value, offset, size]
-    const params = frame.stack.pop3_unsafe();
-    const value = params.a; // bottom = value
-    const init_offset = params.b; // middle = offset
-    const init_size = params.c; // top = size
+    // Pop parameters from stack using optimized pop methods
+    // Stack order (top to bottom): value, offset, size, salt
+    // First pop2 gets: a=offset (second from top), b=value (top)
+    const params1 = frame.stack.pop2_unsafe();
+    const value = params1.b; // top = value
+    const init_offset = params1.a; // second = offset
+    // Second pop2 gets: a=salt (now second from top), b=size (now top)
+    const params2 = frame.stack.pop2_unsafe();
+    const init_size = params2.b; // top (after first pop2) = size
+    const salt = params2.a; // second (after first pop2) = salt
 
     // Check if in static context (CREATE2 not allowed)
     if (frame.is_static) {
