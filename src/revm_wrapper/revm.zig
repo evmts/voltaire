@@ -90,6 +90,58 @@ pub const Revm = struct {
         };
     }
 
+    /// Execute a STATICCALL by invoking a tiny harness contract that performs
+    /// STATICCALL to the target and returns a 32-byte word with the success flag.
+    ///
+    /// This avoids requiring special REVM config for static context at the top level.
+    pub fn staticcall(
+        self: *Revm,
+        from: Address,
+        to: Address,
+        input: []const u8,
+        gas_limit: u64,
+    ) !ExecutionResult {
+        // Build harness bytecode:
+        // GAS; PUSH20 <to>; PUSH1 0x00; PUSH1 0x00; PUSH1 0x00; PUSH1 0x20; STATICCALL;
+        // PUSH1 0x00; SWAP1; MSTORE; PUSH1 0x20; PUSH1 0x00; RETURN
+        var code: [1 + 1 + 20 + 2 + 2 + 2 + 2 + 1 + 2 + 1 + 1 + 2 + 2 + 1]u8 = undefined;
+        var i: usize = 0;
+        code[i] = 0x5a; i += 1; // GAS
+        code[i] = 0x73; i += 1; // PUSH20
+        // Write 20-byte address
+        @memcpy(code[i .. i + 20], &to);
+        i += 20;
+        code[i] = 0x60; code[i+1] = 0x00; i += 2; // PUSH1 0 (in_offset)
+        code[i] = 0x60; code[i+1] = 0x00; i += 2; // PUSH1 0 (in_size)
+        code[i] = 0x60; code[i+1] = 0x00; i += 2; // PUSH1 0 (ret_offset)
+        code[i] = 0x60; code[i+1] = 0x20; i += 2; // PUSH1 32 (ret_size)
+        code[i] = 0xfa; i += 1; // STATICCALL
+        code[i] = 0x60; code[i+1] = 0x00; i += 2; // PUSH1 0 (mstore offset)
+        code[i] = 0x90; i += 1; // SWAP1 (place success above offset)
+        code[i] = 0x52; i += 1; // MSTORE
+        code[i] = 0x60; code[i+1] = 0x20; i += 2; // PUSH1 32
+        code[i] = 0x60; code[i+1] = 0x00; i += 2; // PUSH1 0
+        code[i] = 0xf3; i += 1; // RETURN
+
+        // Install harness code at a fixed harness address
+        const harness_addr = [_]u8{0xCC} ** 20;
+        try self.setCode(harness_addr, code[0..i]);
+
+        // Execute call to harness
+        var res = try self.call(from, harness_addr, 0, input, gas_limit);
+
+        // Interpret harness output as success flag
+        if (res.output.len >= 32) {
+            const success_flag: bool = res.output[res.output.len - 1] == 1;
+            res.success = success_flag;
+        } else {
+            // No output -> treat as failure
+            res.success = false;
+        }
+
+        return res;
+    }
+
     /// Deinitialize the REVM instance
     pub fn deinit(self: *Revm) void {
         c.revm_free(self.ptr);
