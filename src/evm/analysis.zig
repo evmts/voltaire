@@ -603,27 +603,13 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 pc_to_instruction[pc] = @intCast(instruction_count);
 
                 if (opcode == .JUMP) {
-                    // If previous instruction is a PUSH with immediate value, fuse and remove it
-                    if (instruction_count > 0 and instructions[instruction_count - 1].arg == .word) {
-                        const target_pc = instructions[instruction_count - 1].arg.word;
-                        // Remove the PUSH from stream by overwriting it with the JUMP entry
-                        instruction_count -= 1;
-                        pc_to_instruction[pc] = @intCast(instruction_count);
-                        instructions[instruction_count] = Instruction{
-                            .opcode_fn = NoopHandler,
-                            .arg = .{ .jump_pc = target_pc },
-                            .next_instruction = undefined, // set later in resolve
-                        };
-                        inst_jump_type[instruction_count] = .jump;
-                    } else {
-                        // Tag unresolved; resolveJumpTargets will wire next_instruction
-                        instructions[instruction_count] = Instruction{
-                            .opcode_fn = NoopHandler,
-                            .arg = .jump_unresolved,
-                            .next_instruction = undefined, // set later
-                        };
-                        inst_jump_type[instruction_count] = .jump;
-                    }
+                    // Always emit unresolved; resolution pass will convert to pointer when possible
+                    instructions[instruction_count] = Instruction{
+                        .opcode_fn = NoopHandler,
+                        .arg = .jump_unresolved,
+                        .next_instruction = undefined, // set later
+                    };
+                    inst_jump_type[instruction_count] = .jump;
                 } else {
                     instructions[instruction_count] = Instruction{
                         .opcode_fn = operation.execute,
@@ -1283,16 +1269,6 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                             }
                         }
                     }
-                } else {
-                    // Case B: Fused immediate JUMP (jump_pc) — resolve to block start
-                    switch (final_instructions[ji].arg) {
-                        .jump_pc => |pcimm| {
-                            // Keep fused immediate form to preserve correct runtime stack semantics (no pop)
-                            // Optionally we could pre-validate pcimm here, but interpreter will validate.
-                            _ = pcimm;
-                        },
-                        else => {},
-                    }
                 }
             },
             .jumpi => {
@@ -1438,7 +1414,7 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
                 var target_pc_opt: ?u256 = null;
                 // If this instruction is a fused variant, pull target directly
                 switch (inst.arg) {
-                    .jump_pc => |pcimm| target_pc_opt = pcimm,
+                    // fused immediate form removed; only resolve from preceding PUSH if present
                     else => {
                         // Otherwise check if previous instruction carried a PUSH immediate
                         if (idx > 0 and instructions[idx - 1].arg == .word) {

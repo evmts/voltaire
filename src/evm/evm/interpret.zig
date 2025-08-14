@@ -125,16 +125,6 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },
-        .jump_pc => |pc| {
-            pre_step(self, frame, instruction, &loop_iterations);
-            // Fused PUSH+JUMP (PUSH removed). No pops required.
-            if (!frame.valid_jumpdest(pc)) return ExecutionError.Error.InvalidJump;
-            const dest_usize: usize = @intCast(pc);
-            const idx = frame.analysis.pc_to_block_start[dest_usize];
-            if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) return ExecutionError.Error.InvalidJump;
-            instruction = &frame.analysis.instructions[idx];
-            continue :dispatch instruction.arg;
-        },
         // no more pc-based fused conditional jumps; analysis always resolves or marks invalid
         .conditional_jump_invalid => {
             pre_step(self, frame, instruction, &loop_iterations);
