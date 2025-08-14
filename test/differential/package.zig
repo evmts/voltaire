@@ -13,6 +13,9 @@ pub const memory_differential_test = @import("memory_differential_test.zig");
 pub const precompile_differential_test = @import("precompile_differential_test.zig");
 pub const stack_differential_test = @import("stack_differential_test.zig");
 pub const storage_differential_test = @import("storage_differential_test.zig");
+pub const fusion_differential_test = @import("fusion_differential_test.zig");
+pub const call_differential_test = @import("call_differential_test.zig");
+pub const jumps_differential_test = @import("jumps_differential_test.zig");
 // TODO: Re-enable system_differential_test once STATICCALL issue is fixed
 // pub const system_differential_test = @import("system_differential_test.zig");
 
@@ -30,6 +33,9 @@ test {
     _ = precompile_differential_test;
     _ = stack_differential_test;
     _ = storage_differential_test;
+    _ = fusion_differential_test;
+    _ = call_differential_test;
+    _ = jumps_differential_test;
     // TODO: Re-enable once STATICCALL issue is fixed
     // _ = system_differential_test;
 }
