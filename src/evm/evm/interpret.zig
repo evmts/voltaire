@@ -101,12 +101,6 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         },
         .dynamic_gas => |dyn_gas| {
             pre_step(self, frame, instruction, &loop_iterations);
-            if (frame.gas_remaining < dyn_gas.static_cost) {
-                @branchHint(.cold);
-                frame.gas_remaining = 0;
-                return ExecutionError.Error.OutOfGas;
-            }
-            frame.gas_remaining -= dyn_gas.static_cost;
             if (dyn_gas.gas_fn) |gas_fn| {
                 const additional_gas = gas_fn(frame) catch |err| {
                     if (err == ExecutionError.Error.OutOfOffset) {
@@ -209,9 +203,18 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         },
         // A common pattern is to push a constant value to the stack and then execute
         // An instruction. So we combine the push and the instruction into a single instruction.
-        .word => |value| {
+        .word => |bytes| {
             pre_step(self, frame, instruction, &loop_iterations);
-            frame.stack.append_unsafe(value);
+            var v: u256 = 0;
+            var i: usize = 0;
+            while (i < bytes.len) : (i += 1) v = (v << 8) | bytes[i];
+            frame.stack.append_unsafe(v);
+            instruction = try exec_and_advance(frame, instruction);
+            continue :dispatch instruction.arg;
+        },
+        .pc => |pc_val| {
+            pre_step(self, frame, instruction, &loop_iterations);
+            frame.stack.append_unsafe(@as(u256, pc_val));
             instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },

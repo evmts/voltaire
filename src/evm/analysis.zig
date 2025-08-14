@@ -682,7 +682,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = UnreachableHandler,
-                    .arg = .{ .word = 0 },
+                    .arg = .{ .word = &[_]u8{} },
                 };
                 instruction_count += 1;
                 pc += 1;
@@ -694,217 +694,20 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 block.updateStackTracking(opcode_byte, operation.min_stack);
 
                 const push_size = Opcode.get_push_size(opcode_byte);
-                var value: u256 = 0;
-
                 // Record PC to instruction mapping for PUSH BEFORE advancing PC
                 const original_pc = pc;
 
-                // Read push value with bounds checking
-                if (pc + 1 + push_size <= code.len) {
-                    var i: usize = 0;
-                    while (i < push_size) : (i += 1) {
-                        value = (value << 8) | code[pc + 1 + i];
-                    }
-                    pc += 1 + push_size;
-                } else {
-                    // Handle truncated PUSH at end of code
-                    const available = code.len - (pc + 1);
-                    if (available > 0) {
-                        const bytes_to_read = @min(push_size, available);
-                        var i: usize = 0;
-                        while (i < bytes_to_read) : (i += 1) {
-                            value = (value << 8) | code[pc + 1 + i];
-                        }
-                        const missing_bytes = push_size - bytes_to_read;
-                        if (missing_bytes > 0) {
-                            value = value << (8 * missing_bytes);
-                        }
-                    }
-                    pc = code.len; // End of code
-                }
+                const start = original_pc + 1;
+                const end = @min(start + push_size, code.len);
+                pc = end;
 
                 pc_to_instruction[original_pc] = @intCast(instruction_count);
-
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = UnreachableHandler,
-                    .arg = .{ .word = value },
+                    .arg = .{ .word = code[start..end] },
                 };
-                Log.debug("[analysis] PUSH at pc={} size={} value={x}, instruction_count={}", .{ original_pc, push_size, value, instruction_count });
+                Log.debug("[analysis] PUSH at pc={} size={} instruction_count={}", .{ original_pc, push_size, instruction_count });
                 instruction_count += 1;
-
-                // Pattern detection for PUSH + arithmetic fusion
-                if (pc < code.len) {
-                    const next_op = code[pc];
-                    // synthetic helpers no longer used; keep import removed to avoid unused warnings
-
-                    // Check for PUSH+PUSH+operation patterns first
-                    if (next_op >= 0x60 and next_op <= 0x7f) { // Another PUSH
-                        const next_push_size = if (next_op == 0x5f) 0 else next_op - 0x5f;
-                        const next_pc = pc + 1 + next_push_size;
-
-                        if (next_pc < code.len) {
-                            var next_value: u256 = 0;
-
-                            // Read the second push value
-                            if (next_push_size > 0 and pc + 1 + next_push_size <= code.len) {
-                                var i: usize = 0;
-                                while (i < next_push_size) : (i += 1) {
-                                    next_value = (next_value << 8) | code[pc + 1 + i];
-                                }
-                            }
-
-                            const operation_op = code[next_pc];
-
-                            // Check for arithmetic operations after the second PUSH
-                            switch (operation_op) {
-                                0x01 => { // ADD
-                                    // Precompute the result
-                                    const result = value +% next_value;
-                                    // Replace our PUSH with the precomputed result
-                                    instructions[instruction_count - 1] = Instruction{
-                                        .opcode_fn = UnreachableHandler,
-                                        .arg = .{ .word = result },
-                                    };
-                                    // Update gas and stack tracking
-                                    block.gas_cost += 3 + 3; // Two PUSHes (already counted one) + ADD
-                                    pc = next_pc + 1; // Skip both the second PUSH and ADD
-                                    if (builtin.mode == .Debug) stats.eliminated_opcodes += 2;
-                                    Log.debug("[analysis] Precomputed PUSH+PUSH+ADD at pc={} result={x}", .{ original_pc, result });
-                                    continue;
-                                },
-                                0x02 => { // MUL
-                                    // Precompute the result
-                                    const result = value *% next_value;
-                                    // Replace our PUSH with the precomputed result
-                                    instructions[instruction_count - 1] = Instruction{
-                                        .opcode_fn = UnreachableHandler,
-                                        .arg = .{ .word = result },
-                                    };
-                                    // Update gas and stack tracking
-                                    block.gas_cost += 3 + 5; // Two PUSHes (already counted one) + MUL
-                                    pc = next_pc + 1; // Skip both the second PUSH and MUL
-                                    if (builtin.mode == .Debug) stats.eliminated_opcodes += 2;
-                                    Log.debug("[analysis] Precomputed PUSH+PUSH+MUL at pc={} result={x}", .{ original_pc, result });
-                                    continue;
-                                },
-                                0x03 => { // SUB
-                                    // Precompute the result (note: stack order is top - second, so next_value - value)
-                                    const result = next_value -% value;
-                                    // Replace our PUSH with the precomputed result
-                                    instructions[instruction_count - 1] = Instruction{
-                                        .opcode_fn = UnreachableHandler,
-                                        .arg = .{ .word = result },
-                                    };
-                                    // Update gas and stack tracking
-                                    block.gas_cost += 3 + 3; // Two PUSHes (already counted one) + SUB
-                                    pc = next_pc + 1; // Skip both the second PUSH and SUB
-                                    if (builtin.mode == .Debug) stats.eliminated_opcodes += 2;
-                                    Log.debug("[analysis] Precomputed PUSH+PUSH+SUB at pc={} result={x}", .{ original_pc, result });
-                                    continue;
-                                },
-                                0x04 => { // DIV
-                                    // Precompute the result (note: stack order is top / second, so next_value / value)
-                                    const result = if (value == 0) 0 else next_value / value;
-                                    // Replace our PUSH with the precomputed result
-                                    instructions[instruction_count - 1] = Instruction{
-                                        .opcode_fn = UnreachableHandler,
-                                        .arg = .{ .word = result },
-                                    };
-                                    // Update gas and stack tracking
-                                    block.gas_cost += 3 + 5; // Two PUSHes (already counted one) + DIV
-                                    pc = next_pc + 1; // Skip both the second PUSH and DIV
-                                    if (builtin.mode == .Debug) stats.eliminated_opcodes += 2;
-                                    Log.debug("[analysis] Precomputed PUSH+PUSH+DIV at pc={} result={x}", .{ original_pc, result });
-                                    continue;
-                                },
-                                else => {},
-                            }
-                        }
-                    }
-
-                    switch (next_op) {
-                        0x01 => { // ADD
-                            if (value == 0) {
-                                // PUSH 0 + ADD = NOP, remove the PUSH we just added
-                                instruction_count -= 1;
-                                pc += 1;
-                                if (builtin.mode == .Debug) stats.eliminated_opcodes += 2;
-                                continue;
-                            }
-                            // Replace PUSH with fused PUSH+ADD using real ADD handler
-                            instructions[instruction_count - 1] = Instruction{
-                                .opcode_fn = execution.arithmetic.op_add,
-                                .arg = .{ .word = value },
-                            };
-                            block.gas_cost += 3; // ADD gas
-                            block.updateStackTracking(0x01, 1); // ADD with 1 input (other is immediate)
-                            pc += 1; // Skip ADD
-                            if (builtin.mode == .Debug) stats.push_add_fusions += 1;
-                            Log.debug("[analysis] Fused PUSH+ADD at pc={}", .{original_pc});
-                            continue;
-                        },
-                        0x03 => { // SUB
-                            // Replace PUSH with fused PUSH+SUB using real SUB handler
-                            instructions[instruction_count - 1] = Instruction{
-                                .opcode_fn = execution.arithmetic.op_sub,
-                                .arg = .{ .word = value },
-                            };
-                            block.gas_cost += 3; // SUB gas
-                            block.updateStackTracking(0x03, 1);
-                            pc += 1; // Skip SUB
-                            if (builtin.mode == .Debug) stats.push_sub_fusions += 1;
-                            Log.debug("[analysis] Fused PUSH+SUB at pc={}", .{original_pc});
-                            continue;
-                        },
-                        0x02 => { // MUL
-                            if (value == 1) {
-                                // PUSH 1 + MUL = NOP, remove the PUSH
-                                instruction_count -= 1;
-                                pc += 1;
-                                if (builtin.mode == .Debug) stats.eliminated_opcodes += 2;
-                                continue;
-                            }
-                            if (value == 0) {
-                                // PUSH 0 + MUL = PUSH 0, keep PUSH but skip MUL
-                                pc += 1;
-                                if (builtin.mode == .Debug) stats.eliminated_opcodes += 1;
-                                continue;
-                            }
-                            // Replace PUSH with fused PUSH+MUL using real MUL handler
-                            instructions[instruction_count - 1] = Instruction{
-                                .opcode_fn = execution.arithmetic.op_mul,
-                                .arg = .{ .word = value },
-                            };
-                            block.gas_cost += 5; // MUL gas
-                            block.updateStackTracking(0x02, 1);
-                            pc += 1; // Skip MUL
-                            if (builtin.mode == .Debug) stats.push_mul_fusions += 1;
-                            Log.debug("[analysis] Fused PUSH+MUL at pc={}", .{original_pc});
-                            continue;
-                        },
-                        0x04 => { // DIV
-                            if (value == 1) {
-                                // PUSH 1 + DIV = NOP, remove the PUSH
-                                instruction_count -= 1;
-                                pc += 1;
-                                if (builtin.mode == .Debug) stats.eliminated_opcodes += 2;
-                                continue;
-                            }
-                            // Replace PUSH with fused PUSH+DIV using real DIV handler
-                            instructions[instruction_count - 1] = Instruction{
-                                .opcode_fn = execution.arithmetic.op_div,
-                                .arg = .{ .word = value },
-                            };
-                            block.gas_cost += 5; // DIV gas
-                            block.updateStackTracking(0x04, 1);
-                            pc += 1; // Skip DIV
-                            if (builtin.mode == .Debug) stats.push_div_fusions += 1;
-                            Log.debug("[analysis] Fused PUSH+DIV at pc={}", .{original_pc});
-                            continue;
-                        },
-                        else => {},
-                    }
-                }
             },
 
             // PC opcode - needs special handling to store the PC value
@@ -918,7 +721,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
 
                 instructions[instruction_count] = Instruction{
                     .opcode_fn = NoopHandler,
-                    .arg = .{ .word = @as(u256, @intCast(pc)) },
+                    .arg = .{ .pc = @intCast(pc) },
                 };
                 Log.debug("[analysis] PC opcode at pc={}", .{pc});
                 instruction_count += 1;
@@ -941,7 +744,8 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 if (builtin.mode == .Debug) stats.total_blocks += 1;
 
                 const operation = jump_table.get_operation(opcode_byte);
-                // Don't accumulate static gas in block - it will be handled individually
+                // Accumulate static gas in block; dynamic part handled by .dynamic_gas
+                block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
 
                 // Record PC to instruction mapping for special opcodes
@@ -951,7 +755,6 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                     .opcode_fn = operation.execute,
                     .arg = .{
                         .dynamic_gas = DynamicGas{
-                            .static_cost = @intCast(operation.constant_gas),
                             .gas_fn = @ptrCast(getDynamicGasFunction(opcode)),
                         },
                     },
@@ -1259,7 +1062,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
             .jump => {
                 // Case A: PUSH-immediate destination directly before JUMP
                 if (ji > 0 and final_instructions[ji - 1].arg == .word) {
-                    const target_pc = final_instructions[ji - 1].arg.word;
+                    const target_pc = @import("instruction.zig").word_as_256(final_instructions[ji - 1].arg);
                     if (target_pc < code.len) {
                         const block_idx_u16 = pc_to_block_start[@intCast(target_pc)];
                         if (block_idx_u16 != std.math.maxInt(u16)) {
@@ -1277,7 +1080,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
             .jumpi => {
                 // Case A: PUSH-immediate destination directly before JUMPI
                 if (ji > 0 and final_instructions[ji - 1].arg == .word) {
-                    const target_pc = final_instructions[ji - 1].arg.word;
+                    const target_pc = @import("instruction.zig").word_as_256(final_instructions[ji - 1].arg);
                     if (target_pc < code.len) {
                         const block_idx_u16 = pc_to_block_start[@intCast(target_pc)];
                         if (block_idx_u16 != std.math.maxInt(u16)) {
@@ -1424,7 +1227,7 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
                     else => {
                         // Otherwise check if previous instruction carried a PUSH immediate
                         if (idx > 0 and instructions[idx - 1].arg == .word) {
-                            target_pc_opt = instructions[idx - 1].arg.word;
+                            target_pc_opt = @import("instruction.zig").word_as_256(instructions[idx - 1].arg);
                         }
                     },
                 }
@@ -2200,19 +2003,12 @@ test "SHA3 precomputation - detect PUSH followed by SHA3" {
     var analysis = try CodeAnalysis.from_code(allocator, code, &table);
     defer analysis.deinit();
 
-    // The SHA3 instruction should have precomputed values
+    // The SHA3 instruction should have dynamic gas handling and static charged in block
     try std.testing.expectEqual(@as(usize, 6), analysis.instructions.len); // 5 opcodes + 1 STOP
 
-    // Check that the SHA3 instruction has precomputed values
     const sha3_inst = &analysis.instructions[4];
-
-    // Should have precomputed gas cost
     try std.testing.expect(sha3_inst.arg == .dynamic_gas);
-
-    // Word count should be precomputed: (32 + 31) / 32 = 1
-    const expected_word_count: u32 = 1;
-    const expected_gas_cost: u32 = 30 + (6 * expected_word_count); // SHA3 base cost + dynamic
-    try std.testing.expectEqual(expected_gas_cost, sha3_inst.arg.dynamic_gas.static_cost);
+    try std.testing.expect(sha3_inst.arg.dynamic_gas.gas_fn != null);
 }
 
 test "SHA3 precomputation - various sizes" {
@@ -2246,7 +2042,7 @@ test "SHA3 precomputation - various sizes" {
         const sha3_idx = if (tc.size <= 255) 4 else 5;
         const sha3_inst = &analysis.instructions[sha3_idx];
         try std.testing.expect(sha3_inst.arg == .dynamic_gas);
-        try std.testing.expectEqual(tc.gas, sha3_inst.arg.dynamic_gas.static_cost);
+        try std.testing.expect(sha3_inst.arg.dynamic_gas.gas_fn != null);
     }
 }
 
@@ -2269,19 +2065,9 @@ test "SHA3 precomputation - with memory expansion" {
     const sha3_inst = &analysis.instructions[5];
     try std.testing.expect(sha3_inst.arg == .dynamic_gas);
 
-    // Calculate expected costs
-    const size: u32 = 256;
-    const offset: u32 = 4096;
-    const word_count: u32 = (size + 31) / 32; // 8 words
-    const sha3_dynamic_gas: u32 = 6 * word_count; // 48
-
-    // Memory expansion cost calculation
-    const new_mem_size: u32 = offset + size; // 4352
-    const new_mem_words: u32 = (new_mem_size + 31) / 32; // 136 words
-    const memory_cost: u32 = (new_mem_words * new_mem_words) / 512 + (3 * new_mem_words);
-
-    const total_gas: u32 = 30 + sha3_dynamic_gas + memory_cost;
-    try std.testing.expectEqual(total_gas, sha3_inst.arg.dynamic_gas.static_cost);
+    // Static component now charged at block entry; ensure dynamic_gas has a gas_fn
+    try std.testing.expect(sha3_inst.arg == .dynamic_gas);
+    try std.testing.expect(sha3_inst.arg.dynamic_gas.gas_fn != null);
 }
 
 test "SHA3 precomputation - not applied when size unknown" {
@@ -2301,6 +2087,6 @@ test "SHA3 precomputation - not applied when size unknown" {
     // The SHA3 instruction should NOT have precomputed values
     const sha3_inst = &analysis.instructions[3]; // BEGINBLOCK + DUP1 + DUP1 + SHA3
 
-    // Should not have dynamic_gas with precomputed values
+    // Should not have dynamic_gas with precomputed static component; may still have gas_fn
     try std.testing.expect(sha3_inst.arg != .dynamic_gas or sha3_inst.arg.dynamic_gas.gas_fn != null);
 }

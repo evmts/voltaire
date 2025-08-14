@@ -16,7 +16,10 @@ pub const JumpTarget = struct {
 /// This drives optimized execution without per-opcode decoding.
 pub const AnalysisArg = union(enum) {
     none,
-    word: u256,
+    /// Slice of the immediate bytes for PUSH-immediates and fused immediates.
+    /// We store a slice instead of a full u256 to minimize the memory footprint
+    /// of AnalysisArg which helps reduce cache evictions during interpretation.
+    word: []const u8,
     // Unconditional jump variants
     jump, // resolved: pop 1; jump to next_instruction (pre-wired)
     jump_unresolved, // unresolved: pop 1; compute target at runtime
@@ -25,9 +28,24 @@ pub const AnalysisArg = union(enum) {
     conditional_jump: *const Instruction, // resolved true branch target
     conditional_jump_unresolved, // unresolved: compute target at runtime when condition true
     conditional_jump_invalid, // analysis-validated invalid JUMPDEST; interpreter errors if condition true
+    /// PC immediate value (program counter) for the PC opcode
+    pc: u32,
     block_info: BlockInfo,
     dynamic_gas: DynamicGas,
 };
+
+/// Convert the `.word` byte slice (big-endian) into a u256 value.
+pub fn word_as_256(self: AnalysisArg) u256 {
+    switch (self) {
+        .word => |bytes| {
+            var v: u256 = 0;
+            var i: usize = 0;
+            while (i < bytes.len) : (i += 1) v = (v << 8) | bytes[i];
+            return v;
+        },
+        else => return 0,
+    }
+}
 
 /// Block information for BEGINBLOCK instructions.
 /// Contains pre-calculated validation data for an entire basic block.
@@ -47,8 +65,6 @@ pub const DynamicGasFunc = *const fn (frame: *anyopaque) ExecutionError.Error!u6
 
 /// Information for opcodes that have dynamic gas costs
 pub const DynamicGas = struct {
-    /// Static gas cost to charge first
-    static_cost: u32,
     /// Function to calculate additional dynamic gas
     gas_fn: ?DynamicGasFunc,
 };
