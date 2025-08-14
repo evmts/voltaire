@@ -20,7 +20,7 @@ test "Stack validation: binary operations" {
 
     // Test with a standalone stack
     var stack = try Stack.init(testing.allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Test underflow - empty stack
     try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.validate_stack_requirements(&stack, add_op));
@@ -43,7 +43,7 @@ test "Stack validation: PUSH operations" {
 
     // Test with a standalone stack
     var stack = try Stack.init(testing.allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Fill stack to capacity
     var i: usize = 0;
@@ -64,7 +64,7 @@ test "Stack validation: DUP operations" {
 
     // Test with a standalone stack
     var stack = try Stack.init(testing.allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Test with empty stack
     try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.validate_stack_requirements(&stack, dup1_op));
@@ -89,7 +89,7 @@ test "Stack validation: SWAP operations" {
 
     // Test with a standalone stack
     var stack = try Stack.init(testing.allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Test validation patterns
     try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.ValidationPatterns.validate_swap(&stack, 1));
@@ -141,7 +141,7 @@ test "Stack validation: opcode metadata stack requirements verification" {
 
     // Test with a simple stack
     var stack = try Stack.init(testing.allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Should fail with empty stack
     try testing.expectError(ExecutionError.Error.StackUnderflow, stack_validation.validate_stack_requirements(&stack, add_op));

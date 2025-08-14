@@ -13,14 +13,14 @@ fn setup_stack(allocator: std.mem.Allocator, items: []const u256) !Stack {
 
 test "Stack: initialization" {
     var stack = try Stack.init(testing.allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
     try testing.expectEqual(@as(usize, 0), stack.size());
     try testing.expectEqual(@as(usize, Stack.CAPACITY), Stack.CAPACITY);
 }
 
 test "Stack: basic push and pop operations" {
     var stack = try Stack.init(testing.allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Push values
     try stack.append(1);
@@ -44,7 +44,7 @@ test "Stack: basic push and pop operations" {
 
 test "Stack: push and pop (safe variants)" {
     var stack = try Stack.init(testing.allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Safe operations first to set up state
     try stack.append(100);
@@ -61,7 +61,7 @@ test "Stack: push and pop (safe variants)" {
 
 test "Stack: peek operations" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3, 4, 5 });
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Test peek (top element)
     const top = try stack.peek();
@@ -79,7 +79,7 @@ test "Stack: peek operations" {
 
 test "Stack: dup operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 10, 20, 30 });
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Duplicate top element (n=1)
     try stack.dup(1);
@@ -94,7 +94,7 @@ test "Stack: dup operation" {
 
 test "Stack: swap operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3, 4, 5 });
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Swap top with second element (n=1)
     try stack.swap(1);
@@ -109,7 +109,7 @@ test "Stack: swap operation" {
 
 test "Stack: pop2 operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3, 4, 5 });
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     const popped = try stack.pop2();
     try testing.expectEqual(@as(u256, 4), popped.a); // Second from top
@@ -122,7 +122,7 @@ test "Stack: pop2 operation" {
 
 test "Stack: pop3 operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3, 4, 5 });
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     const popped = try stack.pop3();
     try testing.expectEqual(@as(u256, 3), popped.a); // Third from top
@@ -137,7 +137,7 @@ test "Stack: pop3 operation" {
 
 test "Stack: set_top operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3 });
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     try stack.set_top(999);
     try testing.expectEqual(@as(u256, 999), try stack.pop());
@@ -147,7 +147,7 @@ test "Stack: set_top operation" {
 
 test "Stack: clear operation" {
     var stack = try setup_stack(testing.allocator, &[_]u256{ 1, 2, 3, 4, 5 });
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
     try testing.expectEqual(@as(usize, 5), stack.size());
 
     stack.clear();
@@ -161,7 +161,7 @@ test "Stack: clear operation" {
 
 test "Stack: overflow protection" {
     var stack = try Stack.init(testing.allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Fill stack to capacity - 1
     for (0..Stack.CAPACITY - 1) |i| {
@@ -179,7 +179,7 @@ test "Stack: overflow protection" {
 
 test "Stack: data alignment and access" {
     var stack = try Stack.init(testing.allocator);
-    defer stack.deinit();
+    defer stack.deinit(std.testing.allocator);
 
     // Test that we can store large values
     const large_value: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;

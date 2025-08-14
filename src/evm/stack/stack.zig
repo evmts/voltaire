@@ -20,14 +20,12 @@ base: [*]u256,
 limit: [*]u256,
 
 data: *[CAPACITY]u256,
-allocator: std.mem.Allocator,
 
 pub fn init(allocator: std.mem.Allocator) !Stack {
     const data: *[CAPACITY]u256 = try allocator.create([CAPACITY]u256);
     errdefer allocator.free(data);
     const base: [*]u256 = @ptrCast(&data[0]);
     return Stack{
-        .allocator = allocator,
         .data = data,
         .current = base,
         .base = base,
@@ -35,8 +33,8 @@ pub fn init(allocator: std.mem.Allocator) !Stack {
     };
 }
 
-pub fn deinit(self: *Stack) void {
-    self.allocator.free(self.data);
+pub fn deinit(self: *Stack, allocator: std.mem.Allocator) void {
+    allocator.free(self.data);
 }
 
 pub fn clear(self: *Stack) void {
@@ -48,22 +46,22 @@ pub fn clear(self: *Stack) void {
     self.debug_is_in_bounds();
 }
 
-pub inline fn size(self: *const Stack) usize {
+pub fn size(self: *const Stack) usize {
     self.debug_is_in_bounds();
     return (@intFromPtr(self.current) - @intFromPtr(self.base)) / @sizeOf(u256);
 }
 
-pub inline fn is_empty(self: *const Stack) bool {
+pub fn is_empty(self: *const Stack) bool {
     self.debug_is_in_bounds();
     return self.current == self.base;
 }
 
-pub inline fn is_full(self: *const Stack) bool {
+pub fn is_full(self: *const Stack) bool {
     self.debug_is_in_bounds();
     return self.current >= self.limit;
 }
 
-pub inline fn debug_is_in_bounds(self: *const Stack) void {
+pub fn debug_is_in_bounds(self: *const Stack) void {
     std.debug.assert(@intFromPtr(self.current) >= @intFromPtr(self.base));
     std.debug.assert(@intFromPtr(self.current) <= @intFromPtr(self.limit));
 }
@@ -98,7 +96,7 @@ pub fn pop_unsafe(self: *Stack) u256 {
     return value;
 }
 
-pub inline fn dup(self: *Stack, n: usize) Error!void {
+pub fn dup(self: *Stack, n: usize) Error!void {
     if (n == 0) {
         @branchHint(.cold);
         return Error.StackUnderflow;
@@ -109,14 +107,14 @@ pub inline fn dup(self: *Stack, n: usize) Error!void {
     }
     self.dup_unsafe(n);
 }
-pub inline fn dup_unsafe(self: *Stack, n: usize) void {
+pub fn dup_unsafe(self: *Stack, n: usize) void {
     self.debug_is_in_bounds();
     const value = (self.current - n)[0];
     self.append_unsafe(value);
     self.debug_is_in_bounds();
 }
 
-pub inline fn pop2(self: *Stack) Error!Pop2 {
+pub fn pop2(self: *Stack) Error!Pop2 {
     const cur_size = (@intFromPtr(self.current) - @intFromPtr(self.base)) / @sizeOf(u256);
     if (cur_size < 2) {
         @branchHint(.cold);
@@ -124,7 +122,7 @@ pub inline fn pop2(self: *Stack) Error!Pop2 {
     }
     return self.pop2_unsafe();
 }
-pub inline fn pop2_unsafe(self: *Stack) Pop2 {
+pub fn pop2_unsafe(self: *Stack) Pop2 {
     self.debug_is_in_bounds();
     self.current -= 2;
     const top_minus_1 = self.current[0];
@@ -136,7 +134,7 @@ pub inline fn pop2_unsafe(self: *Stack) Pop2 {
     return .{ .a = top_minus_1, .b = top };
 }
 
-pub inline fn pop3(self: *Stack) Error!Pop3 {
+pub fn pop3(self: *Stack) Error!Pop3 {
     self.debug_is_in_bounds();
     const cur_size = (@intFromPtr(self.current) - @intFromPtr(self.base)) / @sizeOf(u256);
     if (cur_size < 3) {
@@ -145,7 +143,7 @@ pub inline fn pop3(self: *Stack) Error!Pop3 {
     }
     return self.pop3_unsafe();
 }
-pub inline fn pop3_unsafe(self: *Stack) Pop3 {
+pub fn pop3_unsafe(self: *Stack) Pop3 {
     self.debug_is_in_bounds();
     self.current -= 3;
     const top_minus_2 = self.current[0];
@@ -159,21 +157,21 @@ pub inline fn pop3_unsafe(self: *Stack) Pop3 {
     return .{ .a = top_minus_2, .b = top_minus_1, .c = top };
 }
 
-pub inline fn set_top(self: *Stack, value: u256) Error!void {
+pub fn set_top(self: *Stack, value: u256) Error!void {
     if (@intFromPtr(self.current) <= @intFromPtr(self.base)) {
         @branchHint(.cold);
         return Error.StackUnderflow;
     }
     (self.current - 1)[0] = value;
 }
-pub inline fn set_top_unsafe(self: *Stack, value: u256) void {
+pub fn set_top_unsafe(self: *Stack, value: u256) void {
     self.debug_is_in_bounds();
     (self.current - 1)[0] = value;
 }
 
 /// Safely set the logical size of the stack to `new_size` elements.
 /// Returns StackOverflow if `new_size` exceeds capacity.
-pub inline fn set_size(self: *Stack, new_size: usize) Error!void {
+pub fn set_size(self: *Stack, new_size: usize) Error!void {
     if (new_size > CAPACITY) {
         @branchHint(.cold);
         return Error.StackOverflow;
@@ -183,7 +181,7 @@ pub inline fn set_size(self: *Stack, new_size: usize) Error!void {
 
 /// Unsafely set the logical size of the stack to `new_size` elements.
 /// Preconditions: new_size <= CAPACITY
-pub inline fn set_size_unsafe(self: *Stack, new_size: usize) void {
+pub fn set_size_unsafe(self: *Stack, new_size: usize) void {
     // Clamp to capacity in debug builds
     if (comptime builtin.mode != .ReleaseFast and builtin.mode != .ReleaseSmall) {
         std.debug.assert(new_size <= CAPACITY);
@@ -204,14 +202,14 @@ pub inline fn set_size_unsafe(self: *Stack, new_size: usize) void {
     self.current = new_current;
 }
 
-pub inline fn swap(self: *Stack, n: usize) Error!void {
+pub fn swap(self: *Stack, n: usize) Error!void {
     if (n < 1) {
         @branchHint(.cold);
         return Error.StackUnderflow;
     }
     self.swap_unsafe(n);
 }
-pub inline fn swap_unsafe(self: *Stack, n: usize) void {
+pub fn swap_unsafe(self: *Stack, n: usize) void {
     self.debug_is_in_bounds();
     std.mem.swap(u256, &(self.current - 1)[0], &(self.current - 1 - n)[0]);
 }
