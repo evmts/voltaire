@@ -72,18 +72,15 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     var loop_iterations: usize = 0;
 
     dispatch: switch (instruction.arg) {
-        // Most instructions
         .none => {
             @branchHint(.likely);
-            const inst = instruction;
-            pre_step(self, frame, inst, &loop_iterations);
-            instruction = try exec_and_advance(frame, inst);
+            pre_step(self, frame, instruction, &loop_iterations);
+            instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },
         // Analysis will batch calculate stack requirements and gas requirements for series of bytecode
         .block_info => |block| {
-            const inst = instruction;
-            pre_step(self, frame, inst, &loop_iterations);
+            pre_step(self, frame, instruction, &loop_iterations);
             const current_stack_size: u16 = @intCast(frame.stack.size());
             if (frame.gas_remaining < block.gas_cost) {
                 @branchHint(.unlikely);
@@ -99,12 +96,11 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 @branchHint(.cold);
                 return ExecutionError.Error.StackOverflow;
             }
-            instruction = try exec_and_advance(frame, inst);
+            instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },
         .dynamic_gas => |dyn_gas| {
-            const inst = instruction;
-            pre_step(self, frame, inst, &loop_iterations);
+            pre_step(self, frame, instruction, &loop_iterations);
             if (frame.gas_remaining < dyn_gas.static_cost) {
                 @branchHint(.cold);
                 frame.gas_remaining = 0;
@@ -126,12 +122,11 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 }
                 frame.gas_remaining -= additional_gas;
             }
-            instruction = try exec_and_advance(frame, inst);
+            instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },
         .jump_pc => |pc| {
-            const inst = instruction;
-            pre_step(self, frame, inst, &loop_iterations);
+            pre_step(self, frame, instruction, &loop_iterations);
             // Fused PUSH+JUMP (PUSH removed). No pops required.
             if (!frame.valid_jumpdest(pc)) return ExecutionError.Error.InvalidJump;
             const dest_usize: usize = @intCast(pc);
@@ -141,8 +136,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             continue :dispatch instruction.arg;
         },
         .conditional_jump_pc => |pc| {
-            const inst = instruction;
-            pre_step(self, frame, inst, &loop_iterations);
+            pre_step(self, frame, instruction, &loop_iterations);
             // Fused PUSH+JUMPI (PUSH removed). Pop only condition.
             const condition = frame.stack.pop_unsafe();
             if (condition != 0) {
@@ -153,36 +147,35 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 instruction = &frame.analysis.instructions[idx];
                 continue :dispatch instruction.arg;
             }
-            instruction = try exec_and_advance(frame, inst);
+            instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },
         .conditional_jump => |true_target| {
-            const inst = instruction;
-            pre_step(self, frame, inst, &loop_iterations);
+            pre_step(self, frame, instruction, &loop_iterations);
             const condition = frame.stack.pop_unsafe();
             if (condition != 0) {
                 @branchHint(.unlikely);
                 instruction = true_target;
                 continue :dispatch instruction.arg;
             }
-            instruction = try exec_and_advance(frame, inst);
+            instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },
+        // Many jumps have a known jump destination and we handle that here.
         .jump => {
-            const inst = instruction;
-            pre_step(self, frame, inst, &loop_iterations);
+            pre_step(self, frame, instruction, &loop_iterations);
             // Analysis resolved the target by wiring next_instruction to the block start.
             // Pop destination to maintain correct stack behavior (already validated by block checks).
-            _ = frame.stack.pop_unsafe();
-            instruction = inst.next_instruction;
+            // _ = frame.stack.pop_unsafe(); TODO I removed this because I don't think it's needed. If it's needed that's a bug and we should update analysis.zig to not need it.
+            const next_inst = instruction.next_instruction;
+            instruction = next_inst;
             continue :dispatch instruction.arg;
         },
         // This is a jump that is not known until compile time because
         // it is pushed to stack dynamically
         .jump_unresolved => {
             @branchHint(.unlikely);
-            const inst = instruction;
-            pre_step(self, frame, inst, &loop_iterations);
+            pre_step(self, frame, instruction, &loop_iterations);
             // Compute target from popped PC and validate jumpdest on the fly
             const dest = frame.stack.pop_unsafe();
             if (!frame.valid_jumpdest(dest)) {
@@ -198,9 +191,9 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             instruction = &frame.analysis.instructions[idx];
             continue :dispatch instruction.arg;
         },
+        // Some conditional jumps are not known until runtime because the value is a dynamic value
         .conditional_jump_unresolved => {
-            const inst = instruction;
-            pre_step(self, frame, inst, &loop_iterations);
+            pre_step(self, frame, instruction, &loop_iterations);
             // EVM stack order: [dest, cond] with cond on top. Pop condition first, then destination.
             const condition = frame.stack.pop_unsafe();
             const dest = frame.stack.pop_unsafe();
@@ -216,19 +209,21 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 instruction = &frame.analysis.instructions[idx];
                 continue :dispatch instruction.arg;
             }
-            instruction = try exec_and_advance(frame, inst);
+            instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },
+        // A common pattern is to push a constant value to the stack and then execute
+        // An instruction. So we combine the push and the instruction into a single instruction.
         .word => |value| {
-            const inst = instruction;
-            pre_step(self, frame, inst, &loop_iterations);
+            pre_step(self, frame, instruction, &loop_iterations);
             frame.stack.append_unsafe(value);
-            instruction = try exec_and_advance(frame, inst);
+            instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },
+        // Generically Kekkak just runs as a .none instruction but when possible
+        // we can run it as a .keccak instruction to avoid the extra stack pop/push
         .keccak => |params| {
-            const inst = instruction;
-            pre_step(self, frame, inst, &loop_iterations);
+            pre_step(self, frame, instruction, &loop_iterations);
             if (frame.gas_remaining < params.gas_cost) {
                 @branchHint(.cold);
                 frame.gas_remaining = 0;
@@ -248,7 +243,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             std.crypto.hash.sha3.Keccak256.hash(data, &hash, .{});
             const result = std.mem.readInt(u256, &hash, .big);
             frame.stack.append_unsafe(result);
-            instruction = try exec_and_advance(frame, inst);
+            instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
         },
     }
