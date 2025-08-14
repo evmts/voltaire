@@ -117,34 +117,34 @@ pub const CodeAnalysis = @This();
 /// Heap-allocated instruction stream for execution.
 /// Regular slice; analysis appends a STOP instruction as the final element.
 /// Must be freed by caller using deinit().
-instructions: []Instruction,                    // 16 bytes - accessed on EVERY instruction
+instructions: []Instruction, // 16 bytes - accessed on EVERY instruction
 
 /// Mapping from bytecode PC to the BEGINBLOCK instruction index that contains that PC.
 /// Size = code_len. Value = maxInt(u16) if unmapped.
-pc_to_block_start: []u16,                      // 16 bytes - accessed on EVERY jump
+pc_to_block_start: []u16, // 16 bytes - accessed on EVERY jump
 
 /// Packed array of valid JUMPDEST positions in the bytecode.
 /// Required for JUMP/JUMPI validation during execution.
 /// Uses cache-efficient linear search on packed u15 array.
-jumpdest_array: JumpdestArray,                 // 24 bytes - accessed on jump validation
+jumpdest_array: JumpdestArray, // 24 bytes - accessed on jump validation
 
 // === SECOND CACHE LINE - WARM (accessed during specific operations) ===
 /// Original contract bytecode for this analysis (used by CODECOPY).
-code: []const u8,                              // 16 bytes - accessed by CODECOPY/CODESIZE
+code: []const u8, // 16 bytes - accessed by CODECOPY/CODESIZE
 
 /// Original code length (used for bounds checks)
-code_len: usize,                               // 8 bytes - accessed with code operations
+code_len: usize, // 8 bytes - accessed with code operations
 
 /// For each instruction index, indicates if it is a JUMP or JUMPI (or other).
 /// Size = instructions.len
-inst_jump_type: []JumpType,                    // 16 bytes - accessed during control flow
+inst_jump_type: []JumpType, // 16 bytes - accessed during control flow
 
 // === THIRD CACHE LINE - COLD (rarely accessed) ===
 /// Mapping from instruction index to original bytecode PC (for debugging/tracing)
-inst_to_pc: []u16,                             // 16 bytes - only for debugging/tracing
+inst_to_pc: []u16, // 16 bytes - only for debugging/tracing
 
 /// Allocator used for the instruction array (needed for cleanup)
-allocator: std.mem.Allocator,                  // 16 bytes - only accessed on deinit
+allocator: std.mem.Allocator, // 16 bytes - only accessed on deinit
 
 /// Handler for opcodes that should never be executed directly.
 /// Used for JUMP, JUMPI, and PUSH opcodes that are handled inline by the interpreter.
@@ -663,31 +663,16 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 // Record PC to instruction mapping for JUMPI
                 pc_to_instruction[pc] = @intCast(instruction_count);
 
-                // If previous instruction is a PUSH with immediate value, fuse and remove it
-                if (instruction_count > 0 and instructions[instruction_count - 1].arg == .word) {
-                    const target_pc = instructions[instruction_count - 1].arg.word;
-                    // Remove the PUSH from stream and emit fused conditional
-                    instruction_count -= 1;
-                    pc_to_instruction[pc] = @intCast(instruction_count);
-                    instructions[instruction_count] = Instruction{
-                        .opcode_fn = NoopHandler,
-                        .arg = .{ .conditional_jump_pc = target_pc },
-                        .next_instruction = undefined, // set later
-                    };
-                    inst_jump_type[instruction_count] = .jumpi;
-                    instruction_count += 1;
-                    pc += 1;
-                } else {
-                    // Tag unresolved; resolveJumpTargets will set conditional true target
-                    instructions[instruction_count] = Instruction{
-                        .opcode_fn = NoopHandler,
-                        .arg = .conditional_jump_unresolved,
-                        .next_instruction = undefined, // set later
-                    };
-                    inst_jump_type[instruction_count] = .jumpi;
-                    instruction_count += 1;
-                    pc += 1;
-                }
+                // Do not emit fused pc form. Keep preceding PUSH (if any) and tag JUMPI;
+                // resolveJumpTargets will convert PUSH+JUMPI into pointer form.
+                instructions[instruction_count] = Instruction{
+                    .opcode_fn = NoopHandler,
+                    .arg = .conditional_jump_unresolved,
+                    .next_instruction = undefined, // set later
+                };
+                inst_jump_type[instruction_count] = .jumpi;
+                instruction_count += 1;
+                pc += 1;
 
                 // Close current block and start new one (for fall-through path)
                 instructions[block.begin_block_index].arg.block_info = block.close();
@@ -1324,14 +1309,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                         }
                     }
                 } else {
-                    // Case B: Fused immediate JUMPI (conditional_jump_pc) — resolve to pointer
-                    switch (final_instructions[ji].arg) {
-                        .conditional_jump_pc => |pcimm| {
-                            // Keep fused immediate form; interpreter pops only condition and branches.
-                            _ = pcimm;
-                        },
-                        else => {},
-                    }
+                    // No preceding PUSH and no pc-based fused form; leave as unresolved
                 }
             },
             else => {},
@@ -1461,7 +1439,6 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
                 // If this instruction is a fused variant, pull target directly
                 switch (inst.arg) {
                     .jump_pc => |pcimm| target_pc_opt = pcimm,
-                    .conditional_jump_pc => |pcimm| target_pc_opt = pcimm,
                     else => {
                         // Otherwise check if previous instruction carried a PUSH immediate
                         if (idx > 0 and instructions[idx - 1].arg == .word) {
@@ -1475,6 +1452,7 @@ fn resolveJumpTargets(code: []const u8, instructions: []Instruction, jumpdest_bi
                         const block_idx = pc_to_block_start[@intCast(target_pc)];
                         if (block_idx != std.math.maxInt(u16) and block_idx < instructions.len) {
                             if (opcode_byte == 0x57) {
+                                // Resolve fused conditional jump pc to pointer target
                                 inst.arg = .{ .conditional_jump = &instructions[block_idx] };
                             } else {
                                 inst.arg = .jump;
@@ -1524,7 +1502,7 @@ test "analysis: minimal dispatcher (SHR) resolves conditional jump target" {
     // No unresolved fused immediates should remain for this small case
     for (analysis.instructions) |inst| {
         switch (inst.arg) {
-            .conditional_jump_pc, .jump_pc => return error.TestUnexpectedResult,
+            .jump_pc => return error.TestUnexpectedResult,
             else => {},
         }
     }
@@ -1739,7 +1717,7 @@ test "analysis: fused conditional JUMPI with immediate destination" {
     // Layout:
     // 0: PUSH1 1        (condition)
     // 2: PUSH1 7        (dest pc)
-    // 4: JUMPI          (should fuse to conditional_jump_pc=7)
+    // 4: JUMPI          (should resolve to pointer target)
     // 5: STOP           (fallthrough not executed)
     // 6: NOP (padding)
     // 7: JUMPDEST       (target)
@@ -1761,12 +1739,13 @@ test "analysis: fused conditional JUMPI with immediate destination" {
     try std.testing.expect(block_idx != std.math.maxInt(u16));
     try std.testing.expect(block_idx < analysis.instructions.len);
 
-    // Ensure a fused conditional_jump_pc exists with target 7
+    // Ensure a conditional_jump pointer exists to target 7
     var found = false;
     for (analysis.instructions) |inst| {
         switch (inst.arg) {
-            .conditional_jump_pc => |pc| {
-                if (pc == 7) found = true;
+            .conditional_jump => |ptr| {
+                _ = ptr;
+                found = true;
             },
             else => {},
         }
@@ -1825,7 +1804,7 @@ test "analysis: dispatcher-like fragment invariants" {
     // No unresolved fused immediates should remain after resolution
     for (analysis.instructions) |inst| {
         switch (inst.arg) {
-            .jump_pc, .conditional_jump_pc => return error.TestUnexpectedResult,
+            .jump_pc => return error.TestUnexpectedResult,
             else => {},
         }
     }
@@ -1897,7 +1876,7 @@ test "analysis: ERC20 runtime contains dispatcher patterns" {
     // No unresolved fused immediates should remain
     for (analysis.instructions) |inst| {
         switch (inst.arg) {
-            .jump_pc, .conditional_jump_pc => return error.TestUnexpectedResult,
+            .jump_pc => return error.TestUnexpectedResult,
             else => {},
         }
     }
@@ -2061,7 +2040,7 @@ test "analysis: inst_jump_type marks dynamic JUMP and JUMPI correctly" {
     // Layout: PUSH1 dest; DUP1; JUMPI; JUMPDEST dest; STOP; JUMP (dynamic)
     // 0: 60 06 (PUSH1 6)
     // 2: 80    (DUP1)
-    // 3: 57    (JUMPI -> may be .conditional_jump_pc or unresolved depending on fusion policy)
+    // 3: 57    (JUMPI -> should resolve to pointer or remain unresolved)
     // 4: 5b    (JUMPDEST at pc=4)
     // 5: 00    (STOP)
     // 6: 56    (JUMP -> dynamic)

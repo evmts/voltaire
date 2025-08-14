@@ -25,8 +25,7 @@ pub const AnalysisArg = union(enum) {
     // Conditional jump variants
     conditional_jump: *const Instruction, // resolved true branch target
     conditional_jump_unresolved, // unresolved: compute target at runtime when condition true
-    // Fused conditional jump (PUSH removed)
-    conditional_jump_pc: u256, // known target PC; will be resolved to .conditional_jump in resolve phase
+    conditional_jump_invalid, // analysis-validated invalid JUMPDEST; interpreter errors if condition true
     block_info: BlockInfo,
     dynamic_gas: DynamicGas,
     keccak: struct {

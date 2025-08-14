@@ -135,18 +135,13 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             instruction = &frame.analysis.instructions[idx];
             continue :dispatch instruction.arg;
         },
-        .conditional_jump_pc => |pc| {
+        // no more pc-based fused conditional jumps; analysis always resolves or marks invalid
+        .conditional_jump_invalid => {
             pre_step(self, frame, instruction, &loop_iterations);
-            // Fused PUSH+JUMPI (PUSH removed). Pop only condition.
+            // If condition is true, this is an invalid jump; otherwise fall through
             const condition = frame.stack.pop_unsafe();
-            Log.warn("[INTERPRET] JUMPI(fused) cond={}, dest_pc={}", .{ condition, pc });
             if (condition != 0) {
-                if (!frame.valid_jumpdest(pc)) return ExecutionError.Error.InvalidJump;
-                const dest_usize: usize = @intCast(pc);
-                const idx = frame.analysis.pc_to_block_start[dest_usize];
-                if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) return ExecutionError.Error.InvalidJump;
-                instruction = &frame.analysis.instructions[idx];
-                continue :dispatch instruction.arg;
+                return ExecutionError.Error.InvalidJump;
             }
             instruction = try exec_and_advance(frame, instruction);
             continue :dispatch instruction.arg;
@@ -232,14 +227,23 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 return ExecutionError.Error.OutOfGas;
             }
             frame.gas_remaining -= params.gas_cost;
-            const size = if (params.size) |imm| @as(u256, @intCast(imm)) else frame.stack.pop_unsafe();
-            const offset = frame.stack.pop_unsafe();
-            if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
-                @branchHint(.unlikely);
-                return ExecutionError.Error.OutOfOffset;
-            }
-            const offset_usize = @as(usize, @intCast(offset));
-            const size_usize = @as(usize, @intCast(size));
+            // Safely downsize operands to host usize; fail if they don't fit
+            const size_usize: usize = if (params.size) |imm| @intCast(imm) else blk: {
+                const s = frame.stack.pop_unsafe();
+                if (s > std.math.maxInt(usize)) {
+                    @branchHint(.unlikely);
+                    return ExecutionError.Error.OutOfOffset;
+                }
+                break :blk @as(usize, @intCast(s));
+            };
+            const offset_usize: usize = blk2: {
+                const off = frame.stack.pop_unsafe();
+                if (off > std.math.maxInt(usize)) {
+                    @branchHint(.unlikely);
+                    return ExecutionError.Error.OutOfOffset;
+                }
+                break :blk2 @as(usize, @intCast(off));
+            };
             const data = try frame.memory.get_slice(offset_usize, size_usize);
             var hash: [32]u8 = undefined;
             std.crypto.hash.sha3.Keccak256.hash(data, &hash, .{});
