@@ -697,6 +697,6 @@ test "E2E: SELFDESTRUCT with created contract tracking (EIP-6780)" {
     
     // Check that balance was transferred to recipient
     const recipient_addr = Address.from_u256(0xDEAD);
-    const recipient_balance = try vm.state.get_balance(recipient_addr);
+    const recipient_balance = vm.state.get_balance(recipient_addr);
     try testing.expectEqual(@as(u256, 500), recipient_balance);
 }
