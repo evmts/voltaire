@@ -134,20 +134,20 @@ const Bucket24 = extern struct { bytes: [24]u8 align(8) };
 
 // Shared count types to keep struct identity stable
 const Size8Counts = struct {
-	noop: u24 = 0,
-	jump_pc: u24 = 0,
-	conditional_jump_unresolved: u24 = 0,
-	conditional_jump_invalid: u24 = 0,
+    noop: u24 = 0,
+    jump_pc: u24 = 0,
+    conditional_jump_unresolved: u24 = 0,
+    conditional_jump_invalid: u24 = 0,
 };
 const Size16Counts = struct {
-	exec: u24 = 0,
-	conditional_jump_pc: u24 = 0,
-	pc: u24 = 0,
-	block_info: u24 = 0,
+    exec: u24 = 0,
+    conditional_jump_pc: u24 = 0,
+    pc: u24 = 0,
+    block_info: u24 = 0,
 };
 const Size24Counts = struct {
-	word: u24 = 0,
-	dynamic_gas: u24 = 0,
+    word: u24 = 0,
+    dynamic_gas: u24 = 0,
 };
 
 // === FIRST CACHE LINE - ULTRA HOT (accessed on every instruction) ===
@@ -197,33 +197,33 @@ allocator: std.mem.Allocator, // 16 bytes - only accessed on deinit
 
 /// Generic function to get instruction parameters from size-based arrays
 pub fn getInstructionParams(self: *const CodeAnalysis, comptime tag: Tag, id: u24) InstructionType(tag) {
-	const InstType = InstructionType(tag);
-	const size = comptime @sizeOf(InstType);
-	return switch (size) {
-		8 => blk: {
-			const base_ptr: *const u8 = &self.size8_instructions[id].bytes[0];
-			break :blk (@as(*const InstType, @ptrCast(@alignCast(base_ptr)))).*;
-		},
-		16 => blk: {
-			const base_ptr: *const u8 = &self.size16_instructions[id].bytes[0];
-			break :blk (@as(*const InstType, @ptrCast(@alignCast(base_ptr)))).*;
-		},
-		24 => blk: {
-			const base_ptr: *const u8 = &self.size24_instructions[id].bytes[0];
-			break :blk (@as(*const InstType, @ptrCast(@alignCast(base_ptr)))).*;
-		},
-		else => unreachable,
-	};
+    const InstType = InstructionType(tag);
+    const size = comptime @sizeOf(InstType);
+    return switch (size) {
+        8 => blk: {
+            const base_ptr: *const u8 = &self.size8_instructions[id].bytes[0];
+            break :blk (@as(*const InstType, @ptrCast(@alignCast(base_ptr)))).*;
+        },
+        16 => blk: {
+            const base_ptr: *const u8 = &self.size16_instructions[id].bytes[0];
+            break :blk (@as(*const InstType, @ptrCast(@alignCast(base_ptr)))).*;
+        },
+        24 => blk: {
+            const base_ptr: *const u8 = &self.size24_instructions[id].bytes[0];
+            break :blk (@as(*const InstType, @ptrCast(@alignCast(base_ptr)))).*;
+        },
+        else => unreachable,
+    };
 }
 
 /// Handler for opcodes that should never be executed directly.
 /// Used for JUMP, JUMPI, and PUSH opcodes that are handled inline by the interpreter.
 /// This function should never be called - if it is, there's a bug in the analysis or interpreter.
 pub fn UnreachableHandler(frame: *anyopaque) ExecutionError.Error!void {
-	_ = frame;
-	// Noop by design: instructions that should be handled inline (e.g., PUSH/PC) or via control-flow
-	// metadata (.next_instruction / .conditional_jump) will never need their execute fn invoked.
-	return;
+    _ = frame;
+    // Noop by design: instructions that should be handled inline (e.g., PUSH/PC) or via control-flow
+    // metadata (.next_instruction / .conditional_jump) will never need their execute fn invoked.
+    return;
 }
 
 /// Handler for BEGINBLOCK instructions that validates an entire basic block upfront.
@@ -323,12 +323,12 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
 
         const empty_instructions = try allocator.alloc(Instruction, 1);
         empty_instructions[0] = .{ .tag = .exec, .id = 0 };
-        
+
         // Allocate size-based arrays
         const empty_size8 = try allocator.alloc(Bucket8, 0);
         const empty_size16 = try allocator.alloc(Bucket16, 1); // Need 1 exec instruction for STOP
         const empty_size24 = try allocator.alloc(Bucket24, 0);
-        
+
         // Create and copy the STOP exec instruction to size16 array
         const stop_op = jump_table.get_operation(@intFromEnum(Opcode.Enum.STOP));
         const exec_inst = ExecInstruction{
@@ -336,7 +336,7 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
             .next_inst = &empty_instructions[0], // Points to itself (STOP terminates anyway)
         };
         @memcpy(empty_size16[0].bytes[0..@sizeOf(ExecInstruction)], std.mem.asBytes(&exec_inst));
-        
+
         const empty_jump_types = try allocator.alloc(JumpType, 0);
         const empty_pc_map = try allocator.alloc(u16, 0);
         const empty_inst_to_pc = try allocator.alloc(u16, 0);
@@ -1324,7 +1324,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 it_word += 1;
                 const start = wr.start_pc;
                 const end = @min(start + wr.len, code.len);
-                const payload: WordInstruction = .{ .word_bytes = if (end > start) code[start..end] else &[_]u8{}, .next_inst = next_inst };
+                const payload: WordInstruction = .{ .word_bytes = if (end > start) code[start..end] else &[_]u8{0}, .next_inst = next_inst };
                 final_instructions[i].id = idx24;
                 {
                     const bytes = std.mem.asBytes(&payload);

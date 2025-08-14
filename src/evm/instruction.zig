@@ -128,13 +128,13 @@ pub const PcInstruction = struct {
 
 /// Conditional jump with known PC target and pre-calculated instruction pointers
 pub const ConditionalJumpPcInstruction = struct {
-    jump_target: *const Instruction,  // where to jump if condition is true
-    next_inst: *const Instruction,    // where to go if condition is false (fall-through)
+    jump_target: *const Instruction, // where to jump if condition is true
+    next_inst: *const Instruction, // where to go if condition is false (fall-through)
 };
 
 /// Word instruction with bytecode slice and next instruction
 pub const WordInstruction = struct {
-    word_bytes: []const u8,        // Slice view into bytecode (1-32 bytes)
+    word_bytes: []const u8, // Slice view into bytecode (1-32 bytes)
     next_inst: *const Instruction,
 };
 
@@ -145,7 +145,7 @@ pub const JumpPcInstruction = struct {
 
 /// Conditional jump with unresolved target and pre-calculated fall-through
 pub const ConditionalJumpUnresolvedInstruction = struct {
-    next_inst: *const Instruction,  // fall-through when condition is false
+    next_inst: *const Instruction, // fall-through when condition is false
 };
 
 pub fn NoopHandler(context: *anyopaque) ExecutionError.Error!void {
