@@ -769,6 +769,20 @@ pub fn build(b: *std.Build) void {
     const stack_test_step = b.step("test-stack", "Run Stack tests");
     stack_test_step.dependOn(&run_stack_test.step);
 
+    // Add Analysis comprehensive tests
+    const analysis_test = b.addTest(.{
+        .name = "analysis-comprehensive-test",
+        .root_source_file = b.path("test/evm/analysis_comprehensive_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    analysis_test.root_module.addImport("evm", evm_mod);
+    analysis_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_analysis_test = b.addRunArtifact(analysis_test);
+    const analysis_test_step = b.step("test-analysis", "Run Analysis comprehensive tests");
+    analysis_test_step.dependOn(&run_analysis_test.step);
+
     // Add new EVM tests
     const newevm_test = b.addTest(.{
         .name = "newevm-test",
@@ -1737,6 +1751,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_exe_unit_tests.step);
     test_step.dependOn(&run_memory_test.step);
     test_step.dependOn(&run_stack_test.step);
+    test_step.dependOn(&run_analysis_test.step);
     test_step.dependOn(&run_newevm_test.step);
     test_step.dependOn(&run_stack_validation_test.step);
     test_step.dependOn(&run_jump_table_test.step);
