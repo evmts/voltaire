@@ -747,3 +747,68 @@ test "top-level call: minimal selector dispatcher returns 32-byte value" {
     try std.testing.expectEqual(@as(usize, 32), res.output.len);
     try std.testing.expectEqual(@as(u8, 1), res.output[31]);
 }
+
+test "top-level call: AND-mask dispatcher with extra calldata returns 32-byte value" {
+    const allocator = std.testing.allocator;
+    const MemoryDatabase = @import("../state/memory_database.zig");
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+
+    // Setup database and EVM
+    var memory_db = try MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    const db_interface = memory_db.to_database_interface();
+    const jump_table = OpcodeMetadata.DEFAULT;
+    const chain_rules = ChainRules{ .is_berlin = true };
+    var evm = try Evm.init(allocator, db_interface, jump_table, chain_rules, null, 0, false, null);
+    defer evm.deinit();
+
+    // Dispatcher that uses AND 0xffffffff for selector extraction
+    const runtime = [_]u8{
+        0x60, 0x00, // PUSH1 0
+        0x35, // CALLDATALOAD
+        0x63, 0xff, 0xff, 0xff, 0xff, // PUSH4 0xffffffff
+        0x16, // AND
+        0x63, 0x12, 0x34, 0x56, 0x78, // PUSH4 0x12345678
+        0x14, // EQ
+        0x60, 0x16, // PUSH1 0x16
+        0x57, // JUMPI
+        0x60, 0x00, // PUSH1 0x00
+        0x60, 0x00, // PUSH1 0x00
+        0xfd, // REVERT
+        0x5b, // JUMPDEST @ 0x16
+        0x60, 0x01, // PUSH1 0x01
+        0x60, 0x1f, // PUSH1 0x1f
+        0x52, // MSTORE
+        0x60, 0x00, // PUSH1 0x00
+        0x60, 0x20, // PUSH1 0x20
+        0xf3, // RETURN
+    };
+
+    const addr = [_]u8{0xcc} ** 20;
+    try memory_db.set_code(addr, &runtime);
+
+    const caller = [_]u8{0xdd} ** 20;
+
+    // Build calldata: 4-byte selector + two 32-byte args
+    var calldata: [4 + 32 + 32]u8 = undefined;
+    calldata[0] = 0x12;
+    calldata[1] = 0x34;
+    calldata[2] = 0x56;
+    calldata[3] = 0x78;
+    @memset(calldata[4..36], 0);
+    @memset(calldata[36..68], 0);
+
+    const params = CallParams{ .call = .{
+        .to = addr,
+        .caller = caller,
+        .input = &calldata,
+        .value = 0,
+        .gas = 200000,
+    } };
+
+    const res = try evm.call(params);
+    try std.testing.expect(res.success);
+    try std.testing.expectEqual(@as(usize, 32), res.output.len);
+    try std.testing.expectEqual(@as(u8, 1), res.output[31]);
+}
