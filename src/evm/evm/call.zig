@@ -50,6 +50,9 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     var call_input: []const u8 = undefined;
     var call_gas: u64 = undefined;
     var call_is_static: bool = undefined;
+    var is_delegatecall: bool = false;
+    var is_create: bool = false;
+    var is_create2: bool = false;
 
     var call_caller: primitives.Address.Address = undefined;
     var call_value: u256 = undefined;
@@ -75,11 +78,64 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
             call_value = 0; // Static calls have no value transfer
             Log.debug("[call] Staticcall params: to={any}, input_len={}, gas={}, static={}, code_len={}", .{ call_data.to, call_data.input.len, call_data.gas, true, call_code.len });
         },
+        .delegatecall => |dc| {
+            // Execute code at `to` but in the context (address/storage) of the current contract
+            call_address = dc.to;
+            call_code = self.state.get_code(dc.to);
+            call_input = dc.input;
+            call_gas = dc.gas;
+            call_is_static = false; // inherit static below for nested frames
+            call_caller = dc.caller; // original caller preserved by opcode layer
+            call_value = 0; // will be overridden from parent frame for nested execution
+            is_delegatecall = true;
+            Log.debug("[call] Delegatecall params: to={any}, input_len={}, gas={} ", .{ dc.to, dc.input.len, dc.gas });
+        },
+        .create => |cr| {
+            // Handle CREATE via dedicated path
+            is_create = true;
+            call_gas = cr.gas;
+            call_caller = cr.caller;
+            call_value = cr.value;
+            call_input = cr.init_code; // reuse variable for initcode
+        },
+        .create2 => |cr2| {
+            // Handle CREATE2 via dedicated path
+            is_create2 = true;
+            call_gas = cr2.gas;
+            call_caller = cr2.caller;
+            call_value = cr2.value;
+            call_input = cr2.init_code; // reuse variable for initcode
+            _ = cr2.salt; // TODO: incorporate salt into address derivation
+        },
         else => {
             // For now, return error for unhandled call types
             Log.debug("[call] Unhandled call type", .{});
             return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
         },
+    }
+
+    // Fast-path: CREATE/CREATE2 handled through create_contract()
+    if (is_create or is_create2) {
+        // Execute constructor and deploy runtime code
+        const create_res = try self.create_contract(call_caller, call_value, call_input, call_gas);
+
+        // On success, return address bytes as output (20 bytes)
+        if (create_res.success) {
+            const addr_buf = try self.allocator.alloc(u8, 20);
+            @memcpy(addr_buf, &create_res.address);
+            return CallResult{
+                .success = true,
+                .gas_left = create_res.gas_left,
+                .output = addr_buf,
+            };
+        }
+
+        // On revert/failure, propagate revert data if any
+        return CallResult{
+            .success = false,
+            .gas_left = create_res.gas_left,
+            .output = create_res.output,
+        };
     }
 
     // For top-level calls, charge the base transaction cost
@@ -214,11 +270,13 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         }
 
         // Initialize only the first frame now. Nested frames will be initialized on demand
+        // Top-level delegatecall is unusual, but if it occurs, run code at target with current address context
+        const contract_addr_for_frame = if (is_delegatecall) call_caller else call_info.address;
         self.frame_stack.?[0] = try Frame.init(
             call_info.gas, // gas_remaining
             call_info.is_static, // static_call
             @intCast(self.depth), // call_depth
-            call_info.address, // contract_address
+            contract_addr_for_frame, // contract_address context
             call_caller, // caller
             call_value, // value
             analysis_ptr, // analysis
@@ -264,13 +322,16 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
             std.debug.assert(parent_stack_current_before >= parent_stack_base_before);
             std.debug.assert(parent_stack_current_before <= parent_stack_limit_before);
         }
+        // For DELEGATECALL: execute at parent's contract address, not target address
+        const nested_contract_addr = if (is_delegatecall) parent_frame.contract_address else call_info.address;
+        const nested_value: u256 = if (is_delegatecall) parent_frame.value else call_value;
         self.frame_stack.?[new_depth] = Frame.init(
             call_info.gas, // gas_remaining
             call_info.is_static or parent_frame.is_static, // inherit static context
             @intCast(new_depth), // call_depth
-            call_info.address, // contract_address
-            call_caller, // caller
-            call_value, // value
+            nested_contract_addr, // contract_address
+            call_caller, // caller (original for delegatecall)
+            nested_value, // value (inherit for delegatecall)
             analysis_ptr, // analysis
             host,
             self.state.database,

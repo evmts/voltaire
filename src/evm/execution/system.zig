@@ -643,6 +643,11 @@ pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
                 _ = try frame.access_address(contract_address);
 
                 frame.stack.append_unsafe(address_u256);
+            } else if (address_bytes.len == 32) {
+                // REVM may return a 32-byte word; ensure we read a full word
+                const address_bytes_32: *const [32]u8 = @ptrCast(address_bytes.ptr);
+                const address_u256: u256 = std.mem.readInt(u256, address_bytes_32, .big);
+                frame.stack.append_unsafe(address_u256);
             } else {
                 frame.stack.append_unsafe(0);
             }
@@ -791,6 +796,11 @@ pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
                 _ = try frame.access_address(contract_address);
 
                 frame.stack.append_unsafe(address_u256);
+            } else if (address_bytes.len == 32) {
+                // Accept 32-byte address word from host
+                const address_bytes_32: *const [32]u8 = @ptrCast(address_bytes.ptr);
+                const address_u256 = std.mem.readInt(u256, address_bytes_32, .big);
+                frame.stack.append_unsafe(address_u256);
             } else {
                 frame.stack.append_unsafe(0);
             }
@@ -819,19 +829,15 @@ pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
 pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
     const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
-    // Correct EVM stack order (top -> bottom):
-    // out_size, out_offset, in_size, in_offset, value, to, gas
-    // Pop in reverse: out, in, value, then (to, gas)
-    const out_pair = frame.stack.pop2_unsafe();
-    const ret_offset = out_pair.a; // second-from-top
-    const ret_size = out_pair.b; // top
-    const in_pair = frame.stack.pop2_unsafe();
-    const args_offset = in_pair.a;
-    const args_size = in_pair.b;
+    // EVM stack order (top -> bottom): gas, to, value, in_offset, in_size, out_offset, out_size
+    // Pop in that order for clarity
+    const gas = frame.stack.pop_unsafe();
+    const to = frame.stack.pop_unsafe();
     const value = frame.stack.pop_unsafe();
-    const to_gas = frame.stack.pop2_unsafe();
-    const to = to_gas.a;
-    const gas = to_gas.b;
+    const args_offset = frame.stack.pop_unsafe();
+    const args_size = frame.stack.pop_unsafe();
+    const ret_offset = frame.stack.pop_unsafe();
+    const ret_size = frame.stack.pop_unsafe();
 
     // Validate static context for value transfers
     if (frame.is_static and value != 0) {

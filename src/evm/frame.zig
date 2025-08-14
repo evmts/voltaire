@@ -38,33 +38,31 @@ pub const StateError = error{OutOfMemory};
 /// Frame represents the entire execution state of the EVM as it executes opcodes
 /// Layout optimized for actual opcode access patterns and cache performance
 pub const Frame = struct {
-    // ULTRA HOT - First cache line priority (accessed by virtually every opcode)
+    // === FIRST CACHE LINE (64 bytes) - ULTRA HOT ===
+    // Every single instruction accesses these fields
     gas_remaining: u64, // 8 bytes - checked/consumed by every opcode
-    stack: Stack, // 32 bytes - accessed by every opcode (heap-backed storage inside)
-
-    // HOT - Second cache line priority (accessed by major opcode categories)
-    memory: Memory, // 72 bytes - memory ops (MLOAD/MSTORE/MCOPY/LOG*/KECCAK256)
+    stack: Stack, // 32 bytes - accessed by every opcode (4 pointers)
     analysis: *const CodeAnalysis, // 8 bytes - control flow (JUMP/JUMPI validation)
-    depth: u10, // 10 bits - call stack depth
-    is_static: bool, // 1 bit - static call restriction
-
-    // WARM - Storage cluster (keep contiguous for SLOAD/SSTORE/TLOAD/TSTORE)
-    contract_address: primitives.Address.Address, // 20 bytes
+    host: Host, // 16 bytes - needed for hardfork checks, gas costs
+    // === SECOND CACHE LINE - MEMORY OPERATIONS ===
+    memory: Memory, // 72 bytes - MLOAD/MSTORE/MCOPY/LOG*/KECCAK256
+    // === THIRD CACHE LINE - STORAGE OPERATIONS ===
+    // SLOAD/SSTORE access these together
     state: DatabaseInterface, // 16 bytes
-
-    // WARM - Call context (grouped together)
-    host: Host, // 16 bytes (ptr + vtable)
+    contract_address: primitives.Address.Address, // 20 bytes
+    depth: u16, // 2 bytes - for reentrancy checks
+    is_static: bool, // 1 byte - for SSTORE restrictions
+    // 3 bytes padding
+    // === FOURTH CACHE LINE - CALL CONTEXT ===
+    // Primarily used during CALL/CREATE operations
     caller: primitives.Address.Address, // 20 bytes
     value: u256, // 32 bytes
-
-    // COLD - Validation flags and rarely accessed data
-    // All EIP validation now done at compile-time via jump tables
 
     /// Initialize a Frame with required parameters
     pub fn init(
         gas_remaining: u64,
         static_call: bool,
-        call_depth: u32,
+        call_depth: u16,
         contract_address: primitives.Address.Address,
         caller: primitives.Address.Address,
         value: u256,
@@ -108,7 +106,7 @@ pub const Frame = struct {
                 break :blk memory_val;
             },
             .analysis = analysis,
-            .depth = @intCast(call_depth),
+            .depth = call_depth,
             .is_static = static_call,
 
             // Call frame stack integration
@@ -245,7 +243,7 @@ pub const Frame = struct {
     }
 
     pub fn set_depth(self: *Frame, d: u32) void {
-        self.depth = @intCast(d);
+        self.depth = d;
     }
 
     pub fn set_is_static(self: *Frame, static: bool) void {
@@ -308,7 +306,7 @@ test "Frame - basic initialization" {
     // Test initial state
     try std.testing.expectEqual(@as(u64, 1000000), ctx.gas_remaining);
     try std.testing.expectEqual(false, ctx.is_static);
-    try std.testing.expectEqual(@as(u10, 1), ctx.depth);
+    try std.testing.expectEqual(@as(u32, 1), ctx.depth);
     try std.testing.expectEqual(@as(usize, 0), ctx.stack.size());
 
     // Test that analysis is correctly referenced

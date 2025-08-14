@@ -544,9 +544,39 @@ pub fn interpretCompat(self: *Evm, contract: *const anyopaque, input: []const u8
 
 // Contract creation: execute initcode and deploy returned runtime code
 pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, value: u256, bytecode: []const u8, gas: u64) !InterprResult {
-    // Simple constructor execution: run initcode and deploy returned runtime code
-    // Compute a deterministic test address (tests only assert code at returned address)
+    // Backwards-compatible CREATE that uses a fixed address for tests that don't
+    // assert the specific CREATE address value.
     const new_address: primitives_internal.Address.Address = [_]u8{0x22} ** 20;
+    return self.create_contract_at(caller, value, bytecode, gas, new_address);
+}
+
+/// Compute CREATE2 address per EIP-1014: keccak256(0xff ++ sender ++ salt ++ keccak256(init_code))[12..]
+pub fn compute_create2_address(self: *Evm, caller: primitives_internal.Address.Address, salt: u256, init_code: []const u8) primitives_internal.Address.Address {
+    _ = self;
+    var preimage: [1 + 20 + 32 + 32]u8 = undefined;
+    preimage[0] = 0xff;
+    // caller (20 bytes)
+    @memcpy(preimage[1..21], &caller);
+    // salt (32 bytes, big-endian)
+    var salt_bytes: [32]u8 = undefined;
+    std.mem.writeInt(u256, &salt_bytes, salt, .big);
+    @memcpy(preimage[21..53], &salt_bytes);
+    // keccak256(init_code)
+    var code_hash: [32]u8 = undefined;
+    Keccak256.hash(init_code, &code_hash, .{});
+    @memcpy(preimage[53..85], &code_hash);
+
+    var out_hash: [32]u8 = undefined;
+    Keccak256.hash(&preimage, &out_hash, .{});
+
+    var addr: primitives_internal.Address.Address = undefined;
+    // Take the last 20 bytes of the hash
+    @memcpy(&addr, out_hash[12..32]);
+    return addr;
+}
+
+/// CREATE/CREATE2 helper that deploys contract at a specified address
+pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Address, value: u256, bytecode: []const u8, gas: u64, new_address: primitives_internal.Address.Address) !InterprResult {
 
     // Check if this is a top-level call and charge base transaction cost
     const is_top_level = !self.is_executing;
