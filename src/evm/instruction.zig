@@ -27,6 +27,42 @@ pub const Instruction = packed struct(u32) {
     id: u24,
 };
 
+/// Comptime function that returns the struct type for a given tag
+pub fn InstructionType(comptime tag: Tag) type {
+    return switch (tag) {
+        .noop => NoopInstruction,
+        .jump_pc => JumpPcInstruction,
+        .conditional_jump_unresolved => ConditionalJumpUnresolvedInstruction,
+        .conditional_jump_invalid => ConditionalJumpInvalidInstruction,
+        .exec => ExecInstruction,
+        .conditional_jump_pc => ConditionalJumpPcInstruction,
+        .word => WordInstruction,
+        .pc => PcInstruction,
+        .block_info => BlockInstruction,
+        .dynamic_gas => DynamicGasInstruction,
+        .jump_unresolved => unreachable, // Handled specially
+        .conditional_jump_idx => unreachable, // Not used
+    };
+}
+
+/// Returns the size category for a given tag
+pub fn getInstructionSize(comptime tag: Tag) usize {
+    return switch (tag) {
+        .noop, .jump_pc, .conditional_jump_unresolved, .conditional_jump_invalid => 8,
+        // 16-byte group
+        // ExecInstruction (2 pointers)
+        // ConditionalJumpPcInstruction (2 pointers)
+        // PcInstruction (u16 + pointer, padded/aligned)
+        // BlockInstruction (u32 + u16 + u16 + pointer)
+        .exec, .conditional_jump_pc, .pc, .block_info => 16,
+        // 24-byte group
+        // DynamicGasInstruction (3 pointers)
+        // WordInstruction (slice + pointer)
+        .dynamic_gas, .word => 24,
+        .jump_unresolved, .conditional_jump_idx => 0, // Special handling
+    };
+}
+
 // Compact reference to bytes in analyzed contract `code`.
 // - `start_pc` is the byte offset within `code`
 // - `len` is the number of immediate bytes (0..32)
