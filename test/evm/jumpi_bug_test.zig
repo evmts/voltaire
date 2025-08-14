@@ -1,44 +1,61 @@
 const std = @import("std");
+const testing = std.testing;
 const evm = @import("evm");
+const primitives = @import("primitives");
+const Address = primitives.Address;
+const MemoryDatabase = evm.MemoryDatabase;
+const CallParams = evm.CallParams;
+const Evm = evm.Evm;
+
+// Enable debug logging for all tests
+test {
+    std.testing.log_level = .warn;
+}
 
 // WORKING: This test documents a dynamic JUMPI to a valid JUMPDEST.
 // It should pass once jumpdest validation off-by-one is fixed in analysis.
 test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
     const allocator = std.testing.allocator;
 
-    var memory_db = evm.MemoryDatabase.init(allocator);
+    var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
 
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Bytecode:
-    // 0x00 PUSH1 0x09 (dest)
+    // 0x00 PUSH1 0x06 (dest)
     // 0x02 PUSH1 0x01 (cond)
     // 0x04 JUMPI
     // 0x05 STOP (should be skipped)
     // 0x06 JUMPDEST
-    // 0x07 PUSH1 0x01; PUSH1 0x1f; MSTORE; PUSH1 0x00; PUSH1 0x20; RETURN
+    // 0x07 PUSH1 0x01
+    // 0x09 PUSH1 0x00
+    // 0x0B MSTORE
+    // 0x0C PUSH1 0x20
+    // 0x0E PUSH1 0x00
+    // 0x10 RETURN
     const code = [_]u8{
-        0x60, 0x06,
-        0x60, 0x01,
-        0x57, 0x00,
-        0x5b, 0x60,
-        0x01, 0x60,
-        0x1f, 0x52,
-        0x60, 0x00,
-        0x60, 0x20,
-        0xf3,
+        0x60, 0x06,  // PUSH1 0x06
+        0x60, 0x01,  // PUSH1 0x01
+        0x57,        // JUMPI
+        0x00,        // STOP (should be skipped)
+        0x5b,        // JUMPDEST (at position 6)
+        0x60, 0x01,  // PUSH1 0x01
+        0x60, 0x00,  // PUSH1 0x00
+        0x52,        // MSTORE
+        0x60, 0x20,  // PUSH1 0x20
+        0x60, 0x00,  // PUSH1 0x00
+        0xf3,        // RETURN
     };
 
-    const primitives = @import("primitives");
-    const caller = primitives.Address.from_u256(0x1);
-    const callee = primitives.Address.from_u256(0x2);
-    try memory_db.set_code(callee, &code);
+    const caller = Address.from_u256(0x1000);
+    const callee = Address.from_u256(0x2000); // Use higher address to avoid precompiles
+    try vm.state.set_code(callee, &code);
     try vm.state.set_balance(caller, std.math.maxInt(u256));
 
-    const params = evm.CallParams{ .call = .{
+    const params = CallParams{ .call = .{
         .caller = caller,
         .to = callee,
         .value = 0,
@@ -46,19 +63,19 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
         .gas = 100000,
     } };
     const res = try vm.call(params);
+    defer if (res.output) |output| allocator.free(output);
+    
+    std.log.warn("Call result: success={}, output_len={?}", .{ res.success, if (res.output) |o| o.len else null });
+    if (res.output) |output| {
+        std.log.warn("Output bytes: {x}", .{output});
+    }
+    
     try std.testing.expect(res.success);
     try std.testing.expect(res.output != null);
     const out = res.output.?;
-    defer allocator.free(out);
     try std.testing.expectEqual(@as(usize, 32), out.len);
     try std.testing.expectEqual(@as(u8, 1), out[31]);
 }
-const testing = std.testing;
-const Evm = @import("evm");
-const primitives = @import("primitives");
-const Address = primitives.Address;
-const MemoryDatabase = @import("evm").MemoryDatabase;
-const CallParams = @import("evm").CallParams;
 
 test "JUMPI should take jump when condition is non-zero" {
     const allocator = std.testing.allocator;
@@ -70,7 +87,7 @@ test "JUMPI should take jump when condition is non-zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm2 = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm2 = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm2.deinit();
 
     const caller = Address.from_u256(0x1000000000000000000000000000000000000001);
@@ -99,13 +116,17 @@ test "JUMPI should take jump when condition is non-zero" {
         0x00, // STOP at pc=11
     };
 
+    // Deploy the bytecode as contract code
+    const contract_addr = Address.from_u256(0x2000000000000000000000000000000000000002);
+    try vm2.state.set_code(contract_addr, bytecode);
+    
     // Call the contract to execute the bytecode
     const call_params = CallParams{
         .call = .{
             .caller = caller,
-            .to = Address.from_u256(0x2000000000000000000000000000000000000002), // arbitrary contract address
+            .to = contract_addr,
             .value = 0,
-            .input = bytecode, // using bytecode as calldata for simplicity
+            .input = &.{}, // empty calldata
             .gas = 1000000,
         },
     };
@@ -129,7 +150,7 @@ test "JUMPI should NOT jump when condition is zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm3 = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm3 = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm3.deinit();
 
     const caller = Address.from_u256(0x1000000000000000000000000000000000000001);
@@ -148,13 +169,17 @@ test "JUMPI should NOT jump when condition is zero" {
         0x00, // STOP at pc=11
     };
 
+    // Deploy the bytecode as contract code
+    const contract_addr = Address.from_u256(0x2000000000000000000000000000000000000002);
+    try vm3.state.set_code(contract_addr, bytecode);
+
     // Call the contract
     const call_params = CallParams{
         .call = .{
             .caller = caller,
-            .to = Address.from_u256(0x2000000000000000000000000000000000000002), // arbitrary contract address
+            .to = contract_addr,
             .value = 0,
-            .input = bytecode, // using bytecode as calldata
+            .input = &.{}, // empty calldata
             .gas = 1000000,
         },
     };

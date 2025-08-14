@@ -2072,6 +2072,7 @@ pub fn build(b: *std.Build) void {
     });
     jumpi_bug_test.root_module.addImport("evm", evm_mod);
     jumpi_bug_test.root_module.addImport("Address", primitives_mod);
+    jumpi_bug_test.root_module.addImport("primitives", primitives_mod);
 
     const run_jumpi_bug_test = b.addRunArtifact(jumpi_bug_test);
     test_step.dependOn(&run_jumpi_bug_test.step);
