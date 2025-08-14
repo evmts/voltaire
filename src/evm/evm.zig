@@ -43,10 +43,6 @@ const Evm = @This();
 /// Maximum call depth supported by EVM (per EIP-150)
 pub const MAX_CALL_DEPTH: u11 = evm_limits.MAX_CALL_DEPTH;
 
-// Constants from call.zig for frame management
-/// Maximum stack buffer size for contracts up to 12,800 bytes
-const MAX_STACK_BUFFER_SIZE = 43008; // 42KB with alignment padding
-
 /// Initial arena capacity for temporary allocations (256KB)
 /// This covers most common contract executions without reallocation
 const ARENA_INITIAL_CAPACITY = 256 * 1024;
@@ -112,8 +108,6 @@ current_input: []const u8 = &.{},                  // 16 bytes - only for CALLDA
 frame_stack: ?[]Frame = null,                      // 8 bytes - frame storage pointer
 /// LRU cache for code analysis to avoid redundant analysis during nested calls
 analysis_cache: ?AnalysisCache = null,             // 8 bytes - analysis cache pointer
-/// Stack buffer for small contract analysis optimization
-analysis_stack_buffer: [MAX_STACK_BUFFER_SIZE]u8 = undefined, // 43KB - rarely accessed
 /// Optional tracer for capturing execution traces
 tracer: ?std.io.AnyWriter = null,                  // 16 bytes - debugging only
 /// Open file handle used by tracer when tracing to file
@@ -199,7 +193,6 @@ pub fn init(
     // NOTE: Execution state is left undefined - will be initialized fresh in each call
     // - frame_stack: initialized in call execution
     // - self_destruct: initialized in call execution
-    // - analysis_stack_buffer: initialized in call execution
 
     // std.debug.print("[Evm.init] Creating Evm struct...\n", .{});
     Log.debug("Evm.init: EVM initialization complete", .{});
@@ -235,7 +228,6 @@ pub fn init(
         // Lifetime: Per EVM instance
         // Frequency: Once per EVM creation
         .analysis_cache = AnalysisCache.init(allocator, AnalysisCache.DEFAULT_CACHE_SIZE),
-        .analysis_stack_buffer = undefined,
         .tracer = tracer,
         .trace_file = null,
         .initial_thread_id = std.Thread.getCurrentId(),
