@@ -67,10 +67,10 @@ pub fn op_return(context: *anyopaque) ExecutionError.Error!void {
     std.debug.assert(frame.stack.size() >= 2);
 
     // Use batch pop for performance - pop 2 values at once
-    // Stack order (top to bottom): [offset, size] with offset on top
+    // EVM stack is [offset, size] with OFFSET on top
     const values = frame.stack.pop2_unsafe();
-    const offset = values.b; // Top
-    const size = values.a; // Second from top
+    const offset = values.b; // Top (offset)
+    const size = values.a; // Second from top (size)
 
     Log.debug("RETURN opcode: offset={}, size={}", .{ offset, size });
 
@@ -125,10 +125,10 @@ pub fn op_revert(context: *anyopaque) ExecutionError.Error!void {
     std.debug.assert(frame.stack.size() >= 2);
 
     // Use batch pop for performance - pop 2 values at once
-    // Stack order (top to bottom): [offset, size] with offset on top
+    // EVM stack is [offset, size] with OFFSET on top
     const values = frame.stack.pop2_unsafe();
-    const offset = values.b; // Top
-    const size = values.a; // Second from top
+    const offset = values.b; // Top (offset)
+    const size = values.a; // Second from top (size)
 
     if (size == 0) {
         @branchHint(.unlikely);
