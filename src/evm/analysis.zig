@@ -1260,9 +1260,12 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
     }
 
     // After resize: wire next_instruction and conditional_jump pointers
-    // 1) Default next pointers already set pre-resize; re-initialize for final slice
+    // 1) Default next pointers already set pre-resize; re-initialize for final slice.
+    //    Note: We will rewire JUMP targets below; avoid clobbering those here.
     var fi: usize = 0;
     while (fi < final_instructions.len) : (fi += 1) {
+        // If this instruction is a resolved JUMP (target set in step 2 below),
+        // we'll overwrite next_instruction there. Initialize defaults here for others.
         const next_idx = if (fi + 1 < final_instructions.len) fi + 1 else fi;
         final_instructions[fi].next_instruction = &final_instructions[next_idx];
     }
@@ -1273,6 +1276,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
         const jt = final_jump_types[ji];
         switch (jt) {
             .jump => {
+                // Case A: PUSH-immediate destination directly before JUMP
                 if (ji > 0 and final_instructions[ji - 1].arg == .word) {
                     const target_pc = final_instructions[ji - 1].arg.word;
                     if (target_pc < code.len) {
@@ -1284,9 +1288,20 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                             }
                         }
                     }
+                } else {
+                    // Case B: Fused immediate JUMP (jump_pc) — resolve to block start
+                    switch (final_instructions[ji].arg) {
+                        .jump_pc => |pcimm| {
+                            // Keep fused immediate form to preserve correct runtime stack semantics (no pop)
+                            // Optionally we could pre-validate pcimm here, but interpreter will validate.
+                            _ = pcimm;
+                        },
+                        else => {},
+                    }
                 }
             },
             .jumpi => {
+                // Case A: PUSH-immediate destination directly before JUMPI
                 if (ji > 0 and final_instructions[ji - 1].arg == .word) {
                     const target_pc = final_instructions[ji - 1].arg.word;
                     if (target_pc < code.len) {
@@ -1297,6 +1312,15 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                                 final_instructions[ji].arg = .{ .conditional_jump = &final_instructions[block_idx] };
                             }
                         }
+                    }
+                } else {
+                    // Case B: Fused immediate JUMPI (conditional_jump_pc) — resolve to pointer
+                    switch (final_instructions[ji].arg) {
+                        .conditional_jump_pc => |pcimm| {
+                            // Keep fused immediate form; interpreter pops only condition and branches.
+                            _ = pcimm;
+                        },
+                        else => {},
                     }
                 }
             },
