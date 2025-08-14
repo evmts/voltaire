@@ -32,8 +32,9 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
         0xf3,
     };
 
-    const caller = evm.Address.from_u256(0x1);
-    const callee = evm.Address.from_u256(0x2);
+    const primitives = @import("primitives");
+    const caller = primitives.Address.from_u256(0x1);
+    const callee = primitives.Address.from_u256(0x2);
     try memory_db.set_code(callee, &code);
     try vm.state.set_balance(caller, std.math.maxInt(u256));
 
@@ -54,7 +55,8 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
 }
 const testing = std.testing;
 const Evm = @import("evm");
-const Address = @import("evm").Address;
+const primitives = @import("primitives");
+const Address = primitives.Address;
 const MemoryDatabase = @import("evm").MemoryDatabase;
 const CallParams = @import("evm").CallParams;
 
