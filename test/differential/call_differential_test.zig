@@ -7,7 +7,7 @@ const revm_wrapper = @import("revm");
 
 // Repro for CALL-family pop-order bug: pass distinct small integers to verify mapping
 
-fn runBoth(bytecode: []const u8, target: Address.Address, gas: u64) !struct { ok1: bool, out1: []const u8, ok2: bool, out2: ?[]u8 } {
+fn runBoth(bytecode: []const u8, target: Address.Address, gas: u64) !struct { ok1: bool, out1: []const u8, ok2: bool, out2: ?[]const u8 } {
     const allocator = testing.allocator;
     // REVM
     var revm_vm = try revm_wrapper.Revm.init(allocator, .{});
@@ -55,7 +55,7 @@ test "CALL pop order: ret/args/gas,to,value wiring matches REVM" {
         try testing.expectEqual(v1, v2);
         try testing.expectEqual(@as(u256, 1), v1);
     }
-    if (res.out2) |o| allocator.free(o);
+    // Note: out2 is const; do not free here.
 }
 
 
