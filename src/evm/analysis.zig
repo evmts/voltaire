@@ -1669,6 +1669,135 @@ test "analysis: fused conditional JUMPI with immediate destination" {
     try std.testing.expect(found);
 }
 
+test "analysis: dispatcher-like fragment invariants" {
+    const allocator = std.testing.allocator;
+    // Minimal dispatcher pattern:
+    // 00: PUSH1 0x00
+    // 02: CALLDATALOAD
+    // 03: PUSH1 0xe0
+    // 05: SHR                     ; selector -> low 4 bytes
+    // 06: PUSH4 0x11223344        ; target selector
+    // 0b: EQ
+    // 0c: PUSH1 0x14              ; dest pc (20)
+    // 0e: JUMPI
+    // 0f: PUSH1 0x00
+    // 11: PUSH1 0x00
+    // 13: REVERT
+    // 14: JUMPDEST                ; dest block
+    // 15: STOP (padding ok)
+    const code = &[_]u8{
+        0x60, 0x00, // PUSH1 0
+        0x35, // CALLDATALOAD
+        0x60, 0xe0, // PUSH1 0xe0
+        0x1c, // SHR
+        0x63, 0x11, 0x22, 0x33, 0x44, // PUSH4 0x11223344
+        0x14, // EQ
+        0x60, 0x14, // PUSH1 0x14
+        0x57, // JUMPI
+        0x60, 0x00, // PUSH1 0
+        0x60, 0x00, // PUSH1 0
+        0xfd, // REVERT
+        0x5b, // JUMPDEST @ 0x14
+        0x00, // STOP
+    };
+
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    // JUMPDEST mapped
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(0x14));
+    const bb_idx = analysis.pc_to_block_start[0x14];
+    try std.testing.expect(bb_idx != std.math.maxInt(u16));
+    try std.testing.expect(bb_idx < analysis.instructions.len);
+
+    // Must contain a conditional jump
+    var has_jumpi: bool = false;
+    for (analysis.inst_jump_type) |jt| {
+        if (jt == .jumpi) has_jumpi = true;
+    }
+    try std.testing.expect(has_jumpi);
+
+    // No unresolved fused immediates should remain after resolution
+    for (analysis.instructions) |inst| {
+        switch (inst.arg) {
+            .jump_pc, .conditional_jump_pc => return error.TestUnexpectedResult,
+            else => {},
+        }
+    }
+
+    // Maps sizes sane
+    try std.testing.expect(analysis.inst_to_pc.len == analysis.instructions.len);
+    try std.testing.expect(analysis.pc_to_block_start.len >= code.len);
+}
+
+test "analysis: ERC20 runtime contains dispatcher patterns" {
+    const allocator = std.testing.allocator;
+    // Load solidity ERC20 creation bytecode and extract runtime after f3 fe
+    const path = "/Users/williamcory/guillotine/src/solidity/erc20_bytecode.hex";
+    const file = try std.fs.openFileAbsolute(path, .{});
+    defer file.close();
+    const hex_content = try file.readToEndAlloc(allocator, 64 * 1024);
+    defer allocator.free(hex_content);
+    const trimmed = std.mem.trim(u8, hex_content, " \t\n\r");
+    const creation_bytes = try allocator.alloc(u8, trimmed.len / 2);
+    defer allocator.free(creation_bytes);
+    _ = try std.fmt.hexToBytes(creation_bytes, trimmed);
+
+    var runtime_code: []const u8 = creation_bytes;
+    if (std.mem.indexOf(u8, creation_bytes, &[_]u8{ 0xf3, 0xfe })) |idx| {
+        const start = idx + 2;
+        if (start < creation_bytes.len) runtime_code = creation_bytes[start..];
+    }
+
+    var analysis = try CodeAnalysis.from_code(allocator, runtime_code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    // Basic sanity
+    try std.testing.expect(analysis.pc_to_block_start.len >= runtime_code.len);
+
+    // Scan dispatcher-relevant opcodes
+    var count_jumpi: usize = 0;
+    var count_jumpdest: usize = 0;
+    var has_calldataload: bool = false;
+    var has_calldatasize: bool = false;
+    var has_eq: bool = false;
+    var i: usize = 0;
+    while (i < runtime_code.len) : (i += 1) {
+        const b = runtime_code[i];
+        switch (b) {
+            0x57 => count_jumpi += 1,
+            0x5b => count_jumpdest += 1,
+            0x35 => has_calldataload = true,
+            0x36 => has_calldatasize = true,
+            0x14 => has_eq = true,
+            else => {},
+        }
+    }
+    try std.testing.expect(count_jumpi >= 1);
+    try std.testing.expect(count_jumpdest >= 2);
+    try std.testing.expect(has_calldataload);
+    try std.testing.expect(has_eq);
+    if (!has_calldatasize) {
+        var has_calldatacopy: bool = false;
+        var j: usize = 0;
+        while (j < runtime_code.len) : (j += 1) {
+            if (runtime_code[j] == 0x37) {
+                has_calldatacopy = true;
+                break;
+            }
+        }
+        try std.testing.expect(has_calldatacopy);
+    }
+
+    // No unresolved fused immediates should remain
+    for (analysis.instructions) |inst| {
+        switch (inst.arg) {
+            .jump_pc, .conditional_jump_pc => return error.TestUnexpectedResult,
+            else => {},
+        }
+    }
+}
+
 test "analysis: fused PUSH+JUMP to forward JUMPDEST" {
     const allocator = std.testing.allocator;
     // Bytes:
