@@ -1236,6 +1236,7 @@ fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_table
                 it_jump_pc += 1;
                 const jump_idx = pc_to_block_start[pc_val];
                 const jump_target = if (jump_idx != std.math.maxInt(u16) and jump_idx < final_instructions.len) &final_instructions[jump_idx] else &final_instructions[0];
+                Log.debug("[CODEGEN] JUMP_PC: pc_val={}, jump_idx={}, jump_target_tag={}", .{ pc_val, jump_idx, jump_target.tag });
                 const payload: JumpPcInstruction = .{ .jump_target = jump_target };
                 final_instructions[i].id = idx8;
                 {

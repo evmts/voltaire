@@ -170,6 +170,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         .jump_pc => {
             pre_step(self, frame, instruction, &loop_iterations);
             const jump_pc_inst = frame.analysis.getInstructionParams(.jump_pc, instruction.id);
+            Log.debug("[INTERPRET] JUMP_PC: current_inst={} -> jump_target={}", .{ instruction, jump_pc_inst.jump_target });
             instruction = jump_pc_inst.jump_target;
             continue :dispatch instruction.tag;
         },
