@@ -57,6 +57,9 @@ pub const Frame = struct {
     // Primarily used during CALL/CREATE operations
     caller: primitives.Address.Address, // 20 bytes
     value: u256, // 32 bytes
+    // Per-frame I/O buffers exposed via Host
+    input_buffer: []const u8 = &.{},
+    output_buffer: []const u8 = &.{},
 
     /// Initialize a Frame with required parameters
     pub fn init(
@@ -113,6 +116,8 @@ pub const Frame = struct {
             .host = host,
             .caller = caller,
             .value = value,
+            .input_buffer = &.{},
+            .output_buffer = &.{},
 
             // Storage cluster
             .contract_address = contract_address,

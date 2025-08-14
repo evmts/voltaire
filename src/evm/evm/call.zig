@@ -388,8 +388,8 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     }
 
     const current_frame = &self.frame_stack.?[self.current_frame_depth];
-    // Expose input to Host via EVM field for opcodes like CALLDATALOAD/COPY
-    self.current_input = call_info.input;
+    // Expose input to Host via current frame buffer
+    current_frame.input_buffer = call_info.input;
     Log.debug("[call] Starting interpret at depth {}, gas={}", .{ self.current_frame_depth, current_frame.gas_remaining });
 
     // For nested calls, capture parent pointers before interpret

@@ -452,17 +452,34 @@ pub fn get_original_storage(self: *Evm, address: primitives.Address.Address, slo
 
 /// Set the output buffer for the current frame (Host interface)
 pub fn set_output(self: *Evm, output: []const u8) !void {
+    // Write to current frame's output buffer when available
+    if (self.frame_stack) |frames| {
+        if (self.current_frame_depth < frames.len) {
+            frames[self.current_frame_depth].output_buffer = output;
+        }
+    }
+    // Maintain legacy field for compatibility and for standalone frames (CREATE path)
     self.current_output = output;
     @import("log.zig").debug("[Evm.set_output] output_len={}", .{output.len});
 }
 
 /// Get the output buffer for the current frame (Host interface)
 pub fn get_output(self: *Evm) []const u8 {
+    if (self.frame_stack) |frames| {
+        if (self.current_frame_depth < frames.len) {
+            return frames[self.current_frame_depth].output_buffer;
+        }
+    }
     return self.current_output;
 }
 
 /// Get the input buffer for the current frame (Host interface)
 pub fn get_input(self: *Evm) []const u8 {
+    if (self.frame_stack) |frames| {
+        if (self.current_frame_depth < frames.len) {
+            return frames[self.current_frame_depth].input_buffer;
+        }
+    }
     return self.current_input;
 }
 
