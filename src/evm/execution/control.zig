@@ -29,8 +29,15 @@ const from_u256 = primitives.Address.from_u256;
 /// Halts execution of the current context and returns successfully with no data.
 /// Stack: [] → [] (execution ends)
 pub fn op_stop(context: *anyopaque) ExecutionError.Error!void {
-    _ = context;
-
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
+    
+    // Debug: log when we hit STOP to understand why ERC20 isn't returning data
+    Log.debug("STOP opcode at depth={}, stack_size={}, current output len={}", .{
+        frame.depth,
+        frame.stack.size(),
+        if (frame.host.get_output().len > 0) frame.host.get_output().len else 0
+    });
+    
     return ExecutionError.Error.STOP;
 }
 

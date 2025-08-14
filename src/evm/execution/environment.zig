@@ -284,9 +284,9 @@ pub fn op_calldataload(context: *anyopaque) ExecutionError.Error!void {
     const word = std.mem.readInt(u256, &buf, .big);
 
     // Debug: log selector extraction for small calldata to diagnose dispatcher issues
-    if (offset_usize == 0 and calldata.len <= 4) {
+    if (offset_usize == 0 and calldata.len >= 4) {
         const selector: u256 = (word >> 224) & 0xffffffff;
-        @import("../log.zig").warn("[CALLDATALOAD] len={}, selector=0x{x:0>8}", .{ calldata.len, selector });
+        @import("../log.zig").debug("[CALLDATALOAD] offset={}, len={}, selector=0x{x:0>8}, full_word=0x{x:0>64}", .{ offset_usize, calldata.len, selector, word });
     }
     frame.stack.append_unsafe(word);
 }

@@ -630,7 +630,7 @@ pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, 
 
     var exec_err: ?ExecutionError.Error = null;
     @import("evm/interpret.zig").interpret(self, &frame) catch |err| {
-        if (err != ExecutionError.Error.STOP) {
+        if (err != ExecutionError.Error.STOP and err != ExecutionError.Error.RETURN) {
             exec_err = err;
         }
     };
