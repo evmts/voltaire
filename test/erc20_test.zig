@@ -83,6 +83,11 @@ test "erc20 transfer benchmark executes successfully" {
 
     // Deploy and call
     const contract_address = try deploy(&vm, allocator, caller, bytecode);
+    
+    // Debug: Check deployed code
+    const deployed_code = vm.state.get_code(contract_address);
+    std.log.debug("Deployed code size: {}", .{deployed_code.len});
+    
     const initial_gas: u64 = 100_000_000;
     std.log.debug("Calling ERC20 transfer with gas: {}, calldata len: {}", .{ initial_gas, calldata.len });
     const params = evm.CallParams{ .call = .{
@@ -93,6 +98,14 @@ test "erc20 transfer benchmark executes successfully" {
         .gas = initial_gas,
     } };
     const call_result = try vm.call(params);
+    
+    std.log.debug("Call result: success={}, gas_left={}, output_len={}", .{call_result.success, call_result.gas_left, if (call_result.output) |o| o.len else 0});
+    
+    // Debug: log the selector we're sending
+    if (calldata.len >= 4) {
+        const selector = std.mem.readInt(u32, calldata[0..4], .big);
+        std.log.debug("Sent selector: 0x{x:0>8}", .{selector});
+    }
 
     if (!call_result.success) {
         std.log.err("ERC20 transfer call failed, gas_left: {}", .{call_result.gas_left});
