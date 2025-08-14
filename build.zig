@@ -782,6 +782,89 @@ pub fn build(b: *std.Build) void {
     const run_analysis_test = b.addRunArtifact(analysis_test);
     const analysis_test_step = b.step("test-analysis", "Run Analysis comprehensive tests");
     analysis_test_step.dependOn(&run_analysis_test.step);
+    
+    // Analysis corner cases tests
+    const analysis_corner_test = b.addTest(.{
+        .name = "analysis-corner-cases-test",
+        .root_source_file = b.path("test/evm/analysis_corner_cases_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    analysis_corner_test.root_module.addImport("evm", evm_mod);
+    analysis_corner_test.root_module.addImport("primitives", primitives_mod);
+    
+    const run_analysis_corner_test = b.addRunArtifact(analysis_corner_test);
+    const analysis_corner_test_step = b.step("test-analysis-corner", "Run Analysis corner cases tests");
+    analysis_corner_test_step.dependOn(&run_analysis_corner_test.step);
+    
+    // Interpret comprehensive tests
+    const interpret_test = b.addTest(.{
+        .name = "interpret-comprehensive-test",
+        .root_source_file = b.path("test/evm/interpret_comprehensive_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    interpret_test.root_module.addImport("evm", evm_mod);
+    interpret_test.root_module.addImport("primitives", primitives_mod);
+    if (bn254_lib) |bn254| {
+        interpret_test.linkLibrary(bn254);
+        interpret_test.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    interpret_test.root_module.addImport("revm_wrapper", revm_mod);
+    
+    const run_interpret_test = b.addRunArtifact(interpret_test);
+    const interpret_test_step = b.step("test-interpret", "Run Interpret comprehensive tests");
+    interpret_test_step.dependOn(&run_interpret_test.step);
+    
+    // Interpret corner cases tests
+    const interpret_corner_test = b.addTest(.{
+        .name = "interpret-corner-cases-test",
+        .root_source_file = b.path("test/evm/interpret_corner_cases_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    interpret_corner_test.root_module.addImport("evm", evm_mod);
+    interpret_corner_test.root_module.addImport("primitives", primitives_mod);
+    
+    const run_interpret_corner_test = b.addRunArtifact(interpret_corner_test);
+    const interpret_corner_test_step = b.step("test-interpret-corner", "Run Interpret corner cases tests");
+    interpret_corner_test_step.dependOn(&run_interpret_corner_test.step);
+
+    // Control comprehensive tests
+    const control_test = b.addTest(.{
+        .name = "control-comprehensive-test",
+        .root_source_file = b.path("test/evm/control_comprehensive_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    control_test.root_module.addImport("evm", evm_mod);
+    control_test.root_module.addImport("primitives", primitives_mod);
+    if (bn254_lib) |bn254| {
+        control_test.linkLibrary(bn254);
+        control_test.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
+    const run_control_test = b.addRunArtifact(control_test);
+    const control_test_step = b.step("test-control", "Run Control comprehensive tests");
+    control_test_step.dependOn(&run_control_test.step);
+
+    // System comprehensive tests
+    const system_test = b.addTest(.{
+        .name = "system-comprehensive-test",
+        .root_source_file = b.path("test/evm/system_comprehensive_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    system_test.root_module.addImport("evm", evm_mod);
+    system_test.root_module.addImport("primitives", primitives_mod);
+    if (bn254_lib) |bn254| {
+        system_test.linkLibrary(bn254);
+        system_test.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
+    const run_system_test = b.addRunArtifact(system_test);
+    const system_test_step = b.step("test-system", "Run System comprehensive tests");
+    system_test_step.dependOn(&run_system_test.step);
 
     // Add new EVM tests
     const newevm_test = b.addTest(.{
