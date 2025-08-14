@@ -64,7 +64,7 @@ test "constructor should return runtime code" {
     // Get deployed code
     const deployed_code = vm.state.get_code(create_result.address);
 
-    // This should pass but currently fails
+    // Assert runtime code was written to state
     try testing.expectEqual(@as(usize, 10), deployed_code.len);
 
     // Verify the deployed code matches expected runtime code

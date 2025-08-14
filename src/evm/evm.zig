@@ -456,6 +456,7 @@ pub fn get_original_storage(self: *Evm, address: primitives.Address.Address, slo
 /// Set the output buffer for the current frame (Host interface)
 pub fn set_output(self: *Evm, output: []const u8) !void {
     self.current_output = output;
+    @import("log.zig").debug("[Evm.set_output] output_len={}", .{output.len});
 }
 
 /// Get the output buffer for the current frame (Host interface)

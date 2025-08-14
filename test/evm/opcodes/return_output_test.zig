@@ -17,9 +17,6 @@ test "RETURN sets output correctly" {
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
-    var vm = try builder.build();
-    defer vm.deinit();
-
     // Bytecode that stores 0xDEADBEEF and returns it
     const bytecode = &[_]u8{
         0x63, 0xde, 0xad, 0xbe, 0xef, // PUSH4 0xDEADBEEF
@@ -42,7 +39,7 @@ test "RETURN sets output correctly" {
     );
     defer contract.deinit(allocator, null);
 
-    const result = try vm.interpret(&contract, &[_]u8{}, false);
+    const result = try evm.interpret(&contract, &[_]u8{}, false);
     defer if (result.output) |output| allocator.free(output);
 
     try testing.expect(result.status == .Success);
@@ -57,6 +54,50 @@ test "RETURN sets output correctly" {
     }
 }
 
+test "Top-level call returns 32-byte value via RETURN" {
+    const allocator = std.testing.allocator;
+    const Prim = @import("primitives");
+    const ReturnAddr = Prim.Address.Address;
+
+    var memory_db = Evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    // runtime: returns 32-byte 0x01
+    const runtime = [_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x1f, // PUSH1 31
+        0x52, // MSTORE
+        0x60, 0x00, // PUSH1 0 (ret offset)
+        0x60, 0x20, // PUSH1 32 (ret size)
+        0xf3, // RETURN
+    };
+
+    const caller: ReturnAddr = [_]u8{0x01} ** 20;
+    const callee: ReturnAddr = [_]u8{0x02} ** 20;
+    try memory_db.set_code(callee, &runtime);
+    try vm.state.set_balance(caller, 1_000_000_000_000_000_000);
+
+    const params = Evm.CallParams{ .call = .{
+        .to = callee,
+        .caller = caller,
+        .input = &.{},
+        .value = 0,
+        .gas = 200_000,
+    } };
+
+    const res = try vm.call(params);
+    try std.testing.expect(res.success);
+    try std.testing.expect(res.output != null);
+    const out = res.output.?;
+    defer allocator.free(out);
+    try std.testing.expectEqual(@as(usize, 32), out.len);
+    try std.testing.expectEqual(@as(u8, 1), out[31]);
+}
+
 test "constructor returns runtime code" {
     const allocator = testing.allocator;
 
@@ -65,9 +106,6 @@ test "constructor returns runtime code" {
 
     const db_interface = memory_db.to_database_interface();
     var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-
-    var vm = try builder.build();
-    defer vm.deinit();
 
     // Simple constructor that returns "HELLO"
     const init_code = &[_]u8{
@@ -81,7 +119,7 @@ test "constructor returns runtime code" {
     };
     const deployer: Address.Address = [_]u8{0x12} ** 20;
 
-    const create_result = try vm.create_contract(deployer, 0, init_code, 1000000);
+    const create_result = try evm.create_contract(deployer, 0, init_code, 1000000);
     defer if (create_result.output) |output| allocator.free(output);
 
     try testing.expect(create_result.success);

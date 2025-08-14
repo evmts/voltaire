@@ -72,15 +72,18 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     var loop_iterations: usize = 0;
 
     dispatch: switch (instruction.arg) {
+        // Most instructions
         .none => {
             @branchHint(.likely);
-            pre_step(self, frame, instruction, &loop_iterations);
-            instruction = try exec_and_advance(frame, instruction);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
+            instruction = try exec_and_advance(frame, inst);
             continue :dispatch instruction.arg;
         },
         // Analysis will batch calculate stack requirements and gas requirements for series of bytecode
         .block_info => |block| {
-            pre_step(self, frame, instruction, &loop_iterations);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
             const current_stack_size: u16 = @intCast(frame.stack.size());
             if (frame.gas_remaining < block.gas_cost) {
                 @branchHint(.unlikely);
@@ -96,11 +99,12 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 @branchHint(.cold);
                 return ExecutionError.Error.StackOverflow;
             }
-            instruction = try exec_and_advance(frame, instruction);
+            instruction = try exec_and_advance(frame, inst);
             continue :dispatch instruction.arg;
         },
         .dynamic_gas => |dyn_gas| {
-            pre_step(self, frame, instruction, &loop_iterations);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
             if (frame.gas_remaining < dyn_gas.static_cost) {
                 @branchHint(.cold);
                 frame.gas_remaining = 0;
@@ -122,11 +126,12 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 }
                 frame.gas_remaining -= additional_gas;
             }
-            instruction = try exec_and_advance(frame, instruction);
+            instruction = try exec_and_advance(frame, inst);
             continue :dispatch instruction.arg;
         },
         .jump_pc => |pc| {
-            pre_step(self, frame, instruction, &loop_iterations);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
             // Fused PUSH+JUMP (PUSH removed). No pops required.
             if (!frame.valid_jumpdest(pc)) return ExecutionError.Error.InvalidJump;
             const dest_usize: usize = @intCast(pc);
@@ -136,47 +141,84 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             continue :dispatch instruction.arg;
         },
         .conditional_jump_pc => |pc| {
-            pre_step(self, frame, instruction, &loop_iterations);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
             // Fused PUSH+JUMPI (PUSH removed). Pop only condition.
             const condition = frame.stack.pop_unsafe();
-            Log.warn("[INTERPRET] JUMPI(fused) cond={}, dest_pc={}", .{ condition, pc });
             if (condition != 0) {
                 if (!frame.valid_jumpdest(pc)) return ExecutionError.Error.InvalidJump;
                 const dest_usize: usize = @intCast(pc);
                 const idx = frame.analysis.pc_to_block_start[dest_usize];
                 if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) return ExecutionError.Error.InvalidJump;
                 instruction = &frame.analysis.instructions[idx];
+<<<<<<< HEAD
                 continue :dispatch instruction.arg;
             }
-            instruction = try exec_and_advance(frame, instruction);
+            instruction = try exec_and_advance(frame, inst);
             continue :dispatch instruction.arg;
         },
         .conditional_jump => |true_target| {
-            pre_step(self, frame, instruction, &loop_iterations);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
             const condition = frame.stack.pop_unsafe();
             if (condition != 0) {
+=======
+                continue;
+            },
+            .conditional_jump_pc => |pc| {
+                // Fused PUSH+JUMPI (PUSH removed). Pop only condition. Log for debugging dispatchers.
+                const condition = frame.stack.pop_unsafe();
+                Log.warn("[INTERPRET] JUMPI(fused) cond={}, dest_pc={}", .{ condition, pc });
+                if (condition != 0) {
+                    if (!frame.valid_jumpdest(pc)) return ExecutionError.Error.InvalidJump;
+                    const dest_usize: usize = @intCast(pc);
+                    const idx = frame.analysis.pc_to_block_start[dest_usize];
+                    if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) return ExecutionError.Error.InvalidJump;
+                    instruction = &frame.analysis.instructions[idx];
+                    continue;
+                }
+            },
+            .conditional_jump => |true_target| {
+                const condition = frame.stack.pop_unsafe();
+                if (condition != 0) {
+                    @branchHint(.unlikely);
+                    instruction = true_target;
+                    continue;
+                }
+            },
+            .jump => {
+                // Analysis resolved the target by wiring next_instruction to the block start.
+                // Pop destination to maintain correct stack behavior (already validated by block checks).
+                _ = frame.stack.pop_unsafe();
+                instruction = next_inst;
+                continue;
+            },
+            // This is a jump that is not known until compile time because
+            // it is pushed to stack dynamically
+            .jump_unresolved => {
+>>>>>>> 15160692 (🐛 fix: Correct JUMPI stack order and add debugging for dispatcher patterns)
                 @branchHint(.unlikely);
                 instruction = true_target;
                 continue :dispatch instruction.arg;
             }
-            instruction = try exec_and_advance(frame, instruction);
+            instruction = try exec_and_advance(frame, inst);
             continue :dispatch instruction.arg;
         },
-        // Many jumps have a known jump destination and we handle that here.
         .jump => {
-            pre_step(self, frame, instruction, &loop_iterations);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
             // Analysis resolved the target by wiring next_instruction to the block start.
             // Pop destination to maintain correct stack behavior (already validated by block checks).
-            // _ = frame.stack.pop_unsafe(); TODO I removed this because I don't think it's needed. If it's needed that's a bug and we should update analysis.zig to not need it.
-            const next_inst = instruction.next_instruction;
-            instruction = next_inst;
+            _ = frame.stack.pop_unsafe();
+            instruction = inst.next_instruction;
             continue :dispatch instruction.arg;
         },
         // This is a jump that is not known until compile time because
         // it is pushed to stack dynamically
         .jump_unresolved => {
             @branchHint(.unlikely);
-            pre_step(self, frame, instruction, &loop_iterations);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
             // Compute target from popped PC and validate jumpdest on the fly
             const dest = frame.stack.pop_unsafe();
             if (!frame.valid_jumpdest(dest)) {
@@ -192,14 +234,12 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             instruction = &frame.analysis.instructions[idx];
             continue :dispatch instruction.arg;
         },
-        // Some conditional jumps are not known until runtime because the value is a dynamic value
         .conditional_jump_unresolved => {
-            pre_step(self, frame, instruction, &loop_iterations);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
             // EVM stack order: [dest, cond] with cond on top. Pop condition first, then destination.
             const condition = frame.stack.pop_unsafe();
             const dest = frame.stack.pop_unsafe();
-            const condition = frame.stack.pop_unsafe();
-            Log.warn("[INTERPRET] JUMPI(cond,dest) cond={}, dest={} ", .{ condition, dest });
             if (condition != 0) {
                 if (!frame.valid_jumpdest(dest)) {
                     return ExecutionError.Error.InvalidJump;
@@ -210,23 +250,22 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                     return ExecutionError.Error.InvalidJump;
                 }
                 instruction = &frame.analysis.instructions[idx];
+<<<<<<< HEAD
                 continue :dispatch instruction.arg;
             }
-            instruction = try exec_and_advance(frame, instruction);
+            instruction = try exec_and_advance(frame, inst);
             continue :dispatch instruction.arg;
         },
-        // A common pattern is to push a constant value to the stack and then execute
-        // An instruction. So we combine the push and the instruction into a single instruction.
         .word => |value| {
-            pre_step(self, frame, instruction, &loop_iterations);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
             frame.stack.append_unsafe(value);
-            instruction = try exec_and_advance(frame, instruction);
+            instruction = try exec_and_advance(frame, inst);
             continue :dispatch instruction.arg;
         },
-        // Generically Kekkak just runs as a .none instruction but when possible
-        // we can run it as a .keccak instruction to avoid the extra stack pop/push
         .keccak => |params| {
-            pre_step(self, frame, instruction, &loop_iterations);
+            const inst = instruction;
+            pre_step(self, frame, inst, &loop_iterations);
             if (frame.gas_remaining < params.gas_cost) {
                 @branchHint(.cold);
                 frame.gas_remaining = 0;
@@ -246,9 +285,65 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             std.crypto.hash.sha3.Keccak256.hash(data, &hash, .{});
             const result = std.mem.readInt(u256, &hash, .big);
             frame.stack.append_unsafe(result);
-            instruction = try exec_and_advance(frame, instruction);
+            instruction = try exec_and_advance(frame, inst);
             continue :dispatch instruction.arg;
         },
+=======
+                continue;
+            },
+            .conditional_jump_unresolved => {
+                // EVM stack order before JUMPI (typical dispatcher): [..., cond, dest] with dest on top.
+                // Pop destination first (top), then condition (next).
+                const dest = frame.stack.pop_unsafe();
+                const condition = frame.stack.pop_unsafe();
+                Log.warn("[INTERPRET] JUMPI(cond,dest) cond={}, dest={} ", .{ condition, dest });
+                if (condition != 0) {
+                    if (!frame.valid_jumpdest(dest)) {
+                        return ExecutionError.Error.InvalidJump;
+                    }
+                    const dest_usize: usize = @intCast(dest);
+                    const idx = frame.analysis.pc_to_block_start[dest_usize];
+                    if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) {
+                        return ExecutionError.Error.InvalidJump;
+                    }
+                    instruction = &frame.analysis.instructions[idx];
+                    continue;
+                }
+            },
+            .word => |value| {
+                frame.stack.append_unsafe(value);
+            },
+            .keccak => |params| {
+                if (frame.gas_remaining < params.gas_cost) {
+                    @branchHint(.cold);
+                    frame.gas_remaining = 0;
+                    return ExecutionError.Error.OutOfGas;
+                }
+                frame.gas_remaining -= params.gas_cost;
+                const size = if (params.size) |imm| @as(u256, @intCast(imm)) else frame.stack.pop_unsafe();
+                const offset = frame.stack.pop_unsafe();
+
+                if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
+                    @branchHint(.unlikely);
+                    return ExecutionError.Error.OutOfOffset;
+                }
+
+                const offset_usize = @as(usize, @intCast(offset));
+                const size_usize = @as(usize, @intCast(size));
+
+                const data = try frame.memory.get_slice(offset_usize, size_usize);
+
+                var hash: [32]u8 = undefined;
+                std.crypto.hash.sha3.Keccak256.hash(data, &hash, .{});
+
+                const result = std.mem.readInt(u256, &hash, .big);
+                frame.stack.append_unsafe(result);
+            },
+        }
+
+        try op_fn(frame);
+        instruction = next_inst;
+>>>>>>> 15160692 (🐛 fix: Correct JUMPI stack order and add debugging for dispatcher patterns)
     }
 }
 
@@ -769,6 +864,8 @@ test "interpret: dispatcher using AND 0xffffffff extracts selector and returns 3
     const out = host.get_output();
     try std.testing.expect(out.len == 32);
     try std.testing.expect(out[31] == 1);
+<<<<<<< HEAD
+=======
 }
 
 test "interpret: ERC20 bench dispatcher returns 32 bytes for 0x30627b7c selector under direct interpret" {
@@ -842,4 +939,5 @@ test "interpret: ERC20 bench dispatcher returns 32 bytes for 0x30627b7c selector
     const out = host.get_output();
     try std.testing.expect(out.len >= 32);
     try std.testing.expect(out[out.len - 1] == 1);
+>>>>>>> 15160692 (🐛 fix: Correct JUMPI stack order and add debugging for dispatcher patterns)
 }

@@ -1,4 +1,58 @@
 const std = @import("std");
+const evm = @import("evm");
+const primitives = @import("primitives");
+
+// WORKING: This test documents a dynamic JUMPI to a valid JUMPDEST.
+// It should pass once jumpdest validation off-by-one is fixed in analysis.
+test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
+    const allocator = std.testing.allocator;
+
+    var memory_db = evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    // Bytecode:
+    // 0x00 PUSH1 0x09 (dest)
+    // 0x02 PUSH1 0x01 (cond)
+    // 0x04 JUMPI
+    // 0x05 STOP (should be skipped)
+    // 0x06 JUMPDEST
+    // 0x07 PUSH1 0x01; PUSH1 0x1f; MSTORE; PUSH1 0x00; PUSH1 0x20; RETURN
+    const code = [_]u8{
+        0x60, 0x06,
+        0x60, 0x01,
+        0x57, 0x00,
+        0x5b, 0x60,
+        0x01, 0x60,
+        0x1f, 0x52,
+        0x60, 0x00,
+        0x60, 0x20,
+        0xf3,
+    };
+
+    const caller = primitives.Address.from_u256(0x1);
+    const callee = primitives.Address.from_u256(0x2);
+    try memory_db.set_code(callee, &code);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+
+    const params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = callee,
+        .value = 0,
+        .input = &.{},
+        .gas = 100000,
+    } };
+    const res = try vm.call(params);
+    try std.testing.expect(res.success);
+    try std.testing.expect(res.output != null);
+    const out = res.output.?;
+    defer allocator.free(out);
+    try std.testing.expectEqual(@as(usize, 32), out.len);
+    try std.testing.expectEqual(@as(u8, 1), out[31]);
+}
 const testing = std.testing;
 const Evm = @import("evm");
 const Address = @import("Address").Address;
@@ -15,12 +69,12 @@ test "JUMPI should take jump when condition is non-zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
+    var vm2 = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm2.deinit();
 
     const caller = Address.from_u256(0x1000000000000000000000000000000000000001);
     const caller_balance = std.math.maxInt(u256);
-    try evm.state.set_balance(caller, caller_balance);
+    try vm2.state.set_balance(caller, caller_balance);
 
     // Create bytecode that reproduces the exact bug:
     // The ERC20 constructor was failing because JUMPI at pc=284 wasn't jumping to pc=292
@@ -54,7 +108,7 @@ test "JUMPI should take jump when condition is non-zero" {
             .gas = 1000000,
         },
     };
-    const result = try evm.call(call_params);
+    const result = try vm2.call(call_params);
     defer if (result.output) |output| allocator.free(output);
 
     // JUMPI is now working correctly after stack order fix
@@ -74,12 +128,12 @@ test "JUMPI should NOT jump when condition is zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
-    defer evm.deinit();
+    var vm3 = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm3.deinit();
 
     const caller = Address.from_u256(0x1000000000000000000000000000000000000001);
     const caller_balance = std.math.maxInt(u256);
-    try evm.state.set_balance(caller, caller_balance);
+    try vm3.state.set_balance(caller, caller_balance);
 
     // Same bytecode but with condition = 0
     const bytecode = &[_]u8{
@@ -103,7 +157,7 @@ test "JUMPI should NOT jump when condition is zero" {
             .gas = 1000000,
         },
     };
-    const result = try evm.call(call_params);
+    const result = try vm3.call(call_params);
     defer if (result.output) |output| allocator.free(output);
 
     // When condition is zero, JUMPI should NOT jump
