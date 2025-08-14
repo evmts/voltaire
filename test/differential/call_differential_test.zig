@@ -16,6 +16,7 @@ fn runBoth(bytecode: []const u8, target: Address.Address, gas: u64) !struct { ok
     try revm_vm.setBalance(caller, 10_000_000);
     try revm_vm.setCode(target, bytecode);
     var r = try revm_vm.call(caller, target, 0, &[_]u8{}, gas);
+    const r_out_copy = try allocator.dupe(u8, r.output);
     defer r.deinit();
 
     // Zig
@@ -27,24 +28,22 @@ fn runBoth(bytecode: []const u8, target: Address.Address, gas: u64) !struct { ok
     try vm.state.set_code(target, bytecode);
     const params = evm.CallParams{ .call = .{ .caller = caller, .to = target, .value = 0, .input = &[_]u8{}, .gas = gas } };
     const z = try vm.call(params);
-    return .{ .ok1 = r.success, .out1 = r.output, .ok2 = z.success, .out2 = z.output };
+    return .{ .ok1 = r.success, .out1 = r_out_copy, .ok2 = z.success, .out2 = z.output };
 }
 
 test "CALL pop order: ret/args/gas,to,value wiring matches REVM" {
     const allocator = testing.allocator;
-    // Contract returns sum of the three values we pass via CALL stack mapping (encoded into return)
-    // We encode: retSize=32, retOff=0, argsSize=0, argsOff=0, value=7, to=self, gas=100000
-    // Callee simply returns 0x01 to validate success; mismatch in mapping tends to revert or return wrong size
-    const bytecode = [_]u8{
+    // Minimal callee: returns 32 bytes with value=1 to signal success
+    const callee = [_]u8{
         0x60, 0x01, // PUSH1 1
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xf3,       // RETURN
+        0xf3, // RETURN
     };
     const target = Address.from_u256(0x2222222222222222222222222222222222222222);
-    const res = try runBoth(&bytecode, target, 1000000);
+    const res = try runBoth(&callee, target, 1000000);
     try testing.expectEqual(res.ok1, res.ok2);
     if (res.ok1 and res.ok2) {
         try testing.expect(res.out2 != null);
@@ -55,7 +54,6 @@ test "CALL pop order: ret/args/gas,to,value wiring matches REVM" {
         try testing.expectEqual(v1, v2);
         try testing.expectEqual(@as(u256, 1), v1);
     }
-    // Note: out2 is const; do not free here.
+    allocator.free(res.out1);
+    if (res.out2) |o| allocator.free(o);
 }
-
-

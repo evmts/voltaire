@@ -15,6 +15,7 @@ fn runBoth(bytecode: []const u8, gas: u64) !struct { ok1: bool, out1: []const u8
     try revm_vm.setBalance(caller, 10_000_000);
     try revm_vm.setCode(contract, bytecode);
     var r = try revm_vm.call(caller, contract, 0, &[_]u8{}, gas);
+    const r_out_copy = try allocator.dupe(u8, r.output);
     defer r.deinit();
     // Zig
     const MemoryDatabase = evm.MemoryDatabase;
@@ -25,7 +26,7 @@ fn runBoth(bytecode: []const u8, gas: u64) !struct { ok1: bool, out1: []const u8
     try vm.state.set_code(contract, bytecode);
     const params = evm.CallParams{ .call = .{ .caller = caller, .to = contract, .value = 0, .input = &[_]u8{}, .gas = gas } };
     const z = try vm.call(params);
-    return .{ .ok1 = r.success, .out1 = r.output, .ok2 = z.success, .out2 = z.output };
+    return .{ .ok1 = r.success, .out1 = r_out_copy, .ok2 = z.success, .out2 = z.output };
 }
 
 // Repro 1: conditional_jump_unresolved pop order (condition, dest) => take branch
@@ -33,16 +34,16 @@ test "jumps: JUMPI dynamic pop order matches REVM (condition first)" {
     const allocator = testing.allocator;
     const bytecode = [_]u8{
         0x60, 0x01, // PUSH1 1 (condition)
-        0x60, 0x07, // PUSH1 7 (dest pc)
-        0x57,       // JUMPI -> should jump to pc=7
-        0x00,       // STOP (not executed)
-        0x5b,       // JUMPDEST at pc=7
+        0x60, 0x06, // PUSH1 6 (dest pc)
+        0x57, // JUMPI -> should jump to pc=4
+        0x00, // STOP (not executed)
+        0x5b, // JUMPDEST at pc=6
         0x60, 0x2a, // PUSH1 42
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xf3,       // RETURN
+        0xf3, // RETURN
     };
     const res = try runBoth(&bytecode, 1_000_000);
     try testing.expectEqual(res.ok1, res.ok2);
@@ -55,7 +56,8 @@ test "jumps: JUMPI dynamic pop order matches REVM (condition first)" {
         try testing.expectEqual(v1, v2);
         try testing.expectEqual(@as(u256, 42), v1);
     }
-    // Note: out2 is const; do not free here.
+    allocator.free(res.out1);
+    if (res.out2) |o| allocator.free(o);
 }
 
 // Repro 2: resolved conditional jump should also consume destination
@@ -63,16 +65,16 @@ test "jumps: resolved conditional jump consumes destination like REVM" {
     const allocator = testing.allocator;
     const bytecode = [_]u8{
         0x60, 0x01, // PUSH1 1 (condition)
-        0x60, 0x0a, // PUSH1 10 (dest pc)
-        0x57,       // JUMPI -> resolved via preceding PUSH
+        0x60, 0x07, // PUSH1 7 (dest pc)
+        0x57, // JUMPI -> resolved via preceding PUSH
         0x60, 0x00, // PUSH1 0 (padding fallthrough)
-        0x5b,       // JUMPDEST at pc=10
+        0x5b, // JUMPDEST at pc=7
         0x60, 0x2a, // PUSH1 42
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xf3,       // RETURN
+        0xf3, // RETURN
     };
     const res = try runBoth(&bytecode, 1_000_000);
     try testing.expectEqual(res.ok1, res.ok2);
@@ -85,7 +87,6 @@ test "jumps: resolved conditional jump consumes destination like REVM" {
         try testing.expectEqual(v1, v2);
         try testing.expectEqual(@as(u256, 42), v1);
     }
+    allocator.free(res.out1);
     if (res.out2) |o| allocator.free(o);
 }
-
-

@@ -18,6 +18,7 @@ fn runBoth(bytecode: []const u8, gas: u64) !struct { revm_ok: bool, revm_out: []
     try revm_vm.setBalance(deployer, 10_000_000);
     try revm_vm.setCode(contract, bytecode);
     var revm_result = try revm_vm.call(deployer, contract, 0, &[_]u8{}, gas);
+    const revm_out_copy = try allocator.dupe(u8, revm_result.output);
     defer revm_result.deinit();
 
     // Guillotine side
@@ -37,22 +38,22 @@ fn runBoth(bytecode: []const u8, gas: u64) !struct { revm_ok: bool, revm_out: []
     } };
     const zig_result = try vm_instance.call(params);
 
-    return .{ .revm_ok = revm_result.success, .revm_out = revm_result.output, .zig_ok = zig_result.success, .zig_out = zig_result.output };
+    return .{ .revm_ok = revm_result.success, .revm_out = revm_out_copy, .zig_ok = zig_result.success, .zig_out = zig_result.output };
 }
 
 test "fusion: PUSH+JUMP immediate fused target matches REVM" {
     const allocator = testing.allocator;
     const bytecode = [_]u8{
-        0x60, 0x05, // PUSH1 0x05
-        0x56,       // JUMP
-        0x00,       // STOP (not executed)
-        0x5b,       // JUMPDEST at pc=4
+        0x60, 0x04, // PUSH1 0x04 (pc of JUMPDEST below)
+        0x56, // JUMP
+        0x00, // STOP (not executed)
+        0x5b, // JUMPDEST at pc=4
         0x60, 0x01, // PUSH1 1
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xf3,       // RETURN
+        0xf3, // RETURN
     };
     const res = try runBoth(&bytecode, 1_000_000);
     try testing.expectEqual(res.revm_ok, res.zig_ok);
@@ -65,7 +66,8 @@ test "fusion: PUSH+JUMP immediate fused target matches REVM" {
         try testing.expectEqual(revm_val, zig_val);
         try testing.expectEqual(@as(u256, 1), revm_val);
     }
-    // Note: zig_out is const; do not attempt to free here. The test harness handles cleanup.
+    allocator.free(res.revm_out);
+    if (res.zig_out) |o| allocator.free(o);
 }
 
 test "fusion: arithmetic fusion PUSH+PUSH+ADD matches REVM" {
@@ -73,12 +75,12 @@ test "fusion: arithmetic fusion PUSH+PUSH+ADD matches REVM" {
     const bytecode = [_]u8{
         0x60, 0x02, // PUSH1 2
         0x60, 0x03, // PUSH1 3
-        0x01,       // ADD (may be precomputed/fused)
+        0x01, // ADD (may be precomputed/fused)
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE (store result at [0..32])
+        0x52, // MSTORE (store result at [0..32])
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xf3,       // RETURN
+        0xf3, // RETURN
     };
     const res = try runBoth(&bytecode, 1_000_000);
     try testing.expectEqual(res.revm_ok, res.zig_ok);
@@ -91,7 +93,6 @@ test "fusion: arithmetic fusion PUSH+PUSH+ADD matches REVM" {
         try testing.expectEqual(revm_val, zig_val);
         try testing.expectEqual(@as(u256, 5), revm_val);
     }
-    // Note: zig_out is const; do not attempt to free here. The test harness handles cleanup.
+    allocator.free(res.revm_out);
+    if (res.zig_out) |o| allocator.free(o);
 }
-
-
