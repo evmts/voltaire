@@ -16,10 +16,13 @@ const U256 = @import("primitives").Uint(256, 4);
 const SAFE = builtin.mode == .Debug or builtin.mode == .ReleaseSafe;
 const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
 
-/// Convert bytecode slice to u256, handling variable length (1-32 bytes)
+/// Convert bytecode slice to u256, handling variable length (0-32 bytes)
 inline fn bytesToU256(bytes: []const u8) u256 {
-    std.debug.assert(bytes.len > 0 and bytes.len <= 32);
+    std.debug.assert(bytes.len <= 32);
     var result: u256 = 0;
+    
+    // Handle empty slice as 0
+    if (bytes.len == 0) return 0;
     
     // Read bytes in big-endian order
     for (bytes) |byte| {
@@ -83,7 +86,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     dispatch: switch (instruction.tag) {
         .exec => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const exec_inst = frame.analysis.exec_instructions[instruction.id];
+            const exec_inst = frame.analysis.getInstructionParams(.exec, instruction.id);
             try exec_inst.exec_fn(frame);
             instruction = exec_inst.next_inst;
             continue :dispatch instruction.tag;
@@ -91,14 +94,14 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         .noop => {
             @branchHint(.likely);
             pre_step(self, frame, instruction, &loop_iterations);
-            const noop_inst = frame.analysis.noop_instructions[instruction.id];
+            const noop_inst = frame.analysis.getInstructionParams(.noop, instruction.id);
             instruction = noop_inst.next_inst;
             continue :dispatch instruction.tag;
         },
         // Analysis will batch calculate stack requirements and gas requirements for series of bytecode
         .block_info => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const block_inst = frame.analysis.block_instructions[instruction.id];
+            const block_inst = frame.analysis.getInstructionParams(.block_info, instruction.id);
             const current_stack_size: u16 = @intCast(frame.stack.size());
             if (frame.gas_remaining < block_inst.gas_cost) {
                 @branchHint(.unlikely);
@@ -119,7 +122,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         },
         .dynamic_gas => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const dyn_inst = frame.analysis.dynamic_gas_instructions[instruction.id];
+            const dyn_inst = frame.analysis.getInstructionParams(.dynamic_gas, instruction.id);
             const additional_gas = dyn_inst.gas_fn(frame) catch |err| {
                 if (err == ExecutionError.Error.OutOfOffset) {
                     return err;
@@ -140,7 +143,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         // no more pc-based fused conditional jumps; analysis always resolves or marks invalid
         .conditional_jump_invalid => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const cji_inst = frame.analysis.conditional_jump_invalid_instructions[instruction.id];
+            const cji_inst = frame.analysis.getInstructionParams(.conditional_jump_invalid, instruction.id);
             const condition = frame.stack.pop_unsafe();
             if (condition != 0) {
                 return ExecutionError.Error.InvalidJump;
@@ -154,7 +157,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         },
         .conditional_jump_pc => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const cjp_inst = frame.analysis.conditional_jump_pc_instructions[instruction.id];
+            const cjp_inst = frame.analysis.getInstructionParams(.conditional_jump_pc, instruction.id);
             const condition = frame.stack.pop_unsafe();
             if (condition != 0) {
                 instruction = cjp_inst.jump_target;
@@ -166,7 +169,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         // Many jumps have a known jump destination and we handle that here.
         .jump_pc => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const jump_pc_inst = frame.analysis.jump_pc_instructions[instruction.id];
+            const jump_pc_inst = frame.analysis.getInstructionParams(.jump_pc, instruction.id);
             instruction = jump_pc_inst.jump_target;
             continue :dispatch instruction.tag;
         },
@@ -197,7 +200,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         // Some conditional jumps are not known until runtime because the value is a dynamic value
         .conditional_jump_unresolved => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const cju_inst = frame.analysis.conditional_jump_unresolved_instructions[instruction.id];
+            const cju_inst = frame.analysis.getInstructionParams(.conditional_jump_unresolved, instruction.id);
             // Check stack has at least 2 elements for condition and destination
             if (frame.stack.size() < 2) {
                 return ExecutionError.Error.StackUnderflow;
@@ -225,7 +228,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         // An instruction. So we combine the push and the instruction into a single instruction.
         .word => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const word_inst = frame.analysis.word_instructions[instruction.id];
+            const word_inst = frame.analysis.getInstructionParams(.word, instruction.id);
             // Lazily convert bytecode slice to u256
             const word_value = bytesToU256(word_inst.word_bytes);
             frame.stack.append_unsafe(word_value);
@@ -234,7 +237,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         },
         .pc => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const pc_inst = frame.analysis.pc_instructions[instruction.id];
+            const pc_inst = frame.analysis.getInstructionParams(.pc, instruction.id);
             frame.stack.append_unsafe(@as(u256, pc_inst.pc_value));
             instruction = pc_inst.next_inst;
             continue :dispatch instruction.tag;
