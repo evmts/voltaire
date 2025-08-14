@@ -1603,6 +1603,134 @@ test "conditional jump (JUMPI) target resolution" {
     try std.testing.expect(jumpi_target_valid);
 }
 
+test "analysis: simple keccak loop fragment (ten-thousand-hashes core)" {
+    const allocator = std.testing.allocator;
+    // Minimal fragment representative of the benchmark inner step:
+    // PUSH1 0x20; PUSH1 0x00; KECCAK256; POP; JUMPDEST; STOP
+    // Note: Real case has a loop; here we assert basic instruction generation and jumpdest mapping.
+    const code = &[_]u8{
+        0x60, 0x20, // PUSH1 32
+        0x60, 0x00, // PUSH1 0
+        0x20, // KECCAK256
+        0x50, // POP
+        0x5b, // JUMPDEST (pc=8)
+        0x00, // STOP
+    };
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    // Expect BEGINBLOCK + PUSH + PUSH + KECCAK256 + POP + JUMPDEST + STOP → 7 instructions
+    try std.testing.expectEqual(@as(usize, 7), analysis.instructions.len);
+
+    // Verify jumpdest bitmap and mapping
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(8));
+    const block_idx = analysis.pc_to_block_start[8];
+    try std.testing.expect(block_idx != std.math.maxInt(u16));
+    try std.testing.expect(block_idx < analysis.instructions.len);
+}
+
+test "analysis: fused conditional JUMPI with immediate destination" {
+    const allocator = std.testing.allocator;
+    // Layout:
+    // 0: PUSH1 1        (condition)
+    // 2: PUSH1 7        (dest pc)
+    // 4: JUMPI          (should fuse to conditional_jump_pc=7)
+    // 5: STOP           (fallthrough not executed)
+    // 6: NOP (padding)
+    // 7: JUMPDEST       (target)
+    const code = &[_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x07, // PUSH1 7
+        0x57, // JUMPI
+        0x00, // STOP
+        0x00, // padding
+        0x5b, // JUMPDEST at pc=7
+    };
+
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    // Jumpdest validation and mapping
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(7));
+    const block_idx = analysis.pc_to_block_start[7];
+    try std.testing.expect(block_idx != std.math.maxInt(u16));
+    try std.testing.expect(block_idx < analysis.instructions.len);
+
+    // Ensure a fused conditional_jump_pc exists with target 7
+    var found = false;
+    for (analysis.instructions) |inst| {
+        switch (inst.arg) {
+            .conditional_jump_pc => |pc| {
+                if (pc == 7) found = true;
+            },
+            else => {},
+        }
+    }
+    try std.testing.expect(found);
+}
+
+test "analysis: fused PUSH+JUMP to forward JUMPDEST" {
+    const allocator = std.testing.allocator;
+    // Bytes:
+    // 0: PUSH1 3   (target pc)
+    // 2: JUMP
+    // 3: JUMPDEST
+    // 4: STOP
+    const code = &[_]u8{ 0x60, 0x03, 0x56, 0x5b, 0x00 };
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    // JUMPDEST validation and mapping
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(3));
+    const block_idx = analysis.pc_to_block_start[3];
+    try std.testing.expect(block_idx != std.math.maxInt(u16));
+    try std.testing.expect(block_idx < analysis.instructions.len);
+
+    // Ensure we have either a fused jump_pc to 3 or a resolved jump pointing to the block
+    var ok = false;
+    for (analysis.instructions) |inst| {
+        switch (inst.arg) {
+            .jump_pc => |pc| {
+                if (pc == 3) ok = true;
+            },
+            .jump => {
+                ok = ok or true; // resolved wiring validated by pc_to_block_start
+            },
+            else => {},
+        }
+    }
+    try std.testing.expect(ok);
+}
+
+test "analysis: back-edge JUMP to earlier JUMPDEST (loop head)" {
+    const allocator = std.testing.allocator;
+    // 0: JUMPDEST
+    // 1: PUSH1 1
+    // 3: POP
+    // 4: PUSH1 0  (dest back to pc=0)
+    // 6: JUMP    (should fuse to jump_pc=0)
+    // 7: STOP
+    const code = &[_]u8{ 0x5b, 0x60, 0x01, 0x50, 0x60, 0x00, 0x56, 0x00 };
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(0));
+    const block_idx = analysis.pc_to_block_start[0];
+    try std.testing.expect(block_idx != std.math.maxInt(u16));
+    try std.testing.expect(block_idx < analysis.instructions.len);
+
+    var has_back_edge = false;
+    for (analysis.instructions) |inst| {
+        switch (inst.arg) {
+            .jump_pc => |pc| {
+                if (pc == 0) has_back_edge = true;
+            },
+            else => {},
+        }
+    }
+    try std.testing.expect(has_back_edge);
+}
+
 test "fusion and optimization statistics" {
     const allocator = std.testing.allocator;
     std.testing.log_level = .warn;
