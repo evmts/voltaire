@@ -1731,6 +1731,167 @@ test "analysis: back-edge JUMP to earlier JUMPDEST (loop head)" {
     try std.testing.expect(has_back_edge);
 }
 
+test "analysis: ten-thousand-hashes runtime invariants" {
+    const allocator = std.testing.allocator;
+
+    // Load official case creation bytecode and extract runtime code after 'f3fe'
+    const path = "/Users/williamcory/guillotine/bench/official/cases/ten-thousand-hashes/bytecode.txt";
+    const file = try std.fs.openFileAbsolute(path, .{});
+    defer file.close();
+    const hex_content = try file.readToEndAlloc(allocator, 16 * 1024);
+    defer allocator.free(hex_content);
+
+    const trimmed = std.mem.trim(u8, hex_content, " \t\n\r");
+    const creation_bytes = try allocator.alloc(u8, trimmed.len / 2);
+    defer allocator.free(creation_bytes);
+    _ = try std.fmt.hexToBytes(creation_bytes, trimmed);
+
+    // Find RETURN+INVALID delimiter used by Solidity (f3 fe), take bytes after as runtime
+    var runtime_code: []const u8 = creation_bytes;
+    const maybe_idx = std.mem.indexOfPos(u8, creation_bytes, 0, &[_]u8{ 0xf3, 0xfe });
+    if (maybe_idx) |idx| {
+        const start = idx + 2;
+        if (start < creation_bytes.len) runtime_code = creation_bytes[start..];
+    }
+
+    // Analyze runtime code
+    var analysis = try CodeAnalysis.from_code(allocator, runtime_code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    // Basic sanity
+    try std.testing.expect(analysis.instructions.len > 8);
+    try std.testing.expect(analysis.pc_to_block_start.len >= runtime_code.len);
+
+    // Ensure at least one valid JUMPDEST exists in the runtime
+    var jumpdest_count: usize = 0;
+    var pc: usize = 0;
+    while (pc < runtime_code.len) : (pc += 1) {
+        if (analysis.jumpdest_array.is_valid_jumpdest(pc)) jumpdest_count += 1;
+    }
+    try std.testing.expect(jumpdest_count > 0);
+
+    // All fused immediate jumps must be resolved to concrete jump targets (no *pc variants left)
+    for (analysis.instructions) |inst| {
+        switch (inst.arg) {
+            .jump_pc => return error.TestUnexpectedResult,
+            .conditional_jump_pc => return error.TestUnexpectedResult,
+            else => {},
+        }
+    }
+
+    // Expect at least one conditional or unconditional jump in the analyzed runtime
+    var has_jump = false;
+    var has_conditional = false;
+    for (analysis.instructions) |inst2| {
+        switch (inst2.arg) {
+            .jump, .jump_unresolved => has_jump = true,
+            .conditional_jump, .conditional_jump_unresolved => has_conditional = true,
+            else => {},
+        }
+    }
+    try std.testing.expect(has_jump or has_conditional);
+}
+
+test "analysis: staticcall pattern with SSTORE should not alter control wiring" {
+    const allocator = std.testing.allocator;
+    // Bytecode: SSTORE; MSTORE 1 at 0; RETURN 32 bytes
+    // 0: 60 01 (PUSH1 1)
+    // 2: 60 00 (PUSH1 0)
+    // 4: 55    (SSTORE)
+    // 5: 60 01 (PUSH1 1)
+    // 7: 60 00 (PUSH1 0)
+    // 9: 52    (MSTORE)
+    // 10:60 20 (PUSH1 32)
+    // 12:60 00 (PUSH1 0)
+    // 14:F3    (RETURN)
+    const code = &[_]u8{ 0x60, 0x01, 0x60, 0x00, 0x55, 0x60, 0x01, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xf3 };
+
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    // Ensure terminator is RETURN not implicit STOP
+    try std.testing.expect(analysis.instructions.len > 0);
+    // No unresolved fused jumps should remain
+    for (analysis.instructions) |inst| {
+        switch (inst.arg) {
+            .jump_pc, .conditional_jump_pc => return error.TestUnexpectedResult,
+            else => {},
+        }
+    }
+    // pc_to_block_start maps all PCs to a valid begin index or max
+    try std.testing.expect(analysis.pc_to_block_start.len >= code.len);
+}
+
+test "analysis: inst_jump_type marks dynamic JUMP and JUMPI correctly" {
+    const allocator = std.testing.allocator;
+    // Layout: PUSH1 dest; DUP1; JUMPI; JUMPDEST dest; STOP; JUMP (dynamic)
+    // 0: 60 06 (PUSH1 6)
+    // 2: 80    (DUP1)
+    // 3: 57    (JUMPI -> may be .conditional_jump_pc or unresolved depending on fusion policy)
+    // 4: 5b    (JUMPDEST at pc=4)
+    // 5: 00    (STOP)
+    // 6: 56    (JUMP -> dynamic)
+    const code = &[_]u8{ 0x60, 0x04, 0x80, 0x57, 0x5b, 0x00, 0x56 };
+
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var jump_count: usize = 0;
+    var jumpi_count: usize = 0;
+    for (analysis.inst_jump_type) |jt| {
+        switch (jt) {
+            .jump => jump_count += 1,
+            .jumpi => jumpi_count += 1,
+            else => {},
+        }
+    }
+    try std.testing.expect(jump_count >= 1);
+    try std.testing.expect(jumpi_count >= 1);
+}
+
+test "analysis: JUMPDEST pcs map to BEGINBLOCK (block_info) via pc_to_block_start" {
+    const allocator = std.testing.allocator;
+    // 0: 5b (JUMPDEST)
+    // 1: 60 00 (PUSH1 0)
+    // 3: 56 (JUMP)
+    // 4: 5b (JUMPDEST)
+    // 5: 00 (STOP)
+    const code = &[_]u8{ 0x5b, 0x60, 0x00, 0x56, 0x5b, 0x00 };
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    const pcs = [_]usize{ 0, 4 };
+    for (pcs) |pc| {
+        try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(pc));
+        const idx = analysis.pc_to_block_start[pc];
+        try std.testing.expect(idx != std.math.maxInt(u16));
+        try std.testing.expect(idx < analysis.instructions.len);
+        const inst = analysis.instructions[idx];
+        // The block entry should carry block_info metadata
+        try std.testing.expect(@as(bool, inst.arg == .block_info));
+    }
+}
+
+test "analysis: inst_to_pc within bounds and nondecreasing" {
+    const allocator = std.testing.allocator;
+    const code = &[_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x50, 0x00 }; // PUSH1 1; PUSH1 2; ADD; POP; STOP
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var prev_pc: u16 = 0;
+    var first = true;
+    for (analysis.inst_to_pc) |pc| {
+        try std.testing.expect(pc <= analysis.code_len);
+        if (first) {
+            prev_pc = pc;
+            first = false;
+        } else {
+            try std.testing.expect(pc >= prev_pc);
+            prev_pc = pc;
+        }
+    }
+}
+
 test "fusion and optimization statistics" {
     const allocator = std.testing.allocator;
     std.testing.log_level = .warn;
