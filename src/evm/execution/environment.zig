@@ -282,6 +282,12 @@ pub fn op_calldataload(context: *anyopaque) ExecutionError.Error!void {
     // Copy contiguous bytes starting at offset into the start of the buffer
     @memcpy(buf[0..available], calldata[offset_usize .. offset_usize + available]);
     const word = std.mem.readInt(u256, &buf, .big);
+
+    // Debug: log selector extraction for small calldata to diagnose dispatcher issues
+    if (offset_usize == 0 and calldata.len <= 4) {
+        const selector: u256 = (word >> 224) & 0xffffffff;
+        @import("../log.zig").warn("[CALLDATALOAD] len={}, selector=0x{x:0>8}", .{ calldata.len, selector });
+    }
     frame.stack.append_unsafe(word);
 }
 
