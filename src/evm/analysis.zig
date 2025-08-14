@@ -1394,32 +1394,8 @@ fn applyPatternOptimizations(instructions: []Instruction, code: []const u8) !voi
                 const size_inst = &instructions[i - 2];
 
                 if (size_inst.arg == .word and offset_inst.arg == .word) {
-                    // We have PUSH size, PUSH offset, SHA3 pattern
-                    const size = size_inst.arg.word;
-                    const offset = offset_inst.arg.word;
-
-                    // Precompute gas costs
-                    const word_count = (size + 31) / 32;
-                    const sha3_dynamic_gas = 6 * word_count;
-
-                    // Calculate memory expansion cost
-                    const new_mem_size = offset + size;
-                    const new_mem_words = (new_mem_size + 31) / 32;
-                    const memory_cost = if (new_mem_size == 0) 0 else (new_mem_words * new_mem_words) / 512 + (3 * new_mem_words);
-
-                    // Total gas cost: base SHA3 cost (30) + dynamic cost + memory expansion
-                    const total_gas = 30 + sha3_dynamic_gas + memory_cost;
-
-                    // Update the instruction with precomputed gas and optimized handler
-                    inst.arg = .{
-                        .dynamic_gas = DynamicGas{
-                            .static_cost = @intCast(total_gas),
-                            .gas_fn = null, // No dynamic calculation needed
-                        },
-                    };
-
-                    // Use the optimized handler that skips gas calculations
-                    inst.opcode_fn = crypto.op_sha3_precomputed;
+                    // Disabled SHA3 precomputation: execute normally to ensure
+                    // memory expansion is accounted based on runtime state.
                 }
             }
         }

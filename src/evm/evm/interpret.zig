@@ -166,8 +166,8 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         .jump => {
             pre_step(self, frame, instruction, &loop_iterations);
             // Analysis resolved the target by wiring next_instruction to the block start.
-            // Pop destination to maintain correct stack behavior (already validated by block checks).
-            // _ = frame.stack.pop_unsafe(); TODO I removed this because I don't think it's needed. If it's needed that's a bug and we should update analysis.zig to not need it.
+            // In fused immediate JUMP, analysis removed the PUSH entirely,
+            // so there is no destination on the stack to pop here.
             const next_inst = instruction.next_instruction;
             instruction = next_inst;
             continue :dispatch instruction.arg;
@@ -198,7 +198,6 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             // EVM stack order: [dest, cond] with cond on top. Pop condition first, then destination.
             const condition = frame.stack.pop_unsafe();
             const dest = frame.stack.pop_unsafe();
-            const condition = frame.stack.pop_unsafe();
             Log.warn("[INTERPRET] JUMPI(cond,dest) cond={}, dest={} ", .{ condition, dest });
             if (condition != 0) {
                 if (!frame.valid_jumpdest(dest)) {

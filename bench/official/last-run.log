@@ -1,220 +1,186 @@
 
-[2025-08-13 03:59:35] Starting perf-fastest.sh
-[2025-08-13 03:59:35] ROOT_DIR=/Users/williamcory/guillotine
-[2025-08-13 03:59:35] System: Darwin Williams-MacBook-Pro-2.local 24.5.0 Darwin Kernel Version 24.5.0: Tue Apr 22 19:52:00 PDT 2025; root:xnu-11417.121.6~2/RELEASE_ARM64_T6031 arm64
-[2025-08-13 03:59:35] zig: 0.14.1
-[2025-08-13 03:59:35] rustc: rustc 1.88.0 (6b00bc388 2025-06-23)
-[2025-08-13 03:59:35] cargo: cargo 1.88.0 (873a06493 2025-05-10)
-[2025-08-13 03:59:35] bun: 1.2.19
-[2025-08-13 03:59:35] hyperfine: hyperfine 1.19.0
-[2025-08-13 03:59:35] git: branch=review commit=41261088 dirty=yes
-[2025-08-13 03:59:35] Found runner: /Users/williamcory/guillotine/bench/official/evms/revm/target/release/revm-runner
-[2025-08-13 03:59:35] Found runner: /Users/williamcory/guillotine/bench/official/evms/geth/runner
-[2025-08-13 03:59:35] Found runner: /Users/williamcory/guillotine/bench/official/evms/evmone/build/evmone-runner
-[2025-08-13 03:59:35] Found runner: /Users/williamcory/guillotine/bench/official/evms/ethereumjs/runner.js
-[2025-08-13 03:59:35] Found runner: /Users/williamcory/guillotine/zig-out/bin/evm-runner
-[2025-08-13 03:59:35] Found runner: /Users/williamcory/guillotine/zig-out/bin/evm-runner-small
-[2025-08-13 03:59:35] Building Zig runners (ReleaseFast and ReleaseSmall)
+[2025-08-13 22:17:55] Starting perf-fastest.sh
+[2025-08-13 22:17:55] ROOT_DIR=/Users/williamcory/guillotine
+[2025-08-13 22:17:55] System: Darwin Williams-Mac-mini.local 24.3.0 Darwin Kernel Version 24.3.0: Thu Jan  2 20:24:22 PST 2025; root:xnu-11215.81.4~3/RELEASE_ARM64_T6041 arm64
+[2025-08-13 22:17:55] zig: 0.14.1
+[2025-08-13 22:17:55] rustc: rustc 1.88.0 (6b00bc388 2025-06-23)
+[2025-08-13 22:17:55] cargo: cargo 1.88.0 (873a06493 2025-05-10)
+[2025-08-13 22:17:55] bun: 1.2.20
+[2025-08-13 22:17:55] hyperfine: hyperfine 1.19.0
+[2025-08-13 22:17:55] git: branch=main commit=be3b72a dirty=yes
+[2025-08-13 22:17:55] Found runner: /Users/williamcory/guillotine/bench/official/evms/revm/target/release/revm-runner
+[2025-08-13 22:17:55] Found runner: /Users/williamcory/guillotine/bench/official/evms/geth/runner
+[2025-08-13 22:17:55] Found runner: /Users/williamcory/guillotine/bench/official/evms/evmone/build/evmone-runner
+[2025-08-13 22:17:55] Found runner: /Users/williamcory/guillotine/bench/official/evms/ethereumjs/runner.js
+[2025-08-13 22:17:55] Found runner: /Users/williamcory/guillotine/zig-out/bin/evm-runner
+[2025-08-13 22:17:55] Found runner: /Users/williamcory/guillotine/zig-out/bin/evm-runner-small
+[2025-08-13 22:17:55] Building Zig runners (ReleaseFast and ReleaseSmall)
 info: Downloading blst library...
 warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
-package:   /Users/williamcory/Guillotine/src/compilers/Cargo.toml
-workspace: /Users/williamcory/Guillotine/Cargo.toml
+package:   /Users/williamcory/guillotine/src/compilers/Cargo.toml
+workspace: /Users/williamcory/guillotine/Cargo.toml
 warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
-package:   /Users/williamcory/Guillotine/src/revm_wrapper/Cargo.toml
-workspace: /Users/williamcory/Guillotine/Cargo.toml
-warning: /Users/williamcory/Guillotine/src/revm_wrapper/Cargo.toml: `panic` setting is ignored for `bench` profile
-    Finished `release` profile [optimized] target(s) in 0.14s
+package:   /Users/williamcory/guillotine/src/revm_wrapper/Cargo.toml
+workspace: /Users/williamcory/guillotine/Cargo.toml
+warning: /Users/williamcory/guillotine/src/revm_wrapper/Cargo.toml: `panic` setting is ignored for `bench` profile
+    Finished `release` profile [optimized] target(s) in 0.13s
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-  0  583k    0   833    0     0   2252      0  0:04:25 --:--:--  0:04:25  2252100  583k  100  583k    0     0  1096k      0 --:--:-- --:--:-- --:--:-- 3595k
+  1  583k    1  7503    0     0  17140      0  0:00:34 --:--:--  0:00:34 17140100  583k  100  583k    0     0   945k      0 --:--:-- --:--:-- --:--:-- 3217k
 info: Downloading blst library...
 warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
-package:   /Users/williamcory/Guillotine/src/compilers/Cargo.toml
-workspace: /Users/williamcory/Guillotine/Cargo.toml
+package:   /Users/williamcory/guillotine/src/compilers/Cargo.toml
+workspace: /Users/williamcory/guillotine/Cargo.toml
 warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
-package:   /Users/williamcory/Guillotine/src/revm_wrapper/Cargo.toml
-workspace: /Users/williamcory/Guillotine/Cargo.toml
-warning: /Users/williamcory/Guillotine/src/revm_wrapper/Cargo.toml: `panic` setting is ignored for `bench` profile
-    Finished `release` profile [optimized] target(s) in 0.14s
+package:   /Users/williamcory/guillotine/src/revm_wrapper/Cargo.toml
+workspace: /Users/williamcory/guillotine/Cargo.toml
+warning: /Users/williamcory/guillotine/src/revm_wrapper/Cargo.toml: `panic` setting is ignored for `bench` profile
+    Finished `release` profile [optimized] target(s) in 0.13s
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-100  583k  100  583k    0     0  1150k      0 --:--:-- --:--:-- --:--:-- 1150k
-[2025-08-13 03:59:46] Building orchestrator (ReleaseFast)
+100  583k  100  583k    0     0  1197k      0 --:--:-- --:--:-- --:--:-- 1197k
+[2025-08-13 22:18:05] Building orchestrator (ReleaseFast)
 info: Downloading blst library...
-[2025-08-13 03:59:46] Running orchestrator with compare mode (single run per case)
-[2025-08-13 03:59:46] Command: /Users/williamcory/guillotine/zig-out/bin/orchestrator --compare --export markdown --num-runs 1 --js-runs 1 --internal-runs 1 --js-internal-runs 1 --snailtracer-internal-runs 1 --js-snailtracer-internal-runs 1
+[2025-08-13 22:18:05] Running orchestrator with compare mode (single run per case)
+[2025-08-13 22:18:05] Command: /Users/williamcory/guillotine/zig-out/bin/orchestrator --compare --export markdown --num-runs 1 --js-runs 1 --internal-runs 1 --js-internal-runs 1 --snailtracer-internal-runs 1 --js-snailtracer-internal-runs 1
 
 === Running benchmarks for zig ===
 
 === Benchmarking erc20-approval-transfer ===
 Errors:
- 
-  Warning: Command took less than 5 ms to complete. Note that the results might be inaccurate because hyperfine can not calibrate the shell startup time much more precise than this limit. You can try to use the `-N`/`--shell=none` option to disable the shell completely.
-  Warning: Ignoring non-zero exit code.
-  Mean: 2.85 ms, Min: 2.85 ms, Max: 2.85 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for erc20-approval-transfer due to non-zero exit code.
 
 === Benchmarking erc20-mint ===
 Errors:
- 
-  Warning: Command took less than 5 ms to complete. Note that the results might be inaccurate because hyperfine can not calibrate the shell startup time much more precise than this limit. You can try to use the `-N`/`--shell=none` option to disable the shell completely.
-  Warning: Ignoring non-zero exit code.
-  Mean: 2.79 ms, Min: 2.79 ms, Max: 2.79 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for erc20-mint due to non-zero exit code.
 
 === Benchmarking ten-thousand-hashes ===
 Errors:
- 
-  Warning: Command took less than 5 ms to complete. Note that the results might be inaccurate because hyperfine can not calibrate the shell startup time much more precise than this limit. You can try to use the `-N`/`--shell=none` option to disable the shell completely.
-  Warning: Ignoring non-zero exit code.
-  Mean: 1.46 ms, Min: 1.46 ms, Max: 1.46 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for ten-thousand-hashes due to non-zero exit code.
 
 === Benchmarking snailtracer ===
 Errors:
- 
-  Warning: Ignoring non-zero exit code.
-  Mean: 43.79 ms, Min: 43.79 ms, Max: 43.79 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for snailtracer due to non-zero exit code.
 
 === Benchmarking erc20-transfer ===
 Errors:
- 
-  Warning: Command took less than 5 ms to complete. Note that the results might be inaccurate because hyperfine can not calibrate the shell startup time much more precise than this limit. You can try to use the `-N`/`--shell=none` option to disable the shell completely.
-  Warning: Ignoring non-zero exit code.
-  Mean: 2.94 ms, Min: 2.94 ms, Max: 2.94 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for erc20-transfer due to non-zero exit code.
 
 === Running benchmarks for zig-small ===
 
 === Benchmarking erc20-approval-transfer ===
 Errors:
- 
-  Warning: Command took less than 5 ms to complete. Note that the results might be inaccurate because hyperfine can not calibrate the shell startup time much more precise than this limit. You can try to use the `-N`/`--shell=none` option to disable the shell completely.
-  Warning: Ignoring non-zero exit code.
-  Mean: 2.76 ms, Min: 2.76 ms, Max: 2.76 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for erc20-approval-transfer due to non-zero exit code.
 
 === Benchmarking erc20-mint ===
 Errors:
- 
-  Warning: Command took less than 5 ms to complete. Note that the results might be inaccurate because hyperfine can not calibrate the shell startup time much more precise than this limit. You can try to use the `-N`/`--shell=none` option to disable the shell completely.
-  Warning: Ignoring non-zero exit code.
-  Mean: 2.54 ms, Min: 2.54 ms, Max: 2.54 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for erc20-mint due to non-zero exit code.
 
 === Benchmarking ten-thousand-hashes ===
 Errors:
- 
-  Warning: Command took less than 5 ms to complete. Note that the results might be inaccurate because hyperfine can not calibrate the shell startup time much more precise than this limit. You can try to use the `-N`/`--shell=none` option to disable the shell completely.
-  Warning: Ignoring non-zero exit code.
-  Mean: 1.70 ms, Min: 1.70 ms, Max: 1.70 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for ten-thousand-hashes due to non-zero exit code.
 
 === Benchmarking snailtracer ===
 Errors:
- 
-  Warning: Ignoring non-zero exit code.
-  Mean: 43.93 ms, Min: 43.93 ms, Max: 43.93 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for snailtracer due to non-zero exit code.
 
 === Benchmarking erc20-transfer ===
 Errors:
- 
-  Warning: Command took less than 5 ms to complete. Note that the results might be inaccurate because hyperfine can not calibrate the shell startup time much more precise than this limit. You can try to use the `-N`/`--shell=none` option to disable the shell completely.
-  Warning: Ignoring non-zero exit code.
-  Mean: 3.55 ms, Min: 3.55 ms, Max: 3.55 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for erc20-transfer due to non-zero exit code.
 
 === Running benchmarks for revm ===
 
 === Benchmarking erc20-approval-transfer ===
-  Mean: 7.09 ms, Min: 7.09 ms, Max: 7.09 ms (per run, 1 internal runs)
+  Mean: 911.26 μs, Min: 911.26 μs, Max: 911.26 μs (per run, 1 internal runs)
 
 === Benchmarking erc20-mint ===
-  Mean: 6.53 ms, Min: 6.53 ms, Max: 6.53 ms (per run, 1 internal runs)
+  Mean: 996.28 μs, Min: 996.28 μs, Max: 996.28 μs (per run, 1 internal runs)
 
 === Benchmarking ten-thousand-hashes ===
-Errors:
- 
-  Warning: Command took less than 5 ms to complete. Note that the results might be inaccurate because hyperfine can not calibrate the shell startup time much more precise than this limit. You can try to use the `-N`/`--shell=none` option to disable the shell completely.
-  Mean: 3.41 ms, Min: 3.41 ms, Max: 3.41 ms (per run, 1 internal runs)
+  Mean: 972.12 μs, Min: 972.12 μs, Max: 972.12 μs (per run, 1 internal runs)
 
 === Benchmarking snailtracer ===
-  Mean: 39.63 ms, Min: 39.63 ms, Max: 39.63 ms (per run, 1 internal runs)
+  Mean: 1.56 ms, Min: 1.56 ms, Max: 1.56 ms (per run, 1 internal runs)
 
 === Benchmarking erc20-transfer ===
-  Mean: 8.55 ms, Min: 8.55 ms, Max: 8.55 ms (per run, 1 internal runs)
+  Mean: 1.23 ms, Min: 1.23 ms, Max: 1.23 ms (per run, 1 internal runs)
 
 === Running benchmarks for ethereumjs ===
 
 === Benchmarking erc20-approval-transfer ===
 Errors:
- 
-  Warning: Ignoring non-zero exit code.
-  Mean: 45.45 ms, Min: 45.45 ms, Max: 45.45 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for erc20-approval-transfer due to non-zero exit code.
 
 === Benchmarking erc20-mint ===
 Errors:
- 
-  Warning: Ignoring non-zero exit code.
-  Mean: 43.58 ms, Min: 43.58 ms, Max: 43.58 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for erc20-mint due to non-zero exit code.
 
 === Benchmarking ten-thousand-hashes ===
 Errors:
- 
-  Warning: Ignoring non-zero exit code.
-  Mean: 46.89 ms, Min: 46.89 ms, Max: 46.89 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for ten-thousand-hashes due to non-zero exit code.
 
 === Benchmarking snailtracer ===
 Errors:
- 
-  Warning: Ignoring non-zero exit code.
-  Mean: 45.09 ms, Min: 45.09 ms, Max: 45.09 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for snailtracer due to non-zero exit code.
 
 === Benchmarking erc20-transfer ===
 Errors:
- 
-  Warning: Ignoring non-zero exit code.
-  Mean: 44.34 ms, Min: 44.34 ms, Max: 44.34 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for erc20-transfer due to non-zero exit code.
 
 === Running benchmarks for geth ===
 
 === Benchmarking erc20-approval-transfer ===
-  Mean: 14.48 ms, Min: 14.48 ms, Max: 14.48 ms (per run, 1 internal runs)
+  Mean: 12.71 ms, Min: 12.71 ms, Max: 12.71 ms (per run, 1 internal runs)
 
 === Benchmarking erc20-mint ===
-  Mean: 13.09 ms, Min: 13.09 ms, Max: 13.09 ms (per run, 1 internal runs)
+  Mean: 11.64 ms, Min: 11.64 ms, Max: 11.64 ms (per run, 1 internal runs)
 
 === Benchmarking ten-thousand-hashes ===
-  Mean: 9.71 ms, Min: 9.71 ms, Max: 9.71 ms (per run, 1 internal runs)
+  Mean: 8.55 ms, Min: 8.55 ms, Max: 8.55 ms (per run, 1 internal runs)
 
 === Benchmarking snailtracer ===
 Errors:
- 
-  Warning: Ignoring non-zero exit code.
-  Mean: 93.54 ms, Min: 93.54 ms, Max: 93.54 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 2 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for snailtracer due to non-zero exit code.
 
 === Benchmarking erc20-transfer ===
-  Mean: 18.44 ms, Min: 18.44 ms, Max: 18.44 ms (per run, 1 internal runs)
+  Mean: 15.57 ms, Min: 15.57 ms, Max: 15.57 ms (per run, 1 internal runs)
 
 === Running benchmarks for evmone ===
 
 === Benchmarking erc20-approval-transfer ===
-  Mean: 5.83 ms, Min: 5.83 ms, Max: 5.83 ms (per run, 1 internal runs)
+  Mean: 8.79 ms, Min: 8.79 ms, Max: 8.79 ms (per run, 1 internal runs)
 
 === Benchmarking erc20-mint ===
-Errors:
- 
-  Warning: Command took less than 5 ms to complete. Note that the results might be inaccurate because hyperfine can not calibrate the shell startup time much more precise than this limit. You can try to use the `-N`/`--shell=none` option to disable the shell completely.
-  Mean: 4.31 ms, Min: 4.31 ms, Max: 4.31 ms (per run, 1 internal runs)
+  Mean: 3.90 ms, Min: 3.90 ms, Max: 3.90 ms (per run, 1 internal runs)
 
 === Benchmarking ten-thousand-hashes ===
-Errors:
- 
-  Warning: Command took less than 5 ms to complete. Note that the results might be inaccurate because hyperfine can not calibrate the shell startup time much more precise than this limit. You can try to use the `-N`/`--shell=none` option to disable the shell completely.
-  Mean: 2.94 ms, Min: 2.94 ms, Max: 2.94 ms (per run, 1 internal runs)
+  Mean: 1.83 ms, Min: 1.83 ms, Max: 1.83 ms (per run, 1 internal runs)
 
 === Benchmarking snailtracer ===
 Errors:
- 
-  Warning: Ignoring non-zero exit code.
-  Mean: 28.79 ms, Min: 28.79 ms, Max: 28.79 ms (per run, 1 internal runs)
+Error: Command terminated with non-zero exit code 1 in the first warmup run. Use the '-i'/'--ignore-failure' option if you want to ignore this. Alternatively, use the '--show-output' option to debug what went wrong.
+Skipping results for snailtracer due to non-zero exit code.
 
 === Benchmarking erc20-transfer ===
-  Mean: 6.92 ms, Min: 6.92 ms, Max: 6.92 ms (per run, 1 internal runs)
+  Mean: 5.21 ms, Min: 5.21 ms, Max: 5.21 ms (per run, 1 internal runs)
 Comparison results exported to bench/official/results.md
-[2025-08-13 03:59:54] Benchmark results written to: /Users/williamcory/guillotine/bench/official/results.md
-[2025-08-13 03:59:54] Opening results in browser...
+[2025-08-13 22:18:09] Benchmark results written to: /Users/williamcory/guillotine/bench/official/results.md
+[2025-08-13 22:18:09] Opening results in browser...
