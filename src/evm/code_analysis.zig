@@ -264,6 +264,7 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
     // Convert bitmap to packed array for cache-efficient validation
     const jumpdest_array = try JumpdestArray.from_bitmap(allocator, &jumpdest_bitmap, code.len);
     jumpdest_bitmap.deinit(); // Free the temporary bitmap
+    
 
     return CodeAnalysis{
         // === FIRST CACHE LINE - ULTRA HOT ===
