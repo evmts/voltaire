@@ -2,10 +2,8 @@ const std = @import("std");
 const testing = std.testing;
 const Allocator = std.mem.Allocator;
 const revm = @import("revm");
-const address = @import("primitives").Address;
-const Address = address.Address;
-const Vm = @import("evm").Evm;
-const CallParams = @import("evm").CallParams;
+const Address = @import("primitives").Address;
+const Evm = @import("evm").Evm;
 const Contract = @import("evm").Contract;
 const Frame = @import("evm").Frame;
 const MemoryDatabase = @import("evm").MemoryDatabase;
@@ -18,7 +16,7 @@ test "CREATE opcode with insufficient balance fails" {
     var revm_vm = try revm.Revm.init(allocator, .{});
     defer revm_vm.deinit();
 
-    const deployer = address.ZERO;
+    const deployer = Address.ZERO;
     // Value for CREATE is embedded in bytecode
 
     // Contract bytecode that attempts CREATE with value
@@ -38,11 +36,11 @@ test "CREATE opcode with insufficient balance fails" {
         0xf3, // RETURN
     };
 
-    const revm_contract_address = try address.from_hex("0x1111111111111111111111111111111111111111");
+    const revm_contract_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
     try revm_vm.setCode(revm_contract_address, &bytecode);
 
     // Execute with REVM
-    var revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1000000);
+    var revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1_000_000);
     defer allocator.free(revm_result.output);
 
     // Initialize Guillotine
@@ -50,19 +48,19 @@ test "CREATE opcode with insufficient balance fails" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Vm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
-    var contract = Contract.init(address.ZERO, 0, &bytecode, 1000000);
+    var contract = Contract.init(Address.ZERO, 0, &bytecode, 1_000_000);
     defer contract.deinit(allocator, null);
 
-    const call_params = CallParams{ .call = .{
+    const call_params = @import("evm").CallParams{ .call = .{
         .caller = deployer,
-        .to = address.ZERO,
+        .to = contract.address,
         .value = 0,
         .input = &[_]u8{},
-        .gas = 1000000,
+        .gas = 1_000_000,
     } };
 
     // Execute using mini EVM
@@ -91,7 +89,7 @@ test "CREATE2 with same salt and init code produces same address" {
     var revm_vm = try revm.Revm.init(allocator, .{});
     defer revm_vm.deinit();
 
-    const deployer = address.ZERO;
+    const deployer = Address.ZERO;
 
     // Contract bytecode that does CREATE2 twice with same parameters
     const bytecode = [_]u8{
@@ -118,11 +116,11 @@ test "CREATE2 with same salt and init code produces same address" {
         0xf3, // RETURN
     };
 
-    const revm_contract_address = try address.from_hex("0x1111111111111111111111111111111111111111");
+    const revm_contract_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
     try revm_vm.setCode(revm_contract_address, &bytecode);
 
     // Execute with REVM
-    var revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1000000);
+    var revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1_000_000);
     defer allocator.free(revm_result.output);
 
     // Initialize Guillotine
@@ -130,19 +128,19 @@ test "CREATE2 with same salt and init code produces same address" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Vm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
-    var contract = Contract.init(address.ZERO, 0, &bytecode, 1000000);
+    var contract = Contract.init(Address.ZERO, 0, &bytecode, 1_000_000);
     defer contract.deinit(allocator, null);
 
-    const call_params = CallParams{ .call = .{
+    const call_params = @import("evm").CallParams{ .call = .{
         .caller = deployer,
-        .to = address.ZERO,
+        .to = contract.address,
         .value = 0,
         .input = &[_]u8{},
-        .gas = 1000000,
+        .gas = 1_000_000,
     } };
 
     // Execute using mini EVM
@@ -177,7 +175,7 @@ test "CREATE in static call fails with WriteProtection" {
     var revm_vm = try revm.Revm.init(allocator, .{});
     defer revm_vm.deinit();
 
-    const deployer = address.ZERO;
+    const deployer = Address.ZERO;
 
     // Contract bytecode that attempts CREATE
     const bytecode = [_]u8{
@@ -192,11 +190,11 @@ test "CREATE in static call fails with WriteProtection" {
         0xf3, // RETURN
     };
 
-    const revm_contract_address = try address.from_hex("0x1111111111111111111111111111111111111111");
+    const revm_contract_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
     try revm_vm.setCode(revm_contract_address, &bytecode);
 
     // Execute with REVM using staticcall (read-only context)
-    const revm_result = try revm_vm.staticcall(deployer, revm_contract_address, &[_]u8{}, 1000000);
+    const revm_result = try revm_vm.staticcall(deployer, revm_contract_address, &[_]u8{}, 1_000_000);
     defer allocator.free(revm_result.output);
 
     // Initialize Guillotine
@@ -204,18 +202,18 @@ test "CREATE in static call fails with WriteProtection" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Vm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
-    var contract = Contract.init(address.ZERO, 0, &bytecode, 1000000);
+    var contract = Contract.init(Address.ZERO, 0, &bytecode, 1_000_000);
     defer contract.deinit(allocator, null);
 
-    const call_params = CallParams{ .staticcall = .{
+    const call_params = @import("evm").CallParams{ .staticcall = .{
         .caller = deployer,
-        .to = address.ZERO,
+        .to = contract.address,
         .input = &[_]u8{},
-        .gas = 1000000,
+        .gas = 1_000_000,
     } };
 
     // Execute using mini EVM
@@ -239,7 +237,7 @@ test "CREATE with no balance succeeds but creates empty contract" {
     var revm_vm = try revm.Revm.init(allocator, .{});
     defer revm_vm.deinit();
 
-    const deployer = address.ZERO;
+    const deployer = Address.ZERO;
 
     // Contract bytecode that attempts CREATE with 0 value
     const bytecode = [_]u8{
@@ -254,11 +252,11 @@ test "CREATE with no balance succeeds but creates empty contract" {
         0xf3, // RETURN
     };
 
-    const revm_contract_address = try address.from_hex("0x1111111111111111111111111111111111111111");
+    const revm_contract_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
     try revm_vm.setCode(revm_contract_address, &bytecode);
 
     // Execute with REVM
-    var revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1000000);
+    var revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1_000_000);
     defer allocator.free(revm_result.output);
 
     // Initialize Guillotine
@@ -266,19 +264,19 @@ test "CREATE with no balance succeeds but creates empty contract" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Vm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
-    var contract = Contract.init(address.ZERO, 0, &bytecode, 1000000);
+    var contract = Contract.init(Address.ZERO, 0, &bytecode, 1_000_000);
     defer contract.deinit(allocator, null);
 
-    const call_params = CallParams{ .call = .{
+    const call_params = @import("evm").CallParams{ .call = .{
         .caller = deployer,
-        .to = address.ZERO,
+        .to = contract.address,
         .value = 0,
         .input = &[_]u8{},
-        .gas = 1000000,
+        .gas = 1_000_000,
     } };
 
     // Execute using mini EVM
@@ -307,7 +305,7 @@ test "CREATE2 with large init code" {
     var revm_vm = try revm.Revm.init(allocator, .{});
     defer revm_vm.deinit();
 
-    const deployer = address.ZERO;
+    const deployer = Address.ZERO;
 
     // Contract bytecode that does CREATE2 with large init code
     // First, store large data in memory, then CREATE2 with it
@@ -341,11 +339,11 @@ test "CREATE2 with large init code" {
         0xf3, // RETURN
     };
 
-    const revm_contract_address = try address.from_hex("0x1111111111111111111111111111111111111111");
+    const revm_contract_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
     try revm_vm.setCode(revm_contract_address, &bytecode);
 
     // Execute with REVM
-    var revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1000000);
+    var revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1_000_000);
     defer allocator.free(revm_result.output);
 
     // Initialize Guillotine
@@ -353,19 +351,19 @@ test "CREATE2 with large init code" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Vm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
-    var contract = Contract.init(address.ZERO, 0, &bytecode, 1000000);
+    var contract = Contract.init(Address.ZERO, 0, &bytecode, 1_000_000);
     defer contract.deinit(allocator, null);
 
-    const call_params = CallParams{ .call = .{
+    const call_params = @import("evm").CallParams{ .call = .{
         .caller = deployer,
-        .to = address.ZERO,
+        .to = contract.address,
         .value = 0,
         .input = &[_]u8{},
-        .gas = 1000000,
+        .gas = 1_000_000,
     } };
 
     // Execute using mini EVM
@@ -394,7 +392,7 @@ test "CREATE with init code that reverts" {
     var revm_vm = try revm.Revm.init(allocator, .{});
     defer revm_vm.deinit();
 
-    const deployer = address.ZERO;
+    const deployer = Address.ZERO;
 
     // Contract bytecode that does CREATE with init code that reverts
     const bytecode = [_]u8{
@@ -427,11 +425,11 @@ test "CREATE with init code that reverts" {
         0xf3, // RETURN
     };
 
-    const revm_contract_address = try address.from_hex("0x1111111111111111111111111111111111111111");
+    const revm_contract_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
     try revm_vm.setCode(revm_contract_address, &bytecode);
 
     // Execute with REVM
-    var revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1000000);
+    var revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1_000_000);
     defer allocator.free(revm_result.output);
 
     // Initialize Guillotine
@@ -439,19 +437,19 @@ test "CREATE with init code that reverts" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Vm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
-    var contract = Contract.init(address.ZERO, 0, &bytecode, 1000000);
+    var contract = Contract.init(Address.ZERO, 0, &bytecode, 1_000_000);
     defer contract.deinit(allocator, null);
 
-    const call_params = CallParams{ .call = .{
+    const call_params = @import("evm").CallParams{ .call = .{
         .caller = deployer,
-        .to = address.ZERO,
+        .to = contract.address,
         .value = 0,
         .input = &[_]u8{},
-        .gas = 1000000,
+        .gas = 1_000_000,
     } };
 
     // Execute using mini EVM

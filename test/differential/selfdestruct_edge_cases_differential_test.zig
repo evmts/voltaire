@@ -2,10 +2,8 @@ const std = @import("std");
 const testing = std.testing;
 const Allocator = std.mem.Allocator;
 const revm = @import("revm");
-const address = @import("primitives").Address;
-const Address = address.Address;
-const Vm = @import("evm").Evm;
-const CallParams = @import("evm").CallParams;
+const Address = @import("primitives").Address;
+const Evm = @import("evm").Evm;
 const Contract = @import("evm").Contract;
 const Frame = @import("evm").Frame;
 const MemoryDatabase = @import("evm").MemoryDatabase;
@@ -18,7 +16,7 @@ test "SELFDESTRUCT in static call fails with WriteProtection" {
     var revm_vm = try revm.Revm.init(allocator, .{});
     defer revm_vm.deinit();
 
-    const deployer = address.ZERO;
+    const deployer = Address.ZERO;
 
     // Contract bytecode that attempts SELFDESTRUCT
     const bytecode = [_]u8{
@@ -28,11 +26,11 @@ test "SELFDESTRUCT in static call fails with WriteProtection" {
         0xff, // SELFDESTRUCT
     };
 
-    const revm_contract_address = try address.from_hex("0x1111111111111111111111111111111111111111");
+    const revm_contract_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
     try revm_vm.setCode(revm_contract_address, &bytecode);
 
     // Execute with REVM using staticcall (read-only context)
-    const revm_result = try revm_vm.staticcall(deployer, revm_contract_address, &[_]u8{}, 1000000);
+    const revm_result = try revm_vm.staticcall(deployer, revm_contract_address, &[_]u8{}, 1_000_000);
     defer allocator.free(revm_result.output);
 
     // Initialize Guillotine
@@ -40,18 +38,18 @@ test "SELFDESTRUCT in static call fails with WriteProtection" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Vm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
-    var contract = Contract.init(address.ZERO, 0, &bytecode, 1000000);
+    var contract = Contract.init(Address.ZERO, 0, &bytecode, 1_000_000);
     defer contract.deinit(allocator, null);
 
-    const call_params = CallParams{ .staticcall = .{
+    const call_params = @import("evm").CallParams{ .staticcall = .{
         .caller = deployer,
-        .to = address.ZERO,
+        .to = contract.address,
         .input = &[_]u8{},
-        .gas = 1000000,
+        .gas = 1_000_000,
     } };
 
     // Execute using mini EVM
@@ -75,8 +73,8 @@ test "SELFDESTRUCT to self keeps balance" {
     var revm_vm = try revm.Revm.init(allocator, .{});
     defer revm_vm.deinit();
 
-    const deployer = address.ZERO;
-    const contract_address = try address.from_hex("0x1111111111111111111111111111111111111111");
+    const deployer = Address.ZERO;
+    const contract_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
 
     // Contract bytecode that selfdestructs to itself
     const bytecode = [_]u8{
@@ -88,7 +86,7 @@ test "SELFDESTRUCT to self keeps balance" {
     try revm_vm.setBalance(contract_address, 1000); // Give contract some balance
 
     // Execute with REVM
-    const revm_result = try revm_vm.call(deployer, contract_address, 0, &[_]u8{}, 1000000);
+    const revm_result = try revm_vm.call(deployer, contract_address, 0, &[_]u8{}, 1_000_000);
     defer allocator.free(revm_result.output);
 
     // Initialize Guillotine
@@ -96,7 +94,7 @@ test "SELFDESTRUCT to self keeps balance" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Vm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine with balance
@@ -104,12 +102,12 @@ test "SELFDESTRUCT to self keeps balance" {
     defer contract.deinit(allocator, null);
     // try memory_db.set_balance(contract_address, 1000); // TODO: Fix this
 
-    const call_params = CallParams{ .call = .{
+    const call_params = @import("evm").CallParams{ .call = .{
         .caller = deployer,
-        .to = address.ZERO,
+        .to = contract.address,
         .value = 0,
         .input = &[_]u8{},
-        .gas = 1000000,
+        .gas = 1_000_000,
     } };
 
     // Execute using mini EVM
@@ -133,7 +131,7 @@ test "SELFDESTRUCT with refund gas calculation" {
     var revm_vm = try revm.Revm.init(allocator, .{});
     defer revm_vm.deinit();
 
-    const deployer = address.ZERO;
+    const deployer = Address.ZERO;
 
     // Contract bytecode that selfdestructs to beneficiary
     const bytecode = [_]u8{
@@ -143,11 +141,11 @@ test "SELFDESTRUCT with refund gas calculation" {
         0xff, // SELFDESTRUCT
     };
 
-    const revm_contract_address = try address.from_hex("0x1111111111111111111111111111111111111111");
+    const revm_contract_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
     try revm_vm.setCode(revm_contract_address, &bytecode);
 
     // Execute with REVM
-    const revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1000000);
+    const revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1_000_000);
     defer allocator.free(revm_result.output);
 
     // Initialize Guillotine
@@ -155,19 +153,19 @@ test "SELFDESTRUCT with refund gas calculation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Vm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
-    var contract = Contract.init(address.ZERO, 0, &bytecode, 1000000);
+    var contract = Contract.init(Address.ZERO, 0, &bytecode, 1_000_000);
     defer contract.deinit(allocator, null);
 
-    const call_params = CallParams{ .call = .{
+    const call_params = @import("evm").CallParams{ .call = .{
         .caller = deployer,
-        .to = address.ZERO,
+        .to = contract.address,
         .value = 0,
         .input = &[_]u8{},
-        .gas = 1000000,
+        .gas = 1_000_000,
     } };
 
     // Execute using mini EVM
@@ -191,7 +189,7 @@ test "SELFDESTRUCT in CREATE context" {
     var revm_vm = try revm.Revm.init(allocator, .{});
     defer revm_vm.deinit();
 
-    const deployer = address.ZERO;
+    const deployer = Address.ZERO;
 
 
     // Contract that creates with init code that selfdestructs
@@ -217,11 +215,11 @@ test "SELFDESTRUCT in CREATE context" {
         0xf3, // RETURN
     };
 
-    const revm_contract_address = try address.from_hex("0x1111111111111111111111111111111111111111");
+    const revm_contract_address = try Address.from_hex("0x1111111111111111111111111111111111111111");
     try revm_vm.setCode(revm_contract_address, &bytecode);
 
     // Execute with REVM
-    const revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1000000);
+    const revm_result = try revm_vm.call(deployer, revm_contract_address, 0, &[_]u8{}, 1_000_000);
     defer allocator.free(revm_result.output);
 
     // Initialize Guillotine
@@ -229,19 +227,19 @@ test "SELFDESTRUCT in CREATE context" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Vm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
-    var contract = Contract.init(address.ZERO, 0, &bytecode, 1000000);
+    var contract = Contract.init(Address.ZERO, 0, &bytecode, 1_000_000);
     defer contract.deinit(allocator, null);
 
-    const call_params = CallParams{ .call = .{
+    const call_params = @import("evm").CallParams{ .call = .{
         .caller = deployer,
-        .to = address.ZERO,
+        .to = contract.address,
         .value = 0,
         .input = &[_]u8{},
-        .gas = 1000000,
+        .gas = 1_000_000,
     } };
 
     // Execute using mini EVM
@@ -270,7 +268,7 @@ test "SELFDESTRUCT multiple times in same transaction" {
     var revm_vm = try revm.Revm.init(allocator, .{});
     defer revm_vm.deinit();
 
-    const deployer = address.ZERO;
+    const deployer = Address.ZERO;
 
     // Contract A that selfdestructs
     const contract_a_code = [_]u8{
@@ -302,8 +300,8 @@ test "SELFDESTRUCT multiple times in same transaction" {
         0xff, // SELFDESTRUCT
     };
 
-    const contract_a_address = try address.from_hex("0x3333333333333333333333333333333333333333");
-    const contract_b_address = try address.from_hex("0x4444444444444444444444444444444444444444");
+    const contract_a_address = try Address.from_hex("0x3333333333333333333333333333333333333333");
+    const contract_b_address = try Address.from_hex("0x4444444444444444444444444444444444444444");
     
     try revm_vm.setCode(contract_a_address, &contract_a_code);
     try revm_vm.setCode(contract_b_address, &contract_b_code);
@@ -311,7 +309,7 @@ test "SELFDESTRUCT multiple times in same transaction" {
     try revm_vm.setBalance(contract_b_address, 700);
 
     // Execute with REVM
-    const revm_result = try revm_vm.call(deployer, contract_b_address, 0, &[_]u8{}, 1000000);
+    const revm_result = try revm_vm.call(deployer, contract_b_address, 0, &[_]u8{}, 1_000_000);
     defer allocator.free(revm_result.output);
 
     // Initialize Guillotine
@@ -319,7 +317,7 @@ test "SELFDESTRUCT multiple times in same transaction" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Vm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contracts in Guillotine
@@ -336,7 +334,7 @@ test "SELFDESTRUCT multiple times in same transaction" {
         .to = contract_b_address,
         .value = 0,
         .input = &[_]u8{},
-        .gas = 1000000,
+        .gas = 1_000_000,
     } };
 
     // Execute using mini EVM
