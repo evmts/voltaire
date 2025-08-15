@@ -22,7 +22,7 @@ const Bucket24 = size_buckets.Bucket24;
 const Size8Counts = size_buckets.Size8Counts;
 const Size16Counts = size_buckets.Size16Counts;
 const Size24Counts = size_buckets.Size24Counts;
-const JumpdestArray = size_buckets.JumpdestArray;
+pub const JumpdestArray = size_buckets.JumpdestArray;
 
 /// Handler for opcodes that should never be executed directly.
 /// Used for JUMP, JUMPI, and PUSH opcodes that are handled inline by the interpreter.
@@ -298,5 +298,5 @@ pub fn deinit(self: *CodeAnalysis) void {
     self.allocator.free(self.inst_to_pc);
 
     // Free the packed jumpdest array
-    self.jumpdest_array.deinit();
+    self.jumpdest_array.deinit(self.allocator);
 }
