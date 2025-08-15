@@ -270,7 +270,7 @@ test "TIMESTAMP returns block timestamp" {
 
     // Verify timestamp was pushed to stack
     const result = stack.pop_unsafe();
-    try testing.expectEqual(@as(primitives.u256, test_timestamp), result);
+    try testing.expectEqual(@as(u256, test_timestamp), result);
 }
 
 test "NUMBER returns block number" {
@@ -304,7 +304,7 @@ test "NUMBER returns block number" {
 
     // Verify block number was pushed to stack
     const result = stack.pop_unsafe();
-    try testing.expectEqual(@as(primitives.u256, test_block_number), result);
+    try testing.expectEqual(@as(u256, test_block_number), result);
 }
 
 test "DIFFICULTY returns block difficulty/prevrandao" {
@@ -372,7 +372,7 @@ test "GASLIMIT returns block gas limit" {
 
     // Verify gas limit was pushed to stack
     const result = stack.pop_unsafe();
-    try testing.expectEqual(@as(primitives.u256, test_gas_limit), result);
+    try testing.expectEqual(@as(u256, test_gas_limit), result);
 }
 
 test "BASEFEE returns block base fee" {
@@ -438,7 +438,7 @@ test "BLOBBASEFEE returns 0 (not yet implemented in BlockInfo)" {
 
     // Verify 0 was pushed to stack (not yet implemented in BlockInfo)
     const result = stack.pop_unsafe();
-    try testing.expectEqual(@as(primitives.u256, 0), result);
+    try testing.expectEqual(@as(u256, 0), result);
 }
 
 test "BLOCKHASH returns 0 for future blocks" {
@@ -473,7 +473,7 @@ test "BLOCKHASH returns 0 for future blocks" {
 
     // Verify 0 was pushed for future block
     const result = stack.pop_unsafe();
-    try testing.expectEqual(@as(primitives.u256, 0), result);
+    try testing.expectEqual(@as(u256, 0), result);
 }
 
 test "BLOCKHASH returns 0 for blocks too far in past" {
