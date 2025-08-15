@@ -1331,6 +1331,35 @@ pub fn build(b: *std.Build) void {
     const thousand_hashes_test_step = b.step("test-thousand-hashes", "Run thousand hashes benchmark test");
     thousand_hashes_test_step.dependOn(&run_thousand_hashes_test.step);
 
+    // Debug executable for 10k hashes
+    const debug_10k_exe = b.addExecutable(.{
+        .name = "debug-10k-hashes",
+        .root_source_file = b.path("test/debug_10k_single.zig"),
+        .target = target,
+        .optimize = .Debug,
+    });
+    debug_10k_exe.root_module.addImport("evm", evm_mod);
+    debug_10k_exe.root_module.addImport("primitives", primitives_mod);
+    b.installArtifact(debug_10k_exe);
+    
+    const run_debug_10k = b.addRunArtifact(debug_10k_exe);
+    const debug_10k_step = b.step("debug-10k", "Debug 10k hashes execution");
+    debug_10k_step.dependOn(&run_debug_10k.step);
+
+    const debug_constructor_exe = b.addExecutable(.{
+        .name = "debug-constructor",
+        .root_source_file = b.path("test/debug_constructor.zig"),
+        .target = target,
+        .optimize = .Debug,
+    });
+    debug_constructor_exe.root_module.addImport("evm", evm_mod);
+    debug_constructor_exe.root_module.addImport("primitives", primitives_mod);
+    b.installArtifact(debug_constructor_exe);
+    
+    const run_debug_constructor = b.addRunArtifact(debug_constructor_exe);
+    const debug_constructor_step = b.step("debug-constructor", "Debug constructor execution");
+    debug_constructor_step.dependOn(&run_debug_constructor.step);
+
     const snailtracer_test = b.addTest(.{
         .name = "snailtracer-test",
         .root_source_file = b.path("test/snailtracer_test.zig"),
