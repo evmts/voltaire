@@ -25,8 +25,6 @@ function App() {
 	const [error, setError] = createSignal<string>('')
 	const [bytecode, setBytecode] = createSignal(sampleContracts[7].bytecode)
 	const [state, setState] = createStore<EvmState>({
-		pc: 0,
-		opcode: '-',
 		gasLeft: 0,
 		depth: 0,
 		stack: [],
@@ -34,6 +32,10 @@ function App() {
 		storage: [],
 		logs: [],
 		returnData: '0x',
+		completed: false,
+		currentInstructionIndex: 0,
+		currentBlockStartIndex: 0,
+		blocks: [],
 	})
 
 	const handleRunPause = () => {
@@ -102,7 +104,7 @@ function App() {
 			const intervalId = setInterval(async () => {
 				try {
 					const newState = await stepEvm()
-					if (newState.pc === 0 && newState.opcode === 'COMPLETE') {
+					if (newState.completed) {
 						setIsRunning(false)
 					}
 					setState(newState)

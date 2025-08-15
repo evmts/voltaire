@@ -1,8 +1,8 @@
 import { type Accessor, createSignal, type Setter, Show } from 'solid-js'
 import BytecodeLoader from '~/components/evm-debugger/BytecodeLoader'
-import BytecodeView from '~/components/evm-debugger/BytecodeView'
 import Controls from '~/components/evm-debugger/Controls'
 import ErrorAlert from '~/components/evm-debugger/ErrorAlert'
+import ExecutionStepsView from '~/components/evm-debugger/ExecutionStepsView'
 import GasUsage from '~/components/evm-debugger/GasUsage'
 import Header from '~/components/evm-debugger/Header'
 import LogsAndReturn from '~/components/evm-debugger/LogsAndReturn'
@@ -66,8 +66,14 @@ const EvmDebugger = (props: EvmDebuggerProps) => {
 				<ErrorAlert error={props.error()} setError={props.setError} />
 				<StateSummary state={props.state as EvmState} isUpdating={isUpdating()} />
 				<Show when={activePanel() === 'all' || activePanel() === 'bytecode'}>
-					<BytecodeView bytecode={props.bytecode()} pc={props.state.pc} />
+					<ExecutionStepsView
+						blocks={props.state.blocks}
+						currentBlockStartIndex={props.state.currentBlockStartIndex}
+						currentInstructionIndex={props.state.currentInstructionIndex}
+						rawBytecode={props.bytecode()}
+					/>
 				</Show>
+
 				<Show when={activePanel() === 'all' || activePanel() === 'gas'}>
 					<GasUsage state={props.state as EvmState} />
 				</Show>
