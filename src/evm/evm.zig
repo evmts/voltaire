@@ -25,6 +25,7 @@ const evm_limits = @import("constants/evm_limits.zig");
 const Frame = @import("frame.zig").Frame;
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
+const FramePool = @import("frame_pool.zig").FramePool;
 pub const StorageKey = @import("primitives").StorageKey;
 pub const CreateResult = @import("evm/create_result.zig").CreateResult;
 pub const CallResult = @import("evm/call_result.zig").CallResult;
@@ -120,6 +121,8 @@ trace_file: ?std.fs.File = null, // 8 bytes - debugging only
 /// All places in code that make this assumption are commented and must be handled
 /// Before we can remove this restriction
 initial_thread_id: std.Thread.Id, // Thread tracking
+/// Pool for lazily reusing temporary Frames (e.g., constructor frames)
+frame_pool: FramePool,
 
 // Compile-time validation and optimizations
 comptime {
@@ -236,6 +239,7 @@ pub fn init(
         .tracer = tracer,
         .trace_file = null,
         .initial_thread_id = std.Thread.getCurrentId(),
+        .frame_pool = try FramePool.init(allocator, MAX_CALL_DEPTH),
     };
 
     // Debug: verify tracer was stored correctly
@@ -261,6 +265,7 @@ pub fn deinit(self: *Evm) void {
     self.access_list.deinit();
     self.internal_arena.deinit();
     self.journal.deinit();
+    self.frame_pool.deinit();
 
     // Clean up analysis cache if it exists
     if (self.analysis_cache) |*cache| {
