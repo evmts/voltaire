@@ -302,9 +302,19 @@ The `bench/official` directory contains standardized EVM benchmarks for performa
    cargo install hyperfine
    ```
 
-2. **Build the benchmark runner**:
+2. **Build the benchmark runners**:
    ```bash
+   # Build Zig benchmark runners
    zig build build-evm-runner
+   zig build build-orchestrator
+   
+   # Build comparison EVM runners (optional, for cross-EVM benchmarks)
+   # EthereumJS (JavaScript/Bun)
+   cd bench/official/evms/ethereumjs && bun install && cd ../../../..
+   
+   # REVM (should already be built during zig build)
+   # Geth (should already be built)  
+   # evmone (should already be built)
    ```
 
 3. **Run individual benchmarks**:
@@ -314,10 +324,17 @@ The `bench/official` directory contains standardized EVM benchmarks for performa
      "zig-out/bin/evm-runner --contract-code-path bench/official/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
    ```
 
-4. **Run all benchmarks** (work in progress):
+4. **Run comparison benchmarks across all EVMs**:
    ```bash
-   # The orchestrator at bench/official/src/main.zig will eventually automate this
-   zig-out/bin/evm-runner --help  # See available options
+   # Compare all EVM implementations and export results
+   ./zig-out/bin/orchestrator --compare --export markdown
+   
+   # Single EVM benchmark
+   ./zig-out/bin/orchestrator -e zig -n 50 --export markdown
+   ./zig-out/bin/orchestrator -e revm -n 50
+   ./zig-out/bin/orchestrator -e ethereumjs -n 10  # Use fewer runs for JS
+   ./zig-out/bin/orchestrator -e geth -n 50
+   ./zig-out/bin/orchestrator -e evmone -n 50
    ```
 
 #### Benchmark Structure
