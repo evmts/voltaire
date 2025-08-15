@@ -54,23 +54,19 @@ test "STATICCALL: SSTORE under STATICCALL returns failure (0) with REVM parity" 
     const code = [_]u8{
         0x60, 0x01, // PUSH1 1 (value)
         0x60, 0x00, // PUSH1 0 (slot)
-        0x55,       // SSTORE
+        0x55, // SSTORE
         0x60, 0x01, // PUSH1 1
         0x60, 0x00, // PUSH1 0
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32
         0x60, 0x00, // PUSH1 0
-        0xf3,       // RETURN
+        0xf3, // RETURN
     };
 
     const res = try runBothStaticcall(&code);
     // Both should indicate failure of the call (revm_ok false, zig_ok false)
     try testing.expectEqual(res.revm_ok, res.zig_ok);
     try testing.expect(!res.revm_ok);
-    if (res.zig_out) |out| {
-        
-    }
+    // res.zig_out is VM-owned view; nothing to free
     allocator.free(res.revm_out);
 }
-
-

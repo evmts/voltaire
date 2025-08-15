@@ -23,18 +23,18 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
 
     var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
-    
+
     // Create a simple test to isolate the issue
     // Test basic RETURN without JUMPI first
     const simple_code = [_]u8{
-        0x60, 0x42,  // PUSH1 0x42
-        0x60, 0x00,  // PUSH1 0x00
-        0x52,        // MSTORE (store 0x42 at offset 0)
-        0x60, 0x20,  // PUSH1 0x20 (size)
-        0x60, 0x00,  // PUSH1 0x00 (offset)
-        0xf3,        // RETURN
+        0x60, 0x42, // PUSH1 0x42
+        0x60, 0x00, // PUSH1 0x00
+        0x52, // MSTORE (store 0x42 at offset 0)
+        0x60, 0x20, // PUSH1 0x20 (size)
+        0x60, 0x00, // PUSH1 0x00 (offset)
+        0xf3, // RETURN
     };
-    
+
     // First test the simple case
     const test_addr = Address.from_u256(0x3000);
     try vm.state.set_code(test_addr, &simple_code);
@@ -48,25 +48,8 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
         .gas = 100000,
     } };
     const test_res = try vm.call(test_params);
-    std.log.warn("Simple test: success={}, output_len={?}, gas_left={}", .{ 
-        test_res.success, 
-        if (test_res.output) |o| o.len else null,
-        test_res.gas_left
-    });
-    if (test_res.output) |output| {
-        if (output.len > 0) {
-            std.log.warn("Simple test output bytes: {x}", .{output});
-            if (output.len >= 32) {
-                const value = std.mem.readInt(u256, output[0..32], .big);
-                std.log.warn("Simple test output value: {}", .{value});
-            }
-        } else {
-            std.log.warn("Simple test returned EMPTY output!", .{});
-        }
-    } else {
-        std.log.warn("Simple test returned NULL output!", .{});
-    }
-    
+    std.log.warn("Simple test: success={}, output_len={?}, gas_left={}", .{ test_res.success, if (test_res.output) |o| o.len else null, test_res.gas_left });
+
     // The simple test should have returned 32 bytes with value 0x42
     try std.testing.expect(test_res.success);
     try std.testing.expect(test_res.output != null);
@@ -91,17 +74,17 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
     // 0x0E PUSH1 0x00
     // 0x10 RETURN
     const code = [_]u8{
-        0x60, 0x06,  // PUSH1 0x06 (destination)
-        0x60, 0x01,  // PUSH1 0x01 (condition)
-        0x57,        // JUMPI
-        0x00,        // STOP (should be skipped)
-        0x5b,        // JUMPDEST (at position 6)
-        0x60, 0x01,  // PUSH1 0x01
-        0x60, 0x00,  // PUSH1 0x00
-        0x52,        // MSTORE
-        0x60, 0x20,  // PUSH1 0x20 (size)
-        0x60, 0x00,  // PUSH1 0x00 (offset)
-        0xf3,        // RETURN
+        0x60, 0x06, // PUSH1 0x06 (destination)
+        0x60, 0x01, // PUSH1 0x01 (condition)
+        0x57, // JUMPI
+        0x00, // STOP (should be skipped)
+        0x5b, // JUMPDEST (at position 6)
+        0x60, 0x01, // PUSH1 0x01
+        0x60, 0x00, // PUSH1 0x00
+        0x52, // MSTORE
+        0x60, 0x20, // PUSH1 0x20 (size)
+        0x60, 0x00, // PUSH1 0x00 (offset)
+        0xf3, // RETURN
     };
 
     const caller = Address.from_u256(0x1000);
@@ -117,19 +100,8 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
         .gas = 100000,
     } };
     const res = try vm.call(params);
-    std.log.warn("Call result: success={}, output_len={?}, gas_used={}", .{ 
-        res.success, 
-        if (res.output) |o| o.len else null,
-        100000 - res.gas_left
-    });
-    if (res.output) |output| {
-        if (output.len > 0) {
-            std.log.warn("Output bytes: {x}", .{output});
-        } else {
-            std.log.warn("Output bytes: {{ }}", .{});
-        }
-    }
-    
+    std.log.warn("Call result: success={}, output_len={?}, gas_used={}", .{ res.success, if (res.output) |o| o.len else null, 100000 - res.gas_left });
+
     try std.testing.expect(res.success);
     try std.testing.expect(res.output != null);
     const out = res.output.?;
@@ -179,7 +151,7 @@ test "JUMPI should take jump when condition is non-zero" {
     // Deploy the bytecode as contract code
     const contract_addr = Address.from_u256(0x2000000000000000000000000000000000000002);
     try vm2.state.set_code(contract_addr, bytecode);
-    
+
     // Call the contract to execute the bytecode
     const call_params = CallParams{
         .call = .{

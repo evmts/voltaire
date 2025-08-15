@@ -46,11 +46,9 @@ fn readCaseFileRuntime(allocator: std.mem.Allocator, case_name: []const u8, file
 }
 
 fn deploy(vm: *evm.Evm, allocator: std.mem.Allocator, caller: primitives.Address.Address, bytecode: []const u8) !primitives.Address.Address {
+    _ = allocator; // unused in this helper
     // Bench bytecode is initcode for ERC20 cases; deploy via CREATE so constructor runs and returns runtime
     const create_result = try vm.create_contract(caller, 0, bytecode, 10_000_000);
-    if (create_result.output) |out| {
-        
-    }
     if (!create_result.success) return error.DeploymentFailed;
     return create_result.address;
 }
@@ -83,11 +81,11 @@ test "erc20 transfer benchmark executes successfully" {
 
     // Deploy and call
     const contract_address = try deploy(&vm, allocator, caller, bytecode);
-    
+
     // Debug: Check deployed code
     const deployed_code = vm.state.get_code(contract_address);
     std.log.debug("Deployed code size: {}", .{deployed_code.len});
-    
+
     const initial_gas: u64 = 100_000_000;
     std.log.debug("Calling ERC20 transfer with gas: {}, calldata len: {}", .{ initial_gas, calldata.len });
     const params = evm.CallParams{ .call = .{
@@ -98,9 +96,9 @@ test "erc20 transfer benchmark executes successfully" {
         .gas = initial_gas,
     } };
     const call_result = try vm.call(params);
-    
-    std.log.debug("Call result: success={}, gas_left={}, output_len={}", .{call_result.success, call_result.gas_left, if (call_result.output) |o| o.len else 0});
-    
+
+    std.log.debug("Call result: success={}, gas_left={}, output_len={}", .{ call_result.success, call_result.gas_left, if (call_result.output) |o| o.len else 0 });
+
     // Debug: log the selector we're sending
     if (calldata.len >= 4) {
         const selector = std.mem.readInt(u32, calldata[0..4], .big);
@@ -121,7 +119,6 @@ test "erc20 transfer benchmark executes successfully" {
     try std.testing.expect(gas_used > 0);
     // transfer(address,uint256) should return 32-byte true
     if (call_result.output) |output| {
-        
         std.log.debug("ERC20 transfer returned {} bytes", .{output.len});
         Log.debug("[erc20-test] Transfer output length: {d}", .{output.len});
         Log.debug("[erc20-test] Call success: {}, gas_left: {d}", .{ call_result.success, call_result.gas_left });
@@ -192,7 +189,6 @@ test "erc20 mint benchmark executes successfully" {
     try std.testing.expect(gas_used > 0);
     // Many mint implementations return bool; accept either true or empty (if non-standard)
     if (call_result.output) |output| {
-        
         if (output.len > 0) {
             try std.testing.expect(output.len >= 32);
             try std.testing.expect(output[output.len - 1] == 1);
@@ -243,7 +239,6 @@ test "erc20 approval-transfer benchmark executes successfully" {
     try std.testing.expect(gas_used > 0);
     // approve->transfer flow should return bool true on the last call
     if (call_result.output) |output| {
-        
         try std.testing.expect(output.len >= 32);
         try std.testing.expect(output[output.len - 1] == 1);
     } else {
@@ -307,7 +302,7 @@ test "erc20 benchmark gas usage patterns" {
         try std.testing.expect(gas_used >= test_case.expected_min_gas);
 
         if (call_result.output) |output| {
-            
+            _ = output; // no-op; output is VM-owned
         }
     }
 }
@@ -384,7 +379,7 @@ test "erc20 allowance starts at zero for fresh keys" {
     try std.testing.expect(call_result.success);
     try std.testing.expect(call_result.output != null);
     const out = call_result.output.?;
-    
+
     try std.testing.expect(out.len >= 32);
     // Expect zero allowance
     var zero_word: [32]u8 = .{0} ** 32;

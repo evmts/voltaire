@@ -59,9 +59,7 @@ test "ERC20 contract deployment hangs - minimal reproduction" {
     );
 
     std.log.info("TEST: Deployment result: success={}, gas_left={}", .{ result.success, result.gas_left });
-    if (result.output) |out| {
-        
-    }
+    // result.output is VM-owned; no action required
 
     if (result.success) {
         std.log.info("TEST: Contract deployed at address: {any}", .{result.address});
@@ -109,9 +107,7 @@ test "Simple contract deployment works" {
     );
 
     std.log.info("TEST: Deployment result: success={}, gas_left={}", .{ result.success, result.gas_left });
-    if (result.output) |out| {
-        
-    }
+    // result.output is VM-owned; no action required
 
     try std.testing.expect(result.success);
 }
