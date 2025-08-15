@@ -66,12 +66,35 @@ async function main() {
     });
     await stateManager.putAccount(CALLER_ADDRESS, callerAccount);
     
-    // Set runtime bytecode directly at a deterministic address
+    // Deploy the contract first to get runtime code
     const contractAddress = Address.fromString('0x5FbDB2315678afecb367f032d93F642f64180aa3');
-    await stateManager.putContractCode(contractAddress, contractCode);
+    
+    // Deploy contract using CREATE to get runtime code
+    const deployResult = await evm.runCall({
+        caller: CALLER_ADDRESS,
+        data: contractCode,
+        gasLimit: BigInt(10_000_000),
+        gasPrice: BigInt(1),
+        value: BigInt(0)
+    });
+    
+    if (deployResult.execResult.exceptionError) {
+        throw new Error(`Deployment failed: ${deployResult.execResult.exceptionError.error || deployResult.execResult.exceptionError}`);
+    }
+    
+    // Extract runtime code from deployment result
+    const runtimeCode = deployResult.execResult.returnValue;
+    if (!runtimeCode || runtimeCode.length === 0) {
+        throw new Error('Deployment returned no runtime code');
+    }
+    
+    // Set the runtime code at the contract address
+    await stateManager.putContractCode(contractAddress, runtimeCode);
 
     // Run the benchmark num_runs times
     for (let i = 0; i < numRuns; i++) {
+        const startTime = process.hrtime.bigint();
+        
         // Execute the contract call
         const result = await evm.runCall({
             caller: CALLER_ADDRESS,
@@ -82,11 +105,17 @@ async function main() {
             value: BigInt(0)
         });
         
+        const endTime = process.hrtime.bigint();
+        const durationNs = endTime - startTime;
+        const durationMs = Number(durationNs) / 1_000_000;
+        
         // Check for errors
         if (result.execResult.exceptionError) {
             throw new Error(`Call failed: ${result.execResult.exceptionError.error || result.execResult.exceptionError}`);
         }
-        // no in-run timers
+        
+        // Output timing in milliseconds (one per line as expected by orchestrator)
+        console.log(durationMs.toFixed(6));
     }
 }
 
