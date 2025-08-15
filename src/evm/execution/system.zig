@@ -750,6 +750,13 @@ pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
     const gas_reserved = remaining_gas / 64;
     const gas_for_create = remaining_gas - gas_reserved;
 
+    // Debug: log init code being deployed
+    std.log.debug("[CREATE2] init_code_len={}, salt={x}, first_bytes={any}", .{ 
+        init_code.len, 
+        salt,
+        if (init_code.len > 0) std.fmt.fmtSliceHexLower(init_code[0..@min(init_code.len, 32)]) else std.fmt.fmtSliceHexLower(&[_]u8{})
+    });
+    
     // CREATE2 uses salt for deterministic address calculation
     const call_params = CallParams{
         .create2 = .{
