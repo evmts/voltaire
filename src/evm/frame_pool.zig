@@ -42,5 +42,3 @@ pub const FramePool = struct {
         self.allocator.destroy(frame_ptr);
     }
 };
-
-

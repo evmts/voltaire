@@ -232,10 +232,10 @@ pub fn init(
         .trace_file = null,
         .initial_thread_id = std.Thread.getCurrentId(),
     };
-    
+
     // Debug: verify tracer was stored correctly
     Log.debug("Evm.init: tracer passed={}, stored tracer={}, self_ptr=0x{x}", .{ tracer != null, result.tracer != null, @intFromPtr(&result) });
-    
+
     return result;
 }
 
@@ -426,10 +426,7 @@ pub fn emit_log(self: *Evm, contract_address: primitives.Address.Address, topics
 
 /// Register a contract as created in the current transaction (Host interface)
 pub fn register_created_contract(self: *Evm, address: primitives.Address.Address) !void {
-    std.log.debug("[EVM] register_created_contract: address={any}, allocator={any}", .{ 
-        std.fmt.fmtSliceHexLower(&address),
-        @intFromPtr(self.created_contracts.allocator.vtable)
-    });
+    std.log.debug("[EVM] register_created_contract: address={any}, allocator={any}", .{ std.fmt.fmtSliceHexLower(&address), @intFromPtr(self.created_contracts.allocator.vtable) });
     return self.created_contracts.mark_created(address);
 }
 
@@ -477,7 +474,7 @@ pub fn get_output(self: *Evm) []const u8 {
     if (self.frame_stack) |frames| {
         if (self.current_frame_depth < frames.len) {
             const result = frames[self.current_frame_depth].output_buffer;
-            Log.debug("[Evm.get_output] frame_depth={}, output_len={}", .{self.current_frame_depth, result.len});
+            Log.debug("[Evm.get_output] frame_depth={}, output_len={}", .{ self.current_frame_depth, result.len });
             return result;
         }
     }
@@ -573,19 +570,15 @@ pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, 
     // CREATE uses sender address + nonce to calculate contract address
     // Get the nonce before incrementing it
     const nonce = self.state.get_nonce(caller);
-    
+
     // Calculate the CREATE address based on creator and nonce
     const new_address = primitives_internal.Address.get_contract_address(caller, nonce);
-    
+
     // Increment the nonce for the creator account
     _ = try self.state.increment_nonce(caller);
-    
-    std.log.debug("[CREATE] caller={any}, nonce={}, new_address={any}", .{ 
-        std.fmt.fmtSliceHexLower(&caller),
-        nonce,
-        std.fmt.fmtSliceHexLower(&new_address) 
-    });
-    
+
+    std.log.debug("[CREATE] caller={any}, nonce={}, new_address={any}", .{ std.fmt.fmtSliceHexLower(&caller), nonce, std.fmt.fmtSliceHexLower(&new_address) });
+
     return self.create_contract_at(caller, value, bytecode, gas, new_address);
 }
 
@@ -606,13 +599,8 @@ pub fn compute_create2_address(self: *Evm, caller: primitives_internal.Address.A
     @memcpy(preimage[53..85], &code_hash);
 
     // Debug logging
-    std.log.debug("[CREATE2] caller={any}, salt={x}, init_code_len={}, code_hash={any}", .{ 
-        std.fmt.fmtSliceHexLower(&caller),
-        salt,
-        init_code.len, 
-        std.fmt.fmtSliceHexLower(&code_hash) 
-    });
-    std.log.debug("[CREATE2] preimage={any}", .{ std.fmt.fmtSliceHexLower(&preimage) });
+    std.log.debug("[CREATE2] caller={any}, salt={x}, init_code_len={}, code_hash={any}", .{ std.fmt.fmtSliceHexLower(&caller), salt, init_code.len, std.fmt.fmtSliceHexLower(&code_hash) });
+    std.log.debug("[CREATE2] preimage={any}", .{std.fmt.fmtSliceHexLower(&preimage)});
 
     var out_hash: [32]u8 = undefined;
     Keccak256.hash(&preimage, &out_hash, .{});
@@ -620,9 +608,9 @@ pub fn compute_create2_address(self: *Evm, caller: primitives_internal.Address.A
     var addr: primitives_internal.Address.Address = undefined;
     // Take the last 20 bytes of the hash
     @memcpy(&addr, out_hash[12..32]);
-    
-    std.log.debug("[CREATE2] computed address={any}", .{ std.fmt.fmtSliceHexLower(&addr) });
-    
+
+    std.log.debug("[CREATE2] computed address={any}", .{std.fmt.fmtSliceHexLower(&addr)});
+
     return addr;
 }
 
@@ -791,7 +779,7 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     } else {
         std.debug.print("[create_contract] Success STOP, empty runtime code\n", .{});
     }
-    
+
     // Add back the unspent frame gas to the caller, but exclude the precharged overhead
     const gas_left = frame.gas_remaining;
     frame.deinit(self.allocator);
