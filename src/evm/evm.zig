@@ -694,7 +694,7 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     var frame = try Frame.init(
         frame_gas,
         false, // not static
-        @intCast(self.depth),
+        @intCast(self.depth + 1), // Increment depth for nested create
         new_address, // contract address being created
         caller,
         value,
@@ -705,11 +705,18 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     );
 
     var exec_err: ?ExecutionError.Error = null;
+    // Save current depth and increment for nested create
+    const saved_depth = self.depth;
+    self.depth += 1;
+    Log.debug("[create_contract_at] Calling interpret for CREATE2 at depth={}", .{self.depth});
     @import("evm/interpret.zig").interpret(self, &frame) catch |err| {
+        Log.debug("[create_contract_at] Interpret finished with error: {}", .{err});
         if (err != ExecutionError.Error.STOP and err != ExecutionError.Error.RETURN) {
             exec_err = err;
         }
     };
+    // Restore depth after create
+    self.depth = saved_depth;
 
     // Branch on result BEFORE deinitializing frame to safely access output
     if (exec_err) |e| {
