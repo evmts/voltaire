@@ -528,9 +528,14 @@ The project includes official EVM benchmarks in `bench/official/` for performanc
    cargo install hyperfine # Linux/other
    ```
 
-2. **Build the benchmark runner**:
+2. **Build the benchmark runners**:
    ```bash
+   # Core Zig runners
    zig build build-evm-runner
+   zig build build-orchestrator
+   
+   # EthereumJS dependencies (required for comparison benchmarks)
+   cd bench/official/evms/ethereumjs && bun install && cd ../../../..
    ```
 
 3. **Run benchmarks**:
@@ -538,6 +543,9 @@ The project includes official EVM benchmarks in `bench/official/` for performanc
    # Single benchmark example
    hyperfine --runs 10 --warmup 3 \
      "zig-out/bin/evm-runner --contract-code-path bench/official/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
+   
+   # Cross-EVM comparison benchmarks
+   ./zig-out/bin/orchestrator --compare --export markdown
    ```
 
 Available benchmark cases:
