@@ -567,11 +567,13 @@ pub inline fn set_is_executing(self: *Evm, on: bool) void {
 }
 
 pub inline fn is_read_only(self: *const Evm) bool {
-    return (self.flags & @as(u8, 1)) != 0;
+    // Read from canonical boolean to avoid desync with tests that set read_only directly
+    return self.read_only;
 }
 
 pub inline fn is_currently_executing(self: *const Evm) bool {
-    return (self.flags & @as(u8, 1) << 1) != 0;
+    // Read from canonical boolean to avoid desync with direct writes
+    return self.is_executing;
 }
 
 // The actual call implementation is in evm/call.zig

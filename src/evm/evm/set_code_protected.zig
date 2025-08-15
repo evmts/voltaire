@@ -25,7 +25,7 @@ pub const SetCodeProtectedError = ExecutionError.Error;
 /// const result = vm.set_code_protected(address, code); // Returns error.WriteProtection
 /// ```
 pub fn set_code_protected(self: *Vm, address: primitives.Address.Address, code: []const u8) SetCodeProtectedError!void {
-    if (self.read_only) {
+    if (self.is_read_only()) {
         return ExecutionError.Error.WriteProtection;
     }
 
