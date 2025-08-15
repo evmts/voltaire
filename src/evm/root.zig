@@ -63,7 +63,7 @@ pub const primitives = @import("primitives");
 // Import all EVM modules
 
 /// Bytecode analysis for jump destination detection
-pub const CodeAnalysis = @import("analysis.zig");
+pub const CodeAnalysis = @import("analysis.zig").CodeAnalysis;
 
 /// Unified error types for EVM execution
 pub const ExecutionError = @import("execution/execution_error.zig");
@@ -429,4 +429,14 @@ test "Execution module" {
 }
 test "Instruction module" {
     std.testing.refAllDecls(instruction_module);
+}
+
+// Import instruction tag tests
+test {
+    _ = @import("instruction_tag_test.zig");
+}
+
+// Import jumpdest validation tests
+test {
+    _ = @import("jumpdest_validation_test.zig");
 }
