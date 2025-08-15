@@ -1411,25 +1411,17 @@ test "CREATE2 opcode creates contract at deterministic address" {
     // Deployer contract bytecode that uses CREATE2
     // The deployed contract simply returns 0x42
     const deployer_bytecode = [_]u8{
-        // First, store the deployed contract bytecode in memory (10 bytes)
-        0x69, // PUSH10
-        0x60,
-        0x42,
-        0x60,
-        0x00,
-        0x52,
-        0x60,
-        0x20,
-        0x60,
-        0x00,
-        0xf3,
-        0x60, 0x00, // PUSH1 0 (offset in memory)
-        0x52, // MSTORE
+        // Store the runtime bytecode in memory using CODECOPY
+        // Runtime bytecode is at the end of this contract
+        0x60, 0x0a, // PUSH1 10 (size of runtime code)
+        0x60, 0x23, // PUSH1 35 (offset of runtime code in this bytecode) 
+        0x60, 0x00, // PUSH1 0 (destination in memory)
+        0x39,       // CODECOPY
 
         // CREATE2 parameters
         0x63, 0xde, 0xad, 0xbe, 0xef, // PUSH4 0xdeadbeef (salt)
         0x60, 0x0a, // PUSH1 10 (size of bytecode to deploy)
-        0x60, 0x16, // PUSH1 22 (offset of bytecode in memory)
+        0x60, 0x00, // PUSH1 0 (offset of bytecode in memory)
         0x60, 0x00, // PUSH1 0 (value to send)
         0xf5, // CREATE2
 
@@ -1440,6 +1432,14 @@ test "CREATE2 opcode creates contract at deterministic address" {
         0x60, 0x20, // PUSH1 32 (size)
         0x60, 0x00, // PUSH1 0 (offset)
         0xf3, // RETURN
+        
+        // Runtime bytecode (10 bytes) - returns 0x42
+        0x60, 0x42, // PUSH1 0x42
+        0x60, 0x00, // PUSH1 0 (memory offset)
+        0x52,       // MSTORE
+        0x60, 0x20, // PUSH1 32 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0xf3,       // RETURN
     };
 
     // Execute on REVM
