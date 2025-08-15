@@ -28,7 +28,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
     const host = Host.init(self);
 
     // Check if top-level call
-    const is_top_level_call = !self.is_executing;
+    const is_top_level_call = !self.is_currently_executing();
     const snapshot_id = if (!is_top_level_call) host.create_snapshot() else 0;
 
     // Extract call parameters
@@ -170,9 +170,9 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
 
     // Main execution loop
     var exec_err: ?ExecutionError.Error = null;
-    const was_executing = self.is_executing;
-    self.is_executing = true;
-    defer self.is_executing = was_executing;
+    const was_executing = self.is_currently_executing();
+    self.set_is_executing(true);
+    defer self.set_is_executing(was_executing);
     
     // For mini EVM, we'll use simple PC tracking instead of analysis blocks
     var pc: usize = 0;
