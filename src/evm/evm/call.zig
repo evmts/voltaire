@@ -301,7 +301,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
             analysis_ptr, // analysis
             host,
             self.state.database,
-            self.allocator, // use general allocator for frame-owned allocations
+            self.allocator, // allocator for frame-owned allocations
         );
         // Code is already handled through the CodeAnalysis passed to Frame.init
         // Frame resources will be released after execution completes
@@ -354,7 +354,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
             analysis_ptr, // analysis
             host,
             self.state.database,
-            self.allocator, // use general allocator for frame-owned allocations
+            self.allocator, // allocator for frame-owned allocations
         ) catch {
             // Frame initialization failed, revert snapshot
             if (self.current_frame_depth > 0) host.revert_to_snapshot(snapshot_id);
