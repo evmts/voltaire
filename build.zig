@@ -613,6 +613,21 @@ pub fn build(b: *std.Build) void {
     const build_evm_runner_small_step = b.step("build-evm-runner-small", "Build the EVM benchmark runner (ReleaseSmall)");
     build_evm_runner_small_step.dependOn(&b.addInstallArtifact(evm_runner_small_exe, .{}).step);
 
+    // Debug EVM Runner
+    const debug_runner_exe = b.addExecutable(.{
+        .name = "debug-runner",
+        .root_source_file = b.path("bench/official/evms/zig/src/debug.zig"),
+        .target = target,
+        .optimize = .Debug,
+    });
+    debug_runner_exe.root_module.addImport("evm", evm_mod);
+    debug_runner_exe.root_module.addImport("primitives", primitives_mod);
+
+    b.installArtifact(debug_runner_exe);
+
+    const build_debug_runner_step = b.step("build-debug-runner", "Build the debug EVM runner");
+    build_debug_runner_step.dependOn(&b.addInstallArtifact(debug_runner_exe, .{}).step);
+
     // Benchmark Orchestrator executable
     const clap_dep = b.dependency("clap", .{
         .target = target,
