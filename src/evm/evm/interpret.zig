@@ -85,7 +85,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     var instruction: *const Instruction = &frame.analysis.instructions[0];
     var loop_iterations: usize = 0;
 
-    const analysis = frame.analysis
+    const analysis = frame.analysis;
 
     dispatch: switch (instruction.tag) {
         // .block_info runs before any series of opcodes and aggregates stack requirements and 
@@ -123,11 +123,10 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             const exec_inst = analysis.getInstructionParams(.exec, instruction.id);
             const exec_fun = exec_inst.exec_fn;
             const next_instruction = exec_inst.next_inst;
-            const next_instruction_tag = exec_inst.tag;
 
-            try exec_fn(frame);
+            try exec_fun(frame);
             instruction = next_instruction;
-            continue :dispatch next_instruction_tag;
+            continue :dispatch instruction.tag;
         },
         // .dynamic_gas is like .exec but it also dynamically charges gas that couldn't be statically analyzed
         .dynamic_gas => {
