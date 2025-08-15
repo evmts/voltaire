@@ -732,7 +732,7 @@ pub fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_t
     var it_pc: usize = 0;
     var it_block: usize = 0;
     var it_dyn: usize = 0;
-    var it_word: usize = 0;
+    // it_word removed - we now use instruction IDs directly to index into words_builder
 
     for (final_instructions, 0..) |hdr, i| {
         const next_inst = if (i + 1 < final_instructions.len) &final_instructions[i + 1] else &final_instructions[final_instructions.len - 1];
@@ -836,8 +836,9 @@ pub fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_t
                 idx24 += 1;
             },
             .word => {
-                const wr = words_builder.items[it_word];
-                it_word += 1;
+                // Use the instruction's ID to index into words_builder, not a sequential iterator
+                const word_id = final_instructions[i].id;
+                const wr = words_builder.items[word_id];
                 const start = wr.start_pc;
                 const end = @min(start + wr.len, code.len);
                 const payload: WordInstruction = .{ .word_bytes = if (end > start) code[start..end] else &[_]u8{0}, .next_inst = next_inst };
