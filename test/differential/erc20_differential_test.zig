@@ -59,7 +59,7 @@ fn run_case(case_name: []const u8) !void {
     defer vm.deinit();
     try vm.state.set_balance(deployer, std.math.maxInt(u256));
     const zig_create = try vm.create_contract(deployer, 0, init_code, 1_000_000_000);
-    defer if (zig_create.output) |o| allocator.free(o);
+    // VM owns zig_create.output - do not free
     // Compare runtime lengths/content
     try testing.expect(zig_create.output != null);
     try testing.expectEqual(@as(usize, revm_runtime.len), zig_create.output.?.len);

@@ -28,7 +28,9 @@ fn runBoth(bytecode: []const u8, target: Address.Address, gas: u64) !struct { ok
     try vm.state.set_code(target, bytecode);
     const params = evm.CallParams{ .call = .{ .caller = caller, .to = target, .value = 0, .input = &[_]u8{}, .gas = gas } };
     const z = try vm.call(params);
-    return .{ .ok1 = r.success, .out1 = r_out_copy, .ok2 = z.success, .out2 = z.output };
+    // Copy the output since VM owns it
+    const z_out_copy = if (z.output) |out| try allocator.dupe(u8, out) else null;
+    return .{ .ok1 = r.success, .out1 = r_out_copy, .ok2 = z.success, .out2 = z_out_copy };
 }
 
 test "CALL pop order: ret/args/gas,to,value wiring matches REVM" {

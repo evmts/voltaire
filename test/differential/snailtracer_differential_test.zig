@@ -59,7 +59,7 @@ test "snailtracer differential: create returns identical runtime and call output
     defer vm.deinit();
     try vm.state.set_balance(deployer, std.math.maxInt(u256));
     const zig_create = try vm.create_contract(deployer, 0, init_code, 1_000_000_000);
-    defer if (zig_create.output) |o| allocator.free(o);
+    // VM owns zig_create.output - do not free
 
     // Compare runtime bytecode from create
     try testing.expect(revm_runtime.len == (if (zig_create.output) |o| o.len else 0));

@@ -37,8 +37,11 @@ fn runBoth(bytecode: []const u8, gas: u64) !struct { revm_ok: bool, revm_out: []
         .gas = gas,
     } };
     const zig_result = try vm_instance.call(params);
+    
+    // Copy the Guillotine output since the VM owns it and may reuse the buffer
+    const zig_out_copy = if (zig_result.output) |out| try allocator.dupe(u8, out) else null;
 
-    return .{ .revm_ok = revm_result.success, .revm_out = revm_out_copy, .zig_ok = zig_result.success, .zig_out = zig_result.output };
+    return .{ .revm_ok = revm_result.success, .revm_out = revm_out_copy, .zig_ok = zig_result.success, .zig_out = zig_out_copy };
 }
 
 test "fusion: PUSH+JUMP immediate fused target matches REVM" {
