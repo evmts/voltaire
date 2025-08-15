@@ -76,6 +76,7 @@ pub fn op_return(context: *anyopaque) ExecutionError.Error!void {
     // Use batch pop for performance - pop 2 values at once
     // EVM stack is [offset, size] with OFFSET on top
     const values = frame.stack.pop2_unsafe();
+    Log.debug("RETURN pop2 result: a={}, b={}", .{ values.a, values.b });
     const offset = values.b; // Top (offset)
     const size = values.a; // Second from top (size)
 
