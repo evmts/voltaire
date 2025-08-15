@@ -296,7 +296,7 @@ test "ADD opcode max_u256 + 1 = 0 (overflow)" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -399,7 +399,7 @@ test "SUB opcode 10 - 5 = 5" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -508,7 +508,7 @@ test "SUB opcode underflow 5 - 10 = max_u256 - 4" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
