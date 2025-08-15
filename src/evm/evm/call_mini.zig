@@ -112,7 +112,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
 
         // Allocate frame stack if needed
         if (self.frame_stack == null) {
-            self.frame_stack = try self.allocator.alloc(Frame, MAX_CALL_DEPTH);
+            self.frame_stack = try std.heap.page_allocator.alloc(Frame, MAX_CALL_DEPTH);
         }
     } else {
         // Nested call - check depth
