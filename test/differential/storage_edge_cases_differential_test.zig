@@ -74,11 +74,11 @@ test "SSTORE and SLOAD basic operation" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -173,11 +173,11 @@ test "SSTORE max u256 value" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -266,11 +266,11 @@ test "SLOAD from uninitialized storage returns zero" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -359,11 +359,11 @@ test "SSTORE in static call fails with WriteProtection" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // All should fail due to WriteProtection
     try testing.expect(!revm_result.success);
@@ -439,11 +439,11 @@ test "Multiple SSTORE to same slot updates value" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -542,11 +542,11 @@ test "SSTORE and SLOAD with max u256 key" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;

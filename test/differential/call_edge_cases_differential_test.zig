@@ -77,11 +77,11 @@ test "CALL with insufficient gas for base cost" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed (CALL should fail but not revert)
     const revm_succeeded = revm_result.success;
@@ -194,11 +194,11 @@ test "DELEGATECALL preserves msg.sender and msg.value" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -323,11 +323,11 @@ test "STATICCALL prevents state modifications" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -426,11 +426,11 @@ test "CALL with value transfer to non-existent account" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -547,11 +547,11 @@ test "CALL with exact gas allocation" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -669,11 +669,11 @@ test "CALLCODE modifies caller's storage" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;

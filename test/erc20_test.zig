@@ -15,7 +15,7 @@ fn hexDecode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
 }
 
 fn readCaseFile(allocator: std.mem.Allocator, comptime case_name: []const u8, comptime file_name: []const u8) ![]u8 {
-    const path = "/Users/williamcory/guillotine/bench/official/cases/" ++ case_name ++ "/" ++ file_name;
+    const path = "/Users/williamcory/Guillotine/bench/official/cases/" ++ case_name ++ "/" ++ file_name;
     const file = try std.fs.openFileAbsolute(path, .{});
     defer file.close();
     const content = try file.readToEndAlloc(allocator, 16 * 1024 * 1024);
@@ -384,4 +384,115 @@ test "erc20 allowance starts at zero for fresh keys" {
     // Expect zero allowance
     var zero_word: [32]u8 = .{0} ** 32;
     try std.testing.expectEqualSlices(u8, zero_word[0..], out[out.len - 32 ..]);
+}
+
+test "erc20 transfer using call_mini" {
+    const allocator = std.testing.allocator;
+
+    // Load bytecode and calldata from official case (erc20-transfer)
+    const bytecode_hex = try readCaseFile(allocator, "erc20-transfer", "bytecode.txt");
+    defer allocator.free(bytecode_hex);
+    const calldata_hex = try readCaseFile(allocator, "erc20-transfer", "calldata.txt");
+    defer allocator.free(calldata_hex);
+
+    const bytecode = try hexDecode(allocator, bytecode_hex);
+    defer allocator.free(bytecode);
+    const calldata = try hexDecode(allocator, calldata_hex);
+    defer allocator.free(calldata);
+
+    // Set up VM in regular mode for deployment
+    var memory_db = evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null); // Regular mode for deployment
+    defer vm.deinit();
+
+    // Caller and funding
+    const caller = primitives.Address.from_u256(0x1000000000000000000000000000000000000001);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+
+    // Deploy with regular execution
+    const contract_address = try deploy(&vm, allocator, caller, bytecode);
+
+    const initial_gas: u64 = 100_000_000;
+    std.log.debug("Calling ERC20 transfer with call_mini, gas: {}, calldata len: {}", .{ initial_gas, calldata.len });
+    const params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_address,
+        .value = 0,
+        .input = calldata,
+        .gas = initial_gas,
+    } };
+    // Use call_mini directly
+    const call_result = try vm.call_mini(params);
+
+    std.log.debug("call_mini result: success={}, gas_left={}, output_len={}", .{ call_result.success, call_result.gas_left, if (call_result.output) |o| o.len else 0 });
+
+    try std.testing.expect(call_result.success);
+    const gas_used = initial_gas - call_result.gas_left;
+    try std.testing.expect(gas_used > 0);
+    
+    // transfer(address,uint256) should return 32-byte true
+    if (call_result.output) |output| {
+        std.log.debug("ERC20 transfer via call_mini returned {} bytes", .{output.len});
+        try std.testing.expect(output.len >= 32);
+        try std.testing.expect(output[output.len - 1] == 1);
+    } else {
+        std.log.err("No output returned from ERC20 transfer using call_mini", .{});
+        return error.MissingReturnData;
+    }
+}
+
+test "erc20 mint using call_mini" {
+    const allocator = std.testing.allocator;
+
+    // Load bytecode and calldata from official case (erc20-mint)
+    const bytecode_hex = try readCaseFile(allocator, "erc20-mint", "bytecode.txt");
+    defer allocator.free(bytecode_hex);
+    const calldata_hex = try readCaseFile(allocator, "erc20-mint", "calldata.txt");
+    defer allocator.free(calldata_hex);
+
+    const bytecode = try hexDecode(allocator, bytecode_hex);
+    defer allocator.free(bytecode);
+    const calldata = try hexDecode(allocator, calldata_hex);
+    defer allocator.free(calldata);
+
+    // Set up VM in regular mode for deployment
+    var memory_db = evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null); // Regular mode for deployment
+    defer vm.deinit();
+
+    // Caller and funding
+    const caller = primitives.Address.from_u256(0x1000000000000000000000000000000000000001);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+
+    // Deploy with regular execution
+    const contract_address = try deploy(&vm, allocator, caller, bytecode);
+    
+    const initial_gas: u64 = 100_000_000;
+    const params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_address,
+        .value = 0,
+        .input = calldata,
+        .gas = initial_gas,
+    } };
+    // Use call_mini directly
+    const call_result = try vm.call_mini(params);
+
+    try std.testing.expect(call_result.success);
+    const gas_used = initial_gas - call_result.gas_left;
+    try std.testing.expect(gas_used > 0);
+    
+    // Many mint implementations return bool; accept either true or empty (if non-standard)
+    if (call_result.output) |output| {
+        if (output.len > 0) {
+            try std.testing.expect(output.len >= 32);
+            try std.testing.expect(output[output.len - 1] == 1);
+        }
+    }
 }

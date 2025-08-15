@@ -90,6 +90,16 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         self.require_one_thread();
     }
 
+    Log.debug("[INTERPRET_DEBUG] Starting interpret", .{});
+    Log.debug("[INTERPRET_DEBUG]   frame.depth: {}", .{frame.depth});
+    Log.debug("[INTERPRET_DEBUG]   frame.gas_remaining: {}", .{frame.gas_remaining});
+    Log.debug("[INTERPRET_DEBUG]   frame.address: {any}", .{std.fmt.fmtSliceHexLower(&frame.contract_address)});
+    Log.debug("[INTERPRET_DEBUG]   analysis.code.len: {}", .{frame.analysis.code.len});
+    if (frame.analysis.code.len > 0) {
+        Log.debug("[INTERPRET_DEBUG]   code first 32 bytes: {any}", .{std.fmt.fmtSliceHexLower(frame.analysis.code[0..@min(frame.analysis.code.len, 32)])});
+    }
+    Log.debug("[INTERPRET_DEBUG]   instruction count: {}", .{frame.analysis.instructions.len});
+
     if (comptime build_options.enable_tracing) {
         const tracer_exists = self.tracer != null;
         Log.debug("interpret called: depth={}, has_tracer={}, self_ptr=0x{x}, tracer_field_offset={}", .{ frame.depth, tracer_exists, @intFromPtr(self), @offsetOf(Evm, "tracer") });

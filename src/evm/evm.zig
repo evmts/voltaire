@@ -105,6 +105,8 @@ current_output: []const u8 = &.{}, // 16 bytes - only for RETURN/REVERT
 current_input: []const u8 = &.{}, // 16 bytes - only for CALLDATALOAD/CALLDATACOPY
 /// Owned copy of current_output to ensure valid lifetime across frame transitions
 owned_output: ?[]u8 = null,
+/// Separate output buffer for mini execution to avoid conflicts with regular execution
+mini_output: ?[]u8 = null,
 
 // === REMAINING COLD DATA ===
 /// Lazily allocated frame stack for nested calls - only allocates what's needed
@@ -256,6 +258,11 @@ pub fn deinit(self: *Evm) void {
         self.allocator.free(buf);
         self.owned_output = null;
     }
+    // Free mini output buffer if present
+    if (self.mini_output) |buf| {
+        self.allocator.free(buf);
+        self.mini_output = null;
+    }
     if (self.trace_file) |f| {
         // Best-effort close
         f.close();
@@ -328,6 +335,11 @@ pub fn reset(self: *Evm) void {
     if (self.owned_output) |buf| {
         self.allocator.free(buf);
         self.owned_output = null;
+    }
+    // Free mini output buffer as well
+    if (self.mini_output) |buf| {
+        self.allocator.free(buf);
+        self.mini_output = null;
     }
     // Reset internal arena allocator to reuse memory
     _ = self.internal_arena.reset(.retain_capacity);
@@ -475,10 +487,16 @@ pub fn get_original_storage(self: *Evm, address: primitives.Address.Address, slo
 
 /// Set the output buffer for the current frame (Host interface)
 pub fn set_output(self: *Evm, output: []const u8) !void {
-    // Free previous owned buffer if any
+    // Free previous owned buffer if any (but be careful about double frees)
     if (self.owned_output) |buf| {
-        self.allocator.free(buf);
-        self.owned_output = null;
+        // Only free if the pointer is different from what we're about to set
+        if (output.ptr != buf.ptr) {
+            self.allocator.free(buf);
+            self.owned_output = null;
+        } else {
+            // Same buffer, don't free and don't duplicate
+            return;
+        }
     }
 
     // Always make an owned copy so data survives child frame teardown
@@ -514,12 +532,17 @@ pub fn get_output(self: *Evm) []const u8 {
 
 /// Get the input buffer for the current frame (Host interface)
 pub fn get_input(self: *Evm) []const u8 {
+    // During mini execution, use current_input directly
+    if (self.current_input.len > 0) {
+        return self.current_input;
+    }
+    // For regular execution, get from frame stack
     if (self.frame_stack) |frames| {
         if (self.current_frame_depth < frames.len) {
             return frames[self.current_frame_depth].input_buffer;
         }
     }
-    return self.current_input;
+    return &.{};
 }
 
 /// Access an address and return the gas cost (Host interface)
@@ -676,14 +699,27 @@ pub fn compute_create2_address(self: *Evm, caller: primitives_internal.Address.A
 
 /// CREATE/CREATE2 helper that deploys contract at a specified address
 pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Address, value: u256, bytecode: []const u8, gas: u64, new_address: primitives_internal.Address.Address) !InterprResult {
+    Log.debug("[CREATE_DEBUG] Starting create_contract_at", .{});
+    Log.debug("[CREATE_DEBUG]   caller: {any}", .{std.fmt.fmtSliceHexLower(&caller)});
+    Log.debug("[CREATE_DEBUG]   value: {}", .{value});
+    Log.debug("[CREATE_DEBUG]   bytecode.len: {}", .{bytecode.len});
+    Log.debug("[CREATE_DEBUG]   gas: {}", .{gas});
+    Log.debug("[CREATE_DEBUG]   new_address: {any}", .{std.fmt.fmtSliceHexLower(&new_address)});
+    Log.debug("[CREATE_DEBUG]   current_frame_depth: {}", .{self.current_frame_depth});
+    
+    if (bytecode.len > 0) {
+        Log.debug("[CREATE_DEBUG]   bytecode first 32 bytes: {any}", .{std.fmt.fmtSliceHexLower(bytecode[0..@min(bytecode.len, 32)])});
+    }
 
     // Check if this is a top-level call and charge base transaction cost
     const is_top_level = self.current_frame_depth == 0;
     var remaining_gas = gas;
     if (is_top_level) {
         const base_cost = GasConstants.TxGas;
+        Log.debug("[CREATE_DEBUG] Top-level call, charging base cost: {}", .{base_cost});
 
         if (remaining_gas < base_cost) {
+            Log.debug("[CREATE_DEBUG] OutOfGas: remaining_gas {} < base_cost {}", .{ remaining_gas, base_cost });
             return InterprResult{
                 .status = .OutOfGas,
                 .output = null,
@@ -695,13 +731,17 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
         }
 
         remaining_gas -= base_cost;
+        Log.debug("[CREATE_DEBUG] After base cost, remaining_gas: {}", .{remaining_gas});
     }
 
     // Analyze initcode (use cache if available)
     // Use analysis cache (always initialized in Evm.init)
+    Log.debug("[CREATE_DEBUG] Analyzing bytecode, cache available: {}", .{self.analysis_cache != null});
     const analysis_ptr = blk: {
         if (self.analysis_cache) |*cache| {
-            break :blk cache.getOrAnalyze(bytecode, &self.table) catch {
+            Log.debug("[CREATE_DEBUG] Using cache for analysis", .{});
+            break :blk cache.getOrAnalyze(bytecode, &self.table) catch |err| {
+                Log.debug("[CREATE_DEBUG] Analysis failed: {}", .{err});
                 return InterprResult{
                     .status = .Failure,
                     .output = null,
@@ -713,6 +753,7 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
             };
         } else {
             // Fallback: treat as failure if cache unavailable (should not happen)
+            Log.debug("[CREATE_DEBUG] No cache available - failing", .{});
             return InterprResult{
                 .status = .Failure,
                 .output = null,
@@ -723,13 +764,22 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
             };
         }
     };
+    Log.debug("[CREATE_DEBUG] Analysis complete, ptr: 0x{x}", .{@intFromPtr(analysis_ptr)});
 
     // Pre-charge CREATE base and initcode costs to align with opcode path
     const GasC = @import("primitives").GasConstants;
     const word_count: u64 = GasC.wordCount(bytecode.len);
     const precharge: u64 = GasC.CreateGas + (word_count * GasC.InitcodeWordGas) + (@as(u64, @intCast(bytecode.len)) * GasC.CreateDataGas);
+    Log.debug("[CREATE_DEBUG] Gas calculation:", .{});
+    Log.debug("[CREATE_DEBUG]   word_count: {}", .{word_count});
+    Log.debug("[CREATE_DEBUG]   CreateGas: {}", .{GasC.CreateGas});
+    Log.debug("[CREATE_DEBUG]   InitcodeWordGas: {}", .{GasC.InitcodeWordGas});
+    Log.debug("[CREATE_DEBUG]   CreateDataGas: {}", .{GasC.CreateDataGas});
+    Log.debug("[CREATE_DEBUG]   precharge total: {}", .{precharge});
+    
     if (remaining_gas <= precharge) {
         // Not enough gas to even pay creation overhead
+        Log.debug("[CREATE_DEBUG] OutOfGas: remaining_gas {} <= precharge {}", .{ remaining_gas, precharge });
         return InterprResult{
             .status = .OutOfGas,
             .output = null,
@@ -740,6 +790,7 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
         };
     }
     const frame_gas: u64 = remaining_gas - precharge;
+    Log.debug("[CREATE_DEBUG] Frame gas after precharge: {}", .{frame_gas});
 
     // Prepare a standalone frame for constructor execution
     const host = @import("host.zig").Host.init(self);
@@ -763,10 +814,17 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     // Save current depth and increment for nested create
     const saved_depth = self.depth;
     self.depth += 1;
+    Log.debug("[CREATE_DEBUG] Starting interpret with frame_gas: {}", .{frame_ptr.gas_remaining});
+    Log.debug("[CREATE_DEBUG] Frame details: address={any}, caller={any}, value={}", .{
+        std.fmt.fmtSliceHexLower(&frame_ptr.contract_address),
+        std.fmt.fmtSliceHexLower(&frame_ptr.caller),
+        frame_ptr.value,
+    });
     Log.debug("[create_contract_at] Before interpret: depth={}, has_tracer={}, self_ptr=0x{x}, tracer_ptr=0x{x}", .{ self.depth, self.tracer != null, @intFromPtr(self), if (self.tracer) |t| @intFromPtr(&t) else 0 });
     Log.debug("[create_contract_at] Tracer field check: offset={}, value_exists={}", .{ @offsetOf(Evm, "tracer"), self.tracer != null });
     Log.debug("[create_contract_at] Calling interpret for CREATE2 at depth={}", .{self.depth});
     @import("evm/interpret.zig").interpret(self, frame_ptr) catch |err| {
+        Log.debug("[CREATE_DEBUG] Interpret finished with error: {}", .{err});
         Log.debug("[create_contract_at] Interpret finished with error: {}", .{err});
         if (err != ExecutionError.Error.STOP and err != ExecutionError.Error.RETURN) {
             exec_err = err;
@@ -774,6 +832,7 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     };
     // Restore depth after create
     self.depth = saved_depth;
+    Log.debug("[CREATE_DEBUG] After interpret: exec_err={?}, gas_remaining={}", .{ exec_err, frame_ptr.gas_remaining });
 
     // Branch on result BEFORE deinitializing frame to safely access output
     if (exec_err) |e| {
@@ -831,14 +890,20 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
 
     // Success (STOP or fell off end): deploy runtime code if any
     const output = host.get_output();
+    Log.debug("[CREATE_DEBUG] Success path: output.len={}", .{output.len});
     var out: ?[]const u8 = null;
     if (output.len > 0) {
+        Log.debug("[CREATE_DEBUG] Deploying runtime code, first 32 bytes: {any}", .{std.fmt.fmtSliceHexLower(output[0..@min(output.len, 32)])});
         std.debug.print("[create_contract] Success STOP, deploying runtime code len={}, first_bytes={any}\n", .{ output.len, std.fmt.fmtSliceHexLower(output[0..@min(output.len, 32)]) });
         // Store code at the new address (MemoryDatabase copies the slice)
-        self.state.set_code(new_address, output) catch {};
+        self.state.set_code(new_address, output) catch |err| {
+            Log.debug("[CREATE_DEBUG] Failed to set code: {}", .{err});
+        };
         // Return view of owned output buffer (no extra allocation)
         out = @constCast(output);
+        Log.debug("[CREATE_DEBUG] Code deployed successfully at {any}", .{std.fmt.fmtSliceHexLower(&new_address)});
     } else {
+        Log.debug("[CREATE_DEBUG] Empty runtime code - no code deployed", .{});
         std.debug.print("[create_contract] Success STOP, empty runtime code\n", .{});
     }
 

@@ -15,7 +15,7 @@ fn hexDecode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
 }
 
 fn readCaseFile(allocator: std.mem.Allocator, comptime case_name: []const u8, comptime file_name: []const u8) ![]u8 {
-    const path = "/Users/williamcory/guillotine/bench/official/cases/" ++ case_name ++ "/" ++ file_name;
+    const path = "/Users/williamcory/Guillotine/bench/official/cases/" ++ case_name ++ "/" ++ file_name;
     const file = try std.fs.openFileAbsolute(path, .{});
     defer file.close();
     const content = try file.readToEndAlloc(allocator, 16 * 1024 * 1024);
@@ -248,4 +248,115 @@ test "snailtracer deployment gas requirements" {
     const gas_used = initial_gas - create_result.gas_left;
     try std.testing.expect(gas_used > 50_000); // Deployment should use significant gas
     try std.testing.expect(gas_used < initial_gas); // But not all of it
+}
+
+test "snailtracer using call_mini" {
+    const allocator = std.testing.allocator;
+
+    // Load bytecode and calldata from official case
+    const bytecode_hex = try readCaseFile(allocator, "snailtracer", "bytecode.txt");
+    defer allocator.free(bytecode_hex);
+    const calldata_hex = try readCaseFile(allocator, "snailtracer", "calldata.txt");
+    defer allocator.free(calldata_hex);
+
+    const bytecode = try hexDecode(allocator, bytecode_hex);
+    defer allocator.free(bytecode);
+    const calldata = try hexDecode(allocator, calldata_hex);
+    defer allocator.free(calldata);
+
+    // Set up VM in regular mode for deployment
+    var memory_db = evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null); // Regular mode for deployment
+    defer vm.deinit();
+
+    // Caller and funding
+    const caller = primitives.Address.from_u256(0x1000000000000000000000000000000000000001);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+
+    // Deploy with regular execution
+    const contract_address = try deploy(&vm, caller, bytecode);
+    
+    const initial_gas: u64 = 100_000_000;
+    const params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_address,
+        .value = 0,
+        .input = calldata,
+        .gas = initial_gas,
+    } };
+    
+    std.log.debug("Calling snailtracer with call_mini, gas: {}, calldata len: {}", .{ initial_gas, calldata.len });
+    // Use call_mini directly
+    const call_result = try vm.call_mini(params);
+
+    std.log.debug("call_mini result: success={}, gas_left={}, output_len={}", .{ 
+        call_result.success, 
+        call_result.gas_left, 
+        if (call_result.output) |o| o.len else 0 
+    });
+
+    try std.testing.expect(call_result.success);
+    const gas_used = initial_gas - call_result.gas_left;
+    try std.testing.expect(gas_used > 0);
+
+    // Snailtracer should produce output
+    if (call_result.output) |output| {
+        std.log.debug("Snailtracer via call_mini returned {} bytes", .{output.len});
+        try std.testing.expect(output.len > 0);
+    } else {
+        return error.NoOutput;
+    }
+}
+
+test "snailtracer high gas consumption with call_mini" {
+    const allocator = std.testing.allocator;
+
+    // Load bytecode and calldata
+    const bytecode_hex = try readCaseFile(allocator, "snailtracer", "bytecode.txt");
+    defer allocator.free(bytecode_hex);
+    const calldata_hex = try readCaseFile(allocator, "snailtracer", "calldata.txt");
+    defer allocator.free(calldata_hex);
+
+    const bytecode = try hexDecode(allocator, bytecode_hex);
+    defer allocator.free(bytecode);
+    const calldata = try hexDecode(allocator, calldata_hex);
+    defer allocator.free(calldata);
+
+    // Set up VM in regular mode for deployment
+    var memory_db = evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null); // Regular mode for deployment
+    defer vm.deinit();
+
+    const caller = primitives.Address.from_u256(0x1000000000000000000000000000000000000001);
+    try vm.state.set_balance(caller, std.math.maxInt(u256));
+
+    // Deploy with regular execution
+    const contract_address = try deploy(&vm, caller, bytecode);
+    
+    const initial_gas: u64 = 100_000_000;
+    const params = evm.CallParams{ .call = .{
+        .caller = caller,
+        .to = contract_address,
+        .value = 0,
+        .input = calldata,
+        .gas = initial_gas,
+    } };
+    // Use call_mini directly
+    const call_result = try vm.call_mini(params);
+
+    try std.testing.expect(call_result.success);
+
+    // Snailtracer is computationally intensive - should use significant gas
+    const gas_used = initial_gas - call_result.gas_left;
+    try std.testing.expect(gas_used > 1_000_000); // Should use at least 1M gas
+
+    if (call_result.output) |output| {
+        _ = output; // VM-owned; no assertions here
+    }
 }

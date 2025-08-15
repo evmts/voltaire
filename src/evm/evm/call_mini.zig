@@ -38,7 +38,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
     var call_gas: u64 = undefined;
     var call_is_static: bool = undefined;
     var call_caller: primitives.Address.Address = undefined;
-    var call_value: primitives.u256 = undefined;
+    var call_value: u256 = undefined;
 
     switch (params) {
         .call => |call_data| {
@@ -110,7 +110,9 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
         self.created_contracts.deinit();
         self.created_contracts = CreatedContracts.init(self.allocator);
         
+        // Clear output and input state
         self.current_output = &.{};
+        self.current_input = &.{};
         
         if (self.frame_stack == null) {
             self.frame_stack = try std.heap.page_allocator.alloc(Frame, MAX_CALL_DEPTH);
@@ -178,6 +180,19 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
     );
     defer frame.deinit(self.allocator);
 
+    // Set the input buffer for the frame
+    frame.input_buffer = call_input;
+
+    // Store the current input for the host interface to access
+    self.current_input = call_input;
+
+    // Store the frame in the frame stack if it exists
+    if (self.frame_stack) |frames| {
+        if (self.current_frame_depth < frames.len) {
+            frames[self.current_frame_depth] = frame;
+        }
+    }
+
     // Main execution loop
     var exec_err: ?ExecutionError.Error = null;
     const was_executing = self.is_currently_executing();
@@ -225,6 +240,13 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
             },
             @intFromEnum(opcode_mod.Enum.JUMP) => {
                 const dest = try frame.stack.pop();
+                
+                // Check if destination fits in usize and is within bounds
+                if (dest > call_code.len) {
+                    exec_err = ExecutionError.Error.InvalidJump;
+                    break;
+                }
+                
                 const dest_usize = @as(usize, @intCast(dest));
                 
                 // Check if destination is valid jumpdest
@@ -241,6 +263,12 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                 const cond = try frame.stack.pop();
                 
                 if (cond != 0) {
+                    // Check if destination fits in usize and is within bounds
+                    if (dest > call_code.len) {
+                        exec_err = ExecutionError.Error.InvalidJump;
+                        break;
+                    }
+                    
                     const dest_usize = @as(usize, @intCast(dest));
                     
                     // Check if destination is valid jumpdest
@@ -261,19 +289,29 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                 pc += 1;
                 continue;
             },
+            @intFromEnum(opcode_mod.Enum.JUMPDEST) => {
+                // JUMPDEST is a no-op, just advance PC
+                pc += 1;
+                continue;
+            },
             @intFromEnum(opcode_mod.Enum.RETURN) => {
                 const offset = try frame.stack.pop();
                 const size = try frame.stack.pop();
+
+                Log.debug("RETURN opcode: offset={}, size={}", .{ offset, size });
 
                 // Get return data from memory
                 if (size > 0) {
                     const offset_usize = @as(usize, @intCast(offset));
                     const size_usize = @as(usize, @intCast(size));
                     const data = try frame.memory.get_slice(offset_usize, size_usize);
+                    Log.debug("RETURN reading {} bytes from memory[{}..{}]", .{ size_usize, offset_usize, offset_usize + size_usize });
+                    Log.debug("RETURN data: {x}", .{std.fmt.fmtSliceHexLower(data)});
                     host.set_output(data) catch {
                         exec_err = ExecutionError.Error.DatabaseCorrupted;
                         break;
                     };
+                    Log.debug("RETURN data set to host output, size: {}", .{data.len});
                 }
 
                 exec_err = ExecutionError.Error.RETURN;
@@ -307,7 +345,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                     }
 
                     // Read push data
-                    var value: primitives.u256 = 0;
+                    var value: u256 = 0;
                     const data_start = pc + 1;
                     const data_end = @min(data_start + push_size, call_code.len);
                     const data = call_code[data_start..data_end];
@@ -346,15 +384,36 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
         }
     }
 
-    // Get output before frame cleanup
-    const output = if (frame.output_buffer.len > 0) frame.output_buffer else &.{};
-
     // Map error to success status
     const success = if (exec_err) |e| switch (e) {
         ExecutionError.Error.STOP => true,
         ExecutionError.Error.RETURN => true,
         else => false,
     } else false;
+
+    // Store output in mini_output buffer to avoid conflicts with regular execution
+    // Free previous mini output if any
+    if (self.mini_output) |buf| {
+        self.allocator.free(buf);
+        self.mini_output = null;
+    }
+
+    // Copy current_output to mini_output if there's data
+    const output = if (self.current_output.len > 0) blk: {
+        const copy = try self.allocator.dupe(u8, self.current_output);
+        self.mini_output = copy;
+        if (copy.len >= 32) {
+            const val = std.mem.readInt(u256, copy[0..32], .big);
+            Log.debug("[call_mini] Returning output: len={}, value={x}, success={}", .{ copy.len, val, success });
+        } else {
+            Log.debug("[call_mini] Returning output: len={}, success={}", .{ copy.len, success });
+        }
+        break :blk copy;
+    } else &.{};
+
+    // Clear current_input and current_output to avoid interference with regular execution
+    self.current_input = &.{};
+    self.current_output = &.{};
 
     return CallResult{
         .success = success,

@@ -77,11 +77,11 @@ test "MSTORE at large offset triggers memory expansion" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -169,11 +169,11 @@ test "MLOAD from uninitialized memory returns zero" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -264,11 +264,11 @@ test "MSTORE8 stores single byte correctly" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -369,11 +369,11 @@ test "MCOPY opcode copies memory correctly" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -475,11 +475,11 @@ test "MCOPY overlapping regions copies correctly" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -567,11 +567,11 @@ test "Memory expansion gas cost edge case" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // Output is VM-owned, do not free
 
     // All should fail due to out of gas
     try testing.expect(!revm_result.success);
