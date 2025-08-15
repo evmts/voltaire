@@ -109,6 +109,9 @@ func main() {
     for i := 0; i < numRuns; i++ {
         ret, gasLeft, err := runtime.Call(contractAddress, calldata, &cfg)
         if err != nil {
+            fmt.Fprintf(os.Stderr, "Call failed with error: %v\n", err)
+            fmt.Fprintf(os.Stderr, "Calldata: %x\n", calldata)
+            fmt.Fprintf(os.Stderr, "Gas left: %d\n", gasLeft)
             panic(fmt.Sprintf("Call failed: %v", err))
         }
         // Sanity: ensure gas was consumed
@@ -122,10 +125,7 @@ func main() {
             if len(ret) < 32 || ret[len(ret)-1] != 1 {
                 panic("Unexpected boolean return (expected 32-byte true)")
             }
-        case 0x30627b7c: // TenThousandHashes.Benchmark()
-            if len(ret) != 0 {
-                panic("Unexpected output for Benchmark()")
-            }
+        // Note: selector 0x30627b7c (Benchmark()) may return data for some contracts like snailtracer
         }
         _ = ret
     }
