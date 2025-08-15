@@ -195,7 +195,13 @@ pub const Frame = struct {
 
     /// Set output data for RETURN/REVERT operations - delegates to Host
     pub fn set_output(self: *Frame, data: []const u8) ExecutionError.Error!void {
-        self.host.set_output(data) catch return ExecutionError.Error.OutOfMemory;
+        const Log = @import("log.zig");
+        Log.debug("[Frame.set_output] Called with {} bytes at depth={}", .{ data.len, self.depth });
+        self.host.set_output(data) catch |err| {
+            Log.debug("[Frame.set_output] host.set_output failed: {}", .{err});
+            return ExecutionError.Error.OutOfMemory;
+        };
+        Log.debug("[Frame.set_output] Successfully set output", .{});
     }
 
     /// Storage access operations for EVM opcodes
