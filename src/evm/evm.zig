@@ -744,7 +744,7 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     // Prepare a standalone frame for constructor execution
     const host = @import("host.zig").Host.init(self);
     const snapshot_id: u32 = host.create_snapshot();
-    var frame = try Frame.init(
+    const frame_val = try Frame.init(
         frame_gas,
         false, // not static
         @intCast(self.depth + 1), // Increment depth for nested create
@@ -756,6 +756,8 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
         self.state.database,
         self.allocator,
     );
+    const frame_ptr = try self.frame_pool.acquire();
+    frame_ptr.* = frame_val;
 
     var exec_err: ?ExecutionError.Error = null;
     // Save current depth and increment for nested create
@@ -764,7 +766,7 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     Log.debug("[create_contract_at] Before interpret: depth={}, has_tracer={}, self_ptr=0x{x}, tracer_ptr=0x{x}", .{ self.depth, self.tracer != null, @intFromPtr(self), if (self.tracer) |t| @intFromPtr(&t) else 0 });
     Log.debug("[create_contract_at] Tracer field check: offset={}, value_exists={}", .{ @offsetOf(Evm, "tracer"), self.tracer != null });
     Log.debug("[create_contract_at] Calling interpret for CREATE2 at depth={}", .{self.depth});
-    @import("evm/interpret.zig").interpret(self, &frame) catch |err| {
+    @import("evm/interpret.zig").interpret(self, frame_ptr) catch |err| {
         Log.debug("[create_contract_at] Interpret finished with error: {}", .{err});
         if (err != ExecutionError.Error.STOP and err != ExecutionError.Error.RETURN) {
             exec_err = err;
@@ -783,8 +785,9 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
                 host.revert_to_snapshot(snapshot_id);
                 // Return view of owned output buffer (no extra allocation)
                 const out: ?[]const u8 = if (output.len > 0) output else null;
-                const gas_left = frame.gas_remaining;
-                frame.deinit(self.allocator);
+                const gas_left = frame_ptr.gas_remaining;
+                frame_ptr.deinit(self.allocator);
+                self.frame_pool.release(frame_ptr);
                 return InterprResult{
                     .status = .Revert,
                     .output = out,
@@ -797,7 +800,8 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
             ExecutionError.Error.OutOfGas => {
                 std.debug.print("[create_contract] OutOfGas during constructor\n", .{});
                 host.revert_to_snapshot(snapshot_id);
-                frame.deinit(self.allocator);
+                frame_ptr.deinit(self.allocator);
+                self.frame_pool.release(frame_ptr);
                 return InterprResult{
                     .status = .OutOfGas,
                     .output = null,
@@ -811,7 +815,8 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
                 std.debug.print("[create_contract] Failure during constructor: {}\n", .{e});
                 // Treat other errors as failure
                 host.revert_to_snapshot(snapshot_id);
-                frame.deinit(self.allocator);
+                frame_ptr.deinit(self.allocator);
+                self.frame_pool.release(frame_ptr);
                 return InterprResult{
                     .status = .Failure,
                     .output = null,
@@ -838,8 +843,9 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     }
 
     // Add back the unspent frame gas to the caller, but exclude the precharged overhead
-    const gas_left = frame.gas_remaining;
-    frame.deinit(self.allocator);
+    const gas_left = frame_ptr.gas_remaining;
+    frame_ptr.deinit(self.allocator);
+    self.frame_pool.release(frame_ptr);
     return InterprResult{
         .status = .Success,
         .output = out,
