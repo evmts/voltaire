@@ -180,7 +180,7 @@ test "MSTORE opcode stores data to memory" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params2);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -274,7 +274,7 @@ test "MSTORE8 opcode stores single byte to memory" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params3);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -371,7 +371,7 @@ test "MSIZE opcode returns memory size" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params4);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -471,7 +471,7 @@ test "MCOPY opcode copies memory regions" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params5);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
