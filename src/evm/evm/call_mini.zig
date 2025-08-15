@@ -352,8 +352,9 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
         }
     }
 
-    // View VM-owned output (do not allocate; lifetime managed by VM)
+    // View VM-owned output, then dupe for test-compat so caller owns it
     const output_view = host.get_output();
+    const output_dupe = self.allocator.dupe(u8, output_view) catch &.{};
 
     // Determine success
     const success = if (exec_err) |e| switch (e) {
@@ -362,7 +363,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
         else => false,
     } else false;
 
-    const out_opt: ?[]const u8 = if (output_view.len > 0) output_view else null;
+    const out_opt: ?[]const u8 = if (output_dupe.len > 0) output_dupe else null;
     return CallResult{
         .success = success,
         .gas_left = frame.gas_remaining,
