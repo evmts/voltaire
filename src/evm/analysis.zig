@@ -1,44 +1,19 @@
-const std = @import("std");
-const builtin = @import("builtin");
-const limits = @import("constants/code_analysis_limits.zig");
-const StaticBitSet = std.bit_set.StaticBitSet;
-const DynamicBitSet = std.DynamicBitSet;
-const Instruction = @import("instruction.zig").Instruction;
-const Tag = @import("instruction.zig").Tag;
-const BlockInfo = @import("instruction.zig").BlockInfo;
-const JumpType = @import("instruction.zig").JumpType;
-const NoopHandler = @import("instruction.zig").NoopHandler;
-const WordRef = @import("instruction.zig").WordRef;
-const DynamicGas = @import("instruction.zig").DynamicGas;
-const DynamicGasFunc = @import("instruction.zig").DynamicGasFunc;
-const ExecInstruction = @import("instruction.zig").ExecInstruction;
-const NoopInstruction = @import("instruction.zig").NoopInstruction;
-const BlockInstruction = @import("instruction.zig").BlockInstruction;
-const DynamicGasInstruction = @import("instruction.zig").DynamicGasInstruction;
-const ConditionalJumpInvalidInstruction = @import("instruction.zig").ConditionalJumpInvalidInstruction;
-const ConditionalJumpPcInstruction = @import("instruction.zig").ConditionalJumpPcInstruction;
-const JumpPcInstruction = @import("instruction.zig").JumpPcInstruction;
-const ConditionalJumpUnresolvedInstruction = @import("instruction.zig").ConditionalJumpUnresolvedInstruction;
-const PcInstruction = @import("instruction.zig").PcInstruction;
-const WordInstruction = @import("instruction.zig").WordInstruction;
-const InstructionType = @import("instruction.zig").InstructionType;
-const getInstructionSize = @import("instruction.zig").getInstructionSize;
-const ExecutionFunc = @import("execution_func.zig").ExecutionFunc;
-const Opcode = @import("opcodes/opcode.zig");
-const OpcodeMetadata = @import("opcode_metadata/opcode_metadata.zig");
-const instruction_limits = @import("constants/instruction_limits.zig");
-const ExecutionError = @import("execution/execution_error.zig");
-const execution = @import("execution/package.zig");
-const Frame = @import("frame.zig").Frame;
-const Log = @import("log.zig");
-const stack_height_changes = @import("opcodes/stack_height_changes.zig");
-const dynamic_gas = @import("gas/dynamic_gas.zig");
+// Re-export the refactored code analysis module
+pub usingnamespace @import("code_analysis.zig");
 
-/// Packed array of valid JUMPDEST positions for cache-efficient validation.
-/// Because JUMPDEST opcodes are sparse (typically <50 per contract vs 24KB max size),
-/// a packed array with linear search provides better cache locality than a bitmap.
-/// Uses u15 to pack positions tightly while supporting max contract size (24KB < 32KB).
-pub const JumpdestArray = struct {
+// Import dependencies for tests
+const std = @import("std");
+const OpcodeMetadata = @import("opcode_metadata/opcode_metadata.zig");
+const CodeAnalysis = @import("code_analysis.zig").CodeAnalysis;
+const Address = @import("../address/address.zig");
+const Frame = @import("frame.zig").Frame;
+const Contract = @import("contract.zig").Contract;
+const Vm = @import("../evm.zig").Vm;
+const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+const Operation = @import("opcode_metadata/operation.zig");
+
+// Tests moved from original analysis.zig
+// These tests verify the correct behavior of the refactored modules
     /// Sorted array of valid JUMPDEST program counters.
     /// u15 allows max value 32767, sufficient for MAX_CONTRACT_SIZE (24576).
     /// Packed to maximize cache line utilization.

@@ -19,17 +19,18 @@ const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
 /// Convert bytecode slice to u256, handling variable length (0-32 bytes)
 inline fn bytesToU256(bytes: []const u8) u256 {
     std.debug.assert(bytes.len <= 32);
-    var result: u256 = 0;
     
-    // Handle empty slice as 0
     if (bytes.len == 0) return 0;
     
-    // Read bytes in big-endian order
-    for (bytes) |byte| {
-        result = (result << 8) | byte;
+    // For full 32 bytes, use readInt directly
+    if (bytes.len == 32) {
+        return std.mem.readInt(u256, bytes[0..32], .big);
     }
     
-    return result;
+    // For partial bytes, pad with zeros on the left (big-endian)
+    var padded: [32]u8 = [_]u8{0} ** 32;
+    @memcpy(padded[32 - bytes.len ..], bytes);
+    return std.mem.readInt(u256, &padded, .big);
 }
 
 inline fn pre_step(self: *Evm, frame: *Frame, inst: *const Instruction, loop_iterations: *usize) void {
@@ -41,15 +42,16 @@ inline fn pre_step(self: *Evm, frame: *Frame, inst: *const Instruction, loop_ite
     }
 
     if (comptime build_options.enable_tracing) {
+        const analysis = frame.analysis;
         if (self.tracer) |writer| {
             // Derive index of current instruction for tracing
-            const base: [*]const @TypeOf(inst.*) = frame.analysis.instructions.ptr;
+            const base: [*]const @TypeOf(inst.*) = analysis.instructions.ptr;
             const idx = (@intFromPtr(inst) - @intFromPtr(base)) / @sizeOf(@TypeOf(inst.*));
-            if (idx < frame.analysis.inst_to_pc.len) {
-                const pc_u16 = frame.analysis.inst_to_pc[idx];
+            if (idx < analysis.inst_to_pc.len) {
+                const pc_u16 = analysis.inst_to_pc[idx];
                 if (pc_u16 != std.math.maxInt(u16)) {
                     const pc: usize = pc_u16;
-                    const opcode: u8 = if (pc < frame.analysis.code_len) frame.analysis.code[pc] else 0x00;
+                    const opcode: u8 = if (pc < analysis.code_len) frame.analysis.code[pc] else 0x00;
                     const stack_len: usize = frame.stack.size();
                     const stack_view: []const u256 = frame.stack.data[0..stack_len];
                     const gas_cost: u64 = 0; // Block-based validation; per-op gas not tracked here
@@ -83,25 +85,16 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     var instruction: *const Instruction = &frame.analysis.instructions[0];
     var loop_iterations: usize = 0;
 
+    const analysis = frame.analysis
+
     dispatch: switch (instruction.tag) {
-        .exec => {
-            pre_step(self, frame, instruction, &loop_iterations);
-            const exec_inst = frame.analysis.getInstructionParams(.exec, instruction.id);
-            try exec_inst.exec_fn(frame);
-            instruction = exec_inst.next_inst;
-            continue :dispatch instruction.tag;
-        },
-        .noop => {
-            @branchHint(.likely);
-            pre_step(self, frame, instruction, &loop_iterations);
-            const noop_inst = frame.analysis.getInstructionParams(.noop, instruction.id);
-            instruction = noop_inst.next_inst;
-            continue :dispatch instruction.tag;
-        },
-        // Analysis will batch calculate stack requirements and gas requirements for series of bytecode
+        // .block_info runs before any series of opcodes and aggregates stack requirements and 
+        // gas validation for all opcodes in a single instruction
+        // TODO: Calling it block is unfortunate because it has nothing to do with a blockchain block
+        // We will rename in future to opcode_series
         .block_info => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const block_inst = frame.analysis.getInstructionParams(.block_info, instruction.id);
+            const block_inst = analysis.getInstructionParams(.block_info, instruction.id);
             const current_stack_size: u16 = @intCast(frame.stack.size());
             if (frame.gas_remaining < block_inst.gas_cost) {
                 @branchHint(.unlikely);
@@ -120,9 +113,27 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             instruction = block_inst.next_inst;
             continue :dispatch instruction.tag;
         },
-        .dynamic_gas => {
+        // .exec runs a ExecutionFunction type instruction
+        // 1. Execute the attatched function with frame
+        // 2. Goto the next instruction next
+        .exec => {
+            @branchHint(.likely);
             pre_step(self, frame, instruction, &loop_iterations);
-            const dyn_inst = frame.analysis.getInstructionParams(.dynamic_gas, instruction.id);
+
+            const exec_inst = analysis.getInstructionParams(.exec, instruction.id);
+            const exec_fun = exec_inst.exec_fn;
+            const next_instruction = exec_inst.next_inst;
+            const next_instruction_tag = exec_inst.tag;
+
+            try exec_fn(frame);
+            instruction = next_instruction;
+            continue :dispatch next_instruction_tag;
+        },
+        // .dynamic_gas is like .exec but it also dynamically charges gas that couldn't be statically analyzed
+        .dynamic_gas => {
+            @branchHint(.likely);
+            pre_step(self, frame, instruction, &loop_iterations);
+            const dyn_inst = analysis.getInstructionParams(.dynamic_gas, instruction.id);
             const additional_gas = dyn_inst.gas_fn(frame) catch |err| {
                 if (err == ExecutionError.Error.OutOfOffset) {
                     return err;
@@ -140,10 +151,18 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             instruction = dyn_inst.next_inst;
             continue :dispatch instruction.tag;
         },
+        // .noop does nothing but go to next instruction
+        // In future this will get optimized away to not needing to exist
+        .noop => {
+            pre_step(self, frame, instruction, &loop_iterations);
+            const noop_inst = analysis.getInstructionParams(.noop, instruction.id);
+            instruction = noop_inst.next_inst;
+            continue :dispatch instruction.tag;
+        },
         // no more pc-based fused conditional jumps; analysis always resolves or marks invalid
         .conditional_jump_invalid => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const cji_inst = frame.analysis.getInstructionParams(.conditional_jump_invalid, instruction.id);
+            const cji_inst = analysis.getInstructionParams(.conditional_jump_invalid, instruction.id);
             const condition = frame.stack.pop_unsafe();
             if (condition != 0) {
                 return ExecutionError.Error.InvalidJump;
@@ -157,7 +176,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         },
         .conditional_jump_pc => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const cjp_inst = frame.analysis.getInstructionParams(.conditional_jump_pc, instruction.id);
+            const cjp_inst = analysis.getInstructionParams(.conditional_jump_pc, instruction.id);
             const condition = frame.stack.pop_unsafe();
             if (condition != 0) {
                 instruction = cjp_inst.jump_target;
@@ -169,7 +188,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         // Many jumps have a known jump destination and we handle that here.
         .jump_pc => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const jump_pc_inst = frame.analysis.getInstructionParams(.jump_pc, instruction.id);
+            const jump_pc_inst = analysis.getInstructionParams(.jump_pc, instruction.id);
             Log.debug("[INTERPRET] JUMP_PC: current_inst={} -> jump_target={}", .{ instruction, jump_pc_inst.jump_target });
             instruction = jump_pc_inst.jump_target;
             continue :dispatch instruction.tag;
@@ -190,55 +209,60 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 return ExecutionError.Error.InvalidJump;
             }
             const dest_usize: usize = @intCast(dest);
-            const idx = frame.analysis.pc_to_block_start[dest_usize];
-            if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) {
+            const idx = analysis.pc_to_block_start[dest_usize];
+            if (idx == std.math.maxInt(u16) or idx >= analysis.instructions.len) {
                 @branchHint(.cold);
                 return ExecutionError.Error.InvalidJump;
             }
-            instruction = &frame.analysis.instructions[idx];
+            instruction = &analysis.instructions[idx];
             continue :dispatch instruction.tag;
         },
         // Some conditional jumps are not known until runtime because the value is a dynamic value
         .conditional_jump_unresolved => {
             pre_step(self, frame, instruction, &loop_iterations);
-            const cju_inst = frame.analysis.getInstructionParams(.conditional_jump_unresolved, instruction.id);
+            const cju_inst = analysis.getInstructionParams(.conditional_jump_unresolved, instruction.id);
             // Check stack has at least 2 elements for condition and destination
             if (frame.stack.size() < 2) {
                 return ExecutionError.Error.StackUnderflow;
             }
-            // EVM stack order: [dest, cond] with cond on top. Pop condition first, then destination.
-            const condition = frame.stack.pop_unsafe();
+            // EVM stack order: [dest, cond] with dest on top. Pop destination first, then condition.
             const dest = frame.stack.pop_unsafe();
-            Log.warn("[INTERPRET] JUMPI(cond,dest) cond={}, dest={} ", .{ condition, dest });
+            const condition = frame.stack.pop_unsafe();
+            Log.warn("[INTERPRET] JUMPI(dest,cond) dest={}, cond={} ", .{ dest, condition });
             if (condition != 0) {
                 if (!frame.valid_jumpdest(dest)) {
                     return ExecutionError.Error.InvalidJump;
                 }
                 const dest_usize: usize = @intCast(dest);
-                const idx = frame.analysis.pc_to_block_start[dest_usize];
-                if (idx == std.math.maxInt(u16) or idx >= frame.analysis.instructions.len) {
+                const idx = analysis.pc_to_block_start[dest_usize];
+                if (idx == std.math.maxInt(u16) or idx >= analysis.instructions.len) {
                     return ExecutionError.Error.InvalidJump;
                 }
-                instruction = &frame.analysis.instructions[idx];
+                instruction = &analysis.instructions[idx];
                 continue :dispatch instruction.tag;
             }
             instruction = cju_inst.next_inst;
             continue :dispatch instruction.tag;
         },
-        // A common pattern is to push a constant value to the stack and then execute
-        // An instruction. So we combine the push and the instruction into a single instruction.
+        // .word abstracts the common pattern of pushing a static value onto the stack
+        // Instead of storing it as a u256 we dynamically read it from the bytecode on request
+        // This allows us to keep our instruction bytecode compact without needing to include u256
         .word => {
+            @branchHint(.likely);
             pre_step(self, frame, instruction, &loop_iterations);
-            const word_inst = frame.analysis.getInstructionParams(.word, instruction.id);
+            const word_inst = analysis.getInstructionParams(.word, instruction.id);
             // Lazily convert bytecode slice to u256
             const word_value = bytesToU256(word_inst.word_bytes);
             frame.stack.append_unsafe(word_value);
             instruction = word_inst.next_inst;
             continue :dispatch instruction.tag;
         },
+        // .pc handles the PC opcode. Since Frame doesn't include pc this is treated as a oen of atm
+        // TODO: In future we want to remove this. This can be a .exec instead
         .pc => {
+            @branchHint(.unlikely);
             pre_step(self, frame, instruction, &loop_iterations);
-            const pc_inst = frame.analysis.getInstructionParams(.pc, instruction.id);
+            const pc_inst = analysis.getInstructionParams(.pc, instruction.id);
             frame.stack.append_unsafe(@as(u256, pc_inst.pc_value));
             instruction = pc_inst.next_inst;
             continue :dispatch instruction.tag;
