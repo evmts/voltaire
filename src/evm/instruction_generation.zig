@@ -611,11 +611,23 @@ pub fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_t
                         const start2 = wr2.start_pc;
                         const end2 = @min(start2 + wr2.len, code.len);
                         while (k2 < end2 - start2) : (k2 += 1) v2 = (v2 << 8) | code[start2 + k2];
+                        
+                        // Debug logging for JUMPI resolution
+                        if (builtin.mode == .Debug) {
+                            Log.debug("[JUMPI_RESOLVE] JUMPI at inst {}, preceded by PUSH value={}, start_pc={}, len={}", .{ ji, v2, start2, wr2.len });
+                            if (v2 < code.len) {
+                                Log.debug("[JUMPI_RESOLVE]   Checking jumpdest_bitmap.isSet({})={}, code[{}]=0x{x:0>2}", .{ v2, jumpdest_bitmap.isSet(v2), v2, if (v2 < code.len) code[v2] else 0xff });
+                            }
+                        }
+                        
                         if (v2 < code.len and jumpdest_bitmap.isSet(v2)) {
                             const cid: u24 = @intCast(cond_jump_pcs_builder.items.len);
                             try cond_jump_pcs_builder.append(@intCast(v2));
                             instructions[ji] = .{ .tag = .conditional_jump_pc, .id = cid };
                             instructions[ji - 1] = .{ .tag = .noop, .id = 0 };
+                            Log.debug("[JUMPI_RESOLVE]   Converted to conditional_jump_pc with target {}", .{v2});
+                        } else {
+                            Log.debug("[JUMPI_RESOLVE]   Keeping as conditional_jump_unresolved", .{});
                         }
                     }
                 },
