@@ -866,8 +866,12 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
     var argv = std.ArrayList([]const u8).init(self.allocator);
     defer argv.deinit();
     try argv.append("hyperfine");
-    try argv.appendSlice(&[_][]const u8{ "--runs", num_runs_str, "--warmup", "3", "--style", "basic" });
-    if (self.show_output) try argv.append("--show-output");
+    try argv.appendSlice(&[_][]const u8{ "--runs", num_runs_str, "--warmup", "3" });
+    if (self.show_output) {
+        try argv.append("--show-output");
+    } else {
+        try argv.appendSlice(&[_][]const u8{ "--style", "basic" });
+    }
     try argv.appendSlice(&[_][]const u8{ "--export-json", export_file, hyperfine_cmd });
 
     const result = try std.process.Child.run(.{ .allocator = self.allocator, .argv = argv.items });
