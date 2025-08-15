@@ -167,6 +167,29 @@ This principle ensures code quality and prevents the accumulation of broken func
 
 **ABSOLUTE MANDATE**: Any code change that breaks compilation or tests is UNACCEPTABLE.
 
+## CRITICAL: Benchmark Validity Requirements
+
+**ABSOLUTE MANDATE**: Benchmarks MUST ONLY measure successful executions.
+
+**NEVER ALLOW**:
+- ❌ Benchmarking failing transactions
+- ❌ Benchmarking reverting calls
+- ❌ Ignoring execution failures in benchmarks
+- ❌ Reporting timings for failed operations
+
+**WHY THIS IS CRITICAL**:
+- Failed transactions have different execution paths
+- Reverts short-circuit execution
+- Measuring failures gives FALSE performance data
+- Invalid benchmarks are WORSE than no benchmarks
+
+**REQUIRED BEHAVIOR**:
+- All benchmark transactions MUST succeed
+- Setup proper initial state for all operations
+- For ERC20: Ensure sender has sufficient token balance
+- For contracts: Deploy and initialize correctly
+- Exit with error if ANY benchmark operation fails
+
 ### MANDATORY BUILD VERIFICATION PROTOCOL
 
 **EVERY SINGLE CODE CHANGE** must be immediately followed by:

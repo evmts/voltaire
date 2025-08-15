@@ -1157,6 +1157,19 @@ pub fn build(b: *std.Build) void {
     const evm_core_test_step = b.step("test-evm-core", "Run evm.zig tests");
     evm_core_test_step.dependOn(&run_evm_core_test.step);
     evm_package_test_step.dependOn(&run_evm_core_test.step);
+    
+    // Add deployment test
+    const deployment_test = b.addTest(.{
+        .name = "deployment-test",
+        .root_source_file = b.path("test/deployment_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    deployment_test.root_module.addImport("evm", evm_mod);
+    deployment_test.root_module.addImport("primitives", primitives_mod);
+    const run_deployment_test = b.addRunArtifact(deployment_test);
+    const deployment_test_step = b.step("test-deployment", "Run deployment tests");
+    deployment_test_step.dependOn(&run_deployment_test.step);
 
     // Add comprehensive opcodes tests package
     const opcodes_package_test = b.addTest(.{
