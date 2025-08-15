@@ -70,7 +70,7 @@ test "PUSH2 opcode pushes 2 bytes" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -161,7 +161,7 @@ test "PUSH4 opcode pushes 4 bytes" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -253,7 +253,7 @@ test "PUSH8 opcode pushes 8 bytes" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -346,7 +346,7 @@ test "PUSH16 opcode pushes 16 bytes" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -442,7 +442,7 @@ test "PUSH32 edge case all zeros" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -536,7 +536,7 @@ test "PUSH20 opcode pushes 20 bytes (address size)" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);

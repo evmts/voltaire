@@ -79,7 +79,7 @@ test "SHL opcode max shift (255) leaves only MSB" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -181,7 +181,7 @@ test "SHL opcode shift >= 256 returns 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -282,7 +282,7 @@ test "SHR opcode max shift (255) preserves only LSB" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -383,7 +383,7 @@ test "SAR opcode arithmetic shift of negative number" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -485,7 +485,7 @@ test "BYTE opcode out of range returns 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -586,7 +586,7 @@ test "SAR opcode shift >= 256 preserves sign" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -688,7 +688,7 @@ test "XOR opcode same value = 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);

@@ -71,7 +71,7 @@ test "CALLDATASIZE opcode returns input data size" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -170,7 +170,7 @@ test "CALLDATALOAD opcode loads 32 bytes from calldata" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -262,7 +262,7 @@ test "CALLDATALOAD opcode edge case - load beyond calldata pads with zeros" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -355,7 +355,7 @@ test "CALLDATACOPY opcode copies data to memory" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -447,7 +447,7 @@ test "CALLDATACOPY edge case - copy beyond calldata pads with zeros" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -532,7 +532,7 @@ test "CALLDATASIZE with empty calldata returns 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);

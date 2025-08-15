@@ -79,7 +79,7 @@ test "DIV opcode max_u256 / max_u256 = 1" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -179,7 +179,7 @@ test "MOD opcode any_number % 1 = 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -279,7 +279,7 @@ test "EXP opcode 0 ** 0 = 1" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -382,7 +382,7 @@ test "SDIV opcode MIN_I256 / -1 = MIN_I256 (overflow)" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -489,7 +489,7 @@ test "ADDMOD opcode (max_u256 + max_u256) % max_u256 = 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -593,7 +593,7 @@ test "MULMOD opcode (max_u256 * max_u256) % max_u256 = 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -695,7 +695,7 @@ test "SMOD opcode MIN_I256 % -1 = 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -794,7 +794,7 @@ test "EXP opcode 1 ** max_u256 = 1" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    defer if (mini_result.output) |output| allocator.free(output);
+    
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
