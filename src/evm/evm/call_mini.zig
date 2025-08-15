@@ -21,7 +21,7 @@ const CreatedContracts = @import("../created_contracts.zig").CreatedContracts;
 pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!CallResult {
     const Log = @import("../log.zig");
     const opcode_mod = @import("../opcodes/opcode.zig");
-    
+
     Log.debug("[call_mini] Starting simplified execution", .{});
 
     // Create host interface
@@ -76,7 +76,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
     if (is_top_level_call) {
         const GasConstants = @import("primitives").GasConstants;
         const base_cost = GasConstants.TxGas;
-        
+
         if (gas_after_base < base_cost) {
             return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
         }
@@ -91,11 +91,11 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                 else => CallResult{ .success = false, .gas_left = 0, .output = &.{} },
             };
         };
-        
+
         if (self.current_frame_depth > 0 and !precompile_result.success) {
             host.revert_to_snapshot(snapshot_id);
         }
-        
+
         return precompile_result;
     }
 
@@ -151,7 +151,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
         analysis_ptr.deinit();
         self.allocator.destroy(analysis_ptr);
     };
-    
+
     // Create frame
     const contract_addr_for_frame = call_address;
     var frame = try Frame.init(
@@ -173,29 +173,29 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
     const was_executing = self.is_currently_executing();
     self.set_is_executing(true);
     defer self.set_is_executing(was_executing);
-    
+
     // For mini EVM, we'll use simple PC tracking instead of analysis blocks
     var pc: usize = 0;
-    
+
     while (pc < call_code.len) {
         const op = call_code[pc];
-        
+
         // Get operation metadata from table
         const operation = self.table.get_operation(op);
-        
+
         // Check if opcode is undefined
         if (operation.undefined) {
             exec_err = ExecutionError.Error.InvalidOpcode;
             break;
         }
-        
+
         // Check gas
         if (frame.gas_remaining < operation.constant_gas) {
             exec_err = ExecutionError.Error.OutOfGas;
             break;
         }
         frame.gas_remaining -= operation.constant_gas;
-        
+
         // Check stack requirements
         if (frame.stack.size() < operation.min_stack) {
             exec_err = ExecutionError.Error.StackUnderflow;
@@ -206,7 +206,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
             exec_err = ExecutionError.Error.StackOverflow;
             break;
         }
-        
+
         // Handle specific opcodes inline
         switch (op) {
             @intFromEnum(opcode_mod.Enum.STOP) => {
@@ -254,7 +254,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
             @intFromEnum(opcode_mod.Enum.RETURN) => {
                 const offset = try frame.stack.pop();
                 const size = try frame.stack.pop();
-                
+
                 // Get return data from memory
                 if (size > 0) {
                     const offset_usize = @as(usize, @intCast(offset));
@@ -266,14 +266,14 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                         break;
                     };
                 }
-                
+
                 exec_err = ExecutionError.Error.RETURN;
                 break;
             },
             @intFromEnum(opcode_mod.Enum.REVERT) => {
                 const offset = try frame.stack.pop();
                 const size = try frame.stack.pop();
-                
+
                 // Get revert data from memory
                 if (size > 0) {
                     const offset_usize = @as(usize, @intCast(offset));
@@ -285,7 +285,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                         break;
                     };
                 }
-                
+
                 exec_err = ExecutionError.Error.REVERT;
                 break;
             },
@@ -306,23 +306,23 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                         exec_err = ExecutionError.Error.OutOfOffset;
                         break;
                     }
-                    
+
                     // Read push data
                     var value: u256 = 0;
                     const data_start = pc + 1;
                     const data_end = @min(data_start + push_size, call_code.len);
                     const data = call_code[data_start..data_end];
-                    
+
                     // Convert bytes to primitives.u256 (big-endian)
                     for (data) |byte| {
                         value = (value << 8) | byte;
                     }
-                    
+
                     try frame.stack.append(value);
                     pc += 1 + push_size;
                     continue;
                 }
-                
+
                 // For all other opcodes, use the execution function from the jump table
                 // Create a context pointer for the execution function
                 const context: *anyopaque = @ptrCast(&frame);
@@ -335,13 +335,13 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
             },
         }
     }
-    
+
     // Handle execution result
     if (exec_err == null and pc >= call_code.len) {
         // Fell off the end - treat as STOP
         exec_err = ExecutionError.Error.STOP;
     }
-    
+
     // Revert snapshot for failed nested calls
     if (!is_top_level_call and exec_err != null) {
         const should_revert = switch (exec_err.?) {
@@ -353,17 +353,17 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
             host.revert_to_snapshot(snapshot_id);
         }
     }
-    
+
     // Get output
     const output = self.allocator.dupe(u8, host.get_output()) catch &.{};
-    
+
     // Determine success
     const success = if (exec_err) |e| switch (e) {
         ExecutionError.Error.STOP => true,
         ExecutionError.Error.RETURN => true,
         else => false,
     } else false;
-    
+
     return CallResult{
         .success = success,
         .gas_left = frame.gas_remaining,
