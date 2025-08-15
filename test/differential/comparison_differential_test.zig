@@ -187,7 +187,7 @@ test "GT opcode 10 > 5 = 1" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -281,7 +281,7 @@ test "EQ opcode 42 == 42 = 1" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -376,7 +376,7 @@ test "SLT opcode signed -1 < 1 = 1" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -471,7 +471,7 @@ test "SGT opcode signed 1 > -1 = 1" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -550,7 +550,7 @@ test "Simple PUSH and RETURN test" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     if (revm_result.success and guillotine_result.success) {
@@ -624,7 +624,7 @@ test "ISZERO opcode 0 == 0 ? 1 : 0" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;

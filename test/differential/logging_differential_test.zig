@@ -139,7 +139,7 @@ test "LOG1 opcode logs data with one topic" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params2);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -215,7 +215,7 @@ test "LOG2 opcode logs data with two topics" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params3);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -292,7 +292,7 @@ test "LOG3 opcode logs data with three topics" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params4);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -370,7 +370,7 @@ test "LOG4 opcode logs data with four topics" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params5);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;

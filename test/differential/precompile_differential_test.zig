@@ -134,7 +134,7 @@ test "SHA256 precompile hashes data" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params2);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -209,7 +209,7 @@ test "RIPEMD160 precompile hashes data" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -284,7 +284,7 @@ test "IDENTITY precompile copies data" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params2);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -359,7 +359,7 @@ test "MODEXP precompile performs modular exponentiation" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params3);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -434,7 +434,7 @@ test "BLAKE2F precompile performs BLAKE2F hashing" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params4);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -509,7 +509,7 @@ test "BLS12_381_G1MSM precompile performs G1 multi-scalar multiplication" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params5);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -584,7 +584,7 @@ test "BLS12_381_G2MSM precompile performs G2 multi-scalar multiplication" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params6);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -659,7 +659,7 @@ test "BLS12_381_PAIRING precompile performs pairing check" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
