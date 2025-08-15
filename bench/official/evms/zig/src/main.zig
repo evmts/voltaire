@@ -182,18 +182,34 @@ pub fn main() !void {
             .gas = 10_000_000, // Plenty of gas
         } };
         
-        const result = vm.call(call_params) catch {
-            // On error, just return with exit code 1 to signal failure to the orchestrator
+        const result = vm.call(call_params) catch |err| {
+            // On error, print to stderr and exit
+            std.debug.print("Error executing call: {}\n", .{err});
             std.process.exit(1);
         };
+        
+        const end_time = std.time.nanoTimestamp();
+        const duration_ns: u64 = @intCast(end_time - start_time);
+        const duration_ms = @as(f64, @floatFromInt(duration_ns)) / 1_000_000.0;
+        
+        // Debug mode: print additional info to stderr (only on first run)
+        if (run == 0) {
+            std.debug.print("Call success: {}, gas_left: {}, output_len: {}\n", .{
+                result.success,
+                result.gas_left,
+                if (result.output) |o| o.len else 0,
+            });
+        }
         
         if (result.output) |output| {
             allocator.free(output);
         }
         
-        const end_time = std.time.nanoTimestamp();
-        const duration_ns: u64 = @intCast(end_time - start_time);
-        const duration_ms = @as(f64, @floatFromInt(duration_ns)) / 1_000_000.0;
+        // Validate the call actually succeeded
+        if (!result.success) {
+            std.debug.print("Call failed!\n", .{});
+            std.process.exit(1);
+        }
         
         // Output timing in milliseconds (one per line as expected by orchestrator)
         print("{d:.6}\n", .{duration_ms});
