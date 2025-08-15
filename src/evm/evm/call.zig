@@ -33,6 +33,20 @@ pub const MAX_INPUT_SIZE: u18 = 128 * 1024; // 128 kb
 pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResult {
     const Log = @import("../log.zig");
     Log.debug("[call] Starting call execution, is_executing={}, has_tracer={}, self_ptr=0x{x}, frame_depth={}", .{ self.is_currently_executing(), self.tracer != null, @intFromPtr(self), self.current_frame_depth });
+    
+    // Debug: log the call parameters to understand what's being called
+    switch (params) {
+        .call => |c| {
+            Log.debug("[call] CALL params: to={any}, gas={}, input_len={}", .{ c.to, c.gas, c.input.len });
+        },
+        .staticcall => |c| {
+            Log.debug("[call] STATICCALL params: to={any}, gas={}, input_len={}", .{ c.to, c.gas, c.input.len });
+        },
+        .delegatecall => |c| {
+            Log.debug("[call] DELEGATECALL params: to={any}, gas={}, input_len={}", .{ c.to, c.gas, c.input.len });
+        },
+        else => {},
+    }
 
     // Create host interface from self
     const host = Host.init(self);
@@ -41,6 +55,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     // Frame depth of 0 means top-level, regardless of is_executing flag
     const is_top_level_call = self.current_frame_depth == 0;
     Log.debug("[call] is_top_level_call={}, is_executing={}, current_frame_depth={}", .{ is_top_level_call, self.is_currently_executing(), self.current_frame_depth });
+    Log.debug("[call] current_output.len at start={}", .{self.current_output.len});
     // Create snapshot for nested calls early to ensure proper revert on any error
     const snapshot_id = if (!is_top_level_call) host.create_snapshot() else 0;
 
@@ -267,6 +282,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         self.created_contracts.deinit();
         self.created_contracts = CreatedContracts.init(self.allocator);
 
+        Log.debug("[call] Clearing current_output for top-level call (was {})", .{self.current_output.len});
         self.current_output = &.{}; // Clear output buffer from previous calls
         
         // Clear owned output buffer to avoid double-free issues
@@ -482,6 +498,12 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     }
 
     // Get output from the host (where RETURN stores it via set_output)
+    Log.debug("[call] About to get output, current_frame_depth={}, frame_stack={}", .{ self.current_frame_depth, self.frame_stack != null });
+    if (self.frame_stack) |frames| {
+        if (self.current_frame_depth < frames.len) {
+            Log.debug("[call] Frame output_buffer before get: len={}", .{ frames[self.current_frame_depth].output_buffer.len });
+        }
+    }
     const output: []const u8 = host.get_output();
     Log.debug("[call] Getting output: host.get_output().len={}, self.current_output.len={}, frame_depth={}", .{ output.len, self.current_output.len, self.current_frame_depth });
     if (output.len > 0 and output.len <= 32) {
