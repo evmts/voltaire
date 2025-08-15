@@ -1154,6 +1154,7 @@ pub fn build(b: *std.Build) void {
     differential_test.root_module.addImport("primitives", primitives_mod);
     differential_test.root_module.addImport("evm", evm_mod);
     differential_test.root_module.addImport("revm", revm_mod);
+    differential_test.root_module.addImport("build_options", build_options_mod);
 
     // Link REVM Rust library for differential tests if available
     if (revm_lib) |revm_library| {
@@ -1202,6 +1203,7 @@ pub fn build(b: *std.Build) void {
     staticcall_test.root_module.addImport("primitives", primitives_mod);
     staticcall_test.root_module.addImport("evm", evm_mod);
     staticcall_test.root_module.addImport("revm", revm_mod);
+    staticcall_test.root_module.addImport("build_options", build_options_mod);
 
     if (revm_lib) |revm_library| {
         staticcall_test.linkLibrary(revm_library);
@@ -1248,6 +1250,7 @@ pub fn build(b: *std.Build) void {
     system_differential_test.root_module.addImport("primitives", primitives_mod);
     system_differential_test.root_module.addImport("evm", evm_mod);
     system_differential_test.root_module.addImport("revm", revm_mod);
+    system_differential_test.root_module.addImport("build_options", build_options_mod);
 
     if (revm_lib) |revm_library| {
         system_differential_test.linkLibrary(revm_library);
