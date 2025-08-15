@@ -8,8 +8,9 @@ const Address = primitives.Address;
 const revm_wrapper = @import("revm");
 
 test "POP opcode removes top stack element" {
-    std.testing.log_level = .warn;
+    std.testing.log_level = .debug;
     const allocator = testing.allocator;
+    std.log.warn("========== STARTING POP TEST ==========", .{});
     // Stack operations: [42] -> [42, 24] -> POP -> [42] -> MSTORE -> RETURN 32 bytes
     const bytecode = [_]u8{
         0x60, 0x42, // PUSH1 0x42
@@ -63,9 +64,15 @@ test "POP opcode removes top stack element" {
     const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
+    // Debug: Check output before calling regular EVM
+    std.log.warn("POP_TEST_MARKER: Before regular call: current_output.len={}", .{vm_instance.current_output.len});
+    
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
     // VM owns guillotine_result.output; do not free here
+    
+    // Debug: Check output after calling regular EVM
+    std.log.warn("After regular call: current_output.len={}", .{vm_instance.current_output.len});
 
     // Debug: log the output info
     std.log.warn("POP test - Guillotine result: success={}, output={?}, gas_left={}", .{ 
