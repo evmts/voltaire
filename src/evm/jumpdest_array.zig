@@ -15,7 +15,6 @@ pub const JumpdestArray = struct {
     /// Original code length for bounds checking and search hint calculation
     code_len: usize,
 
-    allocator: std.mem.Allocator,
 
     /// Convert a DynamicBitSet bitmap to a packed array of JUMPDEST positions.
     /// Collects all set bits from the bitmap into a sorted, packed array.
@@ -48,12 +47,11 @@ pub const JumpdestArray = struct {
         return JumpdestArray{
             .positions = positions,
             .code_len = code_len,
-            .allocator = allocator,
         };
     }
 
-    pub fn deinit(self: *JumpdestArray) void {
-        self.allocator.free(self.positions);
+    pub fn deinit(self: *JumpdestArray, allocator: std.mem.Allocator) void {
+        allocator.free(self.positions);
     }
 
     /// Validates if a program counter is a valid JUMPDEST using cache-friendly linear search.

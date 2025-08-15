@@ -24,7 +24,7 @@ test "JumpdestArray: from_bitmap with empty bitmap" {
     
     // Convert to JumpdestArray
     var jumpdest_array = try Analysis.JumpdestArray.from_bitmap(allocator, &bitmap, 100);
-    defer jumpdest_array.deinit();
+    defer jumpdest_array.deinit(allocator);
     
     // Should have no positions
     try testing.expectEqual(@as(usize, 0), jumpdest_array.positions.len);
@@ -41,7 +41,7 @@ test "JumpdestArray: from_bitmap with single jumpdest" {
     
     // Convert to JumpdestArray
     var jumpdest_array = try Analysis.JumpdestArray.from_bitmap(allocator, &bitmap, 100);
-    defer jumpdest_array.deinit();
+    defer jumpdest_array.deinit(allocator);
     
     // Should have one position
     try testing.expectEqual(@as(usize, 1), jumpdest_array.positions.len);
@@ -61,7 +61,7 @@ test "JumpdestArray: from_bitmap with multiple jumpdests" {
     
     // Convert to JumpdestArray
     var jumpdest_array = try Analysis.JumpdestArray.from_bitmap(allocator, &bitmap, 200);
-    defer jumpdest_array.deinit();
+    defer jumpdest_array.deinit(allocator);
     
     // Should have four positions in order
     try testing.expectEqual(@as(usize, 4), jumpdest_array.positions.len);
@@ -78,7 +78,7 @@ test "JumpdestArray: is_valid_jumpdest with empty array" {
     defer bitmap.deinit();
     
     var jumpdest_array = try Analysis.JumpdestArray.from_bitmap(allocator, &bitmap, 100);
-    defer jumpdest_array.deinit();
+    defer jumpdest_array.deinit(allocator);
     
     // All queries should return false
     try testing.expect(!jumpdest_array.is_valid_jumpdest(0));
@@ -97,7 +97,7 @@ test "JumpdestArray: is_valid_jumpdest with valid positions" {
     bitmap.set(150);
     
     var jumpdest_array = try Analysis.JumpdestArray.from_bitmap(allocator, &bitmap, 200);
-    defer jumpdest_array.deinit();
+    defer jumpdest_array.deinit(allocator);
     
     // Valid positions should return true
     try testing.expect(jumpdest_array.is_valid_jumpdest(10));
@@ -124,7 +124,7 @@ test "JumpdestArray: is_valid_jumpdest out of bounds" {
     bitmap.set(50);
     
     var jumpdest_array = try Analysis.JumpdestArray.from_bitmap(allocator, &bitmap, 100);
-    defer jumpdest_array.deinit();
+    defer jumpdest_array.deinit(allocator);
     
     // Out of bounds should return false
     try testing.expect(!jumpdest_array.is_valid_jumpdest(100));
@@ -431,8 +431,8 @@ test "E2E: JUMPI conditional jump taken" {
     defer vm.deinit();
     
     const bytecode = &[_]u8{
-        0x60, 0x01, // PUSH1 1 (condition - true)
         0x60, 0x08, // PUSH1 8 (jump target)
+        0x60, 0x01, // PUSH1 1 (condition - true)
         0x57, // JUMPI
         0x60, 0xFF, // PUSH1 255 (should be skipped)
         0x00, // STOP
@@ -460,6 +460,12 @@ test "E2E: JUMPI conditional jump taken" {
     
     const result = try vm.call(params);
     defer if (result.output) |output| allocator.free(output);
+    
+    std.log.warn("JUMPI test result: success={}, output_len={?}", .{ 
+        result.success, 
+        if (result.output) |o| o.len else null
+    });
+    
     try testing.expect(result.success);
     
     // Output should contain 0x42 (jump was taken)
@@ -480,8 +486,8 @@ test "E2E: JUMPI conditional jump not taken" {
     defer vm.deinit();
     
     const bytecode = &[_]u8{
-        0x60, 0x00, // PUSH1 0 (condition - false)
         0x60, 0x08, // PUSH1 8 (jump target)
+        0x60, 0x00, // PUSH1 0 (condition - false)
         0x57, // JUMPI
         0x60, 0xFF, // PUSH1 255 (should execute)
         0x00, // STOP

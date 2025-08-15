@@ -9,7 +9,7 @@ const Evm = evm.Evm;
 
 // Enable debug logging for all tests
 test {
-    std.testing.log_level = .warn;
+    std.testing.log_level = .debug;
 }
 
 // WORKING: This test documents a dynamic JUMPI to a valid JUMPDEST.
@@ -23,6 +23,62 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
 
     var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
+    
+    // Create a simple test to isolate the issue
+    // Test basic RETURN without JUMPI first
+    const simple_code = [_]u8{
+        0x60, 0x42,  // PUSH1 0x42
+        0x60, 0x00,  // PUSH1 0x00
+        0x52,        // MSTORE (store 0x42 at offset 0)
+        0x60, 0x20,  // PUSH1 0x20 (size)
+        0x60, 0x00,  // PUSH1 0x00 (offset)
+        0xf3,        // RETURN
+    };
+    
+    // First test the simple case
+    const test_addr = Address.from_u256(0x3000);
+    try vm.state.set_code(test_addr, &simple_code);
+    const test_caller = Address.from_u256(0x1000);
+    try vm.state.set_balance(test_caller, std.math.maxInt(u256));
+    const test_params = CallParams{ .call = .{
+        .caller = test_caller,
+        .to = test_addr,
+        .value = 0,
+        .input = &.{},
+        .gas = 100000,
+    } };
+    const test_res = try vm.call(test_params);
+    defer if (test_res.output) |output| allocator.free(output);
+    
+    std.log.warn("Simple test: success={}, output_len={?}, gas_left={}", .{ 
+        test_res.success, 
+        if (test_res.output) |o| o.len else null,
+        test_res.gas_left
+    });
+    if (test_res.output) |output| {
+        if (output.len > 0) {
+            std.log.warn("Simple test output bytes: {x}", .{output});
+            if (output.len >= 32) {
+                const value = std.mem.readInt(u256, output[0..32], .big);
+                std.log.warn("Simple test output value: {}", .{value});
+            }
+        } else {
+            std.log.warn("Simple test returned EMPTY output!", .{});
+        }
+    } else {
+        std.log.warn("Simple test returned NULL output!", .{});
+    }
+    
+    // The simple test should have returned 32 bytes with value 0x42
+    try std.testing.expect(test_res.success);
+    try std.testing.expect(test_res.output != null);
+    if (test_res.output) |output| {
+        try std.testing.expectEqual(@as(usize, 32), output.len);
+        if (output.len >= 32) {
+            const value = std.mem.readInt(u256, output[0..32], .big);
+            try std.testing.expectEqual(@as(u256, 0x42), value);
+        }
+    }
 
     // Bytecode:
     // 0x00 PUSH1 0x06 (dest)
@@ -37,16 +93,16 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
     // 0x0E PUSH1 0x00
     // 0x10 RETURN
     const code = [_]u8{
-        0x60, 0x06,  // PUSH1 0x06
-        0x60, 0x01,  // PUSH1 0x01
+        0x60, 0x06,  // PUSH1 0x06 (destination)
+        0x60, 0x01,  // PUSH1 0x01 (condition)
         0x57,        // JUMPI
         0x00,        // STOP (should be skipped)
         0x5b,        // JUMPDEST (at position 6)
         0x60, 0x01,  // PUSH1 0x01
         0x60, 0x00,  // PUSH1 0x00
         0x52,        // MSTORE
-        0x60, 0x20,  // PUSH1 0x20
-        0x60, 0x00,  // PUSH1 0x00
+        0x60, 0x20,  // PUSH1 0x20 (size)
+        0x60, 0x00,  // PUSH1 0x00 (offset)
         0xf3,        // RETURN
     };
 
@@ -65,9 +121,17 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
     const res = try vm.call(params);
     defer if (res.output) |output| allocator.free(output);
     
-    std.log.warn("Call result: success={}, output_len={?}", .{ res.success, if (res.output) |o| o.len else null });
+    std.log.warn("Call result: success={}, output_len={?}, gas_used={}", .{ 
+        res.success, 
+        if (res.output) |o| o.len else null,
+        100000 - res.gas_left
+    });
     if (res.output) |output| {
-        std.log.warn("Output bytes: {x}", .{output});
+        if (output.len > 0) {
+            std.log.warn("Output bytes: {x}", .{output});
+        } else {
+            std.log.warn("Output bytes: {{ }}", .{});
+        }
     }
     
     try std.testing.expect(res.success);
