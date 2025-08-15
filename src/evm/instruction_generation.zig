@@ -261,6 +261,7 @@ pub fn codeToInstructions(allocator: std.mem.Allocator, code: []const u8, jump_t
             },
 
             .JUMPI => {
+                Log.debug("[analysis] JUMPI at pc={}, instruction_count={}", .{pc, instruction_count});
                 const operation = jump_table.get_operation(opcode_byte);
                 block.gas_cost += @intCast(operation.constant_gas);
                 block.updateStackTracking(opcode_byte, operation.min_stack);
