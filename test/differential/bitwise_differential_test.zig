@@ -78,7 +78,7 @@ test "AND opcode 0xFF & 0x0F = 0x0F" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -173,7 +173,7 @@ test "OR opcode 0x0F | 0xF0 = 0xFF" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -268,7 +268,7 @@ test "SHL opcode 1 << 4 = 16" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -364,7 +364,7 @@ test "XOR opcode 0xF0 ^ 0x0F = 0xFF" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -454,7 +454,7 @@ test "NOT opcode ~0x0F = 0xFF...F0" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -549,7 +549,7 @@ test "SHR opcode 16 >> 2 = 4" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -645,7 +645,7 @@ test "SAR opcode arithmetic right shift with sign" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -741,7 +741,7 @@ test "BYTE opcode extract byte from word" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;

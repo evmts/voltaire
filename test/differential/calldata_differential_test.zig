@@ -266,7 +266,7 @@ test "CALLDATALOAD opcode edge case - load beyond calldata pads with zeros" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -359,7 +359,7 @@ test "CALLDATACOPY opcode copies data to memory" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -451,7 +451,7 @@ test "CALLDATACOPY edge case - copy beyond calldata pads with zeros" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -536,7 +536,7 @@ test "CALLDATASIZE with empty calldata returns 0" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;

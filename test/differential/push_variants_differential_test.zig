@@ -257,7 +257,7 @@ test "PUSH8 opcode pushes 8 bytes" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -350,7 +350,7 @@ test "PUSH16 opcode pushes 16 bytes" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -446,7 +446,7 @@ test "PUSH32 edge case all zeros" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -540,7 +540,7 @@ test "PUSH20 opcode pushes 20 bytes (address size)" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;

@@ -616,7 +616,7 @@ test "MUL opcode 7 * 6 = 42" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -723,7 +723,7 @@ test "DIV opcode 6 / 42 = 0" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -830,7 +830,7 @@ test "DIV opcode division by zero = 0" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -937,7 +937,7 @@ test "DIV opcode division by zero 42 / 0 = 0" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -1038,7 +1038,7 @@ test "MOD opcode 50 % 7 = 1" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -1134,7 +1134,7 @@ test "EXP opcode 2 ** 3 = 8" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -1230,7 +1230,7 @@ test "SDIV opcode signed division -8 / 2 = -4" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -1325,7 +1325,7 @@ test "SMOD opcode signed modulo -8 % 3 = -2" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -1425,7 +1425,7 @@ test "ADDMOD opcode (5 + 10) % 7 = 1" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -1525,7 +1525,7 @@ test "MULMOD opcode (5 * 6) % 7 = 2" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -1621,7 +1621,7 @@ test "SIGNEXTEND opcode sign extend byte 1 of 0x80" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -1845,7 +1845,7 @@ test "SUB fusion: PUSH 5, PUSH 10, SUB vs PUSH 5, MSTORE, PUSH 10, SUB" {
     } };
 
     const guillotine_result_fusion = try vm_instance_fusion.call(call_params_fusion);
-    defer if (guillotine_result_fusion.output) |output| allocator.free(output);
+    
 
     // Test non-fusion bytecode with Guillotine
     var memory_db_non_fusion = MemoryDatabase.init(allocator);
@@ -1866,7 +1866,7 @@ test "SUB fusion: PUSH 5, PUSH 10, SUB vs PUSH 5, MSTORE, PUSH 10, SUB" {
     } };
 
     const guillotine_result_non_fusion = try vm_instance_non_fusion.call(call_params_non_fusion);
-    defer if (guillotine_result_non_fusion.output) |output| allocator.free(output);
+    
 
     // All should succeed
     try testing.expect(revm_result_fusion.success);
@@ -1963,7 +1963,7 @@ test "MUL fusion: PUSH 6, PUSH 7, MUL vs PUSH 6, MSTORE, PUSH 7, MUL" {
     } };
 
     const guillotine_result_fusion = try vm_instance_fusion.call(call_params_fusion);
-    defer if (guillotine_result_fusion.output) |output| allocator.free(output);
+    
 
     // Test non-fusion bytecode with Guillotine
     var memory_db_non_fusion = MemoryDatabase.init(allocator);
@@ -1984,7 +1984,7 @@ test "MUL fusion: PUSH 6, PUSH 7, MUL vs PUSH 6, MSTORE, PUSH 7, MUL" {
     } };
 
     const guillotine_result_non_fusion = try vm_instance_non_fusion.call(call_params_non_fusion);
-    defer if (guillotine_result_non_fusion.output) |output| allocator.free(output);
+    
 
     // All should succeed
     try testing.expect(revm_result_fusion.success);
@@ -2081,7 +2081,7 @@ test "DIV fusion: PUSH 42, PUSH 6, DIV vs PUSH 42, MSTORE, PUSH 6, DIV" {
     } };
 
     const guillotine_result_fusion = try vm_instance_fusion.call(call_params_fusion);
-    defer if (guillotine_result_fusion.output) |output| allocator.free(output);
+    
 
     // Test non-fusion bytecode with Guillotine
     var memory_db_non_fusion = MemoryDatabase.init(allocator);
@@ -2102,7 +2102,7 @@ test "DIV fusion: PUSH 42, PUSH 6, DIV vs PUSH 42, MSTORE, PUSH 6, DIV" {
     } };
 
     const guillotine_result_non_fusion = try vm_instance_non_fusion.call(call_params_non_fusion);
-    defer if (guillotine_result_non_fusion.output) |output| allocator.free(output);
+    
 
     // All should succeed
     try testing.expect(revm_result_fusion.success);

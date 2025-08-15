@@ -64,7 +64,7 @@ test "minimal repro - RETURN opcode returns 0 bytes during contract deployment" 
     } };
 
     const deploy_result = try vm.call(call_params);
-    defer if (deploy_result.output) |output| allocator.free(output);
+    // VM owns deploy_result.output; do not free here
 
     std.log.debug("Deploy result: success={}, gas_left={}", .{
         deploy_result.success,

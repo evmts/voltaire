@@ -283,7 +283,7 @@ test "EXP opcode 0 ** 0 = 1" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -386,7 +386,7 @@ test "SDIV opcode MIN_I256 / -1 = MIN_I256 (overflow)" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -493,7 +493,7 @@ test "ADDMOD opcode (max_u256 + max_u256) % max_u256 = 0" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -597,7 +597,7 @@ test "MULMOD opcode (max_u256 * max_u256) % max_u256 = 0" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -699,7 +699,7 @@ test "SMOD opcode MIN_I256 % -1 = 0" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -798,7 +798,7 @@ test "EXP opcode 1 ** max_u256 = 1" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;

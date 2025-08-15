@@ -357,7 +357,7 @@ test "EXTCODECOPY opcode - copy contract code to memory" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -488,7 +488,7 @@ test "EXTCODECOPY opcode - copy beyond code length pads with zeros" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -619,7 +619,7 @@ test "EXTCODEHASH opcode - get hash of deployed contract code" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -730,7 +730,7 @@ test "EXTCODEHASH opcode - non-existent account returns 0" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -847,7 +847,7 @@ test "EXTCODEHASH opcode - empty account with balance returns keccak256('')" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;

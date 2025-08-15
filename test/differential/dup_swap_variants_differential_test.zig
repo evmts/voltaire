@@ -281,7 +281,7 @@ test "SWAP2 opcode swaps 1st and 3rd stack elements" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -391,7 +391,7 @@ test "SWAP16 opcode swaps 1st and 17th stack elements" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -490,7 +490,7 @@ test "DUP8 opcode duplicates 8th stack element" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -591,7 +591,7 @@ test "SWAP8 opcode swaps 1st and 9th stack elements" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
