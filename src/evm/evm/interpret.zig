@@ -124,6 +124,19 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             const exec_fun = exec_inst.exec_fn;
             const next_instruction = exec_inst.next_inst;
 
+            // Log execution details 
+            // Get PC from instruction index
+            const base: [*]const Instruction = analysis.instructions.ptr;
+            const idx = (@intFromPtr(instruction) - @intFromPtr(base)) / @sizeOf(Instruction);
+            var pc: usize = 0;
+            if (idx < analysis.inst_to_pc.len) {
+                const pc_u16 = analysis.inst_to_pc[idx];
+                if (pc_u16 != std.math.maxInt(u16)) {
+                    pc = pc_u16;
+                }
+            }
+            Log.debug("[EXEC] Executing instruction at idx={}, pc={}, stack_size={}", .{ idx, pc, frame.stack.size() });
+
             try exec_fun(frame);
             instruction = next_instruction;
             continue :dispatch instruction.tag;
@@ -177,9 +190,13 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             pre_step(self, frame, instruction, &loop_iterations);
             const cjp_inst = analysis.getInstructionParams(.conditional_jump_pc, instruction.id);
             const condition = frame.stack.pop_unsafe();
+            
+            Log.debug("[JUMPI] CONDITIONAL_JUMP_PC: condition={}, taking jump={}", .{ condition, condition != 0 });
             if (condition != 0) {
+                Log.debug("[JUMPI] Jumping to target instruction: {}", .{ cjp_inst.jump_target });
                 instruction = cjp_inst.jump_target;
             } else {
+                Log.debug("[JUMPI] Not jumping, continuing to next: {}", .{ cjp_inst.next_inst });
                 instruction = cjp_inst.next_inst;
             }
             continue :dispatch instruction.tag;
@@ -227,7 +244,9 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             // EVM stack order: [dest, cond] with dest on top. Pop destination first, then condition.
             const dest = frame.stack.pop_unsafe();
             const condition = frame.stack.pop_unsafe();
-            Log.warn("[INTERPRET] JUMPI(dest,cond) dest={}, cond={} ", .{ dest, condition });
+            
+            Log.debug("[JUMPI] CONDITIONAL_JUMP_UNRESOLVED: dest={}, condition={}", .{ dest, condition });
+            Log.warn("[INTERPRET] JUMPI(dest,cond) dest={}, cond={}, taking jump={} ", .{ dest, condition, condition != 0 });
             if (condition != 0) {
                 if (!frame.valid_jumpdest(dest)) {
                     return ExecutionError.Error.InvalidJump;
@@ -237,9 +256,11 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 if (idx == std.math.maxInt(u16) or idx >= analysis.instructions.len) {
                     return ExecutionError.Error.InvalidJump;
                 }
+                Log.debug("[INTERPRET] JUMPI jumping to block idx={}, pc={}", .{idx, dest_usize});
                 instruction = &analysis.instructions[idx];
                 continue :dispatch instruction.tag;
             }
+            Log.debug("[INTERPRET] JUMPI not taken, continuing to next", .{});
             instruction = cju_inst.next_inst;
             continue :dispatch instruction.tag;
         },
@@ -930,4 +951,781 @@ test "interpret: simple JUMP to valid JUMPDEST" {
 
     // Should execute successfully with STOP
     try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
+}
+
+test "interpret: JUMP to invalid destination (not JUMPDEST)" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // Jump to non-JUMPDEST: PUSH1 0x04, JUMP, INVALID, ADD, STOP
+    const code = &[_]u8{
+        0x60, 0x04, // PUSH1 0x04
+        0x56,       // JUMP
+        0xfe,       // INVALID
+        0x01,       // ADD at PC 4 (not a JUMPDEST)
+        0x00,       // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Should fail with InvalidJump
+    try std.testing.expectError(ExecutionError.Error.InvalidJump, interpret(&vm, &frame));
+}
+
+test "interpret: JUMP to out-of-bounds destination" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // Jump beyond code size: PUSH1 0xFF, JUMP, STOP
+    const code = &[_]u8{
+        0x60, 0xFF, // PUSH1 0xFF (255, way beyond code size)
+        0x56,       // JUMP
+        0x00,       // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Should fail with InvalidJump
+    try std.testing.expectError(ExecutionError.Error.InvalidJump, interpret(&vm, &frame));
+}
+
+test "interpret: JUMPI with true condition" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // JUMPI with true condition: PUSH1 0x08, PUSH1 0x01, JUMPI, INVALID, INVALID, JUMPDEST, STOP
+    const code = &[_]u8{
+        0x60, 0x08, // PUSH1 0x08 (destination)
+        0x60, 0x01, // PUSH1 0x01 (condition = true)
+        0x57,       // JUMPI
+        0xfe,       // INVALID
+        0xfe,       // INVALID
+        0x5b,       // JUMPDEST at PC 8
+        0x00,       // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Should jump over INVALID and reach STOP
+    try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
+}
+
+test "interpret: JUMPI with false condition" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // JUMPI with false condition: PUSH1 0x08, PUSH1 0x00, JUMPI, STOP, INVALID, JUMPDEST, INVALID
+    const code = &[_]u8{
+        0x60, 0x08, // PUSH1 0x08 (destination)
+        0x60, 0x00, // PUSH1 0x00 (condition = false)
+        0x57,       // JUMPI
+        0x00,       // STOP (should execute this)
+        0xfe,       // INVALID
+        0x5b,       // JUMPDEST at PC 8
+        0xfe,       // INVALID
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Should not jump and reach STOP
+    try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
+}
+
+test "interpret: JUMPI to invalid destination with true condition" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // JUMPI to non-JUMPDEST: PUSH1 0x06, PUSH1 0x01, JUMPI, STOP, ADD
+    const code = &[_]u8{
+        0x60, 0x06, // PUSH1 0x06 (destination - not a JUMPDEST)
+        0x60, 0x01, // PUSH1 0x01 (condition = true)
+        0x57,       // JUMPI
+        0x00,       // STOP
+        0x01,       // ADD at PC 6 (not a JUMPDEST)
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Should fail with InvalidJump
+    try std.testing.expectError(ExecutionError.Error.InvalidJump, interpret(&vm, &frame));
+}
+
+test "interpret: PC opcode returns correct program counter" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // Test PC at different positions: PC, PC, PC, STOP
+    const code = &[_]u8{
+        0x58,       // PC at position 0
+        0x58,       // PC at position 1  
+        0x58,       // PC at position 2
+        0x00,       // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Execute and check stack
+    try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
+    
+    // Should have pushed 0, 1, 2 onto stack
+    try std.testing.expectEqual(@as(usize, 3), frame.stack.size());
+    try std.testing.expectEqual(@as(u256, 2), frame.stack.data[2]);
+    try std.testing.expectEqual(@as(u256, 1), frame.stack.data[1]);
+    try std.testing.expectEqual(@as(u256, 0), frame.stack.data[0]);
+}
+
+test "interpret: word instruction pushes correct values" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // Various PUSH operations with different sizes
+    const code = &[_]u8{
+        0x60, 0x42,                     // PUSH1 0x42
+        0x61, 0x12, 0x34,               // PUSH2 0x1234
+        0x63, 0xDE, 0xAD, 0xBE, 0xEF,   // PUSH4 0xDEADBEEF
+        0x00,                           // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Execute
+    try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
+    
+    // Check stack values
+    try std.testing.expectEqual(@as(usize, 3), frame.stack.size());
+    try std.testing.expectEqual(@as(u256, 0xDEADBEEF), frame.stack.data[2]);
+    try std.testing.expectEqual(@as(u256, 0x1234), frame.stack.data[1]);
+    try std.testing.expectEqual(@as(u256, 0x42), frame.stack.data[0]);
+}
+
+test "interpret: dynamic gas calculation for memory expansion" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // MLOAD with large offset to trigger memory expansion
+    const code = &[_]u8{
+        0x61, 0x01, 0x00,   // PUSH2 0x0100 (256)
+        0x51,               // MLOAD
+        0x50,               // POP
+        0x00,               // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    // Test with insufficient gas for memory expansion
+    var frame_low_gas = try Frame.init(
+        100,  // Very low gas
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame_low_gas.deinit(allocator);
+
+    // Should fail with OutOfGas
+    try std.testing.expectError(ExecutionError.Error.OutOfGas, interpret(&vm, &frame_low_gas));
+
+    // Test with sufficient gas
+    var frame_high_gas = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame_high_gas.deinit(allocator);
+
+    // Should succeed
+    try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame_high_gas));
+}
+
+test "interpret: noop instruction advances correctly" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // Code with JUMPDEST (which becomes noop) and arithmetic
+    const code = &[_]u8{
+        0x60, 0x02,     // PUSH1 2
+        0x60, 0x03,     // PUSH1 3
+        0x5b,           // JUMPDEST (noop)
+        0x01,           // ADD
+        0x00,           // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Execute
+    try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
+    
+    // Check result
+    try std.testing.expectEqual(@as(usize, 1), frame.stack.size());
+    try std.testing.expectEqual(@as(u256, 5), frame.stack.data[0]);
+}
+
+test "interpret: conditional_jump_invalid with true condition" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // JUMPI to invalid location (will be analyzed as conditional_jump_invalid)
+    const code = &[_]u8{
+        0x60, 0xFF,     // PUSH1 0xFF (invalid jump dest)
+        0x60, 0x01,     // PUSH1 1 (true condition)
+        0x57,           // JUMPI
+        0x00,           // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Should fail with InvalidJump
+    try std.testing.expectError(ExecutionError.Error.InvalidJump, interpret(&vm, &frame));
+}
+
+test "interpret: conditional_jump_invalid with false condition continues" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // JUMPI to invalid location but with false condition
+    const code = &[_]u8{
+        0x60, 0xFF,     // PUSH1 0xFF (invalid jump dest)
+        0x60, 0x00,     // PUSH1 0 (false condition)
+        0x57,           // JUMPI
+        0x00,           // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Should continue to STOP (not jump)
+    try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
+}
+
+test "interpret: jump_unresolved with empty stack causes underflow" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // Dynamic JUMP with empty stack
+    const code = &[_]u8{
+        0x56,           // JUMP (no destination on stack)
+        0x00,           // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Should fail with StackUnderflow
+    try std.testing.expectError(ExecutionError.Error.StackUnderflow, interpret(&vm, &frame));
+}
+
+test "interpret: conditional_jump_unresolved with insufficient stack" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // JUMPI with only one stack item (needs two)
+    const code = &[_]u8{
+        0x60, 0x05,     // PUSH1 5 (only destination, no condition)
+        0x57,           // JUMPI
+        0x00,           // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Should fail with StackUnderflow
+    try std.testing.expectError(ExecutionError.Error.StackUnderflow, interpret(&vm, &frame));
+}
+
+test "interpret: complex control flow with multiple jumps" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // Complex control flow: multiple jumps and conditional jumps
+    const code = &[_]u8{
+        // Start: push 5
+        0x60, 0x05,     // PUSH1 5
+        // Jump to first section
+        0x60, 0x08,     // PUSH1 8
+        0x56,           // JUMP
+        0xfe,           // INVALID (skipped)
+        0xfe,           // INVALID (skipped)
+        // First section at 8
+        0x5b,           // JUMPDEST
+        0x60, 0x03,     // PUSH1 3
+        0x01,           // ADD (5 + 3 = 8)
+        // Conditional jump to second section
+        0x60, 0x16,     // PUSH1 22
+        0x60, 0x01,     // PUSH1 1
+        0x57,           // JUMPI (should jump)
+        0xfe,           // INVALID (skipped)
+        0xfe,           // INVALID (skipped)
+        // Second section at 22
+        0x5b,           // JUMPDEST
+        0x60, 0x02,     // PUSH1 2
+        0x02,           // MUL (8 * 2 = 16)
+        0x00,           // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Execute
+    try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
+    
+    // Check final result
+    try std.testing.expectEqual(@as(usize, 1), frame.stack.size());
+    try std.testing.expectEqual(@as(u256, 16), frame.stack.data[0]);
+}
+
+test "interpret: maximum stack depth" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+    const Stack = @import("../stack/stack.zig");
+
+    // Try to push beyond stack limit
+    var code = std.ArrayList(u8).init(allocator);
+    defer code.deinit();
+
+    // Generate code that pushes Stack.CAPACITY + 1 items
+    var i: usize = 0;
+    while (i < Stack.CAPACITY + 1) : (i += 1) {
+        try code.appendSlice(&[_]u8{ 0x60, 0x01 }); // PUSH1 1
+    }
+    try code.append(0x00); // STOP
+
+    var analysis = try Analysis.from_code(allocator, code.items, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        10000000,  // Lots of gas
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Should fail with StackOverflow
+    try std.testing.expectError(ExecutionError.Error.StackOverflow, interpret(&vm, &frame));
+}
+
+test "interpret: large bytesToU256 conversion" {
+    // Test edge cases for bytesToU256
+
+    // Empty bytes
+    const empty: []const u8 = &[_]u8{};
+    try std.testing.expectEqual(@as(u256, 0), bytesToU256(empty));
+
+    // Single byte with high bit set
+    const high_bit = [_]u8{0x80};
+    try std.testing.expectEqual(@as(u256, 0x80), bytesToU256(high_bit[0..]));
+
+    // 31 bytes (one less than full)
+    const bytes31 = [_]u8{0xFF} ** 31;
+    const expected31: u256 = ((@as(u256, 1) << 248) - 1); // 31 bytes of 0xFF
+    try std.testing.expectEqual(expected31, bytesToU256(bytes31[0..]));
+
+    // Mixed bytes pattern
+    const mixed = [_]u8{ 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
+    try std.testing.expectEqual(@as(u256, 0x123456789ABCDEF0), bytesToU256(mixed[0..]));
 }
