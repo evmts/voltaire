@@ -19,14 +19,14 @@ const MAX_ITERATIONS = 10_000_000; // TODO set this to a real problem
 /// Convert bytecode slice to u256, handling variable length (0-32 bytes)
 inline fn bytesToU256(bytes: []const u8) u256 {
     std.debug.assert(bytes.len <= 32);
-    
+
     if (bytes.len == 0) return 0;
-    
+
     // For full 32 bytes, use readInt directly
     if (bytes.len == 32) {
         return std.mem.readInt(u256, bytes[0..32], .big);
     }
-    
+
     // For partial bytes, pad with zeros on the left (big-endian)
     var padded: [32]u8 = [_]u8{0} ** 32;
     @memcpy(padded[32 - bytes.len ..], bytes);
@@ -45,7 +45,7 @@ inline fn pre_step(self: *Evm, frame: *Frame, inst: *const Instruction, loop_ite
         const analysis = frame.analysis;
         if (self.tracer) |writer| {
             if (frame.depth > 0) {
-                Log.debug("pre_step: HAS TRACER at depth={}, self_ptr=0x{x}", .{frame.depth, @intFromPtr(self)});
+                Log.debug("pre_step: HAS TRACER at depth={}, self_ptr=0x{x}", .{ frame.depth, @intFromPtr(self) });
             }
             // Derive index of current instruction for tracing
             const base: [*]const @TypeOf(inst.*) = analysis.instructions.ptr;
@@ -67,7 +67,7 @@ inline fn pre_step(self: *Evm, frame: *Frame, inst: *const Instruction, loop_ite
                 }
             }
         } else if (frame.depth > 0) {
-            Log.debug("No tracer available for nested call at depth={}, self_ptr=0x{x}", .{frame.depth, @intFromPtr(self)});
+            Log.debug("No tracer available for nested call at depth={}, self_ptr=0x{x}", .{ frame.depth, @intFromPtr(self) });
         }
     }
 }
@@ -89,7 +89,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         // by a single evm run at a time
         self.require_one_thread();
     }
-    
+
     if (comptime build_options.enable_tracing) {
         const tracer_exists = self.tracer != null;
         Log.debug("interpret called: depth={}, has_tracer={}, self_ptr=0x{x}, tracer_field_offset={}", .{ frame.depth, tracer_exists, @intFromPtr(self), @offsetOf(Evm, "tracer") });
@@ -98,7 +98,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         }
         if (frame.depth > 0 and !tracer_exists) {
             Log.debug("WARNING: Tracer is null for nested call at depth={}", .{frame.depth});
-            Log.debug("Evm struct details: is_executing={}, current_frame_depth={}, max_allocated_depth={}", .{ self.is_executing, self.current_frame_depth, self.max_allocated_depth });
+            Log.debug("Evm struct details: is_executing={}, current_frame_depth={}, max_allocated_depth={}", .{ self.is_currently_executing(), self.current_frame_depth, self.max_allocated_depth });
         }
     }
 
@@ -108,7 +108,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     const analysis = frame.analysis;
 
     dispatch: switch (instruction.tag) {
-        // .block_info runs before any series of opcodes and aggregates stack requirements and 
+        // .block_info runs before any series of opcodes and aggregates stack requirements and
         // gas validation for all opcodes in a single instruction
         // TODO: Calling it block is unfortunate because it has nothing to do with a blockchain block
         // We will rename in future to opcode_series
@@ -144,7 +144,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             const exec_fun = exec_inst.exec_fn;
             const next_instruction = exec_inst.next_inst;
 
-            // Log execution details 
+            // Log execution details
             // Get PC from instruction index
             const base: [*]const Instruction = analysis.instructions.ptr;
             const idx = (@intFromPtr(instruction) - @intFromPtr(base)) / @sizeOf(Instruction);
@@ -210,13 +210,13 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             pre_step(self, frame, instruction, &loop_iterations);
             const cjp_inst = analysis.getInstructionParams(.conditional_jump_pc, instruction.id);
             const condition = frame.stack.pop_unsafe();
-            
+
             Log.debug("[JUMPI] CONDITIONAL_JUMP_PC: condition={}, taking jump={}", .{ condition, condition != 0 });
             if (condition != 0) {
-                Log.debug("[JUMPI] Jumping to target instruction: {}", .{ cjp_inst.jump_target });
+                Log.debug("[JUMPI] Jumping to target instruction: {}", .{cjp_inst.jump_target});
                 instruction = cjp_inst.jump_target;
             } else {
-                Log.debug("[JUMPI] Not jumping, continuing to next: {}", .{ cjp_inst.next_inst });
+                Log.debug("[JUMPI] Not jumping, continuing to next: {}", .{cjp_inst.next_inst});
                 instruction = cjp_inst.next_inst;
             }
             continue :dispatch instruction.tag;
@@ -264,7 +264,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             // EVM stack order: [dest, cond] with dest on top. Pop destination first, then condition.
             const dest = frame.stack.pop_unsafe();
             const condition = frame.stack.pop_unsafe();
-            
+
             Log.debug("[JUMPI] CONDITIONAL_JUMP_UNRESOLVED: dest={}, condition={}", .{ dest, condition });
             Log.warn("[INTERPRET] JUMPI(dest,cond) dest={}, cond={}, taking jump={} ", .{ dest, condition, condition != 0 });
             if (condition != 0) {
@@ -276,7 +276,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
                 if (idx == std.math.maxInt(u16) or idx >= analysis.instructions.len) {
                     return ExecutionError.Error.InvalidJump;
                 }
-                Log.debug("[INTERPRET] JUMPI jumping to block idx={}, pc={}", .{idx, dest_usize});
+                Log.debug("[INTERPRET] JUMPI jumping to block idx={}, pc={}", .{ idx, dest_usize });
                 instruction = &analysis.instructions[idx];
                 continue :dispatch instruction.tag;
             }
@@ -834,16 +834,16 @@ test "bytesToU256 correctly converts bytecode to u256" {
     // Test single byte
     const bytes1 = [_]u8{0x42};
     try std.testing.expectEqual(@as(u256, 0x42), bytesToU256(bytes1[0..]));
-    
+
     // Test two bytes
     const bytes2 = [_]u8{ 0x12, 0x34 };
     try std.testing.expectEqual(@as(u256, 0x1234), bytesToU256(bytes2[0..]));
-    
+
     // Test 32 bytes (max) - all 0xFF bytes
     const bytes32 = [_]u8{0xFF} ** 32;
     const expected32 = std.math.maxInt(u256); // All bits set
     try std.testing.expectEqual(expected32, bytesToU256(bytes32[0..]));
-    
+
     // Test partial slice of larger array
     const bytes_partial = [_]u8{ 0xAA, 0xBB, 0xCC, 0xDD, 0xEE };
     try std.testing.expectEqual(@as(u256, 0xAABBCC), bytesToU256(bytes_partial[0..3]));
@@ -933,11 +933,11 @@ test "interpret: simple JUMP to valid JUMPDEST" {
     // Simple jump: PUSH1 0x05, JUMP, INVALID, INVALID, JUMPDEST, STOP
     const code = &[_]u8{
         0x60, 0x05, // PUSH1 0x05
-        0x56,       // JUMP
-        0xfe,       // INVALID
-        0xfe,       // INVALID  
-        0x5b,       // JUMPDEST at PC 5
-        0x00,       // STOP
+        0x56, // JUMP
+        0xfe, // INVALID
+        0xfe, // INVALID
+        0x5b, // JUMPDEST at PC 5
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -984,10 +984,10 @@ test "interpret: JUMP to invalid destination (not JUMPDEST)" {
     // Jump to non-JUMPDEST: PUSH1 0x04, JUMP, INVALID, ADD, STOP
     const code = &[_]u8{
         0x60, 0x04, // PUSH1 0x04
-        0x56,       // JUMP
-        0xfe,       // INVALID
-        0x01,       // ADD at PC 4 (not a JUMPDEST)
-        0x00,       // STOP
+        0x56, // JUMP
+        0xfe, // INVALID
+        0x01, // ADD at PC 4 (not a JUMPDEST)
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1031,8 +1031,8 @@ test "interpret: JUMP to out-of-bounds destination" {
     // Jump beyond code size: PUSH1 0xFF, JUMP, STOP
     const code = &[_]u8{
         0x60, 0xFF, // PUSH1 0xFF (255, way beyond code size)
-        0x56,       // JUMP
-        0x00,       // STOP
+        0x56, // JUMP
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1077,11 +1077,11 @@ test "interpret: JUMPI with true condition" {
     const code = &[_]u8{
         0x60, 0x08, // PUSH1 0x08 (destination)
         0x60, 0x01, // PUSH1 0x01 (condition = true)
-        0x57,       // JUMPI
-        0xfe,       // INVALID
-        0xfe,       // INVALID
-        0x5b,       // JUMPDEST at PC 8
-        0x00,       // STOP
+        0x57, // JUMPI
+        0xfe, // INVALID
+        0xfe, // INVALID
+        0x5b, // JUMPDEST at PC 8
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1126,11 +1126,11 @@ test "interpret: JUMPI with false condition" {
     const code = &[_]u8{
         0x60, 0x08, // PUSH1 0x08 (destination)
         0x60, 0x00, // PUSH1 0x00 (condition = false)
-        0x57,       // JUMPI
-        0x00,       // STOP (should execute this)
-        0xfe,       // INVALID
-        0x5b,       // JUMPDEST at PC 8
-        0xfe,       // INVALID
+        0x57, // JUMPI
+        0x00, // STOP (should execute this)
+        0xfe, // INVALID
+        0x5b, // JUMPDEST at PC 8
+        0xfe, // INVALID
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1175,9 +1175,9 @@ test "interpret: JUMPI to invalid destination with true condition" {
     const code = &[_]u8{
         0x60, 0x06, // PUSH1 0x06 (destination - not a JUMPDEST)
         0x60, 0x01, // PUSH1 0x01 (condition = true)
-        0x57,       // JUMPI
-        0x00,       // STOP
-        0x01,       // ADD at PC 6 (not a JUMPDEST)
+        0x57, // JUMPI
+        0x00, // STOP
+        0x01, // ADD at PC 6 (not a JUMPDEST)
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1220,10 +1220,10 @@ test "interpret: PC opcode returns correct program counter" {
 
     // Test PC at different positions: PC, PC, PC, STOP
     const code = &[_]u8{
-        0x58,       // PC at position 0
-        0x58,       // PC at position 1  
-        0x58,       // PC at position 2
-        0x00,       // STOP
+        0x58, // PC at position 0
+        0x58, // PC at position 1
+        0x58, // PC at position 2
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1254,7 +1254,7 @@ test "interpret: PC opcode returns correct program counter" {
 
     // Execute and check stack
     try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
-    
+
     // Should have pushed 0, 1, 2 onto stack
     try std.testing.expectEqual(@as(usize, 3), frame.stack.size());
     try std.testing.expectEqual(@as(u256, 2), frame.stack.data[2]);
@@ -1272,10 +1272,10 @@ test "interpret: word instruction pushes correct values" {
 
     // Various PUSH operations with different sizes
     const code = &[_]u8{
-        0x60, 0x42,                     // PUSH1 0x42
-        0x61, 0x12, 0x34,               // PUSH2 0x1234
-        0x63, 0xDE, 0xAD, 0xBE, 0xEF,   // PUSH4 0xDEADBEEF
-        0x00,                           // STOP
+        0x60, 0x42, // PUSH1 0x42
+        0x61, 0x12, 0x34, // PUSH2 0x1234
+        0x63, 0xDE, 0xAD, 0xBE, 0xEF, // PUSH4 0xDEADBEEF
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1306,7 +1306,7 @@ test "interpret: word instruction pushes correct values" {
 
     // Execute
     try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
-    
+
     // Check stack values
     try std.testing.expectEqual(@as(usize, 3), frame.stack.size());
     try std.testing.expectEqual(@as(u256, 0xDEADBEEF), frame.stack.data[2]);
@@ -1324,10 +1324,10 @@ test "interpret: dynamic gas calculation for memory expansion" {
 
     // MLOAD with large offset to trigger memory expansion
     const code = &[_]u8{
-        0x61, 0x01, 0x00,   // PUSH2 0x0100 (256)
-        0x51,               // MLOAD
-        0x50,               // POP
-        0x00,               // STOP
+        0x61, 0x01, 0x00, // PUSH2 0x0100 (256)
+        0x51, // MLOAD
+        0x50, // POP
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1344,7 +1344,7 @@ test "interpret: dynamic gas calculation for memory expansion" {
 
     // Test with insufficient gas for memory expansion
     var frame_low_gas = try Frame.init(
-        100,  // Very low gas
+        100, // Very low gas
         false,
         0,
         Address.ZERO,
@@ -1389,11 +1389,11 @@ test "interpret: noop instruction advances correctly" {
 
     // Code with JUMPDEST (which becomes noop) and arithmetic
     const code = &[_]u8{
-        0x60, 0x02,     // PUSH1 2
-        0x60, 0x03,     // PUSH1 3
-        0x5b,           // JUMPDEST (noop)
-        0x01,           // ADD
-        0x00,           // STOP
+        0x60, 0x02, // PUSH1 2
+        0x60, 0x03, // PUSH1 3
+        0x5b, // JUMPDEST (noop)
+        0x01, // ADD
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1424,7 +1424,7 @@ test "interpret: noop instruction advances correctly" {
 
     // Execute
     try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
-    
+
     // Check result
     try std.testing.expectEqual(@as(usize, 1), frame.stack.size());
     try std.testing.expectEqual(@as(u256, 5), frame.stack.data[0]);
@@ -1440,10 +1440,10 @@ test "interpret: conditional_jump_invalid with true condition" {
 
     // JUMPI to invalid location (will be analyzed as conditional_jump_invalid)
     const code = &[_]u8{
-        0x60, 0xFF,     // PUSH1 0xFF (invalid jump dest)
-        0x60, 0x01,     // PUSH1 1 (true condition)
-        0x57,           // JUMPI
-        0x00,           // STOP
+        0x60, 0xFF, // PUSH1 0xFF (invalid jump dest)
+        0x60, 0x01, // PUSH1 1 (true condition)
+        0x57, // JUMPI
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1486,10 +1486,10 @@ test "interpret: conditional_jump_invalid with false condition continues" {
 
     // JUMPI to invalid location but with false condition
     const code = &[_]u8{
-        0x60, 0xFF,     // PUSH1 0xFF (invalid jump dest)
-        0x60, 0x00,     // PUSH1 0 (false condition)
-        0x57,           // JUMPI
-        0x00,           // STOP
+        0x60, 0xFF, // PUSH1 0xFF (invalid jump dest)
+        0x60, 0x00, // PUSH1 0 (false condition)
+        0x57, // JUMPI
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1532,8 +1532,8 @@ test "interpret: jump_unresolved with empty stack causes underflow" {
 
     // Dynamic JUMP with empty stack
     const code = &[_]u8{
-        0x56,           // JUMP (no destination on stack)
-        0x00,           // STOP
+        0x56, // JUMP (no destination on stack)
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1576,9 +1576,9 @@ test "interpret: conditional_jump_unresolved with insufficient stack" {
 
     // JUMPI with only one stack item (needs two)
     const code = &[_]u8{
-        0x60, 0x05,     // PUSH1 5 (only destination, no condition)
-        0x57,           // JUMPI
-        0x00,           // STOP
+        0x60, 0x05, // PUSH1 5 (only destination, no condition)
+        0x57, // JUMPI
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1622,27 +1622,27 @@ test "interpret: complex control flow with multiple jumps" {
     // Complex control flow: multiple jumps and conditional jumps
     const code = &[_]u8{
         // Start: push 5
-        0x60, 0x05,     // PUSH1 5
+        0x60, 0x05, // PUSH1 5
         // Jump to first section
-        0x60, 0x08,     // PUSH1 8
-        0x56,           // JUMP
-        0xfe,           // INVALID (skipped)
-        0xfe,           // INVALID (skipped)
+        0x60, 0x08, // PUSH1 8
+        0x56, // JUMP
+        0xfe, // INVALID (skipped)
+        0xfe, // INVALID (skipped)
         // First section at 8
-        0x5b,           // JUMPDEST
-        0x60, 0x03,     // PUSH1 3
-        0x01,           // ADD (5 + 3 = 8)
+        0x5b, // JUMPDEST
+        0x60, 0x03, // PUSH1 3
+        0x01, // ADD (5 + 3 = 8)
         // Conditional jump to second section
-        0x60, 0x16,     // PUSH1 22
-        0x60, 0x01,     // PUSH1 1
-        0x57,           // JUMPI (should jump)
-        0xfe,           // INVALID (skipped)
-        0xfe,           // INVALID (skipped)
+        0x60, 0x16, // PUSH1 22
+        0x60, 0x01, // PUSH1 1
+        0x57, // JUMPI (should jump)
+        0xfe, // INVALID (skipped)
+        0xfe, // INVALID (skipped)
         // Second section at 22
-        0x5b,           // JUMPDEST
-        0x60, 0x02,     // PUSH1 2
-        0x02,           // MUL (8 * 2 = 16)
-        0x00,           // STOP
+        0x5b, // JUMPDEST
+        0x60, 0x02, // PUSH1 2
+        0x02, // MUL (8 * 2 = 16)
+        0x00, // STOP
     };
 
     var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
@@ -1673,7 +1673,7 @@ test "interpret: complex control flow with multiple jumps" {
 
     // Execute
     try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
-    
+
     // Check final result
     try std.testing.expectEqual(@as(usize, 1), frame.stack.size());
     try std.testing.expectEqual(@as(u256, 16), frame.stack.data[0]);
@@ -1712,7 +1712,7 @@ test "interpret: maximum stack depth" {
     const host = Host.init(&vm);
 
     var frame = try Frame.init(
-        10000000,  // Lots of gas
+        10000000, // Lots of gas
         false,
         0,
         Address.ZERO,
