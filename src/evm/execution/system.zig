@@ -627,7 +627,7 @@ pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
         // Handle gas accounting after CREATE
         frame.gas_remaining = gas_reserved + call_result.gas_left;
 
-        // The host should return the created address in the output
+        // The host returns the created address as 20 bytes in the output
         if (call_result.output) |address_bytes| {
             if (address_bytes.len == 20) {
                 // Convert address bytes to u256 and push
@@ -645,12 +645,8 @@ pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
                 _ = try frame.access_address(contract_address);
 
                 frame.stack.append_unsafe(address_u256);
-            } else if (address_bytes.len == 32) {
-                // REVM may return a 32-byte word; ensure we read a full word
-                const address_bytes_32: *const [32]u8 = @ptrCast(address_bytes.ptr);
-                const address_u256: u256 = std.mem.readInt(u256, address_bytes_32, .big);
-                frame.stack.append_unsafe(address_u256);
             } else {
+                // Invalid address length, push 0
                 frame.stack.append_unsafe(0);
             }
             // Free returned buffer now that we've consumed it
@@ -782,7 +778,7 @@ pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
         // Handle gas accounting after CREATE2
         frame.gas_remaining = gas_reserved + call_result.gas_left;
 
-        // The host should return the created address in the output
+        // The host returns the created address as 20 bytes in the output
         if (call_result.output) |address_bytes| {
             if (address_bytes.len == 20) {
                 // Convert address bytes to u256 and push
@@ -800,12 +796,8 @@ pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
                 _ = try frame.access_address(contract_address);
 
                 frame.stack.append_unsafe(address_u256);
-            } else if (address_bytes.len == 32) {
-                // Accept 32-byte address word from host
-                const address_bytes_32: *const [32]u8 = @ptrCast(address_bytes.ptr);
-                const address_u256 = std.mem.readInt(u256, address_bytes_32, .big);
-                frame.stack.append_unsafe(address_u256);
             } else {
+                // Invalid address length, push 0
                 frame.stack.append_unsafe(0);
             }
             // Free returned buffer now that we've consumed it

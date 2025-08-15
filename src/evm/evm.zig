@@ -767,24 +767,23 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
 
     // Success (STOP or fell off end): deploy runtime code if any
     const output = host.get_output();
+    var out: ?[]u8 = null;
     if (output.len > 0) {
         std.debug.print("[create_contract] Success STOP, deploying runtime code len={}\n", .{output.len});
         // Store code at the new address (MemoryDatabase copies the slice)
         self.state.set_code(new_address, output) catch {};
+        // Return a copy of the deployed bytecode for tests
+        out = try self.allocator.dupe(u8, output);
     } else {
         std.debug.print("[create_contract] Success STOP, empty runtime code\n", .{});
     }
-    
-    // For CREATE/CREATE2, return the address bytes (20 bytes) in the output
-    const address_bytes = try self.allocator.alloc(u8, 20);
-    @memcpy(address_bytes, &new_address);
     
     // Add back the unspent frame gas to the caller, but exclude the precharged overhead
     const gas_left = frame.gas_remaining;
     frame.deinit(self.allocator);
     return InterprResult{
         .status = .Success,
-        .output = address_bytes,
+        .output = out,
         .gas_left = gas_left,
         .gas_used = 0,
         .address = new_address,
