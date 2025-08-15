@@ -148,7 +148,7 @@ test "STATICCALL opcode with tracing - debug differential failure" {
     } };
     
     const guillotine_result = try vm.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
     
     // Print results for debugging
     std.debug.print("\n=== STATICCALL Debug Results ===\n", .{});

@@ -168,7 +168,7 @@ test "differential: minimal dispatcher parity for match and no-match" {
     defer revm_match.deinit();
     const call_match = evm.CallParams{ .call = .{ .caller = contract, .to = contract, .value = 0, .input = &selector_match, .gas = gas } };
     const guillotine_match = try vm_instance.call(call_match);
-    defer if (guillotine_match.output) |o| allocator.free(o);
+    // VM owns guillotine_match.output; do not free here
 
     try testing.expectEqual(revm_match.success, guillotine_match.success);
     if (revm_match.success) {
@@ -182,7 +182,7 @@ test "differential: minimal dispatcher parity for match and no-match" {
     defer revm_nomatch.deinit();
     const call_nomatch = evm.CallParams{ .call = .{ .caller = contract, .to = contract, .value = 0, .input = &selector_nomatch, .gas = gas } };
     const guillotine_nomatch = try vm_instance.call(call_nomatch);
-    defer if (guillotine_nomatch.output) |o| allocator.free(o);
+    // VM owns guillotine_nomatch.output; do not free here
 
     try testing.expectEqual(revm_nomatch.success, guillotine_nomatch.success);
     if (revm_nomatch.success) {

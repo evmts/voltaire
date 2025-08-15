@@ -84,7 +84,7 @@ test "ADD opcode 0 + 0 = 0" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -190,7 +190,7 @@ test "ADD opcode 1 + 1 = 2" {
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -1727,7 +1727,7 @@ test "ADD fusion: PUSH 5, PUSH 10, ADD vs PUSH 5, MSTORE, PUSH 10, ADD" {
     } };
 
     const guillotine_result_fusion = try vm_instance_fusion.call(call_params_fusion);
-    defer if (guillotine_result_fusion.output) |output| allocator.free(output);
+    // VM owns guillotine_result_fusion.output; do not free here
 
     // Test non-fusion bytecode with Guillotine
     var memory_db_non_fusion = MemoryDatabase.init(allocator);
@@ -1748,7 +1748,7 @@ test "ADD fusion: PUSH 5, PUSH 10, ADD vs PUSH 5, MSTORE, PUSH 10, ADD" {
     } };
 
     const guillotine_result_non_fusion = try vm_instance_non_fusion.call(call_params_non_fusion);
-    defer if (guillotine_result_non_fusion.output) |output| allocator.free(output);
+    // VM owns guillotine_result_non_fusion.output; do not free here
 
     // All should succeed
     try testing.expect(revm_result_fusion.success);

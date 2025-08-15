@@ -335,7 +335,7 @@ test "RETURN opcode returns data from memory" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -405,7 +405,7 @@ test "REVERT opcode reverts execution" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params2);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should fail (revert)
     const revm_succeeded = revm_result.success;
@@ -466,7 +466,7 @@ test "INVALID opcode causes invalid instruction error" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params3);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should fail (invalid instruction)
     const revm_succeeded = revm_result.success;
@@ -522,7 +522,7 @@ test "SELFDESTRUCT opcode destroys contract" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params4);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed (SELFDESTRUCT is a valid operation)
     const revm_succeeded = revm_result.success;
@@ -584,7 +584,7 @@ test "CODESIZE opcode returns contract code size" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -662,7 +662,7 @@ test "CODECOPY opcode copies contract code to memory" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params2);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -922,7 +922,7 @@ test "STATICCALL opcode enforces read-only execution" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -1088,7 +1088,7 @@ test "DELEGATECALL opcode executes code in caller's context" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -1527,7 +1527,7 @@ test "CREATE2 opcode creates contract at deterministic address" {
         } };
 
         const guillotine_call_result = try vm_instance.call(call_params2);
-        defer if (guillotine_call_result.output) |output| allocator.free(output);
+        // VM owns guillotine_call_result.output; do not free here
 
         // Both calls should succeed and return 0x42
         try testing.expect(revm_call_result.success);

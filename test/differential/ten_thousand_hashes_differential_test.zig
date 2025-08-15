@@ -59,7 +59,7 @@ test "ten-thousand-hashes differential: runtime and output match REVM" {
     defer vm.deinit();
     try vm.state.set_balance(deployer, std.math.maxInt(u256));
     const zig_create = try vm.create_contract(deployer, 0, init_code, 1_000_000_000);
-    defer if (zig_create.output) |o| allocator.free(o);
+    // zig_create.output is a view into VM-owned buffer now; do not free here
     try testing.expect(zig_create.output != null);
     try testing.expectEqual(@as(usize, revm_runtime.len), zig_create.output.?.len);
     try testing.expectEqualSlices(u8, revm_runtime, zig_create.output.?);
