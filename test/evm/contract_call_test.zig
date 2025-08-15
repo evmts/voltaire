@@ -169,14 +169,10 @@ test "contract call: simple contract execution" {
     };
 
     const create_result = try vm.create_contract(deployer, 0, init_code, 1000000);
-    defer if (create_result.output) |output| 
-
     try testing.expect(create_result.success);
 
     // Call the deployed contract
     const call_result = try vm.call_contract(caller, create_result.address, 0, &.{}, 100000, false);
-    defer if (call_result.output) |output| 
-
     try testing.expect(call_result.success);
     try testing.expect(call_result.gas_left < 100000); // Some gas was used
     try testing.expect(call_result.output != null);
@@ -233,15 +229,11 @@ test "contract call: gas consumption tracking" {
     };
 
     const create_result = try vm.create_contract(deployer, 0, init_code, 1000000);
-    defer if (create_result.output) |output| 
-
     try testing.expect(create_result.success);
 
     // Call with specific gas amount
     const initial_gas: u64 = 50000;
     const call_result = try vm.call_contract(caller, create_result.address, 0, &.{}, initial_gas, false);
-    defer if (call_result.output) |output| 
-
     try testing.expect(call_result.success);
 
     const gas_used = initial_gas - call_result.gas_left;
@@ -297,15 +289,11 @@ test "contract call: revert handling" {
     };
 
     const create_result = try vm.create_contract(deployer, 0, init_code, 1000000);
-    defer if (create_result.output) |output| 
-
     try testing.expect(create_result.success);
 
     // Call the reverting contract
     const initial_gas: u64 = 50000;
     const call_result = try vm.call_contract(caller, create_result.address, 0, &.{}, initial_gas, false);
-    defer if (call_result.output) |output| 
-
     try testing.expect(!call_result.success);
 
     // Gas should be partially consumed (not all)
@@ -360,15 +348,11 @@ test "contract call: input data passing" {
     };
 
     const create_result = try vm.create_contract(deployer, 0, init_code, 1000000);
-    defer if (create_result.output) |output| 
-
     try testing.expect(create_result.success);
 
     // Call with input data
     const input_data = &[_]u8{ 0x11, 0x22, 0x33, 0x44 };
     const call_result = try vm.call_contract(caller, create_result.address, 0, input_data, 100000, false);
-    defer if (call_result.output) |output| 
-
     try testing.expect(call_result.success);
 
     // Check output matches input
@@ -398,8 +382,6 @@ test "contract call: call depth limit" {
 
     // This call should succeed (depth becomes 1024)
     const result1 = try vm.call_contract(caller, contract, 0, &.{}, 100000, false);
-    defer if (result1.output) |output| 
-
     try testing.expect(result1.success);
 
     // Reset VM for next test
@@ -407,8 +389,6 @@ test "contract call: call depth limit" {
 
     // This call should fail (would exceed depth limit)
     const result2 = try vm.call_contract(caller, contract, 0, &.{}, 100000, false);
-    defer if (result2.output) |output| 
-
     try testing.expect(!result2.success);
     try testing.expectEqual(@as(u64, 100000), result2.gas_left); // No gas consumed
 }
@@ -447,8 +427,6 @@ test "contract call: value transfer rollback on failure" {
     };
 
     const create_result = try vm.create_contract(deployer, 0, init_code, 1000000);
-    defer if (create_result.output) |output| 
-
     try testing.expect(create_result.success);
 
     const initial_caller_balance = vm.state.get_balance(caller);
@@ -457,8 +435,6 @@ test "contract call: value transfer rollback on failure" {
     // Call with value - should fail and rollback
     const call_result = try vm.call_contract(caller, create_result.address, 5000, // value
         &.{}, 100000, false);
-    defer if (call_result.output) |output| 
-
     try testing.expect(!call_result.success);
 
     // Balances should be unchanged

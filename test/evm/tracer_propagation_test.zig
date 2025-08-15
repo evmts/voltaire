@@ -46,8 +46,6 @@ test "tracer propagates to nested CREATE2 calls" {
     };
     
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-    
     try std.testing.expect(result.success);
     
     // Check that we got traces

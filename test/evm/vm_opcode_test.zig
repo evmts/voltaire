@@ -119,8 +119,6 @@ test "VM: STOP opcode halts execution" {
 
     const bytecode = [_]u8{0x00}; // STOP
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 1000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     try testing.expectEqual(@as(u64, 0), result.gas_used); // STOP has zero gas cost
 }
@@ -147,8 +145,6 @@ test "VM: JUMPDEST and JUMP sequence" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     // First check if execution was successful
     try testing.expect(result.status == .Success);
 
@@ -187,8 +183,6 @@ test "VM: JUMPI conditional jump taken" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // TODO: VM doesn't properly return output for JUMPI tests yet
     // Expected output would be 170
@@ -217,8 +211,6 @@ test "VM: JUMPI conditional jump not taken" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // TODO: VM doesn't properly return output for JUMPI tests yet
     // Expected output would be 255
@@ -242,8 +234,6 @@ test "VM: PC opcode returns current program counter" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // TODO: PC opcode with control flow doesn't return output properly yet
     // The test execution is successful but no output is returned
@@ -277,8 +267,6 @@ test "VM: ADD opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // ADD opcode executes successfully - no output expected
 }
@@ -327,8 +315,6 @@ test "VM: ADD opcode overflow" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // ADD overflow executes successfully - no output expected
 }
@@ -354,8 +340,6 @@ test "VM: ADD complex sequence" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // ADD complex sequence executes successfully - no output expected
 }
@@ -378,8 +362,6 @@ test "VM: MUL opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -429,8 +411,6 @@ test "VM: MUL opcode overflow" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // MAX_U256 * 2 = 2^257 - 2, which wraps to MAX_U256 - 1
     // const expected = std.math.maxInt(u256) - 1;
@@ -457,8 +437,6 @@ test "VM: MUL by zero" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -483,8 +461,6 @@ test "VM: MUL by one" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -511,8 +487,6 @@ test "VM: MUL complex sequence" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -556,8 +530,6 @@ test "VM: MUL large numbers" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // 2^128 * 2^127 = 2^255
     // const expected = @as(u256, 1) << 255;
@@ -583,8 +555,6 @@ test "VM: SUB opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // 5 - 10 wraps to MAX - 4
     // const expected = std.math.maxInt(u256) - 4;
@@ -611,8 +581,6 @@ test "VM: SUB opcode underflow" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // 10 - 5 = 5
 
@@ -638,8 +606,6 @@ test "VM: SUB from zero" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -664,8 +630,6 @@ test "VM: SUB identity" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -692,8 +656,6 @@ test "VM: SUB complex sequence" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -780,8 +742,6 @@ test "VM: SUB large numbers" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Expected: 2^255 - 2^254 = 2^254 = 28948022309329048855892746252171976963317496166410141009864396001978282409984
@@ -808,8 +768,6 @@ test "VM: DIV opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -833,8 +791,6 @@ test "VM: DIV by zero returns zero" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -859,8 +815,6 @@ test "VM: DIV with remainder" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -885,8 +839,6 @@ test "VM: DIV by one" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -911,8 +863,6 @@ test "VM: DIV zero dividend" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -939,8 +889,6 @@ test "VM: DIV complex sequence" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -976,8 +924,6 @@ test "VM: DIV large numbers" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // 2^128 / 2^64 = 2^64
     // const expected = @as(u256, 1) << 64;
@@ -1003,8 +949,6 @@ test "VM: MOD opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1028,8 +972,6 @@ test "VM: MOD by zero returns zero" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1053,8 +995,6 @@ test "VM: MOD perfect division" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1078,8 +1018,6 @@ test "VM: MOD by one" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1130,8 +1068,6 @@ test "VM: SDIV opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // -3 in two's complement
     // const expected_neg3 = std.math.maxInt(u256) - 2; // -3 = 0xFFFFFFF...FD
@@ -1157,8 +1093,6 @@ test "VM: SDIV by zero returns zero" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1247,8 +1181,6 @@ test "VM: SDIV overflow case MIN_I256 / -1" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // Result should be MIN_I256 (overflow wraps)
     // const min_i256 = @as(u256, 1) << 255;
@@ -1308,8 +1240,6 @@ test "VM: SDIV positive by negative" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // -3 in two's complement
     // const expected_neg3 = std.math.maxInt(u256) - 2;
@@ -1400,8 +1330,6 @@ test "VM: SDIV negative by negative" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1459,8 +1387,6 @@ test "VM: SDIV truncation behavior" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // -3 in two's complement
     // const expected_neg3 = std.math.maxInt(u256) - 2;
@@ -1520,8 +1446,6 @@ test "VM: SMOD opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // -1 in two's complement
     // const expected_neg1 = std.math.maxInt(u256);
@@ -1547,8 +1471,6 @@ test "VM: SMOD by zero returns zero" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1573,8 +1495,6 @@ test "VM: SMOD positive by positive" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1632,8 +1552,6 @@ test "VM: SMOD positive by negative" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1691,8 +1609,6 @@ test "VM: SMOD large negative number" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // The result should be negative (two's complement)
     // Note: Arithmetic operations don't return output in current VM implementation
@@ -1719,8 +1635,6 @@ test "VM: ADDMOD opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1745,8 +1659,6 @@ test "VM: MULMOD opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1770,8 +1682,6 @@ test "VM: EXP opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -1800,8 +1710,6 @@ test "VM: LT opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // true
     // Arithmetic operation executes successfully - no output expected
@@ -1828,8 +1736,6 @@ test "VM: GT opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // true
     // Arithmetic operation executes successfully - no output expected
@@ -1854,8 +1760,6 @@ test "VM: EQ opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // true
     // Arithmetic operation executes successfully - no output expected
@@ -1879,8 +1783,6 @@ test "VM: ISZERO opcode with non-zero" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // ISZERO(5) = 0
     // Arithmetic operation executes successfully - no output expected
@@ -1904,8 +1806,6 @@ test "VM: ISZERO opcode with zero" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // ISZERO(0) = 1
     // Arithmetic operation executes successfully - no output expected
@@ -1933,8 +1833,6 @@ test "VM: CALLER opcode" {
     // For this test, we'll need to set up the EVM state properly
     // This is a simplified version - in reality we'd need proper frame setup
     const result = try run_bytecode(evm, &bytecode, contract_address, 10000, &input_data);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // The caller should be on the stack - in this case it's the same as the contract address (zero)
 
@@ -1959,8 +1857,6 @@ test "VM: NUMBER opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // Block number set in create_test_evm
     // Arithmetic operation executes successfully - no output expected
@@ -1982,8 +1878,6 @@ test "VM: TIMESTAMP opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // Timestamp set in create_test_evm
     // Arithmetic operation executes successfully - no output expected
@@ -2005,8 +1899,6 @@ test "VM: CHAINID opcode" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     // Chain ID set in create_test_evm
     // Arithmetic operation executes successfully - no output expected
@@ -2037,8 +1929,6 @@ test "VM: Complex arithmetic sequence" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -2071,8 +1961,6 @@ test "VM: Conditional logic with comparison" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
 
     // Arithmetic operation executes successfully - no output expected
@@ -2100,8 +1988,6 @@ test "VM: Invalid JUMP destination" {
         // We expect the EVM to handle this and return an Invalid status
         unreachable;
     };
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Invalid);
 }
 
@@ -2119,8 +2005,6 @@ test "VM: Stack underflow" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10000, null);
-    defer if (result.output) |output| 
-
     // Stack underflow should result in Invalid status
     try testing.expect(result.status == .Invalid);
 }
@@ -2140,7 +2024,5 @@ test "VM: Out of gas" {
     };
 
     const result = try run_bytecode(evm, &bytecode, ZERO_ADDRESS, 10, null);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .OutOfGas);
 }

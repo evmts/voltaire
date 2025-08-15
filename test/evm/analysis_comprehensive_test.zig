@@ -329,7 +329,6 @@ test "E2E: Simple PUSH and arithmetic execution" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Output should contain result (5)
@@ -377,7 +376,6 @@ test "E2E: JUMP to valid JUMPDEST" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Output should contain 0x42 (not 0xFF which was skipped)
@@ -459,8 +457,6 @@ test "E2E: JUMPI conditional jump taken" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
-    
     std.log.warn("JUMPI test result: success={}, output_len={?}", .{ 
         result.success, 
         if (result.output) |o| o.len else null
@@ -556,7 +552,6 @@ test "E2E: Loop with backward JUMP" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Output should contain 0 (loop completed)
@@ -600,7 +595,6 @@ test "E2E: PUSH in data section is not executed" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Output should contain the pushed value, not results of executing data as code

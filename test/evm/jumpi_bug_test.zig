@@ -48,8 +48,6 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
         .gas = 100000,
     } };
     const test_res = try vm.call(test_params);
-    defer if (test_res.output) |output| 
-    
     std.log.warn("Simple test: success={}, output_len={?}, gas_left={}", .{ 
         test_res.success, 
         if (test_res.output) |o| o.len else null,
@@ -119,8 +117,6 @@ test "WORKING dynamic JUMPI to valid JUMPDEST returns 0x01" {
         .gas = 100000,
     } };
     const res = try vm.call(params);
-    defer if (res.output) |output| 
-    
     std.log.warn("Call result: success={}, output_len={?}, gas_used={}", .{ 
         res.success, 
         if (res.output) |o| o.len else null,
@@ -195,8 +191,6 @@ test "JUMPI should take jump when condition is non-zero" {
         },
     };
     const result = try vm2.call(call_params);
-    defer if (result.output) |output| 
-
     // JUMPI is now working correctly after stack order fix
     // JUMPI should take the jump when condition is non-zero
     // Execution should jump over 0xFF and push 0xAA instead
@@ -248,8 +242,6 @@ test "JUMPI should NOT jump when condition is zero" {
         },
     };
     const result = try vm3.call(call_params);
-    defer if (result.output) |output| 
-
     // When condition is zero, JUMPI should NOT jump
     // So it should execute normally and push 0xFF then STOP
     // JUMPI is now working correctly after stack order fix

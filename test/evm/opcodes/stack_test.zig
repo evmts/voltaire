@@ -45,8 +45,6 @@ test "Stack: PUSH0 operation" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -89,8 +87,6 @@ test "Stack: PUSH1 operation" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -134,8 +130,6 @@ test "Stack: PUSH2 operation" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -211,8 +205,6 @@ test "Stack: PUSH32 operation" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -262,8 +254,6 @@ test "Stack: POP operation" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -309,8 +299,6 @@ test "Stack: DUP1 operation" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -368,8 +356,6 @@ test "Stack: DUP16 operation" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -415,8 +401,6 @@ test "Stack: SWAP1 operation" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -474,8 +458,6 @@ test "Stack: SWAP16 operation" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -527,8 +509,6 @@ test "Stack: Complex stack manipulation" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -568,8 +548,6 @@ test "Stack: PUSH with insufficient bytes should fail" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     // Execution should fail due to invalid push
     try testing.expect(!result.success);
 }

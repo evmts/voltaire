@@ -106,8 +106,6 @@ test "DELEGATECALL basic functionality" {
     defer contract.deinit(allocator, null);
 
     const result = try vm.interpret(&contract, &.{}, false);
-    defer if (result.output) |out| 
-
     // Verify execution succeeded
     try testing.expectEqual(.Success, result.status);
 
@@ -190,8 +188,6 @@ test "DELEGATECALL preserves sender and value" {
     defer contract.deinit(allocator, null);
 
     const result = try vm.interpret(&contract, &.{}, false);
-    defer if (result.output) |out| 
-
     try testing.expectEqual(.Success, result.status);
     try testing.expect(result.output != null);
     try testing.expectEqual(@as(usize, 64), result.output.?.len);
@@ -275,8 +271,6 @@ test "DELEGATECALL with storage access" {
     defer contract.deinit(allocator, null);
 
     const result = try vm.interpret(&contract, &.{}, false);
-    defer if (result.output) |out| 
-
     try testing.expectEqual(.Success, result.status);
 
     // Verify storage was written to caller's address, not callee's

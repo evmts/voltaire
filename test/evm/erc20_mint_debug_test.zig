@@ -55,8 +55,6 @@ test "debug: erc20.mint with full logging" {
     // Deploy contract
     std.log.debug("=== DEPLOYING CONTRACT ===", .{});
     const create_result = try vm.create_contract(caller, 0, bytecode, 1_000_000_000);
-    defer if (create_result.output) |output| 
-
     if (!create_result.success) {
         std.log.err("Deployment failed - gas_left: {}, success: {}", .{ create_result.gas_left, create_result.success });
         try testing.expect(false);
@@ -70,8 +68,6 @@ test "debug: erc20.mint with full logging" {
     std.log.debug("Calling Benchmark() function with selector: {x}", .{calldata});
 
     const call_result = try vm.call_contract(caller, contract_address, 0, calldata, 1_000_000_000, false);
-    defer if (call_result.output) |output| 
-
     std.log.debug("=== CALL COMPLETE ===", .{});
     std.log.debug("Call result - gas_left: {}, success: {}, gas_used: {}", .{ call_result.gas_left, call_result.success, 1_000_000_000 - call_result.gas_left });
 

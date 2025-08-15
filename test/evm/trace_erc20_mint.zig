@@ -52,8 +52,6 @@ test "trace ERC20 mint execution" {
     std.debug.print("\n=== Deploying ERC20 Contract ===\n", .{});
     const create_result = try vm.create_contract(caller, 0, bytecode, 1_000_000_000 // 1B gas for deployment
     );
-    defer if (create_result.output) |output| 
-
     std.debug.print("Deployment result - success: {}, gas_left: {}, gas_used: {}\n", .{ create_result.success, create_result.gas_left, 1_000_000_000 - create_result.gas_left });
 
     if (!create_result.success) {
@@ -80,8 +78,6 @@ test "trace ERC20 mint execution" {
 
     std.debug.print("\n=== Calling mint function ===\n", .{});
     const call_result = try vm.call_contract(caller, contract_address, 0, calldata, 1_000_000_000, false);
-    defer if (call_result.output) |output| 
-
     std.debug.print("Call result - success: {}, gas_left: {}, gas_used: {}\n", .{ call_result.success, call_result.gas_left, 1_000_000_000 - call_result.gas_left });
 
     if (call_result.output) |output| {

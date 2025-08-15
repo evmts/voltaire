@@ -78,12 +78,8 @@ test "E2E: Dynamic arrays - push, pop, and indexing" {
 
     // Execute the contract with traditional interpreter
     const array_result = try evm.interpretCompat(&contract, &[_]u8{}, false);
-    defer if (array_result.output) |output| 
-
     // Execute the contract with block interpreter
     const array_result_block = try evm.interpret_block_write(&contract, &[_]u8{});
-    defer if (array_result_block.output) |output| 
-
     // Test traditional interpreter results
     try testing.expect(array_result.status == .Success);
     // Test block interpreter results
@@ -166,12 +162,8 @@ test "E2E: Mappings - various key types and nested access" {
 
     // Execute the contract with traditional interpreter
     const mapping_result = try evm.interpretCompat(&contract, &[_]u8{}, false);
-    defer if (mapping_result.output) |output| 
-
     // Execute the contract with block interpreter
     const mapping_result_block = try evm.interpret_block_write(&contract, &[_]u8{});
-    defer if (mapping_result_block.output) |output| 
-
     // Test traditional interpreter results
     try testing.expect(mapping_result.status == .Success);
     // Test block interpreter results
@@ -271,8 +263,6 @@ test "E2E: Struct simulation - packed and unpacked storage" {
 
     // Execute the contract
     const struct_result = try evm.interpretCompat(&contract, &[_]u8{}, false);
-    defer if (struct_result.output) |output| 
-
     try testing.expect(struct_result.status == .Success);
     if (struct_result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -341,8 +331,6 @@ test "E2E: String/Bytes operations - encoding and manipulation" {
 
     // Execute the contract
     const bytes_result = try evm.interpretCompat(&contract, &[_]u8{}, false);
-    defer if (bytes_result.output) |output| 
-
     try testing.expect(bytes_result.status == .Success);
     if (bytes_result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -421,8 +409,6 @@ test "E2E: Nested structures - arrays of mappings simulation" {
 
     // Execute the contract
     const nested_result = try evm.interpretCompat(&contract, &[_]u8{}, false);
-    defer if (nested_result.output) |output| 
-
     try testing.expect(nested_result.status == .Success);
     if (nested_result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -496,8 +482,6 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
 
     // Execute the memory operations contract
     const memory_result = try evm.interpretCompat(&memory_contract, &[_]u8{}, false);
-    defer if (memory_result.output) |output| 
-
     try testing.expect(memory_result.status == .Success);
     const memory_gas_used = memory_result.gas_used;
 
@@ -540,8 +524,6 @@ test "E2E: Storage patterns - efficiency and gas optimization" {
 
     // Execute the storage operations contract
     const storage_result = try evm.interpretCompat(&storage_contract, &[_]u8{}, false);
-    defer if (storage_result.output) |output| 
-
     try testing.expect(storage_result.status == .Success);
     const storage_gas_used = storage_result.gas_used;
 

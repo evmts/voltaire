@@ -66,8 +66,6 @@ test "Block: BLOCKHASH operations" {
         } };
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -109,8 +107,6 @@ test "Block: BLOCKHASH operations" {
         } };
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -146,8 +142,6 @@ test "Block: BLOCKHASH operations" {
         } };
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -209,8 +203,6 @@ test "Block: COINBASE operations" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -273,8 +265,6 @@ test "Block: TIMESTAMP operations" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -336,8 +326,6 @@ test "Block: NUMBER operations" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -399,8 +387,6 @@ test "Block: DIFFICULTY/PREVRANDAO operations" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -462,8 +448,6 @@ test "Block: GASLIMIT operations" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -525,8 +509,6 @@ test "Block: BASEFEE operations (London)" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -596,8 +578,6 @@ test "Block: BLOBHASH operations (Cancun)" {
         } };
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -634,8 +614,6 @@ test "Block: BLOBHASH operations (Cancun)" {
         } };
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -672,8 +650,6 @@ test "Block: BLOBHASH operations (Cancun)" {
         } };
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -735,8 +711,6 @@ test "Block: BLOBBASEFEE operations (Cancun)" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);

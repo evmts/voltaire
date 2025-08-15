@@ -79,8 +79,6 @@ test "E2E: Basic EVM operations" {
 
     // Execute the contract with traditional interpreter
     const result = try evm_instance.interpretCompat(&contract, &[_]u8{}, false);
-    defer if (result.output) |output| 
-
     // Execute the contract with block interpreter
     // SKIP: Bug #3 - interpret_block causes test to hang
     // const result_block = try evm_instance.interpret_block_write(&contract, &[_]u8{});

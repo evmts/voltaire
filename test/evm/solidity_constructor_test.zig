@@ -54,8 +54,6 @@ test "complex Solidity constructor returns full runtime code" {
     };
 
     const create_result = try vm.create_contract(deployer, 0, erc20_init_code, 1000000);
-    defer if (create_result.output) |output| 
-
     const deployed_code = vm.state.get_code(create_result.address);
 
     // This test will likely fail - showing only 36 bytes deployed
@@ -107,8 +105,6 @@ test "gas metering for KECCAK256 operations" {
 
     // Deploy the contract
     const create_result = try vm.create_contract(caller, 0, keccak_init_code, 1000000);
-    defer if (create_result.output) |output| 
-
     // Check what code was actually deployed
     const deployed_code = vm.state.get_code(create_result.address);
     _ = deployed_code;
@@ -120,8 +116,6 @@ test "gas metering for KECCAK256 operations" {
         initial_gas, // gas
         false // is_static
     );
-    defer if (call_result.output) |output| 
-
     const gas_used = initial_gas - call_result.gas_left;
 
     // This should use some gas for the operations

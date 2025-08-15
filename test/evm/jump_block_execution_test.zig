@@ -44,8 +44,6 @@ test "block execution with resolved jump" {
     
     // Execute using block-based interpretation (should handle jump)
     const result = try vm.interpret_block(&contract, &.{}, false);
-    defer if (result.output) |output| 
-    
     // Should succeed and return 0x42
     try std.testing.expectEqual(evm.RunResult.Status.Success, result.status);
     try std.testing.expect(result.output != null);
@@ -101,8 +99,6 @@ test "block execution with conditional jump taken" {
     
     // Execute using block-based interpretation
     const result = try vm.interpret_block(&contract, &.{}, false);
-    defer if (result.output) |output| 
-    
     // Should succeed with value 42
     try std.testing.expectEqual(evm.RunResult.Status.Success, result.status);
     try std.testing.expect(result.output != null);
@@ -154,8 +150,6 @@ test "block execution with conditional jump not taken" {
     
     // Execute using block-based interpretation
     const result = try vm.interpret_block(&contract, &.{}, false);
-    defer if (result.output) |output| 
-    
     // Should succeed with value 99 (not 42)
     try std.testing.expectEqual(evm.RunResult.Status.Success, result.status);
     try std.testing.expect(result.output != null);

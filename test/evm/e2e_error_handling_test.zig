@@ -54,12 +54,8 @@ test "E2E: Revert conditions - require and revert opcodes" {
 
     // Execute the contract with traditional interpreter
     const revert_result = try evm.interpretCompat(&revert_contract, &[_]u8{}, false);
-    defer if (revert_result.output) |output| 
-
     // Execute the contract with block interpreter
     const revert_result_block = try evm.interpret_block_write(&revert_contract, &[_]u8{});
-    defer if (revert_result_block.output) |output| 
-
     // Test traditional interpreter result
     try testing.expect(revert_result.status == .Revert);
     // Test block interpreter result
@@ -101,12 +97,8 @@ test "E2E: Revert conditions - require and revert opcodes" {
 
     // Execute the contract with traditional interpreter
     const conditional_result = try evm.interpretCompat(&conditional_contract, &[_]u8{}, false);
-    defer if (conditional_result.output) |output| 
-
     // Execute the contract with block interpreter
     const conditional_result_block = try evm.interpret_block_write(&conditional_contract, &[_]u8{});
-    defer if (conditional_result_block.output) |output| 
-
     // Test traditional interpreter result
     try testing.expect(conditional_result.status == .Success);
     // Test block interpreter result
@@ -210,8 +202,6 @@ test "E2E: Arithmetic overflow - EVM wraparound behavior" {
 
     // Execute the contract
     const overflow_result = try evm.interpretCompat(&overflow_contract, &[_]u8{}, false);
-    defer if (overflow_result.output) |output| 
-
     try testing.expect(overflow_result.status == .Success);
     if (overflow_result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -252,8 +242,6 @@ test "E2E: Arithmetic overflow - EVM wraparound behavior" {
 
     // Execute the contract
     const underflow_result = try evm.interpretCompat(&underflow_contract, &[_]u8{}, false);
-    defer if (underflow_result.output) |output| 
-
     try testing.expect(underflow_result.status == .Success);
     if (underflow_result.output) |output| {
         var result_value: u256 = 0;
@@ -322,8 +310,6 @@ test "E2E: Gas limits - controlled consumption and out-of-gas" {
 
     // Execute the contract
     const sufficient_result = try evm.interpretCompat(&sufficient_contract, &[_]u8{}, false);
-    defer if (sufficient_result.output) |output| 
-
     try testing.expect(sufficient_result.status == .Success);
     try testing.expect(sufficient_result.gas_used > 0);
 
@@ -351,8 +337,6 @@ test "E2E: Gas limits - controlled consumption and out-of-gas" {
 
     // Execute the contract with insufficient gas
     const insufficient_result = try evm.interpretCompat(&insufficient_contract, &[_]u8{}, false);
-    defer if (insufficient_result.output) |output| 
-
     // Check status
     try testing.expect(insufficient_result.status == .OutOfGas);
 }
@@ -398,8 +382,6 @@ test "E2E: Stack underflow - empty stack operations" {
 
     // Execute the contract
     const underflow_result = try evm.interpretCompat(&underflow_contract, &[_]u8{}, false);
-    defer if (underflow_result.output) |output| 
-
     try testing.expect(underflow_result.status == .Invalid);
 
     // Test arithmetic with insufficient stack items
@@ -425,8 +407,6 @@ test "E2E: Stack underflow - empty stack operations" {
 
     // Execute the contract
     const insufficient_result = try evm.interpretCompat(&insufficient_contract, &[_]u8{}, false);
-    defer if (insufficient_result.output) |output| 
-
     try testing.expect(insufficient_result.status == .Invalid);
 }
 
@@ -478,8 +458,6 @@ test "E2E: Division by zero - EVM behavior" {
 
     // Execute the contract
     const div_zero_result = try evm.interpretCompat(&div_zero_contract, &[_]u8{}, false);
-    defer if (div_zero_result.output) |output| 
-
     try testing.expect(div_zero_result.status == .Success);
     if (div_zero_result.output) |output| {
         var result_value: u256 = 0;
@@ -518,8 +496,6 @@ test "E2E: Division by zero - EVM behavior" {
 
     // Execute the contract
     const mod_zero_result = try evm.interpretCompat(&mod_zero_contract, &[_]u8{}, false);
-    defer if (mod_zero_result.output) |output| 
-
     try testing.expect(mod_zero_result.status == .Success);
     if (mod_zero_result.output) |output| {
         var result_value: u256 = 0;
@@ -585,8 +561,6 @@ test "E2E: Memory expansion - large offset testing" {
 
     // Execute the contract
     const expansion_result = try evm.interpretCompat(&expansion_contract, &[_]u8{}, false);
-    defer if (expansion_result.output) |output| 
-
     try testing.expect(expansion_result.status == .Success);
     if (expansion_result.output) |output| {
         var result_value: u256 = 0;
@@ -645,8 +619,6 @@ test "E2E: Invalid jumps - bad jump destinations" {
 
     // Execute the contract
     const invalid_jump_result = try evm.interpretCompat(&invalid_jump_contract, &[_]u8{}, false);
-    defer if (invalid_jump_result.output) |output| 
-
     try testing.expect(invalid_jump_result.status == .Invalid);
 
     // Test valid jump to JUMPDEST
@@ -680,8 +652,6 @@ test "E2E: Invalid jumps - bad jump destinations" {
 
     // Execute the contract
     const valid_jump_result = try evm.interpretCompat(&valid_jump_contract, &[_]u8{}, false);
-    defer if (valid_jump_result.output) |output| 
-
     try testing.expect(valid_jump_result.status == .Success);
     if (valid_jump_result.output) |output| {
         var result_value: u256 = 0;

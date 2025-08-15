@@ -34,8 +34,6 @@ test "constructor REVERT should fail deployment, not deploy revert data" {
         revert_bytecode,
         1_000_000
     );
-    defer if (create_result.output) |output| 
-
     // The deployment should FAIL because constructor reverted
     try testing.expect(!create_result.success);
     
@@ -69,8 +67,6 @@ test "constructor that returns empty code should deploy empty contract" {
         stop_bytecode,
         1_000_000
     );
-    defer if (create_result.output) |output| 
-
     // The deployment should succeed
     try testing.expect(create_result.success);
     
@@ -110,8 +106,6 @@ test "constructor that returns runtime code should deploy that code" {
         return_bytecode,
         1_000_000
     );
-    defer if (create_result.output) |output| 
-
     // The deployment should succeed
     try testing.expect(create_result.success);
     

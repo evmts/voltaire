@@ -45,8 +45,6 @@ test "Comparison: LT (less than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -84,8 +82,6 @@ test "Comparison: LT (less than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -122,8 +118,6 @@ test "Comparison: LT (less than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -171,8 +165,6 @@ test "Comparison: GT (greater than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -221,8 +213,6 @@ test "Comparison: EQ (equal) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -260,8 +250,6 @@ test "Comparison: EQ (equal) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -308,8 +296,6 @@ test "Comparison: ISZERO operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -346,8 +332,6 @@ test "Comparison: ISZERO operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -399,8 +383,6 @@ test "Comparison: SLT (signed less than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -453,8 +435,6 @@ test "Comparison: SGT (signed greater than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);

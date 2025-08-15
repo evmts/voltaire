@@ -274,7 +274,6 @@ test "Interpret: JUMPI with condition exactly 1" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Should have jumped and returned 0x42
@@ -370,7 +369,6 @@ test "Interpret: unresolved JUMP to valid destination" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Should return 0x99
@@ -422,7 +420,6 @@ test "Interpret: unresolved JUMPI with dynamic destination" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Should jump and return 0x88
@@ -470,7 +467,6 @@ test "Interpret: KECCAK with immediate zero size" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Should return keccak256 of empty data
@@ -632,7 +628,6 @@ test "Interpret: word immediate with value 0" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Should return 0

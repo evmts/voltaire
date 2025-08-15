@@ -38,8 +38,6 @@ test "REVM comparison: ADD 5 + 10 = 15" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -95,8 +93,6 @@ test "REVM comparison: ADD overflow MAX + 1 = 0" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -144,8 +140,6 @@ test "REVM comparison: SUB 100 - 58 = 42" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -197,8 +191,6 @@ test "REVM comparison: SUB underflow 5 - 10" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -250,8 +242,6 @@ test "REVM comparison: MUL 7 * 6 = 42" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -303,8 +293,6 @@ test "REVM comparison: DIV 84 / 2 = 42" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -356,8 +344,6 @@ test "REVM comparison: DIV by zero 10 / 0 = 0" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -409,8 +395,6 @@ test "REVM comparison: MOD 17 % 5 = 2" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -462,8 +446,6 @@ test "REVM comparison: MOD by zero 10 % 0 = 0" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -519,8 +501,6 @@ test "REVM comparison: SDIV -10 / 3 = -3" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -576,8 +556,6 @@ test "REVM comparison: SDIV by zero -10 / 0 = 0" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -633,8 +611,6 @@ test "REVM comparison: SMOD -10 % 3 = -1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -690,8 +666,6 @@ test "REVM comparison: SMOD by zero -10 % 0 = 0" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -751,8 +725,6 @@ test "REVM comparison: SDIV MIN_INT256 / -1 overflow" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -804,8 +776,6 @@ test "REVM comparison: ADDMOD (10 + 10) % 8 = 4" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -857,8 +827,6 @@ test "REVM comparison: ADDMOD (10 + 10) % 0 = 0" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -918,8 +886,6 @@ test "REVM comparison: ADDMOD MAX + MAX % 10" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -971,8 +937,6 @@ test "REVM comparison: MULMOD (10 * 10) % 8 = 4" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1024,8 +988,6 @@ test "REVM comparison: EXP 2 ** 3 = 8" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1073,8 +1035,6 @@ test "REVM comparison: SIGNEXTEND 0xFF from byte 0" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1126,8 +1086,6 @@ test "REVM comparison: LT 5 < 10 = 1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1179,8 +1137,6 @@ test "REVM comparison: GT 10 > 5 = 1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1232,8 +1188,6 @@ test "REVM comparison: EQ 42 == 42 = 1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1285,8 +1239,6 @@ test "REVM comparison: ISZERO 0 = 1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1342,8 +1294,6 @@ test "REVM comparison: SLT -1 < 1 = 1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1399,8 +1349,6 @@ test "REVM comparison: SGT 1 > -1 = 1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1452,8 +1400,6 @@ test "REVM comparison: BYTE extracts byte at index" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1501,8 +1447,6 @@ test "REVM comparison: AND 0xFF & 0x0F = 0x0F" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1554,8 +1498,6 @@ test "REVM comparison: OR 0xF0 | 0x0F = 0xFF" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1607,8 +1549,6 @@ test "REVM comparison: XOR 0xFF ^ 0xF0 = 0x0F" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1660,8 +1600,6 @@ test "REVM comparison: NOT ~0 = MAX" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1713,8 +1651,6 @@ test "REVM comparison: SHL 1 << 4 = 16" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1766,8 +1702,6 @@ test "REVM comparison: SHR 16 >> 4 = 1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1823,8 +1757,6 @@ test "REVM comparison: SAR -16 >> 4 = -1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1876,8 +1808,6 @@ test "REVM comparison: POP removes top stack item" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1929,8 +1859,6 @@ test "REVM comparison: MLOAD loads from memory" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -1978,8 +1906,6 @@ test "REVM comparison: MSTORE stores to memory" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2027,8 +1953,6 @@ test "REVM comparison: MSTORE8 stores single byte" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2076,8 +2000,6 @@ test "REVM comparison: MSIZE returns memory size" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2125,8 +2047,6 @@ test "REVM comparison: SLOAD loads from storage" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2174,8 +2094,6 @@ test "REVM comparison: SSTORE in call context" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2223,8 +2141,6 @@ test "REVM comparison: JUMP to valid destination" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2273,8 +2189,6 @@ test "REVM comparison: JUMPI jump taken" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     // REVM failed with error, we should fail too
     // REVM error: Halted: InvalidJump
     try testing.expect(!result.success);
@@ -2312,8 +2226,6 @@ test "REVM comparison: PC returns program counter" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2361,8 +2273,6 @@ test "REVM comparison: GAS returns remaining gas" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2410,8 +2320,6 @@ test "REVM comparison: PUSH0" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2459,8 +2367,6 @@ test "REVM comparison: PUSH1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2508,8 +2414,6 @@ test "REVM comparison: PUSH2" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2557,8 +2461,6 @@ test "REVM comparison: PUSH3" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2606,8 +2508,6 @@ test "REVM comparison: PUSH4" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2655,8 +2555,6 @@ test "REVM comparison: PUSH5" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2704,8 +2602,6 @@ test "REVM comparison: PUSH6" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2753,8 +2649,6 @@ test "REVM comparison: PUSH7" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2803,8 +2697,6 @@ test "REVM comparison: PUSH8" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2853,8 +2745,6 @@ test "REVM comparison: PUSH9" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2903,8 +2793,6 @@ test "REVM comparison: PUSH10" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -2953,8 +2841,6 @@ test "REVM comparison: PUSH11" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3003,8 +2889,6 @@ test "REVM comparison: PUSH12" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3053,8 +2937,6 @@ test "REVM comparison: PUSH13" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3103,8 +2985,6 @@ test "REVM comparison: PUSH14" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3153,8 +3033,6 @@ test "REVM comparison: PUSH15" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3204,8 +3082,6 @@ test "REVM comparison: PUSH16" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3255,8 +3131,6 @@ test "REVM comparison: PUSH17" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3306,8 +3180,6 @@ test "REVM comparison: PUSH18" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3357,8 +3229,6 @@ test "REVM comparison: PUSH19" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3408,8 +3278,6 @@ test "REVM comparison: PUSH20" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3459,8 +3327,6 @@ test "REVM comparison: PUSH21" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3510,8 +3376,6 @@ test "REVM comparison: PUSH22" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3561,8 +3425,6 @@ test "REVM comparison: PUSH23" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3613,8 +3475,6 @@ test "REVM comparison: PUSH24" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3665,8 +3525,6 @@ test "REVM comparison: PUSH25" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3717,8 +3575,6 @@ test "REVM comparison: PUSH26" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3769,8 +3625,6 @@ test "REVM comparison: PUSH27" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3821,8 +3675,6 @@ test "REVM comparison: PUSH28" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3873,8 +3725,6 @@ test "REVM comparison: PUSH29" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3925,8 +3775,6 @@ test "REVM comparison: PUSH30" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -3977,8 +3825,6 @@ test "REVM comparison: PUSH31" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4030,8 +3876,6 @@ test "REVM comparison: PUSH32" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4079,8 +3923,6 @@ test "REVM comparison: DUP1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4128,8 +3970,6 @@ test "REVM comparison: DUP2" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4177,8 +4017,6 @@ test "REVM comparison: DUP3" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4227,8 +4065,6 @@ test "REVM comparison: DUP4" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4277,8 +4113,6 @@ test "REVM comparison: DUP5" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4327,8 +4161,6 @@ test "REVM comparison: DUP6" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4377,8 +4209,6 @@ test "REVM comparison: DUP7" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4428,8 +4258,6 @@ test "REVM comparison: DUP8" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4479,8 +4307,6 @@ test "REVM comparison: DUP9" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4530,8 +4356,6 @@ test "REVM comparison: DUP10" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4581,8 +4405,6 @@ test "REVM comparison: DUP11" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4633,8 +4455,6 @@ test "REVM comparison: DUP12" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4685,8 +4505,6 @@ test "REVM comparison: DUP13" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4737,8 +4555,6 @@ test "REVM comparison: DUP14" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4789,8 +4605,6 @@ test "REVM comparison: DUP15" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4842,8 +4656,6 @@ test "REVM comparison: DUP16" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4891,8 +4703,6 @@ test "REVM comparison: SWAP1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4940,8 +4750,6 @@ test "REVM comparison: SWAP2" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -4990,8 +4798,6 @@ test "REVM comparison: SWAP3" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5040,8 +4846,6 @@ test "REVM comparison: SWAP4" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5090,8 +4894,6 @@ test "REVM comparison: SWAP5" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5140,8 +4942,6 @@ test "REVM comparison: SWAP6" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5191,8 +4991,6 @@ test "REVM comparison: SWAP7" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5242,8 +5040,6 @@ test "REVM comparison: SWAP8" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5293,8 +5089,6 @@ test "REVM comparison: SWAP9" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5344,8 +5138,6 @@ test "REVM comparison: SWAP10" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5396,8 +5188,6 @@ test "REVM comparison: SWAP11" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5448,8 +5238,6 @@ test "REVM comparison: SWAP12" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5500,8 +5288,6 @@ test "REVM comparison: SWAP13" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5552,8 +5338,6 @@ test "REVM comparison: SWAP14" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5605,8 +5389,6 @@ test "REVM comparison: SWAP15" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5658,8 +5440,6 @@ test "REVM comparison: SWAP16" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5708,8 +5488,6 @@ test "REVM comparison: LOG0" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5758,8 +5536,6 @@ test "REVM comparison: LOG1" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5808,8 +5584,6 @@ test "REVM comparison: LOG2" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5859,8 +5633,6 @@ test "REVM comparison: LOG3" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5910,8 +5682,6 @@ test "REVM comparison: LOG4" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -5959,8 +5729,6 @@ test "REVM comparison: RETURN" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6007,8 +5775,6 @@ test "REVM comparison: REVERT" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     // REVM failed with error, we should fail too
     // REVM error: Reverted: 0x
     try testing.expect(!result.success);
@@ -6047,8 +5813,6 @@ test "REVM comparison: CODECOPY copies code to memory" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6096,8 +5860,6 @@ test "REVM comparison: ADDRESS" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6145,8 +5907,6 @@ test "REVM comparison: CALLER" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6194,8 +5954,6 @@ test "REVM comparison: CALLVALUE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6243,8 +6001,6 @@ test "REVM comparison: CALLDATASIZE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6292,8 +6048,6 @@ test "REVM comparison: CODESIZE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6341,8 +6095,6 @@ test "REVM comparison: GASPRICE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6390,8 +6142,6 @@ test "REVM comparison: BLOCKHASH" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6439,8 +6189,6 @@ test "REVM comparison: COINBASE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6488,8 +6236,6 @@ test "REVM comparison: TIMESTAMP" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6537,8 +6283,6 @@ test "REVM comparison: NUMBER" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6586,8 +6330,6 @@ test "REVM comparison: DIFFICULTY" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6635,8 +6377,6 @@ test "REVM comparison: GASLIMIT" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6684,8 +6424,6 @@ test "REVM comparison: CHAINID" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6733,8 +6471,6 @@ test "REVM comparison: SELFBALANCE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6782,8 +6518,6 @@ test "REVM comparison: BASEFEE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6831,8 +6565,6 @@ test "REVM comparison: KECCAK256 empty" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6882,8 +6614,6 @@ test "REVM comparison: KECCAK256 hello" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6932,8 +6662,6 @@ test "REVM comparison: CALL basic" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -6982,8 +6710,6 @@ test "REVM comparison: DELEGATECALL" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7032,8 +6758,6 @@ test "REVM comparison: STATICCALL" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7082,8 +6806,6 @@ test "REVM comparison: CALLCODE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7133,8 +6855,6 @@ test "REVM comparison: CREATE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7183,8 +6903,6 @@ test "REVM comparison: CREATE2" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7232,8 +6950,6 @@ test "REVM comparison: CALLDATALOAD" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7282,8 +6998,6 @@ test "REVM comparison: CALLDATACOPY" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7331,8 +7045,6 @@ test "REVM comparison: RETURNDATASIZE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7381,8 +7093,6 @@ test "REVM comparison: RETURNDATACOPY empty" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7430,8 +7140,6 @@ test "REVM comparison: EXTCODESIZE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7480,8 +7188,6 @@ test "REVM comparison: EXTCODECOPY" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7529,8 +7235,6 @@ test "REVM comparison: EXTCODEHASH" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7578,8 +7282,6 @@ test "REVM comparison: BALANCE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7627,8 +7329,6 @@ test "REVM comparison: ORIGIN" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7677,8 +7377,6 @@ test "REVM comparison: MCOPY" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7726,8 +7424,6 @@ test "REVM comparison: TLOAD" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7775,8 +7471,6 @@ test "REVM comparison: TSTORE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7824,8 +7518,6 @@ test "REVM comparison: BLOBHASH" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7873,8 +7565,6 @@ test "REVM comparison: BLOBBASEFEE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -7921,8 +7611,6 @@ test "REVM comparison: STOP" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
 }
 
@@ -7956,8 +7644,6 @@ test "REVM comparison: INVALID" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     // REVM failed with error, we should fail too
     // REVM error: Halted: InvalidFEOpcode
     try testing.expect(!result.success);
@@ -7995,8 +7681,6 @@ test "REVM comparison: JUMPDEST" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8043,8 +7727,6 @@ test "REVM comparison: SELFDESTRUCT" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
 }
 
@@ -8080,8 +7762,6 @@ test "REVM comparison: Precompile ecrecover" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8131,8 +7811,6 @@ test "REVM comparison: Precompile SHA256" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8182,8 +7860,6 @@ test "REVM comparison: Precompile RIPEMD160" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8233,8 +7909,6 @@ test "REVM comparison: Precompile identity" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8287,8 +7961,6 @@ test "REVM comparison: Precompile modexp" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8337,8 +8009,6 @@ test "REVM comparison: Precompile ecAdd" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8387,8 +8057,6 @@ test "REVM comparison: Precompile ecMul" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8438,8 +8106,6 @@ test "REVM comparison: Precompile ecPairing" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8489,8 +8155,6 @@ test "REVM comparison: Precompile blake2f" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8538,8 +8202,6 @@ test "REVM comparison: MULMOD 10 * 10 % 0" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8595,8 +8257,6 @@ test "REVM comparison: MULMOD MAX * 2 % 3" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8644,8 +8304,6 @@ test "REVM comparison: EXP 2 ** 256" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8693,8 +8351,6 @@ test "REVM comparison: EXP 0 ** 0" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8742,8 +8398,6 @@ test "REVM comparison: BYTE index 32" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8795,8 +8449,6 @@ test "REVM comparison: SIGNEXTEND byte 31" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8844,8 +8496,6 @@ test "REVM comparison: MLOAD at large offset" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -8892,8 +8542,6 @@ test "REVM comparison: ADD with empty stack" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     // REVM failed with error, we should fail too
     // REVM error: Halted: StackUnderflow
     try testing.expect(!result.success);
@@ -9186,8 +8834,6 @@ test "REVM comparison: Stack depth 1024" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     // REVM failed with error, we should fail too
     // REVM error: Halted: StackOverflow
     try testing.expect(!result.success);
@@ -9224,8 +8870,6 @@ test "REVM comparison: JUMP to non-JUMPDEST" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     // REVM failed with error, we should fail too
     // REVM error: Halted: InvalidJump
     try testing.expect(!result.success);
@@ -9267,8 +8911,6 @@ test "REVM comparison: JUMPI with MAX condition" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     // REVM failed with error, we should fail too
     // REVM error: Halted: InvalidJump
     try testing.expect(!result.success);
@@ -9307,8 +8949,6 @@ test "REVM comparison: CALLDATACOPY beyond data" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9355,8 +8995,6 @@ test "REVM comparison: RETURNDATACOPY no data" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     // REVM failed with error, we should fail too
     // REVM error: Halted: OutOfOffset
     try testing.expect(!result.success);
@@ -9395,8 +9033,6 @@ test "REVM comparison: CREATE2 address calc" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9444,8 +9080,6 @@ test "REVM comparison: EXTCODEHASH empty" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9493,8 +9127,6 @@ test "REVM comparison: BLOCKHASH future block" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9542,8 +9174,6 @@ test "REVM comparison: SHL shift > 256" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9595,8 +9225,6 @@ test "REVM comparison: SHR shift > 256" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9648,8 +9276,6 @@ test "REVM comparison: SAR shift > 256 negative" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9699,8 +9325,6 @@ test "REVM comparison: ECRECOVER invalid sig" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9748,8 +9372,6 @@ test "REVM comparison: MSTORE8 at odd offset" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9809,8 +9431,6 @@ test "REVM comparison: ADDMOD MAX + MAX % MAX" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9859,8 +9479,6 @@ test "REVM comparison: CODECOPY beyond code" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9909,8 +9527,6 @@ test "REVM comparison: EXTCODECOPY non-existent" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     try testing.expect(result.success);
     
     // Check output
@@ -9957,8 +9573,6 @@ test "REVM comparison: RETURNDATALOAD no data" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     // REVM failed with error, we should fail too
     // REVM error: Halted: OpcodeNotFound
     try testing.expect(!result.success);
@@ -9999,8 +9613,6 @@ test "REVM comparison: Insufficient gas for MSTORE" {
         1_000_000,
         false
     );
-    defer if (result.output) |output| 
-    
     // REVM failed with error, we should fail too
     // REVM error: Halted: OutOfGas(InvalidOperand)
     try testing.expect(!result.success);

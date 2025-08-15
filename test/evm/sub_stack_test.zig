@@ -29,8 +29,6 @@ test "trace SUB operation step by step" {
     
     // Execute directly
     const result = try vm.create_contract(caller, 0, bytecode, 1_000_000);
-    defer if (result.output) |output| 
-    
     // Let's also manually trace through the operations
     std.debug.print("\nManual SUB calculation:\n", .{});
     const val1: u256 = 1;

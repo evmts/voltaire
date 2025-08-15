@@ -46,8 +46,6 @@ test "PUSH + ADD fusion optimization" {
     }};
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -95,8 +93,6 @@ test "PUSH 0 + ADD identity elimination" {
     }};
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -144,8 +140,6 @@ test "PUSH + PUSH + ADD constant folding" {
     }};
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -191,8 +185,6 @@ test "ISZERO inline optimization" {
     }};
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
@@ -239,8 +231,6 @@ test "EQ inline optimization" {
     }};
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| 
-
     try testing.expect(result.success);
     if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);

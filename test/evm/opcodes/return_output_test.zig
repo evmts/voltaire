@@ -40,8 +40,6 @@ test "RETURN sets output correctly" {
     defer contract.deinit(allocator, null);
 
     const result = try evm.interpret(&contract, &[_]u8{}, false);
-    defer if (result.output) |output| 
-
     try testing.expect(result.status == .Success);
     try testing.expect(result.output != null);
 
@@ -120,8 +118,6 @@ test "constructor returns runtime code" {
     const deployer: Address.Address = [_]u8{0x12} ** 20;
 
     const create_result = try evm.create_contract(deployer, 0, init_code, 1000000);
-    defer if (create_result.output) |output| 
-
     try testing.expect(create_result.success);
     try testing.expect(create_result.output != null);
 

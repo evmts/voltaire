@@ -45,8 +45,6 @@ test "Bitwise: AND basic operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -85,8 +83,6 @@ test "Bitwise: AND basic operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -134,8 +130,6 @@ test "Bitwise: OR basic operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -185,8 +179,6 @@ test "Bitwise: XOR basic operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -233,8 +225,6 @@ test "Bitwise: NOT operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -282,8 +272,6 @@ test "Bitwise: BYTE operation" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -332,8 +320,6 @@ test "Bitwise: SHL (shift left)" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
@@ -382,8 +368,6 @@ test "Bitwise: SHR (shift right)" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| 
-
         try testing.expect(result.success);
         if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);

@@ -37,8 +37,6 @@ test "tracer captures opcode execution" {
 
     // Deploy the contract
     const create_result = try vm.create_contract(caller, 0, bytecode, 1000000);
-    defer if (create_result.output) |output| 
-
     try testing.expect(create_result.success);
 
     // Parse the trace output
@@ -105,8 +103,6 @@ test "trace format matches REVM JSON structure" {
     const bytecode = &[_]u8{0x00};
 
     const create_result = try vm.create_contract(caller, 0, bytecode, 1000000);
-    defer if (create_result.output) |output| 
-
     // Parse first trace line
     var line_it = std.mem.tokenizeScalar(u8, trace_buffer.items, '\n');
     const first_line = line_it.next().?;

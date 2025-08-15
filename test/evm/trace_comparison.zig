@@ -29,8 +29,6 @@ pub fn compareTraces(allocator: std.mem.Allocator, bytecode: []const u8, gas_lim
         try vm.state.set_balance(caller, std.math.maxInt(u256));
         
         const result = try vm.create_contract(caller, 0, bytecode, gas_limit);
-        defer if (result.output) |output| 
-        
         std.debug.print("\nZig EVM result: success={}, gas_used={}\n", .{result.success, result.gas_used});
     }
     

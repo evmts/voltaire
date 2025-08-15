@@ -79,8 +79,6 @@ test "GT opcode comparison bug" {
     );
     
     const result = try vm.interpret(&contract, &.{}, false);
-    defer if (result.output) |output| 
-    
     // Print the trace
     std.debug.print("\nExecution trace:\n{s}\n", .{trace_buffer.items});
     

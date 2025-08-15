@@ -213,8 +213,6 @@ test "VMCore: VM program counter management and control flow" {
 
     // Execute and verify control flow with traditional interpreter
     const result = try vm.interpret(&contract, &[_]u8{});
-    defer if (result.output) |output| 
-
     // Execute and verify control flow with block interpreter
     // SKIP: Bug #3 - interpret_block causes test to hang
     // const result_block = try vm.interpret_block_write(&contract, &[_]u8{});
@@ -260,8 +258,6 @@ test "VMCore: VM execution loop with gas tracking" {
 
     const initial_gas = contract.gas;
     const result = try vm.interpret(&contract, &[_]u8{});
-    defer if (result.output) |output| 
-
     // Execute with block interpreter
     // SKIP: Bug #3 - interpret_block causes test to hang
     // const result_block = try vm.interpret_block_write(&contract, &[_]u8{});
@@ -383,8 +379,6 @@ test "VMCore: VM instruction dispatch error handling" {
     contract.gas = 100000;
 
     const result = try vm.interpret(&contract, &[_]u8{});
-    defer if (result.output) |output| 
-
     // Execute with block interpreter
     // SKIP: Bug #3 - interpret_block causes test to hang
     // const result_block = try vm.interpret_block_write(&contract, &[_]u8{});
@@ -940,8 +934,6 @@ test "VMCore: Integration - Complete execution flow" {
     contract.gas = 100000;
 
     const result = try vm.interpret(&contract, &[_]u8{});
-    defer if (result.output) |output| 
-
     // Execute with block interpreter
     // SKIP: Bug #3 - interpret_block causes test to hang
     // const result_block = try vm.interpret_block_write(&contract, &[_]u8{});
@@ -988,8 +980,6 @@ test "VMCore: Integration - Error propagation across components" {
     contract.gas = 100000;
 
     const result = try vm.interpret(&contract, &[_]u8{});
-    defer if (result.output) |output| 
-
     // Execute with block interpreter
     // SKIP: Bug #3 - interpret_block causes test to hang
     // const result_block = try vm.interpret_block_write(&contract, &[_]u8{});
@@ -1039,8 +1029,6 @@ test "VMCore: Integration - Memory and gas coordination" {
     contract.gas = 1000; // Limited gas
 
     const result = try vm.interpret(&contract, &[_]u8{});
-    defer if (result.output) |output| 
-
     // Execute with block interpreter
     // SKIP: Bug #3 - interpret_block causes test to hang
     // const result_block = try vm.interpret_block_write(&contract, &[_]u8{});

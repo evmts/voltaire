@@ -540,8 +540,6 @@ test "E2E: Jump to JUMPDEST at position 0" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
-    
     // Should run out of gas due to infinite loop
     try testing.expect(!result.success);
 }
@@ -579,8 +577,6 @@ test "E2E: Contract with maximum stack pushes" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
-    
     // Should fail with stack overflow
     try testing.expect(!result.success);
 }

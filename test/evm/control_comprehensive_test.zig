@@ -41,8 +41,6 @@ test "E2E: STOP opcode halts execution" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
-    
     // STOP should succeed with no output
     try testing.expect(result.success);
     try testing.expect(result.output == null or result.output.?.len == 0);
@@ -81,7 +79,6 @@ test "E2E: JUMPDEST is a no-op" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -120,7 +117,6 @@ test "E2E: RETURN with empty data" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     try testing.expect(result.output == null or result.output.?.len == 0);
 }
@@ -157,7 +153,6 @@ test "E2E: RETURN with data from memory" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -200,7 +195,6 @@ test "E2E: RETURN with out of bounds offset" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     // Should fail with out of offset
     try testing.expect(!result.success);
 }
@@ -234,7 +228,6 @@ test "E2E: REVERT with empty data" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     // REVERT should fail
     try testing.expect(!result.success);
 }
@@ -280,7 +273,6 @@ test "E2E: REVERT with data from memory" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     // REVERT should fail but provide output
     try testing.expect(!result.success);
     
@@ -321,7 +313,6 @@ test "E2E: INVALID opcode consumes all gas" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     // INVALID should fail
     try testing.expect(!result.success);
     // All gas should be consumed (check remaining is 0 instead)
@@ -378,8 +369,6 @@ test "E2E: SELFDESTRUCT in static context fails" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
-    
     // The call should succeed, but STATICCALL should have failed
     try testing.expect(result.success);
     if (result.output) |output| {
@@ -422,8 +411,6 @@ test "E2E: SELFDESTRUCT with cold recipient address" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
-    
     // Should succeed
     try testing.expect(result.success);
     
@@ -487,7 +474,6 @@ test "E2E: Complex control flow with JUMPI and RETURN" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -527,7 +513,6 @@ test "E2E: RETURN with memory expansion gas cost" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -572,8 +557,6 @@ test "E2E: REVERT reverses state changes" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
-    
     // Should fail due to REVERT
     try testing.expect(!result.success);
     
@@ -630,8 +613,6 @@ test "E2E: INVALID opcode in nested call" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
-    
     // Outer call should succeed
     try testing.expect(result.success);
     
@@ -690,8 +671,6 @@ test "E2E: SELFDESTRUCT with created contract tracking (EIP-6780)" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| 
-    
     // Should succeed
     try testing.expect(result.success);
     
