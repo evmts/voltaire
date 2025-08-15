@@ -67,6 +67,22 @@ test "POP opcode removes top stack element" {
     const guillotine_result = try vm_instance.call(call_params);
     // VM owns guillotine_result.output; do not free here
 
+    // Debug: log the output info
+    std.log.warn("POP test - Guillotine result: success={}, output={?}, gas_left={}", .{ 
+        guillotine_result.success,
+        if (guillotine_result.output) |out| out.len else null,
+        guillotine_result.gas_left 
+    });
+    std.log.warn("POP test - Mini result: success={}, output={?}, gas_left={}", .{ 
+        mini_result.success,
+        if (mini_result.output) |out| out.len else null,
+        mini_result.gas_left 
+    });
+    std.log.warn("POP test - REVM result: success={}, output_len={}", .{ 
+        revm_result.success,
+        revm_result.output.len 
+    });
+
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
     const mini_succeeded = mini_result.success;

@@ -271,9 +271,10 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             if (frame.stack.size() < 2) {
                 return ExecutionError.Error.StackUnderflow;
             }
-            // EVM stack order: top = condition, below = destination
-            const condition = frame.stack.pop_unsafe();
+            // EVM stack order: top = destination, below = condition
+            // JUMPI pops destination first, then condition
             const dest = frame.stack.pop_unsafe();
+            const condition = frame.stack.pop_unsafe();
 
             Log.debug("[JUMPI] CONDITIONAL_JUMP_UNRESOLVED: dest={}, condition={}", .{ dest, condition });
             Log.warn("[INTERPRET] JUMPI(dest,cond) dest={}, cond={}, taking jump={} ", .{ dest, condition, condition != 0 });
@@ -303,6 +304,13 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             const word_inst = analysis.getInstructionParams(.word, instruction.id);
             // Lazily convert bytecode slice to u256
             const word_value = bytesToU256(word_inst.word_bytes);
+            
+            // Debug logging for PUSH instructions
+            if (builtin.mode == .Debug) {
+                const bytes_hex = std.fmt.fmtSliceHexLower(word_inst.word_bytes);
+                Log.debug("[WORD] Pushing value={} from bytes={x} (len={})", .{ word_value, bytes_hex, word_inst.word_bytes.len });
+            }
+            
             frame.stack.append_unsafe(word_value);
             instruction = word_inst.next_inst;
             continue :dispatch instruction.tag;

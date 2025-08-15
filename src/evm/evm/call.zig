@@ -32,13 +32,15 @@ pub const MAX_INPUT_SIZE: u18 = 128 * 1024; // 128 kb
 
 pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResult {
     const Log = @import("../log.zig");
-    Log.debug("[call] Starting call execution, is_executing={}, has_tracer={}, self_ptr=0x{x}", .{ self.is_currently_executing(), self.tracer != null, @intFromPtr(self) });
+    Log.debug("[call] Starting call execution, is_executing={}, has_tracer={}, self_ptr=0x{x}, frame_depth={}", .{ self.is_currently_executing(), self.tracer != null, @intFromPtr(self), self.current_frame_depth });
 
     // Create host interface from self
     const host = Host.init(self);
 
-    // Determine if this is a top-level call using execution flag instead of current_frame_depth
-    const is_top_level_call = !self.is_currently_executing();
+    // Determine if this is a top-level call using frame depth
+    // Frame depth of 0 means top-level, regardless of is_executing flag
+    const is_top_level_call = self.current_frame_depth == 0;
+    Log.debug("[call] is_top_level_call={}, is_executing={}, current_frame_depth={}", .{ is_top_level_call, self.is_currently_executing(), self.current_frame_depth });
     // Create snapshot for nested calls early to ensure proper revert on any error
     const snapshot_id = if (!is_top_level_call) host.create_snapshot() else 0;
 

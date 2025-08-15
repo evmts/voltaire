@@ -83,6 +83,7 @@ pub fn op_return(context: *anyopaque) ExecutionError.Error!void {
 
     if (size == 0) {
         @branchHint(.unlikely);
+        Log.debug("RETURN setting empty output", .{});
         try frame.set_output(&[_]u8{});
     } else {
         if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
@@ -111,6 +112,7 @@ pub fn op_return(context: *anyopaque) ExecutionError.Error!void {
 
         // Note: The memory gas cost already protects against excessive memory use.
         // Set the output data that will be returned to the caller
+        Log.debug("RETURN about to call frame.set_output with {} bytes", .{data.len});
         try frame.set_output(data);
 
         Log.debug("RETURN data set to host output, size: {}", .{data.len});

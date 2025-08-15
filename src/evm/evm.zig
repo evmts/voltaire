@@ -524,14 +524,20 @@ pub fn set_output(self: *Evm, output: []const u8) !void {
 
 /// Get the output buffer for the current frame (Host interface)
 pub fn get_output(self: *Evm) []const u8 {
+    Log.debug("[Evm.get_output] Getting output: frame_stack={}, current_frame_depth={}, current_output.len={}", .{ 
+        self.frame_stack != null, 
+        self.current_frame_depth, 
+        self.current_output.len 
+    });
+    
     if (self.frame_stack) |frames| {
         if (self.current_frame_depth < frames.len) {
             const result = frames[self.current_frame_depth].output_buffer;
-            Log.debug("[Evm.get_output] frame_depth={}, output_len={}", .{ self.current_frame_depth, result.len });
+            Log.debug("[Evm.get_output] Using frame output: frame_depth={}, output_len={}", .{ self.current_frame_depth, result.len });
             return result;
         }
     }
-    Log.debug("[Evm.get_output] Using current_output, len={}", .{self.current_output.len});
+    Log.debug("[Evm.get_output] Fallback to current_output, len={}", .{self.current_output.len});
     return self.current_output;
 }
 

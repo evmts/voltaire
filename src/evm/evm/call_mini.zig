@@ -29,6 +29,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
 
     // Check if top-level call
     const is_top_level_call = !self.is_currently_executing();
+    Log.debug("[call_mini] is_top_level_call={}, is_executing={}, current_frame_depth={}", .{ is_top_level_call, self.is_currently_executing(), self.current_frame_depth });
     const snapshot_id = if (!is_top_level_call) host.create_snapshot() else 0;
 
     // Extract call parameters
@@ -259,12 +260,17 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                 continue;
             },
             @intFromEnum(opcode_mod.Enum.JUMPI) => {
+                Log.debug("[JUMPI_DEBUG] PC={}, stack_size={}", .{ pc, frame.stack.size() });
+                
                 const dest = try frame.stack.pop();
                 const cond = try frame.stack.pop();
+                
+                Log.debug("[JUMPI_DEBUG] dest={}, cond={}, taking_jump={}", .{ dest, cond, cond != 0 });
                 
                 if (cond != 0) {
                     // Check if destination fits in usize and is within bounds
                     if (dest > call_code.len) {
+                        Log.debug("[JUMPI_DEBUG] Invalid jump: dest={} > code_len={}", .{ dest, call_code.len });
                         exec_err = ExecutionError.Error.InvalidJump;
                         break;
                     }
@@ -273,14 +279,18 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                     
                     // Check if destination is valid jumpdest
                     if (dest_usize >= call_code.len or call_code[dest_usize] != @intFromEnum(opcode_mod.Enum.JUMPDEST)) {
+                        const byte_at_dest = if (dest_usize < call_code.len) call_code[dest_usize] else 0;
+                        Log.debug("[JUMPI_DEBUG] Invalid jumpdest: dest={}, byte_at_dest=0x{x:0>2}, expected=0x{x:0>2}", .{ dest_usize, byte_at_dest, @intFromEnum(opcode_mod.Enum.JUMPDEST) });
                         exec_err = ExecutionError.Error.InvalidJump;
                         break;
                     }
                     
+                    Log.debug("[JUMPI_DEBUG] Valid jump to {}", .{dest_usize});
                     pc = dest_usize;
                     continue;
                 }
                 
+                Log.debug("[JUMPI_DEBUG] Not taking jump, continuing to PC={}", .{ pc + 1 });
                 pc += 1;
                 continue;
             },
@@ -339,7 +349,11 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                 // Handle PUSH opcodes
                 if (opcode_mod.is_push(op)) {
                     const push_size = opcode_mod.get_push_size(op);
+                    
+                    Log.debug("[PUSH_DEBUG] PC={}, opcode=0x{x:0>2}, push_size={}", .{ pc, op, push_size });
+                    
                     if (pc + push_size >= call_code.len) {
+                        Log.debug("[PUSH_DEBUG] Out of bounds: pc={}, push_size={}, code_len={}", .{ pc, push_size, call_code.len });
                         exec_err = ExecutionError.Error.OutOfOffset;
                         break;
                     }
@@ -349,11 +363,15 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                     const data_start = pc + 1;
                     const data_end = @min(data_start + push_size, call_code.len);
                     const data = call_code[data_start..data_end];
+                    
+                    Log.debug("[PUSH_DEBUG] Reading bytes from [{}..{}]: {x}", .{ data_start, data_end, std.fmt.fmtSliceHexLower(data) });
 
                     // Convert bytes to u256 (big-endian)
                     for (data) |byte| {
                         value = (value << 8) | byte;
                     }
+                    
+                    Log.debug("[PUSH_DEBUG] Final value pushed: {}", .{value});
 
                     try frame.stack.append(value);
                     pc += 1 + push_size;
@@ -411,9 +429,9 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
         break :blk copy;
     } else &.{};
 
-    // Clear current_input and current_output to avoid interference with regular execution
+    // Clear current_input to avoid interference with regular execution
+    // Don't clear current_output as it might be needed by subsequent operations
     self.current_input = &.{};
-    self.current_output = &.{};
 
     return CallResult{
         .success = success,
