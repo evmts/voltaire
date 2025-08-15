@@ -156,6 +156,9 @@ pub fn NoopHandler(context: *anyopaque) ExecutionError.Error!void {
 // ============================================================================
 // Compile-time layout assertions for instruction payloads and header
 comptime {
+    // Enum storage expectations
+    if (@sizeOf(Tag) != 1) @compileError("Tag enum must be 1 byte (enum(u8))");
+    if (@sizeOf(JumpType) > 1) @compileError("JumpType should be compact (<=1 byte)");
     // Header must remain tightly packed: 4 bytes
     if (@sizeOf(Instruction) != 4) @compileError("Instruction must be exactly 4 bytes");
 
