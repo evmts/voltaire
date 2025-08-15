@@ -476,11 +476,7 @@ test "Contract with basic stack operations" {
     // Verify gas was consumed
     try testing.expect(result.gas_left < 100000);
 
-    // Clean up output if present
-    if (result.output) |output| {
-        // Once execution works, we can verify output contains 8
-        allocator.free(output);
-    }
+    // Output is VM-owned; do not free here
 }
 
 test "Contract execution with PUSH0 operation" {
@@ -536,8 +532,5 @@ test "Contract execution with PUSH0 operation" {
     // Verify gas was consumed
     try testing.expect(result.gas_left < 100000);
 
-    // Clean up output if present
-    if (result.output) |output| {
-        allocator.free(output);
-    }
+    // Output is VM-owned; do not free here
 }

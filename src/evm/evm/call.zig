@@ -473,17 +473,10 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         }
     }
 
-    // Copy output before frame cleanup; tests expect ownership of returned output
-    var output: []const u8 = &.{};
-    // Use the frame's output buffer directly since host.get_output() might not work correctly at this point
-    if (current_frame.output_buffer.len > 0) {
-        output = self.allocator.dupe(u8, current_frame.output_buffer) catch &.{};
-        Log.debug("[call] Output length: {}", .{output.len});
-    } else {
-        // Warn when a top-level call produced no return data to help diagnose ERC20/snailtracer failures
-        if (is_top_level_call) {
-            Log.warn("[call] Top-level call returned empty output (code_len={}, input_len={})", .{ call_info.code_size, call_info.input.len });
-        }
+    // View output before frame cleanup; VM owns storage via set_output()
+    const output: []const u8 = if (current_frame.output_buffer.len > 0) current_frame.output_buffer else &.{};
+    if (output.len == 0 and is_top_level_call) {
+        Log.warn("[call] Top-level call returned empty output (code_len={}, input_len={})", .{ call_info.code_size, call_info.input.len });
     }
 
     // Save gas remaining for return

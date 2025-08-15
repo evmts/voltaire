@@ -751,12 +751,8 @@ pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
     const gas_for_create = remaining_gas - gas_reserved;
 
     // Debug: log init code being deployed
-    std.log.debug("[CREATE2] init_code_len={}, salt={x}, first_bytes={any}", .{ 
-        init_code.len, 
-        salt,
-        if (init_code.len > 0) std.fmt.fmtSliceHexLower(init_code[0..@min(init_code.len, 32)]) else std.fmt.fmtSliceHexLower(&[_]u8{})
-    });
-    
+    std.log.debug("[CREATE2] init_code_len={}, salt={x}, first_bytes={any}", .{ init_code.len, salt, if (init_code.len > 0) std.fmt.fmtSliceHexLower(init_code[0..@min(init_code.len, 32)]) else std.fmt.fmtSliceHexLower(&[_]u8{}) });
+
     // CREATE2 uses salt for deterministic address calculation
     const call_params = CallParams{
         .create2 = .{
@@ -1187,7 +1183,7 @@ pub fn op_delegatecall(context: *anyopaque) ExecutionError.Error!void {
     // Return unused gas to caller
     frame.gas_remaining += call_result.gas_left;
 
-    // Store return data if any and free buffer
+    // Store return data if any (VM owns buffer; do not free here)
     if (call_result.output) |output| {
         if (ret_size > 0) {
             const ret_offset_usize = @as(usize, @intCast(ret_offset));
@@ -1368,12 +1364,9 @@ pub fn op_staticcall(context: *anyopaque) ExecutionError.Error!void {
             const copy_size = @min(ret_size_usize, output.len);
             try frame.memory.set_data_bounded(ret_offset_usize, output, 0, copy_size);
         }
-        // TODO: frame.return_data was removed
-        // try frame.return_data.set(output);
-        evm_ptr.allocator.free(output);
+        // Output is owned by VM via Evm.set_output; do not free here
     } else {
-        // TODO: frame.return_data was removed
-        // try frame.return_data.set(&[_]u8{});
+        // No return data
     }
 
     // Push success flag (1 for success, 0 for failure)

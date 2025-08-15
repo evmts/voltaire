@@ -54,8 +54,9 @@ gas_left: u64,
 /// - `[]const u8`: Returned data buffer
 ///
 /// ## Memory Management
-/// The output data is allocated by the VM and ownership is transferred to the caller.
-/// The caller is responsible for freeing this memory when no longer needed.
+/// The output data is a view into VM-owned memory (Evm.set_output).
+/// Do not free it; the VM will manage its lifetime. If you need to hold
+/// the data beyond the VM call, make your own copy.
 ///
 /// ## For Different Call Types
 /// - **RETURN**: Contains the data specified in the RETURN opcode
