@@ -192,6 +192,9 @@ pub fn from_code(allocator: std.mem.Allocator, code: []const u8, jump_table: *co
         // Mark JUMPDEST positions
         if (op == @intFromEnum(Opcode.Enum.JUMPDEST) and code_segments.isSet(i)) {
             jumpdest_bitmap.set(i);
+            if (builtin.mode == .Debug and code.len < 100) {
+                Log.debug("[JUMPDEST_SCAN] Found JUMPDEST at pc={}, code_segment={}", .{ i, code_segments.isSet(i) });
+            }
         }
 
         // Handle opcodes that affect contract properties - skip invalid opcodes
