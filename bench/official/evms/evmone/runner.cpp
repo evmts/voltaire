@@ -139,6 +139,20 @@ int main(int argc, char* argv[]) {
             exit(1);
         }
         
+        if (result.status_code == EVMC_REVERT) {
+            std::cerr << "Execution reverted" << std::endl;
+            std::cerr << "Gas used: " << (GAS - result.gas_left) << std::endl;
+            if (result.output_size > 0) {
+                std::cerr << "Revert data: ";
+                for (size_t j = 0; j < result.output_size; j++) {
+                    std::cerr << std::hex << std::setw(2) << std::setfill('0') 
+                              << (int)result.output_data[j];
+                }
+                std::cerr << std::endl;
+            }
+            exit(1);
+        }
+        
         // Clean up result
         if (result.release) result.release(&result);
         
