@@ -29,7 +29,7 @@ fn readCaseFile(allocator: std.mem.Allocator, comptime case_name: []const u8, co
     return result;
 }
 
-fn deploy(vm: *evm.Evm, allocator: std.mem.Allocator, caller: primitives.Address.Address, bytecode: []const u8) !primitives.Address.Address {
+fn deploy(vm: *evm.Evm, caller: primitives.Address.Address, bytecode: []const u8) !primitives.Address.Address {
     const create_result = try vm.create_contract(caller, 0, bytecode, 10_000_000);
     if (!create_result.success) {
         std.debug.print("TEST FAILURE: deploy failed, success=false, gas_left={}\n", .{create_result.gas_left});
@@ -65,7 +65,7 @@ test "snailtracer benchmark executes successfully" {
     try vm.state.set_balance(caller, std.math.maxInt(u256));
 
     // Deploy and call
-    const contract_address = try deploy(&vm, allocator, caller, bytecode);
+    const contract_address = try deploy(&vm, caller, bytecode);
     const initial_gas: u64 = 100_000_000;
     const params = evm.CallParams{ .call = .{
         .caller = caller,
@@ -116,7 +116,7 @@ test "snailtracer benchmark high gas consumption" {
     try vm.state.set_balance(caller, std.math.maxInt(u256));
 
     // Deploy and call with gas tracking
-    const contract_address = try deploy(&vm, allocator, caller, bytecode);
+    const contract_address = try deploy(&vm, caller, bytecode);
     const initial_gas: u64 = 100_000_000;
     const params = evm.CallParams{ .call = .{
         .caller = caller,
@@ -173,7 +173,7 @@ test "snailtracer produces expected output format" {
     try vm.state.set_balance(caller, std.math.maxInt(u256));
 
     // Deploy and call
-    const contract_address = try deploy(&vm, allocator, caller, bytecode);
+    const contract_address = try deploy(&vm, caller, bytecode);
     const params = evm.CallParams{ .call = .{
         .caller = caller,
         .to = contract_address,
@@ -240,7 +240,7 @@ test "snailtracer deployment gas requirements" {
     const initial_gas: u64 = 10_000_000;
     const create_result = try vm.create_contract(caller, 0, bytecode, initial_gas);
 
-    if (create_result.output) |out| {}
+    _ = create_result.output;
 
     try std.testing.expect(create_result.success);
 
