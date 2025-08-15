@@ -144,7 +144,7 @@ defer contract.deinit(allocator, null);
 
 // Execute
 const result = try vm.interpret(&contract, &[_]u8{});
-defer if (result.output) |output| allocator.free(output);
+// result.output is VM-owned; dupe if you need to keep it after VM teardown
 ```
 
 ## Design Principles

@@ -119,7 +119,7 @@ test "PC opcode returns current program counter" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params2);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -192,7 +192,7 @@ test "JUMPDEST opcode is a valid jump destination" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params3);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -272,7 +272,7 @@ test "RETURN opcode stops execution during contract deployment" {
         .gas = 1000000,
     } };
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     try testing.expect(revm_result.success == guillotine_result.success);
