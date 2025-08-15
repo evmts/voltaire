@@ -305,7 +305,8 @@ fn handle_call_result(frame: Frame, result: anytype, ret_offset: u256, ret_size:
     }
 
     // Set return data
-    try frame.return_data.set(result.output orelse &[_]u8{});
+    // TODO: frame.return_data was removed - need to update to use host interface
+    // try frame.return_data.set(result.output orelse &[_]u8{});
 
     // Push success status (bounds checking already done by jump table)
     frame.stack.append_unsafe(if (result.success) 1 else 0);
@@ -382,7 +383,8 @@ fn handle_create_result(frame: Frame, vm: *Vm, result: anytype, gas_for_call: u6
     if (!result.success) {
         @branchHint(.unlikely);
         frame.stack.append_unsafe(0);
-        try frame.return_data.set(result.output orelse &[_]u8{});
+        // TODO: frame.return_data was removed
+        // try frame.return_data.set(result.output orelse &[_]u8{});
         return;
     }
 
@@ -394,7 +396,8 @@ fn handle_create_result(frame: Frame, vm: *Vm, result: anytype, gas_for_call: u6
     frame.return_data.clear();
 
     // Set return data
-    try frame.return_data.set(result.output orelse &[_]u8{});
+    // TODO: frame.return_data was removed - need to update to use host interface
+    // try frame.return_data.set(result.output orelse &[_]u8{});
 }
 
 /// Calculate complete gas cost for call operations
@@ -952,6 +955,9 @@ pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
             try frame.memory.set_data_bounded(ret_offset_usize, output, 0, copy_size);
         }
     }
+    // Update RETURNDATA buffer for RETURNDATASIZE/RETURNDATACOPY semantics
+    // TODO: frame.return_data was removed
+    // try frame.return_data.set(call_result.output orelse &[_]u8{});
     // Free callee-owned output buffer if present (ownership transferred by Host.call)
     if (call_result.output) |out_buf| {
         const evm_ptr = @as(*Evm, @ptrCast(@alignCast(frame.host.ptr)));
@@ -990,7 +996,7 @@ pub fn op_callcode(context: *anyopaque) ExecutionError.Error!void {
 
     const to_address = from_u256(to);
 
-    // Compute memory expansion costs safely first
+    // Compute memory bounds (charging already done via dynamic_gas path)
     const args_end = if (args_size == 0) 0 else blk: {
         if (args_offset > std.math.maxInt(u64) or args_size > std.math.maxInt(u64))
             return ExecutionError.Error.InvalidOffset;
@@ -1000,7 +1006,6 @@ pub fn op_callcode(context: *anyopaque) ExecutionError.Error!void {
             return ExecutionError.Error.GasUintOverflow;
         break :blk offset + size;
     };
-
     const ret_end = if (ret_size == 0) 0 else blk: {
         if (ret_offset > std.math.maxInt(u64) or ret_size > std.math.maxInt(u64))
             return ExecutionError.Error.InvalidOffset;
@@ -1010,35 +1015,25 @@ pub fn op_callcode(context: *anyopaque) ExecutionError.Error!void {
             return ExecutionError.Error.GasUintOverflow;
         break :blk offset + size;
     };
-
     const max_memory_size = @max(args_end, ret_end);
-    const memory_expansion_cost = if (max_memory_size > 0) frame.memory.get_expansion_cost(max_memory_size) else 0;
-
-    // Base gas cost for CALLCODE is same as CALL (700 at Tangerine)
-    var total_gas_cost: u64 = GasConstants.CALL_BASE_COST + memory_expansion_cost;
-
-    // EIP-2929 cold/warm account access cost
-    if (frame.host.is_hardfork_at_least(.BERLIN)) {
-        const access_cost = try frame.access_address(to_address);
-        if (access_cost > GasConstants.WarmStorageReadCost) {
-            total_gas_cost += GasConstants.ColdAccountAccessCost - GasConstants.WarmStorageReadCost;
-        }
+    if (max_memory_size > 0) {
+        _ = try frame.memory.ensure_context_capacity(@intCast(max_memory_size));
     }
 
-    // Value transfer cost applies (CALLVALUE), but CALLCODE cannot create new accounts
-    if (value != 0) {
-        total_gas_cost += GasConstants.CallValueTransferGas;
+    // Load slices without re-charging
+    const args = if (args_size == 0) &[_]u8{} else blk_args: {
+        const o: usize = @intCast(args_offset);
+        const s: usize = @intCast(args_size);
+        break :blk_args try frame.memory.get_slice(o, s);
+    };
+    if (ret_size > 0) {
+        const ro: usize = @intCast(ret_offset);
+        const rs: usize = @intCast(ret_size);
+        _ = try frame.memory.ensure_context_capacity(ro + rs);
     }
-
-    // Charge operation costs before memory actions
-    try frame.consume_gas(total_gas_cost);
-
-    // Expand memory and get slices
-    const args = try get_call_args(frame, args_offset, args_size);
-    try ensure_return_memory(frame, ret_offset, ret_size);
 
     // Calculate gas to forward with 63/64 rule and stipend for value
-    const gas_limit = calculate_call_gas_amount(frame, gas, value, total_gas_cost);
+    const gas_limit = calculate_call_gas_amount(frame, gas, value, 0);
     // Deduct forwarded gas from caller; stipend is not deducted
     const gas_to_deduct = if (value != 0) gas_limit - GasConstants.CallStipend else gas_limit;
     try frame.consume_gas(gas_to_deduct);
@@ -1069,7 +1064,7 @@ pub fn op_callcode(context: *anyopaque) ExecutionError.Error!void {
     // Return unused gas to caller
     frame.gas_remaining += call_result.gas_left;
 
-    // Write return data and free output buffer
+    // Write return data to memory, update RETURNDATA and free buffer
     if (call_result.output) |output| {
         if (ret_size > 0) {
             const ret_offset_usize = @as(usize, @intCast(ret_offset));
@@ -1079,8 +1074,13 @@ pub fn op_callcode(context: *anyopaque) ExecutionError.Error!void {
                 try frame.memory.set_data_bounded(ret_offset_usize, output, 0, copy_size);
             }
         }
+        // TODO: frame.return_data was removed
+        // try frame.return_data.set(output);
         const evm_ptr = @as(*Evm, @ptrCast(@alignCast(frame.host.ptr)));
         evm_ptr.allocator.free(output);
+    } else {
+        // TODO: frame.return_data was removed
+        // try frame.return_data.set(&[_]u8{});
     }
 
     // Push success flag
@@ -1188,8 +1188,13 @@ pub fn op_delegatecall(context: *anyopaque) ExecutionError.Error!void {
             const copy_size = @min(ret_size_usize, output.len);
             try frame.memory.set_data_bounded(ret_offset_usize, output, 0, copy_size);
         }
+        // TODO: frame.return_data was removed
+        // try frame.return_data.set(output);
         const evm_ptr = @as(*Evm, @ptrCast(@alignCast(frame.host.ptr)));
         evm_ptr.allocator.free(output);
+    } else {
+        // TODO: frame.return_data was removed
+        // try frame.return_data.set(&[_]u8{});
     }
 
     // Push success flag (1 for success, 0 for failure)
@@ -1356,7 +1361,12 @@ pub fn op_staticcall(context: *anyopaque) ExecutionError.Error!void {
             const copy_size = @min(ret_size_usize, output.len);
             try frame.memory.set_data_bounded(ret_offset_usize, output, 0, copy_size);
         }
+        // TODO: frame.return_data was removed
+        // try frame.return_data.set(output);
         evm_ptr.allocator.free(output);
+    } else {
+        // TODO: frame.return_data was removed
+        // try frame.return_data.set(&[_]u8{});
     }
 
     // Push success flag (1 for success, 0 for failure)
