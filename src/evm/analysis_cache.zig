@@ -1,5 +1,5 @@
 const std = @import("std");
-const CodeAnalysis = @import("analysis.zig");
+const CodeAnalysis = @import("analysis.zig").CodeAnalysis;
 const keccak = std.crypto.hash.sha3.Keccak256;
 const Log = @import("log.zig");
 const OpcodeMetadata = @import("opcode_metadata/opcode_metadata.zig");

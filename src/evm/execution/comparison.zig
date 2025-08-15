@@ -172,7 +172,7 @@ pub fn op_iszero(context: *anyopaque) ExecutionError.Error!void {
 // Fuzz testing functions for comparison operations
 pub fn fuzz_comparison_operations(allocator: std.mem.Allocator, operations: []const FuzzComparisonOperation) !void {
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-    const CodeAnalysis = @import("../analysis.zig");
+    const CodeAnalysis = @import("../analysis.zig").CodeAnalysis;
     const AccessList = @import("../access_list.zig").AccessList;
     const SelfDestruct = @import("../self_destruct.zig").SelfDestruct;
     const ChainRules = @import("../hardforks/chain_rules.zig").ChainRules;
