@@ -8,9 +8,7 @@ const Address = primitives.Address;
 const revm_wrapper = @import("revm");
 
 test "POP opcode removes top stack element" {
-    std.testing.log_level = .debug;
     const allocator = testing.allocator;
-    std.log.warn("========== STARTING POP TEST ==========", .{});
     // Stack operations: [42] -> [42, 24] -> POP -> [42] -> MSTORE -> RETURN 32 bytes
     const bytecode = [_]u8{
         0x60, 0x42, // PUSH1 0x42
@@ -64,31 +62,9 @@ test "POP opcode removes top stack element" {
     const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
-    // Debug: Check output before calling regular EVM
-    std.log.warn("POP_TEST_MARKER: Before regular call: current_output.len={}", .{vm_instance.current_output.len});
-    
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
     // VM owns guillotine_result.output; do not free here
-    
-    // Debug: Check output after calling regular EVM
-    std.log.warn("After regular call: current_output.len={}", .{vm_instance.current_output.len});
-
-    // Debug: log the output info
-    std.log.warn("POP test - Guillotine result: success={}, output={?}, gas_left={}", .{ 
-        guillotine_result.success,
-        if (guillotine_result.output) |out| out.len else null,
-        guillotine_result.gas_left 
-    });
-    std.log.warn("POP test - Mini result: success={}, output={?}, gas_left={}", .{ 
-        mini_result.success,
-        if (mini_result.output) |out| out.len else null,
-        mini_result.gas_left 
-    });
-    std.log.warn("POP test - REVM result: success={}, output_len={}", .{ 
-        revm_result.success,
-        revm_result.output.len 
-    });
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -176,8 +152,8 @@ test "PUSH0 opcode pushes zero" {
     const mini_succeeded = mini_result.success;
     const guillotine_succeeded = guillotine_result.success;
 
-    try testing.expect(revm_succeeded == mini_succeeded);
-    try testing.expect(revm_succeeded == guillotine_succeeded);
+    try testing.expectEqual(revm_succeeded, mini_succeeded);
+    try testing.expectEqual(revm_succeeded, guillotine_succeeded);
 
     if (revm_succeeded and mini_succeeded and guillotine_succeeded) {
         try testing.expect(revm_result.output.len == 32);
