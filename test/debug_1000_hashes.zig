@@ -15,7 +15,7 @@ fn hexDecode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
 }
 
 fn readCaseFile(allocator: std.mem.Allocator, comptime case_name: []const u8, comptime file_name: []const u8) ![]u8 {
-    const path = "/Users/williamcory/guillotine/bench/official/cases/" ++ case_name ++ "/" ++ file_name;
+    const path = "/Users/williamcory/Guillotine/bench/official/cases/" ++ case_name ++ "/" ++ file_name;
     const file = try std.fs.openFileAbsolute(path, .{});
     defer file.close();
     const content = try file.readToEndAlloc(allocator, 16 * 1024 * 1024);

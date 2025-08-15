@@ -473,8 +473,9 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         }
     }
 
-    // View output before frame cleanup; VM owns storage via set_output()
-    const output: []const u8 = if (current_frame.output_buffer.len > 0) current_frame.output_buffer else &.{};
+    // Get output from the host (where RETURN stores it via set_output)
+    const output: []const u8 = host.get_output();
+    Log.debug("[call] Getting output: host.get_output().len={}, self.current_output.len={}", .{ output.len, self.current_output.len });
     if (output.len == 0 and is_top_level_call) {
         Log.warn("[call] Top-level call returned empty output (code_len={}, input_len={})", .{ call_info.code_size, call_info.input.len });
     }

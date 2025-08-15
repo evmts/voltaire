@@ -30,6 +30,7 @@ fn readCaseFile(allocator: std.mem.Allocator, comptime case_name: []const u8, co
 
 fn deploy(vm: *evm.Evm, allocator: std.mem.Allocator, caller: primitives.Address.Address, bytecode: []const u8) !primitives.Address.Address {
     _ = allocator; // unused in this helper
+    std.debug.print("[deploy] Called with bytecode.len: {}\n", .{bytecode.len});
     const create_result = try vm.create_contract(caller, 0, bytecode, 10_000_000);
     if (!create_result.success) {
         std.debug.print("TEST FAILURE: deploy failed, success=false, gas_left={}\n", .{create_result.gas_left});
@@ -256,10 +257,15 @@ test "ten-thousand-hashes using call_mini" {
     const calldata_hex = try readCaseFile(allocator, "ten-thousand-hashes", "calldata.txt");
     defer allocator.free(calldata_hex);
 
+    std.debug.print("\n[DEBUG] bytecode_hex.len: {}, first 50 chars: {s}\n", .{ bytecode_hex.len, bytecode_hex[0..@min(50, bytecode_hex.len)] });
+    std.debug.print("[DEBUG] calldata_hex.len: {}, content: {s}\n", .{ calldata_hex.len, calldata_hex });
+
     const bytecode = try hexDecode(allocator, bytecode_hex);
     defer allocator.free(bytecode);
     const calldata = try hexDecode(allocator, calldata_hex);
     defer allocator.free(calldata);
+    
+    std.debug.print("[DEBUG] Decoded bytecode.len: {}, calldata.len: {}\n", .{ bytecode.len, calldata.len });
 
     // Set up VM in regular mode for deployment
     var memory_db = evm.MemoryDatabase.init(allocator);

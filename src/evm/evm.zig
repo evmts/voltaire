@@ -650,6 +650,8 @@ pub fn interpretCompat(self: *Evm, contract: *const anyopaque, input: []const u8
 
 // Contract creation: execute initcode and deploy returned runtime code
 pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, value: u256, bytecode: []const u8, gas: u64) !InterprResult {
+    Log.debug("[create_contract] Received bytecode.len: {}", .{bytecode.len});
+    
     // CREATE uses sender address + nonce to calculate contract address
     // Get the nonce before incrementing it
     const nonce = self.state.get_nonce(caller);

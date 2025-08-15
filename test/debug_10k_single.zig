@@ -12,8 +12,8 @@ pub fn main() !void {
     std.debug.print("=== DEBUG: 10K HASHES SINGLE RUN ===\n", .{});
 
     // Read bytecode and calldata
-    const bytecode_path = "/Users/williamcory/guillotine/bench/official/cases/ten-thousand-hashes/bytecode.txt";
-    const calldata_path = "/Users/williamcory/guillotine/bench/official/cases/ten-thousand-hashes/calldata.txt";
+    const bytecode_path = "/Users/williamcory/Guillotine/bench/official/cases/ten-thousand-hashes/bytecode.txt";
+    const calldata_path = "/Users/williamcory/Guillotine/bench/official/cases/ten-thousand-hashes/calldata.txt";
 
     const bytecode_file = try std.fs.openFileAbsolute(bytecode_path, .{});
     defer bytecode_file.close();
