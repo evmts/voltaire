@@ -260,8 +260,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                     const offset_usize = @as(usize, @intCast(offset));
                     const size_usize = @as(usize, @intCast(size));
                     const data = try frame.memory.get_slice(offset_usize, size_usize);
-                    const output = try self.allocator.dupe(u8, data);
-                    host.set_output(output) catch {
+                    host.set_output(data) catch {
                         exec_err = ExecutionError.Error.DatabaseCorrupted;
                         break;
                     };
@@ -279,8 +278,7 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
                     const offset_usize = @as(usize, @intCast(offset));
                     const size_usize = @as(usize, @intCast(size));
                     const data = try frame.memory.get_slice(offset_usize, size_usize);
-                    const output = try self.allocator.dupe(u8, data);
-                    host.set_output(output) catch {
+                    host.set_output(data) catch {
                         exec_err = ExecutionError.Error.DatabaseCorrupted;
                         break;
                     };
@@ -354,8 +352,8 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
         }
     }
 
-    // Get output
-    const output = self.allocator.dupe(u8, host.get_output()) catch &.{};
+    // View VM-owned output (do not allocate; lifetime managed by VM)
+    const output_view = host.get_output();
 
     // Determine success
     const success = if (exec_err) |e| switch (e) {
@@ -364,9 +362,10 @@ pub inline fn call_mini(self: *Evm, params: CallParams) ExecutionError.Error!Cal
         else => false,
     } else false;
 
+    const out_opt: ?[]const u8 = if (output_view.len > 0) output_view else null;
     return CallResult{
         .success = success,
         .gas_left = frame.gas_remaining,
-        .output = output,
+        .output = out_opt,
     };
 }
