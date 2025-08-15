@@ -261,9 +261,9 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
             if (frame.stack.size() < 2) {
                 return ExecutionError.Error.StackUnderflow;
             }
-            // EVM stack order: [dest, cond] with dest on top. Pop destination first, then condition.
-            const dest = frame.stack.pop_unsafe();
+            // EVM stack order: top = condition, below = destination
             const condition = frame.stack.pop_unsafe();
+            const dest = frame.stack.pop_unsafe();
 
             Log.debug("[JUMPI] CONDITIONAL_JUMP_UNRESOLVED: dest={}, condition={}", .{ dest, condition });
             Log.warn("[INTERPRET] JUMPI(dest,cond) dest={}, cond={}, taking jump={} ", .{ dest, condition, condition != 0 });
