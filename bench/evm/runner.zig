@@ -89,8 +89,6 @@ pub fn main() !void {
     // Run the benchmark num_runs times
     var i: u8 = 0;
     while (i < args.num_runs) : (i += 1) {
-        const timer = std.time.nanoTimestamp();
-
         // Execute the contract call directly without error handling
         const call_params = CallParams{ .call = .{
             .caller = caller_address,
@@ -107,9 +105,6 @@ pub fn main() !void {
             std.debug.print("[runner] call failed; gas_left={}, output_len={}\n", .{ call_result.gas_left, if (call_result.output) |o| o.len else 0 });
         }
 
-        const duration_ns = std.time.nanoTimestamp() - timer;
-        const duration_ms = @as(f64, @floatFromInt(duration_ns)) / 1_000_000.0;
-
         // Validate successful execution
         if (!call_result.success) {
             if (call_result.output) |out| {
@@ -123,14 +118,6 @@ pub fn main() !void {
         // Free output if allocated
         if (call_result.output.len > 0) {
             allocator.free(call_result.output);
-        }
-
-        // Output timing
-        const duration_ms_rounded = @as(u64, @intFromFloat(@round(duration_ms)));
-        if (duration_ms_rounded == 0) {
-            try print("1\n", .{});
-        } else {
-            try print("{d}\n", .{duration_ms_rounded});
         }
     }
 }
