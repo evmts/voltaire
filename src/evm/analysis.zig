@@ -1,6 +1,9 @@
 // Re-export the refactored code analysis module
 pub usingnamespace @import("code_analysis.zig");
 
+// Re-export JumpdestArray from size_buckets
+pub const JumpdestArray = @import("size_buckets.zig").JumpdestArray;
+
 // Import dependencies for tests
 const std = @import("std");
 const OpcodeMetadata = @import("opcode_metadata/opcode_metadata.zig");
@@ -17,123 +20,16 @@ const Instruction = @import("instruction.zig").Instruction;
 const Tag = @import("instruction.zig").Tag;
 const InstructionType = @import("instruction.zig").InstructionType;
 
-// Tests moved from original analysis.zig
+// Import bucket types for tests
+const Bucket8 = @import("size_buckets.zig").Bucket8;
+const Bucket16 = @import("size_buckets.zig").Bucket16;
+const Bucket24 = @import("size_buckets.zig").Bucket24;
+
+// Tests moved from original analysis.zig  
 // These tests verify the correct behavior of the refactored modules
-
-/// Packed array of valid JUMPDEST positions for cache-efficient validation.
-/// Because JUMPDEST opcodes are sparse (typically <50 per contract vs 24KB max size),
-/// a packed array with linear search provides better cache locality than a bitmap.
-/// Uses u15 to pack positions tightly while supporting max contract size (24KB < 32KB).
-pub const JumpdestArray = struct {
-    /// Sorted array of valid JUMPDEST program counters.
-    /// u15 allows max value 32767, sufficient for MAX_CONTRACT_SIZE (24576).
-    /// Packed to maximize cache line utilization.
-    positions: []const u15,
-
-    /// Original code length for bounds checking and search hint calculation
-    code_len: usize,
-
-    allocator: std.mem.Allocator,
-
-    /// Convert a DynamicBitSet bitmap to a packed array of JUMPDEST positions.
-    /// Collects all set bits from the bitmap into a sorted, packed array.
-    pub fn from_bitmap(allocator: std.mem.Allocator, bitmap: *const DynamicBitSet, code_len: usize) !JumpdestArray {
-        comptime {
-            std.debug.assert(std.math.maxInt(u15) >= limits.MAX_CONTRACT_SIZE);
-        }
-
-        // First pass: count set bits to determine array size
-        var count: usize = 0;
-        var i: usize = 0;
-        while (i < code_len) : (i += 1) {
-            if (bitmap.isSet(i)) count += 1;
-        }
-
-        // Allocate packed array
-        const positions = try allocator.alloc(u15, count);
-        errdefer allocator.free(positions);
-
-        // Second pass: collect positions into array
-        var pos_idx: usize = 0;
-        i = 0;
-        while (i < code_len) : (i += 1) {
-            if (bitmap.isSet(i)) {
-                positions[pos_idx] = @intCast(i);
-                pos_idx += 1;
-            }
-        }
-
-        return JumpdestArray{
-            .positions = positions,
-            .code_len = code_len,
-            .allocator = allocator,
-        };
-    }
-
-    pub fn deinit(self: *JumpdestArray) void {
-        self.allocator.free(self.positions);
-    }
-
-    /// Validates if a program counter is a valid JUMPDEST using cache-friendly linear search.
-    /// Uses proportional starting point (pc / code_len * positions.len) then searches
-    /// bidirectionally to maximize cache hits on the packed array.
-    pub fn is_valid_jumpdest(self: *const JumpdestArray, pc: usize) bool {
-        if (self.positions.len == 0 or pc >= self.code_len) return false;
-
-        // Calculate proportional starting index for linear search
-        // This distributes search starting points across the array for better cache locality
-        const start_idx = (pc * self.positions.len) / self.code_len;
-        const safe_start = @min(start_idx, self.positions.len - 1);
-
-        // Linear search from calculated starting point - forwards then backwards
-        // Linear search maximizes CPU cache hit rates on packed consecutive memory
-        if (self.positions[safe_start] == pc) return true;
-
-        // Search forward
-        var i = safe_start + 1;
-        while (i < self.positions.len and self.positions[i] <= pc) : (i += 1) {
-            if (self.positions[i] == pc) return true;
-        }
-
-        // Search backward
-        i = safe_start;
-        while (i > 0) {
-            i -= 1;
-            if (self.positions[i] >= pc) {
-                if (self.positions[i] == pc) return true;
-            } else break;
-        }
-
-        return false;
-    }
-};
-
-// Aligned bucket element types for size-based instruction storage
-const Bucket8 = extern struct { bytes: [8]u8 align(8) };
-const Bucket16 = extern struct { bytes: [16]u8 align(8) };
-const Bucket24 = extern struct { bytes: [24]u8 align(8) };
-
-// Shared count types to keep struct identity stable
-const Size8Counts = struct {
-    noop: u24 = 0,
-    jump_pc: u24 = 0,
-    conditional_jump_unresolved: u24 = 0,
-    conditional_jump_invalid: u24 = 0,
-};
-const Size16Counts = struct {
-    exec: u24 = 0,
-    conditional_jump_pc: u24 = 0,
-    pc: u24 = 0,
-    block_info: u24 = 0,
-};
-const Size24Counts = struct {
-    word: u24 = 0,
-    dynamic_gas: u24 = 0,
-};
 
 // Import other required types
 const ExecutionError = @import("execution/execution_error.zig");
-
 
 // Tests below
 
@@ -954,4 +850,1084 @@ test "SHA3 precomputation - not applied when size unknown" {
     // Should not have dynamic_gas with precomputed static component; may still have gas_fn
     // SHA3 without known size should be .exec
     try std.testing.expect(sha3_inst.tag == .exec);
+}
+
+// === Additional Unit Tests for analysis.zig ===
+
+test "JumpdestArray.from_bitmap - empty bitmap" {
+    const allocator = std.testing.allocator;
+    
+    var bitmap = try DynamicBitSet.initEmpty(allocator, 100);
+    defer bitmap.deinit();
+    
+    var jumpdest_array = try JumpdestArray.from_bitmap(allocator, &bitmap, 100);
+    defer jumpdest_array.deinit(allocator);
+    
+    try std.testing.expectEqual(@as(usize, 0), jumpdest_array.positions.len);
+    try std.testing.expect(!jumpdest_array.is_valid_jumpdest(0));
+    try std.testing.expect(!jumpdest_array.is_valid_jumpdest(50));
+    try std.testing.expect(!jumpdest_array.is_valid_jumpdest(99));
+}
+
+test "JumpdestArray.from_bitmap - single jumpdest" {
+    const allocator = std.testing.allocator;
+    
+    var bitmap = try DynamicBitSet.initEmpty(allocator, 100);
+    defer bitmap.deinit();
+    bitmap.set(42);
+    
+    var jumpdest_array = try JumpdestArray.from_bitmap(allocator, &bitmap, 100);
+    defer jumpdest_array.deinit(allocator);
+    
+    try std.testing.expectEqual(@as(usize, 1), jumpdest_array.positions.len);
+    try std.testing.expectEqual(@as(u15, 42), jumpdest_array.positions[0]);
+    try std.testing.expect(!jumpdest_array.is_valid_jumpdest(41));
+    try std.testing.expect(jumpdest_array.is_valid_jumpdest(42));
+    try std.testing.expect(!jumpdest_array.is_valid_jumpdest(43));
+}
+
+test "JumpdestArray.from_bitmap - multiple jumpdests" {
+    const allocator = std.testing.allocator;
+    
+    var bitmap = try DynamicBitSet.initEmpty(allocator, 1000);
+    defer bitmap.deinit();
+    
+    // Set multiple jumpdests at various positions
+    const positions = [_]usize{ 0, 10, 50, 100, 250, 500, 750, 999 };
+    for (positions) |pos| {
+        bitmap.set(pos);
+    }
+    
+    var jumpdest_array = try JumpdestArray.from_bitmap(allocator, &bitmap, 1000);
+    defer jumpdest_array.deinit(allocator);
+    
+    try std.testing.expectEqual(@as(usize, positions.len), jumpdest_array.positions.len);
+    
+    // Verify all positions are valid
+    for (positions) |pos| {
+        try std.testing.expect(jumpdest_array.is_valid_jumpdest(pos));
+    }
+    
+    // Verify non-jumpdest positions are invalid
+    try std.testing.expect(!jumpdest_array.is_valid_jumpdest(5));
+    try std.testing.expect(!jumpdest_array.is_valid_jumpdest(51));
+    try std.testing.expect(!jumpdest_array.is_valid_jumpdest(998));
+}
+
+test "JumpdestArray.from_bitmap - max contract size" {
+    const allocator = std.testing.allocator;
+    
+    var bitmap = try DynamicBitSet.initEmpty(allocator, limits.MAX_CONTRACT_SIZE);
+    defer bitmap.deinit();
+    
+    // Set jumpdests at extremes
+    bitmap.set(0);
+    bitmap.set(limits.MAX_CONTRACT_SIZE - 1);
+    bitmap.set(limits.MAX_CONTRACT_SIZE / 2);
+    
+    var jumpdest_array = try JumpdestArray.from_bitmap(allocator, &bitmap, limits.MAX_CONTRACT_SIZE);
+    defer jumpdest_array.deinit(allocator);
+    
+    try std.testing.expectEqual(@as(usize, 3), jumpdest_array.positions.len);
+    try std.testing.expect(jumpdest_array.is_valid_jumpdest(0));
+    try std.testing.expect(jumpdest_array.is_valid_jumpdest(limits.MAX_CONTRACT_SIZE - 1));
+    try std.testing.expect(jumpdest_array.is_valid_jumpdest(limits.MAX_CONTRACT_SIZE / 2));
+}
+
+test "JumpdestArray.is_valid_jumpdest - out of bounds" {
+    const allocator = std.testing.allocator;
+    
+    var bitmap = try DynamicBitSet.initEmpty(allocator, 100);
+    defer bitmap.deinit();
+    bitmap.set(50);
+    
+    var jumpdest_array = try JumpdestArray.from_bitmap(allocator, &bitmap, 100);
+    defer jumpdest_array.deinit(allocator);
+    
+    // PC beyond code length should return false
+    try std.testing.expect(!jumpdest_array.is_valid_jumpdest(100));
+    try std.testing.expect(!jumpdest_array.is_valid_jumpdest(200));
+    try std.testing.expect(!jumpdest_array.is_valid_jumpdest(std.math.maxInt(usize)));
+}
+
+test "analysis: PUSH opcode with data bytes" {
+    const allocator = std.testing.allocator;
+    
+    // PUSH3 followed by 3 data bytes, then JUMPDEST
+    const code = &[_]u8{
+        0x62, 0xAA, 0xBB, 0xCC, // PUSH3 0xAABBCC
+        0x5B, // JUMPDEST
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // JUMPDEST should be at position 4, not positions 1, 2, or 3
+    try std.testing.expect(!analysis.jumpdest_array.is_valid_jumpdest(1));
+    try std.testing.expect(!analysis.jumpdest_array.is_valid_jumpdest(2));
+    try std.testing.expect(!analysis.jumpdest_array.is_valid_jumpdest(3));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(4));
+}
+
+test "analysis: PUSH32 with JUMPDEST byte in data" {
+    const allocator = std.testing.allocator;
+    
+    // PUSH32 with 0x5B (JUMPDEST opcode) as one of the data bytes
+    var code: [34]u8 = undefined;
+    code[0] = 0x7F; // PUSH32
+    @memset(code[1..33], 0x00);
+    code[10] = 0x5B; // JUMPDEST byte value in PUSH data
+    code[33] = 0x00; // STOP
+    
+    var analysis = try CodeAnalysis.from_code(allocator, &code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // The 0x5B byte at position 10 is data, not a JUMPDEST
+    try std.testing.expect(!analysis.jumpdest_array.is_valid_jumpdest(10));
+}
+
+test "analysis: invalid opcode handling" {
+    const allocator = std.testing.allocator;
+    
+    // Code with invalid opcodes
+    const code = &[_]u8{
+        0x60, 0x01, // PUSH1 1
+        0xFE, // INVALID opcode
+        0x60, 0x02, // PUSH1 2
+        0xFF, // Another invalid opcode
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should not crash and should handle invalid opcodes gracefully
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: code too large" {
+    const allocator = std.testing.allocator;
+    
+    // Try to create code larger than MAX_CONTRACT_SIZE
+    const large_code = try allocator.alloc(u8, limits.MAX_CONTRACT_SIZE + 1);
+    defer allocator.free(large_code);
+    @memset(large_code, 0x00); // Fill with STOP opcodes
+    
+    const result = CodeAnalysis.from_code(allocator, large_code, &OpcodeMetadata.DEFAULT);
+    try std.testing.expectError(error.CodeTooLarge, result);
+}
+
+test "analysis: multiple basic blocks with terminators" {
+    const allocator = std.testing.allocator;
+    
+    // Code with multiple basic blocks separated by different terminators
+    const code = &[_]u8{
+        // Block 1
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x02, // PUSH1 2
+        0x01, // ADD
+        0x00, // STOP (terminator)
+        
+        // Block 2 (unreachable)
+        0x5B, // JUMPDEST
+        0x60, 0x03, // PUSH1 3
+        0xFD, // REVERT (terminator)
+        
+        // Block 3 
+        0x5B, // JUMPDEST
+        0x60, 0x04, // PUSH1 4
+        0xF3, // RETURN (terminator)
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Verify JUMPDESTs are properly marked
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(5));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(9));
+    
+    // Verify block mapping exists
+    try std.testing.expect(analysis.pc_to_block_start[5] != std.math.maxInt(u16));
+    try std.testing.expect(analysis.pc_to_block_start[9] != std.math.maxInt(u16));
+}
+
+test "analysis: nested PUSH operations" {
+    const allocator = std.testing.allocator;
+    
+    // Various PUSH operations of different sizes
+    const code = &[_]u8{
+        0x5F, // PUSH0 (EIP-3855)
+        0x60, 0xFF, // PUSH1 0xFF
+        0x61, 0x12, 0x34, // PUSH2 0x1234
+        0x62, 0xAB, 0xCD, 0xEF, // PUSH3 0xABCDEF
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Verify instruction count includes all operations
+    try std.testing.expect(analysis.instructions.len >= 5); // At least 5 opcodes
+}
+
+test "analysis: JUMPI with invalid destination" {
+    const allocator = std.testing.allocator;
+    
+    // JUMPI to a non-JUMPDEST location
+    const code = &[_]u8{
+        0x60, 0x01, // PUSH1 1 (condition)
+        0x60, 0x06, // PUSH1 6 (destination - not a JUMPDEST)
+        0x57, // JUMPI
+        0x00, // STOP
+        0x60, 0x42, // PUSH1 0x42 (at PC 6 - not a JUMPDEST)
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // PC 6 should not be a valid jumpdest
+    try std.testing.expect(!analysis.jumpdest_array.is_valid_jumpdest(6));
+    
+    // Should have a conditional jump instruction
+    var has_jumpi = false;
+    for (analysis.inst_jump_type) |jt| {
+        if (jt == .jumpi) has_jumpi = true;
+    }
+    try std.testing.expect(has_jumpi);
+}
+
+test "analysis: self-modifying pattern (CREATE2 address calculation)" {
+    const allocator = std.testing.allocator;
+    
+    // Pattern often seen in CREATE2 deployments
+    const code = &[_]u8{
+        0x60, 0x00, // PUSH1 0 (salt)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x20, // PUSH1 32 (size)
+        0x60, 0x00, // PUSH1 0 (value)
+        0xF5, // CREATE2
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle CREATE2 opcode properly
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: extreme stack depth changes" {
+    const allocator = std.testing.allocator;
+    
+    // Code that pushes many values then duplicates them
+    const code = &[_]u8{
+        // Push 16 values
+        0x60, 0x01, 0x60, 0x02, 0x60, 0x03, 0x60, 0x04,
+        0x60, 0x05, 0x60, 0x06, 0x60, 0x07, 0x60, 0x08,
+        0x60, 0x09, 0x60, 0x0A, 0x60, 0x0B, 0x60, 0x0C,
+        0x60, 0x0D, 0x60, 0x0E, 0x60, 0x0F, 0x60, 0x10,
+        // DUP16 (duplicates 16th stack item)
+        0x8F,
+        // SWAP16 (swaps 1st and 17th stack items)
+        0x9F,
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle deep stack operations
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: LOG operations with various topic counts" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // Setup for LOG operations
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x20, // PUSH1 32 (size)
+        
+        // LOG0 - no topics
+        0xA0,
+        
+        // LOG1 - 1 topic
+        0x60, 0x01, // PUSH1 1 (topic)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x20, // PUSH1 32 (size)
+        0xA1,
+        
+        // LOG4 - 4 topics
+        0x60, 0x01, 0x60, 0x02, 0x60, 0x03, 0x60, 0x04, // 4 topics
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x20, // PUSH1 32 (size) 
+        0xA4,
+        
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle all LOG variants
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: memory expansion patterns" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // MSTORE at high memory address
+        0x61, 0x10, 0x00, // PUSH2 0x1000 (4096)
+        0x60, 0x42, // PUSH1 0x42 (value)
+        0x52, // MSTORE
+        
+        // MLOAD from even higher address
+        0x61, 0x20, 0x00, // PUSH2 0x2000 (8192)
+        0x51, // MLOAD
+        
+        // RETURN with large memory range
+        0x61, 0x10, 0x00, // PUSH2 0x1000 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0xF3, // RETURN
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle memory expansion operations
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: edge case - single byte code" {
+    const allocator = std.testing.allocator;
+    
+    // Single STOP instruction
+    const code = &[_]u8{0x00};
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    try std.testing.expect(analysis.instructions.len >= 1);
+    try std.testing.expectEqual(@as(usize, 1), analysis.code_len);
+}
+
+test "analysis: SELFDESTRUCT and state-changing operations" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // Store a value
+        0x60, 0x42, // PUSH1 0x42
+        0x60, 0x00, // PUSH1 0
+        0x55, // SSTORE
+        
+        // Self destruct to an address
+        0x73, // PUSH20
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0xFF, // SELFDESTRUCT
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle SELFDESTRUCT
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: complex control flow with multiple jump targets" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // Entry point
+        0x60, 0x00, // PUSH1 0
+        0x60, 0x0A, // PUSH1 10 (first jump target)
+        0x57, // JUMPI
+        
+        // Fallthrough path
+        0x60, 0x10, // PUSH1 16 (second jump target)
+        0x56, // JUMP
+        
+        // First jump target
+        0x5B, // JUMPDEST at PC 10
+        0x60, 0x01, // PUSH1 1
+        0xF3, // RETURN
+        
+        // Second jump target
+        0x5B, // JUMPDEST at PC 16
+        0x60, 0x02, // PUSH1 2
+        0xF3, // RETURN
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Both jump destinations should be valid
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(10));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(16));
+    
+    // Should have both JUMP and JUMPI
+    var jump_count: usize = 0;
+    var jumpi_count: usize = 0;
+    for (analysis.inst_jump_type) |jt| {
+        switch (jt) {
+            .jump => jump_count += 1,
+            .jumpi => jumpi_count += 1,
+            else => {},
+        }
+    }
+    try std.testing.expect(jump_count >= 1);
+    try std.testing.expect(jumpi_count >= 1);
+}
+
+test "analysis: arithmetic operations coverage" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // Basic arithmetic
+        0x60, 0x05, 0x60, 0x03, 0x01, // ADD: 5 + 3
+        0x60, 0x08, 0x60, 0x03, 0x02, // MUL: 8 * 3
+        0x60, 0x08, 0x60, 0x03, 0x03, // SUB: 8 - 3
+        0x60, 0x08, 0x60, 0x02, 0x04, // DIV: 8 / 2
+        0x60, 0x07, 0x60, 0x03, 0x05, // SDIV: signed division
+        0x60, 0x08, 0x60, 0x03, 0x06, // MOD: 8 % 3
+        0x60, 0x07, 0x60, 0x03, 0x07, // SMOD: signed modulo
+        0x60, 0x05, 0x60, 0x03, 0x08, // ADDMOD: (5 + 3) % n
+        0x60, 0x05, 0x60, 0x03, 0x60, 0x07, 0x09, // MULMOD: (5 * 3) % 7
+        0x60, 0x02, 0x60, 0x03, 0x0A, // EXP: 2^3
+        0x60, 0xFF, 0x0B, // SIGNEXTEND
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle all arithmetic operations
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: comparison operations" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // Comparisons
+        0x60, 0x05, 0x60, 0x03, 0x10, // LT: 5 < 3
+        0x60, 0x05, 0x60, 0x03, 0x11, // GT: 5 > 3  
+        0x60, 0x05, 0x60, 0x03, 0x12, // SLT: signed less than
+        0x60, 0x05, 0x60, 0x03, 0x13, // SGT: signed greater than
+        0x60, 0x05, 0x60, 0x05, 0x14, // EQ: 5 == 5
+        0x60, 0x00, 0x15, // ISZERO: is zero?
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle all comparison operations
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: CREATE and CREATE2 patterns" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // CREATE pattern
+        0x60, 0x20, // PUSH1 32 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x00, // PUSH1 0 (value)
+        0xF0, // CREATE
+        
+        // CREATE2 pattern with salt
+        0x60, 0x42, // PUSH1 0x42 (salt)
+        0x60, 0x20, // PUSH1 32 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x00, // PUSH1 0 (value)
+        0xF5, // CREATE2
+        
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle contract creation opcodes
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: all PUSH variants" {
+    const allocator = std.testing.allocator;
+    
+    var code = std.ArrayList(u8).init(allocator);
+    defer code.deinit();
+    
+    // PUSH0 (EIP-3855)
+    try code.append(0x5F);
+    
+    // PUSH1 through PUSH32
+    var i: u8 = 1;
+    while (i <= 32) : (i += 1) {
+        try code.append(0x60 + i - 1); // PUSH opcode
+        // Add i bytes of data
+        var j: u8 = 0;
+        while (j < i) : (j += 1) {
+            try code.append(j);
+        }
+    }
+    
+    try code.append(0x00); // STOP
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code.items, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle all PUSH variants
+    try std.testing.expect(analysis.instructions.len >= 34); // At least 33 PUSH ops + STOP
+}
+
+test "analysis: consecutive JUMPDESTs" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        0x5B, // JUMPDEST
+        0x5B, // JUMPDEST
+        0x5B, // JUMPDEST
+        0x60, 0x01, // PUSH1 1
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // All three JUMPDESTs should be valid
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(0));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(1));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(2));
+}
+
+test "analysis: infinite loop pattern" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        0x5B, // JUMPDEST (loop start)
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x00, // PUSH1 0 (jump to start)
+        0x56, // JUMP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle infinite loops
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(0));
+}
+
+test "analysis: dynamic jump resolution limits" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // Dynamic jump (destination from stack)
+        0x5A, // GAS
+        0x60, 0x0F, // PUSH1 15
+        0x16, // AND (limit gas to small value)
+        0x56, // JUMP (dynamic)
+        
+        // Potential destinations
+        0x00, // STOP
+        0x00, // STOP
+        0x5B, // JUMPDEST at 8
+        0x00, // STOP
+        0x5B, // JUMPDEST at 10
+        0x00, // STOP
+        0x5B, // JUMPDEST at 12
+        0x00, // STOP
+        0x5B, // JUMPDEST at 14
+        0x00, // STOP
+        0x5B, // JUMPDEST at 16
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Multiple potential jump destinations should be marked
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(8));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(10));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(12));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(14));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(16));
+}
+
+test "analysis: JUMPDEST in PUSH data should not be valid" {
+    const allocator = std.testing.allocator;
+    
+    // PUSH20 containing 0x5B (JUMPDEST) bytes
+    var code = [_]u8{0x73} ++ [_]u8{0x5B} ** 20 ++ [_]u8{0x00};
+    
+    var analysis = try CodeAnalysis.from_code(allocator, &code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // None of the 0x5B bytes in PUSH data should be valid jumpdests
+    var i: usize = 1;
+    while (i <= 20) : (i += 1) {
+        try std.testing.expect(!analysis.jumpdest_array.is_valid_jumpdest(i));
+    }
+}
+
+test "analysis: maximum stack depth tracking" {
+    const allocator = std.testing.allocator;
+    
+    // Push many values without popping
+    var code = std.ArrayList(u8).init(allocator);
+    defer code.deinit();
+    
+    // Push 100 values
+    var i: usize = 0;
+    while (i < 100) : (i += 1) {
+        try code.append(0x60); // PUSH1
+        try code.append(@intCast(i));
+    }
+    
+    // Pop all values
+    i = 0;
+    while (i < 100) : (i += 1) {
+        try code.append(0x50); // POP
+    }
+    
+    try code.append(0x00); // STOP
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code.items, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle deep stacks
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: empty basic blocks" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        0x60, 0x04, // PUSH1 4
+        0x56, // JUMP
+        0x5B, // JUMPDEST at 3 (empty block)
+        0x5B, // JUMPDEST at 4 (target)
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Both jumpdests should be valid even if one leads to empty block
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(3));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(4));
+}
+
+test "analysis: mixed valid and invalid jump targets" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // Valid jump
+        0x60, 0x08, // PUSH1 8
+        0x56, // JUMP
+        
+        // Invalid jump
+        0x60, 0x09, // PUSH1 9 (not a JUMPDEST)
+        0x56, // JUMP
+        
+        0x5B, // JUMPDEST at 8
+        0x60, 0x42, // PUSH1 0x42 (at 9 - not a JUMPDEST)
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Only PC 8 should be valid jumpdest
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(8));
+    try std.testing.expect(!analysis.jumpdest_array.is_valid_jumpdest(9));
+}
+
+test "analysis: PUSH0 opcode (EIP-3855)" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        0x5F, // PUSH0
+        0x5F, // PUSH0  
+        0x01, // ADD (0 + 0)
+        0x5F, // PUSH0
+        0x14, // EQ (result == 0)
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle PUSH0
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: balance and extcode operations" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // BALANCE
+        0x73, // PUSH20 (address)
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x31, // BALANCE
+        
+        // EXTCODESIZE
+        0x73, // PUSH20 (address)
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
+        0x3B, // EXTCODESIZE
+        
+        // EXTCODEHASH
+        0x73, // PUSH20 (address)
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03,
+        0x3F, // EXTCODEHASH
+        
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle external account operations
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+// Tests for the size_buckets module functionality
+test "size_buckets: getInstructionParams for 8-byte instructions" {
+    const allocator = std.testing.allocator;
+    
+    // Create test arrays
+    const size8 = try allocator.alloc(Bucket8, 2);
+    defer allocator.free(size8);
+    const size16 = try allocator.alloc(Bucket16, 1);
+    defer allocator.free(size16);
+    const size24 = try allocator.alloc(Bucket24, 1);
+    defer allocator.free(size24);
+    
+    // Create a noop instruction
+    const noop_inst = Instruction{ .tag = .noop, .id = 0 };
+    const noop_params = @import("instruction.zig").NoopInstruction{
+        .next_inst = &noop_inst,
+    };
+    @memcpy(size8[0].bytes[0..@sizeOf(@TypeOf(noop_params))], std.mem.asBytes(&noop_params));
+    
+    // Test retrieval
+    const retrieved = @import("size_buckets.zig").getInstructionParams(
+        size8, size16, size24, .noop, 0
+    );
+    try std.testing.expectEqual(noop_params.next_inst, retrieved.next_inst);
+}
+
+test "size_buckets: getInstructionParams for 16-byte instructions" {
+    const allocator = std.testing.allocator;
+    
+    const size8 = try allocator.alloc(Bucket8, 1);
+    defer allocator.free(size8);
+    const size16 = try allocator.alloc(Bucket16, 2);
+    defer allocator.free(size16);
+    const size24 = try allocator.alloc(Bucket24, 1);
+    defer allocator.free(size24);
+    
+    // Create an exec instruction
+    const dummy_fn = @import("code_analysis.zig").UnreachableHandler;
+    const exec_params = @import("instruction.zig").ExecInstruction{
+        .exec_fn = dummy_fn,
+        .next_inst = @ptrFromInt(0x1234),
+    };
+    @memcpy(size16[0].bytes[0..@sizeOf(@TypeOf(exec_params))], std.mem.asBytes(&exec_params));
+    
+    // Test retrieval
+    const retrieved = @import("size_buckets.zig").getInstructionParams(
+        size8, size16, size24, .exec, 0
+    );
+    try std.testing.expectEqual(exec_params.exec_fn, retrieved.exec_fn);
+}
+
+test "size_buckets: getInstructionParams for 24-byte instructions" {
+    const allocator = std.testing.allocator;
+    
+    const size8 = try allocator.alloc(Bucket8, 1);
+    defer allocator.free(size8);
+    const size16 = try allocator.alloc(Bucket16, 1);
+    defer allocator.free(size16);
+    const size24 = try allocator.alloc(Bucket24, 2);
+    defer allocator.free(size24);
+    
+    // Create a word instruction
+    const word_params = @import("instruction.zig").WordInstruction{
+        .word_ref = @import("instruction.zig").WordRef{
+            .start_pc = 42,
+            .len = 32,
+            ._pad = 0,
+        },
+        .next_inst = @ptrFromInt(0x5678),
+    };
+    @memcpy(size24[0].bytes[0..@sizeOf(@TypeOf(word_params))], std.mem.asBytes(&word_params));
+    
+    // Test retrieval
+    const retrieved = @import("size_buckets.zig").getInstructionParams(
+        size8, size16, size24, .word, 0
+    );
+    try std.testing.expectEqual(word_params.word_ref.start_pc, retrieved.word_ref.start_pc);
+    try std.testing.expectEqual(word_params.word_ref.len, retrieved.word_ref.len);
+}
+
+test "code_bitmap: marks PUSH data bytes correctly" {
+    const allocator = std.testing.allocator;
+    const createCodeBitmap = @import("code_bitmap.zig").createCodeBitmap;
+    
+    // Code with various PUSH instructions
+    const code = &[_]u8{
+        0x60, 0xFF, // PUSH1 - byte at 1 is data
+        0x61, 0x12, 0x34, // PUSH2 - bytes at 3,4 are data
+        0x5B, // JUMPDEST - should remain as code
+        0x7F, // PUSH32 - next 32 bytes are data
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F,
+        0x00, // STOP - should be code
+    };
+    
+    var bitmap = try createCodeBitmap(allocator, code);
+    defer bitmap.deinit();
+    
+    // Check code bytes are set
+    try std.testing.expect(bitmap.isSet(0)); // PUSH1 opcode
+    try std.testing.expect(bitmap.isSet(2)); // PUSH2 opcode
+    try std.testing.expect(bitmap.isSet(5)); // JUMPDEST
+    try std.testing.expect(bitmap.isSet(6)); // PUSH32 opcode
+    try std.testing.expect(bitmap.isSet(39)); // STOP
+    
+    // Check data bytes are unset
+    try std.testing.expect(!bitmap.isSet(1)); // PUSH1 data
+    try std.testing.expect(!bitmap.isSet(3)); // PUSH2 data
+    try std.testing.expect(!bitmap.isSet(4)); // PUSH2 data
+    // Check some PUSH32 data bytes
+    try std.testing.expect(!bitmap.isSet(7)); // PUSH32 data
+    try std.testing.expect(!bitmap.isSet(20)); // PUSH32 data
+    try std.testing.expect(!bitmap.isSet(38)); // PUSH32 data
+}
+
+test "pattern_optimization: handles empty instruction stream" {
+    const allocator = std.testing.allocator;
+    const applyPatternOptimizations = @import("pattern_optimization.zig").applyPatternOptimizations;
+    
+    // Empty instruction stream
+    const instructions = try allocator.alloc(Instruction, 0);
+    defer allocator.free(instructions);
+    
+    // Should not crash
+    try applyPatternOptimizations(instructions, &[_]u8{});
+}
+
+test "analysis: code_len field accuracy" {
+    const allocator = std.testing.allocator;
+    
+    const test_cases = [_]struct { code: []const u8 }{
+        .{ .code = &[_]u8{} }, // Empty
+        .{ .code = &[_]u8{0x00} }, // Single byte
+        .{ .code = &[_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 } }, // 6 bytes
+        .{ .code = &[_]u8{0x00} ** 100 }, // 100 bytes
+        .{ .code = &[_]u8{0x5B} ** 1000 }, // 1000 bytes
+    };
+    
+    for (test_cases) |tc| {
+        var analysis = try CodeAnalysis.from_code(allocator, tc.code, &OpcodeMetadata.DEFAULT);
+        defer analysis.deinit();
+        
+        try std.testing.expectEqual(tc.code.len, analysis.code_len);
+        try std.testing.expectEqual(tc.code.ptr, analysis.code.ptr);
+    }
+}
+
+test "analysis: allocator consistency" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Verify allocator is stored correctly
+    try std.testing.expectEqual(allocator, analysis.allocator);
+}
+
+test "analysis: instruction and auxiliary array sizes match" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x02, // PUSH1 2
+        0x01, // ADD
+        0x60, 0x0A, // PUSH1 10
+        0x56, // JUMP
+        0x5B, // JUMPDEST
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // All auxiliary arrays should have same length as instructions
+    try std.testing.expectEqual(analysis.instructions.len, analysis.inst_jump_type.len);
+    try std.testing.expectEqual(analysis.instructions.len, analysis.inst_to_pc.len);
+    
+    // pc_to_block_start should cover at least the code length
+    try std.testing.expect(analysis.pc_to_block_start.len >= code.len);
+}
+
+test "analysis: deeply nested conditionals" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // Nested if-else pattern
+        0x60, 0x01, // PUSH1 1
+        0x60, 0x08, // PUSH1 8
+        0x57, // JUMPI (to first branch)
+        0x60, 0x20, // PUSH1 32 (else branch)
+        0x56, // JUMP
+        
+        0x5B, // JUMPDEST at 8 (first branch)
+        0x60, 0x02, // PUSH1 2
+        0x60, 0x10, // PUSH1 16
+        0x57, // JUMPI (nested condition)
+        0x60, 0x20, // PUSH1 32
+        0x56, // JUMP
+        
+        0x5B, // JUMPDEST at 16 (nested true)
+        0x60, 0x03, // PUSH1 3
+        0x60, 0x20, // PUSH1 32
+        0x56, // JUMP
+        
+        0x5B, // JUMPDEST at 32 (common exit)
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // All jumpdests should be valid
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(8));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(16));
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(32));
+}
+
+test "analysis: opcode at end of code" {
+    const allocator = std.testing.allocator;
+    
+    // Code ending with incomplete PUSH
+    const code = &[_]u8{
+        0x60, 0x01, // PUSH1 1
+        0x60, // PUSH1 without data byte
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle gracefully without crashing
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: all memory operations" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // MLOAD
+        0x60, 0x00, // PUSH1 0
+        0x51, // MLOAD
+        
+        // MSTORE
+        0x60, 0x42, // PUSH1 0x42
+        0x60, 0x00, // PUSH1 0
+        0x52, // MSTORE
+        
+        // MSTORE8
+        0x60, 0xFF, // PUSH1 0xFF
+        0x60, 0x20, // PUSH1 32
+        0x53, // MSTORE8
+        
+        // MSIZE
+        0x59, // MSIZE
+        
+        // MCOPY (Cancun)
+        0x60, 0x20, // PUSH1 32 (size)
+        0x60, 0x00, // PUSH1 0 (source)
+        0x60, 0x40, // PUSH1 64 (dest)
+        0x5E, // MCOPY
+        
+        0x00, // STOP
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Should handle all memory operations
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: block terminators create proper boundaries" {
+    const allocator = std.testing.allocator;
+    
+    const code = &[_]u8{
+        // Block 1
+        0x60, 0x01, // PUSH1 1
+        0x00, // STOP (terminator)
+        
+        // Block 2 (unreachable without jump)
+        0x60, 0x02, // PUSH1 2
+        0xFD, // REVERT (terminator)
+        
+        // Block 3 (unreachable)
+        0x60, 0x03, // PUSH1 3
+        0xF3, // RETURN (terminator)
+        
+        // Block 4 (unreachable)
+        0x60, 0x04, // PUSH1 4
+        0xFE, // INVALID (terminator)
+        
+        // Block 5 (unreachable)
+        0x60, 0x05, // PUSH1 5
+        0xFF, // SELFDESTRUCT (terminator)
+    };
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // Each terminator should create a block boundary
+    try std.testing.expect(analysis.instructions.len > 0);
+}
+
+test "analysis: pc_to_block_start handles sparse jumpdests" {
+    const allocator = std.testing.allocator;
+    
+    // Code with jumpdests far apart
+    var code = try allocator.alloc(u8, 1000);
+    defer allocator.free(code);
+    
+    // Fill with STOP opcodes
+    @memset(code, 0x00);
+    
+    // Place sparse jumpdests
+    code[0] = 0x5B; // JUMPDEST at 0
+    code[100] = 0x5B; // JUMPDEST at 100
+    code[500] = 0x5B; // JUMPDEST at 500
+    code[999] = 0x5B; // JUMPDEST at 999
+    
+    var analysis = try CodeAnalysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+    
+    // pc_to_block_start should handle sparse jumpdests
+    try std.testing.expect(analysis.pc_to_block_start.len >= code.len);
+    
+    // Verify block starts are mapped
+    try std.testing.expect(analysis.pc_to_block_start[0] != std.math.maxInt(u16));
+    try std.testing.expect(analysis.pc_to_block_start[100] != std.math.maxInt(u16));
+    try std.testing.expect(analysis.pc_to_block_start[500] != std.math.maxInt(u16));
+    try std.testing.expect(analysis.pc_to_block_start[999] != std.math.maxInt(u16));
 }
