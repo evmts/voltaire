@@ -273,7 +273,7 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
 test "BEGINBLOCK: upfront OutOfGas when gas < block base cost" {
     const allocator = std.testing.allocator;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-    const Analysis = @import("../analysis.zig");
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
     const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
     const AccessList = @import("../access_list/access_list.zig").AccessList;
     const CallJournal = @import("../call_frame_stack.zig").CallJournal;
@@ -339,7 +339,7 @@ test "BEGINBLOCK: upfront OutOfGas when gas < block base cost" {
 test "interpret: keccak+pop+JUMPDEST+STOP fragment halts with STOP" {
     const allocator = std.testing.allocator;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-    const Analysis = @import("../analysis.zig");
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
     const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
     const Host = @import("../host.zig").Host;
     const Address = @import("primitives").Address.Address;
@@ -385,7 +385,7 @@ test "interpret: keccak+pop+JUMPDEST+STOP fragment halts with STOP" {
 test "interpret: fused PUSH+JUMP to forward JUMPDEST halts with STOP" {
     const allocator = std.testing.allocator;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-    const Analysis = @import("../analysis.zig");
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
     const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
     const Host = @import("../host.zig").Host;
     const Address = @import("primitives").Address.Address;
@@ -422,7 +422,7 @@ test "interpret: fused PUSH+JUMP to forward JUMPDEST halts with STOP" {
 test "BEGINBLOCK: stack underflow detected at block entry" {
     const allocator = std.testing.allocator;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-    const Analysis = @import("../analysis.zig");
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
     const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
     const AccessList = @import("../access_list/access_list.zig").AccessList;
     const CallJournal = @import("../call_frame_stack.zig").CallJournal;
@@ -485,7 +485,7 @@ test "BEGINBLOCK: stack underflow detected at block entry" {
 test "BEGINBLOCK: stack overflow detected from max growth" {
     const allocator = std.testing.allocator;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-    const Analysis = @import("../analysis.zig");
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
     const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
     const AccessList = @import("../access_list/access_list.zig").AccessList;
     const CallJournal = @import("../call_frame_stack.zig").CallJournal;
@@ -554,7 +554,7 @@ test "BEGINBLOCK: stack overflow detected from max growth" {
 test "dynamic jump returns 32-byte true" {
     const allocator = std.testing.allocator;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-    const Analysis = @import("../analysis.zig");
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
     const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
     const AccessList = @import("../access_list/access_list.zig").AccessList;
     const CallJournal = @import("../call_frame_stack.zig").CallJournal;
@@ -639,7 +639,7 @@ test "dynamic jump returns 32-byte true" {
 test "interpret: minimal dispatcher executes selected branch and returns 32 bytes" {
     const allocator = std.testing.allocator;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-    const Analysis = @import("../analysis.zig");
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
     const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
     const Host = @import("../host.zig").Host;
     const Address = @import("primitives").Address.Address;
@@ -727,7 +727,7 @@ test "interpret: minimal dispatcher executes selected branch and returns 32 byte
 test "interpret: dispatcher using AND 0xffffffff extracts selector and returns 32 bytes" {
     const allocator = std.testing.allocator;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-    const Analysis = @import("../analysis.zig");
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
     const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
     const Host = @import("../host.zig").Host;
     const Address = @import("primitives").Address.Address;
@@ -812,7 +812,7 @@ test "interpret: ERC20 bench dispatcher returns 32 bytes for 0x30627b7c selector
     const allocator = std.testing.allocator;
     const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-    const Analysis = @import("../analysis.zig");
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
     const Address = @import("primitives").Address.Address;
 
     // Read initcode and calldata from official bench files
@@ -879,4 +879,55 @@ test "interpret: ERC20 bench dispatcher returns 32 bytes for 0x30627b7c selector
     const out = host.get_output();
     try std.testing.expect(out.len >= 32);
     try std.testing.expect(out[out.len - 1] == 1);
+}
+
+test "interpret: simple JUMP to valid JUMPDEST" {
+    const allocator = std.testing.allocator;
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const MemoryDatabase = @import("../state/memory_database.zig").MemoryDatabase;
+    const Analysis = @import("../analysis.zig").CodeAnalysis;
+    const Host = @import("../host.zig").Host;
+    const Address = @import("primitives").Address.Address;
+
+    // Simple jump: PUSH1 0x05, JUMP, INVALID, INVALID, JUMPDEST, STOP
+    const code = &[_]u8{
+        0x60, 0x05, // PUSH1 0x05
+        0x56,       // JUMP
+        0xfe,       // INVALID
+        0xfe,       // INVALID  
+        0x5b,       // JUMPDEST at PC 5
+        0x00,       // STOP
+    };
+
+    var analysis = try Analysis.from_code(allocator, code, &OpcodeMetadata.DEFAULT);
+    defer analysis.deinit();
+
+    // Verify JUMPDEST is valid
+    try std.testing.expect(analysis.jumpdest_array.is_valid_jumpdest(5));
+
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+
+    var vm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    defer vm.deinit();
+
+    const host = Host.init(&vm);
+
+    var frame = try Frame.init(
+        100000,
+        false,
+        0,
+        Address.ZERO,
+        Address.ZERO,
+        0,
+        &analysis,
+        host,
+        db_interface,
+        allocator,
+    );
+    defer frame.deinit(allocator);
+
+    // Should execute successfully with STOP
+    try std.testing.expectError(ExecutionError.Error.STOP, interpret(&vm, &frame));
 }
