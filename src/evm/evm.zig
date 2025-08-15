@@ -173,7 +173,7 @@ pub fn init(
     // Expected size: 256KB (ARENA_INITIAL_CAPACITY)
     // Lifetime: Per EVM instance (freed on deinit)
     // Frequency: Once per EVM creation
-    var internal_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var internal_arena = std.heap.ArenaAllocator.init(allocator);
     // Preallocate memory to avoid frequent allocations during execution
     const arena_buffer = try internal_arena.allocator().alloc(u8, ARENA_INITIAL_CAPACITY);
 
@@ -337,12 +337,8 @@ pub fn reset(self: *Evm) void {
     self.current_frame_depth = 0;
     self.max_allocated_depth = 0;
 
-    // Clean up any existing frame stack
-    if (self.frame_stack) |frames| {
-        // Frames are deinitialized during call() completion; just free the array storage
-        self.allocator.free(frames);
-        self.frame_stack = null;
-    }
+    // Keep preallocated frame stack for reuse across calls; frames themselves
+    // are deinitialized at the end of each call execution.
 }
 
 /// Get the internal arena allocator for temporary EVM data
