@@ -536,10 +536,12 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     if (!success) {
         Log.debug("[call] Call failed with error: {?}", .{exec_err});
     }
+    // Return VM-owned view; callers must not free
+    const out_opt: ?[]const u8 = if (output.len > 0) output else null;
     return CallResult{
         .success = success,
         .gas_left = gas_remaining,
-        .output = output,
+        .output = out_opt,
     };
 }
 
