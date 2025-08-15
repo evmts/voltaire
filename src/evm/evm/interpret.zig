@@ -58,8 +58,13 @@ inline fn pre_step(self: *Evm, frame: *Frame, inst: *const Instruction, loop_ite
                     const mem_size: usize = frame.memory.size();
                     var tr = Tracer.init(writer);
                     _ = tr.trace(pc, opcode, stack_view, frame.gas_remaining, gas_cost, mem_size, @intCast(frame.depth)) catch {};
+                    if (frame.depth > 0) {
+                        Log.debug("Tracing nested call: pc={}, depth={}, opcode=0x{x}, code_len={}", .{ pc, frame.depth, opcode, analysis.code_len });
+                    }
                 }
             }
+        } else if (frame.depth > 0) {
+            Log.debug("No tracer available for nested call at depth={}", .{frame.depth});
         }
     }
 }
@@ -80,6 +85,12 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         // to self. Because of this state on self should only ever be modified
         // by a single evm run at a time
         self.require_one_thread();
+    }
+    
+    if (comptime build_options.enable_tracing) {
+        if (frame.depth > 0) {
+            Log.debug("interpret called for nested frame: depth={}, has_tracer={}", .{ frame.depth, self.tracer != null });
+        }
     }
 
     var instruction: *const Instruction = &frame.analysis.instructions[0];
