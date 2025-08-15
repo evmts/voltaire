@@ -275,7 +275,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         if (self.frame_stack == null) {
             // Allocate frame stack with maximum capacity to avoid reallocation
             // This prevents frame pointer invalidation during nested calls
-            self.frame_stack = try self.allocator.alloc(Frame, MAX_CALL_DEPTH);
+            self.frame_stack = try std.heap.page_allocator.alloc(Frame, MAX_CALL_DEPTH);
 
             if (comptime builtin.mode == .Debug or builtin.mode == .ReleaseSafe) {
                 // Verify initial allocation is within expected bounds

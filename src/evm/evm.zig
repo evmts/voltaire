@@ -279,8 +279,7 @@ pub fn deinit(self: *Evm) void {
 
     // Clean up lazily allocated frame stack if it exists
     if (self.frame_stack) |frames| {
-        // Frames are deinitialized at the end of each call; just free array storage
-        self.allocator.free(frames);
+        std.heap.page_allocator.free(frames);
         self.frame_stack = null;
     }
 
