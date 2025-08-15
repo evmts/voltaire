@@ -80,6 +80,8 @@ depth: u11 = 0, // 2 bytes - call depth tracking
 read_only: bool = false, // 1 byte - STATICCALL check
 /// Whether the VM is currently executing a call (used to detect nested calls)
 is_executing: bool = false, // 1 byte - execution state
+/// Packed execution flags (bit 0 = read_only, bit 1 = is_executing)
+flags: u8 = 0,
 /// Current active frame depth in the frame stack
 current_frame_depth: u11 = 0, // 2 bytes - frame management
 /// Maximum frame depth allocated so far (for efficient cleanup)
@@ -100,6 +102,8 @@ context: Context, // Transaction context - rarely accessed
 current_output: []const u8 = &.{}, // 16 bytes - only for RETURN/REVERT
 /// Input buffer for the current frame (exposed via Host.get_input)
 current_input: []const u8 = &.{}, // 16 bytes - only for CALLDATALOAD/CALLDATACOPY
+/// Owned copy of current_output to ensure valid lifetime across frame transitions
+owned_output: ?[]u8 = null,
 
 // === REMAINING COLD DATA ===
 /// Lazily allocated frame stack for nested calls - only allocates what's needed
@@ -212,6 +216,7 @@ pub fn init(
         .depth = @intCast(depth),
         .read_only = read_only,
         .is_executing = false,
+        .flags = @as(u8, if (read_only) 1 else 0),
         .current_frame_depth = 0,
         .max_allocated_depth = 0,
         .current_snapshot_id = 0,
@@ -242,6 +247,11 @@ pub fn init(
 /// Free all VM resources.
 /// Must be called when finished with the VM to prevent memory leaks.
 pub fn deinit(self: *Evm) void {
+    // Free owned output buffer if present
+    if (self.owned_output) |buf| {
+        self.allocator.free(buf);
+        self.owned_output = null;
+    }
     if (self.trace_file) |f| {
         // Best-effort close
         f.close();
@@ -310,12 +320,19 @@ pub fn disable_tracing(self: *Evm) void {
 /// This is efficient for executing multiple contracts in sequence.
 /// Clears all state but keeps the allocated memory for reuse.
 pub fn reset(self: *Evm) void {
+    // Free owned output buffer to avoid leaking across runs
+    if (self.owned_output) |buf| {
+        self.allocator.free(buf);
+        self.owned_output = null;
+    }
     // Reset internal arena allocator to reuse memory
     _ = self.internal_arena.reset(.retain_capacity);
 
     // Reset execution state
     self.depth = 0;
     self.read_only = false;
+    // Keep flags in sync (clear read_only bit and executing bit)
+    self.flags &= ~@as(u8, 0b11);
     self.gas_refunds = 0; // Reset refunds for new transaction
     self.current_frame_depth = 0;
     self.max_allocated_depth = 0;
@@ -458,15 +475,28 @@ pub fn get_original_storage(self: *Evm, address: primitives.Address.Address, slo
 
 /// Set the output buffer for the current frame (Host interface)
 pub fn set_output(self: *Evm, output: []const u8) !void {
-    // Write to current frame's output buffer when available
+    // Free previous owned buffer if any
+    if (self.owned_output) |buf| {
+        self.allocator.free(buf);
+        self.owned_output = null;
+    }
+
+    // Always make an owned copy so data survives child frame teardown
+    if (output.len > 0) {
+        const copy = try self.allocator.dupe(u8, output);
+        self.owned_output = copy;
+        self.current_output = copy;
+    } else {
+        self.current_output = &.{};
+    }
+
+    // Update current frame's visible output buffer if stack exists
     if (self.frame_stack) |frames| {
         if (self.current_frame_depth < frames.len) {
-            frames[self.current_frame_depth].output_buffer = output;
+            frames[self.current_frame_depth].output_buffer = self.current_output;
         }
     }
-    // Maintain legacy field for compatibility and for standalone frames (CREATE path)
-    self.current_output = output;
-    @import("log.zig").debug("[Evm.set_output] output_len={}", .{output.len});
+    @import("log.zig").debug("[Evm.set_output] output_len={}", .{self.current_output.len});
 }
 
 /// Get the output buffer for the current frame (Host interface)
@@ -514,6 +544,34 @@ pub fn is_hardfork_at_least(self: *Evm, target: Hardfork) bool {
 
 pub fn get_hardfork(self: *Evm) Hardfork {
     return self.chain_rules.getHardfork();
+}
+
+// Inline helpers to keep boolean fields and packed flags in sync
+inline fn set_flag(self: *Evm, bit_index: u3, on: bool) void {
+    const mask: u8 = @as(u8, 1) << bit_index;
+    if (on) {
+        self.flags |= mask;
+    } else {
+        self.flags &= ~mask;
+    }
+}
+
+pub inline fn set_read_only(self: *Evm, on: bool) void {
+    self.read_only = on;
+    set_flag(self, 0, on);
+}
+
+pub inline fn set_is_executing(self: *Evm, on: bool) void {
+    self.is_executing = on;
+    set_flag(self, 1, on);
+}
+
+pub inline fn is_read_only(self: *const Evm) bool {
+    return (self.flags & @as(u8, 1)) != 0;
+}
+
+pub inline fn is_currently_executing(self: *const Evm) bool {
+    return (self.flags & @as(u8, 1) << 1) != 0;
 }
 
 // The actual call implementation is in evm/call.zig
@@ -771,10 +829,7 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     const output = host.get_output();
     var out: ?[]u8 = null;
     if (output.len > 0) {
-        std.debug.print("[create_contract] Success STOP, deploying runtime code len={}, first_bytes={any}\n", .{
-            output.len,
-            std.fmt.fmtSliceHexLower(output[0..@min(output.len, 32)])
-        });
+        std.debug.print("[create_contract] Success STOP, deploying runtime code len={}, first_bytes={any}\n", .{ output.len, std.fmt.fmtSliceHexLower(output[0..@min(output.len, 32)]) });
         // Store code at the new address (MemoryDatabase copies the slice)
         self.state.set_code(new_address, output) catch {};
         // Return a copy of the deployed bytecode for tests
