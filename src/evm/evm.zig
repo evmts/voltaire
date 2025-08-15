@@ -771,7 +771,10 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     const output = host.get_output();
     var out: ?[]u8 = null;
     if (output.len > 0) {
-        std.debug.print("[create_contract] Success STOP, deploying runtime code len={}\n", .{output.len});
+        std.debug.print("[create_contract] Success STOP, deploying runtime code len={}, first_bytes={any}\n", .{
+            output.len,
+            std.fmt.fmtSliceHexLower(output[0..@min(output.len, 32)])
+        });
         // Store code at the new address (MemoryDatabase copies the slice)
         self.state.set_code(new_address, output) catch {};
         // Return a copy of the deployed bytecode for tests
