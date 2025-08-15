@@ -82,7 +82,7 @@ test "Simple bytecode works with block execution" {
     try std.testing.expect(result.success);
 
     if (result.output) |output| {
-        defer allocator.free(output);
+        
         std.log.info("Simple execution output size: {}", .{output.len});
     }
 }

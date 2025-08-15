@@ -43,7 +43,7 @@ test "measure function call overhead for hot opcodes" {
     for (0..iterations) |_| {
         var contract = Evm.Contract.init_at_address(caller, contract_addr, 0, 100000, &bytecode, &.{}, false);
         const result = try vm.interpret(&contract, &.{}, false);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
         
         try testing.expectEqual(Evm.RunResult.Status.Success, result.status);
         try testing.expectEqual(@as(usize, 32), result.output.?.len);
@@ -109,7 +109,7 @@ test "hot opcode pattern - tight loop" {
     for (0..iterations) |_| {
         var contract = Evm.Contract.init_at_address(caller, contract_addr, 0, 1000000, bytecode.items, &.{}, false);
         const result = try vm.interpret(&contract, &.{}, false);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
         
         try testing.expectEqual(Evm.RunResult.Status.Success, result.status);
     }

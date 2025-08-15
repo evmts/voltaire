@@ -60,7 +60,7 @@ test "ERC20 contract deployment hangs - minimal reproduction" {
 
     std.log.info("TEST: Deployment result: success={}, gas_left={}", .{ result.success, result.gas_left });
     if (result.output) |out| {
-        allocator.free(out);
+        
     }
 
     if (result.success) {
@@ -110,7 +110,7 @@ test "Simple contract deployment works" {
 
     std.log.info("TEST: Deployment result: success={}, gas_left={}", .{ result.success, result.gas_left });
     if (result.output) |out| {
-        allocator.free(out);
+        
     }
 
     try std.testing.expect(result.success);

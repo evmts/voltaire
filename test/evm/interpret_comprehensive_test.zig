@@ -50,7 +50,7 @@ test "E2E: Basic execution path with simple instructions" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -93,7 +93,7 @@ test "E2E: Block info gas exhaustion" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(!result.success); // Should fail with out of gas
 }
 
@@ -126,7 +126,7 @@ test "E2E: Block info stack underflow" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(!result.success); // Should fail with stack underflow
 }
 
@@ -164,7 +164,7 @@ test "E2E: Block info stack overflow" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(!result.success); // Should fail with stack overflow
 }
 
@@ -200,7 +200,7 @@ test "E2E: Dynamic gas with memory expansion" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -246,7 +246,7 @@ test "E2E: Fused PUSH+JUMP execution" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -285,7 +285,7 @@ test "E2E: Invalid jump destination" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(!result.success); // Should fail with invalid jump
 }
 
@@ -327,7 +327,7 @@ test "E2E: Conditional jump taken" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -375,7 +375,7 @@ test "E2E: Conditional jump not taken" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -425,7 +425,7 @@ test "E2E: Dynamic jump (jump_unresolved)" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -477,7 +477,7 @@ test "E2E: Dynamic conditional jump (conditional_jump_unresolved)" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -523,7 +523,7 @@ test "E2E: Word instruction (PUSH operations)" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -573,7 +573,7 @@ test "E2E: Keccak hash computation" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Keccak256 of 32 zero bytes should produce a specific hash
@@ -614,7 +614,7 @@ test "E2E: Keccak with insufficient gas" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(!result.success); // Should fail with out of gas
 }
 
@@ -652,7 +652,7 @@ test "E2E: Keccak with out of bounds offset" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(!result.success); // Should fail with out of offset
 }
 
@@ -697,7 +697,7 @@ test "E2E: Complex control flow with nested jumps" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -739,6 +739,6 @@ test "E2E: Gas exhaustion during loop execution" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(!result.success); // Should fail with out of gas
 }

@@ -82,7 +82,7 @@ fn runZigEvm(allocator: std.mem.Allocator, bytecode: []const u8) !struct { outpu
     if (result.output) |out| {
         output = try allocator.alloc(u8, out.len);
         @memcpy(output, out);
-        allocator.free(out);
+        
     } else {
         output = try allocator.alloc(u8, 0);
     }

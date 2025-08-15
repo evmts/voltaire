@@ -60,7 +60,7 @@ test "BLAKE2f official test vector" {
     input[212] = 1;
 
     const output = try allocator.alloc(u8, 64);
-    defer allocator.free(output);
+    
 
     const result = blake2f.execute(input, output, 10000);
 
@@ -81,7 +81,7 @@ test "BLAKE2f invalid input size" {
     @memset(input, 0);
 
     const output = try allocator.alloc(u8, 64);
-    defer allocator.free(output);
+    
 
     const result = blake2f.execute(input, output, 10000);
 
@@ -105,7 +105,7 @@ test "BLAKE2f invalid final flag" {
     input[212] = 2;
 
     const output = try allocator.alloc(u8, 64);
-    defer allocator.free(output);
+    
 
     const result = blake2f.execute(input, output, 10000);
 
@@ -129,7 +129,7 @@ test "BLAKE2f gas calculation" {
     input[212] = 1;
 
     const output = try allocator.alloc(u8, 64);
-    defer allocator.free(output);
+    
 
     const result = blake2f.execute(input, output, 10000);
 
@@ -156,7 +156,7 @@ test "BLAKE2f insufficient gas" {
     input[212] = 1;
 
     const output = try allocator.alloc(u8, 64);
-    defer allocator.free(output);
+    
 
     // Try with insufficient gas
     const result = blake2f.execute(input, output, 50); // Only 50 gas available
@@ -179,7 +179,7 @@ test "BLAKE2f output buffer too small" {
     input[212] = 1;
 
     const output = try allocator.alloc(u8, 32); // Too small, should be 64
-    defer allocator.free(output);
+    
 
     const result = blake2f.execute(input, output, 10000);
 
@@ -203,7 +203,7 @@ test "BLAKE2f zero rounds" {
     input[212] = 1;
 
     const output = try allocator.alloc(u8, 64);
-    defer allocator.free(output);
+    
 
     const result = blake2f.execute(input, output, 10000);
 

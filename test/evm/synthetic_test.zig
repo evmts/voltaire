@@ -46,7 +46,7 @@ test "PUSH + ADD fusion optimization" {
     }};
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     try testing.expect(result.success);
     if (result.output) |output| {
@@ -95,7 +95,7 @@ test "PUSH 0 + ADD identity elimination" {
     }};
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     try testing.expect(result.success);
     if (result.output) |output| {
@@ -144,7 +144,7 @@ test "PUSH + PUSH + ADD constant folding" {
     }};
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     try testing.expect(result.success);
     if (result.output) |output| {
@@ -191,7 +191,7 @@ test "ISZERO inline optimization" {
     }};
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     try testing.expect(result.success);
     if (result.output) |output| {
@@ -239,7 +239,7 @@ test "EQ inline optimization" {
     }};
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     try testing.expect(result.success);
     if (result.output) |output| {

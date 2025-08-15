@@ -35,7 +35,7 @@ test "debug: minimal ERC20 constructor execution" {
         simple_constructor,
         1_000_000
     );
-    defer if (create_result.output) |output| allocator.free(output);
+    defer if (create_result.output) |output| 
 
     std.log.debug("Simple constructor result: success={}, gas_left={}", .{
         create_result.success, create_result.gas_left
@@ -72,7 +72,7 @@ test "debug: minimal storage constructor" {
         storage_constructor,
         1_000_000
     );
-    defer if (create_result.output) |output| allocator.free(output);
+    defer if (create_result.output) |output| 
 
     std.log.debug("Storage constructor result: success={}, gas_left={}", .{
         create_result.success, create_result.gas_left

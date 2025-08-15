@@ -133,7 +133,7 @@ test "compare block execution with regular execution metrics" {
     const start_regular = std.time.nanoTimestamp();
     
     const result1 = try vm.interpret(&contract1, &.{}, false);
-    defer if (result1.output) |output| allocator.free(output);
+    defer if (result1.output) |output| 
     
     baseline_metrics.execution_time_ns = @intCast(std.time.nanoTimestamp() - start_regular);
     baseline_metrics.gas_consumed = result1.gas_used;
@@ -156,7 +156,7 @@ test "compare block execution with regular execution metrics" {
     const start_block = std.time.nanoTimestamp();
     
     const result2 = try vm.interpret_block(&contract2, &.{}, false);
-    defer if (result2.output) |output| allocator.free(output);
+    defer if (result2.output) |output| 
     
     block_metrics.execution_time_ns = @intCast(std.time.nanoTimestamp() - start_block);
     block_metrics.gas_consumed = result2.gas_used;

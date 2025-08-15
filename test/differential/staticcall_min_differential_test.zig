@@ -68,7 +68,7 @@ test "STATICCALL: SSTORE under STATICCALL returns failure (0) with REVM parity" 
     try testing.expectEqual(res.revm_ok, res.zig_ok);
     try testing.expect(!res.revm_ok);
     if (res.zig_out) |out| {
-        allocator.free(out);
+        
     }
     allocator.free(res.revm_out);
 }

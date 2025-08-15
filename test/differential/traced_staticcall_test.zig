@@ -86,7 +86,7 @@ test "traced STATICCALL execution" {
     
     std.debug.print("\n=== Executing STATICCALL test with tracing ===\n", .{});
     const result = try vm.call(call_params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     
     // Print results
     std.debug.print("Execution success: {}\n", .{result.success});

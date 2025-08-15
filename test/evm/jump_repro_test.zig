@@ -60,7 +60,7 @@ test "dynamic jump minimal returns 32-byte true" {
     // Expect 32-byte true (last byte == 1)
     try std.testing.expect(call_result.output != null);
     const output = call_result.output.?;
-    defer allocator.free(output);
+    
     try std.testing.expect(output.len == 32);
     try std.testing.expect(output[31] == 1);
 }

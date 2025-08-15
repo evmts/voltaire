@@ -45,7 +45,7 @@ test "Bitwise: AND basic operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -85,7 +85,7 @@ test "Bitwise: AND basic operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -134,7 +134,7 @@ test "Bitwise: OR basic operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -185,7 +185,7 @@ test "Bitwise: XOR basic operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -233,7 +233,7 @@ test "Bitwise: NOT operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -282,7 +282,7 @@ test "Bitwise: BYTE operation" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -332,7 +332,7 @@ test "Bitwise: SHL (shift left)" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -382,7 +382,7 @@ test "Bitwise: SHR (shift right)" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {

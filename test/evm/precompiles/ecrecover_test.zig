@@ -514,7 +514,7 @@ test "ecrecover output buffer stress test" {
 
     for (buffer_sizes) |size| {
         const output = std.testing.allocator.alloc(u8, size) catch unreachable;
-        defer std.testing.allocator.free(output);
+        defer std.testing.
         @memset(output, 0xFF); // Fill with non-zero to test clearing
 
         const result = ecrecover.execute(&input, output, 5000);

@@ -52,7 +52,7 @@ test "trace ERC20 mint deployment only" {
     std.debug.print("\n=== Deploying ERC20 Contract (for mint test) ===\n", .{});
     const create_result = try vm.create_contract(caller, 0, bytecode, 1_000_000_000 // 1B gas for deployment
     );
-    defer if (create_result.output) |output| allocator.free(output);
+    defer if (create_result.output) |output| 
 
     std.debug.print("Deployment result - success: {}, gas_left: {}, gas_used: {}\n", .{ create_result.success, create_result.gas_left, 1_000_000_000 - create_result.gas_left });
 

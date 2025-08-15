@@ -49,7 +49,7 @@ fn deploy(vm: *evm.Evm, allocator: std.mem.Allocator, caller: primitives.Address
     // Bench bytecode is initcode for ERC20 cases; deploy via CREATE so constructor runs and returns runtime
     const create_result = try vm.create_contract(caller, 0, bytecode, 10_000_000);
     if (create_result.output) |out| {
-        defer allocator.free(out);
+        
     }
     if (!create_result.success) return error.DeploymentFailed;
     return create_result.address;
@@ -121,7 +121,7 @@ test "erc20 transfer benchmark executes successfully" {
     try std.testing.expect(gas_used > 0);
     // transfer(address,uint256) should return 32-byte true
     if (call_result.output) |output| {
-        defer allocator.free(output);
+        
         std.log.debug("ERC20 transfer returned {} bytes", .{output.len});
         Log.debug("[erc20-test] Transfer output length: {d}", .{output.len});
         Log.debug("[erc20-test] Call success: {}, gas_left: {d}", .{ call_result.success, call_result.gas_left });
@@ -192,7 +192,7 @@ test "erc20 mint benchmark executes successfully" {
     try std.testing.expect(gas_used > 0);
     // Many mint implementations return bool; accept either true or empty (if non-standard)
     if (call_result.output) |output| {
-        defer allocator.free(output);
+        
         if (output.len > 0) {
             try std.testing.expect(output.len >= 32);
             try std.testing.expect(output[output.len - 1] == 1);
@@ -243,7 +243,7 @@ test "erc20 approval-transfer benchmark executes successfully" {
     try std.testing.expect(gas_used > 0);
     // approve->transfer flow should return bool true on the last call
     if (call_result.output) |output| {
-        defer allocator.free(output);
+        
         try std.testing.expect(output.len >= 32);
         try std.testing.expect(output[output.len - 1] == 1);
     } else {
@@ -307,7 +307,7 @@ test "erc20 benchmark gas usage patterns" {
         try std.testing.expect(gas_used >= test_case.expected_min_gas);
 
         if (call_result.output) |output| {
-            defer allocator.free(output);
+            
         }
     }
 }
@@ -384,7 +384,7 @@ test "erc20 allowance starts at zero for fresh keys" {
     try std.testing.expect(call_result.success);
     try std.testing.expect(call_result.output != null);
     const out = call_result.output.?;
-    defer allocator.free(out);
+    
     try std.testing.expect(out.len >= 32);
     // Expect zero allowance
     var zero_word: [32]u8 = .{0} ** 32;

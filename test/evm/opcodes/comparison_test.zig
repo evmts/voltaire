@@ -45,7 +45,7 @@ test "Comparison: LT (less than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -84,7 +84,7 @@ test "Comparison: LT (less than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -122,7 +122,7 @@ test "Comparison: LT (less than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -171,7 +171,7 @@ test "Comparison: GT (greater than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -221,7 +221,7 @@ test "Comparison: EQ (equal) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -260,7 +260,7 @@ test "Comparison: EQ (equal) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -308,7 +308,7 @@ test "Comparison: ISZERO operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -346,7 +346,7 @@ test "Comparison: ISZERO operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -399,7 +399,7 @@ test "Comparison: SLT (signed less than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {
@@ -453,7 +453,7 @@ test "Comparison: SGT (signed greater than) operations" {
         }};
 
         const result = try vm.call(call_params);
-        defer if (result.output) |output| allocator.free(output);
+        defer if (result.output) |output| 
 
         try testing.expect(result.success);
         if (result.output) |output| {

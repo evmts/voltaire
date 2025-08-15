@@ -35,7 +35,7 @@ test "interpret_block: simple arithmetic execution" {
     
     // Execute using block-based interpretation
     const result = try vm.interpret_block(&contract, &.{}, false);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     
     // Verify success
     try std.testing.expectEqual(evm.RunResult.Status.Success, result.status);
@@ -81,7 +81,7 @@ test "interpret_block: contract with output" {
     
     // Execute using block-based interpretation
     const result = try vm.interpret_block(&contract, &.{}, false);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     
     // Verify success with output
     try std.testing.expectEqual(evm.RunResult.Status.Success, result.status);
@@ -131,7 +131,7 @@ test "interpret_block: fallback to regular interpret for jumps" {
     
     // Execute using block-based interpretation (should fallback to regular)
     const result = try vm.interpret_block(&contract, &.{}, false);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     
     // Should still succeed (via fallback)
     try std.testing.expectEqual(evm.RunResult.Status.Success, result.status);
@@ -173,7 +173,7 @@ test "interpret_block: comparison with regular interpret" {
     
     // Execute using regular interpretation
     const result1 = try vm.interpret(&contract1, &.{}, false);
-    defer if (result1.output) |output| allocator.free(output);
+    defer if (result1.output) |output| 
     
     // Create contract for block interpretation
     var contract2 = try evm.Contract.init(
@@ -190,7 +190,7 @@ test "interpret_block: comparison with regular interpret" {
     
     // Execute using block-based interpretation
     const result2 = try vm.interpret_block(&contract2, &.{}, false);
-    defer if (result2.output) |output| allocator.free(output);
+    defer if (result2.output) |output| 
     
     // Both should succeed with same results
     try std.testing.expectEqual(result1.status, result2.status);

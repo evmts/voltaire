@@ -59,7 +59,7 @@ test "STOP (0x00): Halt execution" {
     
     // Clean up allocated output
     if (result.output) |output| {
-        allocator.free(output);
+        
     }
 }
 
@@ -111,7 +111,7 @@ test "ADD (0x01): Basic addition" {
     
     // Clean up allocated output
     if (result.output) |output| {
-        allocator.free(output);
+        
     }
 }
 
@@ -176,7 +176,7 @@ test "ADD: Overflow wraps to zero" {
     
     // Clean up allocated output
     if (result.output) |output| {
-        allocator.free(output);
+        
     }
 }
 

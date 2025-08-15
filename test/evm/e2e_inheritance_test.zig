@@ -90,7 +90,7 @@ test "E2E: Basic inheritance - virtual function overrides" {
 
     // Execute the contract
     const result = try evm_instance.interpretCompat(&contract, &[_]u8{}, false);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     try testing.expect(result.status == .Success);
     if (result.output) |output| {
@@ -179,7 +179,7 @@ test "E2E: Interface compliance - polymorphic behavior" {
 
     // Execute the contract
     const result = try evm_instance.interpretCompat(&contract, &[_]u8{}, false);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     try testing.expect(result.status == .Success);
     if (result.output) |output| {
@@ -260,7 +260,7 @@ test "E2E: Multiple inheritance - diamond pattern resolution" {
 
     // Execute the contract
     const result = try evm_instance.interpretCompat(&contract, &[_]u8{}, false);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     try testing.expect(result.status == .Success);
     if (result.output) |output| {
@@ -351,7 +351,7 @@ test "E2E: Function visibility - access control patterns" {
 
     // Execute the contract
     const result = try evm_instance.interpretCompat(&contract, &[_]u8{}, false);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     try testing.expect(result.status == .Success);
     if (result.output) |output| {

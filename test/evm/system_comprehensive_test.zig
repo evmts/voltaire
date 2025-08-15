@@ -58,7 +58,7 @@ test "E2E: CREATE opcode creates new contract" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     
     // CREATE should succeed
     try testing.expect(result.success);
@@ -109,7 +109,7 @@ test "E2E: CREATE with value transfer" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
 }
 
@@ -168,7 +168,7 @@ test "E2E: CREATE in static context fails" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -219,7 +219,7 @@ test "E2E: CREATE2 with salt creates deterministic address" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
 }
 
@@ -274,7 +274,7 @@ test "E2E: CALL to existing contract" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -331,7 +331,7 @@ test "E2E: CALL with value transfer" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Check balance transfer
@@ -386,7 +386,7 @@ test "E2E: CALLCODE executes in caller's context" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     // Storage should be in caller's context, not target's
@@ -448,7 +448,7 @@ test "E2E: DELEGATECALL preserves original caller" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -513,7 +513,7 @@ test "E2E: STATICCALL enforces read-only context" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -555,7 +555,7 @@ test "E2E: GAS opcode returns remaining gas" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -607,7 +607,7 @@ test "E2E: CREATE at max depth fails" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     
     // Should succeed, but deep creates will fail
     try testing.expect(result.success);
@@ -658,7 +658,7 @@ test "E2E: CALL with insufficient gas" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     
     // Should fail due to insufficient gas
     try testing.expect(!result.success);
@@ -717,7 +717,7 @@ test "E2E: CREATE2 with same salt twice" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -788,7 +788,7 @@ test "E2E: DELEGATECALL with calldata forwarding" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {
@@ -848,7 +848,7 @@ test "E2E: EIP-150 63/64 gas rule" {
     };
     
     const result = try vm.call(params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     try testing.expect(result.success);
     
     if (result.output) |output| {

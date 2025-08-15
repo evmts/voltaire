@@ -62,7 +62,7 @@ test "RETURN opcode must stop execution during contract deployment - reproduces 
     // std.testing.log_level = .debug;
     
     const result = try vm.call(call_params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     // Check if RETURN properly stopped execution
     try std.testing.expect(result.success);
@@ -133,7 +133,7 @@ test "Minimal RETURN stops execution test" {
     } };
 
     const result = try vm.call(call_params);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     // Verify RETURN worked
     try std.testing.expect(result.success);

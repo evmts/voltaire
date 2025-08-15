@@ -56,7 +56,7 @@ test "constructor should return runtime code" {
     const create_result = try vm.create_contract(deployer, 0, // value
         init_code, 1000000 // gas
     );
-    defer if (create_result.output) |output| allocator.free(output);
+    defer if (create_result.output) |output| 
 
     // Check deployment
     try testing.expect(create_result.success);
@@ -118,7 +118,7 @@ test "manual constructor execution to debug" {
 
     // Execute the constructor
     const result = try vm.interpret(&contract, &.{}, false);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
 
     // Verify constructor executed successfully
     try testing.expectEqual(Evm.RunResult.Status.Success, result.status);

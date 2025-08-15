@@ -28,7 +28,7 @@ test "MODEXP basic functionality" {
     input[98] = 5; // mod
 
     var output = try allocator.alloc(u8, 1);
-    defer allocator.free(output);
+    
 
     const result = modexp.execute(input, output, 10000);
 
@@ -59,7 +59,7 @@ test "MODEXP special cases" {
     input[98] = 7; // mod
 
     var output = try allocator.alloc(u8, 1);
-    defer allocator.free(output);
+    
 
     const result = modexp.execute(input, output, 10000);
 
@@ -89,7 +89,7 @@ test "MODEXP exponent zero" {
     input[98] = 7; // mod
 
     var output = try allocator.alloc(u8, 1);
-    defer allocator.free(output);
+    
 
     const result = modexp.execute(input, output, 10000);
 
@@ -122,7 +122,7 @@ test "MODEXP larger numbers" {
     input[101] = 1000 & 0xFF; // mod low byte
 
     var output = try allocator.alloc(u8, 2);
-    defer allocator.free(output);
+    
 
     const result = modexp.execute(input, output, 10000);
 
@@ -165,7 +165,7 @@ test "MODEXP insufficient gas" {
     input[98] = 5;
 
     var output = try allocator.alloc(u8, 1);
-    defer allocator.free(output);
+    
 
     // Try with insufficient gas
     const result = modexp.execute(input, output, 10); // Very low gas limit
@@ -185,7 +185,7 @@ test "MODEXP invalid input" {
     @memset(input, 0);
 
     var output = try allocator.alloc(u8, 32);
-    defer allocator.free(output);
+    
 
     const result = modexp.execute(input, output, 10000);
 

@@ -37,7 +37,7 @@ test "trace ERC20 constructor execution" {
     
     // Create contract (deploy)
     const result = try vm.create_contract(caller, 0, bytecode, 1_000_000_000);
-    defer if (result.output) |output| allocator.free(output);
+    defer if (result.output) |output| 
     
     std.debug.print("\nERC20 Constructor result: success={}, gas_left={}\n", .{
         result.success,

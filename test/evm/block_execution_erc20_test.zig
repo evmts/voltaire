@@ -133,7 +133,7 @@ test "ERC20 transfer with regular execution works" {
     // try std.testing.expect(result.status == .Success);
 
     // if (result.output) |output| {
-    //     defer allocator.free(output);
+    //     
     //     std.log.info("Regular execution output size: {}", .{output.len});
     // }
 }
@@ -197,7 +197,7 @@ test "ERC20 transfer with block execution works" {
     // try std.testing.expect(result.status == .Success);
 
     // if (result.output) |output| {
-    //     defer allocator.free(output);
+    //     
     //     std.log.info("Block execution output size: {}", .{output.len});
     // }
 }
@@ -257,7 +257,7 @@ test "Simple bytecode works with block execution" {
     try std.testing.expect(result.status == .Success);
 
     if (result.output) |output| {
-        defer allocator.free(output);
+        
         std.log.info("Simple block execution output size: {}, value: 0x{x}", .{ output.len, std.fmt.fmtSliceHexLower(output) });
 
         // Verify the output is 0x42
