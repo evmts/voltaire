@@ -3,11 +3,13 @@ const testing = std.testing;
 const Allocator = std.mem.Allocator;
 const revm = @import("revm");
 const Address = @import("primitives").Address;
-const Evm = @import("evm").Evm;
-const Contract = @import("evm").Contract;
-const Frame = @import("evm").Frame;
-const MemoryDatabase = @import("evm").MemoryDatabase;
-const Operation = @import("evm").Operation;
+const evm = @import("evm");
+const Evm = evm.Evm;
+const Contract = evm.Contract;
+const Frame = evm.Frame;
+const MemoryDatabase = evm.MemoryDatabase;
+const Operation = evm.Operation;
+const CallParams = evm.CallParams;
 
 test "SELFDESTRUCT in static call fails with WriteProtection" {
     const allocator = testing.allocator;
