@@ -60,14 +60,52 @@ fn main() {
     };
     db.insert_account_info(caller_address, caller_info);
     
-    // For now, go back to simple approach: directly set code
-    // TODO: Implement proper contract deployment tracing
+    // Deploy the contract first to get runtime code
     let contract_address = Address::from_str("0x5FbDB2315678afecb367f032d93F642f64180aa3").unwrap();
+    
+    // Deploy in a separate scope to release the database borrow
+    let runtime_code = {
+        // First, deploy the contract using CREATE
+        let mut deploy_evm = Evm::builder()
+            .with_db(&mut db)
+            .with_spec_id(PRAGUE)
+            .modify_tx_env(|tx| {
+                tx.caller = caller_address;
+                tx.transact_to = TxKind::Create;
+                tx.value = U256::ZERO;
+                tx.data = contract_code.clone();
+                tx.gas_limit = 10_000_000;
+                tx.gas_price = U256::from(10u64);
+            })
+            .modify_block_env(|block| {
+                block.basefee = U256::from(7u64);
+            })
+            .build();
+        
+        let deploy_result = deploy_evm.transact().unwrap();
+        
+        // Extract the deployed runtime code
+        if deploy_result.result.is_success() {
+            match deploy_result.result {
+                revm::primitives::ExecutionResult::Success { output, .. } => {
+                    match output {
+                        revm::primitives::Output::Create(bytes, _) => bytes,
+                        _ => panic!("Unexpected output type from CREATE"),
+                    }
+                }
+                _ => panic!("Contract deployment failed"),
+            }
+        } else {
+            panic!("Contract deployment failed: {:?}", deploy_result.result);
+        }
+    }; // deploy_evm is dropped here, releasing the borrow on db
+    
+    // Now set the runtime code at the contract address
     let contract_info = AccountInfo {
         balance: U256::ZERO,
-        nonce: 0,
-        code_hash: revm::primitives::keccak256(&contract_code),
-        code: Some(revm::primitives::Bytecode::new_raw(contract_code.clone())),
+        nonce: 1, // Nonce incremented after deployment
+        code_hash: revm::primitives::keccak256(&runtime_code),
+        code: Some(revm::primitives::Bytecode::new_raw(runtime_code)),
     };
     db.insert_account_info(contract_address, contract_info);
     
@@ -97,7 +135,10 @@ fn main() {
                 .build();
             
             // Run once with tracing
-            let _result = evm.transact().unwrap();
+            let result = evm.transact().unwrap();
+            if !result.result.is_success() {
+                panic!("Contract execution failed: {:?}", result.result);
+            }
         }
         // EVM is dropped here, releasing the borrow on tracer
         
@@ -112,7 +153,7 @@ fn main() {
                 tx.caller = caller_address;
                 tx.transact_to = TxKind::Call(contract_address);
                 tx.value = U256::ZERO;
-                tx.data = calldata;
+                tx.data = calldata.clone();
                 tx.gas_limit = 1_000_000_000; // 1B gas
                 tx.gas_price = U256::from(10u64);
             })
@@ -123,7 +164,19 @@ fn main() {
         
         // Run the benchmark num_runs times
         for _ in 0..num_runs {
-            let _result = evm.transact().unwrap();
+            let start = std::time::Instant::now();
+            
+            let result = evm.transact().unwrap();
+            
+            let duration = start.elapsed();
+            let duration_ms = duration.as_secs_f64() * 1000.0;
+            
+            if !result.result.is_success() {
+                panic!("Contract execution failed: {:?}", result.result);
+            }
+            
+            // Output timing in milliseconds (one per line as expected by orchestrator)
+            println!("{:.6}", duration_ms);
         }
     }
 }
