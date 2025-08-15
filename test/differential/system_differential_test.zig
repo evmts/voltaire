@@ -20,28 +20,28 @@ fn compareTracesForBytecode(
         std.debug.print("Skipping trace comparison - tracing not enabled. Build with -Denable-tracing=true\n", .{});
         return;
     }
-    
+
     // Create temp directory for trace files
     var tmp_dir = testing.tmpDir(.{});
     defer tmp_dir.cleanup();
-    
+
     // Generate unique filenames
     const timestamp = std.time.timestamp();
     const revm_trace_path = try std.fmt.allocPrint(allocator, "revm_trace_{}.json", .{timestamp});
     defer allocator.free(revm_trace_path);
     const zig_trace_path = try std.fmt.allocPrint(allocator, "zig_trace_{}.json", .{timestamp});
     defer allocator.free(zig_trace_path);
-    
+
     // Get the temp directory path
     const tmp_dir_path = try tmp_dir.dir.realpathAlloc(allocator, ".");
     defer allocator.free(tmp_dir_path);
-    
+
     // Create full paths
     const revm_full_path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ tmp_dir_path, revm_trace_path });
     defer allocator.free(revm_full_path);
     const zig_full_path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{ tmp_dir_path, zig_trace_path });
     defer allocator.free(zig_full_path);
-    
+
     // === Execute with REVM and get trace ===
     const revm_settings = revm_wrapper.RevmSettings{
         .gas_limit = 1000000,
@@ -52,17 +52,17 @@ fn compareTracesForBytecode(
         .block_difficulty = 0,
         .block_basefee = 0,
     };
-    
+
     var revm_vm = try revm_wrapper.Revm.init(allocator, revm_settings);
     defer revm_vm.deinit();
-    
+
     const contract_addr = Address.from_u256(0x2222222222222222222222222222222222222222);
     const caller_addr = Address.from_u256(0x1111111111111111111111111111111111111111);
-    
+
     // Set up REVM state
     try revm_vm.setCode(contract_addr, bytecode);
     try revm_vm.setBalance(caller_addr, 10000000);
-    
+
     // Execute with trace
     var revm_result = try revm_vm.callWithTrace(
         caller_addr,
@@ -73,42 +73,42 @@ fn compareTracesForBytecode(
         revm_full_path,
     );
     defer revm_result.deinit();
-    
+
     // === Execute with Zig EVM and get trace ===
     // Open trace file for Zig EVM
     var trace_file = try tmp_dir.dir.createFile(zig_trace_path, .{});
     defer trace_file.close();
-    
+
     const writer = trace_file.writer().any();
-    
+
     // Set up Zig EVM
     const MemoryDatabase = evm.MemoryDatabase;
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
-    
+
     const db_interface = memory_db.to_database_interface();
-    
+
     // Configure for latest hardfork with tracing
     const hardfork = .CANCUN;
     const table = evm.OpcodeMetadata.init_from_hardfork(hardfork);
     const chain_rules = evm.ChainRules.for_hardfork(hardfork);
-    
+
     var evm_instance = try evm.Evm.init(
         allocator,
         db_interface,
         table,
         chain_rules,
         evm.Context.init(),
-        0,    // depth
+        0, // depth
         false, // read_only
         writer, // tracer
     );
     defer evm_instance.deinit();
-    
+
     // Set up state
     try evm_instance.state.set_code(contract_addr, bytecode);
     try evm_instance.state.set_balance(caller_addr, 10000000);
-    
+
     // Execute
     const call_params = evm.CallParams{ .call = .{
         .caller = caller_addr,
@@ -116,21 +116,21 @@ fn compareTracesForBytecode(
         .value = 0,
         .input = input,
         .gas = 1000000,
-    }};
-    
+    } };
+
     _ = evm_instance.call(call_params) catch |err| {
         std.debug.print("Zig EVM execution failed: {}\n", .{err});
         return err;
     };
-    
+
     // === Compare traces ===
     // Read both trace files
     const revm_trace_content = try std.fs.cwd().readFileAlloc(allocator, revm_full_path, 10 * 1024 * 1024);
     defer allocator.free(revm_trace_content);
-    
+
     const zig_trace_content = try tmp_dir.dir.readFileAlloc(allocator, zig_trace_path, 10 * 1024 * 1024);
     defer allocator.free(zig_trace_content);
-    
+
     // Debug: print first few lines of each trace
     // Count lines in each trace
     var revm_line_count: usize = 0;
@@ -143,50 +143,50 @@ fn compareTracesForBytecode(
         var lines = std.mem.tokenizeScalar(u8, zig_trace_content, '\n');
         while (lines.next()) |_| zig_line_count += 1;
     }
-    
+
     std.debug.print("\nREVM trace lines: {}, Zig trace lines: {}\n", .{ revm_line_count, zig_line_count });
     std.debug.print("\nREVM trace (first 500 chars):\n{s}\n", .{revm_trace_content[0..@min(500, revm_trace_content.len)]});
     std.debug.print("\nZig trace (first 500 chars):\n{s}\n", .{zig_trace_content[0..@min(500, zig_trace_content.len)]});
-    
+
     // Parse traces line by line
     var revm_lines = std.mem.tokenizeScalar(u8, revm_trace_content, '\n');
     var zig_lines = std.mem.tokenizeScalar(u8, zig_trace_content, '\n');
-    
+
     var line_num: usize = 0;
     while (true) {
         const revm_line = revm_lines.next();
         const zig_line = zig_lines.next();
-        
+
         if (revm_line == null and zig_line == null) break;
-        
+
         line_num += 1;
-        
+
         if (revm_line == null) {
             std.debug.print("Trace divergence at line {}: REVM trace ended but Zig trace continues\n", .{line_num});
             std.debug.print("Zig trace line: {s}\n", .{zig_line.?});
             break;
         }
-        
+
         if (zig_line == null) {
             std.debug.print("Trace divergence at line {}: Zig trace ended but REVM trace continues\n", .{line_num});
             std.debug.print("REVM trace line: {s}\n", .{revm_line.?});
             break;
         }
-        
+
         // Parse JSON to compare key fields
         const revm_json = try std.json.parseFromSlice(std.json.Value, allocator, revm_line.?, .{});
         defer revm_json.deinit();
-        
+
         const zig_json = try std.json.parseFromSlice(std.json.Value, allocator, zig_line.?, .{});
         defer zig_json.deinit();
-        
+
         const revm_obj = revm_json.value.object;
         const zig_obj = zig_json.value.object;
-        
+
         // Compare program counter
         const revm_pc = revm_obj.get("pc").?.integer;
         const zig_pc = zig_obj.get("pc").?.integer;
-        
+
         if (revm_pc != zig_pc) {
             std.debug.print("Trace divergence at line {}: PC mismatch\n", .{line_num});
             std.debug.print("  REVM PC: {}, Zig PC: {}\n", .{ revm_pc, zig_pc });
@@ -194,11 +194,11 @@ fn compareTracesForBytecode(
             std.debug.print("  Zig:  {s}\n", .{zig_line.?});
             break;
         }
-        
+
         // Compare opcode
         const revm_op = revm_obj.get("op").?.integer;
         const zig_op = zig_obj.get("op").?.integer;
-        
+
         if (revm_op != zig_op) {
             std.debug.print("Trace divergence at line {}: Opcode mismatch at PC {}\n", .{ line_num, revm_pc });
             std.debug.print("  REVM opcode: 0x{x}, Zig opcode: 0x{x}\n", .{ revm_op, zig_op });
@@ -206,33 +206,33 @@ fn compareTracesForBytecode(
             std.debug.print("  Zig:  {s}\n", .{zig_line.?});
             break;
         }
-        
+
         // Compare stack
         const revm_stack = revm_obj.get("stack").?.array;
         const zig_stack = zig_obj.get("stack").?.array;
-        
+
         if (revm_stack.items.len != zig_stack.items.len) {
             std.debug.print("Trace divergence at line {}: Stack size mismatch at PC {}\n", .{ line_num, revm_pc });
             std.debug.print("  REVM stack size: {}, Zig stack size: {}\n", .{ revm_stack.items.len, zig_stack.items.len });
             std.debug.print("  REVM: {s}\n", .{revm_line.?});
             std.debug.print("  Zig:  {s}\n", .{zig_line.?});
-            
+
             // Create minimal reproduction
             createMinimalReproduction(allocator, bytecode, @intCast(revm_pc)) catch {};
             break;
         }
-        
+
         // Compare stack values
         for (revm_stack.items, zig_stack.items, 0..) |revm_val, zig_val, i| {
             const revm_str = revm_val.string;
             const zig_str = zig_val.string;
-            
+
             if (!std.mem.eql(u8, revm_str, zig_str)) {
                 std.debug.print("Trace divergence at line {}: Stack value mismatch at PC {} position {}\n", .{ line_num, revm_pc, i });
                 std.debug.print("  REVM: {s}, Zig: {s}\n", .{ revm_str, zig_str });
                 std.debug.print("  Full REVM: {s}\n", .{revm_line.?});
                 std.debug.print("  Full Zig:  {s}\n", .{zig_line.?});
-                
+
                 // Create minimal reproduction
                 createMinimalReproduction(allocator, bytecode, @intCast(revm_pc)) catch {};
                 break;
@@ -246,37 +246,37 @@ fn createMinimalReproduction(allocator: std.mem.Allocator, bytecode: []const u8,
     std.debug.print("\n=== Minimal Reproduction ===\n", .{});
     std.debug.print("Original bytecode length: {}\n", .{bytecode.len});
     std.debug.print("Stop at PC: {}\n", .{stop_pc});
-    
+
     // Find the instruction boundary after stop_pc
     var pc: usize = 0;
     var end_pc: usize = 0;
-    
+
     while (pc < bytecode.len and pc <= stop_pc) {
         const opcode = bytecode[pc];
         end_pc = pc + 1;
-        
+
         // Handle PUSH instructions
         if (opcode >= 0x60 and opcode <= 0x7f) {
             const push_size = opcode - 0x5f;
             end_pc += push_size;
         }
-        
+
         pc = end_pc;
     }
-    
+
     // Create minimal bytecode that stops after the divergence point
     var minimal = try allocator.alloc(u8, end_pc + 1);
     defer allocator.free(minimal);
-    
+
     @memcpy(minimal[0..end_pc], bytecode[0..end_pc]);
     minimal[end_pc] = 0x00; // STOP
-    
+
     std.debug.print("Minimal bytecode (hex): ", .{});
     for (minimal) |byte| {
         std.debug.print("{x:0>2}", .{byte});
     }
     std.debug.print("\n", .{});
-    
+
     std.debug.print("Minimal bytecode (length {}): [", .{minimal.len});
     for (minimal, 0..) |byte, i| {
         if (i > 0) std.debug.print(", ", .{});
@@ -1208,7 +1208,7 @@ test "CREATE opcode deploys new contract" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -1336,7 +1336,7 @@ test "CREATE opcode with subsequent CALL to deployed contract" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -1362,44 +1362,44 @@ test "CREATE opcode with subsequent CALL to deployed contract" {
 
 test "trace comparison - simple arithmetic" {
     std.testing.log_level = .warn;
-    
+
     const allocator = testing.allocator;
-    
+
     // Simple bytecode: PUSH1 0x05, PUSH1 0x03, ADD, PUSH1 0x00, MSTORE, PUSH1 0x20, PUSH1 0x00, RETURN
     const bytecode = &[_]u8{
         0x60, 0x05, // PUSH1 5
         0x60, 0x03, // PUSH1 3
-        0x01,       // ADD
+        0x01, // ADD
         0x60, 0x00, // PUSH1 0 (offset)
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32 (length)
         0x60, 0x00, // PUSH1 0 (offset)
-        0xf3,       // RETURN
+        0xf3, // RETURN
     };
-    
+
     std.debug.print("\n=== SIMPLE ARITHMETIC TRACE COMPARISON ===\n", .{});
     try compareTracesForBytecode(allocator, bytecode, &.{});
 }
 
 test "trace comparison - CREATE2 divergence" {
     std.testing.log_level = .warn;
-    
+
     const allocator = testing.allocator;
-    
+
     // CREATE2 test - adjusted to match expected stack order
     const bytecode = &[_]u8{
         0x60, 0x42, // PUSH1 0x42 (salt)
         0x60, 0x00, // PUSH1 0 (length)
         0x60, 0x00, // PUSH1 0 (offset)
         0x60, 0x00, // PUSH1 0 (value)
-        0xf5,       // CREATE2
+        0xf5, // CREATE2
         0x60, 0x00, // PUSH1 0 (offset)
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32 (length)
         0x60, 0x00, // PUSH1 0 (offset)
-        0xf3,       // RETURN
+        0xf3, // RETURN
     };
-    
+
     std.debug.print("\n=== CREATE2 TRACE COMPARISON ===\n", .{});
     try compareTracesForBytecode(allocator, bytecode, &.{});
 }
@@ -1414,9 +1414,9 @@ test "CREATE2 opcode creates contract at deterministic address" {
         // Store the runtime bytecode in memory using CODECOPY
         // Runtime bytecode is at the end of this contract
         0x60, 0x0a, // PUSH1 10 (size of runtime code)
-        0x60, 0x1b, // PUSH1 27 (offset of runtime code in this bytecode) 
+        0x60, 0x1b, // PUSH1 27 (offset of runtime code in this bytecode)
         0x60, 0x00, // PUSH1 0 (destination in memory)
-        0x39,       // CODECOPY
+        0x39, // CODECOPY
 
         // CREATE2 parameters
         0x63, 0xde, 0xad, 0xbe, 0xef, // PUSH4 0xdeadbeef (salt)
@@ -1432,14 +1432,14 @@ test "CREATE2 opcode creates contract at deterministic address" {
         0x60, 0x20, // PUSH1 32 (size)
         0x60, 0x00, // PUSH1 0 (offset)
         0xf3, // RETURN
-        
+
         // Runtime bytecode (10 bytes) - returns 0x42
         0x60, 0x42, // PUSH1 0x42
         0x60, 0x00, // PUSH1 0 (memory offset)
-        0x52,       // MSTORE
+        0x52, // MSTORE
         0x60, 0x20, // PUSH1 32 (size)
         0x60, 0x00, // PUSH1 0 (offset)
-        0xf3,       // RETURN
+        0xf3, // RETURN
     };
 
     // Execute on REVM
@@ -1487,7 +1487,7 @@ test "CREATE2 opcode creates contract at deterministic address" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -1532,16 +1532,16 @@ test "CREATE2 opcode creates contract at deterministic address" {
         // Both calls should succeed and return 0x42
         try testing.expect(revm_call_result.success);
         try testing.expect(guillotine_call_result.success);
-        
+
         std.log.debug("[CREATE2 test] revm output_len={}, guillotine output_len={}", .{
             revm_call_result.output.len,
             if (guillotine_call_result.output) |output| output.len else 0,
         });
-        
+
         if (revm_call_result.output.len > 0) {
             std.log.debug("[CREATE2 test] revm output first bytes: {any}", .{revm_call_result.output[0..@min(revm_call_result.output.len, 16)]});
         }
-        
+
         if (guillotine_call_result.output) |output| {
             if (output.len > 0) {
                 std.log.debug("[CREATE2 test] guillotine output first bytes: {any}", .{output[0..@min(output.len, 16)]});
@@ -1643,7 +1643,7 @@ test "EXTCALL EOF opcode support check" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should agree on whether EXTCALL is supported
     const revm_succeeded = revm_result.success;
@@ -1769,7 +1769,7 @@ test "EXTDELEGATECALL EOF opcode support check" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
@@ -1957,7 +1957,7 @@ test "EXTSTATICCALL EOF opcode support check" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results
     const revm_succeeded = revm_result.success;
