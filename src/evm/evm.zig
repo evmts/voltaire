@@ -708,6 +708,7 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     // Save current depth and increment for nested create
     const saved_depth = self.depth;
     self.depth += 1;
+    Log.debug("[create_contract_at] Before interpret: depth={}, has_tracer={}, self_ptr=0x{x}, tracer_ptr=0x{x}", .{ self.depth, self.tracer != null, @intFromPtr(self), if (self.tracer) |t| @intFromPtr(&t) else 0 });
     Log.debug("[create_contract_at] Calling interpret for CREATE2 at depth={}", .{self.depth});
     @import("evm/interpret.zig").interpret(self, &frame) catch |err| {
         Log.debug("[create_contract_at] Interpret finished with error: {}", .{err});
