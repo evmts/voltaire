@@ -64,7 +64,7 @@ inline fn pre_step(self: *Evm, frame: *Frame, inst: *const Instruction, loop_ite
                 }
             }
         } else if (frame.depth > 0) {
-            Log.debug("No tracer available for nested call at depth={}", .{frame.depth});
+            Log.debug("No tracer available for nested call at depth={}, self_ptr=0x{x}", .{frame.depth, @intFromPtr(self)});
         }
     }
 }
@@ -88,8 +88,10 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     }
     
     if (comptime build_options.enable_tracing) {
-        if (frame.depth > 0) {
-            Log.debug("interpret called for nested frame: depth={}, has_tracer={}", .{ frame.depth, self.tracer != null });
+        Log.debug("interpret called: depth={}, has_tracer={}, self_ptr=0x{x}, tracer_field_offset={}", .{ frame.depth, self.tracer != null, @intFromPtr(self), @offsetOf(Evm, "tracer") });
+        if (frame.depth > 0 and self.tracer == null) {
+            Log.debug("WARNING: Tracer is null for nested call at depth={}", .{frame.depth});
+            Log.debug("Evm struct details: is_executing={}, current_frame_depth={}, max_allocated_depth={}", .{ self.is_executing, self.current_frame_depth, self.max_allocated_depth });
         }
     }
 
