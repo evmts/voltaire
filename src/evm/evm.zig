@@ -54,11 +54,7 @@ allocator: std.mem.Allocator, // 16 bytes - accessed by CALL/CREATE for frame al
 access_list: AccessList, // 24 bytes - accessed by all address/storage operations
 /// Call journal for transaction revertibility
 journal: CallJournal, // 24 bytes - accessed by state-changing operations
-/// Transaction-level gas refund accumulator for SSTORE and SELFDESTRUCT
-/// Signed accumulator: EIP-2200 allows negative deltas during execution.
-/// Applied at transaction end with EIP-3529 cap.
-gas_refunds: i64, // 8 bytes - accessed by SSTORE/SELFDESTRUCT
-// Total first cache line: ~72 bytes (slight overflow, but keeps hot data together)
+// Total first cache line: exactly 64 bytes (16 + 24 + 24)
 
 // === SECOND CACHE LINE - STATE MANAGEMENT ===
 // Accessed together during state operations
@@ -88,6 +84,10 @@ current_frame_depth: u11 = 0, // 2 bytes - frame management
 max_allocated_depth: u11 = 0, // 2 bytes - frame management
 /// Current snapshot ID for the frame being executed
 current_snapshot_id: u32 = 0, // 4 bytes - snapshot tracking
+/// Transaction-level gas refund accumulator for SSTORE and SELFDESTRUCT
+/// Signed accumulator: EIP-2200 allows negative deltas during execution.
+/// Applied at transaction end with EIP-3529 cap.
+gas_refunds: i64, // 8 bytes - accessed by SSTORE/SELFDESTRUCT
 
 // === FOURTH CACHE LINE - CONFIGURATION (COLD) ===
 // Only accessed during initialization or specific opcodes
@@ -598,7 +598,7 @@ pub usingnamespace @import("evm/interpret.zig");
 // Compatibility wrapper for old interpret API used by tests
 pub const InterprResult = struct {
     status: enum { Success, Failure, Invalid, Revert, OutOfGas },
-    output: ?[]u8,
+    output: ?[]const u8,
     gas_left: u64,
     gas_used: u64,
     address: primitives_internal.Address.Address,
@@ -779,11 +779,8 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
                 std.debug.print("[create_contract] REVERT with output_len={}\n", .{output.len});
                 // Revert state changes since snapshot
                 host.revert_to_snapshot(snapshot_id);
-                // Duplicate revert data for return
-                var out: ?[]u8 = null;
-                if (output.len > 0) {
-                    out = try self.allocator.dupe(u8, output);
-                }
+                // Return view of owned output buffer (no extra allocation)
+                const out: ?[]const u8 = if (output.len > 0) output else null;
                 const gas_left = frame.gas_remaining;
                 frame.deinit(self.allocator);
                 return InterprResult{
@@ -827,13 +824,13 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
 
     // Success (STOP or fell off end): deploy runtime code if any
     const output = host.get_output();
-    var out: ?[]u8 = null;
+    var out: ?[]const u8 = null;
     if (output.len > 0) {
         std.debug.print("[create_contract] Success STOP, deploying runtime code len={}, first_bytes={any}\n", .{ output.len, std.fmt.fmtSliceHexLower(output[0..@min(output.len, 32)]) });
         // Store code at the new address (MemoryDatabase copies the slice)
         self.state.set_code(new_address, output) catch {};
-        // Return a copy of the deployed bytecode for tests
-        out = try self.allocator.dupe(u8, output);
+        // Return view of owned output buffer (no extra allocation)
+        out = @constCast(output);
     } else {
         std.debug.print("[create_contract] Success STOP, empty runtime code\n", .{});
     }

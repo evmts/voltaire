@@ -1414,7 +1414,7 @@ test "CREATE2 opcode creates contract at deterministic address" {
         // Store the runtime bytecode in memory using CODECOPY
         // Runtime bytecode is at the end of this contract
         0x60, 0x0a, // PUSH1 10 (size of runtime code)
-        0x60, 0x23, // PUSH1 35 (offset of runtime code in this bytecode) 
+        0x60, 0x1b, // PUSH1 27 (offset of runtime code in this bytecode) 
         0x60, 0x00, // PUSH1 0 (destination in memory)
         0x39,       // CODECOPY
 
@@ -1532,6 +1532,21 @@ test "CREATE2 opcode creates contract at deterministic address" {
         // Both calls should succeed and return 0x42
         try testing.expect(revm_call_result.success);
         try testing.expect(guillotine_call_result.success);
+        
+        std.log.debug("[CREATE2 test] revm output_len={}, guillotine output_len={}", .{
+            revm_call_result.output.len,
+            if (guillotine_call_result.output) |output| output.len else 0,
+        });
+        
+        if (revm_call_result.output.len > 0) {
+            std.log.debug("[CREATE2 test] revm output first bytes: {any}", .{revm_call_result.output[0..@min(revm_call_result.output.len, 16)]});
+        }
+        
+        if (guillotine_call_result.output) |output| {
+            if (output.len > 0) {
+                std.log.debug("[CREATE2 test] guillotine output first bytes: {any}", .{output[0..@min(output.len, 16)]});
+            }
+        }
 
         if (revm_call_result.success and guillotine_call_result.success) {
             try testing.expect(revm_call_result.output.len == 32);
