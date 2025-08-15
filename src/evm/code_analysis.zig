@@ -12,17 +12,17 @@ const OpcodeMetadata = @import("opcode_metadata/opcode_metadata.zig");
 const Log = @import("log.zig");
 
 // Import modular components
-const JumpdestArray = @import("jumpdest_array.zig").JumpdestArray;
 const createCodeBitmap = @import("code_bitmap.zig").createCodeBitmap;
 const codeToInstructions = @import("instruction_generation.zig").codeToInstructions;
 const applyPatternOptimizations = @import("pattern_optimization.zig").applyPatternOptimizations;
-const Bucket8 = @import("size_buckets.zig").Bucket8;
-const Bucket16 = @import("size_buckets.zig").Bucket16;
-const Bucket24 = @import("size_buckets.zig").Bucket24;
-const Size8Counts = @import("size_buckets.zig").Size8Counts;
-const Size16Counts = @import("size_buckets.zig").Size16Counts;
-const Size24Counts = @import("size_buckets.zig").Size24Counts;
-const getInstructionParams = @import("size_buckets.zig").getInstructionParams;
+const size_buckets = @import("size_buckets.zig");
+const Bucket8 = size_buckets.Bucket8;
+const Bucket16 = size_buckets.Bucket16;
+const Bucket24 = size_buckets.Bucket24;
+const Size8Counts = size_buckets.Size8Counts;
+const Size16Counts = size_buckets.Size16Counts;
+const Size24Counts = size_buckets.Size24Counts;
+const JumpdestArray = size_buckets.JumpdestArray;
 
 /// Handler for opcodes that should never be executed directly.
 /// Used for JUMP, JUMPI, and PUSH opcodes that are handled inline by the interpreter.
@@ -94,7 +94,7 @@ allocator: std.mem.Allocator, // 16 bytes - only accessed on deinit
 
 /// Generic function to get instruction parameters from size-based arrays
 pub fn getInstructionParams(self: *const CodeAnalysis, comptime tag: Tag, id: u24) InstructionType(tag) {
-    return getInstructionParams(self.size8_instructions, self.size16_instructions, self.size24_instructions, tag, id);
+    return size_buckets.getInstructionParams(self.size8_instructions, self.size16_instructions, self.size24_instructions, tag, id);
 }
 
 /// Main public API: Analyzes bytecode and returns optimized CodeAnalysis with instruction stream.
