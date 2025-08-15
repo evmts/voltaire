@@ -173,7 +173,7 @@ pub fn init(
     // Expected size: 256KB (ARENA_INITIAL_CAPACITY)
     // Lifetime: Per EVM instance (freed on deinit)
     // Frequency: Once per EVM creation
-    var internal_arena = std.heap.ArenaAllocator.init(allocator);
+    var internal_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     // Preallocate memory to avoid frequent allocations during execution
     const arena_buffer = try internal_arena.allocator().alloc(u8, ARENA_INITIAL_CAPACITY);
 
