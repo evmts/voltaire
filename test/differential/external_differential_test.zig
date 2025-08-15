@@ -26,17 +26,17 @@ test "EXTCODESIZE opcode - get size of deployed contract" {
     // PUSH20 target_address, EXTCODESIZE, MSTORE, RETURN
     var bytecode = [_]u8{0} ** 200;
     var pos: usize = 0;
-    
+
     // PUSH20 0x3333333333333333333333333333333333333333 (target address)
     bytecode[pos] = 0x73; // PUSH20
     pos += 1;
-    @memcpy(bytecode[pos..pos+20], &[_]u8{0x33} ** 20);
+    @memcpy(bytecode[pos .. pos + 20], &[_]u8{0x33} ** 20);
     pos += 20;
-    
+
     // EXTCODESIZE
     bytecode[pos] = 0x3B;
     pos += 1;
-    
+
     // Store result in memory and return
     bytecode[pos] = 0x60; // PUSH1
     pos += 1;
@@ -71,7 +71,7 @@ test "EXTCODESIZE opcode - get size of deployed contract" {
 
     // Deploy the target contract first
     try revm_vm.setCode(revm_target_address, &deployed_code);
-    
+
     // Set the bytecode as contract code
     try revm_vm.setCode(revm_contract_address, actual_bytecode);
 
@@ -95,7 +95,7 @@ test "EXTCODESIZE opcode - get size of deployed contract" {
 
     // Deploy the target contract first
     try vm_instance.state.set_code(target_address, &deployed_code);
-    
+
     // Set the code for the contract address in EVM state
     try vm_instance.state.set_code(contract_address, actual_bytecode);
 
@@ -143,17 +143,17 @@ test "EXTCODESIZE opcode - non-existent contract returns 0" {
     // PUSH20 target_address, EXTCODESIZE, MSTORE, RETURN
     var bytecode = [_]u8{0} ** 200;
     var pos: usize = 0;
-    
+
     // PUSH20 0x4444444444444444444444444444444444444444 (non-existent address)
     bytecode[pos] = 0x73; // PUSH20
     pos += 1;
-    @memcpy(bytecode[pos..pos+20], &[_]u8{0x44} ** 20);
+    @memcpy(bytecode[pos .. pos + 20], &[_]u8{0x44} ** 20);
     pos += 20;
-    
+
     // EXTCODESIZE
     bytecode[pos] = 0x3B;
     pos += 1;
-    
+
     // Store result in memory and return
     bytecode[pos] = 0x60; // PUSH1
     pos += 1;
@@ -218,7 +218,7 @@ test "EXTCODESIZE opcode - non-existent contract returns 0" {
     } };
 
     const guillotine_result = try vm_instance.call(call_params);
-    defer if (guillotine_result.output) |output| allocator.free(output);
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - both should succeed
     const revm_succeeded = revm_result.success;
@@ -262,35 +262,35 @@ test "EXTCODECOPY opcode - copy contract code to memory" {
     // PUSH1 codeSize, PUSH1 codeOffset, PUSH1 memOffset, PUSH20 address, EXTCODECOPY, RETURN
     var bytecode = [_]u8{0} ** 200;
     var pos: usize = 0;
-    
+
     // PUSH1 10 (size to copy)
     bytecode[pos] = 0x60;
     pos += 1;
     bytecode[pos] = 0x0A;
     pos += 1;
-    
+
     // PUSH1 0 (code offset)
     bytecode[pos] = 0x60;
     pos += 1;
     bytecode[pos] = 0x00;
     pos += 1;
-    
+
     // PUSH1 0 (memory offset)
     bytecode[pos] = 0x60;
     pos += 1;
     bytecode[pos] = 0x00;
     pos += 1;
-    
+
     // PUSH20 0x3333333333333333333333333333333333333333 (target address)
     bytecode[pos] = 0x73; // PUSH20
     pos += 1;
-    @memcpy(bytecode[pos..pos+20], &[_]u8{0x33} ** 20);
+    @memcpy(bytecode[pos .. pos + 20], &[_]u8{0x33} ** 20);
     pos += 20;
-    
+
     // EXTCODECOPY
     bytecode[pos] = 0x3C;
     pos += 1;
-    
+
     // Return the copied data
     bytecode[pos] = 0x60; // PUSH1
     pos += 1;
@@ -319,7 +319,7 @@ test "EXTCODECOPY opcode - copy contract code to memory" {
 
     // Deploy the target contract first
     try revm_vm.setCode(revm_target_address, &deployed_code);
-    
+
     // Set the bytecode as contract code
     try revm_vm.setCode(revm_contract_address, actual_bytecode);
 
@@ -343,7 +343,7 @@ test "EXTCODECOPY opcode - copy contract code to memory" {
 
     // Deploy the target contract first
     try vm_instance.state.set_code(target_address, &deployed_code);
-    
+
     // Set the code for the contract address in EVM state
     try vm_instance.state.set_code(contract_address, actual_bytecode);
 
@@ -393,35 +393,35 @@ test "EXTCODECOPY opcode - copy beyond code length pads with zeros" {
     // Contract that copies more bytes than exist in the target code
     var bytecode = [_]u8{0} ** 200;
     var pos: usize = 0;
-    
+
     // PUSH1 32 (size to copy - more than deployed_code.len)
     bytecode[pos] = 0x60;
     pos += 1;
     bytecode[pos] = 0x20;
     pos += 1;
-    
+
     // PUSH1 0 (code offset)
     bytecode[pos] = 0x60;
     pos += 1;
     bytecode[pos] = 0x00;
     pos += 1;
-    
+
     // PUSH1 0 (memory offset)
     bytecode[pos] = 0x60;
     pos += 1;
     bytecode[pos] = 0x00;
     pos += 1;
-    
+
     // PUSH20 0x3333333333333333333333333333333333333333 (target address)
     bytecode[pos] = 0x73; // PUSH20
     pos += 1;
-    @memcpy(bytecode[pos..pos+20], &[_]u8{0x33} ** 20);
+    @memcpy(bytecode[pos .. pos + 20], &[_]u8{0x33} ** 20);
     pos += 20;
-    
+
     // EXTCODECOPY
     bytecode[pos] = 0x3C;
     pos += 1;
-    
+
     // Return the copied data
     bytecode[pos] = 0x60; // PUSH1
     pos += 1;
@@ -450,7 +450,7 @@ test "EXTCODECOPY opcode - copy beyond code length pads with zeros" {
 
     // Deploy the target contract first
     try revm_vm.setCode(revm_target_address, &deployed_code);
-    
+
     // Set the bytecode as contract code
     try revm_vm.setCode(revm_contract_address, actual_bytecode);
 
@@ -474,7 +474,7 @@ test "EXTCODECOPY opcode - copy beyond code length pads with zeros" {
 
     // Deploy the target contract first
     try vm_instance.state.set_code(target_address, &deployed_code);
-    
+
     // Set the code for the contract address in EVM state
     try vm_instance.state.set_code(contract_address, actual_bytecode);
 
@@ -503,10 +503,10 @@ test "EXTCODECOPY opcode - copy beyond code length pads with zeros" {
 
         // Compare the copied bytes
         try testing.expectEqualSlices(u8, revm_result.output, guillotine_result.output.?);
-        
+
         // Check that first bytes match deployed code
         try testing.expectEqualSlices(u8, deployed_code[0..], revm_result.output[0..deployed_code.len]);
-        
+
         // Check that remaining bytes are zero-padded
         for (revm_result.output[deployed_code.len..]) |byte| {
             try testing.expectEqual(@as(u8, 0), byte);
@@ -536,17 +536,17 @@ test "EXTCODEHASH opcode - get hash of deployed contract code" {
     // PUSH20 target_address, EXTCODEHASH, MSTORE, RETURN
     var bytecode = [_]u8{0} ** 200;
     var pos: usize = 0;
-    
+
     // PUSH20 0x3333333333333333333333333333333333333333 (target address)
     bytecode[pos] = 0x73; // PUSH20
     pos += 1;
-    @memcpy(bytecode[pos..pos+20], &[_]u8{0x33} ** 20);
+    @memcpy(bytecode[pos .. pos + 20], &[_]u8{0x33} ** 20);
     pos += 20;
-    
+
     // EXTCODEHASH
     bytecode[pos] = 0x3F;
     pos += 1;
-    
+
     // Store result in memory and return
     bytecode[pos] = 0x60; // PUSH1
     pos += 1;
@@ -581,7 +581,7 @@ test "EXTCODEHASH opcode - get hash of deployed contract code" {
 
     // Deploy the target contract first
     try revm_vm.setCode(revm_target_address, &deployed_code);
-    
+
     // Set the bytecode as contract code
     try revm_vm.setCode(revm_contract_address, actual_bytecode);
 
@@ -605,7 +605,7 @@ test "EXTCODEHASH opcode - get hash of deployed contract code" {
 
     // Deploy the target contract first
     try vm_instance.state.set_code(target_address, &deployed_code);
-    
+
     // Set the code for the contract address in EVM state
     try vm_instance.state.set_code(contract_address, actual_bytecode);
 
@@ -637,7 +637,7 @@ test "EXTCODEHASH opcode - get hash of deployed contract code" {
         const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
 
         try testing.expectEqual(revm_value, guillotine_value);
-        
+
         // Verify it's not zero (should be actual hash)
         try testing.expect(revm_value != 0);
     } else {
@@ -655,17 +655,17 @@ test "EXTCODEHASH opcode - non-existent account returns 0" {
     // PUSH20 target_address, EXTCODEHASH, MSTORE, RETURN
     var bytecode = [_]u8{0} ** 200;
     var pos: usize = 0;
-    
+
     // PUSH20 0x4444444444444444444444444444444444444444 (non-existent address)
     bytecode[pos] = 0x73; // PUSH20
     pos += 1;
-    @memcpy(bytecode[pos..pos+20], &[_]u8{0x44} ** 20);
+    @memcpy(bytecode[pos .. pos + 20], &[_]u8{0x44} ** 20);
     pos += 20;
-    
+
     // EXTCODEHASH
     bytecode[pos] = 0x3F;
     pos += 1;
-    
+
     // Store result in memory and return
     bytecode[pos] = 0x60; // PUSH1
     pos += 1;
@@ -764,17 +764,17 @@ test "EXTCODEHASH opcode - empty account with balance returns keccak256('')" {
     // PUSH20 target_address, EXTCODEHASH, MSTORE, RETURN
     var bytecode = [_]u8{0} ** 200;
     var pos: usize = 0;
-    
+
     // PUSH20 0x5555555555555555555555555555555555555555 (account with balance)
     bytecode[pos] = 0x73; // PUSH20
     pos += 1;
-    @memcpy(bytecode[pos..pos+20], &[_]u8{0x55} ** 20);
+    @memcpy(bytecode[pos .. pos + 20], &[_]u8{0x55} ** 20);
     pos += 20;
-    
+
     // EXTCODEHASH
     bytecode[pos] = 0x3F;
     pos += 1;
-    
+
     // Store result in memory and return
     bytecode[pos] = 0x60; // PUSH1
     pos += 1;
@@ -806,7 +806,7 @@ test "EXTCODEHASH opcode - empty account with balance returns keccak256('')" {
 
     // Set balance for deployer
     try revm_vm.setBalance(revm_deployer, 10000000);
-    
+
     // Set balance for target address (but no code)
     try revm_vm.setBalance(revm_target_address, 1000);
 
@@ -865,7 +865,7 @@ test "EXTCODEHASH opcode - empty account with balance returns keccak256('')" {
         const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
 
         try testing.expectEqual(revm_value, guillotine_value);
-        
+
         // For an account with balance but no code, EXTCODEHASH should return keccak256('')
         // which is: 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
         const expected_hash: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;

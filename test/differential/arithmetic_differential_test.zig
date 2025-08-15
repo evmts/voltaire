@@ -1777,7 +1777,7 @@ test "SUB fusion: PUSH 5, PUSH 10, SUB vs PUSH 5, MSTORE, PUSH 10, SUB" {
     // Fusion bytecode: PUSH1 5, PUSH1 10, SUB (computes 10 - 5 = 5)
     const fusion_bytecode = [_]u8{
         0x60, 0x05, // PUSH1 5
-        0x60, 0x0A, // PUSH1 10  
+        0x60, 0x0A, // PUSH1 10
         0x03, // SUB
         0x60, 0x00, // PUSH1 0 (memory offset)
         0x52, // MSTORE
@@ -1794,7 +1794,7 @@ test "SUB fusion: PUSH 5, PUSH 10, SUB vs PUSH 5, MSTORE, PUSH 10, SUB" {
         0x60, 0x20, // PUSH1 32 (memory offset to load 5)
         0x51, // MLOAD (load 5 back onto stack)
         0x60, 0x0A, // PUSH1 10
-        0x03, // SUB  
+        0x03, // SUB
         0x60, 0x00, // PUSH1 0 (memory offset)
         0x52, // MSTORE
         0x60, 0x20, // PUSH1 32 (size)

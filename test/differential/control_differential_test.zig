@@ -215,29 +215,29 @@ test "JUMPDEST opcode is a valid jump destination" {
 
 test "RETURN opcode stops execution during contract deployment" {
     const allocator = testing.allocator;
-    
+
     // This reproduces the exact issue from the ten-thousand-hashes trace
     // The deployment code copies runtime code and returns it
     // Bug: Zig continues executing the runtime code after RETURN
     const deployment_bytecode = [_]u8{
         // Deployment code (what we see in the trace steps 10-16)
         0x60, 0x08, // PUSH1 0x08 (size of runtime code)
-        0x80,       // DUP1 
+        0x80, // DUP1
         0x60, 0x0c, // PUSH1 0x0c (offset of runtime code)
-        0x5f,       // PUSH0 (destination in memory)
-        0x39,       // CODECOPY
-        0x5f,       // PUSH0 (offset in memory)
-        0xf3,       // RETURN <-- Execution should STOP here
-        
+        0x5f, // PUSH0 (destination in memory)
+        0x39, // CODECOPY
+        0x5f, // PUSH0 (offset in memory)
+        0xf3, // RETURN <-- Execution should STOP here
+
         // Runtime code (should NOT execute during deployment)
         0x60, 0x80, // PUSH1 0x80
-        0x60, 0x40, // PUSH1 0x40  
-        0x52,       // MSTORE
-        0x34,       // CALLVALUE
-        0x80,       // DUP1
-        0x15,       // ISZERO
+        0x60, 0x40, // PUSH1 0x40
+        0x52, // MSTORE
+        0x34, // CALLVALUE
+        0x80, // DUP1
+        0x15, // ISZERO
         0x60, 0x0e, // PUSH1 0x0e
-        0x57,       // JUMPI
+        0x57, // JUMPI
     };
 
     // Execute on REVM
@@ -276,35 +276,36 @@ test "RETURN opcode stops execution during contract deployment" {
 
     // Compare results
     try testing.expect(revm_result.success == guillotine_result.success);
-    
+
     // Should have returned the runtime code (8 bytes)
     try testing.expect(revm_result.output.len == 8);
     try testing.expect(guillotine_result.output != null);
     try testing.expect(guillotine_result.output.?.len == 8);
-    
+
     // Verify the returned data matches our runtime code
     const expected_runtime = deployment_bytecode[12..20];
     try testing.expectEqualSlices(u8, expected_runtime, revm_result.output);
     try testing.expectEqualSlices(u8, expected_runtime, guillotine_result.output.?);
-    
+
     // CRITICAL: Check gas consumption to detect if runtime code was executed
     // If execution continued after RETURN, more gas would be consumed
     const revm_gas_used = revm_result.gas_used;
     const guillotine_gas_used = 1000000 - guillotine_result.gas_left;
-    
+
     // Gas should be similar (within reasonable bounds for deployment only)
     // If Zig executes the runtime code, it will use significantly more gas
-    const gas_difference = if (guillotine_gas_used > revm_gas_used) 
-        guillotine_gas_used - revm_gas_used 
-        else revm_gas_used - guillotine_gas_used;
-    
+    const gas_difference = if (guillotine_gas_used > revm_gas_used)
+        guillotine_gas_used - revm_gas_used
+    else
+        revm_gas_used - guillotine_gas_used;
+
     // Debug: Log gas consumption
     std.debug.print("\n[RETURN test] Gas consumption:\n", .{});
     std.debug.print("  REVM gas used: {}\n", .{revm_gas_used});
     std.debug.print("  Guillotine gas used: {}\n", .{guillotine_gas_used});
     std.debug.print("  Difference: {}\n", .{gas_difference});
-    
-    // Allow some difference but not the huge difference that would occur 
+
+    // Allow some difference but not the huge difference that would occur
     // if runtime code was executed (would be 100s of gas units more)
     try testing.expect(gas_difference < 50);
 }
