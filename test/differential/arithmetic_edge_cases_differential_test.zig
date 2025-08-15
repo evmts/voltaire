@@ -79,7 +79,7 @@ test "DIV opcode max_u256 / max_u256 = 1" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    
+    // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -179,7 +179,7 @@ test "MOD opcode any_number % 1 = 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    
+    // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
@@ -279,11 +279,11 @@ test "EXP opcode 0 ** 0 = 1" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    
+    // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -302,6 +302,7 @@ test "EXP opcode 0 ** 0 = 1" {
 
         // Extract u256 from output (big-endian)
         const revm_value = std.mem.readInt(u256, revm_result.output[0..32], .big);
+        const mini_value = std.mem.readInt(u256, mini_result.output.?[0..32], .big);
         const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
 
         // 0^0 = 1 by convention
@@ -382,11 +383,11 @@ test "SDIV opcode MIN_I256 / -1 = MIN_I256 (overflow)" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    
+    // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -489,11 +490,11 @@ test "ADDMOD opcode (max_u256 + max_u256) % max_u256 = 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    
+    // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -512,10 +513,12 @@ test "ADDMOD opcode (max_u256 + max_u256) % max_u256 = 0" {
 
         // Extract u256 from output (big-endian)
         const revm_value = std.mem.readInt(u256, revm_result.output[0..32], .big);
+        const mini_value = std.mem.readInt(u256, mini_result.output.?[0..32], .big);
         const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
 
         // (max + max) % max = 0
         try testing.expectEqual(@as(u256, 0), revm_value);
+        try testing.expectEqual(revm_value, mini_value);
         try testing.expectEqual(revm_value, guillotine_value);
     }
 }
@@ -593,11 +596,11 @@ test "MULMOD opcode (max_u256 * max_u256) % max_u256 = 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    
+    // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -616,10 +619,12 @@ test "MULMOD opcode (max_u256 * max_u256) % max_u256 = 0" {
 
         // Extract u256 from output (big-endian)
         const revm_value = std.mem.readInt(u256, revm_result.output[0..32], .big);
+        const mini_value = std.mem.readInt(u256, mini_result.output.?[0..32], .big);
         const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
 
         // (max * max) % max = 0
         try testing.expectEqual(@as(u256, 0), revm_value);
+        try testing.expectEqual(revm_value, mini_value);
         try testing.expectEqual(revm_value, guillotine_value);
     }
 }
@@ -695,11 +700,11 @@ test "SMOD opcode MIN_I256 % -1 = 0" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    
+    // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -718,10 +723,12 @@ test "SMOD opcode MIN_I256 % -1 = 0" {
 
         // Extract u256 from output (big-endian)
         const revm_value = std.mem.readInt(u256, revm_result.output[0..32], .big);
+        const mini_value = std.mem.readInt(u256, mini_result.output.?[0..32], .big);
         const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
 
         // MIN_I256 % -1 = 0
         try testing.expectEqual(@as(u256, 0), revm_value);
+        try testing.expectEqual(revm_value, mini_value);
         try testing.expectEqual(revm_value, guillotine_value);
     }
 }
@@ -794,11 +801,11 @@ test "EXP opcode 1 ** max_u256 = 1" {
 
     // Execute using mini EVM (after REVM, before Guillotine)
     const mini_result = try vm_instance.call_mini(call_params);
-    
+    // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
     const guillotine_result = try vm_instance.call(call_params);
-    
+    // VM owns guillotine_result.output; do not free here
 
     // Compare results - all three should succeed
     const revm_succeeded = revm_result.success;
@@ -817,6 +824,7 @@ test "EXP opcode 1 ** max_u256 = 1" {
 
         // Extract u256 from output (big-endian)
         const revm_value = std.mem.readInt(u256, revm_result.output[0..32], .big);
+        const mini_value = std.mem.readInt(u256, mini_result.output.?[0..32], .big);
         const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
 
         // 1^anything = 1
