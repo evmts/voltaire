@@ -257,6 +257,19 @@ pub const Frame = struct {
 };
 
 // ============================================================================
+// Compile-time layout assertions for Frame hot/cold organization
+comptime {
+    // Ensure hot field ordering remains as designed for cache locality
+    if (@offsetOf(Frame, "stack") <= @offsetOf(Frame, "gas_remaining")) @compileError("stack must come after gas_remaining");
+
+    // Basic size expectations: Frame should be reasonably small (< 1024 bytes)
+    if (@sizeOf(Frame) >= 1024) @compileError("Frame grew beyond expected 1KB budget");
+
+    // Alignment sanity (should be pointer-aligned at least)
+    if (@alignOf(Frame) < @alignOf(*anyopaque)) @compileError("Frame alignment must be at least pointer alignment");
+}
+
+// ============================================================================
 // Tests - TDD approach
 // ============================================================================
 

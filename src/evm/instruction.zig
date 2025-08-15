@@ -152,3 +152,38 @@ pub fn NoopHandler(context: *anyopaque) ExecutionError.Error!void {
     _ = context;
     return;
 }
+
+// ============================================================================
+// Compile-time layout assertions for instruction payloads and header
+comptime {
+    // Header must remain tightly packed: 4 bytes
+    if (@sizeOf(Instruction) != 4) @compileError("Instruction must be exactly 4 bytes");
+
+    // 8-byte bucket group
+    if (@sizeOf(NoopInstruction) != 8) @compileError("NoopInstruction must be 8 bytes");
+    if (@sizeOf(JumpPcInstruction) != 8) @compileError("JumpPcInstruction must be 8 bytes");
+    if (@sizeOf(ConditionalJumpUnresolvedInstruction) != 8) @compileError("ConditionalJumpUnresolvedInstruction must be 8 bytes");
+    if (@sizeOf(ConditionalJumpInvalidInstruction) != 8) @compileError("ConditionalJumpInvalidInstruction must be 8 bytes");
+
+    // 16-byte bucket group
+    if (@sizeOf(ExecInstruction) != 16) @compileError("ExecInstruction must be 16 bytes");
+    if (@sizeOf(ConditionalJumpPcInstruction) != 16) @compileError("ConditionalJumpPcInstruction must be 16 bytes");
+    if (@sizeOf(PcInstruction) != 16) @compileError("PcInstruction must be 16 bytes");
+    if (@sizeOf(BlockInstruction) != 16) @compileError("BlockInstruction must be 16 bytes");
+
+    // 24-byte bucket group
+    if (@sizeOf(DynamicGasInstruction) != 24) @compileError("DynamicGasInstruction must be 24 bytes");
+    if (@sizeOf(WordInstruction) != 24) @compileError("WordInstruction must be 24 bytes");
+
+    // Size table sanity check
+    if (getInstructionSize(.noop) != @sizeOf(NoopInstruction)) @compileError("noop size mismatch");
+    if (getInstructionSize(.jump_pc) != @sizeOf(JumpPcInstruction)) @compileError("jump_pc size mismatch");
+    if (getInstructionSize(.conditional_jump_unresolved) != @sizeOf(ConditionalJumpUnresolvedInstruction)) @compileError("conditional_jump_unresolved size mismatch");
+    if (getInstructionSize(.conditional_jump_invalid) != @sizeOf(ConditionalJumpInvalidInstruction)) @compileError("conditional_jump_invalid size mismatch");
+    if (getInstructionSize(.exec) != @sizeOf(ExecInstruction)) @compileError("exec size mismatch");
+    if (getInstructionSize(.conditional_jump_pc) != @sizeOf(ConditionalJumpPcInstruction)) @compileError("conditional_jump_pc size mismatch");
+    if (getInstructionSize(.pc) != @sizeOf(PcInstruction)) @compileError("pc size mismatch");
+    if (getInstructionSize(.block_info) != @sizeOf(BlockInstruction)) @compileError("block_info size mismatch");
+    if (getInstructionSize(.dynamic_gas) != @sizeOf(DynamicGasInstruction)) @compileError("dynamic_gas size mismatch");
+    if (getInstructionSize(.word) != @sizeOf(WordInstruction)) @compileError("word size mismatch");
+}

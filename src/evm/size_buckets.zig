@@ -16,6 +16,17 @@ pub const Size8Counts = struct {
     conditional_jump_unresolved: u24 = 0,
     conditional_jump_invalid: u24 = 0,
 };
+
+// ============================================================================
+// Compile-time layout assertions for bucket storage and JumpdestArray
+comptime {
+    if (@sizeOf(Bucket8) != 8 or @alignOf(Bucket8) != 8)
+        @compileError("Bucket8 must be size=8, align=8");
+    if (@sizeOf(Bucket16) != 16 or @alignOf(Bucket16) != 8)
+        @compileError("Bucket16 must be size=16, align=8");
+    if (@sizeOf(Bucket24) != 24 or @alignOf(Bucket24) != 8)
+        @compileError("Bucket24 must be size=24, align=8");
+}
 pub const Size16Counts = struct {
     exec: u24 = 0,
     conditional_jump_pc: u24 = 0,

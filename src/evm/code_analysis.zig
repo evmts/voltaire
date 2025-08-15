@@ -300,3 +300,12 @@ pub fn deinit(self: *CodeAnalysis) void {
     // Free the packed jumpdest array
     self.jumpdest_array.deinit(self.allocator);
 }
+
+// ============================================================================
+// Compile-time layout assertions documenting expected characteristics
+comptime {
+    // Keep CodeAnalysis reasonably small to preserve cache behavior
+    if (@sizeOf(CodeAnalysis) >= 256) @compileError("CodeAnalysis grew beyond expected footprint (<256 bytes)");
+    // Slices and pointers should be naturally aligned; ensure struct alignment is not weaker
+    if (@alignOf(CodeAnalysis) < @alignOf(*anyopaque)) @compileError("CodeAnalysis alignment must be at least pointer alignment");
+}
