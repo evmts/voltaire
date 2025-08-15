@@ -266,6 +266,12 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         self.created_contracts = CreatedContracts.init(self.allocator);
 
         self.current_output = &.{}; // Clear output buffer from previous calls
+        
+        // Clear owned output buffer to avoid double-free issues
+        if (self.owned_output) |buf| {
+            self.allocator.free(buf);
+            self.owned_output = null;
+        }
 
         // MEMORY ALLOCATION: Frame stack array (preallocated to max)
         // Expected size: 1024 * sizeof(Frame) ≈ 1024 * ~500 bytes = ~512KB
@@ -475,9 +481,12 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
 
     // Get output from the host (where RETURN stores it via set_output)
     const output: []const u8 = host.get_output();
-    Log.debug("[call] Getting output: host.get_output().len={}, self.current_output.len={}", .{ output.len, self.current_output.len });
+    Log.debug("[call] Getting output: host.get_output().len={}, self.current_output.len={}, frame_depth={}", .{ output.len, self.current_output.len, self.current_frame_depth });
+    if (output.len > 0 and output.len <= 32) {
+        Log.debug("[call] Output data: {x}", .{std.fmt.fmtSliceHexLower(output)});
+    }
     if (output.len == 0 and is_top_level_call) {
-        Log.warn("[call] Top-level call returned empty output (code_len={}, input_len={})", .{ call_info.code_size, call_info.input.len });
+        Log.warn("[call] Top-level call returned empty output (code_len={}, input_len={}, exec_err={?})", .{ call_info.code_size, call_info.input.len, exec_err });
     }
 
     // Save gas remaining for return

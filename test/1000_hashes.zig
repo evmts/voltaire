@@ -30,7 +30,11 @@ fn readCaseFile(allocator: std.mem.Allocator, comptime case_name: []const u8, co
 
 fn deploy(vm: *evm.Evm, allocator: std.mem.Allocator, caller: primitives.Address.Address, bytecode: []const u8) !primitives.Address.Address {
     _ = allocator; // unused in this helper
-    std.debug.print("[deploy] Called with bytecode.len: {}\n", .{bytecode.len});
+    std.debug.print("[deploy] Called with bytecode.len: {}, ptr: {*}, first bytes: ", .{ bytecode.len, bytecode.ptr });
+    for (bytecode[0..@min(10, bytecode.len)]) |b| {
+        std.debug.print("{x:0>2} ", .{b});
+    }
+    std.debug.print("\n", .{});
     const create_result = try vm.create_contract(caller, 0, bytecode, 10_000_000);
     if (!create_result.success) {
         std.debug.print("TEST FAILURE: deploy failed, success=false, gas_left={}\n", .{create_result.gas_left});

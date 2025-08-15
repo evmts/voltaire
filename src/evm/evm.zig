@@ -487,6 +487,40 @@ pub fn get_original_storage(self: *Evm, address: primitives.Address.Address, slo
 
 /// Set the output buffer for the current frame (Host interface)
 pub fn set_output(self: *Evm, output: []const u8) !void {
+    Log.debug("[Evm.set_output] Setting output: len={}, frame_depth={}, is_executing={}", .{ output.len, self.current_frame_depth, self.is_executing });
+    if (output.len > 0 and output.len <= 32) {
+        Log.debug("[Evm.set_output] Output data: {x}", .{std.fmt.fmtSliceHexLower(output)});
+    }
+    
+    // For mini execution, use a separate buffer
+    if (!self.is_executing) {
+        // This is mini execution
+        Log.debug("[Evm.set_output] Mini execution detected, using separate buffer");
+        
+        // Free previous mini output if any
+        if (self.mini_output) |buf| {
+            if (output.ptr != buf.ptr) {
+                self.allocator.free(buf);
+                self.mini_output = null;
+            } else {
+                return; // Same buffer, don't duplicate
+            }
+        }
+        
+        if (output.len > 0) {
+            const copy = try self.allocator.dupe(u8, output);
+            self.mini_output = copy;
+        } else {
+            self.mini_output = null;
+        }
+        
+        Log.debug("[Evm.set_output] Mini output set: len={}", .{if (self.mini_output) |buf| buf.len else 0});
+        return;
+    }
+    
+    // Regular execution
+    Log.debug("[Evm.set_output] Regular execution detected");
+    
     // Free previous owned buffer if any (but be careful about double frees)
     if (self.owned_output) |buf| {
         // Only free if the pointer is different from what we're about to set
@@ -514,19 +548,31 @@ pub fn set_output(self: *Evm, output: []const u8) !void {
             frames[self.current_frame_depth].output_buffer = self.current_output;
         }
     }
-    @import("log.zig").debug("[Evm.set_output] output_len={}", .{self.current_output.len});
+    Log.debug("[Evm.set_output] Regular output set: current_output.len={}, owned_output.len={}", .{ self.current_output.len, if (self.owned_output) |buf| buf.len else 0 });
 }
 
 /// Get the output buffer for the current frame (Host interface)
 pub fn get_output(self: *Evm) []const u8 {
+    // For mini execution, return mini buffer
+    if (!self.is_executing) {
+        if (self.mini_output) |buf| {
+            Log.debug("[Evm.get_output] Mini execution: mini_output.len={}", .{buf.len});
+            return buf;
+        } else {
+            Log.debug("[Evm.get_output] Mini execution: no mini output, returning empty", .{});
+            return &.{};
+        }
+    }
+    
+    // Regular execution
     if (self.frame_stack) |frames| {
         if (self.current_frame_depth < frames.len) {
             const result = frames[self.current_frame_depth].output_buffer;
-            Log.debug("[Evm.get_output] frame_depth={}, output_len={}", .{ self.current_frame_depth, result.len });
+            Log.debug("[Evm.get_output] Regular execution frame_depth={}, output_len={}", .{ self.current_frame_depth, result.len });
             return result;
         }
     }
-    Log.debug("[Evm.get_output] Using current_output, len={}", .{self.current_output.len});
+    Log.debug("[Evm.get_output] Regular execution using current_output, len={}", .{self.current_output.len});
     return self.current_output;
 }
 
@@ -650,7 +696,14 @@ pub fn interpretCompat(self: *Evm, contract: *const anyopaque, input: []const u8
 
 // Contract creation: execute initcode and deploy returned runtime code
 pub fn create_contract(self: *Evm, caller: primitives_internal.Address.Address, value: u256, bytecode: []const u8, gas: u64) !InterprResult {
-    Log.debug("[create_contract] Received bytecode.len: {}", .{bytecode.len});
+    Log.debug("[create_contract] Received bytecode.len: {}, ptr: {*}", .{ bytecode.len, bytecode.ptr });
+    if (bytecode.len > 0) {
+        std.debug.print("[create_contract] First bytes: ", .{});
+        for (bytecode[0..@min(10, bytecode.len)]) |b| {
+            std.debug.print("{x:0>2} ", .{b});
+        }
+        std.debug.print("\n", .{});
+    }
     
     // CREATE uses sender address + nonce to calculate contract address
     // Get the nonce before incrementing it

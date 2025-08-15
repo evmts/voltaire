@@ -8,6 +8,7 @@ const Address = primitives.Address;
 const revm_wrapper = @import("revm");
 
 test "POP opcode removes top stack element" {
+    std.testing.log_level = .warn;
     const allocator = testing.allocator;
     // Stack operations: [42] -> [42, 24] -> POP -> [42] -> MSTORE -> RETURN 32 bytes
     const bytecode = [_]u8{
