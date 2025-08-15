@@ -541,6 +541,11 @@ pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
     const value = params.a; // bottom = value
     const init_offset = params.b; // middle = offset
     const init_size = params.c; // top = size
+    
+    // Debug: Check what parameters we got from stack
+    if (builtin.mode == .Debug) {
+        std.debug.print("[op_create DEBUG] Stack params: value={}, offset={}, size={}\n", .{ value, init_offset, init_size });
+    }
 
     // Check if in static context (CREATE not allowed)
     if (frame.is_static) {
@@ -600,6 +605,18 @@ pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
     const gas_reserved = remaining_gas / 64;
     const gas_for_create = remaining_gas - gas_reserved;
 
+    // Debug: Check init_code before passing to CallParams
+    if (builtin.mode == .Debug) {
+        std.debug.print("[op_create DEBUG] init_code.len: {}, ptr: {*}\n", .{ init_code.len, init_code.ptr });
+        if (init_code.len > 0) {
+            std.debug.print("[op_create DEBUG] First bytes: ", .{});
+            for (init_code[0..@min(10, init_code.len)]) |b| {
+                std.debug.print("{x:0>2} ", .{b});
+            }
+            std.debug.print("\n", .{});
+        }
+    }
+    
     // CREATE uses sender address + nonce for address calculation
     const call_params = CallParams{
         .create = .{

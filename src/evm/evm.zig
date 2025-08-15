@@ -487,52 +487,23 @@ pub fn get_original_storage(self: *Evm, address: primitives.Address.Address, slo
 
 /// Set the output buffer for the current frame (Host interface)
 pub fn set_output(self: *Evm, output: []const u8) !void {
-    Log.debug("[Evm.set_output] Setting output: len={}, frame_depth={}, is_executing={}", .{ output.len, self.current_frame_depth, self.is_executing });
+    Log.debug("[Evm.set_output] Setting output: len={}, frame_depth={}", .{ output.len, self.current_frame_depth });
     if (output.len > 0 and output.len <= 32) {
         Log.debug("[Evm.set_output] Output data: {x}", .{std.fmt.fmtSliceHexLower(output)});
     }
     
-    // For mini execution, use a separate buffer
-    if (!self.is_executing) {
-        // This is mini execution
-        Log.debug("[Evm.set_output] Mini execution detected, using separate buffer");
-        
-        // Free previous mini output if any
-        if (self.mini_output) |buf| {
-            if (output.ptr != buf.ptr) {
-                self.allocator.free(buf);
-                self.mini_output = null;
-            } else {
-                return; // Same buffer, don't duplicate
-            }
-        }
-        
-        if (output.len > 0) {
-            const copy = try self.allocator.dupe(u8, output);
-            self.mini_output = copy;
-        } else {
-            self.mini_output = null;
-        }
-        
-        Log.debug("[Evm.set_output] Mini output set: len={}", .{if (self.mini_output) |buf| buf.len else 0});
-        return;
-    }
-    
-    // Regular execution
-    Log.debug("[Evm.set_output] Regular execution detected");
-    
-    // Free previous owned buffer if any (but be careful about double frees)
+    // Check if this is the same buffer we already own
     if (self.owned_output) |buf| {
-        // Only free if the pointer is different from what we're about to set
-        if (output.ptr != buf.ptr) {
-            self.allocator.free(buf);
-            self.owned_output = null;
-        } else {
-            // Same buffer, don't free and don't duplicate
+        if (output.ptr == buf.ptr and output.len == buf.len) {
+            // Same buffer, no need to do anything
+            Log.debug("[Evm.set_output] Same buffer already owned, no change needed", .{});
             return;
         }
+        // Different buffer, free the old one
+        self.allocator.free(buf);
+        self.owned_output = null;
     }
-
+    
     // Always make an owned copy so data survives child frame teardown
     if (output.len > 0) {
         const copy = try self.allocator.dupe(u8, output);
@@ -548,31 +519,19 @@ pub fn set_output(self: *Evm, output: []const u8) !void {
             frames[self.current_frame_depth].output_buffer = self.current_output;
         }
     }
-    Log.debug("[Evm.set_output] Regular output set: current_output.len={}, owned_output.len={}", .{ self.current_output.len, if (self.owned_output) |buf| buf.len else 0 });
+    Log.debug("[Evm.set_output] Output set: current_output.len={}, owned_output.len={}", .{ self.current_output.len, if (self.owned_output) |buf| buf.len else 0 });
 }
 
 /// Get the output buffer for the current frame (Host interface)
 pub fn get_output(self: *Evm) []const u8 {
-    // For mini execution, return mini buffer
-    if (!self.is_executing) {
-        if (self.mini_output) |buf| {
-            Log.debug("[Evm.get_output] Mini execution: mini_output.len={}", .{buf.len});
-            return buf;
-        } else {
-            Log.debug("[Evm.get_output] Mini execution: no mini output, returning empty", .{});
-            return &.{};
-        }
-    }
-    
-    // Regular execution
     if (self.frame_stack) |frames| {
         if (self.current_frame_depth < frames.len) {
             const result = frames[self.current_frame_depth].output_buffer;
-            Log.debug("[Evm.get_output] Regular execution frame_depth={}, output_len={}", .{ self.current_frame_depth, result.len });
+            Log.debug("[Evm.get_output] frame_depth={}, output_len={}", .{ self.current_frame_depth, result.len });
             return result;
         }
     }
-    Log.debug("[Evm.get_output] Regular execution using current_output, len={}", .{self.current_output.len});
+    Log.debug("[Evm.get_output] Using current_output, len={}", .{self.current_output.len});
     return self.current_output;
 }
 
