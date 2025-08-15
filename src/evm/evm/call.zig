@@ -428,8 +428,8 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
     // Execute and normalize result handling so we can always clean up the frame
     var exec_err: ?ExecutionError.Error = null;
     // Mark executing to enable nested-call behavior
-    const was_executing = self.is_executing;
-    self.is_executing = true;
+    const was_executing = self.is_currently_executing();
+    self.set_is_executing(true);
     interpret(self, current_frame) catch |err| {
         Log.warn("[call] Interpret ended with error: {}", .{err});
         exec_err = err;
@@ -446,7 +446,7 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
         }
     };
     // Restore executing flag
-    self.is_executing = was_executing;
+    self.set_is_executing(was_executing);
 
     // For nested calls, verify parent pointers after interpret
     if (!is_top_level_call) {
