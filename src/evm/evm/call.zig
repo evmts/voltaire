@@ -32,7 +32,7 @@ pub const MAX_INPUT_SIZE: u18 = 128 * 1024; // 128 kb
 
 pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResult {
     const Log = @import("../log.zig");
-    Log.debug("[call] Starting call execution, is_executing={}", .{self.is_executing});
+    Log.debug("[call] Starting call execution, is_executing={}, has_tracer={}, self_ptr=0x{x}", .{self.is_executing, self.tracer != null, @intFromPtr(self)});
 
     // Create host interface from self
     const host = Host.init(self);
@@ -117,12 +117,14 @@ pub inline fn call(self: *Evm, params: CallParams) ExecutionError.Error!CallResu
 
     // Fast-path: CREATE/CREATE2 handled through create_contract()
     if (is_create or is_create2) {
+        Log.debug("[call] CREATE/CREATE2 path: is_create2={}, self_ptr=0x{x}, has_tracer={}", .{is_create2, @intFromPtr(self), self.tracer != null});
         // Execute constructor and deploy runtime code
         const create_res = blk: {
             if (is_create2) {
                 const new_addr = self.compute_create2_address(call_caller, create2_salt, call_input);
                 // CREATE2 also needs to increment the nonce of the creator
                 _ = try self.state.increment_nonce(call_caller);
+                Log.debug("[call] About to call create_contract_at, self_ptr=0x{x}, has_tracer={}", .{@intFromPtr(self), self.tracer != null});
                 break :blk try self.create_contract_at(call_caller, call_value, call_input, call_gas, new_addr);
             } else {
                 break :blk try self.create_contract(call_caller, call_value, call_input, call_gas);

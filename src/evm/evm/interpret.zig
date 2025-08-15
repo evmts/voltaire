@@ -44,6 +44,9 @@ inline fn pre_step(self: *Evm, frame: *Frame, inst: *const Instruction, loop_ite
     if (comptime build_options.enable_tracing) {
         const analysis = frame.analysis;
         if (self.tracer) |writer| {
+            if (frame.depth > 0) {
+                Log.debug("pre_step: HAS TRACER at depth={}, self_ptr=0x{x}", .{frame.depth, @intFromPtr(self)});
+            }
             // Derive index of current instruction for tracing
             const base: [*]const @TypeOf(inst.*) = analysis.instructions.ptr;
             const idx = (@intFromPtr(inst) - @intFromPtr(base)) / @sizeOf(@TypeOf(inst.*));
@@ -88,8 +91,12 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
     }
     
     if (comptime build_options.enable_tracing) {
-        Log.debug("interpret called: depth={}, has_tracer={}, self_ptr=0x{x}, tracer_field_offset={}", .{ frame.depth, self.tracer != null, @intFromPtr(self), @offsetOf(Evm, "tracer") });
-        if (frame.depth > 0 and self.tracer == null) {
+        const tracer_exists = self.tracer != null;
+        Log.debug("interpret called: depth={}, has_tracer={}, self_ptr=0x{x}, tracer_field_offset={}", .{ frame.depth, tracer_exists, @intFromPtr(self), @offsetOf(Evm, "tracer") });
+        if (tracer_exists) {
+            Log.debug("TRACER EXISTS: depth={}, will trace execution", .{frame.depth});
+        }
+        if (frame.depth > 0 and !tracer_exists) {
             Log.debug("WARNING: Tracer is null for nested call at depth={}", .{frame.depth});
             Log.debug("Evm struct details: is_executing={}, current_frame_depth={}, max_allocated_depth={}", .{ self.is_executing, self.current_frame_depth, self.max_allocated_depth });
         }

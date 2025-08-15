@@ -50,14 +50,14 @@ const ARENA_INITIAL_CAPACITY = 256 * 1024;
 // These are accessed by nearly every operation
 /// Normal allocator for data that outlives EVM execution (passed by user)
 allocator: std.mem.Allocator, // 16 bytes - accessed by CALL/CREATE for frame allocation
-/// Transaction-level gas refund accumulator for SSTORE and SELFDESTRUCT
-/// Signed accumulator: EIP-2200 allows negative deltas during execution.
-/// Applied at transaction end with EIP-3529 cap.
-gas_refunds: i64, // 8 bytes - accessed by SSTORE/SELFDESTRUCT
 /// Warm/cold access tracking for EIP-2929 gas costs
 access_list: AccessList, // 24 bytes - accessed by all address/storage operations
 /// Call journal for transaction revertibility
 journal: CallJournal, // 24 bytes - accessed by state-changing operations
+/// Transaction-level gas refund accumulator for SSTORE and SELFDESTRUCT
+/// Signed accumulator: EIP-2200 allows negative deltas during execution.
+/// Applied at transaction end with EIP-3529 cap.
+gas_refunds: i64, // 8 bytes - accessed by SSTORE/SELFDESTRUCT
 // Total first cache line: ~72 bytes (slight overflow, but keeps hot data together)
 
 // === SECOND CACHE LINE - STATE MANAGEMENT ===
@@ -196,7 +196,7 @@ pub fn init(
 
     // std.debug.print("[Evm.init] Creating Evm struct...\n", .{});
     Log.debug("Evm.init: EVM initialization complete", .{});
-    return Evm{
+    const result = Evm{
         // First cache line - hot data
         .allocator = allocator,
         .gas_refunds = 0,
@@ -232,6 +232,11 @@ pub fn init(
         .trace_file = null,
         .initial_thread_id = std.Thread.getCurrentId(),
     };
+    
+    // Debug: verify tracer was stored correctly
+    Log.debug("Evm.init: tracer passed={}, stored tracer={}, self_ptr=0x{x}", .{ tracer != null, result.tracer != null, @intFromPtr(&result) });
+    
+    return result;
 }
 
 /// Free all VM resources.
@@ -709,6 +714,7 @@ pub fn create_contract_at(self: *Evm, caller: primitives_internal.Address.Addres
     const saved_depth = self.depth;
     self.depth += 1;
     Log.debug("[create_contract_at] Before interpret: depth={}, has_tracer={}, self_ptr=0x{x}, tracer_ptr=0x{x}", .{ self.depth, self.tracer != null, @intFromPtr(self), if (self.tracer) |t| @intFromPtr(&t) else 0 });
+    Log.debug("[create_contract_at] Tracer field check: offset={}, value_exists={}", .{ @offsetOf(Evm, "tracer"), self.tracer != null });
     Log.debug("[create_contract_at] Calling interpret for CREATE2 at depth={}", .{self.depth});
     @import("evm/interpret.zig").interpret(self, &frame) catch |err| {
         Log.debug("[create_contract_at] Interpret finished with error: {}", .{err});
