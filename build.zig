@@ -35,6 +35,9 @@ pub fn build(b: *std.Build) void {
     // Compile-time tracing toggle (no runtime checks). Usage: zig build -Denable-tracing=true
     const enable_tracing = b.option(bool, "enable-tracing", "Enable EVM instruction tracing (compile-time)") orelse false;
     build_options.addOption(bool, "enable_tracing", enable_tracing);
+    // Compile-time option to disable tailcall dispatch (disabled by default due to circular dependency). Usage: zig build -Ddisable-tailcall-dispatch=false
+    const disable_tailcall_dispatch = b.option(bool, "disable-tailcall-dispatch", "Disable tailcall-based interpreter dispatch (use switch instead)") orelse true;
+    build_options.addOption(bool, "disable_tailcall_dispatch", disable_tailcall_dispatch);
     const build_options_mod = build_options.createModule();
 
     const lib_mod = b.createModule(.{
@@ -613,6 +616,33 @@ pub fn build(b: *std.Build) void {
     const build_evm_runner_small_step = b.step("build-evm-runner-small", "Build the EVM benchmark runner (ReleaseSmall)");
     build_evm_runner_small_step.dependOn(&b.addInstallArtifact(evm_runner_small_exe, .{}).step);
 
+    // EVM Benchmark Runner for call2 (ReleaseFast)
+    const evm_runner_call2_exe = b.addExecutable(.{
+        .name = "evm-runner-call2",
+        .root_source_file = b.path("bench/official/src/evm-runner-call2.zig"),
+        .target = target,
+        .optimize = .ReleaseFast,
+    });
+    
+    // Debug version of call2 runner
+    // const evm_runner_call2_debug_exe = b.addExecutable(.{
+    //     .name = "evm-runner-call2-debug",
+    //     .root_source_file = b.path("bench/official/src/evm-runner-call2.zig"),
+    //     .target = target,
+    //     .optimize = .Debug,
+    // });
+    evm_runner_call2_exe.root_module.addImport("evm", evm_mod);
+    evm_runner_call2_exe.root_module.addImport("primitives", primitives_mod);
+    b.installArtifact(evm_runner_call2_exe);
+    const build_evm_runner_call2_step = b.step("build-evm-runner-call2", "Build the EVM benchmark runner for call2 (ReleaseFast)");
+    build_evm_runner_call2_step.dependOn(&b.addInstallArtifact(evm_runner_call2_exe, .{}).step);
+    
+    // evm_runner_call2_debug_exe.root_module.addImport("evm", evm_mod);
+    // evm_runner_call2_debug_exe.root_module.addImport("primitives", primitives_mod);
+    // b.installArtifact(evm_runner_call2_debug_exe);
+    // const build_evm_runner_call2_debug_step = b.step("build-evm-runner-call2-debug", "Build the EVM benchmark runner for call2 (Debug)");
+    // build_evm_runner_call2_debug_step.dependOn(&b.addInstallArtifact(evm_runner_call2_debug_exe, .{}).step);
+
     // Debug EVM Runner
     const debug_runner_exe = b.addExecutable(.{
         .name = "debug-runner",
@@ -704,8 +734,12 @@ pub fn build(b: *std.Build) void {
     evmone_cmake_build.setCwd(b.path(""));
     evmone_cmake_build.step.dependOn(&evmone_cmake_configure.step);
 
-    // Make benchmark comparison target depend on external runner builds
-    // Allow building/running orchestrator without external toolchains
+    // Make benchmark comparison target depend on all runners
+    // Zig runners
+    compare_step.dependOn(build_evm_runner_step);
+    compare_step.dependOn(build_evm_runner_small_step);
+    compare_step.dependOn(build_evm_runner_call2_step);
+    // External runners
     compare_step.dependOn(&geth_runner_build.step);
     compare_step.dependOn(&evmone_cmake_build.step);
 
@@ -881,6 +915,104 @@ pub fn build(b: *std.Build) void {
     const system_test_step = b.step("test-system", "Run System comprehensive tests");
     system_test_step.dependOn(&run_system_test.step);
 
+    // Tailcall dispatch benchmark test
+    const tailcall_benchmark = b.addTest(.{
+        .name = "tailcall-benchmark",
+        .root_source_file = b.path("test/evm/tailcall_benchmark.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    tailcall_benchmark.root_module.addImport("evm", evm_mod);
+    tailcall_benchmark.root_module.addImport("primitives", primitives_mod);
+    if (bn254_lib) |bn254| {
+        tailcall_benchmark.linkLibrary(bn254);
+        tailcall_benchmark.addIncludePath(b.path("src/bn254_wrapper"));
+    }
+    
+    const run_tailcall_benchmark = b.addRunArtifact(tailcall_benchmark);
+    const tailcall_benchmark_step = b.step("test-tailcall-benchmark", "Run tailcall dispatch benchmark");
+    tailcall_benchmark_step.dependOn(&run_tailcall_benchmark.step);
+
+    // Interpret2 test
+    const interpret2_test = b.addTest(.{
+        .name = "interpret2-test",
+        .root_source_file = b.path("test/evm/interpret2_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    interpret2_test.root_module.addImport("evm", evm_mod);
+    interpret2_test.root_module.addImport("primitives", primitives_mod);
+    interpret2_test.root_module.addImport("crypto", crypto_mod);
+    interpret2_test.root_module.addImport("build_options", build_options_mod);
+    
+    const run_interpret2_test = b.addRunArtifact(interpret2_test);
+    const interpret2_test_step = b.step("test-interpret2", "Run interpret2 tests");
+    interpret2_test_step.dependOn(&run_interpret2_test.step);
+    
+    // Interpret2 simple test
+    const interpret2_simple_test = b.addTest(.{
+        .name = "interpret2-simple-test",
+        .root_source_file = b.path("test/evm/interpret2_simple_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    interpret2_simple_test.root_module.addImport("evm", evm_mod);
+    interpret2_simple_test.root_module.addImport("primitives", primitives_mod);
+    interpret2_simple_test.root_module.addImport("crypto", crypto_mod);
+    interpret2_simple_test.root_module.addImport("build_options", build_options_mod);
+    
+    const run_interpret2_simple_test = b.addRunArtifact(interpret2_simple_test);
+    const interpret2_simple_test_step = b.step("test-interpret2-simple", "Run interpret2 simple tests");
+    interpret2_simple_test_step.dependOn(&run_interpret2_simple_test.step);
+    
+    // Interpret2 comprehensive test
+    const interpret2_comprehensive_test = b.addTest(.{
+        .name = "interpret2-comprehensive-test",
+        .root_source_file = b.path("test/evm/interpret2_comprehensive_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    interpret2_comprehensive_test.root_module.addImport("evm", evm_mod);
+    interpret2_comprehensive_test.root_module.addImport("primitives", primitives_mod);
+    interpret2_comprehensive_test.root_module.addImport("crypto", crypto_mod);
+    interpret2_comprehensive_test.root_module.addImport("build_options", build_options_mod);
+    
+    const run_interpret2_comprehensive_test = b.addRunArtifact(interpret2_comprehensive_test);
+    const interpret2_comprehensive_test_step = b.step("test-interpret2-comprehensive", "Run interpret2 comprehensive tests");
+    interpret2_comprehensive_test_step.dependOn(&run_interpret2_comprehensive_test.step);
+    
+    // Environment and block opcodes test for interpret2
+    const environment_block_opcodes_test = b.addTest(.{
+        .name = "environment-block-opcodes-test",
+        .root_source_file = b.path("test/evm/opcodes/environment_block_opcodes_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    environment_block_opcodes_test.root_module.addImport("evm", evm_mod);
+    environment_block_opcodes_test.root_module.addImport("primitives", primitives_mod);
+    environment_block_opcodes_test.root_module.addImport("crypto", crypto_mod);
+    environment_block_opcodes_test.root_module.addImport("build_options", build_options_mod);
+    
+    const run_environment_block_opcodes_test = b.addRunArtifact(environment_block_opcodes_test);
+    const environment_block_opcodes_test_step = b.step("test-environment-block-opcodes", "Run environment and block opcodes tests");
+    environment_block_opcodes_test_step.dependOn(&run_environment_block_opcodes_test.step);
+    
+    // RETURN opcode test
+    const return_opcode_test = b.addTest(.{
+        .name = "return-opcode-test",
+        .root_source_file = b.path("test/evm/return_opcode_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    return_opcode_test.root_module.addImport("evm", evm_mod);
+    return_opcode_test.root_module.addImport("primitives", primitives_mod);
+    return_opcode_test.root_module.addImport("crypto", crypto_mod);
+    return_opcode_test.root_module.addImport("build_options", build_options_mod);
+    
+    const run_return_opcode_test = b.addRunArtifact(return_opcode_test);
+    const return_opcode_test_step = b.step("test-return-opcode", "Run RETURN opcode tests");
+    return_opcode_test_step.dependOn(&run_return_opcode_test.step);
+
     // Add new EVM tests
     const newevm_test = b.addTest(.{
         .name = "newevm-test",
@@ -908,6 +1040,19 @@ pub fn build(b: *std.Build) void {
     const run_newevm_arithmetic_test = b.addRunArtifact(newevm_arithmetic_test);
     newevm_test_step.dependOn(&run_newevm_arithmetic_test.step);
 
+    // Add comprehensive arithmetic opcode tests for interpret2
+    const newevm_arithmetic_opcodes_test = b.addTest(.{
+        .name = "newevm-arithmetic-opcodes-test",
+        .root_source_file = b.path("test/evm/opcodes/arithmetic_opcodes_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    newevm_arithmetic_opcodes_test.root_module.addImport("evm", evm_mod);
+    newevm_arithmetic_opcodes_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_newevm_arithmetic_opcodes_test = b.addRunArtifact(newevm_arithmetic_opcodes_test);
+    newevm_test_step.dependOn(&run_newevm_arithmetic_opcodes_test.step);
+
     // Add bitwise opcode tests for new EVM
     const newevm_bitwise_test = b.addTest(.{
         .name = "newevm-bitwise-test",
@@ -933,6 +1078,19 @@ pub fn build(b: *std.Build) void {
 
     const run_newevm_comparison_test = b.addRunArtifact(newevm_comparison_test);
     newevm_test_step.dependOn(&run_newevm_comparison_test.step);
+
+    // Add comparison and bitwise opcodes test for interpret2
+    const comparison_bitwise_opcodes_test = b.addTest(.{
+        .name = "comparison-bitwise-opcodes-test",
+        .root_source_file = b.path("test/evm/opcodes/comparison_bitwise_opcodes_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    comparison_bitwise_opcodes_test.root_module.addImport("evm", evm_mod);
+    comparison_bitwise_opcodes_test.root_module.addImport("primitives", primitives_mod);
+
+    const run_comparison_bitwise_opcodes_test = b.addRunArtifact(comparison_bitwise_opcodes_test);
+    newevm_test_step.dependOn(&run_comparison_bitwise_opcodes_test.step);
 
     // Add block opcode tests for new EVM
     const newevm_block_test = b.addTest(.{
@@ -1919,6 +2077,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_differential_test.step);
     test_step.dependOn(&run_staticcall_test.step);
     test_step.dependOn(&run_evm_core_test.step);
+    test_step.dependOn(&run_interpret2_test.step);
     // benchmark runner test removed - file no longer exists
 
     // Add inline ops test

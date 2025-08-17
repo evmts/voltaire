@@ -96,6 +96,26 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         }
     }
 
+    // Use tailcall dispatch if enabled
+    if (comptime !build_options.disable_tailcall_dispatch) {
+        // Import tailcall modules only when enabled to avoid circular dependencies
+        const threadify = @import("threadify.zig");
+        
+        const ops = try threadify.build(self.allocator, frame.analysis);
+        defer self.allocator.free(ops);
+        
+        // Store ops array and starting index in frame for tailcall dispatch
+        frame.tailcall_ops = @ptrCast(ops.ptr);
+        frame.tailcall_index = 0;
+        
+        // Start execution with first instruction
+        // Use .auto to let compiler decide between tail call and regular call
+        const frame_ptr = @as(*anyopaque, @ptrCast(frame));
+        const first_fn = ops[0];
+        return @call(.auto, first_fn, .{frame_ptr});
+    }
+
+    // Otherwise use switch-based interpreter
     var i: u16 = 0;
     var loop_iterations: usize = 0;
     const analysis = frame.analysis;
@@ -1013,10 +1033,8 @@ pub fn interpret(self: *Evm, frame: *Frame) ExecutionError.Error!void {
         },
         .op_selfdestruct => {
             @branchHint(.cold);
-            i += 1;
-            const next_tag = instructions[i].tag;
-            try execution.control.op_selfdestruct(frame);
-            continue :dispatch next_tag;
+            try execution.system.op_selfdestruct(frame);
+            return error.STOP;
         },
     }
 }
@@ -2424,3 +2442,4 @@ test "interpret: large bytesToU256 conversion" {
     const mixed = [_]u8{ 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0 };
     try std.testing.expectEqual(@as(u256, 0x123456789ABCDEF0), bytesToU256(mixed[0..]));
 }
+

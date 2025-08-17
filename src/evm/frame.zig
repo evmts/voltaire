@@ -26,6 +26,12 @@ const CodeAnalysis = @import("analysis.zig").CodeAnalysis;
 const Host = @import("root.zig").Host;
 const DatabaseInterface = @import("state/database_interface.zig").DatabaseInterface;
 
+/// Function type for tailcall dispatch - using opaque to break circular dependency
+pub const TailcallFunc = *const fn (frame: *anyopaque, ops: [*]const *const anyopaque, ip: *usize) ExecutionError.Error!noreturn;
+
+// Forward declaration for SimpleAnalysis
+const SimpleAnalysis = @import("evm/analysis2.zig").SimpleAnalysis;
+
 // Safety check constants - only enabled in Debug and ReleaseSafe modes
 // These checks are redundant after analysis.zig validates blocks
 const SAFE_GAS_CHECK = builtin.mode != .ReleaseFast and builtin.mode != .ReleaseSmall;
@@ -60,6 +66,16 @@ pub const Frame = struct {
     // Per-frame I/O buffers exposed via Host
     input_buffer: []const u8 = &.{},
     output_buffer: []const u8 = &.{},
+
+    // Tailcall dispatch fields (only used when tailcall dispatch is enabled)
+    // Store function array and current index for minimal indirection
+    tailcall_ops: [*]const TailcallFunc = undefined,
+    tailcall_index: usize = undefined,
+    tailcall_iterations: usize = 0, // Track number of iterations for safety
+    tailcall_max_iterations: usize = 10_000_000, // Maximum allowed iterations
+    
+    // Cached analysis for O(1) lookups in tailcall dispatch
+    tailcall_analysis: ?*const SimpleAnalysis = null,
 
     /// Initialize a Frame with required parameters
     pub fn init(
@@ -198,7 +214,7 @@ pub const Frame = struct {
         const Log = @import("log.zig");
         Log.debug("[Frame.set_output] Called with {} bytes at depth={}", .{ data.len, self.depth });
         self.host.set_output(data) catch |err| {
-            Log.debug("[Frame.set_output] host.set_output failed: {}", .{err});
+            Log.debug("[Frame.set_output] host.set_output failed: {any}", .{err});
             return ExecutionError.Error.OutOfMemory;
         };
         Log.debug("[Frame.set_output] Successfully set output", .{});

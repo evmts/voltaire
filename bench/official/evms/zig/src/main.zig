@@ -28,10 +28,11 @@ pub fn main() !void {
     defer std.process.argsFree(gpa_allocator, args);
 
     if (args.len < 5) {
-        std.debug.print("Usage: {s} --contract-code-path <path> --calldata <hex> [--num-runs <n>] [--next]\n", .{args[0]});
+        std.debug.print("Usage: {s} --contract-code-path <path> --calldata <hex> [--num-runs <n>] [--next] [--call2]\n", .{args[0]});
         std.debug.print("Example: {s} --contract-code-path bytecode.txt --calldata 0x12345678\n", .{args[0]});
         std.debug.print("Options:\n", .{});
-        std.debug.print("  --next    Use block-based execution (new optimized interpreter)\n", .{});
+        std.debug.print("  --next    Use call_mini (simplified lazy jumpdest validation)\n", .{});
+        std.debug.print("  --call2   Use call2 with interpret2 (tailcall dispatch interpreter)\n", .{});
         std.process.exit(1);
     }
 
@@ -39,6 +40,7 @@ pub fn main() !void {
     var calldata_hex: ?[]const u8 = null;
     var num_runs: u8 = 1;
     var use_block_execution = false;
+    var use_call2 = false;
 
     var i: usize = 1;
     while (i < args.len) : (i += 1) {
@@ -68,6 +70,8 @@ pub fn main() !void {
             i += 1;
         } else if (std.mem.eql(u8, args[i], "--next")) {
             use_block_execution = true;
+        } else if (std.mem.eql(u8, args[i], "--call2")) {
+            use_call2 = true;
         } else {
             std.debug.print("Error: Unknown argument {s}\n", .{args[i]});
             std.process.exit(1);
@@ -169,7 +173,7 @@ pub fn main() !void {
                     try vm.state.set_code(contract_address, contract_code);
                 }
             }
-            allocator.free(output);
+            // Don't free - output is VM-owned memory
         } else {
             // No output, use bytecode directly
             try vm.state.set_code(contract_address, contract_code);
@@ -246,11 +250,24 @@ pub fn main() !void {
             .gas = 100_000_000, // 100M gas for intensive operations like minting loops
         } };
         
-        const result = vm.call(call_params) catch |err| {
-            // On error, print to stderr and exit
-            std.debug.print("Error executing call: {}\n", .{err});
-            std.process.exit(1);
-        };
+        const result = if (use_call2)
+            vm.call2(call_params) catch |err| {
+                // On error, print to stderr and exit
+                std.debug.print("Error executing call2: {}\n", .{err});
+                std.process.exit(1);
+            }
+        else if (use_block_execution)
+            vm.call_mini(call_params) catch |err| {
+                // On error, print to stderr and exit
+                std.debug.print("Error executing call_mini: {}\n", .{err});
+                std.process.exit(1);
+            }
+        else
+            vm.call(call_params) catch |err| {
+                // On error, print to stderr and exit
+                std.debug.print("Error executing call: {}\n", .{err});
+                std.process.exit(1);
+            };
         
         const end_time = std.time.nanoTimestamp();
         const duration_ns: u64 = @intCast(end_time - start_time);
@@ -290,9 +307,7 @@ pub fn main() !void {
             }
         }
         
-        if (result.output) |output| {
-            allocator.free(output);
-        }
+        // Don't free output - it's VM-owned memory per CallResult documentation
         
         // Validate the call actually succeeded
         if (!result.success) {
@@ -307,6 +322,7 @@ pub fn main() !void {
 
 
 fn deployContract(allocator: std.mem.Allocator, vm: *evm.Evm, caller: Address, bytecode: []const u8) !Address {
+    _ = allocator; // Not used after removing free calls
     
     // Use CREATE to deploy the contract
     const create_params = evm.CallParams{ .create = .{
@@ -324,7 +340,7 @@ fn deployContract(allocator: std.mem.Allocator, vm: *evm.Evm, caller: Address, b
     
     // Extract deployed address from output
     if (result.output) |output| {
-        defer allocator.free(output);
+        // Don't free output - it's VM-owned memory
         if (output.len >= 20) {
             var addr: Address = undefined;
             @memcpy(&addr, output[0..20]);

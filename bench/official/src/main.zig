@@ -19,7 +19,8 @@ pub fn main() !void {
         \\--export <FORMAT>          Export results (json, markdown, detailed)
         \\--compare                  Compare all available EVM implementations
         \\--all                      Include all test cases (by default only working benchmarks are included)
-        \\--next                     Use block-based execution for Zig EVM (new optimized interpreter)
+        \\--next                     Use call_mini for Zig EVM (simplified lazy jumpdest validation)
+        \\--call2                    Use call2 for Zig EVM (interpret2 with tailcall dispatch)
         \\--show-output              Show output from hyperfine
         \\--diff <TEST>              Run differential trace comparison between REVM and Zig for a specific test case
         \\--diff-output <DIR>        Output directory for differential traces (default: differential_traces)
@@ -62,6 +63,7 @@ pub fn main() !void {
     const compare_mode = res.args.compare != 0;
     const include_all_cases = res.args.all != 0;
     const use_next = res.args.next != 0;
+    const use_call2 = res.args.call2 != 0;
     const show_output = res.args.@"show-output" != 0;
     const diff_test = res.args.diff;
     const diff_output_dir = res.args.@"diff-output" orelse "differential_traces";
@@ -70,7 +72,7 @@ pub fn main() !void {
 
     if (diff_test) |test_name| {
         // Differential trace mode
-        var orchestrator = try Orchestrator.init(allocator, "zig", 1, 1, 1, 1, 1, 1, false, use_next, show_output);
+        var orchestrator = try Orchestrator.init(allocator, "zig", 1, 1, 1, 1, 1, 1, false, use_next, use_call2, show_output);
         defer orchestrator.deinit();
 
         try orchestrator.discoverTestCases();
@@ -96,7 +98,7 @@ pub fn main() !void {
         }
     } else if (compare_mode) {
         // Compare mode: run benchmarks for all available EVMs
-        const evms = [_][]const u8{ "zig", "zig-small", "revm", "ethereumjs", "geth", "evmone" };
+        const evms = [_][]const u8{ "zig", "zig-call2", "zig-small", "revm", "ethereumjs", "geth", "evmone" };
 
         var all_results = std.ArrayList(Orchestrator.BenchmarkResult).init(allocator);
         defer all_results.deinit();
@@ -104,7 +106,7 @@ pub fn main() !void {
         for (evms) |evm| {
             std.debug.print("\n=== Running benchmarks for {s} ===\n", .{evm});
 
-            var orchestrator = try Orchestrator.init(allocator, evm, num_runs, internal_runs, js_runs, js_internal_runs, snailtracer_internal_runs, js_snailtracer_internal_runs, include_all_cases, use_next, show_output);
+            var orchestrator = try Orchestrator.init(allocator, evm, num_runs, internal_runs, js_runs, js_internal_runs, snailtracer_internal_runs, js_snailtracer_internal_runs, include_all_cases, use_next, use_call2, show_output);
             defer orchestrator.deinit();
 
             try orchestrator.discoverTestCases();
@@ -138,7 +140,7 @@ pub fn main() !void {
         }
     } else {
         // Single EVM mode
-        var orchestrator = try Orchestrator.init(allocator, evm_name, num_runs, internal_runs, js_runs, js_internal_runs, snailtracer_internal_runs, js_snailtracer_internal_runs, include_all_cases, use_next, show_output);
+        var orchestrator = try Orchestrator.init(allocator, evm_name, num_runs, internal_runs, js_runs, js_internal_runs, snailtracer_internal_runs, js_snailtracer_internal_runs, include_all_cases, use_next, use_call2, show_output);
         defer orchestrator.deinit();
 
         // Discover test cases
@@ -226,7 +228,7 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
     } else {
         try file.writer().print("**Test Runs per Case**: {}\n", .{num_runs});
     }
-    try file.writer().print("**EVMs Compared**: Guillotine (Zig ReleaseFast), Guillotine (Zig ReleaseSmall), REVM (Rust), EthereumJS (JavaScript), Geth (Go), evmone (C++)\n", .{});
+    try file.writer().print("**EVMs Compared**: Guillotine (Zig ReleaseFast), Guillotine (Call2 Interpreter), Guillotine (Zig ReleaseSmall), REVM (Rust), EthereumJS (JavaScript), Geth (Go), evmone (C++)\n", .{});
     try file.writer().print("**Timestamp**: {} (Unix epoch)\n\n", .{seconds});
 
     // Determine which test cases to include
@@ -271,11 +273,12 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
 
     // Add summary statistics first
     try file.writer().print("## Overall Performance Summary (Per Run)\n\n", .{});
-    try file.writeAll("| Test Case | Zig-Fast | Zig-Small | REVM | EthereumJS | Geth | evmone |\n");
-    try file.writeAll("|-----------|----------|-----------|------|------------|------|--------|\n");
+    try file.writeAll("| Test Case | Zig-Fast | Zig-Call2 | Zig-Small | REVM | EthereumJS | Geth | evmone |\n");
+    try file.writeAll("|-----------|----------|-----------|-----------|------|------------|------|--------|\n");
 
     for (test_cases) |test_case| {
         var zig_fast_mean: f64 = 0;
+        var zig_call2_mean: f64 = 0;
         var zig_small_mean: f64 = 0;
         var revm_mean: f64 = 0;
         var ethereumjs_mean: f64 = 0;
@@ -290,6 +293,8 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
             {
                 if (std.mem.indexOf(u8, result.test_case, "(zig)") != null) {
                     zig_fast_mean = result.mean_ms;
+                } else if (std.mem.indexOf(u8, result.test_case, "(zig-call2)") != null) {
+                    zig_call2_mean = result.mean_ms;
                 } else if (std.mem.indexOf(u8, result.test_case, "(zig-small)") != null) {
                     zig_small_mean = result.mean_ms;
                 } else if (std.mem.indexOf(u8, result.test_case, "(revm)") != null) {
@@ -305,15 +310,17 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
         }
 
         const zig_fast_formatted = formatTimeWithUnit(zig_fast_mean);
+        const zig_call2_formatted = formatTimeWithUnit(zig_call2_mean);
         const zig_small_formatted = formatTimeWithUnit(zig_small_mean);
         const revm_formatted = formatTimeWithUnit(revm_mean);
         const ethereumjs_formatted = formatTimeWithUnit(ethereumjs_mean);
         const geth_formatted = formatTimeWithUnit(geth_mean);
         const evmone_formatted = formatTimeWithUnit(evmone_mean);
 
-        try file.writer().print("| {s:<25} | {s:>8} | {s:>9} | {s:>4} | {s:>10} | {s:>4} | {s:>6} |\n", .{
+        try file.writer().print("| {s:<25} | {s:>8} | {s:>9} | {s:>9} | {s:>4} | {s:>10} | {s:>4} | {s:>6} |\n", .{
             test_case,
             zig_fast_formatted,
+            zig_call2_formatted,
             zig_small_formatted,
             revm_formatted,
             ethereumjs_formatted,
@@ -341,6 +348,8 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
             {
                 const evm_name = if (std.mem.indexOf(u8, result.test_case, "(zig)") != null)
                     "Guillotine (Zig Fast)"
+                else if (std.mem.indexOf(u8, result.test_case, "(zig-call2)") != null)
+                    "Guillotine (Call2)"
                 else if (std.mem.indexOf(u8, result.test_case, "(zig-small)") != null)
                     "Guillotine (Zig Small)"
                 else if (std.mem.indexOf(u8, result.test_case, "(revm)") != null)
@@ -379,6 +388,7 @@ fn exportComparisonMarkdown(allocator: std.mem.Allocator, results: []const Orche
     try file.writeAll("- Times are displayed in the most appropriate unit (μs, ms, or s)\n");
     try file.writeAll("- All implementations use optimized builds:\n");
     try file.writeAll("  - Zig (Fast): ReleaseFast\n");
+    try file.writeAll("  - Zig (Call2): ReleaseFast with tailcall-based interpreter\n");
     try file.writeAll("  - Zig (Small): ReleaseSmall\n");
     try file.writeAll("  - Rust (REVM): --release\n");
     try file.writeAll("  - JavaScript (EthereumJS): Bun runtime\n");
