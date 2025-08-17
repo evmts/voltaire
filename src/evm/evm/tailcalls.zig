@@ -378,9 +378,31 @@ pub fn op_push(frame: *anyopaque, ops: [*]const *const anyopaque, ip: *usize) Er
     const analysis = f.tailcall_analysis;
     const pc = analysis.getPc(ip.*);
     if (pc != @import("analysis2.zig").SimpleAnalysis.MAX_USIZE) {
-        if (analysis.getPushValue(pc)) |value| {
-            try f.stack.append(value);
-            return next(frame, ops, ip);
+        const bytecode = analysis.bytecode;
+        if (pc < bytecode.len) {
+            const opcode = bytecode[pc];
+            
+            // Handle PUSH0
+            if (opcode == 0x5F) {
+                try f.stack.append(0);
+                return next(frame, ops, ip);
+            }
+            
+            // Handle PUSH1-PUSH32
+            if (opcode >= 0x60 and opcode <= 0x7F) {
+                const push_size = opcode - 0x5F;
+                const value_start = pc + 1;
+                
+                // Read push value directly from bytecode
+                var value: u256 = 0;
+                var i: usize = 0;
+                while (i < push_size and value_start + i < bytecode.len) : (i += 1) {
+                    value = (value << 8) | bytecode[value_start + i];
+                }
+                
+                try f.stack.append(value);
+                return next(frame, ops, ip);
+            }
         }
     }
 
