@@ -19,7 +19,7 @@ test "Stack: PUSH0 operation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const bytecode = &[_]u8{
@@ -46,7 +46,7 @@ test "Stack: PUSH0 operation" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 0
         var expected = [_]u8{0} ** 32;
@@ -61,7 +61,7 @@ test "Stack: PUSH1 operation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const bytecode = &[_]u8{
@@ -88,7 +88,7 @@ test "Stack: PUSH1 operation" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 0xAB
         var expected = [_]u8{0} ** 32;
@@ -104,7 +104,7 @@ test "Stack: PUSH2 operation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const bytecode = &[_]u8{
@@ -131,7 +131,7 @@ test "Stack: PUSH2 operation" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 0x1234
         var expected = [_]u8{0} ** 32;
@@ -147,7 +147,7 @@ test "Stack: PUSH32 operation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const bytecode = &[_]u8{
@@ -206,7 +206,7 @@ test "Stack: PUSH32 operation" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result matches the 32 bytes pushed
         const expected = [_]u8{
@@ -226,7 +226,7 @@ test "Stack: POP operation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const bytecode = &[_]u8{
@@ -255,7 +255,7 @@ test "Stack: POP operation" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Should return 0x42 (0x99 was popped)
         var expected = [_]u8{0} ** 32;
@@ -271,7 +271,7 @@ test "Stack: DUP1 operation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const bytecode = &[_]u8{
@@ -300,7 +300,7 @@ test "Stack: DUP1 operation" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Should return 0x84 (0x42 + 0x42)
         var expected = [_]u8{0} ** 32;
@@ -316,7 +316,7 @@ test "Stack: DUP16 operation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     // Build bytecode that pushes 16 values and then duplicates the 16th
@@ -357,7 +357,7 @@ test "Stack: DUP16 operation" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Should return 1 (the 16th item from top)
         var expected = [_]u8{0} ** 32;
@@ -373,7 +373,7 @@ test "Stack: SWAP1 operation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const bytecode = &[_]u8{
@@ -402,7 +402,7 @@ test "Stack: SWAP1 operation" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // After SWAP1, top should be 0x11 (was second)
         var expected = [_]u8{0} ** 32;
@@ -418,7 +418,7 @@ test "Stack: SWAP16 operation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     // Build bytecode that pushes 17 values and then swaps 1st with 17th
@@ -459,7 +459,7 @@ test "Stack: SWAP16 operation" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // After SWAP16, top should be 1 (was 17th from top)
         var expected = [_]u8{0} ** 32;
@@ -475,7 +475,7 @@ test "Stack: Complex stack manipulation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     // Complex sequence: push, dup, swap, pop
@@ -510,7 +510,7 @@ test "Stack: Complex stack manipulation" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Result should be 0x50 (0x10 + 0x20 + 0x20)
         var expected = [_]u8{0} ** 32;
@@ -526,7 +526,7 @@ test "Stack: PUSH with insufficient bytes should fail" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     // PUSH2 with only 1 byte of data (should fail)

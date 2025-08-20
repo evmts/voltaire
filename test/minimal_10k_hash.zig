@@ -16,15 +16,13 @@ test "minimal 10k hash test" {
         break :blk buf[0..len];
     };
     
-    std.debug.print("\n=== MINIMAL 10K HASH TEST ===\n", .{});
-    std.debug.print("Runtime code length: {} bytes\n", .{runtime_code.len});
     
     // Set up VM
     var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
     
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
     
     // Set up accounts
@@ -40,7 +38,6 @@ test "minimal 10k hash test" {
     const calldata = [_]u8{0x30, 0x62, 0x7b, 0x7c};
     
     const initial_gas: u64 = 50_000_000; // 50M gas should be plenty
-    std.debug.print("Initial gas: {}\n", .{initial_gas});
     
     const params = evm.CallParams{ .call = .{
         .caller = caller,
@@ -52,22 +49,15 @@ test "minimal 10k hash test" {
     
     const result = try vm.call(params);
     
-    std.debug.print("Call success: {}\n", .{result.success});
-    std.debug.print("Gas left: {}\n", .{result.gas_left});
-    std.debug.print("Gas used: {}\n", .{initial_gas - result.gas_left});
     
     if (!result.success) {
-        std.debug.print("Call failed!\n", .{});
-        if (result.output) |output| {
-            std.debug.print("Output: {x}\n", .{output});
+        if (result.output) |_| {
         }
     }
     
     try std.testing.expect(result.success);
     
     const gas_used = initial_gas - result.gas_left;
-    std.debug.print("\nExpected gas usage: > 100,000 (for 20k hash operations)\n", .{});
-    std.debug.print("Actual gas usage: {}\n", .{gas_used});
     
     // Each KECCAK256 costs ~30 gas, so 20k hashes should use ~600k gas minimum
     try std.testing.expect(gas_used > 100_000);
@@ -80,13 +70,12 @@ test "simple hash operation test" {
     // PUSH1 0x20, PUSH1 0x00, KECCAK256, STOP
     const simple_hash_code = [_]u8{0x60, 0x20, 0x60, 0x00, 0x20, 0x00};
     
-    std.debug.print("\n=== SIMPLE HASH TEST ===\n", .{});
     
     var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
     
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
     
     const caller = primitives.Address.from_u256(0x1000000000000000000000000000000000000001);
@@ -106,7 +95,6 @@ test "simple hash operation test" {
     
     const result = try vm.call(params);
     
-    std.debug.print("Simple hash - success: {}, gas_used: {}\n", .{
         result.success,
         initial_gas - result.gas_left,
     });

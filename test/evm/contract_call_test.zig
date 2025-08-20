@@ -12,7 +12,7 @@ test "contract call: empty contract returns success" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const caller = primitives.Address.from_u256(0x1111);
@@ -44,7 +44,7 @@ test "contract call: value transfer to empty contract" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const caller = primitives.Address.from_u256(0x1111);
@@ -77,7 +77,7 @@ test "contract call: insufficient balance for value transfer" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const caller = primitives.Address.from_u256(0x1111);
@@ -110,7 +110,7 @@ test "contract call: static call cannot transfer value" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const caller = primitives.Address.from_u256(0x1111);
@@ -139,7 +139,7 @@ test "contract call: simple contract execution" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1111);
@@ -177,11 +177,11 @@ test "contract call: simple contract execution" {
     try testing.expect(call_result.gas_left < 100000); // Some gas was used
     try testing.expect(call_result.output != null);
 
-    if (call_result.output) |output| {
+    if (call_result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check the value is 42
         var value: u256 = 0;
-        for (output) |byte| {
+        for (output) |_| {
             value = (value << 8) | byte;
         }
         try testing.expectEqual(@as(u256, 0x42), value);
@@ -195,7 +195,7 @@ test "contract call: gas consumption tracking" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1111);
@@ -243,9 +243,9 @@ test "contract call: gas consumption tracking" {
     try testing.expect(gas_used < 1000);
 
     // Check computation result (1 + 2) * 3 = 9
-    if (call_result.output) |output| {
+    if (call_result.output) |_| {
         var value: u256 = 0;
-        for (output) |byte| {
+        for (output) |_| {
             value = (value << 8) | byte;
         }
         try testing.expectEqual(@as(u256, 9), value);
@@ -259,7 +259,7 @@ test "contract call: revert handling" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1111);
@@ -303,7 +303,7 @@ test "contract call: revert handling" {
 
     // Check revert data
     try testing.expect(call_result.output != null);
-    if (call_result.output) |output| {
+    if (call_result.output) |_| {
         try testing.expectEqual(@as(usize, 2), output.len);
         try testing.expectEqual(@as(u8, 0xde), output[0]);
         try testing.expectEqual(@as(u8, 0xad), output[1]);
@@ -317,7 +317,7 @@ test "contract call: input data passing" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1111);
@@ -357,7 +357,7 @@ test "contract call: input data passing" {
 
     // Check output matches input
     try testing.expect(call_result.output != null);
-    if (call_result.output) |output| {
+    if (call_result.output) |_| {
         try testing.expectEqualSlices(u8, input_data, output);
     }
 }
@@ -369,7 +369,7 @@ test "contract call: call depth limit" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const caller = primitives.Address.from_u256(0x1111);
@@ -400,7 +400,7 @@ test "contract call: value transfer rollback on failure" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1111);

@@ -15,7 +15,7 @@ test "Arithmetic: ADD basic operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     // Test 1: Simple addition (5 + 10 = 15)
@@ -46,7 +46,7 @@ test "Arithmetic: ADD basic operations" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |output| {
+        if (result.output) |_| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is 15 (stored as big-endian u256)
             var expected = [_]u8{0} ** 32;
@@ -87,7 +87,7 @@ test "Arithmetic: ADD basic operations" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |output| {
+        if (result.output) |_| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is 0 (overflow wraps)
             var expected = [_]u8{0} ** 32;
@@ -103,7 +103,7 @@ test "Arithmetic: SUB basic operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     // Test: Simple subtraction (100 - 58 = 42)
@@ -134,7 +134,7 @@ test "Arithmetic: SUB basic operations" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |output| {
+        if (result.output) |_| {
             try testing.expectEqual(@as(usize, 32), output.len);
             var expected = [_]u8{0} ** 32;
             expected[31] = 42;

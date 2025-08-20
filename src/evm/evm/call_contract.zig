@@ -6,7 +6,7 @@ const precompile_addresses = @import("../precompiles/precompile_addresses.zig");
 const Log = @import("../log.zig");
 const Vm = @import("../evm.zig");
 const ExecutionError = @import("../execution/execution_error.zig");
-const Frame = @import("../frame.zig").Frame;
+const Frame = @import("../stack_frame.zig").StackFrame;
 const CodeAnalysis = @import("../analysis.zig").CodeAnalysis;
 const ChainRules = @import("../hardforks/chain_rules.zig").ChainRules;
 const Host = @import("../host.zig").Host;
@@ -119,16 +119,18 @@ pub fn call_contract(self: *Vm, caller: primitives.Address.Address, to: primitiv
     const snapshot_id = host.create_snapshot();
 
     // Create execution context for the contract
-    var context = Frame.init(execution_gas, // gas remaining
-        is_static, // static call flag
-        @intCast(self.depth), // call depth
-        to, // contract address
-        caller, // caller address
-        value, // value being transferred
-        &analysis, // code analysis
-        host, // host interface from self
-        self.state.database, // database interface
-        self.allocator // allocator
+    var context = Frame.init(
+        execution_gas, // gas_remaining
+        to, // contract_address
+        analysis.analysis, // analysis 
+        &[_]*const fn (*Frame) @import("../execution/execution_error.zig").Error!noreturn{}, // ops (empty)
+        host, // host
+        self.state.database, // state
+        self.allocator, // allocator
+        is_static, // is_static
+        caller, // caller
+        value, // value
+        input, // input_buffer
     ) catch |err| {
         Log.debug("VM.call_contract: Frame creation failed with error: {any}", .{err});
         return CallResult{ .success = false, .gas_left = 0, .output = null };

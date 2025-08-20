@@ -82,7 +82,7 @@ test "trace ERC20 execution to file" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
     var vm = try builder.build();
     defer vm.deinit();
 
@@ -95,7 +95,7 @@ test "trace ERC20 execution to file" {
     const create_result = try vm.create_contract(caller, 0, bytecode, 1_000_000_000);
     if (!create_result.success) {
         std.log.err("Deployment failed - gas_left: {}, success: {}", .{ create_result.gas_left, create_result.success });
-        if (create_result.output) |output| {
+        if (create_result.output) |_| {
             std.log.err("Revert data: {x}", .{output});
             if (output.len >= 4) {
                 const selector = std.mem.readInt(u32, output[0..4], .big);
@@ -121,7 +121,7 @@ test "trace ERC20 execution to file" {
     std.log.info("=== CALL COMPLETE ===", .{});
     std.log.info("Call result - gas_left: {}, success: {}, gas_used: {}", .{ call_result.gas_left, call_result.success, 1_000_000_000 - call_result.gas_left });
 
-    if (call_result.output) |output| {
+    if (call_result.output) |_| {
         std.log.info("Output length: {}, data: {x}", .{ output.len, output });
     }
 

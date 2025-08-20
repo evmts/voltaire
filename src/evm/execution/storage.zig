@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const ExecutionError = @import("execution_error.zig");
-const Frame = @import("../frame.zig").Frame;
+const Frame = @import("../stack_frame.zig").StackFrame;
 const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
 const storage_costs = @import("../gas/storage_costs.zig");
@@ -10,15 +10,14 @@ const storage_costs = @import("../gas/storage_costs.zig");
 // These checks are redundant after analysis.zig validates operations
 const SAFE_STACK_CHECKS = builtin.mode != .ReleaseFast and builtin.mode != .ReleaseSmall;
 
-pub fn op_sload(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
+pub fn op_sload(frame: *Frame) ExecutionError.Error!void {
     if (SAFE_STACK_CHECKS) {
         if (SAFE_STACK_CHECKS) {
             std.debug.assert(frame.stack.size() >= 1);
         }
     }
 
-    const slot = try frame.stack.peek_unsafe();
+    const slot = frame.stack.peek_unsafe();
 
     if (frame.host.is_hardfork_at_least(.BERLIN)) {
         const is_cold = frame.mark_storage_slot_warm(slot) catch {
@@ -37,9 +36,8 @@ pub fn op_sload(context: *anyopaque) ExecutionError.Error!void {
 }
 
 /// SSTORE opcode - Store value in persistent storage
-pub fn op_sstore(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
-    if (frame.is_static) {
+pub fn op_sstore(frame: *Frame) ExecutionError.Error!void {
+    if (frame.host.get_is_static()) {
         @branchHint(.unlikely);
         return ExecutionError.Error.WriteProtection;
     }
@@ -85,8 +83,7 @@ pub fn op_sstore(context: *anyopaque) ExecutionError.Error!void {
     frame.adjust_gas_refund(cost.refund);
 }
 
-pub fn op_tload(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
+pub fn op_tload(frame: *Frame) ExecutionError.Error!void {
     // TODO: Add hardfork validation for EIP-1153 (Cancun)
     // if (!frame.flags.is_eip1153) {
     //     return ExecutionError.Error.InvalidOpcode;
@@ -99,7 +96,7 @@ pub fn op_tload(context: *anyopaque) ExecutionError.Error!void {
     }
 
     // Get slot from top of stack unsafely - bounds checking is done in jump_table.zig
-    const slot = try frame.stack.peek_unsafe();
+    const slot = frame.stack.peek_unsafe();
 
     const value = frame.get_transient_storage(slot);
 
@@ -107,14 +104,13 @@ pub fn op_tload(context: *anyopaque) ExecutionError.Error!void {
     frame.stack.set_top_unsafe(value);
 }
 
-pub fn op_tstore(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
+pub fn op_tstore(frame: *Frame) ExecutionError.Error!void {
     // TODO: Add hardfork validation for EIP-1153 (Cancun)
     // if (!frame.flags.is_eip1153) {
     //     return ExecutionError.Error.InvalidOpcode;
     // }
 
-    if (frame.is_static) {
+    if (frame.host.get_is_static()) {
         @branchHint(.unlikely);
         return ExecutionError.Error.WriteProtection;
     }

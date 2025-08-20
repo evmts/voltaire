@@ -19,7 +19,7 @@ test "LOG0 (0xA0): Emit log with no topics" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const code = [_]u8{
@@ -83,7 +83,7 @@ test "LOG1 (0xA1): Emit log with one topic" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const code = [_]u8{
@@ -181,7 +181,7 @@ test "LOG2-LOG4: Multiple topics" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const code = [_]u8{
@@ -312,7 +312,7 @@ test "LOG0-LOG4: Gas consumption" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const code = [_]u8{ 0xA0, 0xA1, 0xA2, 0xA3, 0xA4 }; // LOG0-LOG4
@@ -396,7 +396,7 @@ test "LOG operations: Static call protection" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const code = [_]u8{
@@ -469,7 +469,7 @@ test "LOG operations: Stack underflow" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const code = [_]u8{ 0xA0, 0xA1, 0xA2, 0xA3, 0xA4 }; // All LOG opcodes
@@ -525,7 +525,7 @@ test "LOG operations: Empty data" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const code = [_]u8{
@@ -561,7 +561,7 @@ test "LOG operations: Empty data" {
     const state: Evm.Operation.State = &frame;
 
     // Execute push operations
-    for (0..3) |i| {
+    for (0..3) |_| {
         frame.pc = i * 2;
         _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     }
@@ -585,7 +585,7 @@ test "LOG operations: Large memory offset" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const code = [_]u8{0xA0}; // LOG0
@@ -639,7 +639,7 @@ test "LOG operations: ERC20 Transfer event pattern" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const code = [_]u8{
@@ -793,7 +793,7 @@ test "LOG operations: Multiple logs in sequence" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
     defer evm.deinit();
 
     const code = [_]u8{
@@ -845,7 +845,7 @@ test "LOG operations: Multiple logs in sequence" {
     const state: Evm.Operation.State = &frame;
 
     // Execute first LOG0
-    for (0..2) |i| {
+    for (0..2) |_| {
         frame.pc = i * 2;
         _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     }
@@ -853,7 +853,7 @@ test "LOG operations: Multiple logs in sequence" {
     _ = try evm.table.execute(0, interpreter, state, 0xA0);
 
     // Execute LOG1
-    for (0..3) |i| {
+    for (0..3) |_| {
         frame.pc = 5 + i * 2;
         _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     }
@@ -861,7 +861,7 @@ test "LOG operations: Multiple logs in sequence" {
     _ = try evm.table.execute(0, interpreter, state, 0xA1);
 
     // Execute second LOG0
-    for (0..2) |i| {
+    for (0..2) |_| {
         frame.pc = 12 + i * 2;
         _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     }

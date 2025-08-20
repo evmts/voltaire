@@ -15,7 +15,7 @@ test "PUSH + ADD fusion optimization" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     // Bytecode: PUSH1 10, PUSH1 5, ADD
@@ -47,7 +47,7 @@ test "PUSH + ADD fusion optimization" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 15
         var expected = [_]u8{0} ** 32;
@@ -63,7 +63,7 @@ test "PUSH 0 + ADD identity elimination" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     // Bytecode: PUSH1 42, PUSH1 0, ADD
@@ -94,7 +94,7 @@ test "PUSH 0 + ADD identity elimination" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 42
         var expected = [_]u8{0} ** 32;
@@ -110,7 +110,7 @@ test "PUSH + PUSH + ADD constant folding" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     // Bytecode: PUSH1 7, PUSH1 3, ADD
@@ -141,7 +141,7 @@ test "PUSH + PUSH + ADD constant folding" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 10
         var expected = [_]u8{0} ** 32;
@@ -157,7 +157,7 @@ test "ISZERO inline optimization" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     // Test that ISZERO is optimized to use inline version
@@ -186,7 +186,7 @@ test "ISZERO inline optimization" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // ISZERO(0) should return 1
         var expected = [_]u8{0} ** 32;
@@ -202,7 +202,7 @@ test "EQ inline optimization" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
     defer vm.deinit();
 
     // Test that EQ is optimized to use inline version
@@ -232,7 +232,7 @@ test "EQ inline optimization" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |output| {
+    if (result.output) |_| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // EQ(5, 5) should return 1
         var expected = [_]u8{0} ** 32;

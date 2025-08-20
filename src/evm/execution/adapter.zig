@@ -1,5 +1,5 @@
 const ExecutionError = @import("execution_error.zig");
-const Frame = @import("../frame.zig").Frame;
+const Frame = @import("../stack_frame.zig").StackFrame;
 const Operation = @import("../opcodes/operation.zig");
 const Stack = @import("../stack/stack.zig");
 const GasConstants = @import("primitives").GasConstants;
@@ -17,8 +17,7 @@ pub fn call_any(comptime OpFn: *const fn (*anyopaque) ExecutionError.Error!void,
 }
 
 /// Adapter for op_returndatasize - push the size of return data to stack
-pub fn op_returndatasize_adapter(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
+pub fn op_returndatasize_adapter(frame: *Frame) ExecutionError.Error!void {
 
     if (frame.stack.size() >= Stack.CAPACITY) {
         @branchHint(.cold);
@@ -26,12 +25,11 @@ pub fn op_returndatasize_adapter(context: *anyopaque) ExecutionError.Error!void 
     }
 
     // Push result unsafely - bounds checking is done in jump_table.zig
-    frame.stack.append_unsafe(@as(u256, @intCast(frame.host.get_output().len)));
+    frame.stack.append_unsafe(@as(u256, @intCast(frame.output_buffer.len)));
 }
 
 /// Adapter for op_returndatacopy - copy return data to memory
-pub fn op_returndatacopy_adapter(context: *anyopaque) ExecutionError.Error!void {
-    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
+pub fn op_returndatacopy_adapter(frame: *Frame) ExecutionError.Error!void {
 
     if (frame.stack.size() < 3) {
         @branchHint(.cold);
@@ -59,7 +57,7 @@ pub fn op_returndatacopy_adapter(context: *anyopaque) ExecutionError.Error!void 
     const size_usize = @as(usize, @intCast(size));
 
     // Check bounds
-    const output = frame.host.get_output();
+    const output = frame.output_buffer;
     if (data_offset_usize + size_usize > output.len) {
         @branchHint(.unlikely);
         return ExecutionError.Error.ReturnDataOutOfBounds;

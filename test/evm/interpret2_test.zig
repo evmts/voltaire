@@ -3,7 +3,7 @@ const testing = std.testing;
 const evm = @import("evm");
 const primitives = @import("primitives");
 
-// Import interpret2 components
+// Import interpret2 components  
 const interpret2 = evm.interpret2;
 
 test "interpret2: simple ADD operation" {
@@ -20,28 +20,41 @@ test "interpret2: simple ADD operation" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
     
-    // Analyze the code first
-    const metadata = evm.OpcodeMetadata.init();
-    var analysis = try evm.CodeAnalysis.from_code(allocator, &code, &metadata);
-    defer analysis.deinit();
+    // Create empty analysis for interpret2 to fill
+    const SimpleAnalysis = evm.SimpleAnalysis;
+    const empty_analysis = SimpleAnalysis{
+        .inst_to_pc = &.{},
+        .pc_to_inst = &.{},
+        .bytecode = &code,
+        .inst_count = 0,
+        .block_boundaries = std.bit_set.DynamicBitSet.initEmpty(testing.allocator, 0) catch @panic("OOM"),
+        .bucket_indices = &.{},
+        .u16_bucket = &.{},
+        .u32_bucket = &.{},
+        .u64_bucket = &.{},
+        .u256_bucket = &.{},
+    };
+    // No longer need metadata - using bucket system
+    const empty_ops: []*const fn (*evm.Frame) evm.ExecutionError.Error!noreturn = &.{};
     
     // Create frame
     var frame = try evm.Frame.init(
-        1_000_000,                    // gas
-        false,                        // static
-        0,                           // depth
-        primitives.Address.ZERO_ADDRESS,
-        primitives.Address.ZERO_ADDRESS,
-        0,
-        &analysis,
-        host,
-        memory_db.to_database_interface(),
-        allocator
+        1_000_000,                    // gas_remaining
+        primitives.Address.ZERO_ADDRESS,  // contract_address
+        empty_analysis,               // analysis
+        empty_ops,                    // ops
+        host,                         // host
+        memory_db.to_database_interface(), // state
+        allocator,                    // allocator
+        false,                        // is_static
+        primitives.Address.ZERO_ADDRESS,  // caller
+        0,                            // value
+        &.{},                         // input_buffer
     );
     defer frame.deinit(allocator);
     
     // Execute using interpret2
-    const result = interpret2.interpret2(&frame, &code);
+    const result = interpret2.interpret2(&frame);
     try testing.expectError(evm.ExecutionError.Error.STOP, result);
     
     // Check stack result - should have 8 (5 + 3)
@@ -66,25 +79,38 @@ test "interpret2: PUSH operations" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
     
-    const metadata = evm.OpcodeMetadata.init();
-    var analysis = try evm.CodeAnalysis.from_code(allocator, &code, &metadata);
-    defer analysis.deinit();
+    const SimpleAnalysis = evm.SimpleAnalysis;
+    const empty_analysis = SimpleAnalysis{
+        .inst_to_pc = &.{},
+        .pc_to_inst = &.{},
+        .bytecode = &code,
+        .inst_count = 0,
+        .block_boundaries = std.bit_set.DynamicBitSet.initEmpty(testing.allocator, 0) catch @panic("OOM"),
+        .bucket_indices = &.{},
+        .u16_bucket = &.{},
+        .u32_bucket = &.{},
+        .u64_bucket = &.{},
+        .u256_bucket = &.{},
+    };
+    // No longer need metadata - using bucket system
+    const empty_ops: []*const fn (*evm.Frame) evm.ExecutionError.Error!noreturn = &.{};
     
     var frame = try evm.Frame.init(
-        1_000_000,
-        false,
-        0,
-        primitives.Address.ZERO_ADDRESS,
-        primitives.Address.ZERO_ADDRESS,
-        0,
-        &analysis,
-        host,
-        memory_db.to_database_interface(),
-        allocator
+        1_000_000,                    // gas_remaining
+        primitives.Address.ZERO_ADDRESS,  // contract_address
+        empty_analysis,               // analysis
+        empty_ops,                    // ops
+        host,                         // host
+        memory_db.to_database_interface(), // state
+        allocator,                    // allocator
+        false,                        // is_static
+        primitives.Address.ZERO_ADDRESS,  // caller
+        0,                            // value
+        &.{},                         // input_buffer
     );
     defer frame.deinit(allocator);
     
-    const result = interpret2.interpret2(&frame, &code);
+    const result = interpret2.interpret2(&frame);
     try testing.expectError(evm.ExecutionError.Error.STOP, result);
     
     // Stack should have two values
@@ -113,25 +139,38 @@ test "interpret2: JUMP to valid destination" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
     
-    const metadata = evm.OpcodeMetadata.init();
-    var analysis = try evm.CodeAnalysis.from_code(allocator, &code, &metadata);
-    defer analysis.deinit();
+    const SimpleAnalysis = evm.SimpleAnalysis;
+    const empty_analysis = SimpleAnalysis{
+        .inst_to_pc = &.{},
+        .pc_to_inst = &.{},
+        .bytecode = &code,
+        .inst_count = 0,
+        .block_boundaries = std.bit_set.DynamicBitSet.initEmpty(testing.allocator, 0) catch @panic("OOM"),
+        .bucket_indices = &.{},
+        .u16_bucket = &.{},
+        .u32_bucket = &.{},
+        .u64_bucket = &.{},
+        .u256_bucket = &.{},
+    };
+    // No longer need metadata - using bucket system
+    const empty_ops: []*const fn (*evm.Frame) evm.ExecutionError.Error!noreturn = &.{};
     
     var frame = try evm.Frame.init(
-        1_000_000,
-        false,
-        0,
-        primitives.Address.ZERO_ADDRESS,
-        primitives.Address.ZERO_ADDRESS,
-        0,
-        &analysis,
-        host,
-        memory_db.to_database_interface(),
-        allocator
+        1_000_000,                    // gas_remaining
+        primitives.Address.ZERO_ADDRESS,  // contract_address
+        empty_analysis,               // analysis
+        empty_ops,                    // ops
+        host,                         // host
+        memory_db.to_database_interface(), // state
+        allocator,                    // allocator
+        false,                        // is_static
+        primitives.Address.ZERO_ADDRESS,  // caller
+        0,                            // value
+        &.{},                         // input_buffer
     );
     defer frame.deinit(allocator);
     
-    const result = interpret2.interpret2(&frame, &code);
+    const result = interpret2.interpret2(&frame);
     try testing.expectError(evm.ExecutionError.Error.STOP, result);
     
     // Should have pushed 0x42 after jumping
@@ -160,25 +199,38 @@ test "interpret2: JUMPI conditional jump taken" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
     
-    const metadata = evm.OpcodeMetadata.init();
-    var analysis = try evm.CodeAnalysis.from_code(allocator, &code, &metadata);
-    defer analysis.deinit();
+    const SimpleAnalysis = evm.SimpleAnalysis;
+    const empty_analysis = SimpleAnalysis{
+        .inst_to_pc = &.{},
+        .pc_to_inst = &.{},
+        .bytecode = &code,
+        .inst_count = 0,
+        .block_boundaries = std.bit_set.DynamicBitSet.initEmpty(testing.allocator, 0) catch @panic("OOM"),
+        .bucket_indices = &.{},
+        .u16_bucket = &.{},
+        .u32_bucket = &.{},
+        .u64_bucket = &.{},
+        .u256_bucket = &.{},
+    };
+    // No longer need metadata - using bucket system
+    const empty_ops: []*const fn (*evm.Frame) evm.ExecutionError.Error!noreturn = &.{};
     
     var frame = try evm.Frame.init(
-        1_000_000,
-        false,
-        0,
-        primitives.Address.ZERO_ADDRESS,
-        primitives.Address.ZERO_ADDRESS,
-        0,
-        &analysis,
-        host,
-        memory_db.to_database_interface(),
-        allocator
+        1_000_000,                    // gas_remaining
+        primitives.Address.ZERO_ADDRESS,  // contract_address
+        empty_analysis,               // analysis
+        empty_ops,                    // ops
+        host,                         // host
+        memory_db.to_database_interface(), // state
+        allocator,                    // allocator
+        false,                        // is_static
+        primitives.Address.ZERO_ADDRESS,  // caller
+        0,                            // value
+        &.{},                         // input_buffer
     );
     defer frame.deinit(allocator);
     
-    const result = interpret2.interpret2(&frame, &code);
+    const result = interpret2.interpret2(&frame);
     try testing.expectError(evm.ExecutionError.Error.STOP, result);
     
     // Should have 0xBB (jumped over 0xAA)
@@ -207,25 +259,38 @@ test "interpret2: JUMPI conditional jump not taken" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
     
-    const metadata = evm.OpcodeMetadata.init();
-    var analysis = try evm.CodeAnalysis.from_code(allocator, &code, &metadata);
-    defer analysis.deinit();
+    const SimpleAnalysis = evm.SimpleAnalysis;
+    const empty_analysis = SimpleAnalysis{
+        .inst_to_pc = &.{},
+        .pc_to_inst = &.{},
+        .bytecode = &code,
+        .inst_count = 0,
+        .block_boundaries = std.bit_set.DynamicBitSet.initEmpty(testing.allocator, 0) catch @panic("OOM"),
+        .bucket_indices = &.{},
+        .u16_bucket = &.{},
+        .u32_bucket = &.{},
+        .u64_bucket = &.{},
+        .u256_bucket = &.{},
+    };
+    // No longer need metadata - using bucket system
+    const empty_ops: []*const fn (*evm.Frame) evm.ExecutionError.Error!noreturn = &.{};
     
     var frame = try evm.Frame.init(
-        1_000_000,
-        false,
-        0,
-        primitives.Address.ZERO_ADDRESS,
-        primitives.Address.ZERO_ADDRESS,
-        0,
-        &analysis,
-        host,
-        memory_db.to_database_interface(),
-        allocator
+        1_000_000,                    // gas_remaining
+        primitives.Address.ZERO_ADDRESS,  // contract_address
+        empty_analysis,               // analysis
+        empty_ops,                    // ops
+        host,                         // host
+        memory_db.to_database_interface(), // state
+        allocator,                    // allocator
+        false,                        // is_static
+        primitives.Address.ZERO_ADDRESS,  // caller
+        0,                            // value
+        &.{},                         // input_buffer
     );
     defer frame.deinit(allocator);
     
-    const result = interpret2.interpret2(&frame, &code);
+    const result = interpret2.interpret2(&frame);
     try testing.expectError(evm.ExecutionError.Error.STOP, result);
     
     // Should have 0xAA (did not jump)
@@ -251,25 +316,38 @@ test "interpret2: DUP and SWAP operations" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
     
-    const metadata = evm.OpcodeMetadata.init();
-    var analysis = try evm.CodeAnalysis.from_code(allocator, &code, &metadata);
-    defer analysis.deinit();
+    const SimpleAnalysis = evm.SimpleAnalysis;
+    const empty_analysis = SimpleAnalysis{
+        .inst_to_pc = &.{},
+        .pc_to_inst = &.{},
+        .bytecode = &code,
+        .inst_count = 0,
+        .block_boundaries = std.bit_set.DynamicBitSet.initEmpty(testing.allocator, 0) catch @panic("OOM"),
+        .bucket_indices = &.{},
+        .u16_bucket = &.{},
+        .u32_bucket = &.{},
+        .u64_bucket = &.{},
+        .u256_bucket = &.{},
+    };
+    // No longer need metadata - using bucket system
+    const empty_ops: []*const fn (*evm.Frame) evm.ExecutionError.Error!noreturn = &.{};
     
     var frame = try evm.Frame.init(
-        1_000_000,
-        false,
-        0,
-        primitives.Address.ZERO_ADDRESS,
-        primitives.Address.ZERO_ADDRESS,
-        0,
-        &analysis,
-        host,
-        memory_db.to_database_interface(),
-        allocator
+        1_000_000,                    // gas_remaining
+        primitives.Address.ZERO_ADDRESS,  // contract_address
+        empty_analysis,               // analysis
+        empty_ops,                    // ops
+        host,                         // host
+        memory_db.to_database_interface(), // state
+        allocator,                    // allocator
+        false,                        // is_static
+        primitives.Address.ZERO_ADDRESS,  // caller
+        0,                            // value
+        &.{},                         // input_buffer
     );
     defer frame.deinit(allocator);
     
-    const result = interpret2.interpret2(&frame, &code);
+    const result = interpret2.interpret2(&frame);
     try testing.expectError(evm.ExecutionError.Error.STOP, result);
     
     // After DUP1: [1, 2, 2]
@@ -296,25 +374,38 @@ test "interpret2: invalid JUMP destination" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
     
-    const metadata = evm.OpcodeMetadata.init();
-    var analysis = try evm.CodeAnalysis.from_code(allocator, &code, &metadata);
-    defer analysis.deinit();
+    const SimpleAnalysis = evm.SimpleAnalysis;
+    const empty_analysis = SimpleAnalysis{
+        .inst_to_pc = &.{},
+        .pc_to_inst = &.{},
+        .bytecode = &code,
+        .inst_count = 0,
+        .block_boundaries = std.bit_set.DynamicBitSet.initEmpty(testing.allocator, 0) catch @panic("OOM"),
+        .bucket_indices = &.{},
+        .u16_bucket = &.{},
+        .u32_bucket = &.{},
+        .u64_bucket = &.{},
+        .u256_bucket = &.{},
+    };
+    // No longer need metadata - using bucket system
+    const empty_ops: []*const fn (*evm.Frame) evm.ExecutionError.Error!noreturn = &.{};
     
     var frame = try evm.Frame.init(
-        1_000_000,
-        false,
-        0,
-        primitives.Address.ZERO_ADDRESS,
-        primitives.Address.ZERO_ADDRESS,
-        0,
-        &analysis,
-        host,
-        memory_db.to_database_interface(),
-        allocator
+        1_000_000,                    // gas_remaining
+        primitives.Address.ZERO_ADDRESS,  // contract_address
+        empty_analysis,               // analysis
+        empty_ops,                    // ops
+        host,                         // host
+        memory_db.to_database_interface(), // state
+        allocator,                    // allocator
+        false,                        // is_static
+        primitives.Address.ZERO_ADDRESS,  // caller
+        0,                            // value
+        &.{},                         // input_buffer
     );
     defer frame.deinit(allocator);
     
-    const result = interpret2.interpret2(&frame, &code);
+    const result = interpret2.interpret2(&frame);
     try testing.expectError(evm.ExecutionError.Error.InvalidJump, result);
 }
 
@@ -343,35 +434,45 @@ test "interpret2: arithmetic operations" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
     
-    const metadata = evm.OpcodeMetadata.init();
-    var analysis = try evm.CodeAnalysis.from_code(allocator, &code, &metadata);
-    defer analysis.deinit();
+    const SimpleAnalysis = evm.SimpleAnalysis;
+    const empty_analysis = SimpleAnalysis{
+        .inst_to_pc = &.{},
+        .pc_to_inst = &.{},
+        .bytecode = &code,
+        .inst_count = 0,
+        .block_boundaries = std.bit_set.DynamicBitSet.initEmpty(testing.allocator, 0) catch @panic("OOM"),
+        .bucket_indices = &.{},
+        .u16_bucket = &.{},
+        .u32_bucket = &.{},
+        .u64_bucket = &.{},
+        .u256_bucket = &.{},
+    };
+    // No longer need metadata - using bucket system
+    const empty_ops: []*const fn (*evm.Frame) evm.ExecutionError.Error!noreturn = &.{};
     
     var frame = try evm.Frame.init(
-        1_000_000,
-        false,
-        0,
-        primitives.Address.ZERO_ADDRESS,
-        primitives.Address.ZERO_ADDRESS,
-        0,
-        &analysis,
-        host,
-        memory_db.to_database_interface(),
-        allocator
+        1_000_000,                    // gas_remaining
+        primitives.Address.ZERO_ADDRESS,  // contract_address
+        empty_analysis,               // analysis
+        empty_ops,                    // ops
+        host,                         // host
+        memory_db.to_database_interface(), // state
+        allocator,                    // allocator
+        false,                        // is_static
+        primitives.Address.ZERO_ADDRESS,  // caller
+        0,                            // value
+        &.{},                         // input_buffer
     );
     defer frame.deinit(allocator);
     
-    const result = interpret2.interpret2(&frame, &code);
+    const result = interpret2.interpret2(&frame);
     try testing.expectError(evm.ExecutionError.Error.STOP, result);
     
     // Debug: Check stack size
     const stack_size = frame.stack.size();
     if (stack_size == 0) {
-        std.debug.print("\nStack is empty after execution!\n", .{});
     } else {
-        std.debug.print("\nStack has {} items\n", .{stack_size});
         const top = try frame.stack.pop();
-        std.debug.print("Top of stack: {}\n", .{top});
         try testing.expectEqual(@as(u256, 5), top);
     }
 }

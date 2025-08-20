@@ -31,7 +31,7 @@ fn read_case_file(allocator: std.mem.Allocator, comptime case_name: []const u8, 
     return result;
 }
 
-test "call2 differential: ERC20 transfer with REVM, call, call_mini, and call2" {
+test "call2 differential: ERC20 transfer with REVM, call, call, and call2" {
     const allocator = testing.allocator;
 
     // Load bytecode and calldata
@@ -95,7 +95,7 @@ test "call2 differential: ERC20 transfer with REVM, call, call_mini, and call2" 
     {
         var memory_db = evm.MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
+        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
         defer vm.deinit();
         
         try vm.state.set_balance(deployer, std.math.maxInt(u256));
@@ -132,11 +132,11 @@ test "call2 differential: ERC20 transfer with REVM, call, call_mini, and call2" 
         // Don't free output - it's VM-owned memory per CallResult documentation
     }
 
-    // === Guillotine - call_mini ===
+    // === Guillotine - call ===
     {
         var memory_db = evm.MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
+        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
         defer vm.deinit();
         
         try vm.state.set_balance(deployer, std.math.maxInt(u256));
@@ -152,7 +152,7 @@ test "call2 differential: ERC20 transfer with REVM, call, call_mini, and call2" 
         try vm.state.set_storage(contract_addr, slot_key, balance);
         try vm.state.set_storage(contract_addr, 2, balance);
         
-        // Call with call_mini interpreter
+        // Call with call interpreter
         const call_params = evm.CallParams{ .call = .{
             .caller = deployer,
             .to = contract_addr,
@@ -161,14 +161,14 @@ test "call2 differential: ERC20 transfer with REVM, call, call_mini, and call2" 
             .gas = 10_000_000,
         } };
         
-        const call_mini_result = try vm.call_mini(call_params);
-        const call_mini_gas_used = 10_000_000 - call_mini_result.gas_left;
+        const call_result = try vm.call(call_params);
+        const call_gas_used = 10_000_000 - call_result.gas_left;
         
-        std.log.debug("call_mini: success={}, gas_used={}, output_len={}", .{ call_mini_result.success, call_mini_gas_used, if (call_mini_result.output) |o| o.len else 0 });
+        std.log.debug("call: success={}, gas_used={}, output_len={}", .{ call_result.success, call_gas_used, if (call_result.output) |o| o.len else 0 });
         
         // Verify against REVM
-        try testing.expectEqual(revm_success, call_mini_result.success);
-        try testing.expectEqualSlices(u8, revm_output, call_mini_result.output orelse &.{});
+        try testing.expectEqual(revm_success, call_result.success);
+        try testing.expectEqualSlices(u8, revm_output, call_result.output orelse &.{});
         
         // Don't free output - it's VM-owned memory per CallResult documentation
     }
@@ -177,7 +177,7 @@ test "call2 differential: ERC20 transfer with REVM, call, call_mini, and call2" 
     {
         var memory_db = evm.MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
+        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
         defer vm.deinit();
         
         try vm.state.set_balance(deployer, std.math.maxInt(u256));
@@ -215,7 +215,7 @@ test "call2 differential: ERC20 transfer with REVM, call, call_mini, and call2" 
     }
 }
 
-test "call2 differential: ten-thousand-hashes with REVM, call, call_mini, and call2" {
+test "call2 differential: ten-thousand-hashes with REVM, call, call, and call2" {
     const allocator = testing.allocator;
 
     // Load bytecode and calldata
@@ -264,7 +264,7 @@ test "call2 differential: ten-thousand-hashes with REVM, call, call_mini, and ca
     {
         var memory_db = evm.MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
+        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
         defer vm.deinit();
         
         try vm.state.set_balance(deployer, std.math.maxInt(u256));
@@ -299,11 +299,11 @@ test "call2 differential: ten-thousand-hashes with REVM, call, call_mini, and ca
         // Don't free output - it's VM-owned memory per CallResult documentation
     }
 
-    // === Guillotine - call_mini ===
+    // === Guillotine - call ===
     {
         var memory_db = evm.MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
+        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
         defer vm.deinit();
         
         try vm.state.set_balance(deployer, std.math.maxInt(u256));
@@ -317,7 +317,7 @@ test "call2 differential: ten-thousand-hashes with REVM, call, call_mini, and ca
         // Set up contract
         try vm.state.set_code(contract_addr, zig_runtime);
         
-        // Call with call_mini interpreter
+        // Call with call interpreter
         const call_params = evm.CallParams{ .call = .{
             .caller = deployer,
             .to = contract_addr,
@@ -326,14 +326,14 @@ test "call2 differential: ten-thousand-hashes with REVM, call, call_mini, and ca
             .gas = 10_000_000,
         } };
         
-        const call_mini_result = try vm.call_mini(call_params);
-        const call_mini_gas_used = 10_000_000 - call_mini_result.gas_left;
+        const call_result = try vm.call(call_params);
+        const call_gas_used = 10_000_000 - call_result.gas_left;
         
-        std.log.debug("call_mini: success={}, gas_used={}, output_len={}", .{ call_mini_result.success, call_mini_gas_used, if (call_mini_result.output) |o| o.len else 0 });
+        std.log.debug("call: success={}, gas_used={}, output_len={}", .{ call_result.success, call_gas_used, if (call_result.output) |o| o.len else 0 });
         
         // Verify against REVM
-        try testing.expectEqual(revm_success, call_mini_result.success);
-        try testing.expectEqualSlices(u8, revm_output, call_mini_result.output orelse &.{});
+        try testing.expectEqual(revm_success, call_result.success);
+        try testing.expectEqualSlices(u8, revm_output, call_result.output orelse &.{});
         
         // Don't free output - it's VM-owned memory per CallResult documentation
     }
@@ -342,7 +342,7 @@ test "call2 differential: ten-thousand-hashes with REVM, call, call_mini, and ca
     {
         var memory_db = evm.MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
+        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
         defer vm.deinit();
         
         try vm.state.set_balance(deployer, std.math.maxInt(u256));
