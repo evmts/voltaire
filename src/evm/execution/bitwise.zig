@@ -19,18 +19,22 @@
 
 const std = @import("std");
 const ExecutionError = @import("execution_error.zig");
-const Frame = @import("../stack_frame.zig").StackFrame;
+const Frame = @import("../frame.zig").Frame;
 const primitives = @import("primitives");
 
 /// AND opcode (0x16) - Bitwise AND operation
 ///
 /// Pops two values from the stack and pushes their bitwise AND.
 /// Stack: [a, b] → [a & b]
-pub fn op_and(frame: *Frame) ExecutionError.Error!void {
+pub fn op_and(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
     const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe();
+    const a = try frame.stack.peek_unsafe();
     const r = a & b;
+    if (b == 0xffffffff) {
+        @import("../log.zig").warn("[AND] a=0x{x:0>64}, mask=0xffffffff, res=0x{x:0>64}", .{ a, r });
+    }
     frame.stack.set_top_unsafe(r);
 }
 
@@ -38,10 +42,11 @@ pub fn op_and(frame: *Frame) ExecutionError.Error!void {
 ///
 /// Pops two values from the stack and pushes their bitwise OR.
 /// Stack: [a, b] → [a | b]
-pub fn op_or(frame: *Frame) ExecutionError.Error!void {
+pub fn op_or(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
     const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe();
+    const a = try frame.stack.peek_unsafe();
     frame.stack.set_top_unsafe(a | b);
 }
 
@@ -49,10 +54,11 @@ pub fn op_or(frame: *Frame) ExecutionError.Error!void {
 ///
 /// Pops two values from the stack and pushes their bitwise XOR.
 /// Stack: [a, b] → [a ^ b]
-pub fn op_xor(frame: *Frame) ExecutionError.Error!void {
+pub fn op_xor(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
     const b = frame.stack.pop_unsafe();
-    const a = frame.stack.peek_unsafe();
+    const a = try frame.stack.peek_unsafe();
     frame.stack.set_top_unsafe(a ^ b);
 }
 
@@ -60,9 +66,10 @@ pub fn op_xor(frame: *Frame) ExecutionError.Error!void {
 ///
 /// Pops one value from the stack and pushes its bitwise complement.
 /// Stack: [a] → [~a]
-pub fn op_not(frame: *Frame) ExecutionError.Error!void {
+pub fn op_not(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 1);
-    const a = frame.stack.peek_unsafe();
+    const a = try frame.stack.peek_unsafe();
     frame.stack.set_top_unsafe(~a);
 }
 
@@ -73,10 +80,11 @@ pub fn op_not(frame: *Frame) ExecutionError.Error!void {
 /// If i >= 32, returns 0.
 ///
 /// Stack: [i, val] → [byte]
-pub fn op_byte(frame: *Frame) ExecutionError.Error!void {
+pub fn op_byte(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
     const i = frame.stack.pop_unsafe();
-    const val = frame.stack.peek_unsafe();
+    const val = try frame.stack.peek_unsafe();
 
     const result = if (i >= 32) 0 else blk: {
         const i_usize = @as(usize, @intCast(i));
@@ -93,10 +101,11 @@ pub fn op_byte(frame: *Frame) ExecutionError.Error!void {
 /// If shift >= 256, returns 0.
 ///
 /// Stack: [shift, value] → [value << shift]
-pub fn op_shl(frame: *Frame) ExecutionError.Error!void {
+pub fn op_shl(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
     const shift = frame.stack.pop_unsafe();
-    const value = frame.stack.peek_unsafe();
+    const value = try frame.stack.peek_unsafe();
 
     const result = if (shift >= 256) 0 else value << @intCast(shift);
 
@@ -109,14 +118,15 @@ pub fn op_shl(frame: *Frame) ExecutionError.Error!void {
 /// Fills with zeros from the left. If shift >= 256, returns 0.
 ///
 /// Stack: [shift, value] → [value >> shift]
-pub fn op_shr(frame: *Frame) ExecutionError.Error!void {
+pub fn op_shr(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
     const shift = frame.stack.pop_unsafe();
-    const value = frame.stack.peek_unsafe();
+    const value = try frame.stack.peek_unsafe();
 
     const result = if (shift >= 256) 0 else value >> @intCast(shift);
     if (shift == 224) {
-        @import("../log.zig").debug("[SHR] value=0x{x:0>64} >> 224 = 0x{x:0>64}", .{ value, result });
+        @import("../log.zig").warn("[SHR] value=0x{x:0>64} >> 224 = 0x{x:0>64}", .{ value, result });
     }
 
     frame.stack.set_top_unsafe(result);
@@ -129,10 +139,11 @@ pub fn op_shr(frame: *Frame) ExecutionError.Error!void {
 /// 0 for positive numbers or MAX_U256 for negative numbers.
 ///
 /// Stack: [shift, value] → [value >> shift] (arithmetic)
-pub fn op_sar(frame: *Frame) ExecutionError.Error!void {
+pub fn op_sar(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
     const shift = frame.stack.pop_unsafe();
-    const value = frame.stack.peek_unsafe();
+    const value = try frame.stack.peek_unsafe();
 
     const result = if (shift >= 256) blk: {
         const sign_bit = value >> 255;

@@ -58,7 +58,7 @@ test "MSTORE at large offset triggers memory expansion" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -76,7 +76,7 @@ test "MSTORE at large offset triggers memory expansion" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
@@ -150,7 +150,7 @@ test "MLOAD from uninitialized memory returns zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -168,7 +168,7 @@ test "MLOAD from uninitialized memory returns zero" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
@@ -245,7 +245,7 @@ test "MSTORE8 stores single byte correctly" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -263,7 +263,7 @@ test "MSTORE8 stores single byte correctly" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
@@ -350,7 +350,7 @@ test "MCOPY opcode copies memory correctly" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -368,7 +368,7 @@ test "MCOPY opcode copies memory correctly" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
@@ -409,38 +409,10 @@ test "MCOPY overlapping regions copies correctly" {
     const bytecode = [_]u8{
         // Store pattern at offset 0
         0x7F, // PUSH32
-        0x11,
-        0x22,
-        0x33,
-        0x44,
-        0x55,
-        0x66,
-        0x77,
-        0x88,
-        0x99,
-        0xAA,
-        0xBB,
-        0xCC,
-        0xDD,
-        0xEE,
-        0xFF,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
+        0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88,
+        0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x60, 0x00, // PUSH1 0 (offset)
         0x52, // MSTORE
         // Copy 24 bytes from offset 0 to offset 8 (overlapping)
@@ -484,7 +456,7 @@ test "MCOPY overlapping regions copies correctly" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -502,7 +474,7 @@ test "MCOPY overlapping regions copies correctly" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM
@@ -576,7 +548,7 @@ test "Memory expansion gas cost edge case" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -594,7 +566,7 @@ test "Memory expansion gas cost edge case" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // Output is VM-owned, do not free
 
     // Execute using Guillotine regular EVM

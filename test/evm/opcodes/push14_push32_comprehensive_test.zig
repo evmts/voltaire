@@ -19,7 +19,7 @@ test "PUSH14 (0x6D): Push 14 bytes onto stack" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -76,7 +76,7 @@ test "PUSH15 (0x6E): Push 15 bytes onto stack" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -123,7 +123,7 @@ test "PUSH16 (0x6F): Push 16 bytes onto stack" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -180,7 +180,7 @@ test "PUSH17-PUSH19: Various sizes" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -193,21 +193,21 @@ test "PUSH17-PUSH19: Various sizes" {
 
     // PUSH17
     code[idx] = 0x70;
-    for (1..18) |_| {
+    for (1..18) |i| {
         code[idx + i] = @intCast(i);
     }
     idx += 18;
 
     // PUSH18
     code[idx] = 0x71;
-    for (1..19) |_| {
+    for (1..19) |i| {
         code[idx + i] = @intCast(i);
     }
     idx += 19;
 
     // PUSH19
     code[idx] = 0x72;
-    for (1..20) |_| {
+    for (1..20) |i| {
         code[idx + i] = @intCast(i);
     }
 
@@ -264,7 +264,7 @@ test "PUSH20-PUSH24: Various sizes" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -277,35 +277,35 @@ test "PUSH20-PUSH24: Various sizes" {
 
     // PUSH20 (0x73) - 20 bytes is common for addresses
     code[idx] = 0x73;
-    for (1..21) |_| {
+    for (1..21) |i| {
         code[idx + i] = @intCast(i);
     }
     idx += 21;
 
     // PUSH21 (0x74)
     code[idx] = 0x74;
-    for (1..22) |_| {
+    for (1..22) |i| {
         code[idx + i] = @intCast(i);
     }
     idx += 22;
 
     // PUSH22 (0x75)
     code[idx] = 0x75;
-    for (1..23) |_| {
+    for (1..23) |i| {
         code[idx + i] = @intCast(i);
     }
     idx += 23;
 
     // PUSH23 (0x76)
     code[idx] = 0x76;
-    for (1..24) |_| {
+    for (1..24) |i| {
         code[idx + i] = @intCast(i);
     }
     idx += 24;
 
     // PUSH24 (0x77)
     code[idx] = 0x77;
-    for (1..25) |_| {
+    for (1..25) |i| {
         code[idx + i] = @intCast(i);
     }
 
@@ -378,7 +378,7 @@ test "PUSH25-PUSH31: Various sizes" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -391,21 +391,21 @@ test "PUSH25-PUSH31: Various sizes" {
 
     // PUSH25 (0x78)
     code[idx] = 0x78;
-    for (1..26) |_| {
+    for (1..26) |i| {
         code[idx + i] = @intCast(i % 256);
     }
     idx += 26;
 
     // PUSH30 (0x7D)
     code[idx] = 0x7D;
-    for (1..31) |_| {
+    for (1..31) |i| {
         code[idx + i] = @intCast(i % 256);
     }
     idx += 31;
 
     // PUSH31 (0x7E)
     code[idx] = 0x7E;
-    for (1..32) |_| {
+    for (1..32) |i| {
         code[idx + i] = @intCast(i % 256);
     }
 
@@ -465,7 +465,7 @@ test "PUSH32 (0x7F): Push full 32 bytes onto stack" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -636,7 +636,7 @@ test "PUSH14-PUSH32: Gas consumption" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -712,7 +712,7 @@ test "PUSH operations: Truncated data at end of code" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -774,7 +774,7 @@ test "PUSH20: Address pushing pattern" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -845,7 +845,7 @@ test "PUSH32: Hash value pattern" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -929,7 +929,7 @@ test "Large PUSH operations with stack near limit" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 
@@ -996,7 +996,7 @@ test "Large PUSH operations with stack near limit" {
     const state: Evm.Operation.State = &frame;
 
     // Fill stack to near capacity (1023 items)
-    for (0..1023) |_| {
+    for (0..1023) |i| {
         try frame.stack.append(@as(u256, @intCast(i)));
     }
 
@@ -1024,7 +1024,7 @@ test "PUSH operations sequence verification" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
 
     defer evm.deinit();
 

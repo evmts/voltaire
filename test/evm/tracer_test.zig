@@ -12,7 +12,7 @@ test "tracer captures opcode execution" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     
     // Create a tracer that writes to a buffer
     var trace_buffer = std.ArrayList(u8).init(allocator);
@@ -46,6 +46,7 @@ test "tracer captures opcode execution" {
     try testing.expect(trace_output.len > 0);
     
     // Debug print can be removed now that JSON is working
+    // std.debug.print("\nTrace output:\n{s}\n", .{trace_output});
     
     // Parse JSON lines and verify structure
     var line_it = std.mem.tokenizeScalar(u8, trace_output, '\n');
@@ -85,7 +86,7 @@ test "trace format matches REVM JSON structure" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     
     var trace_buffer = std.ArrayList(u8).init(allocator);
     defer trace_buffer.deinit();

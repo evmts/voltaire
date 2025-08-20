@@ -27,7 +27,7 @@
 //! - Error mapping utilities for consistent handling
 //!
 //! ### Utilities
-//! - **SimpleAnalysis**: Simplified bytecode analysis for tailcall dispatch
+//! - **CodeAnalysis**: Bytecode analysis and jump destination detection
 //! - **Hardfork**: Fork-specific behavior configuration
 //! - **gas_constants**: Gas cost calculations
 //! - **chain_rules**: Chain-specific validation rules
@@ -62,11 +62,7 @@ pub const primitives = @import("primitives");
 
 // Import all EVM modules
 
-/// Simplified bytecode analysis for tailcall dispatch
-pub const SimpleAnalysis = @import("evm/analysis2.zig").SimpleAnalysis;
-/// Instruction metadata for analysis2
-pub const analysis2 = @import("evm/analysis2.zig");
-/// Compatibility wrapper for the old CodeAnalysis interface
+/// Bytecode analysis for jump destination detection
 pub const CodeAnalysis = @import("analysis.zig").CodeAnalysis;
 
 /// Unified error types for EVM execution
@@ -113,12 +109,9 @@ pub const stack_validation = @import("stack/stack_validation.zig");
 /// Main virtual machine implementation
 pub const Evm = @import("evm.zig");
 
-/// Main call function using interpret2 (tailcall dispatch)
-pub const call2 = @import("evm/call2.zig").call;
-
 /// Execution context and frame management
-pub const Frame = @import("stack_frame.zig").StackFrame;
-pub const ExecutionContext = @import("stack_frame.zig").StackFrame;
+pub const Frame = @import("frame.zig").Frame;
+pub const ExecutionContext = @import("frame.zig").Frame;
 /// Backwards-compatibility builder used by older tests
 pub const EvmBuilder = struct {
     allocator: std.mem.Allocator,
@@ -129,7 +122,7 @@ pub const EvmBuilder = struct {
     }
 
     pub fn build(self: *EvmBuilder) !Evm {
-        return Evm.init(self.allocator, self.database, null, null, null, null);
+        return Evm.init(self.allocator, self.database, null, null, null, 0, false, null);
     }
 };
 
@@ -184,8 +177,8 @@ pub const ecmul = @import("precompiles/ecmul.zig");
 /// ECPAIRING precompile (0x08)
 pub const ecpairing = @import("precompiles/ecpairing.zig");
 
-/// Tailcall interpreter prototype
-pub const interpret2 = @import("evm/interpret2.zig");
+/// Tailcall interpreter prototype (simplified version)
+pub const interpret2 = @import("evm/interpret2_simple.zig");
 
 /// EIP-4844 blob transaction support (blobs, KZG verification, gas market)
 pub const blob = @import("blob/index.zig");

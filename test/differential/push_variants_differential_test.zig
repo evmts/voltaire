@@ -51,7 +51,7 @@ test "PUSH2 opcode pushes 2 bytes" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -69,7 +69,7 @@ test "PUSH2 opcode pushes 2 bytes" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -142,7 +142,7 @@ test "PUSH4 opcode pushes 4 bytes" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -160,7 +160,7 @@ test "PUSH4 opcode pushes 4 bytes" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -234,7 +234,7 @@ test "PUSH8 opcode pushes 8 bytes" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -252,7 +252,7 @@ test "PUSH8 opcode pushes 8 bytes" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -327,7 +327,7 @@ test "PUSH16 opcode pushes 16 bytes" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -345,7 +345,7 @@ test "PUSH16 opcode pushes 16 bytes" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -423,7 +423,7 @@ test "PUSH32 edge case all zeros" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -441,7 +441,7 @@ test "PUSH32 edge case all zeros" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -517,7 +517,7 @@ test "PUSH20 opcode pushes 20 bytes (address size)" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -535,7 +535,7 @@ test "PUSH20 opcode pushes 20 bytes (address size)" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM

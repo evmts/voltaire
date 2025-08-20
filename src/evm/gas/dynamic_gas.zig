@@ -1,5 +1,5 @@
 const std = @import("std");
-const Frame = @import("../stack_frame.zig").StackFrame;
+const Frame = @import("../frame.zig").Frame;
 const ExecutionError = @import("../execution/execution_error.zig");
 const primitives = @import("primitives");
 const GasConstants = primitives.GasConstants;

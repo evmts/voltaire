@@ -183,7 +183,7 @@ pub fn runDifferentialTrace(self: *Orchestrator, test_case: TestCase, output_dir
         zig_trace_path,
     });
     if (self.use_next) try zig_argv.append("--next");
-    // No need for --call2 flag as we're using the call2 runner binary directly
+    if (self.use_call2 and !std.mem.eql(u8, self.evm_name, "zig-call2")) try zig_argv.append("--call2");
 
     print("Running Zig command: ", .{});
     for (zig_argv.items) |arg| {
@@ -831,10 +831,11 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
 
     var runner_path: []const u8 = undefined;
     if (std.mem.eql(u8, self.evm_name, "zig")) {
-        // Default zig to use call2 runner
         runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "zig-out", "bin", "evm-runner" });
     } else if (std.mem.eql(u8, self.evm_name, "zig-call2")) {
-        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "zig-out", "bin", "evm-runner" });
+        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "zig-out", "bin", "evm-runner-call2" });
+    } else if (std.mem.eql(u8, self.evm_name, "zig-small")) {
+        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "zig-out", "bin", "evm-runner-small" });
     } else if (std.mem.eql(u8, self.evm_name, "ethereumjs")) {
         runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "official", "evms", "ethereumjs", "runner.js" });
     } else if (std.mem.eql(u8, self.evm_name, "geth")) {
@@ -851,9 +852,9 @@ fn runSingleBenchmark(self: *Orchestrator, test_case: TestCase) !void {
     const num_runs_str = try std.fmt.allocPrint(self.allocator, "{}", .{runs_to_use});
     defer self.allocator.free(num_runs_str);
 
-    // Build hyperfine command (zig now defaults to call2, so no need for --call2 flag)
+    // Build hyperfine command
     const next_flag = if (self.use_next and std.mem.eql(u8, self.evm_name, "zig")) " --next" else "";
-    const call2_flag = "";
+    const call2_flag = if (self.use_call2 and std.mem.eql(u8, self.evm_name, "zig")) " --call2" else "";
     // For EthereumJS, invoke via bun explicitly to avoid shebang/exec issues
     const js_prefix = if (std.mem.eql(u8, self.evm_name, "ethereumjs")) "bun " else "";
     const hyperfine_cmd = try std.fmt.allocPrint(self.allocator, "{s}{s} --contract-code-path {s} --calldata {s} --num-runs {}{s}{s}", .{ js_prefix, runner_path, test_case.bytecode_path, trimmed_calldata, internal_runs_to_use, next_flag, call2_flag });
@@ -1239,10 +1240,11 @@ fn buildRunnerCommand(self: *Orchestrator, test_case: TestCase) ![]const u8 {
     
     var runner_path: []const u8 = undefined;
     if (std.mem.eql(u8, self.evm_name, "zig")) {
-        // Default zig to use call2 runner
         runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "zig-out", "bin", "evm-runner" });
     } else if (std.mem.eql(u8, self.evm_name, "zig-call2")) {
-        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "zig-out", "bin", "evm-runner" });
+        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "zig-out", "bin", "evm-runner-call2" });
+    } else if (std.mem.eql(u8, self.evm_name, "zig-small")) {
+        runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "zig-out", "bin", "evm-runner-small" });
     } else if (std.mem.eql(u8, self.evm_name, "ethereumjs")) {
         runner_path = try std.fs.path.join(self.allocator, &[_][]const u8{ project_root, "bench", "official", "evms", "ethereumjs", "runner.js" });
     } else if (std.mem.eql(u8, self.evm_name, "geth")) {
@@ -1266,7 +1268,7 @@ fn buildRunnerCommand(self: *Orchestrator, test_case: TestCase) ![]const u8 {
     defer self.allocator.free(num_runs_str);
     
     const next_flag = if (self.use_next) " --next" else "";
-    const call2_flag = "";
+    const call2_flag = if (self.use_call2 and std.mem.eql(u8, self.evm_name, "zig")) " --call2" else "";
     
     // For EthereumJS, invoke via bun explicitly
     const js_prefix = if (std.mem.eql(u8, self.evm_name, "ethereumjs")) "bun " else "";

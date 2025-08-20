@@ -1,7 +1,7 @@
 const std = @import("std");
 const Address = @import("primitives").Address.Address;
 pub const CallResult = @import("evm/call_result.zig").CallResult;
-const Frame = @import("stack_frame.zig").StackFrame;
+const Frame = @import("frame.zig").Frame;
 
 /// Call operation parameters for different call types
 pub const CallParams = union(enum) {
@@ -92,7 +92,7 @@ pub const Host = struct {
         /// Emit log event (for LOG0-LOG4 opcodes)
         emit_log: *const fn (ptr: *anyopaque, contract_address: Address, topics: []const u256, data: []const u8) void,
         /// Execute EVM call (CALL, DELEGATECALL, STATICCALL, CREATE, CREATE2)
-        inner_call: *const fn (ptr: *anyopaque, params: CallParams) anyerror!CallResult,
+        call: *const fn (ptr: *anyopaque, params: CallParams) anyerror!CallResult,
         /// Register a contract as created in the current transaction (EIP-6780)
         register_created_contract: *const fn (ptr: *anyopaque, address: Address) anyerror!void,
         /// Check if a contract was created in the current transaction (EIP-6780)
@@ -105,6 +105,10 @@ pub const Host = struct {
         record_storage_change: *const fn (ptr: *anyopaque, address: Address, slot: u256, original_value: u256) anyerror!void,
         /// Get the original storage value from the journal
         get_original_storage: *const fn (ptr: *anyopaque, address: Address, slot: u256) ?u256,
+        /// Set the output buffer for the current frame
+        set_output: *const fn (ptr: *anyopaque, output: []const u8) anyerror!void,
+        /// Get the output buffer for the current frame
+        get_output: *const fn (ptr: *anyopaque) []const u8,
         /// Access an address and return the gas cost (EIP-2929)
         access_address: *const fn (ptr: *anyopaque, address: Address) anyerror!u64,
         /// Access a storage slot and return the gas cost (EIP-2929)
@@ -116,9 +120,6 @@ pub const Host = struct {
         /// Hardfork helpers
         is_hardfork_at_least: *const fn (ptr: *anyopaque, target: @import("hardforks/hardfork.zig").Hardfork) bool,
         get_hardfork: *const fn (ptr: *anyopaque) @import("hardforks/hardfork.zig").Hardfork,
-        /// Get metadata for the current frame
-        get_is_static: *const fn (ptr: *anyopaque) bool,
-        get_depth: *const fn (ptr: *anyopaque) u11,
     };
 
     /// Initialize a Host interface from any implementation
@@ -156,9 +157,9 @@ pub const Host = struct {
                 return self.emit_log(contract_address, topics, data);
             }
 
-            fn vtable_inner_call(ptr: *anyopaque, params: CallParams) anyerror!CallResult {
+            fn vtable_call(ptr: *anyopaque, params: CallParams) anyerror!CallResult {
                 const self: Impl = @ptrCast(@alignCast(ptr));
-                return self.inner_call(params);
+                return self.call(params);
             }
 
             fn vtable_register_created_contract(ptr: *anyopaque, address: Address) anyerror!void {
@@ -191,6 +192,15 @@ pub const Host = struct {
                 return self.get_original_storage(address, slot);
             }
 
+            fn vtable_set_output(ptr: *anyopaque, output: []const u8) anyerror!void {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.set_output(output);
+            }
+
+            fn vtable_get_output(ptr: *anyopaque) []const u8 {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_output();
+            }
 
             fn vtable_access_address(ptr: *anyopaque, address: Address) anyerror!u64 {
                 const self: Impl = @ptrCast(@alignCast(ptr));
@@ -222,37 +232,27 @@ pub const Host = struct {
                 return self.get_hardfork();
             }
 
-            fn vtable_get_is_static(ptr: *anyopaque) bool {
-                const self: Impl = @ptrCast(@alignCast(ptr));
-                return self.get_is_static();
-            }
-
-            fn vtable_get_depth(ptr: *anyopaque) u11 {
-                const self: Impl = @ptrCast(@alignCast(ptr));
-                return self.get_depth();
-            }
-
             const vtable = VTable{
                 .get_balance = vtable_get_balance,
                 .account_exists = vtable_account_exists,
                 .get_code = vtable_get_code,
                 .get_block_info = vtable_get_block_info,
                 .emit_log = vtable_emit_log,
-                .inner_call = vtable_inner_call,
+                .call = vtable_call,
                 .register_created_contract = vtable_register_created_contract,
                 .was_created_in_tx = vtable_was_created_in_tx,
                 .create_snapshot = vtable_create_snapshot,
                 .revert_to_snapshot = vtable_revert_to_snapshot,
                 .record_storage_change = vtable_record_storage_change,
                 .get_original_storage = vtable_get_original_storage,
+                .set_output = vtable_set_output,
+                .get_output = vtable_get_output,
                 .access_address = vtable_access_address,
                 .access_storage_slot = vtable_access_storage_slot,
                 .mark_for_destruction = vtable_mark_for_destruction,
                 .get_input = vtable_get_input,
                 .is_hardfork_at_least = vtable_is_hardfork_at_least,
                 .get_hardfork = vtable_get_hardfork,
-                .get_is_static = vtable_get_is_static,
-                .get_depth = vtable_get_depth,
             };
         };
 
@@ -288,8 +288,8 @@ pub const Host = struct {
     }
 
     /// Execute EVM call
-    pub fn inner_call(self: Host, params: CallParams) !CallResult {
-        return self.vtable.inner_call(self.ptr, params);
+    pub fn call(self: Host, params: CallParams) !CallResult {
+        return self.vtable.call(self.ptr, params);
     }
 
     /// Register a contract as created in the current transaction (EIP-6780)
@@ -322,6 +322,15 @@ pub const Host = struct {
         return self.vtable.get_original_storage(self.ptr, address, slot);
     }
 
+    /// Set the output buffer for the current frame
+    pub fn set_output(self: Host, output: []const u8) !void {
+        return self.vtable.set_output(self.ptr, output);
+    }
+
+    /// Get the output buffer for the current frame
+    pub fn get_output(self: Host) []const u8 {
+        return self.vtable.get_output(self.ptr);
+    }
 
     /// Access an address and return the gas cost (EIP-2929)
     pub fn access_address(self: Host, address: Address) !u64 {
@@ -350,16 +359,6 @@ pub const Host = struct {
 
     pub fn get_hardfork(self: Host) @import("hardforks/hardfork.zig").Hardfork {
         return self.vtable.get_hardfork(self.ptr);
-    }
-
-    /// Get whether the current frame is static (read-only)
-    pub fn get_is_static(self: Host) bool {
-        return self.vtable.get_is_static(self.ptr);
-    }
-
-    /// Get the call depth for the current frame
-    pub fn get_depth(self: Host) u11 {
-        return self.vtable.get_depth(self.ptr);
     }
 };
 
@@ -440,17 +439,6 @@ pub const MockHost = struct {
     }
 
     pub fn call(self: *MockHost, params: CallParams) CallResult {
-        _ = self;
-        _ = params;
-        // Mock implementation - just return success with empty output
-        return CallResult{
-            .success = true,
-            .gas_left = 0,
-            .output = &.{},
-        };
-    }
-
-    pub fn inner_call(self: *MockHost, params: CallParams) !CallResult {
         _ = self;
         _ = params;
         // Mock implementation - just return success with empty output
@@ -553,48 +541,6 @@ pub const MockHost = struct {
         _ = self;
         // Mock implementation - return latest hardfork
         return .CANCUN;
-    }
-
-    pub fn get_is_static(self: *MockHost) bool {
-        _ = self;
-        // Mock implementation - return false
-        return false;
-    }
-
-    pub fn get_caller(self: *MockHost) @import("primitives").Address.Address {
-        _ = self;
-        // Mock implementation - return zero address
-        return @import("primitives").ZERO_ADDRESS;
-    }
-
-    pub fn get_value(self: *MockHost) u256 {
-        _ = self;
-        // Mock implementation - return zero value
-        return 0;
-    }
-
-    pub fn get_input_buffer(self: *MockHost) []const u8 {
-        _ = self;
-        // Mock implementation - return empty buffer
-        return &.{};
-    }
-
-    pub fn get_output_buffer(self: *MockHost) []const u8 {
-        _ = self;
-        // Mock implementation - return empty buffer
-        return &.{};
-    }
-
-    pub fn get_depth(self: *MockHost) u11 {
-        _ = self;
-        // Mock implementation - return zero depth
-        return 0;
-    }
-
-    pub fn set_output_buffer(self: *MockHost, output: []const u8) !void {
-        _ = self;
-        _ = output;
-        // Mock implementation - do nothing
     }
 
     pub fn to_host(self: *MockHost) Host {

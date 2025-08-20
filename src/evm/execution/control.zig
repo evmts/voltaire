@@ -18,7 +18,7 @@
 const std = @import("std");
 const Log = @import("../log.zig");
 const ExecutionError = @import("execution_error.zig");
-const Frame = @import("../stack_frame.zig").StackFrame;
+const Frame = @import("../frame.zig").Frame;
 // AccessList import removed - using Host interface instead
 const GasConstants = @import("primitives").GasConstants;
 const primitives = @import("primitives");
@@ -28,18 +28,23 @@ const from_u256 = primitives.Address.from_u256;
 ///
 /// Halts execution of the current context and returns successfully with no data.
 /// Stack: [] → [] (execution ends)
-pub fn op_stop(frame: *Frame) ExecutionError.Error!void {
-
+pub fn op_stop(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
+    
     // Debug: log when we hit STOP to understand why ERC20 isn't returning data
-    Log.debug("STOP opcode at stack_size={}, current output len={}", .{ frame.stack.size(), if (frame.output_buffer.len > 0) frame.output_buffer.len else 0 });
-
+    Log.debug("STOP opcode at depth={}, stack_size={}, current output len={}", .{
+        frame.depth,
+        frame.stack.size(),
+        if (frame.host.get_output().len > 0) frame.host.get_output().len else 0
+    });
+    
     return ExecutionError.Error.STOP;
 }
 
 // JUMP and JUMPI are removed; see interpreter for inlined handling.
 
-pub fn op_pc(frame: *Frame) ExecutionError.Error!void {
-    _ = frame;
+pub fn op_pc(context: *anyopaque) ExecutionError.Error!void {
+    _ = context;
 
     // PC opcode pushes the current program counter onto the stack
     // This should never be called - PC is handled by storing the value in the instruction
@@ -51,7 +56,8 @@ pub fn op_pc(frame: *Frame) ExecutionError.Error!void {
 ///
 /// Pushes the amount of gas remaining in the current execution context.
 /// Stack: [] → [gas_remaining]
-pub fn op_gas(frame: *Frame) ExecutionError.Error!void {
+pub fn op_gas(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     frame.stack.append_unsafe(@as(u256, @intCast(frame.gas_remaining)));
 }
 
@@ -60,8 +66,8 @@ pub fn op_gas(frame: *Frame) ExecutionError.Error!void {
 /// This is a no-op that marks a valid destination for JUMP/JUMPI.
 /// Has no effect on execution or stack.
 /// Stack: [] → []
-pub fn op_jumpdest(frame: *Frame) ExecutionError.Error!void {
-    _ = frame;
+pub fn op_jumpdest(context: *anyopaque) ExecutionError.Error!void {
+    _ = context;
     // No-op, just marks valid jump destination
 }
 
@@ -70,7 +76,9 @@ pub fn op_jumpdest(frame: *Frame) ExecutionError.Error!void {
 /// Halts execution and returns data from memory. The returned data becomes
 /// available to the caller.
 /// Stack: [offset, size] → [] (execution ends)
-pub fn op_return(frame: *Frame) ExecutionError.Error!void {
+pub fn op_return(context: *anyopaque) ExecutionError.Error!void {
+    const ctx = @as(*Frame, @ptrCast(@alignCast(context)));
+    const frame = ctx;
 
     std.debug.assert(frame.stack.size() >= 2);
 
@@ -129,10 +137,11 @@ pub fn op_return(frame: *Frame) ExecutionError.Error!void {
 /// Halts execution, reverts all state changes made in the current context,
 /// and returns data from memory. The returned data is available to the caller.
 /// Stack: [offset, size] → [] (execution ends)
-pub fn op_revert(frame: *Frame) ExecutionError.Error!void {
-    if (frame.stack.size() < 2) {
-        return ExecutionError.Error.StackUnderflow;
-    }
+pub fn op_revert(context: *anyopaque) ExecutionError.Error!void {
+    const ctx = @as(*Frame, @ptrCast(@alignCast(context)));
+    const frame = ctx;
+
+    std.debug.assert(frame.stack.size() >= 2);
 
     // Use batch pop for performance - pop 2 values at once
     // EVM stack is [offset, size] with OFFSET on top
@@ -174,7 +183,9 @@ pub fn op_revert(frame: *Frame) ExecutionError.Error!void {
 /// Represents an invalid opcode. Consumes all remaining gas and causes
 /// execution to fail with an error.
 /// Stack: [] → [] (execution fails)
-pub fn op_invalid(frame: *Frame) ExecutionError.Error!void {
+pub fn op_invalid(context: *anyopaque) ExecutionError.Error!void {
+    const ctx = @as(*Frame, @ptrCast(@alignCast(context)));
+    const frame = ctx;
 
     // INVALID opcode consumes all remaining gas
     frame.gas_remaining = 0;
@@ -183,10 +194,12 @@ pub fn op_invalid(frame: *Frame) ExecutionError.Error!void {
 }
 
 /// Pre-Cancun SELFDESTRUCT - destroys contract and transfers balance
-pub fn op_selfdestruct_legacy(frame: *Frame) ExecutionError.Error!void {
+pub fn op_selfdestruct_legacy(context: *anyopaque) ExecutionError.Error!void {
+    const ctx = @as(*Frame, @ptrCast(@alignCast(context)));
+    const frame = ctx;
 
     // Check if we're in a static call
-    if (frame.host.get_is_static()) {
+    if (frame.is_static) {
         @branchHint(.unlikely);
         return ExecutionError.Error.WriteProtection;
     }
@@ -217,10 +230,12 @@ pub fn op_selfdestruct_legacy(frame: *Frame) ExecutionError.Error!void {
 }
 
 /// Cancun+ SELFDESTRUCT - only works on contracts created in same transaction (EIP-6780)
-pub fn op_selfdestruct(frame: *Frame) ExecutionError.Error!void {
+pub fn op_selfdestruct(context: *anyopaque) ExecutionError.Error!void {
+    const ctx = @as(*Frame, @ptrCast(@alignCast(context)));
+    const frame = ctx;
 
     // Check if we're in a static call
-    if (frame.host.get_is_static()) {
+    if (frame.is_static) {
         @branchHint(.unlikely);
         return ExecutionError.Error.WriteProtection;
     }

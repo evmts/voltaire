@@ -53,7 +53,7 @@ test "KECCAK256 opcode hashes empty data" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -88,10 +88,17 @@ test "KECCAK256 opcode hashes empty data" {
             try testing.expectEqual(byte, guillotine_result.output.?[i]);
         }
 
-        for (revm_result.output) |_| {
+        std.debug.print("KECCAK256 empty test: Hashes match\n", .{});
+        std.debug.print("REVM hash: ", .{});
+        for (revm_result.output) |byte| {
+            std.debug.print("{x:0>2}", .{byte});
         }
-        for (guillotine_result.output.?) |_| {
+        std.debug.print("\n", .{});
+        std.debug.print("Guillotine hash: ", .{});
+        for (guillotine_result.output.?) |byte| {
+            std.debug.print("{x:0>2}", .{byte});
         }
+        std.debug.print("\n", .{});
     } else {
         // If either failed, print debug info
         // Debug disabled in compatibility path
@@ -150,7 +157,7 @@ test "KECCAK256 opcode hashes test data" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -185,10 +192,17 @@ test "KECCAK256 opcode hashes test data" {
             try testing.expectEqual(byte, guillotine_result.output.?[i]);
         }
 
-        for (revm_result.output) |_| {
+        std.debug.print("KECCAK256 abc test: Hashes match\n", .{});
+        std.debug.print("REVM hash: ", .{});
+        for (revm_result.output) |byte| {
+            std.debug.print("{x:0>2}", .{byte});
         }
-        for (guillotine_result.output.?) |_| {
+        std.debug.print("\n", .{});
+        std.debug.print("Guillotine hash: ", .{});
+        for (guillotine_result.output.?) |byte| {
+            std.debug.print("{x:0>2}", .{byte});
         }
+        std.debug.print("\n", .{});
     } else {
         // If either failed, print debug info
         // Debug disabled in compatibility path
@@ -250,7 +264,7 @@ test "KECCAK256 opcode hashes 32-byte data" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -285,10 +299,17 @@ test "KECCAK256 opcode hashes 32-byte data" {
             try testing.expectEqual(byte, guillotine_result.output.?[i]);
         }
 
-        // for (revm_result.output) |_| {
+        // std.debug.print("KECCAK256 32-byte test: Hashes match\n", .{});
+        // std.debug.print("REVM hash: ", .{});
+        // for (revm_result.output) |byte| {
+        //     std.debug.print("{x:0>2}", .{byte});
         // }
-        // for (guillotine_result.output.?) |_| {
+        // std.debug.print("\n", .{});
+        // std.debug.print("Guillotine hash: ", .{});
+        // for (guillotine_result.output.?) |byte| {
+        //     std.debug.print("{x:0>2}", .{byte});
         // }
+        // std.debug.print("\n", .{});
     } else {
         // If either failed, print debug info
         // Debug disabled in compatibility path

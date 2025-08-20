@@ -30,7 +30,7 @@ fn create_test_evm(allocator: std.mem.Allocator) !struct { evm: *Evm.Evm, memory
     const memory_db = try allocator.create(MemoryDatabase);
     memory_db.* = MemoryDatabase.init(allocator);
     const db_interface = memory_db.to_database_interface();
-    const vm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    const vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     evm.* = vm;
 
     // Set up basic context
@@ -100,7 +100,7 @@ fn run_bytecode(
     // );
     // defer contract_block.deinit(evm_instance.allocator, null);
     // const result_block = try evm_instance.interpret_block_write(&contract_block, input orelse &[_]u8{});
-    // defer if (result_block.output) |_| evm_instance.
+    // defer if (result_block.output) |output| evm_instance.
     // 
     // // Verify both interpreters produce same result
     // try std.testing.expectEqual(result.status, result_block.status);
@@ -149,7 +149,7 @@ test "VM: JUMPDEST and JUMP sequence" {
     try testing.expect(result.status == .Success);
 
     // Then check if we got output
-    if (result.output) |_| {
+    if (result.output) |output| {
         const expected_bytes = u256_to_bytes32(66);
         try testing.expectEqualSlices(u8, &expected_bytes, output);
     } else {
@@ -237,7 +237,7 @@ test "VM: PC opcode returns current program counter" {
     try testing.expect(result.status == .Success);
     // TODO: PC opcode with control flow doesn't return output properly yet
     // The test execution is successful but no output is returned
-    if (result.output) |_| {
+    if (result.output) |output| {
         // Top of stack should be 3 (the last PC value pushed)
         const expected_bytes = u256_to_bytes32(3);
         try testing.expectEqualSlices(u8, &expected_bytes, output);

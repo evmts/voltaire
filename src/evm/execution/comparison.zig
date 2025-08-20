@@ -16,8 +16,7 @@
 
 const std = @import("std");
 const ExecutionError = @import("execution_error.zig");
-const Frame = @import("../stack_frame.zig").StackFrame;
-// InstructionMetadata no longer exists - using bucketed system
+const Frame = @import("../frame.zig").Frame;
 const primitives = @import("primitives");
 const Log = @import("../log.zig");
 
@@ -31,13 +30,14 @@ const Stack = @import("../stack/stack.zig");
 ///
 /// Pops two values and pushes 1 if the first is less than the second, 0 otherwise.
 /// Stack: [a, b] → [a < b]
-pub fn op_lt(frame: *Frame) ExecutionError.Error!void {
+pub fn op_lt(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     // Pop the top operand
     const top = frame.stack.pop_unsafe();
     // Peek the second from top operand
-    const second_from_top = frame.stack.peek_unsafe();
+    const second_from_top = try frame.stack.peek_unsafe();
 
     // EVM semantics: compare top (b) with second-from-top (a), push b < a
     // REVM computes: top < second_from_top
@@ -55,13 +55,14 @@ pub fn op_lt(frame: *Frame) ExecutionError.Error!void {
 ///
 /// Pops two values and pushes 1 if the first is greater than the second, 0 otherwise.
 /// Stack: [a, b] → [a > b]
-pub fn op_gt(frame: *Frame) ExecutionError.Error!void {
+pub fn op_gt(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     // Pop the top operand
     const top = frame.stack.pop_unsafe();
     // Peek the second from top operand
-    const second_from_top = frame.stack.peek_unsafe();
+    const second_from_top = try frame.stack.peek_unsafe();
 
     // EVM semantics: compare top (b) with second-from-top (a), push b > a
     // REVM computes: top > second_from_top
@@ -80,13 +81,14 @@ pub fn op_gt(frame: *Frame) ExecutionError.Error!void {
 /// Pops two values, interprets them as signed integers, and pushes 1 if the
 /// first is less than the second, 0 otherwise.
 /// Stack: [a, b] → [a < b] (signed)
-pub fn op_slt(frame: *Frame) ExecutionError.Error!void {
+pub fn op_slt(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     // Pop the top operand
     const top = frame.stack.pop_unsafe();
     // Peek the second from top operand
-    const second_from_top = frame.stack.peek_unsafe();
+    const second_from_top = try frame.stack.peek_unsafe();
 
     // EVM semantics: compare top (b) with second-from-top (a), push b < a (signed)
     // REVM computes: top < second_from_top
@@ -108,13 +110,14 @@ pub fn op_slt(frame: *Frame) ExecutionError.Error!void {
 /// Pops two values, interprets them as signed integers, and pushes 1 if the
 /// first is greater than the second, 0 otherwise.
 /// Stack: [a, b] → [a > b] (signed)
-pub fn op_sgt(frame: *Frame) ExecutionError.Error!void {
+pub fn op_sgt(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     // Pop the top operand
     const top = frame.stack.pop_unsafe();
     // Peek the second from top operand
-    const second_from_top = frame.stack.peek_unsafe();
+    const second_from_top = try frame.stack.peek_unsafe();
 
     // EVM semantics: compare top (b) with second-from-top (a), push b > a (signed)
     // REVM computes: top > second_from_top
@@ -132,13 +135,14 @@ pub fn op_sgt(frame: *Frame) ExecutionError.Error!void {
 ///
 /// Pops two values and pushes 1 if they are equal, 0 otherwise.
 /// Stack: [a, b] → [a == b]
-pub fn op_eq(frame: *Frame) ExecutionError.Error!void {
+pub fn op_eq(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     // Pop the top operand (b)
     const b = frame.stack.pop_unsafe();
     // Peek the new top operand (a)
-    const a = frame.stack.peek_unsafe();
+    const a = try frame.stack.peek_unsafe();
 
     const result: u256 = if (a == b) 1 else 0;
 
@@ -150,11 +154,12 @@ pub fn op_eq(frame: *Frame) ExecutionError.Error!void {
 ///
 /// Pops one value and pushes 1 if it is zero, 0 otherwise.
 /// Stack: [a] → [a == 0]
-pub fn op_iszero(frame: *Frame) ExecutionError.Error!void {
+pub fn op_iszero(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 1);
 
     // Peek the operand
-    const value = frame.stack.peek_unsafe();
+    const value = try frame.stack.peek_unsafe();
 
     // Optimized: Use @intFromBool for direct bool to int conversion
     // This should compile to more efficient assembly than if/else
@@ -166,6 +171,8 @@ pub fn op_iszero(frame: *Frame) ExecutionError.Error!void {
 
 // Fuzz testing functions for comparison operations
 pub fn fuzz_comparison_operations(allocator: std.mem.Allocator, operations: []const FuzzComparisonOperation) !void {
+    const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
+    const CodeAnalysis = @import("../analysis.zig").CodeAnalysis;
     const MockHost = @import("../host.zig").MockHost;
 
     for (operations) |op| {
@@ -174,43 +181,28 @@ pub fn fuzz_comparison_operations(allocator: std.mem.Allocator, operations: []co
 
         // Create a simple code analysis for testing
         const code = &[_]u8{0x00}; // STOP
-
-        // Create empty analysis for StackFrame
-        const SimpleAnalysis = @import("../evm/analysis2.zig").SimpleAnalysis;
-        const empty_analysis = SimpleAnalysis{
-            .inst_to_pc = &.{},
-            .pc_to_inst = &.{},
-            .bytecode = code,
-            .inst_count = 0,
-            .block_boundaries = try std.bit_set.DynamicBitSet.initEmpty(allocator, 0),
-            .bucket_indices = &.{},
-            .u16_bucket = &.{},
-            .u32_bucket = &.{},
-            .u64_bucket = &.{},
-            .u256_bucket = &.{},
-        };
-        // No longer need metadata - using bucket system
-        const empty_ops: []*const fn (*Frame) ExecutionError.Error!noreturn = &.{};
+        const table = OpcodeMetadata.DEFAULT;
+        var analysis = try CodeAnalysis.from_code(allocator, code, &table);
+        defer analysis.deinit();
 
         // Create mock host
         var mock_host = MockHost.init(allocator);
         defer mock_host.deinit();
         const host = mock_host.to_host();
-
+        
         const db_interface = memory_db.to_database_interface();
 
         var context = try Frame.init(
             1000000, // gas_remaining
+            false, // static_call
+            0, // call_depth
             primitives.Address.ZERO_ADDRESS, // contract_address
-            empty_analysis,
-            empty_ops,
+            primitives.Address.ZERO_ADDRESS, // caller
+            0, // value
+            &analysis,
             host,
             db_interface,
             allocator,
-            false, // is_static
-            primitives.Address.ZERO_ADDRESS, // caller
-            0, // value
-            &.{}, // input_buffer
         );
         defer context.deinit(allocator);
 

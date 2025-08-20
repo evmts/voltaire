@@ -18,7 +18,7 @@ test "E2E: STOP opcode halts execution" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -52,7 +52,7 @@ test "E2E: JUMPDEST is a no-op" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -81,7 +81,7 @@ test "E2E: JUMPDEST is a no-op" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0x42), value);
@@ -94,7 +94,7 @@ test "E2E: RETURN with empty data" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -127,7 +127,7 @@ test "E2E: RETURN with data from memory" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -155,7 +155,7 @@ test "E2E: RETURN with data from memory" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0x42), value);
@@ -168,7 +168,7 @@ test "E2E: RETURN with out of bounds offset" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -205,7 +205,7 @@ test "E2E: REVERT with empty data" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -238,7 +238,7 @@ test "E2E: REVERT with data from memory" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -276,7 +276,7 @@ test "E2E: REVERT with data from memory" {
     // REVERT should fail but provide output
     try testing.expect(!result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 4), output.len);
         try testing.expectEqual(@as(u8, 0xEF), output[0]);
         try testing.expectEqual(@as(u8, 0xBE), output[1]);
@@ -291,7 +291,7 @@ test "E2E: INVALID opcode consumes all gas" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -325,7 +325,7 @@ test "E2E: SELFDESTRUCT in static context fails" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Create a contract that calls SELFDESTRUCT
@@ -371,7 +371,7 @@ test "E2E: SELFDESTRUCT in static context fails" {
     const result = try vm.call(params);
     // The call should succeed, but STATICCALL should have failed
     try testing.expect(result.success);
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0), value); // STATICCALL failed
@@ -384,7 +384,7 @@ test "E2E: SELFDESTRUCT with cold recipient address" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Set some balance to the contract
@@ -426,7 +426,7 @@ test "E2E: Complex control flow with JUMPI and RETURN" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Contract that returns different values based on calldata
@@ -476,7 +476,7 @@ test "E2E: Complex control flow with JUMPI and RETURN" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0x42), value);
@@ -489,7 +489,7 @@ test "E2E: RETURN with memory expansion gas cost" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Return large memory region
@@ -515,10 +515,10 @@ test "E2E: RETURN with memory expansion gas cost" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 256), output.len);
         // Memory should be zero-initialized
-        for (output) |_| {
+        for (output) |byte| {
             try testing.expectEqual(@as(u8, 0), byte);
         }
     }
@@ -530,7 +530,7 @@ test "E2E: REVERT reverses state changes" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Contract that stores value then reverts
@@ -571,7 +571,7 @@ test "E2E: INVALID opcode in nested call" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Contract A with INVALID opcode
@@ -616,7 +616,7 @@ test "E2E: INVALID opcode in nested call" {
     // Outer call should succeed
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         // Inner call should have failed (0)
@@ -630,7 +630,7 @@ test "E2E: SELFDESTRUCT with created contract tracking (EIP-6780)" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Deploy a contract that can selfdestruct

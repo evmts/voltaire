@@ -1,7 +1,7 @@
 const std = @import("std");
 const ExecutionError = @import("execution_error.zig");
 const builtin = @import("builtin");
-const Frame = @import("../stack_frame.zig").StackFrame;
+const Frame = @import("../frame.zig").Frame;
 const Evm = @import("../evm.zig");
 const Vm = Evm; // Alias for compatibility
 const primitives = @import("primitives");
@@ -12,7 +12,6 @@ const Host = @import("../host.zig").Host;
 const CallParams = @import("../host.zig").CallParams;
 const AccessList = @import("../access_list/access_list.zig");
 const Log = @import("../log.zig");
-const CodeAnalysis = @import("../analysis.zig").CodeAnalysis;
 
 // Define local CallType to decouple from preallocated call frame stack
 const CallType = enum { Call, CallCode, DelegateCall, StaticCall };
@@ -180,6 +179,12 @@ pub const CallResult = struct {
 // Shared Validation Functions for Call Operations
 // ============================================================================
 
+/// Check call depth limit shared by all call operations
+/// Returns true if depth limit is exceeded, false otherwise
+fn validate_call_depth(frame: *Frame) bool {
+    return frame.depth >= 1024;
+}
+
 /// Handle memory expansion for call arguments
 /// Returns the arguments slice or empty slice if size is 0
 fn get_call_args(frame: *Frame, args_offset: u256, args_size: u256) ExecutionError.Error![]const u8 {
@@ -313,7 +318,7 @@ fn handle_call_result(frame: Frame, result: anytype, ret_offset: u256, ret_size:
 
 /// Check static call restrictions for CREATE operations
 fn validate_create_static_context(frame: Frame) ExecutionError.Error!void {
-    if (frame.host.get_is_static()) {
+    if (frame.is_static) {
         @branchHint(.unlikely);
         return ExecutionError.Error.WriteProtection;
     }
@@ -466,8 +471,8 @@ pub fn calculate_call_gas(
 // ============================================================================
 
 // Gas opcode handler
-pub fn gas_op(frame: *Frame) ExecutionError.Error!void {
-    frame.stack.append_unsafe(@as(u256, @intCast(frame.gas_remaining)));
+pub fn gas_op(context: *Frame) ExecutionError.Error!void {
+    context.stack.append_unsafe(@as(u256, @intCast(context.gas_remaining)));
 }
 
 // Helper to check if u256 fits in usize
@@ -526,7 +531,8 @@ pub fn revert_to_snapshot(vm: *Vm, snapshot_id: usize) !void {
     try vm.revert_to_snapshot(snapshot_id);
 }
 
-pub fn op_create(frame: *Frame) ExecutionError.Error!void {
+pub fn op_create(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // Pop parameters from stack using optimized pop3
     // Stack order: [value, offset, size] with size on top
@@ -535,16 +541,23 @@ pub fn op_create(frame: *Frame) ExecutionError.Error!void {
     const value = params.a; // bottom = value
     const init_offset = params.b; // middle = offset
     const init_size = params.c; // top = size
-
+    
     // Debug: Check what parameters we got from stack
     if (builtin.mode == .Debug) {
         std.debug.print("[op_create DEBUG] Stack params: value={}, offset={}, size={}\n", .{ value, init_offset, init_size });
     }
 
     // Check if in static context (CREATE not allowed)
-    if (frame.host.get_is_static()) {
+    if (frame.is_static) {
         @branchHint(.unlikely);
         return ExecutionError.Error.StaticStateChange;
+    }
+
+    // Check call depth limit
+    if (frame.depth >= 1024) {
+        @branchHint(.unlikely);
+        frame.stack.append_unsafe(0);
+        return;
     }
 
     // CRITICAL FIX: Calculate memory expansion costs BEFORE expanding memory
@@ -603,7 +616,7 @@ pub fn op_create(frame: *Frame) ExecutionError.Error!void {
             std.debug.print("\n", .{});
         }
     }
-
+    
     // CREATE uses sender address + nonce for address calculation
     const call_params = CallParams{
         .create = .{
@@ -619,7 +632,7 @@ pub fn op_create(frame: *Frame) ExecutionError.Error!void {
     const snapshot = frame.host.create_snapshot();
 
     // Execute the CREATE through the host
-    const call_result = frame.host.inner_call(call_params) catch {
+    const call_result = frame.host.call(call_params) catch {
         // On error, revert the snapshot and push 0 (failure)
         frame.host.revert_to_snapshot(snapshot);
         frame.stack.append_unsafe(0);
@@ -679,7 +692,8 @@ pub fn op_create(frame: *Frame) ExecutionError.Error!void {
 }
 
 /// CREATE2 opcode - Create contract with deterministic address
-pub fn op_create2(frame: *Frame) ExecutionError.Error!void {
+pub fn op_create2(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // Pop parameters from stack using optimized pop methods
     // Stack order (top to bottom): value, offset, size, salt
@@ -693,13 +707,19 @@ pub fn op_create2(frame: *Frame) ExecutionError.Error!void {
     const salt = params2.a; // second (after first pop2) = salt
 
     // Check if in static context (CREATE2 not allowed)
-    if (frame.host.get_is_static()) {
+    if (frame.is_static) {
         @branchHint(.unlikely);
         return ExecutionError.Error.StaticStateChange;
     }
 
-    // Check call depth limit in the host interface
+    // Check call depth limit
+    if (frame.depth >= 1024) {
+        @branchHint(.unlikely);
+        frame.stack.append_unsafe(0);
+        return;
+    }
 
+    // CRITICAL FIX: Calculate memory expansion costs BEFORE expanding memory
     const init_end = if (init_size > 0) blk: {
         try check_offset_bounds(init_offset);
         try check_offset_bounds(init_size);
@@ -766,7 +786,7 @@ pub fn op_create2(frame: *Frame) ExecutionError.Error!void {
     const snapshot = frame.host.create_snapshot();
 
     // Execute the CREATE2 through the host
-    const call_result = frame.host.inner_call(call_params) catch {
+    const call_result = frame.host.call(call_params) catch {
         // On error, revert the snapshot and push 0 (failure)
         frame.host.revert_to_snapshot(snapshot);
         frame.stack.append_unsafe(0);
@@ -825,11 +845,8 @@ pub fn op_create2(frame: *Frame) ExecutionError.Error!void {
     }
 }
 
-pub fn op_call(frame: *Frame) ExecutionError.Error!void {
-    // Validate that we have enough stack elements for CALL (requires 7)
-    if (frame.stack.size() < 7) {
-        return ExecutionError.Error.StackUnderflow;
-    }
+pub fn op_call(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // EVM stack order (top -> bottom): gas, to, value, in_offset, in_size, out_offset, out_size
     // Pop in that order for clarity
@@ -842,8 +859,15 @@ pub fn op_call(frame: *Frame) ExecutionError.Error!void {
     const ret_size = frame.stack.pop_unsafe();
 
     // Validate static context for value transfers
-    if (frame.host.get_is_static() and value != 0) {
+    if (frame.is_static and value != 0) {
         return ExecutionError.Error.WriteProtection;
+    }
+
+    // Check depth limit
+    if (validate_call_depth(frame)) {
+        // Depth limit exceeded, push failure
+        frame.stack.append_unsafe(0);
+        return;
     }
 
     // Convert to address
@@ -919,7 +943,7 @@ pub fn op_call(frame: *Frame) ExecutionError.Error!void {
     } };
 
     // Perform the call using the host's call method
-    const call_result = host.inner_call(call_params) catch {
+    const call_result = host.call(call_params) catch {
         // On error, revert the snapshot and push 0 (failure)
         frame.host.revert_to_snapshot(snapshot);
         try frame.stack.append(0);
@@ -964,7 +988,8 @@ pub fn op_call(frame: *Frame) ExecutionError.Error!void {
     frame.stack.append_unsafe(if (call_result.success) 1 else 0);
 }
 
-pub fn op_callcode(frame: *Frame) ExecutionError.Error!void {
+pub fn op_callcode(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // Pop parameters from stack (same layout as CALL) using optimized methods
     const params1 = frame.stack.pop3_unsafe();
@@ -979,8 +1004,14 @@ pub fn op_callcode(frame: *Frame) ExecutionError.Error!void {
     const ret_size = params3.b;
 
     // CALLCODE obeys static context for value transfers
-    if (frame.host.get_is_static() and value != 0) {
+    if (frame.is_static and value != 0) {
         return ExecutionError.Error.WriteProtection;
+    }
+
+    // Depth limit
+    if (validate_call_depth(frame)) {
+        frame.stack.append_unsafe(0);
+        return;
     }
 
     const to_address = from_u256(to);
@@ -1039,7 +1070,7 @@ pub fn op_callcode(frame: *Frame) ExecutionError.Error!void {
         .gas = gas_limit,
     } };
 
-    const call_result = frame.host.inner_call(call_params) catch {
+    const call_result = frame.host.call(call_params) catch {
         frame.host.revert_to_snapshot(snapshot);
         frame.stack.append_unsafe(0);
         return;
@@ -1076,7 +1107,8 @@ pub fn op_callcode(frame: *Frame) ExecutionError.Error!void {
     frame.stack.append_unsafe(if (call_result.success) 1 else 0);
 }
 
-pub fn op_delegatecall(frame: *Frame) ExecutionError.Error!void {
+pub fn op_delegatecall(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     const params1 = frame.stack.pop2_unsafe();
     const gas = params1.a;
@@ -1111,6 +1143,12 @@ pub fn op_delegatecall(frame: *Frame) ExecutionError.Error!void {
     if (max_memory_size > 0) _ = try frame.memory.ensure_context_capacity(@intCast(max_memory_size));
     const to_address = from_u256(to);
 
+    if (frame.depth >= 1024) {
+        @branchHint(.unlikely);
+        frame.stack.append_unsafe(0);
+        return;
+    }
+
     const args = if (args_size == 0) &[_]u8{} else blk_args: {
         const o: usize = @intCast(args_offset);
         const s: usize = @intCast(args_size);
@@ -1143,7 +1181,7 @@ pub fn op_delegatecall(frame: *Frame) ExecutionError.Error!void {
     };
 
     // Execute the delegatecall through the host
-    const call_result = frame.host.inner_call(call_params) catch {
+    const call_result = frame.host.call(call_params) catch {
         // On error, revert the snapshot and push 0 (failure)
         frame.host.revert_to_snapshot(snapshot);
         frame.stack.append_unsafe(0);
@@ -1183,7 +1221,8 @@ pub fn op_delegatecall(frame: *Frame) ExecutionError.Error!void {
     frame.stack.append_unsafe(if (call_result.success) 1 else 0);
 }
 
-pub fn op_staticcall(frame: *Frame) ExecutionError.Error!void {
+pub fn op_staticcall(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // Debug: Capture original frame pointer
     const original_frame_ptr = @intFromPtr(frame);
@@ -1246,6 +1285,13 @@ pub fn op_staticcall(frame: *Frame) ExecutionError.Error!void {
     const to_address = from_u256(to);
     Log.debug("[STATICCALL] Converted address: {any}", .{to_address});
 
+    // Check call depth limit
+    if (frame.depth >= 1024) {
+        @branchHint(.unlikely);
+        frame.stack.append_unsafe(0);
+        return;
+    }
+
     // Now expand memory after charging for it
     const args = if (args_size == 0) &[_]u8{} else blk_args: {
         const o: usize = @intCast(args_offset);
@@ -1282,18 +1328,20 @@ pub fn op_staticcall(frame: *Frame) ExecutionError.Error!void {
     // Debug: capture stack/frame state before call
     // Get the EVM to check current state
     const evm_ptr = @as(*Evm, @ptrCast(@alignCast(frame.host.ptr)));
-    const evm_depth_before: u32 = @intCast(evm_ptr.frames.items.len);
+    const evm_depth_before = evm_ptr.current_frame_depth;
 
+    const pre_depth = frame.depth;
     const pre_stack_size = frame.stack.size();
     Log.debug(
-        "[STATICCALL] pre-call: frame={x}, stack size={}",
+        "[STATICCALL] pre-call: frame={x}, depth={}, stack size={}",
         .{
             @intFromPtr(frame),
+            pre_depth,
             pre_stack_size,
         },
     );
 
-    const call_result = frame.host.inner_call(call_params) catch {
+    const call_result = frame.host.call(call_params) catch {
         // On error, revert the snapshot and push 0 (failure)
         frame.host.revert_to_snapshot(snapshot);
         frame.stack.append_unsafe(0);
@@ -1301,11 +1349,12 @@ pub fn op_staticcall(frame: *Frame) ExecutionError.Error!void {
     };
 
     // Debug: capture stack/frame state after call
-    const evm_depth_after: u32 = @intCast(evm_ptr.frames.items.len);
+    const evm_depth_after = evm_ptr.current_frame_depth;
     Log.debug(
-        "[STATICCALL] post-call: frame={x}, evm_depth_before={}, evm_depth_after={}, stack size={}",
+        "[STATICCALL] post-call: frame={x}, depth={}, evm_depth_before={}, evm_depth_after={}, stack size={}",
         .{
             @intFromPtr(frame),
+            frame.depth,
             evm_depth_before,
             evm_depth_after,
             frame.stack.size(),
@@ -1379,10 +1428,11 @@ pub fn op_staticcall(frame: *Frame) ExecutionError.Error!void {
 /// Gas: Variable based on hardfork and account creation
 /// Memory: No memory access
 /// Storage: Contract marked for destruction (if created in same tx)
-pub fn op_selfdestruct(frame: *Frame) ExecutionError.Error!void {
+pub fn op_selfdestruct(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
 
     // Check static call restriction
-    if (frame.host.get_is_static()) {
+    if (frame.is_static) {
         return ExecutionError.Error.WriteProtection;
     }
 
@@ -1434,8 +1484,8 @@ pub fn op_selfdestruct(frame: *Frame) ExecutionError.Error!void {
 
 /// EXTCALL opcode (0xF8): External call with EOF validation
 /// Not implemented - EOF feature
-pub fn op_extcall(frame: *Frame) ExecutionError.Error!void {
-    _ = frame;
+pub fn op_extcall(context: *anyopaque) ExecutionError.Error!void {
+    _ = context;
 
     // This is an EOF (EVM Object Format) opcode, not yet implemented
     return ExecutionError.Error.EOFNotSupported;
@@ -1443,8 +1493,8 @@ pub fn op_extcall(frame: *Frame) ExecutionError.Error!void {
 
 /// EXTDELEGATECALL opcode (0xF9): External delegate call with EOF validation
 /// Not implemented - EOF feature
-pub fn op_extdelegatecall(frame: *Frame) ExecutionError.Error!void {
-    _ = frame;
+pub fn op_extdelegatecall(context: *anyopaque) ExecutionError.Error!void {
+    _ = context;
 
     // This is an EOF (EVM Object Format) opcode, not yet implemented
     return ExecutionError.Error.EOFNotSupported;
@@ -1452,8 +1502,8 @@ pub fn op_extdelegatecall(frame: *Frame) ExecutionError.Error!void {
 
 /// EXTSTATICCALL opcode (0xFB): External static call with EOF validation
 /// Not implemented - EOF feature
-pub fn op_extstaticcall(frame: *Frame) ExecutionError.Error!void {
-    _ = frame;
+pub fn op_extstaticcall(context: *anyopaque) ExecutionError.Error!void {
+    _ = context;
 
     // This is an EOF (EVM Object Format) opcode, not yet implemented
     return ExecutionError.Error.EOFNotSupported;
@@ -1871,21 +1921,20 @@ fn validate_system_result(frame: *const Frame, op: FuzzSystemOperation, result: 
 
 test "CALL with value guarantees 2300 gas stipend added to forwarded gas (3x memory corruption test)" {
     const allocator = testing.allocator;
-
+    
     // Run test 3 times to detect memory corruption
     var run: usize = 0;
     while (run < 3) : (run += 1) {
         std.debug.print("CALL gas stipend test run {}/3\n", .{run + 1});
-
+        
         // Create a proper frame for testing
-        const SimpleAnalysis = @import("../evm/analysis2.zig").SimpleAnalysis;
+        const CodeAnalysis = @import("../analysis.zig").CodeAnalysis;
         const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
         const code = &[_]u8{0x00}; // STOP
-        _ = OpcodeMetadata.DEFAULT; // Unused in new analysis system
-        const result = try SimpleAnalysis.analyze(allocator, code);
-        // Analysis is const from analyze(), cannot deinit here
-        defer allocator.free(result.block_gas_costs);
-
+        const table = OpcodeMetadata.DEFAULT;
+        var analysis = try CodeAnalysis.from_code(allocator, code, &table);
+        defer analysis.deinit();
+        
         const MockHost = @import("../host.zig").MockHost;
         const MemDb = @import("../state/memory_database.zig").MemoryDatabase;
         var memory_db = MemDb.init(allocator);
@@ -1894,90 +1943,88 @@ test "CALL with value guarantees 2300 gas stipend added to forwarded gas (3x mem
         defer mock_host.deinit();
         const host = mock_host.to_host();
         const db_interface = memory_db.to_database_interface();
-
+        
         var frame = try Frame.init(
             10000, // gas_remaining
+            false, // static_call
+            0, // call_depth
             primitives.Address.ZERO_ADDRESS, // contract_address
-            result.analysis,
-            &.{}, // empty ops
+            primitives.Address.ZERO_ADDRESS, // caller
+            0, // value
+            &analysis,
             host,
             db_interface,
             allocator,
-            false, // is_static
-            primitives.Address.ZERO_ADDRESS, // caller
-            0, // value
-            &.{}, // input_buffer
         );
         defer frame.deinit(allocator);
 
-        // Test 1: With value transfer, stipend is ADDED to forwarded gas
-        {
-            const gas_requested: u256 = 1000; // Request 1000 gas
-            const value: u256 = 1; // Non-zero value triggers stipend
-            const already_consumed: u64 = 100; // Some gas already consumed
+    // Test 1: With value transfer, stipend is ADDED to forwarded gas
+    {
+        const gas_requested: u256 = 1000; // Request 1000 gas
+        const value: u256 = 1; // Non-zero value triggers stipend
+        const already_consumed: u64 = 100; // Some gas already consumed
 
-            const gas_for_call = calculate_call_gas_amount(&frame, gas_requested, value, already_consumed);
+        const gas_for_call = calculate_call_gas_amount(&frame, gas_requested, value, already_consumed);
 
-            // Available after consumed: 10000 - 100 = 9900
-            // Max forwardable: 9900 - (9900/64) = 9900 - 154 = 9746
-            // Requested: 1000 (less than max)
-            // With stipend: 1000 + 2300 = 3300
-            try testing.expectEqual(@as(u64, 1000 + GasConstants.GAS_STIPEND_VALUE_TRANSFER), gas_for_call);
-        }
+        // Available after consumed: 10000 - 100 = 9900
+        // Max forwardable: 9900 - (9900/64) = 9900 - 154 = 9746
+        // Requested: 1000 (less than max)
+        // With stipend: 1000 + 2300 = 3300
+        try testing.expectEqual(@as(u64, 1000 + GasConstants.GAS_STIPEND_VALUE_TRANSFER), gas_for_call);
+    }
 
-        // Test 2: EIP-150 63/64 rule limits gas forwarding
-        {
-            frame.gas_remaining = 6400; // Specific amount for easy calculation
-            const gas_requested: u256 = 10000; // Request more than available
-            const value: u256 = 0; // No value, no stipend
-            const already_consumed: u64 = 0;
+    // Test 2: EIP-150 63/64 rule limits gas forwarding
+    {
+        frame.gas_remaining = 6400; // Specific amount for easy calculation
+        const gas_requested: u256 = 10000; // Request more than available
+        const value: u256 = 0; // No value, no stipend
+        const already_consumed: u64 = 0;
 
-            const gas_for_call = calculate_call_gas_amount(&frame, gas_requested, value, already_consumed);
+        const gas_for_call = calculate_call_gas_amount(&frame, gas_requested, value, already_consumed);
 
-            // Available: 6400
-            // One 64th: 6400 / 64 = 100
-            // Max forwardable: 6400 - 100 = 6300
-            // No stipend since value = 0
-            try testing.expectEqual(@as(u64, 6300), gas_for_call);
-        }
+        // Available: 6400
+        // One 64th: 6400 / 64 = 100
+        // Max forwardable: 6400 - 100 = 6300
+        // No stipend since value = 0
+        try testing.expectEqual(@as(u64, 6300), gas_for_call);
+    }
 
-        // Test 3: Stipend is added even when gas is limited by 63/64 rule
-        {
-            frame.gas_remaining = 640; // Low gas
-            const gas_requested: u256 = 1000; // Request more than available
-            const value: u256 = 1; // Non-zero value
-            const already_consumed: u64 = 0;
+    // Test 3: Stipend is added even when gas is limited by 63/64 rule
+    {
+        frame.gas_remaining = 640; // Low gas
+        const gas_requested: u256 = 1000; // Request more than available
+        const value: u256 = 1; // Non-zero value
+        const already_consumed: u64 = 0;
 
-            const gas_for_call = calculate_call_gas_amount(&frame, gas_requested, value, already_consumed);
+        const gas_for_call = calculate_call_gas_amount(&frame, gas_requested, value, already_consumed);
 
-            // Available: 640
-            // One 64th: 640 / 64 = 10
-            // Max forwardable: 640 - 10 = 630
-            // With stipend: 630 + 2300 = 2930
-            try testing.expectEqual(@as(u64, 630 + GasConstants.GAS_STIPEND_VALUE_TRANSFER), gas_for_call);
-        }
-
+        // Available: 640
+        // One 64th: 640 / 64 = 10
+        // Max forwardable: 640 - 10 = 630
+        // With stipend: 630 + 2300 = 2930
+        try testing.expectEqual(@as(u64, 630 + GasConstants.GAS_STIPEND_VALUE_TRANSFER), gas_for_call);
+    }
+    
         std.debug.print("  Run {} completed successfully\n", .{run + 1});
     } // End of while loop
 }
 
 test "CALL without value respects gas limit without stipend (3x memory corruption test)" {
     const allocator = testing.allocator;
-
+    
     // Run test 3 times to detect memory corruption
     var run: usize = 0;
     while (run < 3) : (run += 1) {
         std.debug.print("CALL without value test run {}/3\n", .{run + 1});
-
+        
         // Create a proper frame for testing
-        const SimpleAnalysis = @import("../evm/analysis2.zig").SimpleAnalysis;
+        const CodeAnalysis = @import("../analysis.zig").CodeAnalysis;
         const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
         const code = &[_]u8{0x00}; // STOP
-        _ = OpcodeMetadata.DEFAULT; // Unused in new analysis system
-        const result = try SimpleAnalysis.analyze(allocator, code);
-        // Analysis is const from analyze(), cannot deinit here
-        defer allocator.free(result.block_gas_costs);
-
+        const table = OpcodeMetadata.DEFAULT;
+        var analysis = try CodeAnalysis.from_code(allocator, code, &table);
+        defer analysis.deinit();
+        
         const MockHost = @import("../host.zig").MockHost;
         const MemDb = @import("../state/memory_database.zig").MemoryDatabase;
         var memory_db = MemDb.init(allocator);
@@ -1986,56 +2033,54 @@ test "CALL without value respects gas limit without stipend (3x memory corruptio
         defer mock_host.deinit();
         const host = mock_host.to_host();
         const db_interface = memory_db.to_database_interface();
-
+        
         const prim = @import("primitives");
         var frame = try Frame.init(
             1000, // gas_remaining
+            false, // static_call
+            0, // call_depth
             prim.Address.ZERO_ADDRESS, // contract_address
-            result.analysis,
-            &.{}, // empty ops
+            prim.Address.ZERO_ADDRESS, // caller
+            0, // value
+            &analysis,
             host,
             db_interface,
             allocator,
-            false, // is_static
-            prim.Address.ZERO_ADDRESS, // caller
-            0, // value
-            &.{}, // input_buffer
         );
         defer frame.deinit(allocator);
 
-        // Test: Without value transfer, no stipend should be applied
-        {
-            const gas_requested: u256 = 50; // Request only 50 gas
-            const value: u256 = 0; // Zero value - no stipend
-            const already_consumed: u64 = 0;
+    // Test: Without value transfer, no stipend should be applied
+    {
+        const gas_requested: u256 = 50; // Request only 50 gas
+        const value: u256 = 0; // Zero value - no stipend
+        const already_consumed: u64 = 0;
 
-            const gas_for_call = calculate_call_gas_amount(&frame, gas_requested, value, already_consumed);
+        const gas_for_call = calculate_call_gas_amount(&frame, gas_requested, value, already_consumed);
 
-            // Available: 1000
-            // One 64th: 1000 / 64 = 15
-            // Max forwardable: 1000 - 15 = 985
-            // Requested: 50 (less than max)
-            // No stipend since value = 0
-            try testing.expectEqual(@as(u64, 50), gas_for_call);
-            try testing.expect(gas_for_call < GasConstants.GAS_STIPEND_VALUE_TRANSFER);
-        }
-
+        // Available: 1000
+        // One 64th: 1000 / 64 = 15
+        // Max forwardable: 1000 - 15 = 985
+        // Requested: 50 (less than max)
+        // No stipend since value = 0
+        try testing.expectEqual(@as(u64, 50), gas_for_call);
+        try testing.expect(gas_for_call < GasConstants.GAS_STIPEND_VALUE_TRANSFER);
+    }
+    
         std.debug.print("  Run {} completed successfully\n", .{run + 1});
     } // End of while loop
 }
 
 test "EIP-150 gas calculations for nested calls" {
     const allocator = testing.allocator;
-
+    
     // Create a proper frame for testing
-    const SimpleAnalysis = @import("../evm/analysis2.zig").SimpleAnalysis;
+    const CodeAnalysis = @import("../analysis.zig").CodeAnalysis;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
     const code = &[_]u8{0x00}; // STOP
-    _ = OpcodeMetadata.DEFAULT; // Unused in new analysis system
-    const result = try SimpleAnalysis.analyze(allocator, code);
-    // Analysis is const from analyze(), cannot deinit here
-    defer allocator.free(result.block_gas_costs);
-
+    const table = OpcodeMetadata.DEFAULT;
+    var analysis = try CodeAnalysis.from_code(allocator, code, &table);
+    defer analysis.deinit();
+    
     const MockHost = @import("../host.zig").MockHost;
     const MemDb = @import("../state/memory_database.zig").MemoryDatabase;
     var memory_db = MemDb.init(allocator);
@@ -2044,20 +2089,19 @@ test "EIP-150 gas calculations for nested calls" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
     const db_interface = memory_db.to_database_interface();
-
+    
     const prim = @import("primitives");
     var frame = try Frame.init(
         100000, // gas_remaining
+        false, // static_call
+        0, // call_depth
         prim.Address.ZERO_ADDRESS, // contract_address
-        result.analysis,
-        &.{}, // empty ops
+        prim.Address.ZERO_ADDRESS, // caller
+        0, // value
+        &analysis,
         host,
         db_interface,
         allocator,
-        false, // is_static
-        prim.Address.ZERO_ADDRESS, // caller
-        0, // value
-        &.{}, // input_buffer
     );
     defer frame.deinit(allocator);
 
@@ -2095,40 +2139,38 @@ test "EIP-150 gas calculations for nested calls" {
 
 test "EIP-150 minimum gas retention" {
     const allocator = std.testing.allocator;
-
+    
     // Create minimal test infrastructure
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
-    const SimpleAnalysis = @import("../evm/analysis2.zig").SimpleAnalysis;
+    const CodeAnalysis = @import("../analysis.zig").CodeAnalysis;
     const MockHost = @import("../host.zig").MockHost;
     const MemDb = @import("../state/memory_database.zig").MemoryDatabase;
-
+    
     var memory_db = MemDb.init(allocator);
     defer memory_db.deinit();
-
+    
     const code = &[_]u8{0x00}; // STOP
-    _ = OpcodeMetadata.DEFAULT; // Unused in new analysis system
-    const result = try SimpleAnalysis.analyze(allocator, code);
-    // Analysis is const from analyze(), cannot deinit here
-    defer allocator.free(result.block_gas_costs);
-
+    const table = OpcodeMetadata.DEFAULT;
+    var analysis = try CodeAnalysis.from_code(allocator, code, &table);
+    defer analysis.deinit();
+    
     var mock_host = MockHost.init(allocator);
     defer mock_host.deinit();
     const host = mock_host.to_host();
     const db_interface = memory_db.to_database_interface();
-
+    
     // Test that caller always retains at least 1/64 of gas
     var frame = try Frame.init(
         64, // gas_remaining - Exactly 64 gas
+        false, // static_call
+        0, // call_depth
         primitives.Address.ZERO_ADDRESS, // contract_address
-        result.analysis,
-        &.{}, // empty ops
+        primitives.Address.ZERO_ADDRESS, // caller
+        0, // value
+        &analysis,
         host,
         db_interface,
         allocator,
-        false, // is_static
-        primitives.Address.ZERO_ADDRESS, // caller
-        0, // value
-        &.{}, // input_buffer
     );
     defer frame.deinit(allocator);
 
@@ -2164,16 +2206,15 @@ test "EIP-150 minimum gas retention" {
 
 test "EIP-150 stipend edge cases" {
     const allocator = testing.allocator;
-
+    
     // Create a proper frame for testing
-    const SimpleAnalysis = @import("../evm/analysis2.zig").SimpleAnalysis;
+    const CodeAnalysis = @import("../analysis.zig").CodeAnalysis;
     const OpcodeMetadata = @import("../opcode_metadata/opcode_metadata.zig");
     const code = &[_]u8{0x00}; // STOP
-    _ = OpcodeMetadata.DEFAULT; // Unused in new analysis system
-    const result = try SimpleAnalysis.analyze(allocator, code);
-    // Analysis is const from analyze(), cannot deinit here
-    defer allocator.free(result.block_gas_costs);
-
+    const table = OpcodeMetadata.DEFAULT;
+    var analysis = try CodeAnalysis.from_code(allocator, code, &table);
+    defer analysis.deinit();
+    
     const MockHost = @import("../host.zig").MockHost;
     const MemDb = @import("../state/memory_database.zig").MemoryDatabase;
     var memory_db = MemDb.init(allocator);
@@ -2182,20 +2223,19 @@ test "EIP-150 stipend edge cases" {
     defer mock_host.deinit();
     const host = mock_host.to_host();
     const db_interface = memory_db.to_database_interface();
-
+    
     const prim = @import("primitives");
     var frame = try Frame.init(
         100, // gas_remaining - Very low gas
+        false, // static_call
+        0, // call_depth
         prim.Address.ZERO_ADDRESS, // contract_address
-        result.analysis,
-        &.{}, // empty ops
+        prim.Address.ZERO_ADDRESS, // caller
+        0, // value
+        &analysis,
         host,
         db_interface,
         allocator,
-        false, // is_static
-        prim.Address.ZERO_ADDRESS, // caller
-        0, // value
-        &.{}, // input_buffer
     );
     defer frame.deinit(allocator);
 

@@ -36,7 +36,7 @@ test "simple ERC20 call debug" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const caller = primitives.Address.from_u256(0x1000000000000000000000000000000000000001);
@@ -60,7 +60,7 @@ test "simple ERC20 call debug" {
 
     std.log.debug("Call result: success={}, gas_left={}", .{ result.success, result.gas_left });
 
-    if (result.output) |_| {
+    if (result.output) |output| {
         std.log.debug("Output length: {}", .{output.len});
         if (output.len > 0) {
             std.log.debug("Output bytes: {x}", .{output});

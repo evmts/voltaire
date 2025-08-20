@@ -1,6 +1,6 @@
 const std = @import("std");
 const ExecutionError = @import("execution_error.zig");
-const Frame = @import("../stack_frame.zig").StackFrame;
+const Frame = @import("../frame.zig").Frame;
 const primitives = @import("primitives");
 const Log = @import("../log.zig");
 
@@ -42,12 +42,13 @@ fn hash_with_stack_buffer(data: []const u8) [32]u8 {
     return hash;
 }
 
-pub fn op_sha3(frame: *Frame) ExecutionError.Error!void {
+pub fn op_sha3(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     // Debug: show what's on stack before popping
     if (frame.stack.size() >= 2) {
-        const top = frame.stack.peek_unsafe();
+        const top = try frame.stack.peek_unsafe();
         const second = try frame.stack.peek_n(1);
         Log.debug("KECCAK256 stack before pop: top={}, second={}", .{ top, second });
     }
@@ -117,7 +118,8 @@ pub const op_keccak256 = op_sha3;
 
 /// Optimized SHA3 handler for when gas costs are precomputed during analysis.
 /// This version skips dynamic gas calculations and uses the precomputed total.
-pub fn op_sha3_precomputed(frame: *Frame) ExecutionError.Error!void {
+pub fn op_sha3_precomputed(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     std.debug.assert(frame.stack.size() >= 2);
 
     const offset = frame.stack.pop_unsafe();

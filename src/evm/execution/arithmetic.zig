@@ -54,7 +54,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const ExecutionError = @import("execution_error.zig");
-const Frame = @import("../stack_frame.zig").StackFrame;
+const Frame = @import("../frame.zig").Frame;
 const primitives = @import("primitives");
 const U256 = primitives.Uint(256, 4);
 const Log = @import("../log.zig");
@@ -83,13 +83,14 @@ const MemoryDatabase = @import("../state/memory_database.zig");
 const Operation = @import("../opcodes/operation.zig");
 
 /// ADD opcode (0x01) - Addition with wrapping overflow
-pub fn op_add(frame: *Frame) ExecutionError.Error!void {
+pub fn op_add(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         std.debug.assert(frame.stack.size() >= 2);
     }
 
     const top = frame.stack.pop_unsafe(); // top
-    const top_minus_1 = frame.stack.peek_unsafe(); // second from top
+    const top_minus_1 = try frame.stack.peek_unsafe(); // second from top
     const result = top_minus_1 +% top;
     frame.stack.set_top_unsafe(result);
 }
@@ -118,13 +119,14 @@ pub fn op_add(frame: *Frame) ExecutionError.Error!void {
 /// ## Example
 /// Stack: [10, 20] => [200]
 /// Stack: [2^128, 2^128] => [0] (overflow wraps)
-pub fn op_mul(frame: *Frame) ExecutionError.Error!void {
+pub fn op_mul(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         std.debug.assert(frame.stack.size() >= 2);
     }
 
     const top = frame.stack.pop_unsafe();
-    const top_minus_1 = frame.stack.peek_unsafe();
+    const top_minus_1 = try frame.stack.peek_unsafe();
 
     // Use optimized U256 multiplication
     const a_u256 = U256.from_u256_unsafe(top_minus_1);
@@ -159,13 +161,14 @@ pub fn op_mul(frame: *Frame) ExecutionError.Error!void {
 /// ## Example
 /// Stack: [30, 10] => [20]
 /// Stack: [10, 20] => [2^256 - 10] (underflow wraps)
-pub fn op_sub(frame: *Frame) ExecutionError.Error!void {
+pub fn op_sub(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         std.debug.assert(frame.stack.size() >= 2);
     }
 
     const a = frame.stack.pop_unsafe();
-    const b = frame.stack.peek_unsafe();
+    const b = try frame.stack.peek_unsafe();
     const result = a -% b;
 
     frame.stack.set_top_unsafe(result);
@@ -202,19 +205,24 @@ pub fn op_sub(frame: *Frame) ExecutionError.Error!void {
 /// Unlike most programming languages, EVM division by zero does not
 /// throw an error but returns 0. This is a deliberate design choice
 /// to avoid exceptional halting conditions.
-pub fn op_div(frame: *Frame) ExecutionError.Error!void {
+pub fn op_div(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         std.debug.assert(frame.stack.size() >= 2);
     }
 
-    const top = frame.stack.pop_unsafe();
-    const second_from_top = frame.stack.peek_unsafe();
-    const result = if (second_from_top == 0) blk: {
+    const b = frame.stack.pop_unsafe(); // divisor (top)
+    const a = try frame.stack.peek_unsafe(); // dividend (second from top)
+
+    // EVM semantics: b / a (top / second_from_top)
+    // REVM computes: top / second_from_top
+    const result = if (a == 0) blk: {
         break :blk 0;
     } else blk: {
-        const result_u256 = U256.from_u256_unsafe(top).wrapping_div(U256.from_u256_unsafe(second_from_top));
+        const result_u256 = U256.from_u256_unsafe(b).wrapping_div(U256.from_u256_unsafe(a));
         break :blk result_u256.to_u256_unsafe();
     };
+
     frame.stack.set_top_unsafe(result);
 }
 
@@ -253,13 +261,14 @@ pub fn op_div(frame: *Frame) ExecutionError.Error!void {
 /// The special case for MIN_I256 / -1 prevents integer overflow,
 /// as the mathematical result (2^255) cannot be represented in i256.
 /// In this case, we return MIN_I256 to match EVM behavior.
-pub fn op_sdiv(frame: *Frame) ExecutionError.Error!void {
+pub fn op_sdiv(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         std.debug.assert(frame.stack.size() >= 2);
     }
 
     const b = frame.stack.pop_unsafe(); // top (dividend)
-    const a = frame.stack.peek_unsafe(); // second from top (divisor)
+    const a = try frame.stack.peek_unsafe(); // second from top (divisor)
 
     // EVM semantics: b / a (top / second_from_top) - signed division
     // REVM computes: top / second_from_top
@@ -315,13 +324,14 @@ pub fn op_sdiv(frame: *Frame) ExecutionError.Error!void {
 /// ## Note
 /// The result is always in range [0, b-1] for b > 0.
 /// Like DIV, modulo by zero returns 0 rather than throwing an error.
-pub fn op_mod(frame: *Frame) ExecutionError.Error!void {
+pub fn op_mod(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         std.debug.assert(frame.stack.size() >= 2);
     }
 
     const b = frame.stack.pop_unsafe(); // top
-    const a = frame.stack.peek_unsafe(); // second from top
+    const a = try frame.stack.peek_unsafe(); // second from top
 
     // EVM semantics: b % a (top % second_from_top)
     // REVM computes: top % second_from_top
@@ -373,13 +383,14 @@ pub fn op_mod(frame: *Frame) ExecutionError.Error!void {
 /// In signed modulo, the result has the same sign as the dividend (a).
 /// This follows the Euclidean division convention where:
 /// a = b * q + r, where |r| < |b| and sign(r) = sign(a)
-pub fn op_smod(frame: *Frame) ExecutionError.Error!void {
+pub fn op_smod(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         std.debug.assert(frame.stack.size() >= 2);
     }
 
     const b = frame.stack.pop_unsafe(); // top (dividend)
-    const a = frame.stack.peek_unsafe(); // second from top (divisor)
+    const a = try frame.stack.peek_unsafe(); // second from top (divisor)
 
     // EVM semantics: b % a (top % second_from_top) - signed modulo
     // REVM computes: top % second_from_top
@@ -431,14 +442,15 @@ pub fn op_smod(frame: *Frame) ExecutionError.Error!void {
 /// This operation correctly computes (a + b) mod n even when
 /// a + b exceeds 2^256, using specialized algorithms to avoid
 /// intermediate overflow.
-pub fn op_addmod(frame: *Frame) ExecutionError.Error!void {
+pub fn op_addmod(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         std.debug.assert(frame.stack.size() >= 3);
     }
 
     const top = frame.stack.pop_unsafe();
     const second = frame.stack.pop_unsafe();
-    const third = frame.stack.peek_unsafe();
+    const third = try frame.stack.peek_unsafe();
 
     // REVM pattern: for ADDMOD with stack [7, 10, 5], computes (5 + 10) % 7 = 1
     // So: top (5) + second (10) % third (7)
@@ -500,14 +512,15 @@ pub fn op_addmod(frame: *Frame) ExecutionError.Error!void {
 /// ## Note
 /// This operation correctly computes (a * b) mod n even when
 /// a * b exceeds 2^256, unlike naive (a *% b) % n approach.
-pub fn op_mulmod(frame: *Frame) ExecutionError.Error!void {
+pub fn op_mulmod(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         std.debug.assert(frame.stack.size() >= 3);
     }
 
     const top = frame.stack.pop_unsafe();
     const second = frame.stack.pop_unsafe();
-    const third = frame.stack.peek_unsafe();
+    const third = try frame.stack.peek_unsafe();
 
     // REVM pattern: same as ADDMOD
     const a = top;
@@ -571,13 +584,14 @@ pub fn op_mulmod(frame: *Frame) ExecutionError.Error!void {
 /// - 2^10: 10 + 50*1 = 60 gas (exponent fits in 1 byte)
 /// - 2^256: 10 + 50*2 = 110 gas (exponent needs 2 bytes)
 /// - 2^(2^255): 10 + 50*32 = 1610 gas (huge exponent)
-pub fn op_exp(frame: *Frame) ExecutionError.Error!void {
+pub fn op_exp(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         std.debug.assert(frame.stack.size() >= 2);
     }
 
     const b = frame.stack.pop_unsafe(); // top (will be base)
-    const a = frame.stack.peek_unsafe(); // second from top (will be exponent)
+    const a = try frame.stack.peek_unsafe(); // second from top (will be exponent)
 
     // EVM semantics: b^a (top ^ second_from_top)
     // REVM computes: top ^ second_from_top
@@ -679,13 +693,14 @@ pub fn op_exp(frame: *Frame) ExecutionError.Error!void {
 /// - Converting int8/int16/etc to int256
 /// - Arithmetic on mixed-width signed integers
 /// - Implementing higher-level language semantics
-pub fn op_signextend(frame: *Frame) ExecutionError.Error!void {
+pub fn op_signextend(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         std.debug.assert(frame.stack.size() >= 2);
     }
 
     const byte_num = frame.stack.pop_unsafe();
-    const x = frame.stack.peek_unsafe();
+    const x = try frame.stack.peek_unsafe();
 
     var result: u256 = undefined;
 

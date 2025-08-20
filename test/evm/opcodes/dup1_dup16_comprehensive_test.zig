@@ -23,7 +23,7 @@ test "DUP1 (0x80): Duplicate 1st stack item" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{
@@ -87,7 +87,7 @@ test "DUP2 (0x81): Duplicate 2nd stack item" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{
@@ -144,7 +144,7 @@ test "DUP3-DUP5: Various duplications" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{ 0x82, 0x83, 0x84 }; // DUP3, DUP4, DUP5
@@ -210,7 +210,7 @@ test "DUP6-DUP10: Mid-range duplications" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{ 0x85, 0x86, 0x87, 0x88, 0x89 }; // DUP6-DUP10
@@ -241,7 +241,7 @@ test "DUP6-DUP10: Mid-range duplications" {
     const state: Evm.Operation.State = &frame;
 
     // Push 10 distinct values
-    for (1..11) |_| {
+    for (1..11) |i| {
         try frame.stack.append(i * 0x10);
     }
 
@@ -279,7 +279,7 @@ test "DUP11-DUP16: High-range duplications" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{ 0x8A, 0x8B, 0x8C, 0x8D, 0x8E, 0x8F }; // DUP11-DUP16
@@ -310,7 +310,7 @@ test "DUP11-DUP16: High-range duplications" {
     const state: Evm.Operation.State = &frame;
 
     // Push 16 distinct values
-    for (1..17) |_| {
+    for (1..17) |i| {
         try frame.stack.append(i * 0x100);
     }
 
@@ -353,7 +353,7 @@ test "DUP16 (0x8F): Duplicate 16th stack item (maximum)" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{0x8F}; // DUP16
@@ -384,7 +384,7 @@ test "DUP16 (0x8F): Duplicate 16th stack item (maximum)" {
     const state: Evm.Operation.State = &frame;
 
     // Push exactly 16 values
-    for (0..16) |_| {
+    for (0..16) |i| {
         try frame.stack.append(0x1000 + i);
     }
 
@@ -408,7 +408,7 @@ test "DUP1-DUP16: Gas consumption" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{
@@ -442,12 +442,12 @@ test "DUP1-DUP16: Gas consumption" {
     const state: Evm.Operation.State = &frame;
 
     // Push 16 values to satisfy all DUP operations
-    for (0..16) |_| {
+    for (0..16) |i| {
         try frame.stack.append(@as(u256, @intCast(i)));
     }
 
     // Test each DUP operation
-    for (0..16) |_| {
+    for (0..16) |i| {
         frame.pc = i;
         const gas_before = frame.gas_remaining;
 
@@ -474,7 +474,7 @@ test "DUP operations: Stack underflow" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{ 0x80, 0x81, 0x85, 0x8F }; // DUP1, DUP2, DUP6, DUP16
@@ -523,7 +523,7 @@ test "DUP operations: Stack underflow" {
     try testing.expectEqual(@as(usize, 3), frame.stack.size);
 
     // Push more values
-    for (0..4) |_| {
+    for (0..4) |i| {
         try frame.stack.append(@as(u256, @intCast(i)));
     }
 
@@ -544,7 +544,7 @@ test "DUP operations: Stack overflow" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{0x80}; // DUP1
@@ -575,7 +575,7 @@ test "DUP operations: Stack overflow" {
     const state: Evm.Operation.State = &frame;
 
     // Fill stack to capacity (1024 items)
-    for (0..1024) |_| {
+    for (0..1024) |i| {
         try frame.stack.append(@as(u256, @intCast(i & 0xFF)));
     }
 
@@ -591,7 +591,7 @@ test "DUP operations: Sequential duplications" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{
@@ -629,7 +629,7 @@ test "DUP operations: Sequential duplications" {
     const state: Evm.Operation.State = &frame;
 
     // Execute PUSH operations
-    for (0..3) |_| {
+    for (0..3) |i| {
         frame.pc = i * 2;
         _ = try evm.table.execute(frame.pc, interpreter, state, 0x60);
     }
@@ -667,7 +667,7 @@ test "DUP operations: Pattern verification" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{ 0x80, 0x84, 0x88, 0x8C, 0x8F }; // DUP1, DUP5, DUP9, DUP13, DUP16
@@ -698,7 +698,7 @@ test "DUP operations: Pattern verification" {
     const state: Evm.Operation.State = &frame;
 
     // Push a pattern of values
-    for (0..16) |_| {
+    for (0..16) |i| {
         try frame.stack.append(@as(u256, (i + 1) * 0x11)); // 0x11, 0x22, ..., 0x110
     }
 
@@ -738,7 +738,7 @@ test "DUP operations: Boundary test with exact stack size" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var evm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm.deinit();
 
     const code = [_]u8{ 0x80, 0x8F }; // DUP1, DUP16
@@ -780,7 +780,7 @@ test "DUP operations: Boundary test with exact stack size" {
     frame.stack.clear();
 
     // Test DUP16 with exactly 16 items
-    for (1..17) |_| {
+    for (1..17) |i| {
         try frame.stack.append(@as(u256, @intCast(i)));
     }
     frame.pc = 1;
@@ -790,7 +790,7 @@ test "DUP operations: Boundary test with exact stack size" {
 
     // Test DUP16 with 15 items (should fail)
     frame.stack.clear();
-    for (1..16) |_| {
+    for (1..16) |i| {
         try frame.stack.append(@as(u256, @intCast(i)));
     }
     const result = evm.table.execute(frame.pc, interpreter, state, 0x8F);

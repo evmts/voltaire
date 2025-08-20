@@ -12,7 +12,7 @@ test "complex Solidity constructor returns full runtime code" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1111);
@@ -64,7 +64,7 @@ test "complex Solidity constructor returns full runtime code" {
 // Helper to convert byte array to u256 (big-endian)
 fn bytes_to_u256(bytes: []const u8) u256 {
     var value: u256 = 0;
-    for (bytes) |_| {
+    for (bytes) |byte| {
         value = (value << 8) | byte;
     }
     return value;
@@ -77,7 +77,7 @@ test "gas metering for KECCAK256 operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const caller = primitives.Address.from_u256(0x1111);

@@ -25,6 +25,7 @@ test "CALLDATASIZE opcode returns input data size" {
     };
 
     const calldata = [_]u8{ 0xDE, 0xAD, 0xBE, 0xEF };
+    std.debug.print("\n[CALLDATASIZE test] Starting test with calldata.len={}, bytecode: {x}\n", .{ calldata.len, std.fmt.fmtSliceHexLower(&bytecode) });
 
     // Execute on REVM - inline all setup
     const revm_settings = revm_wrapper.RevmSettings{};
@@ -52,7 +53,7 @@ test "CALLDATASIZE opcode returns input data size" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -70,7 +71,7 @@ test "CALLDATASIZE opcode returns input data size" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -97,6 +98,7 @@ test "CALLDATASIZE opcode returns input data size" {
         const mini_value = std.mem.readInt(u256, mini_result.output.?[0..32], .big);
         const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
 
+        std.debug.print("[CALLDATASIZE test] Values: revm={x}, mini={x}, guillotine={x}\n", .{ revm_value, mini_value, guillotine_value });
 
         // Should return 4 (size of calldata)
         try testing.expectEqual(@as(u256, 4), revm_value);
@@ -152,7 +154,7 @@ test "CALLDATALOAD opcode loads 32 bytes from calldata" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -170,7 +172,7 @@ test "CALLDATALOAD opcode loads 32 bytes from calldata" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -244,7 +246,7 @@ test "CALLDATALOAD opcode edge case - load beyond calldata pads with zeros" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -262,7 +264,7 @@ test "CALLDATALOAD opcode edge case - load beyond calldata pads with zeros" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -337,7 +339,7 @@ test "CALLDATACOPY opcode copies data to memory" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -355,7 +357,7 @@ test "CALLDATACOPY opcode copies data to memory" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -429,7 +431,7 @@ test "CALLDATACOPY edge case - copy beyond calldata pads with zeros" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -447,7 +449,7 @@ test "CALLDATACOPY edge case - copy beyond calldata pads with zeros" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -514,7 +516,7 @@ test "CALLDATASIZE with empty calldata returns 0" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -532,7 +534,7 @@ test "CALLDATASIZE with empty calldata returns 0" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM

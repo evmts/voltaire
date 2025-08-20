@@ -57,12 +57,13 @@ test "benchmark interpreters: ten-thousand-hashes" {
     const deployer = try Address.from_hex("0x1111111111111111111111111111111111111111");
     const fixed_addr = try Address.from_hex("0xc0de000000000000000000000000000000000000");
     
+    std.debug.print("\n=== Ten Thousand Hashes Benchmark ===\n", .{});
     
     // Benchmark interpret.zig
     {
         var memory_db = evm.MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
         defer vm.deinit();
         
         try vm.state.set_balance(deployer, std.math.maxInt(u256));
@@ -73,17 +74,18 @@ test "benchmark interpreters: ten-thousand-hashes" {
         const result = try vm.call(deployer, contract_addr, 0, calldata, 5_000_000);
         const elapsed = std.time.nanoTimestamp() - start;
         
+        std.debug.print("interpret.zig:    {d:.3} ms (success: {}, gas used: {})\n", .{
             @as(f64, @floatFromInt(elapsed)) / 1_000_000.0,
             result.success,
             result.gas_used,
         });
     }
     
-    // Benchmark call.zig
+    // Benchmark call_mini.zig
     {
         var memory_db = evm.MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
         defer vm.deinit();
         
         try vm.state.set_balance(deployer, std.math.maxInt(u256));
@@ -101,9 +103,10 @@ test "benchmark interpreters: ten-thousand-hashes" {
         };
         
         const start = std.time.nanoTimestamp();
-        const result = try vm.call(params);
+        const result = try vm.call_mini(params);
         const elapsed = std.time.nanoTimestamp() - start;
         
+        std.debug.print("call_mini.zig:    {d:.3} ms (success: {}, gas left: {})\n", .{
             @as(f64, @floatFromInt(elapsed)) / 1_000_000.0,
             result.success,
             result.gas_left,
@@ -126,6 +129,7 @@ test "benchmark interpreters: ten-thousand-hashes" {
         defer result.deinit();
         const elapsed = std.time.nanoTimestamp() - start;
         
+        std.debug.print("REVM:             {d:.3} ms (success: {}, gas used: {})\n", .{
             @as(f64, @floatFromInt(elapsed)) / 1_000_000.0,
             result.success,
             result.gas_used,
@@ -158,12 +162,13 @@ test "benchmark interpreters: erc20-transfer" {
     const deployer = try Address.from_hex("0x1111111111111111111111111111111111111111");
     const fixed_addr = try Address.from_hex("0xc0de000000000000000000000000000000000000");
     
+    std.debug.print("\n=== ERC20 Transfer Benchmark ===\n", .{});
     
     // Benchmark interpret.zig
     {
         var memory_db = evm.MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
         defer vm.deinit();
         
         try vm.state.set_balance(deployer, std.math.maxInt(u256));
@@ -174,17 +179,18 @@ test "benchmark interpreters: erc20-transfer" {
         const result = try vm.call(deployer, contract_addr, 0, calldata, 1_000_000);
         const elapsed = std.time.nanoTimestamp() - start;
         
+        std.debug.print("interpret.zig:    {d:.3} ms (success: {}, gas used: {})\n", .{
             @as(f64, @floatFromInt(elapsed)) / 1_000_000.0,
             result.success,
             result.gas_used,
         });
     }
     
-    // Benchmark call.zig
+    // Benchmark call_mini.zig
     {
         var memory_db = evm.MemoryDatabase.init(allocator);
         defer memory_db.deinit();
-        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+        var vm = try evm.Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
         defer vm.deinit();
         
         try vm.state.set_balance(deployer, std.math.maxInt(u256));
@@ -202,9 +208,10 @@ test "benchmark interpreters: erc20-transfer" {
         };
         
         const start = std.time.nanoTimestamp();
-        const result = try vm.call(params);
+        const result = try vm.call_mini(params);
         const elapsed = std.time.nanoTimestamp() - start;
         
+        std.debug.print("call_mini.zig:    {d:.3} ms (success: {}, gas left: {})\n", .{
             @as(f64, @floatFromInt(elapsed)) / 1_000_000.0,
             result.success,
             result.gas_left,
@@ -227,6 +234,7 @@ test "benchmark interpreters: erc20-transfer" {
         defer result.deinit();
         const elapsed = std.time.nanoTimestamp() - start;
         
+        std.debug.print("REVM:             {d:.3} ms (success: {}, gas used: {})\n", .{
             @as(f64, @floatFromInt(elapsed)) / 1_000_000.0,
             result.success,
             result.gas_used,

@@ -18,7 +18,7 @@ const CONTRACT_ADDRESS = primitives.Address.from_u256(0x3333);
 // Helper to convert byte array to u256 (big-endian)
 fn bytes_to_u256(bytes: []const u8) u256 {
     var value: u256 = 0;
-    for (bytes) |_| {
+    for (bytes) |byte| {
         value = (value << 8) | byte;
     }
     return value;
@@ -46,7 +46,7 @@ test "E2E: Basic EVM operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm_instance.deinit();
 
     // Set up deployer account with ETH
@@ -82,7 +82,7 @@ test "E2E: Basic EVM operations" {
     // Execute the contract with block interpreter
     // SKIP: Bug #3 - interpret_block causes test to hang
     // const result_block = try evm_instance.interpret_block_write(&contract, &[_]u8{});
-    // defer if (result_block.output) |_| 
+    // defer if (result_block.output) |output| 
     const result_block = result; // Use traditional result for now
 
     // Verify execution success for traditional interpreter
@@ -91,7 +91,7 @@ test "E2E: Basic EVM operations" {
     try testing.expect(result_block.status == .Success);
 
     // Check if we have output data for traditional interpreter
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
 
         // Decode returned value (should be 42 in first 32 bytes)
@@ -104,7 +104,7 @@ test "E2E: Basic EVM operations" {
     }
 
     // Check if we have output data for block interpreter
-    if (result_block.output) |_| {
+    if (result_block.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
 
         // Decode returned value (should be 42 in first 32 bytes)
@@ -139,7 +139,7 @@ test "E2E: Arithmetic operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm_instance.deinit();
 
     // Create a contract at the specified address
@@ -225,7 +225,7 @@ test "E2E: Memory operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm_instance.deinit();
 
     // Create a contract at the specified address
@@ -310,7 +310,7 @@ test "E2E: Storage operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm_instance.deinit();
 
     // Create a contract at the specified address
@@ -381,7 +381,7 @@ test "E2E: Stack operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm_instance.deinit();
 
     // Create a contract at the specified address
@@ -466,7 +466,7 @@ test "E2E: Gas consumption patterns" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    evm_instance.* = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer evm_instance.deinit();
 
     // Create a contract at the specified address

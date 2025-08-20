@@ -258,12 +258,12 @@ test "ECRECOVER integration with VM" {
     // Check that unused output buffer space is cleared
     if (result.get_output_size() == 0) {
         // With placeholder implementation, output should be unchanged
-        for (output_buffer) |_| {
+        for (output_buffer) |byte| {
             try testing.expectEqual(@as(u8, 0xFF), byte);
         }
     } else {
         // With real implementation, first 12 bytes should be zero (padding)
-        for (output_buffer[0..12]) |_| {
+        for (output_buffer[0..12]) |byte| {
             try testing.expectEqual(@as(u8, 0), byte);
         }
     }

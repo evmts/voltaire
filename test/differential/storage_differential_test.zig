@@ -63,7 +63,7 @@ test "SSTORE then SLOAD storage operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -98,8 +98,10 @@ test "SSTORE then SLOAD storage operations" {
         const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
 
         try testing.expectEqual(revm_value, guillotine_value);
+        std.debug.print("SSTORE/SLOAD test: REVM returned {}, Guillotine returned {}\n", .{ revm_value, guillotine_value });
     } else {
         // If either failed, print debug info
+        std.debug.print("REVM success: {}, Guillotine success: {}\n", .{ revm_succeeded, guillotine_result.success });
         // Error details not available in new API
         // For SSTORE/SLOAD, we expect this to succeed
         try testing.expect(false);
@@ -151,7 +153,7 @@ test "SLOAD from empty storage slot returns 0" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -186,8 +188,10 @@ test "SLOAD from empty storage slot returns 0" {
         const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
 
         try testing.expectEqual(revm_value, guillotine_value);
+        std.debug.print("SLOAD empty test: REVM returned {}, Guillotine returned {}\n", .{ revm_value, guillotine_value });
     } else {
         // If either failed, print debug info
+        std.debug.print("REVM success: {}, Guillotine success: {}\n", .{ revm_succeeded, guillotine_result.success });
         // Error details not available in new API
         // For SLOAD empty slot, we expect this to succeed
         try testing.expect(false);
@@ -250,7 +254,7 @@ test "TSTORE then TLOAD transient storage operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -285,8 +289,10 @@ test "TSTORE then TLOAD transient storage operations" {
         const guillotine_value = std.mem.readInt(u256, guillotine_result.output.?[0..32], .big);
 
         try testing.expectEqual(revm_value, guillotine_value);
+        std.debug.print("TSTORE/TLOAD test: REVM returned {x}, Guillotine returned {x}\n", .{ revm_value, guillotine_value });
     } else {
         // If either failed, print debug info
+        std.debug.print("REVM success: {}, Guillotine success: {}\n", .{ revm_succeeded, guillotine_result.success });
         // Error details not available in new API
         // For TSTORE/TLOAD, we expect this to succeed
         try testing.expect(false);

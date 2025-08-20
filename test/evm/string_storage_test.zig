@@ -58,7 +58,7 @@ test "minimal string storage in constructor" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     var vm = try builder.build();
     defer vm.deinit();
 
@@ -174,7 +174,7 @@ test "complex string storage like ERC20" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     var vm = try builder.build();
     defer vm.deinit();
 
@@ -215,7 +215,7 @@ test "reproduce array bounds panic 0x41" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var builder = try Evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     var vm = try builder.build();
     defer vm.deinit();
 
@@ -227,7 +227,7 @@ test "reproduce array bounds panic 0x41" {
     // This might fail with array bounds if our EVM has such checks
     std.log.debug("Create result: success={}, gas_left={}", .{ create_result.success, create_result.gas_left });
     if (!create_result.success) {
-        if (create_result.output) |_| {
+        if (create_result.output) |output| {
             if (output.len >= 4) {
                 const panic_code = std.mem.readInt(u32, output[0..4], .big);
                 std.log.debug("Panic code: 0x{x}", .{panic_code});

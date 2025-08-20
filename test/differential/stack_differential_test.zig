@@ -41,7 +41,7 @@ test "POP opcode removes top stack element" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -59,7 +59,7 @@ test "POP opcode removes top stack element" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -122,7 +122,7 @@ test "PUSH0 opcode pushes zero" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -140,7 +140,7 @@ test "PUSH0 opcode pushes zero" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params2);
+    const mini_result = try vm_instance.call_mini(call_params2);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -203,7 +203,7 @@ test "PUSH1 opcode pushes 1 byte" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -221,7 +221,7 @@ test "PUSH1 opcode pushes 1 byte" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params3);
+    const mini_result = try vm_instance.call_mini(call_params3);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -285,7 +285,7 @@ test "DUP1 opcode duplicates top stack element" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -303,7 +303,7 @@ test "DUP1 opcode duplicates top stack element" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params4);
+    const mini_result = try vm_instance.call_mini(call_params4);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM
@@ -368,7 +368,7 @@ test "SWAP1 opcode swaps top two stack elements" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -386,7 +386,7 @@ test "SWAP1 opcode swaps top two stack elements" {
     } };
 
     // Execute using mini EVM (after REVM, before Guillotine)
-    const mini_result = try vm_instance.call(call_params5);
+    const mini_result = try vm_instance.call_mini(call_params5);
     // VM owns mini_result.output; do not free here
 
     // Execute using Guillotine regular EVM

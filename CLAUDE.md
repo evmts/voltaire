@@ -371,7 +371,7 @@ This is a high-performance Ethereum Virtual Machine (EVM) implementation written
 - `frame/` - Execution context management
   - `frame.zig` - Call frame implementation
   - `contract.zig` - Contract code and metadata
-  - `analysis2.zig` - Simplified bytecode analysis for tailcall dispatch
+  - `code_analysis.zig` - Bytecode analysis and jump destinations
   - `bitvec.zig` - Bit vector for valid jump destinations
 
 #### Opcodes and Operations

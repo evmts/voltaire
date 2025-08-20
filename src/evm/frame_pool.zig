@@ -1,5 +1,5 @@
 const std = @import("std");
-const Frame = @import("stack_frame.zig").StackFrame;
+const Frame = @import("frame.zig").Frame;
 
 /// Simple frame pool scaffold to enable future slab/mmap-backed allocation.
 ///

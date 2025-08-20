@@ -23,4 +23,6 @@ test "simple update operation" {
     const updated_value = try trie.get(&key);
     try std.testing.expect(updated_value != null);
     try std.testing.expectEqualStrings("second", updated_value.?);
+
+    std.debug.print("\nSimple update test passed!\n", .{});
 }

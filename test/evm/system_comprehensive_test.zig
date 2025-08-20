@@ -19,7 +19,7 @@ test "E2E: CREATE opcode creates new contract" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Contract that deploys a simple contract
@@ -68,7 +68,7 @@ test "E2E: CREATE with value transfer" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Give contract some balance
@@ -116,7 +116,7 @@ test "E2E: CREATE in static context fails" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Contract that tries CREATE
@@ -167,7 +167,7 @@ test "E2E: CREATE in static context fails" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0), value); // STATICCALL failed
     }
@@ -179,7 +179,7 @@ test "E2E: CREATE2 with salt creates deterministic address" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -224,7 +224,7 @@ test "E2E: CALL to existing contract" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Target contract that returns 0x42
@@ -271,7 +271,7 @@ test "E2E: CALL to existing contract" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0x42), value);
     }
@@ -283,7 +283,7 @@ test "E2E: CALL with value transfer" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Give caller some balance
@@ -338,7 +338,7 @@ test "E2E: CALLCODE executes in caller's context" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Target code that stores value
@@ -395,7 +395,7 @@ test "E2E: DELEGATECALL preserves original caller" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Target that returns CALLER
@@ -442,7 +442,7 @@ test "E2E: DELEGATECALL preserves original caller" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         const value = std.mem.readInt(u256, output[0..32], .big);
         // Should return original caller, not proxy
         try testing.expectEqual(@as(u256, 0xCAFE), value);
@@ -455,7 +455,7 @@ test "E2E: STATICCALL enforces read-only context" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Target that tries to write storage
@@ -506,7 +506,7 @@ test "E2E: STATICCALL enforces read-only context" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         const value = std.mem.readInt(u256, output[0..32], .big);
         // STATICCALL should have failed (0)
         try testing.expectEqual(@as(u256, 0), value);
@@ -519,7 +519,7 @@ test "E2E: GAS opcode returns remaining gas" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -547,7 +547,7 @@ test "E2E: GAS opcode returns remaining gas" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         const gas_value = std.mem.readInt(u256, output[0..32], .big);
         // Should have some gas remaining
         try testing.expect(gas_value > 0);
@@ -561,7 +561,7 @@ test "E2E: CREATE at max depth fails" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Contract that recursively creates itself
@@ -606,7 +606,7 @@ test "E2E: CALL with insufficient gas" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Simple target
@@ -655,7 +655,7 @@ test "E2E: CREATE2 with same salt twice" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Contract that tries CREATE2 twice with same salt
@@ -704,7 +704,7 @@ test "E2E: CREATE2 with same salt twice" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         const value = std.mem.readInt(u256, output[0..32], .big);
         // Second CREATE2 should fail (address already exists)
         try testing.expectEqual(@as(u256, 0), value);
@@ -717,7 +717,7 @@ test "E2E: DELEGATECALL with calldata forwarding" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Target that returns calldata
@@ -774,7 +774,7 @@ test "E2E: DELEGATECALL with calldata forwarding" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0x99), value);
     }
@@ -786,7 +786,7 @@ test "E2E: EIP-150 63/64 gas rule" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Target that returns remaining gas
@@ -833,7 +833,7 @@ test "E2E: EIP-150 63/64 gas rule" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         const gas_in_callee = std.mem.readInt(u256, output[0..32], .big);
         // Callee should get at most 63/64 of remaining gas
         // This is approximate due to gas consumed by instructions

@@ -22,7 +22,7 @@ test "E2E: Basic execution path with simple instructions" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -52,7 +52,7 @@ test "E2E: Basic execution path with simple instructions" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 8), value);
@@ -65,7 +65,7 @@ test "E2E: Block info gas exhaustion" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Multiple PUSH operations that consume gas
@@ -101,7 +101,7 @@ test "E2E: Block info stack underflow" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // ADD requires 2 stack items but stack is empty
@@ -133,7 +133,7 @@ test "E2E: Block info stack overflow" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Generate bytecode that pushes 1025 items (stack limit is 1024)
@@ -170,7 +170,7 @@ test "E2E: Dynamic gas with memory expansion" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -198,7 +198,7 @@ test "E2E: Dynamic gas with memory expansion" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0x42), value);
@@ -211,7 +211,7 @@ test "E2E: Fused PUSH+JUMP execution" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -243,7 +243,7 @@ test "E2E: Fused PUSH+JUMP execution" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0x42), value);
@@ -256,7 +256,7 @@ test "E2E: Invalid jump destination" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -288,7 +288,7 @@ test "E2E: Conditional jump taken" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -322,7 +322,7 @@ test "E2E: Conditional jump taken" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0x42), value);
@@ -335,7 +335,7 @@ test "E2E: Conditional jump not taken" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -369,7 +369,7 @@ test "E2E: Conditional jump not taken" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0xFF), value);
@@ -382,7 +382,7 @@ test "E2E: Dynamic jump (jump_unresolved)" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Dynamic jump where destination is computed
@@ -418,7 +418,7 @@ test "E2E: Dynamic jump (jump_unresolved)" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0x42), value);
@@ -431,7 +431,7 @@ test "E2E: Dynamic conditional jump (conditional_jump_unresolved)" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Dynamic JUMPI where destination is computed
@@ -469,7 +469,7 @@ test "E2E: Dynamic conditional jump (conditional_jump_unresolved)" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0x99), value);
@@ -482,7 +482,7 @@ test "E2E: Word instruction (PUSH operations)" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -514,7 +514,7 @@ test "E2E: Word instruction (PUSH operations)" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check first 4 bytes of the pushed value
         try testing.expectEqual(@as(u8, 0x12), output[0]);
@@ -530,7 +530,7 @@ test "E2E: Keccak hash computation" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -564,7 +564,7 @@ test "E2E: Keccak hash computation" {
     try testing.expect(result.success);
     
     // Keccak256 of 32 zero bytes should produce a specific hash
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // We got a hash output, exact value depends on keccak implementation
         try testing.expect(output[0] != 0 or output[31] != 0); // Non-zero hash
@@ -577,7 +577,7 @@ test "E2E: Keccak with insufficient gas" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -610,7 +610,7 @@ test "E2E: Keccak with out of bounds offset" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     const bytecode = &[_]u8{
@@ -647,7 +647,7 @@ test "E2E: Complex control flow with nested jumps" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Complex bytecode with multiple jumps
@@ -684,7 +684,7 @@ test "E2E: Complex control flow with nested jumps" {
     const result = try vm.call(params);
     try testing.expect(result.success);
     
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         const value = std.mem.readInt(u256, output[0..32], .big);
         try testing.expectEqual(@as(u256, 0xAA), value);
@@ -697,7 +697,7 @@ test "E2E: Gas exhaustion during loop execution" {
     var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     
-    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, null);
+    var vm = try Evm.init(allocator, memory_db.to_database_interface(), null, null, null, 0, false, null);
     defer vm.deinit();
     
     // Infinite loop that will run out of gas

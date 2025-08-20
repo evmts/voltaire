@@ -54,12 +54,6 @@ fn deploy(vm: *evm.Evm, allocator: std.mem.Allocator, caller: primitives.Address
 }
 
 test "erc20 transfer benchmark executes successfully" {
-    if (std.process.getEnvVarOwned(std.testing.allocator, "ENABLE_ALIGNMENT_TESTS")) |_| {
-        // Environment variable set, run the test
-    } else |_| {
-        // Environment variable not set, skip the test
-        return error.SkipZigTest;
-    }
     const allocator = std.testing.allocator;
 
     // Load bytecode and calldata from official case (erc20-transfer)
@@ -78,7 +72,7 @@ test "erc20 transfer benchmark executes successfully" {
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
 
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Caller and funding
@@ -171,7 +165,7 @@ test "erc20 mint benchmark executes successfully" {
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
 
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Caller and funding
@@ -203,12 +197,6 @@ test "erc20 mint benchmark executes successfully" {
 }
 
 test "erc20 approval-transfer benchmark executes successfully" {
-    if (std.process.getEnvVarOwned(std.testing.allocator, "ENABLE_ALIGNMENT_TESTS")) |_| {
-        // Environment variable set, run the test
-    } else |_| {
-        // Environment variable not set, skip the test
-        return error.SkipZigTest;
-    }
     const allocator = std.testing.allocator;
 
     // Load bytecode and calldata from official case (erc20-approval-transfer)
@@ -227,7 +215,7 @@ test "erc20 approval-transfer benchmark executes successfully" {
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
 
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Caller and funding
@@ -259,12 +247,6 @@ test "erc20 approval-transfer benchmark executes successfully" {
 }
 
 test "erc20 benchmark gas usage patterns" {
-    if (std.process.getEnvVarOwned(std.testing.allocator, "ENABLE_ALIGNMENT_TESTS")) |_| {
-        // Environment variable set, run the test
-    } else |_| {
-        // Environment variable not set, skip the test
-        return error.SkipZigTest;
-    }
     const allocator = std.testing.allocator;
 
     // Test gas consumption for different ERC20 operations
@@ -296,7 +278,7 @@ test "erc20 benchmark gas usage patterns" {
         defer memory_db.deinit();
         const db_interface = memory_db.to_database_interface();
 
-        var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+        var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
         defer vm.deinit();
 
         const caller = primitives.Address.from_u256(0x1000000000000000000000000000000000000001);
@@ -362,7 +344,7 @@ test "erc20 allowance starts at zero for fresh keys" {
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
 
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     const deployer = primitives.Address.from_u256(0x1000000000000000000000000000000000000001);
@@ -404,13 +386,7 @@ test "erc20 allowance starts at zero for fresh keys" {
     try std.testing.expectEqualSlices(u8, zero_word[0..], out[out.len - 32 ..]);
 }
 
-test "erc20 transfer using call" {
-    if (std.process.getEnvVarOwned(std.testing.allocator, "ENABLE_ALIGNMENT_TESTS")) |_| {
-        // Environment variable set, run the test
-    } else |_| {
-        // Environment variable not set, skip the test
-        return error.SkipZigTest;
-    }
+test "erc20 transfer using call_mini" {
     const allocator = std.testing.allocator;
 
     // Load bytecode and calldata from official case (erc20-transfer)
@@ -429,7 +405,7 @@ test "erc20 transfer using call" {
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
 
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null); // Regular mode for deployment
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null); // Regular mode for deployment
     defer vm.deinit();
 
     // Caller and funding
@@ -440,7 +416,7 @@ test "erc20 transfer using call" {
     const contract_address = try deploy(&vm, allocator, caller, bytecode);
 
     const initial_gas: u64 = 100_000_000;
-    std.log.debug("Calling ERC20 transfer with call, gas: {}, calldata len: {}", .{ initial_gas, calldata.len });
+    std.log.debug("Calling ERC20 transfer with call_mini, gas: {}, calldata len: {}", .{ initial_gas, calldata.len });
     const params = evm.CallParams{ .call = .{
         .caller = caller,
         .to = contract_address,
@@ -448,10 +424,10 @@ test "erc20 transfer using call" {
         .input = calldata,
         .gas = initial_gas,
     } };
-    // Use call directly
-    const call_result = try vm.call(params);
+    // Use call_mini directly
+    const call_result = try vm.call_mini(params);
 
-    std.log.debug("call result: success={}, gas_left={}, output_len={}", .{ call_result.success, call_result.gas_left, if (call_result.output) |o| o.len else 0 });
+    std.log.debug("call_mini result: success={}, gas_left={}, output_len={}", .{ call_result.success, call_result.gas_left, if (call_result.output) |o| o.len else 0 });
 
     try std.testing.expect(call_result.success);
     const gas_used = initial_gas - call_result.gas_left;
@@ -459,16 +435,16 @@ test "erc20 transfer using call" {
     
     // transfer(address,uint256) should return 32-byte true
     if (call_result.output) |output| {
-        std.log.debug("ERC20 transfer via call returned {} bytes", .{output.len});
+        std.log.debug("ERC20 transfer via call_mini returned {} bytes", .{output.len});
         try std.testing.expect(output.len >= 32);
         try std.testing.expect(output[output.len - 1] == 1);
     } else {
-        std.log.err("No output returned from ERC20 transfer using call", .{});
+        std.log.err("No output returned from ERC20 transfer using call_mini", .{});
         return error.MissingReturnData;
     }
 }
 
-test "erc20 mint using call" {
+test "erc20 mint using call_mini" {
     const allocator = std.testing.allocator;
 
     // Load bytecode and calldata from official case (erc20-mint)
@@ -487,7 +463,7 @@ test "erc20 mint using call" {
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
 
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null); // Regular mode for deployment
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null); // Regular mode for deployment
     defer vm.deinit();
 
     // Caller and funding
@@ -505,8 +481,8 @@ test "erc20 mint using call" {
         .input = calldata,
         .gas = initial_gas,
     } };
-    // Use call directly
-    const call_result = try vm.call(params);
+    // Use call_mini directly
+    const call_result = try vm.call_mini(params);
 
     try std.testing.expect(call_result.success);
     const gas_used = initial_gas - call_result.gas_left;

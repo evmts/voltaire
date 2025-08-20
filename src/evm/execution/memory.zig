@@ -19,7 +19,7 @@ const builtin = @import("builtin");
 const Operation = @import("../opcodes/operation.zig");
 const Log = @import("../log.zig");
 const ExecutionError = @import("execution_error.zig");
-const Frame = @import("../stack_frame.zig").StackFrame;
+const Frame = @import("../frame.zig").Frame;
 const Stack = @import("../stack/stack.zig");
 const GasConstants = @import("primitives").GasConstants;
 
@@ -32,7 +32,8 @@ const SAFE_MEMORY_EXPANSION = builtin.mode != .ReleaseFast and builtin.mode != .
 ///
 /// Loads 32 bytes from memory starting at the given offset.
 /// Stack: [offset] → [value]
-pub fn op_mload(frame: *Frame) ExecutionError.Error!void {
+pub fn op_mload(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         if (frame.stack.size() < 1) {
             @branchHint(.cold);
@@ -41,7 +42,7 @@ pub fn op_mload(frame: *Frame) ExecutionError.Error!void {
     }
 
     // Get offset from top of stack unsafely - bounds checking is done in jump_table.zig
-    const offset = frame.stack.peek_unsafe();
+    const offset = try frame.stack.peek_unsafe();
 
     // Check offset bounds
     if (offset > std.math.maxInt(usize)) {
@@ -71,9 +72,17 @@ pub fn op_mload(frame: *Frame) ExecutionError.Error!void {
 ///
 /// Stores 32 bytes to memory starting at the given offset.
 /// Stack: [offset, value] → []
-pub fn op_mstore(frame: *Frame) ExecutionError.Error!void {
-    std.debug.assert(frame.stack.size() >= 2);
+pub fn op_mstore(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
+    if (SAFE_STACK_CHECKS) {
+        if (frame.stack.size() < 2) {
+            @branchHint(.cold);
+            unreachable;
+        }
+    }
 
+    // Pop two values unsafely using batch operation - bounds checking is done in jump_table.zig
+    // EVM Stack: [..., value, offset] where offset is on top
     const popped = frame.stack.pop2_unsafe();
     const value = popped.a; // First popped (was second from top)
     const offset = popped.b; // Second popped (was top)
@@ -98,7 +107,7 @@ pub fn op_mstore(frame: *Frame) ExecutionError.Error!void {
     Log.debug("MSTORE: offset={}, value={x:0>64}, first_few_bytes={x}", .{ offset_usize, value, std.fmt.fmtSliceHexLower(bytes[0..@min(16, bytes.len)]) });
 
     // Use unsafe write since we just ensured capacity
-    if (comptime SAFE_MEMORY_EXPANSION) {
+    if (SAFE_MEMORY_EXPANSION) {
         try frame.memory.set_data(offset_usize, &bytes);
     } else {
         frame.memory.set_data_unsafe(offset_usize, &bytes);
@@ -109,7 +118,8 @@ pub fn op_mstore(frame: *Frame) ExecutionError.Error!void {
 ///
 /// Stores a single byte (LSB of the value) to memory at the given offset.
 /// Stack: [offset, value] → []
-pub fn op_mstore8(frame: *Frame) ExecutionError.Error!void {
+pub fn op_mstore8(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         if (frame.stack.size() < 2) {
             @branchHint(.cold);
@@ -149,7 +159,8 @@ pub fn op_mstore8(frame: *Frame) ExecutionError.Error!void {
 ///
 /// Returns the size of active memory in bytes, rounded up to the nearest word (32 bytes).
 /// Stack: [] → [size]
-pub fn op_msize(frame: *Frame) ExecutionError.Error!void {
+pub fn op_msize(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
     if (SAFE_STACK_CHECKS) {
         if (frame.stack.size() >= Stack.CAPACITY) {
             @branchHint(.cold);
@@ -171,7 +182,9 @@ pub fn op_msize(frame: *Frame) ExecutionError.Error!void {
 /// Copies data within memory from source to destination (EIP-5656, Cancun).
 /// Handles overlapping regions correctly.
 /// Stack: [dest, src, length] → []
-pub fn op_mcopy(frame: *Frame) ExecutionError.Error!void {
+pub fn op_mcopy(context: *anyopaque) ExecutionError.Error!void {
+    const frame = @as(*Frame, @ptrCast(@alignCast(context)));
+
     if (SAFE_STACK_CHECKS) {
         if (frame.stack.size() < 3) {
             @branchHint(.cold);

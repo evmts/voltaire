@@ -67,6 +67,8 @@ pub fn main() !void {
         null, // table
         null, // chain_rules
         null, // context
+        0, // depth
+        false, // read_only
         tracer, // tracer
     );
     defer vm.deinit();

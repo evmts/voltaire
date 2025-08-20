@@ -40,7 +40,7 @@ test "SELFDESTRUCT in static call fails with WriteProtection" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
@@ -55,7 +55,7 @@ test "SELFDESTRUCT in static call fails with WriteProtection" {
     } };
 
     // Execute using mini EVM
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // Output is VM-owned, do not free
 
     // Execute using regular Guillotine
@@ -96,7 +96,7 @@ test "SELFDESTRUCT to self keeps balance" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine with balance
@@ -113,7 +113,7 @@ test "SELFDESTRUCT to self keeps balance" {
     } };
 
     // Execute using mini EVM
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // Output is VM-owned, do not free
 
     // Execute using regular Guillotine
@@ -155,7 +155,7 @@ test "SELFDESTRUCT with refund gas calculation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
@@ -171,7 +171,7 @@ test "SELFDESTRUCT with refund gas calculation" {
     } };
 
     // Execute using mini EVM
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // Output is VM-owned, do not free
 
     // Execute using regular Guillotine
@@ -229,7 +229,7 @@ test "SELFDESTRUCT in CREATE context" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contract in Guillotine
@@ -245,7 +245,7 @@ test "SELFDESTRUCT in CREATE context" {
     } };
 
     // Execute using mini EVM
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // Output is VM-owned, do not free
 
     // Execute using regular Guillotine
@@ -319,7 +319,7 @@ test "SELFDESTRUCT multiple times in same transaction" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     // Deploy contracts in Guillotine
@@ -340,7 +340,7 @@ test "SELFDESTRUCT multiple times in same transaction" {
     } };
 
     // Execute using mini EVM
-    const mini_result = try vm_instance.call(call_params);
+    const mini_result = try vm_instance.call_mini(call_params);
     // Output is VM-owned, do not free
 
     // Execute using regular Guillotine

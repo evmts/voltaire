@@ -19,7 +19,7 @@ test "Block: BLOCKHASH operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Set up block context
@@ -67,11 +67,11 @@ test "Block: BLOCKHASH operations" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Should return a non-zero hash for recent blocks
             var all_zero = true;
-            for (output) |_| {
+            for (output) |byte| {
                 if (byte != 0) {
                     all_zero = false;
                     break;
@@ -108,7 +108,7 @@ test "Block: BLOCKHASH operations" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Should return 0 for old blocks
             var expected = [_]u8{0} ** 32;
@@ -143,7 +143,7 @@ test "Block: BLOCKHASH operations" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Should return 0 for future blocks
             var expected = [_]u8{0} ** 32;
@@ -159,7 +159,7 @@ test "Block: COINBASE operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Set coinbase address
@@ -204,7 +204,7 @@ test "Block: COINBASE operations" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is the coinbase address
         var expected = [_]u8{0} ** 32;
@@ -221,7 +221,7 @@ test "Block: TIMESTAMP operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Set block timestamp
@@ -266,7 +266,7 @@ test "Block: TIMESTAMP operations" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 1234567890
         var expected = [_]u8{0} ** 32;
@@ -282,7 +282,7 @@ test "Block: NUMBER operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Set block number
@@ -327,7 +327,7 @@ test "Block: NUMBER operations" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 987654321
         var expected = [_]u8{0} ** 32;
@@ -343,7 +343,7 @@ test "Block: DIFFICULTY/PREVRANDAO operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Set difficulty/prevrandao
@@ -388,7 +388,7 @@ test "Block: DIFFICULTY/PREVRANDAO operations" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 0x123456789ABCDEF0
         var expected = [_]u8{0} ** 32;
@@ -404,7 +404,7 @@ test "Block: GASLIMIT operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Set gas limit
@@ -449,7 +449,7 @@ test "Block: GASLIMIT operations" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 30_000_000
         var expected = [_]u8{0} ** 32;
@@ -465,7 +465,7 @@ test "Block: BASEFEE operations (London)" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Set base fee
@@ -510,7 +510,7 @@ test "Block: BASEFEE operations (London)" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 1_000_000_000
         var expected = [_]u8{0} ** 32;
@@ -526,7 +526,7 @@ test "Block: BLOBHASH operations (Cancun)" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Set up blob hashes
@@ -579,7 +579,7 @@ test "Block: BLOBHASH operations (Cancun)" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is first blob hash
             var expected = [_]u8{0} ** 32;
@@ -615,7 +615,7 @@ test "Block: BLOBHASH operations (Cancun)" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is second blob hash
             var expected = [_]u8{0} ** 32;
@@ -651,7 +651,7 @@ test "Block: BLOBHASH operations (Cancun)" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Should return 0 for out of bounds
             var expected = [_]u8{0} ** 32;
@@ -667,7 +667,7 @@ test "Block: BLOBBASEFEE operations (Cancun)" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Set blob base fee
@@ -712,7 +712,7 @@ test "Block: BLOBBASEFEE operations (Cancun)" {
 
     const result = try vm.call(call_params);
     try testing.expect(result.success);
-    if (result.output) |_| {
+    if (result.output) |output| {
         try testing.expectEqual(@as(usize, 32), output.len);
         // Check that the result is 100_000_000
         var expected = [_]u8{0} ** 32;

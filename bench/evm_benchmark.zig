@@ -29,6 +29,8 @@ fn evm_snail_shell_benchmark_impl(allocator: Allocator) !void {
         null, // table
         null, // chain_rules
         null, // context
+        0, // depth
+        false, // read_only
         null, // tracer
     );
     defer evm_instance.deinit();
@@ -167,6 +169,8 @@ fn evm_arithmetic_benchmark_impl(allocator: Allocator) !void {
         null, // table
         null, // chain_rules
         null, // context
+        0, // depth
+        false, // read_only
         null, // tracer
     );
     defer evm_instance.deinit();
@@ -243,6 +247,8 @@ fn evm_memory_benchmark_impl(allocator: Allocator) !void {
         null, // table
         null, // chain_rules
         null, // context
+        0, // depth
+        false, // read_only
         null, // tracer
     );
     defer evm_instance.deinit();
@@ -329,6 +335,8 @@ fn evm_storage_benchmark_impl(allocator: Allocator) !void {
         null, // table
         null, // chain_rules
         null, // context
+        0, // depth
+        false, // read_only
         null, // tracer
     );
     defer evm_instance.deinit();

@@ -45,7 +45,7 @@ test "STOP opcode halts execution" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -104,7 +104,7 @@ test "PC opcode returns current program counter" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -177,7 +177,7 @@ test "JUMPDEST opcode is a valid jump destination" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x2222222222222222222222222222222222222222);
@@ -258,7 +258,7 @@ test "RETURN opcode stops execution during contract deployment" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm_instance = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm_instance.deinit();
 
     const contract_address = Address.from_u256(0x5FbDB2315678afecb367f032d93F642f64180aa3);
@@ -300,6 +300,10 @@ test "RETURN opcode stops execution during contract deployment" {
         revm_gas_used - guillotine_gas_used;
 
     // Debug: Log gas consumption
+    std.debug.print("\n[RETURN test] Gas consumption:\n", .{});
+    std.debug.print("  REVM gas used: {}\n", .{revm_gas_used});
+    std.debug.print("  Guillotine gas used: {}\n", .{guillotine_gas_used});
+    std.debug.print("  Difference: {}\n", .{gas_difference});
 
     // Allow some difference but not the huge difference that would occur
     // if runtime code was executed (would be 100s of gas units more)

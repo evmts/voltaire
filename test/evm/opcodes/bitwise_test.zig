@@ -15,7 +15,7 @@ test "Bitwise: AND basic operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Test 1: Simple AND (0xFF00 & 0xF0F0 = 0xF000)
@@ -46,7 +46,7 @@ test "Bitwise: AND basic operations" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is 0xF000
             var expected = [_]u8{0} ** 32;
@@ -84,7 +84,7 @@ test "Bitwise: AND basic operations" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is 0
             var expected = [_]u8{0} ** 32;
@@ -100,7 +100,7 @@ test "Bitwise: OR basic operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Test: Simple OR (0xFF00 | 0x00FF = 0xFFFF)
@@ -131,7 +131,7 @@ test "Bitwise: OR basic operations" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is 0xFFFF
             var expected = [_]u8{0} ** 32;
@@ -149,7 +149,7 @@ test "Bitwise: XOR basic operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Test: XOR with same value gives 0 (0xABCD ^ 0xABCD = 0)
@@ -180,7 +180,7 @@ test "Bitwise: XOR basic operations" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is 0
             var expected = [_]u8{0} ** 32;
@@ -196,7 +196,7 @@ test "Bitwise: NOT operations" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Test: NOT of 0 gives all 1s
@@ -226,7 +226,7 @@ test "Bitwise: NOT operations" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is all 1s
             var expected = [_]u8{0xFF} ** 32;
@@ -242,7 +242,7 @@ test "Bitwise: BYTE operation" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Test: Get byte 31 (rightmost) from 0x..ABCD
@@ -273,7 +273,7 @@ test "Bitwise: BYTE operation" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is 0xCD
             var expected = [_]u8{0} ** 32;
@@ -290,7 +290,7 @@ test "Bitwise: SHL (shift left)" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Test: 1 << 4 = 16
@@ -321,7 +321,7 @@ test "Bitwise: SHL (shift left)" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is 16
             var expected = [_]u8{0} ** 32;
@@ -338,7 +338,7 @@ test "Bitwise: SHR (shift right)" {
     defer memory_db.deinit();
 
     const db_interface = memory_db.to_database_interface();
-    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, null);
+    var vm = try evm.Evm.init(allocator, db_interface, null, null, null, 0, false, null);
     defer vm.deinit();
 
     // Test: 16 >> 4 = 1
@@ -369,7 +369,7 @@ test "Bitwise: SHR (shift right)" {
 
         const result = try vm.call(call_params);
         try testing.expect(result.success);
-        if (result.output) |_| {
+        if (result.output) |output| {
             try testing.expectEqual(@as(usize, 32), output.len);
             // Check that the result is 1
             var expected = [_]u8{0} ** 32;
