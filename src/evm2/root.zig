@@ -2,7 +2,7 @@ const std = @import("std");
 
 // Import main modules
 pub const FrameConfig = @import("frame.zig").FrameConfig;
-pub const createColdFrame = @import("frame.zig").createColdFrame;
+pub const createFrame = @import("frame.zig").createFrame;
 pub const Analysis = @import("analysis.zig").Analysis;
 pub const Interpreter = @import("interpreter.zig").Interpreter;
 pub const Dispatcher = @import("dispatcher.zig").Dispatcher;
@@ -221,7 +221,7 @@ pub const opcodes = struct {
 test {
     // Test main modules
     _ = FrameConfig;
-    _ = createColdFrame;
+    _ = createFrame;
     _ = Analysis;
     _ = Interpreter;
     _ = Dispatcher;

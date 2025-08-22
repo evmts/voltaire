@@ -29,7 +29,7 @@ pub const EvmConfig = struct {
 };
 
 pub fn createEvm(comptime config: EvmConfig) type {
-    const Frame = frame_mod.createColdFrame(config.frame_config);
+    const Frame = frame_mod.createFrame(config.frame_config);
     const DepthType = config.get_depth_type();
     
     return struct {

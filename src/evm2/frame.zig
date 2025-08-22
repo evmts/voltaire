@@ -656,9 +656,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
             // Find next instruction
             const next_idx = idx + 1;
-            if (next_idx >= instructions.len) {
-                return Error.OutOfBounds;
-            }
+            std.debug.assert(next_idx < instructions.len);
 
             return @call(.always_tail, instructions[next_idx].execute, .{ self, instructions, next_idx });
         }
@@ -677,9 +675,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
             // Find next instruction
             const next_idx = idx + 1;
-            if (next_idx >= instructions.len) {
-                return Error.OutOfBounds;
-            }
+            std.debug.assert(next_idx < instructions.len);
 
             return @call(.always_tail, instructions[next_idx].execute, .{ self, instructions, next_idx });
         }
@@ -689,7 +685,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             return struct {
                 fn handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
                     // Get opcode info for gas consumption
-                    if (self.pc >= self.bytecode.len) return Error.OutOfBounds;
+                    std.debug.assert(self.pc < self.bytecode.len);
                     const opcode = self.bytecode[self.pc];
                     const opcode_info = opcode_data.OPCODE_INFO[opcode];
 
@@ -702,9 +698,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
                     self.pc += 1;
 
                     const next_idx = idx + 1;
-                    if (next_idx >= instructions.len) {
-                        return Error.OutOfBounds;
-                    }
+                    std.debug.assert(next_idx < instructions.len);
 
                     return @call(.always_tail, instructions[next_idx].execute, .{ self, instructions, next_idx });
                 }
@@ -756,9 +750,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
                     // Find next instruction
                     const next_idx = idx + 1;
-                    if (next_idx >= instructions.len) {
-                        return Error.OutOfBounds;
-                    }
+                    std.debug.assert(next_idx < instructions.len);
 
                     return @call(.always_tail, instructions[next_idx].execute, .{ self, instructions, next_idx });
                 }
@@ -776,9 +768,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
                     // Find next instruction
                     const next_idx = idx + 1;
-                    if (next_idx >= instructions.len) {
-                        return Error.OutOfBounds;
-                    }
+                    std.debug.assert(next_idx < instructions.len);
 
                     return @call(.always_tail, instructions[next_idx].execute, .{ self, instructions, next_idx });
                 }
@@ -807,9 +797,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
             // Continue to next instruction
             const next_idx = idx + 1;
-            if (next_idx >= instructions.len) {
-                return Error.OutOfBounds;
-            }
+            std.debug.assert(next_idx < instructions.len);
 
             return @call(.always_tail, instructions[next_idx].execute, .{ self, instructions, next_idx });
         }
@@ -820,9 +808,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
             // Continue to next instruction
             const next_idx = idx + 1;
-            if (next_idx >= instructions.len) {
-                return Error.OutOfBounds;
-            }
+            std.debug.assert(next_idx < instructions.len);
 
             return @call(.always_tail, instructions[next_idx].execute, .{ self, instructions, next_idx });
         }
@@ -860,48 +846,42 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
         fn op_pushn_handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
             const pc = instructions[idx].pc;
-            if (pc >= self.bytecode.len) return Error.OutOfBounds;
+            std.debug.assert(pc < self.bytecode.len);
             const opcode = self.bytecode[pc];
             const n = opcode - (@intFromEnum(Opcode.PUSH1) - 1);
             try self.push_n(n);
             // pc is already advanced by push_n
 
             const next_idx = idx + 1;
-            if (next_idx >= instructions.len) {
-                return Error.OutOfBounds;
-            }
+            std.debug.assert(next_idx < instructions.len);
 
             return @call(.always_tail, instructions[next_idx].execute, .{ self, instructions, next_idx });
         }
 
         fn op_dup_handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
             const pc = instructions[idx].pc;
-            if (pc >= self.bytecode.len) return Error.OutOfBounds;
+            std.debug.assert(pc < self.bytecode.len);
             const opcode = self.bytecode[pc];
             const n = opcode - (@intFromEnum(Opcode.DUP1) - 1);
             try self.dup_n(n);
             self.pc += 1;
 
             const next_idx = idx + 1;
-            if (next_idx >= instructions.len) {
-                return Error.OutOfBounds;
-            }
+            std.debug.assert(next_idx < instructions.len);
 
             return @call(.always_tail, instructions[next_idx].execute, .{ self, instructions, next_idx });
         }
 
         fn op_swap_handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
             const pc = instructions[idx].pc;
-            if (pc >= self.bytecode.len) return Error.OutOfBounds;
+            std.debug.assert(pc < self.bytecode.len);
             const opcode = self.bytecode[pc];
             const n = opcode - (@intFromEnum(Opcode.SWAP1) - 1);
             try self.swap_n(n);
             self.pc += 1;
 
             const next_idx = idx + 1;
-            if (next_idx >= instructions.len) {
-                return Error.OutOfBounds;
-            }
+            std.debug.assert(next_idx < instructions.len);
 
             return @call(.always_tail, instructions[next_idx].execute, .{ self, instructions, next_idx });
         }
@@ -956,9 +936,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 // Condition is false, continue to next instruction
                 self.pc += 1;
                 const next_idx = idx + 1;
-                if (next_idx >= instructions.len) {
-                    return Error.OutOfBounds;
-                }
+                std.debug.assert(next_idx < instructions.len);
 
                 return @call(.always_tail, instructions[next_idx].execute, .{ self, instructions, next_idx });
             }
