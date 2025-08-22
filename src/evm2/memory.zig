@@ -103,6 +103,34 @@ pub fn createMemory(comptime config: MemoryConfig) type {
             }
         }
         
+        // EVM-compliant memory operations that expand to word boundaries
+        pub fn set_data_evm(self: *Self, offset: usize, data: []const u8) !void {
+            const end = offset + data.len;
+            // Round up to next 32-byte word boundary for EVM compliance
+            const word_aligned_end = ((end + 31) / 32) * 32;
+            try self.ensure_capacity(word_aligned_end);
+            
+            const start_idx = self.checkpoint + offset;
+            @memcpy(self.buffer_ptr.items[start_idx..start_idx + data.len], data);
+        }
+        
+        pub fn set_byte_evm(self: *Self, offset: usize, value: u8) !void {
+            const bytes = [_]u8{value};
+            try self.set_data_evm(offset, &bytes);
+        }
+        
+        pub fn set_u256_evm(self: *Self, offset: usize, value: u256) !void {
+            var bytes: [32]u8 = undefined;
+            var temp = value;
+            var i: usize = 32;
+            while (i > 0) {
+                i -= 1;
+                bytes[i] = @truncate(temp);
+                temp >>= 8;
+            }
+            try self.set_data_evm(offset, &bytes);
+        }
+        
         pub fn get_slice(self: *const Self, offset: usize, len: usize) MemoryError![]const u8 {
             const end = offset + len;
             if (end > self.size()) {

@@ -2,6 +2,8 @@ const std = @import("std");
 const builtin = @import("builtin");
 const NoOpTracer = @import("noop_tracer.zig").NoOpTracer;
 const memory_mod = @import("memory.zig");
+const opcode_data = @import("opcode_data.zig");
+const Opcode = opcode_data.Opcode;
 
 pub const FrameConfig = struct {
     const Self = @This();
@@ -110,6 +112,20 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
             execute: *const fn (*Self, []const Instruction, usize) Error!void,
             metadata: u64 = 0, // For PUSH values (up to PUSH6) or jump indices
         };
+        
+        // Special trace instruction types
+        const TraceInstruction = enum {
+            before_op,
+            after_op,
+            on_error,
+        };
+        
+        // Configuration for tracing - only enable if we're not using NoOpTracer
+        const ENABLE_TRACING = blk: {
+            // Check if TracerType is NoOpTracer by comparing the type name
+            const tracer_type_name = @typeName(TracerType);
+            break :blk !std.mem.eql(u8, tracer_type_name, "noop_tracer.NoOpTracer");
+        };
 
         // Cacheline 1
         next_stack_index: StackIndexType, // 1-4 bytes depending on stack_size
@@ -162,28 +178,27 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                 error.InvalidOpcode => return Error.InvalidOpcode,
                 error.StackUnderflow => return Error.StackUnderflow,
                 error.StackOverflow => return Error.StackOverflow,
-                else => return Error.InvalidOpcode,
             };
             total_static_gas += entry_result.gas_cost;
             
             // Find and analyze all JUMPDEST locations
             var i: usize = 0;
             while (i < self.bytecode.len) {
-                const opcode = self.bytecode[i];
+                const opcode_byte = self.bytecode[i];
+                const opcode: Opcode = @enumFromInt(opcode_byte);
                 
-                if (opcode == 0x5B) { // JUMPDEST
+                if (opcode == Opcode.JUMPDEST) {
                     const result = Op5B.analyzeBasicBlock(self.bytecode, i) catch |err| switch (err) {
                         error.InvalidOpcode => return Error.InvalidOpcode,
                         error.StackUnderflow => return Error.StackUnderflow,
                         error.StackOverflow => return Error.StackOverflow,
-                        else => return Error.InvalidOpcode,
                     };
                     total_static_gas += result.gas_cost;
                 }
                 
                 // Skip PUSH immediate data
-                if (opcode >= 0x60 and opcode <= 0x7F) {
-                    const push_size = opcode - 0x5F;
+                if (opcode_byte >= @intFromEnum(Opcode.PUSH1) and opcode_byte <= @intFromEnum(Opcode.PUSH32)) {
+                    const push_size = opcode_byte - (@intFromEnum(Opcode.PUSH1) - 1);
                     i += push_size;
                 }
                 
@@ -212,19 +227,20 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
             
             // First pass: mark opcodes and count them
             while (i < self.bytecode.len) {
-                const opcode = self.bytecode[i];
+                const opcode_byte = self.bytecode[i];
+                const opcode: Opcode = @enumFromInt(opcode_byte);
                 
                 // Mark JUMPDEST locations
-                if (opcode == 0x5B) {
+                if (opcode == Opcode.JUMPDEST) {
                     jump_dests.set(i);
                 }
                 
                 // Handle PUSH opcodes
-                if (opcode >= 0x60 and opcode <= 0x7F) {
+                if (opcode_byte >= @intFromEnum(Opcode.PUSH1) and opcode_byte <= @intFromEnum(Opcode.PUSH32)) {
                     push_locations.set(i);
-                    const push_size = opcode - 0x5F;
+                    const push_size = opcode_byte - (@intFromEnum(Opcode.PUSH1) - 1);
                     i += push_size;
-                } else if (opcode == 0x5F) { // PUSH0
+                } else if (opcode == Opcode.PUSH0) {
                     push_locations.set(i);
                 }
                 
@@ -232,62 +248,76 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                 i += 1;
             }
             
-            // Allocate instruction array with extra slot for OUT_OF_BOUNDS
-            const instructions = allocator.alloc(Instruction, opcode_count + 1) catch return Error.AllocationError;
+            // Calculate total instruction count including trace instructions
+            const total_instruction_count = if (ENABLE_TRACING) 
+                opcode_count * 3 + 1 // Each opcode becomes: trace_before + opcode + trace_after, plus OUT_OF_BOUNDS
+            else 
+                opcode_count + 1; // Just opcodes plus OUT_OF_BOUNDS
+            
+            // Allocate instruction array
+            const instructions = allocator.alloc(Instruction, total_instruction_count) catch return Error.AllocationError;
             defer allocator.free(instructions);
+            
             
             // Second pass: build instruction array
             var inst_idx: usize = 0;
             i = 0;
             
             while (i < self.bytecode.len) {
-                const opcode = self.bytecode[i];
+                const opcode_byte = self.bytecode[i];
                 const pc = @as(PcType, @intCast(i));
                 
-                instructions[inst_idx] = switch (opcode) {
-                    0x00 => .{ .pc = pc, .execute = op_stop_handler },
-                    0x01 => .{ .pc = pc, .execute = op_add_handler },
-                    0x02 => .{ .pc = pc, .execute = op_mul_handler },
-                    0x03 => .{ .pc = pc, .execute = op_sub_handler },
-                    0x04 => .{ .pc = pc, .execute = op_div_handler },
-                    0x05 => .{ .pc = pc, .execute = op_sdiv_handler },
-                    0x06 => .{ .pc = pc, .execute = op_mod_handler },
-                    0x07 => .{ .pc = pc, .execute = op_smod_handler },
-                    0x08 => .{ .pc = pc, .execute = op_addmod_handler },
-                    0x09 => .{ .pc = pc, .execute = op_mulmod_handler },
-                    0x0A => .{ .pc = pc, .execute = op_exp_handler },
-                    0x0B => .{ .pc = pc, .execute = op_signextend_handler },
-                    0x10 => .{ .pc = pc, .execute = op_lt_handler },
-                    0x11 => .{ .pc = pc, .execute = op_gt_handler },
-                    0x12 => .{ .pc = pc, .execute = op_slt_handler },
-                    0x13 => .{ .pc = pc, .execute = op_sgt_handler },
-                    0x14 => .{ .pc = pc, .execute = op_eq_handler },
-                    0x15 => .{ .pc = pc, .execute = op_iszero_handler },
-                    0x16 => .{ .pc = pc, .execute = op_and_handler },
-                    0x17 => .{ .pc = pc, .execute = op_or_handler },
-                    0x18 => .{ .pc = pc, .execute = op_xor_handler },
-                    0x19 => .{ .pc = pc, .execute = op_not_handler },
-                    0x1A => .{ .pc = pc, .execute = op_byte_handler },
-                    0x1B => .{ .pc = pc, .execute = op_shl_handler },
-                    0x1C => .{ .pc = pc, .execute = op_shr_handler },
-                    0x1D => .{ .pc = pc, .execute = op_sar_handler },
-                    0x50 => .{ .pc = pc, .execute = op_pop_handler },
-                    0x51 => .{ .pc = pc, .execute = op_mload_handler },
-                    0x52 => .{ .pc = pc, .execute = op_mstore_handler },
-                    0x53 => .{ .pc = pc, .execute = op_mstore8_handler },
-                    0x56 => .{ .pc = pc, .execute = op_jump_handler },
-                    0x57 => .{ .pc = pc, .execute = op_jumpi_handler },
-                    0x58 => .{ .pc = pc, .execute = op_pc_handler },
-                    0x59 => .{ .pc = pc, .execute = op_msize_handler },
-                    0x5A => .{ .pc = pc, .execute = op_gas_handler },
-                    0x5B => .{ .pc = pc, .execute = op_jumpdest_handler },
-                    0x5F => .{ .pc = pc, .execute = op_push0_handler },
-                    0x60 => blk: {
+                // Insert trace_before instruction if tracing is enabled
+                if (ENABLE_TRACING) {
+                    instructions[inst_idx] = .{ .pc = pc, .execute = trace_before_op_handler };
+                    inst_idx += 1;
+                }
+                
+                // Insert the actual operation instruction
+                instructions[inst_idx] = switch (opcode_byte) {
+                    @intFromEnum(Opcode.STOP) => .{ .pc = pc, .execute = op_stop_handler },
+                    @intFromEnum(Opcode.ADD) => .{ .pc = pc, .execute = op_add_handler },
+                    @intFromEnum(Opcode.MUL) => .{ .pc = pc, .execute = op_mul_handler },
+                    @intFromEnum(Opcode.SUB) => .{ .pc = pc, .execute = op_sub_handler },
+                    @intFromEnum(Opcode.DIV) => .{ .pc = pc, .execute = op_div_handler },
+                    @intFromEnum(Opcode.SDIV) => .{ .pc = pc, .execute = op_sdiv_handler },
+                    @intFromEnum(Opcode.MOD) => .{ .pc = pc, .execute = op_mod_handler },
+                    @intFromEnum(Opcode.SMOD) => .{ .pc = pc, .execute = op_smod_handler },
+                    @intFromEnum(Opcode.ADDMOD) => .{ .pc = pc, .execute = op_addmod_handler },
+                    @intFromEnum(Opcode.MULMOD) => .{ .pc = pc, .execute = op_mulmod_handler },
+                    @intFromEnum(Opcode.EXP) => .{ .pc = pc, .execute = op_exp_handler },
+                    @intFromEnum(Opcode.SIGNEXTEND) => .{ .pc = pc, .execute = op_signextend_handler },
+                    @intFromEnum(Opcode.LT) => .{ .pc = pc, .execute = op_lt_handler },
+                    @intFromEnum(Opcode.GT) => .{ .pc = pc, .execute = op_gt_handler },
+                    @intFromEnum(Opcode.SLT) => .{ .pc = pc, .execute = op_slt_handler },
+                    @intFromEnum(Opcode.SGT) => .{ .pc = pc, .execute = op_sgt_handler },
+                    @intFromEnum(Opcode.EQ) => .{ .pc = pc, .execute = op_eq_handler },
+                    @intFromEnum(Opcode.ISZERO) => .{ .pc = pc, .execute = op_iszero_handler },
+                    @intFromEnum(Opcode.AND) => .{ .pc = pc, .execute = op_and_handler },
+                    @intFromEnum(Opcode.OR) => .{ .pc = pc, .execute = op_or_handler },
+                    @intFromEnum(Opcode.XOR) => .{ .pc = pc, .execute = op_xor_handler },
+                    @intFromEnum(Opcode.NOT) => .{ .pc = pc, .execute = op_not_handler },
+                    @intFromEnum(Opcode.BYTE) => .{ .pc = pc, .execute = op_byte_handler },
+                    @intFromEnum(Opcode.SHL) => .{ .pc = pc, .execute = op_shl_handler },
+                    @intFromEnum(Opcode.SHR) => .{ .pc = pc, .execute = op_shr_handler },
+                    @intFromEnum(Opcode.SAR) => .{ .pc = pc, .execute = op_sar_handler },
+                    @intFromEnum(Opcode.POP) => .{ .pc = pc, .execute = op_pop_handler },
+                    @intFromEnum(Opcode.MLOAD) => .{ .pc = pc, .execute = op_mload_handler },
+                    @intFromEnum(Opcode.MSTORE) => .{ .pc = pc, .execute = op_mstore_handler },
+                    @intFromEnum(Opcode.MSTORE8) => .{ .pc = pc, .execute = op_mstore8_handler },
+                    @intFromEnum(Opcode.JUMP) => .{ .pc = pc, .execute = op_jump_handler },
+                    @intFromEnum(Opcode.JUMPI) => .{ .pc = pc, .execute = op_jumpi_handler },
+                    @intFromEnum(Opcode.PC) => .{ .pc = pc, .execute = op_pc_handler },
+                    @intFromEnum(Opcode.MSIZE) => .{ .pc = pc, .execute = op_msize_handler },
+                    @intFromEnum(Opcode.GAS) => .{ .pc = pc, .execute = op_gas_handler },
+                    @intFromEnum(Opcode.JUMPDEST) => .{ .pc = pc, .execute = op_jumpdest_handler },
+                    @intFromEnum(Opcode.PUSH0) => .{ .pc = pc, .execute = op_push0_handler },
+                    @intFromEnum(Opcode.PUSH1) => blk: {
                         const value = if (i + 1 < self.bytecode.len) self.bytecode[i + 1] else 0;
                         i += 1;
                         break :blk .{ .pc = pc, .execute = op_push1_handler, .metadata = value };
                     },
-                    0x61 => blk: {
+                    @intFromEnum(Opcode.PUSH2) => blk: {
                         if (i + 2 < self.bytecode.len) {
                             const value = std.mem.readInt(u16, self.bytecode[i + 1..][0..2], .big);
                             i += 2;
@@ -296,7 +326,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x62 => blk: {
+                    @intFromEnum(Opcode.PUSH3) => blk: {
                         if (i + 3 < self.bytecode.len) {
                             var value: u64 = 0;
                             value |= @as(u64, self.bytecode[i + 1]) << 16;
@@ -308,7 +338,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x63 => blk: {
+                    @intFromEnum(Opcode.PUSH4) => blk: {
                         if (i + 4 < self.bytecode.len) {
                             const value = std.mem.readInt(u32, self.bytecode[i + 1..][0..4], .big);
                             i += 4;
@@ -317,7 +347,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x64 => blk: {
+                    @intFromEnum(Opcode.PUSH5) => blk: {
                         if (i + 5 < self.bytecode.len) {
                             var value: u64 = 0;
                             value |= @as(u64, self.bytecode[i + 1]) << 32;
@@ -331,7 +361,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x65 => blk: {
+                    @intFromEnum(Opcode.PUSH6) => blk: {
                         if (i + 6 < self.bytecode.len) {
                             var value: u64 = 0;
                             value |= @as(u64, self.bytecode[i + 1]) << 40;
@@ -346,7 +376,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x66 => blk: {
+                    @intFromEnum(Opcode.PUSH7) => blk: {
                         const push_size = 7;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -355,7 +385,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x67 => blk: {
+                    @intFromEnum(Opcode.PUSH8) => blk: {
                         const push_size = 8;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -364,7 +394,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x68 => blk: {
+                    @intFromEnum(Opcode.PUSH9) => blk: {
                         const push_size = 9;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -373,7 +403,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x69 => blk: {
+                    @intFromEnum(Opcode.PUSH10) => blk: {
                         const push_size = 10;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -382,7 +412,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x6A => blk: {
+                    @intFromEnum(Opcode.PUSH11) => blk: {
                         const push_size = 11;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -391,7 +421,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x6B => blk: {
+                    @intFromEnum(Opcode.PUSH12) => blk: {
                         const push_size = 12;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -400,7 +430,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x6C => blk: {
+                    @intFromEnum(Opcode.PUSH13) => blk: {
                         const push_size = 13;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -409,7 +439,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x6D => blk: {
+                    @intFromEnum(Opcode.PUSH14) => blk: {
                         const push_size = 14;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -418,7 +448,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x6E => blk: {
+                    @intFromEnum(Opcode.PUSH15) => blk: {
                         const push_size = 15;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -427,7 +457,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x6F => blk: {
+                    @intFromEnum(Opcode.PUSH16) => blk: {
                         const push_size = 16;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -436,7 +466,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x70 => blk: {
+                    @intFromEnum(Opcode.PUSH17) => blk: {
                         const push_size = 17;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -445,7 +475,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x71 => blk: {
+                    @intFromEnum(Opcode.PUSH18) => blk: {
                         const push_size = 18;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -454,7 +484,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x72 => blk: {
+                    @intFromEnum(Opcode.PUSH19) => blk: {
                         const push_size = 19;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -463,7 +493,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x73 => blk: {
+                    @intFromEnum(Opcode.PUSH20) => blk: {
                         const push_size = 20;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -472,7 +502,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x74 => blk: {
+                    @intFromEnum(Opcode.PUSH21) => blk: {
                         const push_size = 21;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -481,7 +511,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x75 => blk: {
+                    @intFromEnum(Opcode.PUSH22) => blk: {
                         const push_size = 22;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -490,7 +520,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x76 => blk: {
+                    @intFromEnum(Opcode.PUSH23) => blk: {
                         const push_size = 23;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -499,7 +529,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x77 => blk: {
+                    @intFromEnum(Opcode.PUSH24) => blk: {
                         const push_size = 24;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -508,7 +538,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x78 => blk: {
+                    @intFromEnum(Opcode.PUSH25) => blk: {
                         const push_size = 25;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -517,7 +547,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x79 => blk: {
+                    @intFromEnum(Opcode.PUSH26) => blk: {
                         const push_size = 26;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -526,7 +556,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x7A => blk: {
+                    @intFromEnum(Opcode.PUSH27) => blk: {
                         const push_size = 27;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -535,7 +565,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x7B => blk: {
+                    @intFromEnum(Opcode.PUSH28) => blk: {
                         const push_size = 28;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -544,7 +574,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x7C => blk: {
+                    @intFromEnum(Opcode.PUSH29) => blk: {
                         const push_size = 29;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -553,7 +583,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x7D => blk: {
+                    @intFromEnum(Opcode.PUSH30) => blk: {
                         const push_size = 30;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -562,7 +592,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x7E => blk: {
+                    @intFromEnum(Opcode.PUSH31) => blk: {
                         const push_size = 31;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -571,7 +601,7 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x7F => blk: {
+                    @intFromEnum(Opcode.PUSH32) => blk: {
                         const push_size = 32;
                         if (i + push_size < self.bytecode.len) {
                             i += push_size;
@@ -580,18 +610,24 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                             break :blk .{ .pc = pc, .execute = op_invalid_handler };
                         }
                     },
-                    0x80...0x8F => .{ .pc = pc, .execute = op_dup_handler },
-                    0x90...0x9F => .{ .pc = pc, .execute = op_swap_handler },
-                    0xFE => .{ .pc = pc, .execute = op_invalid_handler },
+                    @intFromEnum(Opcode.DUP1)...@intFromEnum(Opcode.DUP16) => .{ .pc = pc, .execute = op_dup_handler },
+                    @intFromEnum(Opcode.SWAP1)...@intFromEnum(Opcode.SWAP16) => .{ .pc = pc, .execute = op_swap_handler },
+                    @intFromEnum(Opcode.INVALID) => .{ .pc = pc, .execute = op_invalid_handler },
                     else => .{ .pc = pc, .execute = op_invalid_handler },
                 };
-                
                 inst_idx += 1;
+                
+                // Insert trace_after instruction if tracing is enabled
+                if (ENABLE_TRACING) {
+                    instructions[inst_idx] = .{ .pc = pc, .execute = trace_after_op_handler };
+                    inst_idx += 1;
+                }
+                
                 i += 1;
             }
             
             // Add OUT_OF_BOUNDS instruction at the end
-            instructions[opcode_count] = .{ .pc = @intCast(self.bytecode.len), .execute = out_of_bounds_handler };
+            instructions[inst_idx] = .{ .pc = @intCast(self.bytecode.len), .execute = out_of_bounds_handler };
             
             // Start execution with first instruction
             return self.execute_instruction(instructions, 0);
@@ -613,23 +649,13 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
         
         fn op_add_handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
             // Get opcode info for gas consumption
-            const opcode_info = @import("opcode_data.zig").OPCODE_INFO[0x01]; // ADD
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.ADD)];
             
             // Consume gas (unchecked since we validated in pre-analysis)
             self.consumeGasUnchecked(opcode_info.gas_cost);
             
-            // Call tracer before operation
-            self.tracer.beforeOp(Self, self);
-            
             // Execute the operation
-            self.op_add() catch |err| {
-                // Call tracer on error
-                self.tracer.onError(Self, self, err);
-                return err;
-            };
-            
-            // Call tracer after operation
-            self.tracer.afterOp(Self, self);
+            try self.op_add();
             
             self.pc += 1;
             
@@ -643,18 +669,14 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
         }
         
         fn op_mul_handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
-            // Call tracer before operation
-            self.tracer.beforeOp(Self, self);
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MUL)];
+            
+            // Consume gas (unchecked since we validated in pre-analysis)
+            self.consumeGasUnchecked(opcode_info.gas_cost);
             
             // Execute the operation
-            self.op_mul() catch |err| {
-                // Call tracer on error
-                self.tracer.onError(Self, self, err);
-                return err;
-            };
-            
-            // Call tracer after operation
-            self.tracer.afterOp(Self, self);
+            try self.op_mul();
             
             self.pc += 1;
             
@@ -672,24 +694,15 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
             return struct {
                 fn handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
                     // Get opcode info for gas consumption
+                    if (self.pc >= self.bytecode.len) return Error.OutOfBounds;
                     const opcode = self.bytecode[self.pc];
-                    const opcode_info = @import("opcode_data.zig").OPCODE_INFO[opcode];
+                    const opcode_info = opcode_data.OPCODE_INFO[opcode];
                     
                     // Consume gas (unchecked since we validated in pre-analysis)
                     self.consumeGasUnchecked(opcode_info.gas_cost);
                     
-                    // Call tracer before operation
-                    self.tracer.beforeOp(Self, self);
-                    
                     // Execute the operation
-                    op(self) catch |err| {
-                        // Call tracer on error
-                        self.tracer.onError(Self, self, err);
-                        return err;
-                    };
-                    
-                    // Call tracer after operation
-                    self.tracer.afterOp(Self, self);
+                    try op(self);
                     
                     self.pc += 1;
                     
@@ -741,18 +754,8 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
         fn makePushHandler(comptime bytes: u8) fn (*Self, []const Instruction, usize) Error!void {
             return struct {
                 fn handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
-                    // Call tracer before operation
-                    self.tracer.beforeOp(Self, self);
-                    
                     const value = @as(WordType, @intCast(instructions[idx].metadata));
-                    self.push(value) catch |err| {
-                        // Call tracer on error
-                        self.tracer.onError(Self, self, err);
-                        return err;
-                    };
-                    
-                    // Call tracer after operation
-                    self.tracer.afterOp(Self, self);
+                    try self.push(value);
                     
                     self.pc += 1 + bytes; // opcode + N bytes
                     
@@ -771,18 +774,8 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
         fn makePushNHandler(comptime n: u8) fn (*Self, []const Instruction, usize) Error!void {
             return struct {
                 fn handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
-                    // Call tracer before operation
-                    self.tracer.beforeOp(Self, self);
-                    
                     // Use the generic push_n with comptime known size
-                    self.push_n(n) catch |err| {
-                        // Call tracer on error
-                        self.tracer.onError(Self, self, err);
-                        return err;
-                    };
-                    
-                    // Call tracer after operation
-                    self.tracer.afterOp(Self, self);
+                    try self.push_n(n);
                     
                     // pc is already advanced by push_n
                     
@@ -810,6 +803,33 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
             _ = instructions;
             _ = idx;
             return Error.OutOfBounds;
+        }
+        
+        // Trace instruction handlers
+        fn trace_before_op_handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
+            // Call tracer before operation
+            self.tracer.beforeOp(Self, self);
+            
+            // Continue to next instruction
+            const next_idx = idx + 1;
+            if (next_idx >= instructions.len) {
+                return Error.OutOfBounds;
+            }
+            
+            return @call(.always_tail, instructions[next_idx].execute, .{self, instructions, next_idx});
+        }
+        
+        fn trace_after_op_handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
+            // Call tracer after operation
+            self.tracer.afterOp(Self, self);
+            
+            // Continue to next instruction
+            const next_idx = idx + 1;
+            if (next_idx >= instructions.len) {
+                return Error.OutOfBounds;
+            }
+            
+            return @call(.always_tail, instructions[next_idx].execute, .{self, instructions, next_idx});
         }
         
         const op_push2_handler = makePushHandler(2);
@@ -844,8 +864,10 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
         const op_push31_handler = makePushNHandler(31);
         
         fn op_pushn_handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
-            const opcode = self.bytecode[instructions[idx].pc];
-            const n = opcode - 0x5F;
+            const pc = instructions[idx].pc;
+            if (pc >= self.bytecode.len) return Error.OutOfBounds;
+            const opcode = self.bytecode[pc];
+            const n = opcode - (@intFromEnum(Opcode.PUSH1) - 1);
             try self.push_n(n);
             // pc is already advanced by push_n
             
@@ -858,8 +880,10 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
         }
         
         fn op_dup_handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
-            const opcode = self.bytecode[instructions[idx].pc];
-            const n = opcode - 0x7F;
+            const pc = instructions[idx].pc;
+            if (pc >= self.bytecode.len) return Error.OutOfBounds;
+            const opcode = self.bytecode[pc];
+            const n = opcode - (@intFromEnum(Opcode.DUP1) - 1);
             try self.dup_n(n);
             self.pc += 1;
             
@@ -872,8 +896,10 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
         }
         
         fn op_swap_handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
-            const opcode = self.bytecode[instructions[idx].pc];
-            const n = opcode - 0x8F;
+            const pc = instructions[idx].pc;
+            if (pc >= self.bytecode.len) return Error.OutOfBounds;
+            const opcode = self.bytecode[pc];
+            const n = opcode - (@intFromEnum(Opcode.SWAP1) - 1);
             try self.swap_n(n);
             self.pc += 1;
             
@@ -886,27 +912,20 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
         }
         
         fn op_jump_handler(self: *Self, instructions: []const Instruction, _: usize) Error!void {
-            // Call tracer before operation
-            self.tracer.beforeOp(Self, self);
-            
-            const dest = self.pop() catch |err| {
-                // Call tracer on error
-                self.tracer.onError(Self, self, err);
-                return err;
-            };
+            const dest = try self.pop();
             
             if (dest > max_bytecode_size) {
-                const err = Error.InvalidJump;
-                self.tracer.onError(Self, self, err);
-                return err;
+                return Error.InvalidJump;
             }
             
-            // Call tracer after operation (before jump)
-            self.tracer.afterOp(Self, self);
+            const dest_pc = @as(usize, @intCast(dest));
+            if (!self.is_valid_jump_dest(dest_pc)) {
+                return Error.InvalidJump;
+            }
             
             self.pc = @intCast(dest);
             
-            // Find instruction with matching PC
+            // Find first instruction with matching PC (handles tracing automatically)
             for (instructions, 0..) |inst, inst_idx| {
                 if (inst.pc == self.pc) {
                     return @call(.always_tail, inst.execute, .{self, instructions, inst_idx});
@@ -924,9 +943,13 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
                 if (dest > max_bytecode_size) {
                     return Error.InvalidJump;
                 }
+                const dest_pc = @as(usize, @intCast(dest));
+                if (!self.is_valid_jump_dest(dest_pc)) {
+                    return Error.InvalidJump;
+                }
                 self.pc = @intCast(dest);
                 
-                // Find instruction with matching PC
+                // Find first instruction with matching PC (handles tracing automatically)
                 for (instructions, 0..) |inst, inst_idx| {
                     if (inst.pc == self.pc) {
                         return @call(.always_tail, inst.execute, .{self, instructions, inst_idx});
@@ -1028,6 +1051,13 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
         }
         
         pub fn op_push1(self: *Self) Error!void {
+            // Check bounds before reading bytecode
+            if (self.pc + 1 >= self.bytecode.len) {
+                // EVM specification: missing data is treated as zero
+                self.pc += 1; // Still advance PC past the opcode
+                return self.push(0);
+            }
+            
             // Read one byte from bytecode after the opcode
             const value = self.bytecode[self.pc + 1];
             self.pc += 2; // Advance PC past opcode and data byte
@@ -1037,21 +1067,33 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
         // Generic push function for PUSH2-PUSH32
         fn push_n(self: *Self, n: u8) Error!void {
             const start = self.pc + 1;
+            const end = start + n;
             var value: u256 = 0;
+            
+            // Check bounds - if we don't have enough bytes, pad with zeros
+            const available_bytes = if (end <= self.bytecode.len) 
+                n 
+            else if (start >= self.bytecode.len) 
+                0 
+            else 
+                @as(u8, @intCast(self.bytecode.len - start));
             
             // Handle different sizes using std.mem.readInt
             if (n <= 8) {
                 // For sizes that fit in standard integer types
-                const bytes = self.bytecode[start..start + n];
                 var buffer: [@divExact(64, 8)]u8 = [_]u8{0} ** 8;
-                // Copy to right-aligned position for big-endian
-                @memcpy(buffer[8 - n..], bytes);
+                // Copy available bytes to right-aligned position for big-endian
+                if (available_bytes > 0) {
+                    @memcpy(buffer[8 - available_bytes..], self.bytecode[start..start + available_bytes]);
+                }
                 const small_value = std.mem.readInt(u64, &buffer, .big);
                 value = small_value;
             } else {
                 // For larger sizes, read in chunks
                 var temp_buffer: [32]u8 = [_]u8{0} ** 32;
-                @memcpy(temp_buffer[32 - n..], self.bytecode[start..start + n]);
+                if (available_bytes > 0) {
+                    @memcpy(temp_buffer[32 - available_bytes..], self.bytecode[start..start + available_bytes]);
+                }
                 
                 // Read as four u64s and combine
                 var result: u256 = 0;
@@ -1545,10 +1587,24 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
             try self.set_top(result);
         }
         
+        // Helper function to validate if a PC position contains a valid JUMPDEST
+        fn is_valid_jump_dest(self: *Self, pc: usize) bool {
+            // Check bounds
+            if (pc >= self.bytecode.len) return false;
+            
+            // Check if the instruction at this position is JUMPDEST
+            const opcode = self.bytecode[pc];
+            return opcode == @intFromEnum(Opcode.JUMPDEST);
+        }
+        
         // Control flow operations
         pub fn op_jump(self: *Self) Error!void {
             const dest = try self.pop();
             if (dest > max_bytecode_size) {
+                return Error.InvalidJump;
+            }
+            const dest_pc = @as(usize, @intCast(dest));
+            if (!self.is_valid_jump_dest(dest_pc)) {
                 return Error.InvalidJump;
             }
             self.pc = @intCast(dest);
@@ -1559,6 +1615,10 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
             const condition = try self.pop();
             if (condition != 0) {
                 if (dest > max_bytecode_size) {
+                    return Error.InvalidJump;
+                }
+                const dest_pc = @as(usize, @intCast(dest));
+                if (!self.is_valid_jump_dest(dest_pc)) {
                     return Error.InvalidJump;
                 }
                 self.pc = @intCast(dest);
@@ -1632,8 +1692,8 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
             
             const offset_usize = @as(usize, @intCast(offset));
             
-            // Write 32 bytes to memory (memory handles expansion automatically)
-            self.memory.set_u256(offset_usize, value) catch |err| switch (err) {
+            // Write 32 bytes to memory using EVM-compliant expansion
+            self.memory.set_u256_evm(offset_usize, value) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
@@ -1652,8 +1712,8 @@ pub fn createColdFrame(comptime config: FrameConfig) type {
             const offset_usize = @as(usize, @intCast(offset));
             const byte_value = @as(u8, @truncate(value & 0xFF));
             
-            // Write 1 byte to memory
-            self.memory.set_byte(offset_usize, byte_value) catch |err| switch (err) {
+            // Write 1 byte to memory using EVM-compliant expansion
+            self.memory.set_byte_evm(offset_usize, byte_value) catch |err| switch (err) {
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
             };
@@ -1666,7 +1726,7 @@ test "ColdFrame push and push_unsafe" {
     const allocator = std.testing.allocator;
     const Frame = createColdFrame(.{});
     
-    const dummy_bytecode = [_]u8{0x00}; // STOP
+    const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
     var frame = try Frame.init(allocator, &dummy_bytecode, 0);
     defer frame.deinit(allocator);
     
@@ -1693,7 +1753,7 @@ test "ColdFrame pop and pop_unsafe" {
     const allocator = std.testing.allocator;
     const Frame = createColdFrame(.{});
     
-    const dummy_bytecode = [_]u8{0x00}; // STOP
+    const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
     var frame = try Frame.init(allocator, &dummy_bytecode, 0);
     defer frame.deinit(allocator);
     
@@ -1724,7 +1784,7 @@ test "ColdFrame set_top and set_top_unsafe" {
     const allocator = std.testing.allocator;
     const Frame = createColdFrame(.{});
     
-    const dummy_bytecode = [_]u8{0x00}; // STOP
+    const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
     var frame = try Frame.init(allocator, &dummy_bytecode, 0);
     defer frame.deinit(allocator);
     
@@ -1753,7 +1813,7 @@ test "ColdFrame peek and peek_unsafe" {
     const allocator = std.testing.allocator;
     const Frame = createColdFrame(.{});
     
-    const dummy_bytecode = [_]u8{0x00}; // STOP
+    const dummy_bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
     var frame = try Frame.init(allocator, &dummy_bytecode, 0);
     defer frame.deinit(allocator);
     
@@ -1783,17 +1843,17 @@ test "ColdFrame with bytecode and pc" {
     
     // Test with small bytecode (fits in u8)
     const SmallFrame = createColdFrame(.{ .max_bytecode_size = 255 });
-    const small_bytecode = [_]u8{0x60, 0x01, 0x60, 0x02, 0x00}; // PUSH1 1 PUSH1 2 STOP
+    const small_bytecode = [_]u8{@intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.PUSH1), 0x02, @intFromEnum(Opcode.STOP)};
     
     var small_frame = try SmallFrame.init(allocator, &small_bytecode, 1000000);
     defer small_frame.deinit(allocator);
     
     try std.testing.expectEqual(@as(u8, 0), small_frame.pc);
-    try std.testing.expectEqual(@as(u8, 0x60), small_frame.bytecode[0]);
+    try std.testing.expectEqual(@intFromEnum(Opcode.PUSH1), small_frame.bytecode[0]);
     
     // Test with medium bytecode (fits in u16)
     const MediumFrame = createColdFrame(.{ .max_bytecode_size = 65535 });
-    const medium_bytecode = [_]u8{0x58, 0x00}; // PC STOP
+    const medium_bytecode = [_]u8{@intFromEnum(Opcode.PC), @intFromEnum(Opcode.STOP)};
     
     var medium_frame = try MediumFrame.init(allocator, &medium_bytecode, 1000000);
     defer medium_frame.deinit(allocator);
@@ -1806,7 +1866,7 @@ test "ColdFrame op_pc pushes pc to stack" {
     const allocator = std.testing.allocator;
     const Frame = createColdFrame(.{});
     
-    const bytecode = [_]u8{0x58, 0x00}; // PC STOP
+    const bytecode = [_]u8{@intFromEnum(Opcode.PC), @intFromEnum(Opcode.STOP)};
     var frame = try Frame.init(allocator, &bytecode, 0);
     defer frame.deinit(allocator);
     
@@ -1826,7 +1886,7 @@ test "ColdFrame op_stop returns stop error" {
     const allocator = std.testing.allocator;
     const Frame = createColdFrame(.{});
     
-    const bytecode = [_]u8{0x00}; // STOP
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
     var frame = try Frame.init(allocator, &bytecode, 0);
     defer frame.deinit(allocator);
     
@@ -1838,7 +1898,7 @@ test "ColdFrame op_pop removes top stack item" {
     const allocator = std.testing.allocator;
     const Frame = createColdFrame(.{});
     
-    const bytecode = [_]u8{0x50, 0x00}; // POP STOP
+    const bytecode = [_]u8{@intFromEnum(Opcode.POP), @intFromEnum(Opcode.STOP)};
     var frame = try Frame.init(allocator, &bytecode, 0);
     defer frame.deinit(allocator);
     
@@ -1868,7 +1928,7 @@ test "ColdFrame op_push0 pushes zero to stack" {
     const allocator = std.testing.allocator;
     const Frame = createColdFrame(.{});
     
-    const bytecode = [_]u8{0x5f, 0x00}; // PUSH0 STOP
+    const bytecode = [_]u8{@intFromEnum(Opcode.PUSH0), @intFromEnum(Opcode.STOP)};
     var frame = try Frame.init(allocator, &bytecode, 0);
     defer frame.deinit(allocator);
     
@@ -3143,19 +3203,19 @@ test "ColdFrame op_jump unconditional jump" {
     const allocator = std.testing.allocator;
     const Frame = createColdFrame(.{});
     
-    const bytecode = [_]u8{0x56, 0x00}; // JUMP STOP
+    // JUMP STOP JUMPDEST STOP (positions: 0=JUMP, 1=STOP, 2=JUMPDEST, 3=STOP) 
+    const bytecode = [_]u8{0x56, 0x00, 0x5B, 0x00};
     var frame = try Frame.init(allocator, &bytecode, 0);
     defer frame.deinit(allocator);
     
-    // Test valid jump to position 10
-    try frame.push(10);
+    // Test valid jump to position 2 (JUMPDEST)
+    try frame.push(2);
     try frame.op_jump();
-    try std.testing.expectEqual(@as(u16, 10), frame.pc);
+    try std.testing.expectEqual(@as(u16, 2), frame.pc);
     
-    // Test jump to position 0
+    // Test invalid jump to position 0 (JUMP instruction, not JUMPDEST)
     try frame.push(0);
-    try frame.op_jump();
-    try std.testing.expectEqual(@as(u16, 0), frame.pc);
+    try std.testing.expectError(error.InvalidJump, frame.op_jump());
     
     // Test invalid jump beyond bytecode size
     try frame.push(30000); // Beyond max_bytecode_size
@@ -3166,27 +3226,28 @@ test "ColdFrame op_jumpi conditional jump" {
     const allocator = std.testing.allocator;
     const Frame = createColdFrame(.{});
     
-    const bytecode = [_]u8{0x57, 0x00}; // JUMPI STOP
+    // JUMPI STOP JUMPDEST STOP (positions: 0=JUMPI, 1=STOP, 2=JUMPDEST, 3=STOP)
+    const bytecode = [_]u8{0x57, 0x00, 0x5B, 0x00};
     var frame = try Frame.init(allocator, &bytecode, 0);
     defer frame.deinit(allocator);
     
-    // Test jump with non-zero condition (should jump)
+    // Test jump with non-zero condition (should jump to valid JUMPDEST)
     frame.pc = 0;
     try frame.push(1); // condition (non-zero)
-    try frame.push(20); // destination
+    try frame.push(2); // destination (JUMPDEST)
     try frame.op_jumpi();
-    try std.testing.expectEqual(@as(u16, 20), frame.pc);
+    try std.testing.expectEqual(@as(u16, 2), frame.pc);
     
     // Test jump with zero condition (should not jump)
     frame.pc = 5;
     try frame.push(0); // condition (zero)
-    try frame.push(30); // destination
+    try frame.push(2); // destination
     try frame.op_jumpi();
     try std.testing.expectEqual(@as(u16, 5), frame.pc); // PC unchanged
     
-    // Test invalid jump with non-zero condition
+    // Test invalid jump with non-zero condition (jump to STOP instead of JUMPDEST)
     try frame.push(1); // condition (non-zero)
-    try frame.push(30000); // Invalid destination
+    try frame.push(1); // Invalid destination (STOP instruction)
     try std.testing.expectError(error.InvalidJump, frame.op_jumpi());
     
     // Test invalid destination with zero condition (should not error)
@@ -3570,5 +3631,221 @@ test "ColdFrame op_mstore8 byte store operations" {
     const word2 = try frame.pop();
     const byte_10 = @as(u8, @truncate((word2 >> (21 * 8)) & 0xFF));
     try std.testing.expectEqual(@as(u8, 0xCD), byte_10);
+}
+
+test "trace instructions behavior with different tracer types" {
+    // Simple test tracer that counts calls
+    const TestTracer = struct {
+        call_count: usize = 0,
+        
+        pub fn init() @This() {
+            return .{};
+        }
+        
+        pub fn beforeOp(self: *@This(), comptime FrameType: type, frame_instance: *const FrameType) void {
+            _ = frame_instance;
+            self.call_count += 1;
+        }
+        
+        pub fn afterOp(self: *@This(), comptime FrameType: type, frame_instance: *const FrameType) void {
+            _ = frame_instance;
+            self.call_count += 1;
+        }
+        
+        pub fn onError(self: *@This(), comptime FrameType: type, frame_instance: *const FrameType, err: anyerror) void {
+            _ = frame_instance;
+            _ = err;
+            self.call_count += 1;
+        }
+    };
+    
+    const allocator = std.testing.allocator;
+    
+    // Test that frames with different tracer types compile successfully
+    const FrameNoOp = createColdFrame(.{});
+    const FrameWithTestTracer = createColdFrame(.{
+        .TracerType = TestTracer,
+    });
+    
+    // Verify both frame types can be instantiated
+    const bytecode = [_]u8{ 0x60, 0x05, 0x00 }; // PUSH1 5, STOP
+    
+    var frame_noop = try FrameNoOp.init(allocator, &bytecode, 1000);
+    defer frame_noop.deinit(allocator);
+    
+    var frame_traced = try FrameWithTestTracer.init(allocator, &bytecode, 1000);
+    defer frame_traced.deinit(allocator);
+    
+    // Both should start with empty stacks
+    try std.testing.expectEqual(@as(usize, 0), frame_noop.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 0), frame_traced.next_stack_index);
+    
+    // The traced frame should start with zero tracer calls
+    try std.testing.expectEqual(@as(usize, 0), frame_traced.tracer.call_count);
+    
+    // Test type name checking (this verifies our ENABLE_TRACING logic)
+    const noop_type_name = @typeName(NoOpTracer);
+    const test_tracer_type_name = @typeName(TestTracer);
+    
+    try std.testing.expect(std.mem.eql(u8, noop_type_name, "noop_tracer.NoOpTracer"));
+    try std.testing.expect(!std.mem.eql(u8, test_tracer_type_name, "noop_tracer.NoOpTracer"));
+}
+
+test "ColdFrame jump to invalid destination should fail" {
+    const allocator = std.testing.allocator;
+    const Frame = createColdFrame(.{});
+    
+    // PUSH1 3, JUMP, STOP - jumping to position 3 which is STOP instruction should fail
+    const bytecode = [_]u8{0x60, 0x03, 0x56, 0x00};
+    var frame = try Frame.init(allocator, &bytecode, 1000000);
+    defer frame.deinit(allocator);
+    
+    // This should fail because we're jumping to position 3 which is STOP, not JUMPDEST
+    const result = frame.interpret(allocator);
+    try std.testing.expectError(error.InvalidJump, result);
+}
+
+test "ColdFrame memory expansion edge cases" {
+    const allocator = std.testing.allocator;
+    const Frame = createColdFrame(.{});
+    
+    const bytecode = [_]u8{0x53, 0x00}; // MSTORE8 STOP
+    var frame = try Frame.init(allocator, &bytecode, 1000000);
+    defer frame.deinit(allocator);
+    
+    // Test memory expansion with MSTORE8 at various offsets
+    // Memory should expand in 32-byte chunks (EVM word alignment)
+    
+    // Store at offset 0 - should expand to 32 bytes
+    try frame.push(0xFF); // value
+    try frame.push(0); // offset
+    try frame.op_mstore8();
+    try frame.op_msize();
+    const size1 = try frame.pop();
+    try std.testing.expectEqual(@as(u256, 32), size1);
+    
+    // Store at offset 31 - should still be 32 bytes
+    try frame.push(0xAA); // value
+    try frame.push(31); // offset
+    try frame.op_mstore8();
+    try frame.op_msize();
+    const size2 = try frame.pop();
+    try std.testing.expectEqual(@as(u256, 32), size2);
+    
+    // Store at offset 32 - should expand to 64 bytes
+    try frame.push(0xBB); // value
+    try frame.push(32); // offset
+    try frame.op_mstore8();
+    try frame.op_msize();
+    const size3 = try frame.pop();
+    try std.testing.expectEqual(@as(u256, 64), size3);
+    
+    // Store at offset 63 - should still be 64 bytes
+    try frame.push(0xCC); // value
+    try frame.push(63); // offset
+    try frame.op_mstore8();
+    try frame.op_msize();
+    const size4 = try frame.pop();
+    try std.testing.expectEqual(@as(u256, 64), size4);
+    
+    // Store at offset 64 - should expand to 96 bytes
+    try frame.push(0xDD); // value
+    try frame.push(64); // offset
+    try frame.op_mstore8();
+    try frame.op_msize();
+    const size5 = try frame.pop();
+    try std.testing.expectEqual(@as(u256, 96), size5);
+}
+
+test "ColdFrame JUMPDEST validation comprehensive" {
+    const allocator = std.testing.allocator;
+    const Frame = createColdFrame(.{});
+    
+    // Complex bytecode with valid and invalid jump destinations
+    // PUSH1 8, JUMPI, INVALID, PUSH1 12, JUMP, INVALID, JUMPDEST, PUSH1 1, STOP, INVALID, JUMPDEST, PUSH1 2, STOP
+    const bytecode = [_]u8{
+        0x60, 0x08, // PUSH1 8 (offset 0-1)
+        0x57,       // JUMPI (offset 2)
+        0xFE,       // INVALID (offset 3)
+        0x60, 0x0C, // PUSH1 12 (offset 4-5)
+        0x56,       // JUMP (offset 6)
+        0xFE,       // INVALID (offset 7)
+        0x5B,       // JUMPDEST (offset 8) - valid destination
+        0x60, 0x01, // PUSH1 1 (offset 9-10)
+        0x00,       // STOP (offset 11)
+        0xFE,       // INVALID (offset 12) - trying to jump here should fail
+        0x5B,       // JUMPDEST (offset 13) - valid destination
+        0x60, 0x02, // PUSH1 2 (offset 14-15)
+        0x00        // STOP (offset 16)
+    };
+    var frame = try Frame.init(allocator, &bytecode, 1000000);
+    defer frame.deinit(allocator);
+    
+    // Test 1: Jump to valid JUMPDEST at offset 8
+    try frame.push(8);
+    try frame.op_jump();
+    try std.testing.expectEqual(@as(u16, 8), frame.pc);
+    
+    // Test 2: Jump to valid JUMPDEST at offset 13
+    try frame.push(13);
+    try frame.op_jump();
+    try std.testing.expectEqual(@as(u16, 13), frame.pc);
+    
+    // Test 3: Jump to invalid destination (INVALID opcode at offset 3)
+    try frame.push(3);
+    try std.testing.expectError(error.InvalidJump, frame.op_jump());
+    
+    // Test 4: Jump to invalid destination (INVALID opcode at offset 7)
+    try frame.push(7);
+    try std.testing.expectError(error.InvalidJump, frame.op_jump());
+    
+    // Test 5: Jump to invalid destination (INVALID opcode at offset 12)
+    try frame.push(12);
+    try std.testing.expectError(error.InvalidJump, frame.op_jump());
+    
+    // Test 6: Jump to bytecode instruction (PUSH1 at offset 0)
+    try frame.push(0);
+    try std.testing.expectError(error.InvalidJump, frame.op_jump());
+    
+    // Test 7: JUMPI with zero condition should not validate destination
+    try frame.push(0); // condition = 0 (don't jump)
+    try frame.push(3); // invalid destination
+    frame.pc = 10; // set PC to known value
+    try frame.op_jumpi();
+    try std.testing.expectEqual(@as(u16, 10), frame.pc); // PC should be unchanged
+    
+    // Test 8: JUMPI with non-zero condition should validate destination
+    try frame.push(1); // condition = 1 (jump)
+    try frame.push(3); // invalid destination
+    try std.testing.expectError(error.InvalidJump, frame.op_jumpi());
+}
+
+test "ColdFrame gas consumption tracking" {
+    const allocator = std.testing.allocator;
+    const Frame = createColdFrame(.{});
+    
+    // PUSH1 10, PUSH1 20, ADD, GAS, STOP
+    const bytecode = [_]u8{0x60, 0x0A, 0x60, 0x14, 0x01, 0x5A, 0x00};
+    var frame = try Frame.init(allocator, &bytecode, 1000);
+    defer frame.deinit(allocator);
+    
+    // Check initial gas
+    const initial_gas = frame.gas_remaining;
+    try std.testing.expectEqual(@as(i32, 1000), initial_gas);
+    
+    // Run the interpretation which will consume gas
+    const result = frame.interpret(allocator);
+    try std.testing.expectError(error.STOP, result);
+    
+    // Check that gas was consumed - stack should have gas value then result
+    try std.testing.expectEqual(@as(u12, 2), frame.next_stack_index);
+    
+    // Pop gas value (should be less than 1000)
+    const gas_remaining = try frame.pop();
+    try std.testing.expect(gas_remaining < 1000);
+    
+    // Pop addition result
+    const add_result = try frame.pop();
+    try std.testing.expectEqual(@as(u256, 30), add_result); // 10 + 20 = 30
 }
 
