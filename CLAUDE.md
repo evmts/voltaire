@@ -604,6 +604,58 @@ This will enable all debug logging statements in the code being tested, which is
 - **Version control tracks history** - there's no need to preserve old code as comments
 - **Clean codebase only** - the codebase should only contain active, working code
 
+## EVM2 Frame.zig Navigation Guide
+
+### File Structure Overview for `src/evm2/frame.zig` (~2000+ lines)
+
+**CRITICAL**: This file is too large to read in one operation. Use targeted reads with offset/limit or Grep for specific sections.
+
+#### Key Line Number Ranges:
+- **Lines 1-90**: Imports, FrameConfig struct, and configuration validation
+- **Lines 91-165**: Frame struct definition, Error enum, init/deinit functions
+- **Lines 166-583**: `interpret()` function - instruction array building and execution loop
+- **Lines 584-898**: Instruction handlers (op_stop_handler, op_add_handler, etc.)
+- **Lines 900-975**: Core opcode implementations (op_pc, op_stop, op_pop, push_n helper)
+- **Lines 976-1098**: PUSH opcode implementations (op_push0 through op_push32)
+- **Lines 1099-1186**: DUP/SWAP and bitwise operations (op_dup1, op_and, op_or, etc.)
+- **Lines 1187-1356**: Arithmetic operations (op_add, op_mul, op_div, op_exp, etc.)
+- **Lines 1357-1375**: Gas management (consumeGasUnchecked, checkGas, op_gas)
+- **Lines 1376-1471**: Comparison and control flow (op_lt, op_jump, op_jumpi, op_invalid)
+- **Lines 1472-1555**: Memory and crypto operations (op_keccak256, op_mload, op_mstore)
+- **Lines 1560+**: Extensive test suite
+
+#### Common Search Patterns:
+```bash
+# Find specific opcode implementation
+grep -n "pub fn op_[opcode_name]" src/evm2/frame.zig
+
+# Find handler functions
+grep -n "_handler.*fn" src/evm2/frame.zig
+
+# Find test for specific functionality
+grep -n "test.*[functionality]" src/evm2/frame.zig
+```
+
+#### Efficient Reading Strategies:
+1. **For opcode implementations**: Read lines 900-1555
+2. **For handler dispatch**: Read lines 584-898
+3. **For configuration**: Read lines 1-165
+4. **For tests**: Use Grep to find specific test, then read with offset/limit
+5. **For interpret loop**: Read lines 166-583
+
+#### Key Functions by Purpose:
+- **Initialization**: `init()` (~line 137), `deinit()` (~line 160)
+- **Execution**: `interpret()` (~line 166), `execute_instruction()` (~line 585)
+- **Stack Operations**: `push_unsafe()`, `pop_unsafe()`, `peek_unsafe()`, `set_top_unsafe()`
+- **Memory**: `op_mload()` (~line 1497), `op_mstore()` (~line 1518)
+- **Arithmetic**: `op_add()` (~line 1189), `op_mul()` (~line 1195), etc.
+- **Control Flow**: `op_jump()` (~line 1436), `op_jumpi()` (~line 1448)
+
+#### Configuration Types:
+- **FrameConfig**: Lines 9-64, defines stack size, word type, memory limits
+- **Frame struct**: Lines 91+, contains stack, bytecode, pc, gas_remaining, memory
+- **Error enum**: Lines 94-104, defines all possible execution errors
+
 ## Essential Documentation References
 
 ### Zig Programming Language Documentation
