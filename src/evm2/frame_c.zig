@@ -1,6 +1,6 @@
 const std = @import("std");
 const frame_mod = @import("frame.zig");
-const debugging_tracer = @import("debugging_tracer.zig");
+const tracer_mod = @import("tracer.zig");
 
 // ============================================================================
 // FRAME C API - EVM Frame operations exported to C
@@ -14,7 +14,7 @@ pub const Frame = frame_mod.createFrame(.{});
 
 // Create debug frame type with debugging tracer
 pub const DebugFrame = frame_mod.createFrame(.{
-    .TracerType = debugging_tracer.DebuggingTracer,
+    .TracerType = tracer_mod.DebuggingTracer,
 });
 
 pub const allocator = std.heap.c_allocator;

@@ -1,5 +1,374 @@
 const std = @import("std");
-const frame = @import("frame.zig");
+const frame_mod = @import("frame.zig");
+const primitives = @import("primitives");
+const Address = primitives.Address.Address;
+
+// ============================================================================
+// NO-OP TRACER
+// ============================================================================
+
+// No-op tracer that does nothing - zero runtime cost
+pub const NoOpTracer = struct {
+    pub fn init() NoOpTracer {
+        return .{};
+    }
+    
+    pub fn beforeOp(self: *NoOpTracer, comptime FrameType: type, frame: *const FrameType) void {
+        _ = self;
+        _ = frame;
+        // FrameType is used in the function signature, no need to discard
+    }
+    
+    pub fn afterOp(self: *NoOpTracer, comptime FrameType: type, frame: *const FrameType) void {
+        _ = self;
+        _ = frame;
+        // FrameType is used in the function signature, no need to discard
+    }
+    
+    pub fn onError(self: *NoOpTracer, comptime FrameType: type, frame: *const FrameType, err: anyerror) void {
+        _ = self;
+        _ = frame;
+        // No-op tracer doesn't do anything with errors
+        // But we need to use it to avoid compiler error
+        if (false) {
+            std.debug.print("Error: {}\n", .{err});
+        }
+        // FrameType is used in the function signature, no need to discard
+    }
+};
+
+// ============================================================================
+// DEBUGGING TRACER
+// ============================================================================
+
+/// DebuggingTracer provides comprehensive debugging capabilities for the Go CLI debugger
+/// Features:
+/// - Step-by-step execution control
+/// - Breakpoint support  
+/// - State capture at each instruction
+/// - Memory/stack/gas tracking
+/// - Error reporting
+pub const DebuggingTracer = struct {
+    const Self = @This();
+    
+    allocator: std.mem.Allocator,
+    
+    // Control state
+    step_mode: bool = false,          // true = step through each instruction
+    paused: bool = false,             // true = execution is paused
+    breakpoints: std.AutoHashMap(u32, void),    // Set of PC values to break on
+    
+    // Execution history
+    steps: std.ArrayList(ExecutionStep),
+    max_history: usize = 10000,       // Limit history to prevent memory issues
+    
+    // State snapshots for debugging
+    state_snapshots: std.ArrayList(StateSnapshot),
+    
+    // Statistics
+    total_instructions: u64 = 0,
+    total_gas_used: u64 = 0,
+    
+    pub const ExecutionStep = struct {
+        step_number: u64,
+        pc: u32,
+        opcode: u8,
+        opcode_name: []const u8,
+        gas_before: i32,
+        gas_after: i32,
+        gas_cost: u32,
+        stack_before: []u256,    // Owned slice
+        stack_after: []u256,     // Owned slice
+        memory_size_before: usize,
+        memory_size_after: usize,
+        depth: u32,
+        error_occurred: bool,
+        error_msg: ?[]const u8,
+    };
+    
+    pub const StateSnapshot = struct {
+        pc: u32,
+        gas_remaining: i32,
+        stack: []u256,           // Owned slice
+        memory_size: usize,
+        depth: u32,
+        timestamp: i64,
+    };
+    
+    pub fn init() Self {
+        // Use a global allocator for debugging tracer
+        // This is acceptable for debugging scenarios
+        const allocator = std.heap.c_allocator;
+        return .{
+            .allocator = allocator,
+            .breakpoints = std.AutoHashMap(u32, void).init(allocator),
+            .steps = std.ArrayList(ExecutionStep).init(allocator),
+            .state_snapshots = std.ArrayList(StateSnapshot).init(allocator),
+        };
+    }
+    
+    pub fn deinit(self: *Self) void {
+        // Free execution step memory
+        for (self.steps.items) |*step| {
+            self.allocator.free(step.stack_before);
+            self.allocator.free(step.stack_after);
+            if (step.error_msg) |msg| {
+                self.allocator.free(msg);
+            }
+        }
+        self.steps.deinit();
+        
+        // Free state snapshots
+        for (self.state_snapshots.items) |*snapshot| {
+            self.allocator.free(snapshot.stack);
+        }
+        self.state_snapshots.deinit();
+        
+        self.breakpoints.deinit();
+    }
+    
+    /// Enable or disable step-by-step execution mode
+    pub fn setStepMode(self: *Self, enabled: bool) void {
+        self.step_mode = enabled;
+    }
+    
+    /// Check if execution should pause (breakpoint or step mode)
+    pub fn shouldPause(self: *Self, pc: u32) bool {
+        return self.step_mode or self.breakpoints.get(pc) != null;
+    }
+    
+    /// Pause execution
+    pub fn pause(self: *Self) void {
+        self.paused = true;
+    }
+    
+    /// Resume execution
+    pub fn resumeExecution(self: *Self) void {
+        self.paused = false;
+    }
+    
+    /// Add a breakpoint at the given PC
+    pub fn addBreakpoint(self: *Self, pc: u32) !void {
+        try self.breakpoints.put(pc, {});
+    }
+    
+    /// Remove a breakpoint at the given PC
+    pub fn removeBreakpoint(self: *Self, pc: u32) bool {
+        return self.breakpoints.remove(pc);
+    }
+    
+    /// Check if there's a breakpoint at the given PC
+    pub fn hasBreakpoint(self: *Self, pc: u32) bool {
+        return self.breakpoints.get(pc) != null;
+    }
+    
+    /// Clear all breakpoints
+    pub fn clearBreakpoints(self: *Self) void {
+        self.breakpoints.clearRetainingCapacity();
+    }
+    
+    /// Get the current execution step count
+    pub fn getStepCount(self: *Self) u64 {
+        return self.total_instructions;
+    }
+    
+    /// Get the most recent execution steps
+    pub fn getRecentSteps(self: *Self, count: usize) []const ExecutionStep {
+        const start = if (self.steps.items.len > count) self.steps.items.len - count else 0;
+        return self.steps.items[start..];
+    }
+    
+    /// Get a specific execution step by index
+    pub fn getStep(self: *Self, index: usize) ?*const ExecutionStep {
+        if (index >= self.steps.items.len) return null;
+        return &self.steps.items[index];
+    }
+    
+    /// Create a snapshot of the current state
+    pub fn captureState(self: *Self, comptime FrameType: type, frame: *const FrameType) !void {
+        // Get current stack contents
+        const stack_copy = try self.allocator.alloc(u256, frame.next_stack_index);
+        for (0..frame.next_stack_index) |i| {
+            // Access stack items from bottom to top for consistent ordering
+            stack_copy[i] = frame.stack[i];
+        }
+        
+        const snapshot = StateSnapshot{
+            .pc = @as(u32, @intCast(frame.pc)),
+            .gas_remaining = frame.gas_remaining,
+            .stack = stack_copy,
+            .memory_size = if (@hasField(FrameType, "memory")) frame.memory.size() else 0,
+            .depth = if (@hasField(FrameType, "depth")) frame.depth else 0,
+            .timestamp = std.time.milliTimestamp(),
+        };
+        
+        try self.state_snapshots.append(snapshot);
+        
+        // Limit snapshots to prevent memory growth
+        if (self.state_snapshots.items.len > self.max_history) {
+            const old = self.state_snapshots.orderedRemove(0);
+            self.allocator.free(old.stack);
+        }
+    }
+    
+    /// Required tracer interface: called before each operation
+    pub fn beforeOp(self: *Self, comptime FrameType: type, frame: *const FrameType) void {
+        // Check if we should pause execution
+        const pc = @as(u32, @intCast(frame.pc));
+        if (self.shouldPause(pc)) {
+            self.paused = true;
+        }
+        
+        // While paused, we would need to implement a mechanism to wait
+        // In the C API, this could be handled by returning a "paused" status
+        // and requiring explicit resume calls
+        
+        // Capture state before operation for step recording
+        self.captureStateForStep(FrameType, frame, true) catch |err| {
+            std.log.warn("Failed to capture before state: {}", .{err});
+        };
+    }
+    
+    /// Required tracer interface: called after each operation
+    pub fn afterOp(self: *Self, comptime FrameType: type, frame: *const FrameType) void {
+        // Update statistics
+        self.total_instructions += 1;
+        
+        // Capture state after operation to complete the step record
+        self.captureStateForStep(FrameType, frame, false) catch |err| {
+            std.log.warn("Failed to capture after state: {}", .{err});
+        };
+        
+        // Create state snapshot if configured
+        self.captureState(FrameType, frame) catch |err| {
+            std.log.warn("Failed to capture state snapshot: {}", .{err});
+        };
+    }
+    
+    /// Required tracer interface: called when an error occurs
+    pub fn onError(self: *Self, comptime FrameType: type, frame: *const FrameType, err: anyerror) void {
+        
+        // Record error in current step if we have one
+        if (self.steps.items.len > 0) {
+            const current_step = &self.steps.items[self.steps.items.len - 1];
+            current_step.error_occurred = true;
+            
+            // Store error message
+            const error_name = @errorName(err);
+            current_step.error_msg = self.allocator.dupe(u8, error_name) catch null;
+        }
+        
+        // Always pause on error for debugging
+        self.paused = true;
+        
+        std.log.debug("DebuggingTracer: Error occurred at PC {} in frame type {s}: {}", .{ frame.pc, @typeName(FrameType), err });
+    }
+    
+    /// Helper function to capture state for step recording
+    fn captureStateForStep(self: *Self, comptime FrameType: type, frame: *const FrameType, is_before: bool) !void {
+        const pc = @as(u32, @intCast(frame.pc));
+        const gas = frame.gas_remaining;
+        
+        // Create stack copy
+        const stack_copy = try self.allocator.alloc(u256, frame.next_stack_index);
+        for (0..frame.next_stack_index) |i| {
+            stack_copy[i] = frame.stack[i];
+        }
+        
+        if (is_before) {
+            // Start a new execution step
+            const opcode = if (frame.pc < frame.bytecode.len) frame.bytecode[frame.pc] else 0x00;
+            
+            const step = ExecutionStep{
+                .step_number = self.total_instructions,
+                .pc = pc,
+                .opcode = opcode,
+                .opcode_name = getOpcodeName(opcode),
+                .gas_before = gas,
+                .gas_after = gas, // Will be updated in afterOp
+                .gas_cost = 0,    // Will be calculated in afterOp
+                .stack_before = stack_copy,
+                .stack_after = &[_]u256{}, // Will be updated in afterOp
+                .memory_size_before = if (@hasField(FrameType, "memory")) frame.memory.size() else 0,
+                .memory_size_after = 0, // Will be updated in afterOp
+                .depth = if (@hasField(FrameType, "depth")) frame.depth else 0,
+                .error_occurred = false,
+                .error_msg = null,
+            };
+            
+            try self.steps.append(step);
+            
+            // Limit history size
+            if (self.steps.items.len > self.max_history) {
+                const old = self.steps.orderedRemove(0);
+                self.allocator.free(old.stack_before);
+                self.allocator.free(old.stack_after);
+                if (old.error_msg) |msg| {
+                    self.allocator.free(msg);
+                }
+            }
+        } else {
+            // Update the current step with after state
+            if (self.steps.items.len > 0) {
+                const current_step = &self.steps.items[self.steps.items.len - 1];
+                current_step.gas_after = gas;
+                current_step.gas_cost = @intCast(@max(0, current_step.gas_before - gas));
+                current_step.stack_after = stack_copy;
+                current_step.memory_size_after = if (@hasField(FrameType, "memory")) frame.memory.size() else 0;
+            } else {
+                // No current step, free the stack copy
+                self.allocator.free(stack_copy);
+            }
+        }
+    }
+    
+    /// Reset all debugging state
+    pub fn reset(self: *Self) void {
+        // Clear execution history
+        for (self.steps.items) |*step| {
+            self.allocator.free(step.stack_before);
+            self.allocator.free(step.stack_after);
+            if (step.error_msg) |msg| {
+                self.allocator.free(msg);
+            }
+        }
+        self.steps.clearRetainingCapacity();
+        
+        // Clear state snapshots
+        for (self.state_snapshots.items) |*snapshot| {
+            self.allocator.free(snapshot.stack);
+        }
+        self.state_snapshots.clearRetainingCapacity();
+        
+        // Reset statistics
+        self.total_instructions = 0;
+        self.total_gas_used = 0;
+        
+        // Keep breakpoints but reset execution state
+        self.paused = false;
+    }
+    
+    /// Get debugging statistics
+    pub fn getStats(self: *Self) struct {
+        total_instructions: u64,
+        total_gas_used: u64,
+        breakpoint_count: usize,
+        history_size: usize,
+        snapshot_count: usize,
+    } {
+        return .{
+            .total_instructions = self.total_instructions,
+            .total_gas_used = self.total_gas_used,
+            .breakpoint_count = self.breakpoints.count(),
+            .history_size = self.steps.items.len,
+            .snapshot_count = self.state_snapshots.items.len,
+        };
+    }
+};
+
+// ============================================================================
+// WRITER-BASED TRACERS
+// ============================================================================
 
 // Configuration for tracing behavior
 pub const MemoryCaptureMode = enum { none, prefix, full };
@@ -372,7 +741,7 @@ test "tracer captures basic frame state with writer" {
     const allocator = std.testing.allocator;
     
     // Create a frame with some state
-    const Frame = frame.createFrame(.{
+    const Frame = frame_mod.createFrame(.{
         .stack_size = 10,
         .block_gas_limit = 1000,
     });
@@ -407,7 +776,7 @@ test "tracer captures basic frame state with writer" {
 test "tracer writes JSON to writer" {
     const allocator = std.testing.allocator;
     
-    const Frame = frame.createFrame(.{});
+    const Frame = frame_mod.createFrame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 }, 1000);
     defer test_frame.deinit(allocator);
     
@@ -433,7 +802,7 @@ test "tracer writes JSON to writer" {
 test "logging tracer writes to stdout" {
     const allocator = std.testing.allocator;
     
-    const Frame = frame.createFrame(.{});
+    const Frame = frame_mod.createFrame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000);
     defer test_frame.deinit(allocator);
     
@@ -461,7 +830,7 @@ test "file tracer writes to file" {
     defer allocator.free(file_path);
     
     // Create frame
-    const Frame = frame.createFrame(.{});
+    const Frame = frame_mod.createFrame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x42 }, 1000);
     defer test_frame.deinit(allocator);
     
@@ -486,7 +855,7 @@ test "file tracer writes to file" {
 test "tracer with gas cost computation" {
     const allocator = std.testing.allocator;
     
-    const Frame = frame.createFrame(.{});
+    const Frame = frame_mod.createFrame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x01 }, 1000);
     defer test_frame.deinit(allocator);
     
@@ -521,7 +890,7 @@ test "tracer with gas cost computation" {
 test "tracer handles empty stack with JSON output" {
     const allocator = std.testing.allocator;
     
-    const Frame = frame.createFrame(.{});
+    const Frame = frame_mod.createFrame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000);
     defer test_frame.deinit(allocator);
     
@@ -538,7 +907,7 @@ test "tracer handles empty stack with JSON output" {
 test "tracer handles large stack values in JSON" {
     const allocator = std.testing.allocator;
     
-    const Frame = frame.createFrame(.{});
+    const Frame = frame_mod.createFrame(.{});
     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000);
     defer test_frame.deinit(allocator);
     
@@ -554,4 +923,95 @@ test "tracer handles large stack values in JSON" {
     const json = output.items;
     try std.testing.expect(std.mem.indexOf(u8, json, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff") != null);
     try std.testing.expect(std.mem.indexOf(u8, json, "0xdeadbeef") != null);
+}
+
+// ============================================================================
+// TRACER TESTS
+// ============================================================================
+
+// Test that NoOpTracer has zero cost
+test "NoOpTracer has zero runtime cost" {
+    var tracer = NoOpTracer.init();
+    
+    const TestFrame = struct {
+        pc: u16,
+        gas: i32,
+    };
+    
+    const test_frame = TestFrame{ .pc = 0, .gas = 1000 };
+    
+    // These should compile to nothing
+    tracer.beforeOp(TestFrame, &test_frame);
+    tracer.afterOp(TestFrame, &test_frame);
+    tracer.onError(TestFrame, &test_frame, error.TestError);
+}
+
+test "DebuggingTracer basic functionality" {
+    var tracer = DebuggingTracer.init();
+    defer tracer.deinit();
+    
+    // Test breakpoint management
+    try tracer.addBreakpoint(10);
+    try tracer.addBreakpoint(20);
+    
+    try std.testing.expect(tracer.hasBreakpoint(10));
+    try std.testing.expect(tracer.hasBreakpoint(20));
+    try std.testing.expect(!tracer.hasBreakpoint(15));
+    
+    // Test step mode
+    tracer.setStepMode(true);
+    try std.testing.expect(tracer.shouldPause(5)); // Should pause in step mode
+    
+    tracer.setStepMode(false);
+    try std.testing.expect(tracer.shouldPause(10)); // Should pause on breakpoint
+    try std.testing.expect(!tracer.shouldPause(5)); // Should not pause on regular instruction
+    
+    // Test removal
+    try std.testing.expect(tracer.removeBreakpoint(10));
+    try std.testing.expect(!tracer.hasBreakpoint(10));
+    try std.testing.expect(!tracer.removeBreakpoint(10)); // Already removed
+    
+    // Test clear
+    tracer.clearBreakpoints();
+    try std.testing.expect(!tracer.hasBreakpoint(20));
+}
+
+test "DebuggingTracer memory management" {
+    var tracer = DebuggingTracer.init();
+    defer tracer.deinit();
+    
+    // This test verifies that the tracer properly manages memory
+    // when used with a mock frame
+    const MockFrame = struct {
+        pc: usize,
+        gas_remaining: i32,
+        bytecode: []const u8,
+        next_stack_index: usize,
+        stack: [16]u256,
+        
+        fn init() @This() {
+            return .{
+                .pc = 0,
+                .gas_remaining = 1000,
+                .bytecode = &[_]u8{0x60, 0x05}, // PUSH1 5
+                .next_stack_index = 0,
+                .stack = [_]u256{0} ** 16,
+            };
+        }
+    };
+    
+    var mock_frame = MockFrame.init();
+    
+    // Test beforeOp and afterOp
+    tracer.beforeOp(MockFrame, &mock_frame);
+    tracer.afterOp(MockFrame, &mock_frame);
+    
+    // Verify step was recorded
+    try std.testing.expectEqual(@as(usize, 1), tracer.steps.items.len);
+    try std.testing.expectEqual(@as(u64, 1), tracer.total_instructions);
+    
+    const step = &tracer.steps.items[0];
+    try std.testing.expectEqual(@as(u32, 0), step.pc);
+    try std.testing.expectEqual(@as(u8, 0x60), step.opcode);
+    try std.testing.expectEqualStrings("PUSH1", step.opcode_name);
 }
