@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -513,11 +511,6 @@ func (m *ModelV2) updateAllComponents() {
 	m.helpPanel.Render()
 }
 
-// NewModelV2 creates the enhanced application model
-func NewModelV2() ModelV2 {
-	provider := NewMockDataProvider()
-	return NewModelV2WithProvider(provider)
-}
 
 // NewModelV2WithProvider creates the enhanced application model with a specific provider
 func NewModelV2WithProvider(provider DataProvider) ModelV2 {
@@ -550,20 +543,3 @@ func NewModelV2WithProvider(provider DataProvider) ModelV2 {
 	}
 }
 
-func mainV2() {
-	// Create the enhanced application model
-	m := NewModelV2()
-	
-	// Configure the tea program
-	p := tea.NewProgram(
-		m,
-		tea.WithAltScreen(),       // Use alternate screen buffer
-		tea.WithMouseCellMotion(), // Enable mouse support
-	)
-	
-	// Start the program
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Error running EVM debugger: %v\n", err)
-		os.Exit(1)
-	}
-}

@@ -588,32 +588,32 @@ contract SimpleCalculator {
 	mappings[0] = SourceLocation{
 		Start: 150, Length: 18, Line: 7, Column: 8,
 		SourceText: "uint256 sum = a + b",
-		Context: "calculate: variable declaration and addition",
+		Context: "calculate: loading first parameter (a)",
 	}
 	mappings[2] = SourceLocation{
-		Start: 155, Length: 6, Line: 7, Column: 18,
-		SourceText: "a + b",
-		Context: "calculate: addition operation", 
+		Start: 150, Length: 18, Line: 7, Column: 8,
+		SourceText: "uint256 sum = a + b",
+		Context: "calculate: loading second parameter (b)", 
 	}
 	mappings[4] = SourceLocation{
 		Start: 155, Length: 6, Line: 7, Column: 18,
 		SourceText: "a + b",
-		Context: "calculate: addition result",
+		Context: "calculate: performing addition",
 	}
 	mappings[5] = SourceLocation{
 		Start: 190, Length: 20, Line: 8, Column: 8,
 		SourceText: "uint256 diff = sum - 0x10",
-		Context: "calculate: subtraction setup",
+		Context: "calculate: loading constant 0x10",
 	}
 	mappings[7] = SourceLocation{
 		Start: 203, Length: 10, Line: 8, Column: 21,
 		SourceText: "sum - 0x10",
-		Context: "calculate: subtraction operation",
+		Context: "calculate: performing subtraction",
 	}
 	mappings[8] = SourceLocation{
 		Start: 250, Length: 13, Line: 10, Column: 8,
 		SourceText: "return result",
-		Context: "calculate: return statement",
+		Context: "calculate: halt execution",
 	}
 
 	return SourceMapping{
