@@ -2,7 +2,7 @@ package main
 
 /*
 #cgo CFLAGS: -I../evm2
-#cgo LDFLAGS: -L../../.zig-cache/o/9e486a064f0c9946e650d9fa28732145 -levm2_c
+#cgo LDFLAGS: -L../../zig-out/lib -levm2_c
 
 #include <stdlib.h>
 #include <stdint.h>

@@ -1978,9 +1978,8 @@ pub fn build(b: *std.Build) void {
     const evm2_c_shared_step = b.step("evm2-c-shared", "Build EVM2 C API shared library");
     evm2_c_shared_step.dependOn(&evm2_c_shared.step);
 
-    const evm2_c_step = b.step("evm2-c", "Build both EVM2 C API libraries");
+    const evm2_c_step = b.step("evm2-c", "Build EVM2 C API static library (for Go CLI)");
     evm2_c_step.dependOn(&evm2_c_static.step);
-    evm2_c_step.dependOn(&evm2_c_shared.step);
 
     // C API Tests
     const test_evm2_c = b.addTest(.{
@@ -1990,6 +1989,91 @@ pub fn build(b: *std.Build) void {
     const run_test_evm2_c = b.addRunArtifact(test_evm2_c);
     const test_evm2_c_step = b.step("test-evm2-c", "Run EVM2 C API tests");
     test_evm2_c_step.dependOn(&run_test_evm2_c.step);
+
+    // =============================================================================
+    // CLI BUILD TARGET
+    // =============================================================================
+
+    // Create a custom step to find and copy the EVM2 C library to a known location for Go CGO
+    const find_and_copy_lib_cmd = b.addSystemCommand(&[_][]const u8{
+        "sh", "-c", 
+        "mkdir -p zig-cache/lib && find .zig-cache/o -name 'libevm2_c.a' -exec cp {} zig-cache/lib/libevm2_c.a \\;"
+    });
+    find_and_copy_lib_cmd.step.dependOn(&evm2_c_static.step);
+
+    // CLI build command that builds the Go debugger with EVM2 integration
+    const cli_cmd = blk: {
+        // Output binary name based on target platform
+        const exe_name = if (target.result.os.tag == .windows) "evm-debugger.exe" else "evm-debugger";
+        
+        // Cross-platform Go build command
+        const cmd = b.addSystemCommand(&[_][]const u8{
+            "go", "build", "-o", exe_name, "-ldflags", "-s -w", "."
+        });
+        cmd.setCwd(b.path("src/cli"));
+        
+        // Set CGO environment variables
+        cmd.setEnvironmentVariable("CGO_ENABLED", "1");
+        
+        // Set GOOS and GOARCH based on Zig target
+        const goos = switch (target.result.os.tag) {
+            .linux => "linux",
+            .windows => "windows", 
+            .macos => "darwin",
+            else => "linux", // fallback
+        };
+        
+        const goarch = switch (target.result.cpu.arch) {
+            .x86_64 => "amd64",
+            .aarch64 => "arm64",
+            .x86 => "386",
+            else => "amd64", // fallback
+        };
+        
+        cmd.setEnvironmentVariable("GOOS", goos);
+        cmd.setEnvironmentVariable("GOARCH", goarch);
+        
+        // Set CGO compiler and linker flags
+        const cflags = "-I../evm2";
+        cmd.setEnvironmentVariable("CGO_CFLAGS", cflags);
+        
+        // Use the copied library in a fixed location
+        const ldflags = "-L../../zig-cache/lib -levm2_c";
+        cmd.setEnvironmentVariable("CGO_LDFLAGS", ldflags);
+        
+        break :blk cmd;
+    };
+
+    // CLI build depends on the library being copied to the known location
+    cli_cmd.step.dependOn(&find_and_copy_lib_cmd.step);
+    
+    const cli_step = b.step("cli", "Build the EVM debugger CLI with EVM2 integration");
+    cli_step.dependOn(&cli_cmd.step);
+
+    // CLI clean command
+    const cli_clean_cmd = b.addSystemCommand(&[_][]const u8{
+        "go", "clean", "-cache"
+    });
+    cli_clean_cmd.setCwd(b.path("src/cli"));
+    
+    // Also remove the copied library and Go binary
+    const clean_lib_cmd = b.addSystemCommand(&[_][]const u8{
+        "rm", "-rf", "zig-cache/lib", "src/cli/evm-debugger", "src/cli/evm-debugger.exe"
+    });
+    
+    const cli_clean_step = b.step("cli-clean", "Clean CLI build artifacts and Go cache");
+    cli_clean_step.dependOn(&cli_clean_cmd.step);
+    cli_clean_step.dependOn(&clean_lib_cmd.step);
+
+    // CLI run command (builds and runs the CLI)
+    const cli_run_cmd = b.addSystemCommand(&[_][]const u8{
+        "./evm-debugger", "--help"
+    });
+    cli_run_cmd.setCwd(b.path("src/cli"));
+    cli_run_cmd.step.dependOn(&cli_cmd.step);
+    
+    const cli_run_step = b.step("cli-run", "Build and run the EVM debugger CLI");
+    cli_run_step.dependOn(&cli_run_cmd.step);
 
     // Add BN254 individual test targets
     const bn254_fp_test = b.addTest(.{

@@ -188,6 +188,111 @@ const char* evm_error_string(int error_code);
 bool evm_error_is_stop(int error_code);
 
 // ============================================================================
+// DEBUGGING AND TRACING FUNCTIONS
+// ============================================================================
+
+/// Create a debugging frame with tracing capabilities
+/// @param bytecode Pointer to bytecode array
+/// @param bytecode_len Length of bytecode in bytes
+/// @param initial_gas Initial gas amount
+/// @return Opaque frame handle, or NULL on failure
+evm_frame_t evm_debug_frame_create(
+    const uint8_t* bytecode,
+    size_t bytecode_len,
+    uint64_t initial_gas
+);
+
+/// Set step mode for debugging frame
+/// @param frame_ptr Debug frame handle
+/// @param enabled true to enable step mode, false to disable
+/// @return Error code
+int evm_debug_set_step_mode(evm_frame_t frame_ptr, bool enabled);
+
+/// Check if frame is currently paused
+/// @param frame_ptr Debug frame handle
+/// @return true if paused, false otherwise
+bool evm_debug_is_paused(evm_frame_t frame_ptr);
+
+/// Resume execution from paused state
+/// @param frame_ptr Debug frame handle
+/// @return Error code
+int evm_debug_resume(evm_frame_t frame_ptr);
+
+/// Execute a single step and pause
+/// @param frame_ptr Debug frame handle
+/// @return Error code
+int evm_debug_step(evm_frame_t frame_ptr);
+
+/// Add a breakpoint at the given PC
+/// @param frame_ptr Debug frame handle
+/// @param pc Program counter value to break on
+/// @return Error code
+int evm_debug_add_breakpoint(evm_frame_t frame_ptr, uint32_t pc);
+
+/// Remove a breakpoint at the given PC
+/// @param frame_ptr Debug frame handle
+/// @param pc Program counter value
+/// @return 1 if breakpoint was removed, 0 if not found
+int evm_debug_remove_breakpoint(evm_frame_t frame_ptr, uint32_t pc);
+
+/// Check if there's a breakpoint at the given PC
+/// @param frame_ptr Debug frame handle
+/// @param pc Program counter value
+/// @return 1 if breakpoint exists, 0 otherwise
+int evm_debug_has_breakpoint(evm_frame_t frame_ptr, uint32_t pc);
+
+/// Clear all breakpoints
+/// @param frame_ptr Debug frame handle
+/// @return Error code
+int evm_debug_clear_breakpoints(evm_frame_t frame_ptr);
+
+/// Get the number of execution steps taken
+/// @param frame_ptr Debug frame handle
+/// @return Number of steps
+uint64_t evm_debug_get_step_count(evm_frame_t frame_ptr);
+
+/// Get execution step information by index
+/// @param frame_ptr Debug frame handle
+/// @param step_index Step index (0-based)
+/// @param step_out Pointer to structure to fill with step info
+/// @return Error code
+int evm_debug_get_step(evm_frame_t frame_ptr, uint64_t step_index, void* step_out);
+
+/// Get current stack contents
+/// @param frame_ptr Frame handle
+/// @param stack_out Buffer to write stack items (32 bytes each)
+/// @param max_items Maximum number of items to write
+/// @param count_out Pointer to store actual number of items written
+/// @return Error code
+int evm_frame_get_stack(evm_frame_t frame_ptr, uint8_t* stack_out, uint32_t max_items, uint32_t* count_out);
+
+/// Get stack item at specific index (0 = bottom, top = depth-1)
+/// @param frame_ptr Frame handle
+/// @param index Stack index
+/// @param item_out Buffer for 32-byte stack item
+/// @return Error code
+int evm_frame_get_stack_item(evm_frame_t frame_ptr, uint32_t index, uint8_t* item_out);
+
+/// Get memory contents
+/// @param frame_ptr Frame handle
+/// @param offset Memory offset to start reading
+/// @param length Number of bytes to read
+/// @param data_out Buffer to write memory data
+/// @return Error code
+int evm_frame_get_memory(evm_frame_t frame_ptr, uint32_t offset, uint32_t length, uint8_t* data_out);
+
+/// Get current memory size
+/// @param frame_ptr Frame handle
+/// @return Memory size in bytes
+uint32_t evm_frame_get_memory_size(evm_frame_t frame_ptr);
+
+/// Get debugging statistics
+/// @param frame_ptr Debug frame handle
+/// @param stats_out Pointer to structure to fill with stats
+/// @return Error code
+int evm_debug_get_stats(evm_frame_t frame_ptr, void* stats_out);
+
+// ============================================================================
 // DEBUG FUNCTIONS (DEBUG BUILDS ONLY)
 // ============================================================================
 
