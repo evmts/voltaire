@@ -1940,6 +1940,57 @@ pub fn build(b: *std.Build) void {
     const test_evm2_step = b.step("test-evm2", "Run EVM2 tests");
     test_evm2_step.dependOn(&run_test_evm2.step);
 
+    // ========================================================================
+    // EVM2 C API Library
+    // ========================================================================
+
+    // Create C API module
+    const evm2_c_mod = b.createModule(.{
+        .root_source_file = b.path("src/evm2/root_c.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    evm2_c_mod.addImport("primitives", primitives_mod);
+    evm2_c_mod.addImport("evm", evm_mod);
+    evm2_c_mod.addImport("build_options", build_options_mod);
+    evm2_c_mod.addImport("crypto", crypto_mod);
+
+    // Create C API static library
+    const evm2_c_static = b.addLibrary(.{
+        .name = "evm2_c",
+        .linkage = .static,
+        .root_module = evm2_c_mod,
+    });
+    b.installArtifact(evm2_c_static);
+
+    // Create C API shared library
+    const evm2_c_shared = b.addLibrary(.{
+        .name = "evm2_c",
+        .linkage = .dynamic,
+        .root_module = evm2_c_mod,
+    });
+    b.installArtifact(evm2_c_shared);
+
+    // Build steps for C libraries
+    const evm2_c_static_step = b.step("evm2-c-static", "Build EVM2 C API static library");
+    evm2_c_static_step.dependOn(&evm2_c_static.step);
+
+    const evm2_c_shared_step = b.step("evm2-c-shared", "Build EVM2 C API shared library");
+    evm2_c_shared_step.dependOn(&evm2_c_shared.step);
+
+    const evm2_c_step = b.step("evm2-c", "Build both EVM2 C API libraries");
+    evm2_c_step.dependOn(&evm2_c_static.step);
+    evm2_c_step.dependOn(&evm2_c_shared.step);
+
+    // C API Tests
+    const test_evm2_c = b.addTest(.{
+        .name = "test-evm2-c",
+        .root_module = evm2_c_mod,
+    });
+    const run_test_evm2_c = b.addRunArtifact(test_evm2_c);
+    const test_evm2_c_step = b.step("test-evm2-c", "Run EVM2 C API tests");
+    test_evm2_c_step.dependOn(&run_test_evm2_c.step);
+
     // Add BN254 individual test targets
     const bn254_fp_test = b.addTest(.{
         .name = "bn254-fp-test",
