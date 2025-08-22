@@ -179,3 +179,6 @@ coordinate.md
 profile_results/
 advanced_cpu_profiles/*.trace/
 advanced_cpu_profiles/*_summary.txt
+
+# Go binaries
+src/cli/evm-debugger
