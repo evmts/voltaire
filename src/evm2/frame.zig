@@ -162,53 +162,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
             self.memory.deinit();
         }
 
-        pub fn analyzeBasicBlocks(self: *Self) Error!void {
-            const Op5B = @import("opcodes/5b-jumpdest.zig").Op5B;
-
-            // Pre-analysis: validate all basic blocks starting from JUMPDESTs and PC=0
-            var total_static_gas: i64 = 0;
-
-            // Analyze from PC=0 (entry point)
-            const entry_result = Op5B.analyzeBasicBlock(self.bytecode, 0) catch |err| switch (err) {
-                error.InvalidOpcode => return Error.InvalidOpcode,
-                error.StackUnderflow => return Error.StackUnderflow,
-                error.StackOverflow => return Error.StackOverflow,
-            };
-            total_static_gas += entry_result.gas_cost;
-
-            // Find and analyze all JUMPDEST locations
-            var i: usize = 0;
-            while (i < self.bytecode.len) {
-                const opcode_byte = self.bytecode[i];
-                const opcode: Opcode = @enumFromInt(opcode_byte);
-
-                if (opcode == Opcode.JUMPDEST) {
-                    const result = Op5B.analyzeBasicBlock(self.bytecode, i) catch |err| switch (err) {
-                        error.InvalidOpcode => return Error.InvalidOpcode,
-                        error.StackUnderflow => return Error.StackUnderflow,
-                        error.StackOverflow => return Error.StackOverflow,
-                    };
-                    total_static_gas += result.gas_cost;
-                }
-
-                // Skip PUSH immediate data
-                if (opcode_byte >= @intFromEnum(Opcode.PUSH1) and opcode_byte <= @intFromEnum(Opcode.PUSH32)) {
-                    const push_size = opcode_byte - (@intFromEnum(Opcode.PUSH1) - 1);
-                    i += push_size;
-                }
-
-                i += 1;
-            }
-
-            // Check if we have enough gas for static costs
-            if (total_static_gas > self.gas_remaining) {
-                return Error.OutOfGas;
-            }
-        }
 
         pub fn interpret(self: *Self, allocator: std.mem.Allocator) !void {
-            // Pre-analysis phase
-            try self.analyzeBasicBlocks();
 
             // Pass 1: Analyze bytecode with bitmaps
             var jump_dests = std.bit_set.DynamicBitSet.initEmpty(allocator, self.bytecode.len) catch return Error.AllocationError;
