@@ -1,5 +1,6 @@
 const std = @import("std");
 const opcode_data = @import("../opcode_data.zig");
+const Opcode = opcode_data.Opcode;
 
 pub const Op5B = struct {
     /// Performs static analysis starting from JUMPDEST
@@ -12,17 +13,21 @@ pub const Op5B = struct {
         var max_stack_height: u16 = 0;
         
         // If starting at JUMPDEST, consume its gas and skip it
-        if (pc < bytecode.len and bytecode[pc] == 0x5B) {
-            total_gas -= 1; // JUMPDEST costs 1 gas
-            pc += 1;
+        if (pc < bytecode.len) {
+            const opcode_byte = bytecode[pc];
+            const opcode: Opcode = @enumFromInt(opcode_byte);
+            if (opcode == Opcode.JUMPDEST) {
+                total_gas -= 1; // JUMPDEST costs 1 gas
+                pc += 1;
+            }
         }
         
         while (pc < bytecode.len) {
-            const opcode = bytecode[pc];
-            const info = opcode_info[opcode];
+            const opcode_byte = bytecode[pc];
+            const info = opcode_info[opcode_byte];
             
             // Check if opcode is undefined
-            if (@as(std.builtin.BranchHint, .cold) == .cold and info.is_undefined) {
+            if (@as(std.builtin.BranchHint, .cold) == .cold and opcode_data.isUndefined(opcode_byte)) {
                 return error.InvalidOpcode;
             }
             
@@ -30,7 +35,7 @@ pub const Op5B = struct {
             total_gas -= @intCast(info.gas_cost);
             
             // Update stack height
-            const min_required = opcode_data.getMinStackRequired(opcode);
+            const min_required = opcode_data.getMinStackRequired(opcode_byte);
             if (@as(std.builtin.BranchHint, .cold) == .cold and stack_height < min_required) {
                 return error.StackUnderflow;
             }
@@ -50,25 +55,25 @@ pub const Op5B = struct {
             }
             
             // Handle special cases
-            switch (opcode) {
+            switch (opcode_byte) {
                 // STOP, RETURN, REVERT, INVALID, SELFDESTRUCT - block terminators
-                0x00, 0xf3, 0xfd, 0xfe, 0xff => break,
+                @intFromEnum(Opcode.STOP), @intFromEnum(Opcode.RETURN), @intFromEnum(Opcode.REVERT), @intFromEnum(Opcode.INVALID), @intFromEnum(Opcode.SELFDESTRUCT) => break,
                 
                 // JUMP - unconditional jump, end of basic block
-                0x56 => {
+                @intFromEnum(Opcode.JUMP) => {
                     pc += 1;
                     break;
                 },
                 
                 // JUMPI - conditional jump, end of basic block
-                0x57 => {
+                @intFromEnum(Opcode.JUMPI) => {
                     pc += 1;
                     break;
                 },
                 
                 // PUSH operations - skip immediate data
-                0x60...0x7f => {
-                    const push_size = opcode - 0x5f;
+                @intFromEnum(Opcode.PUSH1)...@intFromEnum(Opcode.PUSH32) => {
+                    const push_size = opcode_byte - (@intFromEnum(Opcode.PUSH1) - 1);
                     pc += push_size;
                 },
                 
@@ -86,7 +91,7 @@ pub const Op5B = struct {
     
     test "analyzeBasicBlock simple arithmetic" {
         // JUMPDEST, PUSH1 5, PUSH1 10, ADD, POP, STOP
-        const bytecode = [_]u8{ 0x5b, 0x60, 0x05, 0x60, 0x0a, 0x01, 0x50, 0x00 };
+        const bytecode = [_]u8{ @intFromEnum(Opcode.JUMPDEST), @intFromEnum(Opcode.PUSH1), 0x05, @intFromEnum(Opcode.PUSH1), 0x0a, @intFromEnum(Opcode.ADD), @intFromEnum(Opcode.POP), @intFromEnum(Opcode.STOP) };
         
         const result = try analyzeBasicBlock(&bytecode, 0);
         
@@ -97,14 +102,14 @@ pub const Op5B = struct {
     
     test "analyzeBasicBlock stack underflow" {
         // JUMPDEST, ADD (requires 2 items but stack is empty)
-        const bytecode = [_]u8{ 0x5b, 0x01 };
+        const bytecode = [_]u8{ @intFromEnum(Opcode.JUMPDEST), @intFromEnum(Opcode.ADD) };
         
         try std.testing.expectError(error.StackUnderflow, analyzeBasicBlock(&bytecode, 0));
     }
     
     test "analyzeBasicBlock ends at jump" {
         // JUMPDEST, PUSH1 4, JUMP, PUSH1 99 (should not be analyzed)
-        const bytecode = [_]u8{ 0x5b, 0x60, 0x04, 0x56, 0x60, 0x63 };
+        const bytecode = [_]u8{ @intFromEnum(Opcode.JUMPDEST), @intFromEnum(Opcode.PUSH1), 0x04, @intFromEnum(Opcode.JUMP), @intFromEnum(Opcode.PUSH1), 0x63 };
         
         const result = try analyzeBasicBlock(&bytecode, 0);
         
@@ -115,7 +120,7 @@ pub const Op5B = struct {
     
     test "analyzeBasicBlock invalid opcode" {
         // JUMPDEST, 0x0c (invalid opcode)
-        const bytecode = [_]u8{ 0x5b, 0x0c };
+        const bytecode = [_]u8{ @intFromEnum(Opcode.JUMPDEST), 0x0c };
         
         try std.testing.expectError(error.InvalidOpcode, analyzeBasicBlock(&bytecode, 0));
     }
