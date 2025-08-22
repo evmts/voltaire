@@ -1,7 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const NoOpTracer = @import("noop_tracer.zig").NoOpTracer;
+const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const memory_mod = @import("memory.zig");
+const stack_mod = @import("stack.zig");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 
@@ -20,7 +21,7 @@ pub const FrameConfig = struct {
     /// Memory configuration
     memory_initial_capacity: usize = 4096,
     memory_limit: u64 = 0xFFFFFF,
-    /// gets the pc type from the bytecode zie
+    /// gets the pc type from the bytecode size
     fn get_pc_type(self: Self) type {
         return if (self.max_bytecode_size <= std.math.maxInt(u8))
             u8
@@ -71,18 +72,20 @@ pub const FrameConfig = struct {
 pub fn createFrame(comptime config: FrameConfig) type {
     config.validate();
 
-    const stack_size = config.stack_size;
     const WordType = config.WordType;
-    const max_bytecode_size = config.max_bytecode_size;
-    const PcType = config.get_pc_type();
-    const StackIndexType = config.get_stack_index_type();
-    const GasType = config.get_gas_type();
     const TracerType = config.TracerType;
+    const GasType = config.get_gas_type();
+    const PcType = config.get_pc_type();
+    const max_bytecode_size = config.max_bytecode_size;
 
-    // Create Memory type with frame config
     const Memory = memory_mod.createMemory(.{
         .initial_capacity = config.memory_initial_capacity,
         .memory_limit = config.memory_limit,
+    });
+
+    const Stack = stack_mod.createStack(.{
+        .stack_size = config.stack_size,
+        .WordType = config.WordType,
     });
 
     const Frame = struct {
@@ -120,12 +123,11 @@ pub fn createFrame(comptime config: FrameConfig) type {
         const ENABLE_TRACING = blk: {
             // Check if TracerType is NoOpTracer by comparing the type name
             const tracer_type_name = @typeName(TracerType);
-            break :blk !std.mem.eql(u8, tracer_type_name, "noop_tracer.NoOpTracer");
+            break :blk !std.mem.eql(u8, tracer_type_name, "tracer.NoOpTracer");
         };
 
         // Cacheline 1
-        next_stack_index: StackIndexType, // 1-4 bytes depending on stack_size
-        stack: *[stack_size]WordType, // 8 bytes (pointer)
+        stack: Stack, // EVM stack
         bytecode: []const u8, // 16 bytes (slice)
         pc: PcType, // 1-4 bytes depending on max_bytecode_size
         gas_remaining: GasType, // 4 or 8 bytes depending on block_gas_limit
@@ -134,21 +136,19 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
         pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: GasType) Error!Self {
             if (bytecode.len > max_bytecode_size) return Error.BytecodeTooLarge;
-            const stack_memory = allocator.alloc(WordType, stack_size) catch {
+            
+            var stack = Stack.init(allocator) catch {
                 return Error.AllocationError;
             };
-            errdefer allocator.free(stack_memory);
-            @memset(std.mem.sliceAsBytes(stack_memory), 0);
+            errdefer stack.deinit(allocator);
 
             var memory = Memory.init(allocator) catch {
-                allocator.free(stack_memory);
                 return Error.AllocationError;
             };
             errdefer memory.deinit();
 
             return Self{
-                .next_stack_index = 0,
-                .stack = @ptrCast(&stack_memory[0]),
+                .stack = stack,
                 .bytecode = bytecode,
                 .pc = 0,
                 .gas_remaining = gas_remaining,
@@ -158,8 +158,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-            const stack_slice = @as([*]WordType, @ptrCast(self.stack))[0..stack_size];
-            allocator.free(stack_slice);
+            self.stack.deinit(allocator);
             self.memory.deinit();
         }
 
@@ -744,7 +743,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             return struct {
                 fn handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
                     const value = @as(WordType, @intCast(instructions[idx].metadata));
-                    try self.push(value);
+                    try self.stack.push(value);
 
                     self.pc += 1 + bytes; // opcode + N bytes
 
@@ -863,7 +862,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             std.debug.assert(pc < self.bytecode.len);
             const opcode = self.bytecode[pc];
             const n = opcode - (@intFromEnum(Opcode.DUP1) - 1);
-            try self.dup_n(n);
+            try self.stack.dup_n(n);
             self.pc += 1;
 
             const next_idx = idx + 1;
@@ -877,7 +876,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             std.debug.assert(pc < self.bytecode.len);
             const opcode = self.bytecode[pc];
             const n = opcode - (@intFromEnum(Opcode.SWAP1) - 1);
-            try self.swap_n(n);
+            try self.stack.swap_n(n);
             self.pc += 1;
 
             const next_idx = idx + 1;
@@ -887,7 +886,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         fn op_jump_handler(self: *Self, instructions: []const Instruction, _: usize) Error!void {
-            const dest = try self.pop();
+            const dest = try self.stack.pop();
 
             if (dest > max_bytecode_size) {
                 return Error.InvalidJump;
@@ -911,8 +910,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         fn op_jumpi_handler(self: *Self, instructions: []const Instruction, idx: usize) Error!void {
-            const dest = try self.pop();
-            const condition = try self.pop();
+            const dest = try self.stack.pop();
+            const condition = try self.stack.pop();
 
             if (condition != 0) {
                 if (dest > max_bytecode_size) {
@@ -942,72 +941,9 @@ pub fn createFrame(comptime config: FrameConfig) type {
             }
         }
 
-        fn push_unsafe(self: *Self, value: WordType) void {
-            @branchHint(.likely);
-            if (self.next_stack_index >= stack_size) unreachable;
-            self.stack[self.next_stack_index] = value;
-            self.next_stack_index += 1;
-        }
-
-        pub fn push(self: *Self, value: WordType) Error!void {
-            if (self.next_stack_index >= stack_size) {
-                @branchHint(.cold);
-                return Error.StackOverflow;
-            }
-            self.push_unsafe(value);
-        }
-
-        fn pop_unsafe(self: *Self) WordType {
-            @branchHint(.likely);
-            if (self.next_stack_index == 0) unreachable;
-
-            self.next_stack_index -= 1;
-            return self.stack[self.next_stack_index];
-        }
-
-        pub fn pop(self: *Self) Error!WordType {
-            if (self.next_stack_index == 0) {
-                @branchHint(.cold);
-                return Error.StackUnderflow;
-            }
-
-            return self.pop_unsafe();
-        }
-
-        fn set_top_unsafe(self: *Self, value: WordType) void {
-            @branchHint(.likely);
-            if (self.next_stack_index == 0) unreachable;
-
-            self.stack[self.next_stack_index - 1] = value;
-        }
-
-        pub fn set_top(self: *Self, value: WordType) Error!void {
-            if (self.next_stack_index == 0) {
-                @branchHint(.cold);
-                return Error.StackUnderflow;
-            }
-
-            self.set_top_unsafe(value);
-        }
-
-        fn peek_unsafe(self: *const Self) WordType {
-            @branchHint(.likely);
-            if (self.next_stack_index == 0) unreachable;
-
-            return self.stack[self.next_stack_index - 1];
-        }
-
-        pub fn peek(self: *const Self) Error!WordType {
-            if (self.next_stack_index == 0) {
-                @branchHint(.cold);
-                return Error.StackUnderflow;
-            }
-
-            return self.peek_unsafe();
-        }
 
         pub fn op_pc(self: *Self) Error!void {
-            return self.push(@as(WordType, self.pc));
+            return self.stack.push(@as(WordType, self.pc));
         }
 
         pub fn op_stop(self: *Self) Error!void {
@@ -1016,11 +952,11 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         pub fn op_pop(self: *Self) Error!void {
-            _ = try self.pop();
+            _ = try self.stack.pop();
         }
 
         pub fn op_push0(self: *Self) Error!void {
-            return self.push(0);
+            return self.stack.push(0);
         }
 
         pub fn op_push1(self: *Self) Error!void {
@@ -1028,13 +964,13 @@ pub fn createFrame(comptime config: FrameConfig) type {
             if (self.pc + 1 >= self.bytecode.len) {
                 // EVM specification: missing data is treated as zero
                 self.pc += 1; // Still advance PC past the opcode
-                return self.push(0);
+                return self.stack.push(0);
             }
 
             // Read one byte from bytecode after the opcode
             const value = self.bytecode[self.pc + 1];
             self.pc += 2; // Advance PC past opcode and data byte
-            return self.push(value);
+            return self.stack.push(value);
         }
 
         // Generic push function for PUSH2-PUSH32
@@ -1079,7 +1015,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             }
 
             self.pc += n + 1; // Advance PC past opcode and data bytes
-            return self.push(value);
+            return self.stack.push(value);
         }
 
         pub fn op_push2(self: *Self) Error!void {
@@ -1206,109 +1142,80 @@ pub fn createFrame(comptime config: FrameConfig) type {
             return self.push_n(32);
         }
 
-        // Generic dup function for DUP1-DUP16
-        fn dup_n(self: *Self, n: u8) Error!void {
-            // Check if we have enough items on stack
-            if (self.next_stack_index < n) {
-                return Error.StackUnderflow;
-            }
-
-            // Get the value n positions from the top
-            const value = self.stack[self.next_stack_index - n];
-
-            // Push the duplicate
-            return self.push(value);
-        }
-
         pub fn op_dup1(self: *Self) Error!void {
-            return self.dup_n(1);
+            return self.stack.op_dup1();
         }
 
         pub fn op_dup16(self: *Self) Error!void {
-            return self.dup_n(16);
-        }
-
-        // Generic swap function for SWAP1-SWAP16
-        fn swap_n(self: *Self, n: u8) Error!void {
-            // Check if we have enough items on stack (need n+1 items)
-            if (self.next_stack_index < n + 1) {
-                return Error.StackUnderflow;
-            }
-
-            // Get indices of the two items to swap
-            const top_index = self.next_stack_index - 1;
-            const other_index = self.next_stack_index - n - 1;
-
-            // Swap them
-            std.mem.swap(WordType, &self.stack[top_index], &self.stack[other_index]);
+            return self.stack.op_dup16();
         }
 
         pub fn op_swap1(self: *Self) Error!void {
-            return self.swap_n(1);
+            return self.stack.op_swap1();
         }
 
         pub fn op_swap16(self: *Self) Error!void {
-            return self.swap_n(16);
+            return self.stack.op_swap16();
         }
 
         // Bitwise operations
         pub fn op_and(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
-            try self.set_top(a & b);
+            const top_minus_1 = try self.stack.pop();
+            const top = try self.stack.peek();
+            try self.stack.set_top(top & top_minus_1);
         }
 
         pub fn op_or(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
-            try self.set_top(a | b);
+            const top_minus_1 = try self.stack.pop();
+            const top = try self.stack.peek();
+            try self.stack.set_top(top | top_minus_1);
         }
 
         pub fn op_xor(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
-            try self.set_top(a ^ b);
+            const top_minus_1 = try self.stack.pop();
+            const top = try self.stack.peek();
+            try self.stack.set_top(top ^ top_minus_1);
         }
 
         pub fn op_not(self: *Self) Error!void {
-            const a = try self.peek();
-            try self.set_top(~a);
+            const top = try self.stack.peek();
+            try self.stack.set_top(~top);
         }
 
         pub fn op_byte(self: *Self) Error!void {
-            const i = try self.pop();
-            const val = try self.peek();
+            const byte_index = try self.stack.pop();
+            const value = try self.stack.peek();
 
-            const result = if (i >= 32) 0 else blk: {
-                const i_usize = @as(usize, @intCast(i));
-                const shift_amount = (31 - i_usize) * 8;
-                break :blk (val >> @intCast(shift_amount)) & 0xFF;
+            const result = if (byte_index >= 32) 0 else blk: {
+                const index_usize = @as(usize, @intCast(byte_index));
+                const shift_amount = (31 - index_usize) * 8;
+                break :blk (value >> @intCast(shift_amount)) & 0xFF;
             };
 
-            try self.set_top(result);
+            try self.stack.set_top(result);
         }
 
         pub fn op_shl(self: *Self) Error!void {
-            const shift = try self.pop();
-            const value = try self.peek();
+            const shift = try self.stack.pop();
+            const value = try self.stack.peek();
 
             const result = if (shift >= 256) 0 else value << @intCast(shift);
 
-            try self.set_top(result);
+            try self.stack.set_top(result);
         }
 
         pub fn op_shr(self: *Self) Error!void {
-            const shift = try self.pop();
-            const value = try self.peek();
+            const shift = try self.stack.pop();
+            const value = try self.stack.peek();
 
             const result = if (shift >= 256) 0 else value >> @intCast(shift);
 
-            try self.set_top(result);
+            try self.stack.set_top(result);
         }
 
         pub fn op_sar(self: *Self) Error!void {
-            const shift = try self.pop();
-            const value = try self.peek();
+            const shift = try self.stack.pop();
+            const value = try self.stack.peek();
 
             const result = if (shift >= 256) blk: {
                 const sign_bit = value >> 255;
@@ -1320,140 +1227,140 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 break :blk @as(WordType, @bitCast(result_signed));
             };
 
-            try self.set_top(result);
+            try self.stack.set_top(result);
         }
 
         // Arithmetic operations
         pub fn op_add(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
-            try self.set_top(a +% b);
+            const top_minus_1 = try self.stack.pop();
+            const top = try self.stack.peek();
+            try self.stack.set_top(top +% top_minus_1);
         }
 
         pub fn op_mul(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
-            try self.set_top(a *% b);
+            const top_minus_1 = try self.stack.pop();
+            const top = try self.stack.peek();
+            try self.stack.set_top(top *% top_minus_1);
         }
 
         pub fn op_sub(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
-            try self.set_top(a -% b);
+            const top_minus_1 = try self.stack.pop();
+            const top = try self.stack.peek();
+            try self.stack.set_top(top -% top_minus_1);
         }
 
         pub fn op_div(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
-            const result = if (b == 0) 0 else a / b;
-            try self.set_top(result);
+            const denominator = try self.stack.pop();
+            const numerator = try self.stack.peek();
+            const result = if (denominator == 0) 0 else numerator / denominator;
+            try self.stack.set_top(result);
         }
 
         pub fn op_sdiv(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
+            const denominator = try self.stack.pop();
+            const numerator = try self.stack.peek();
 
             var result: WordType = undefined;
-            if (b == 0) {
+            if (denominator == 0) {
                 result = 0;
             } else {
-                const a_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
-                const b_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
+                const numerator_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(numerator));
+                const denominator_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(denominator));
                 const min_signed = std.math.minInt(std.meta.Int(.signed, @bitSizeOf(WordType)));
 
-                if (a_signed == min_signed and b_signed == -1) {
+                if (numerator_signed == min_signed and denominator_signed == -1) {
                     // MIN / -1 overflow case
-                    result = a;
+                    result = numerator;
                 } else {
-                    const result_signed = @divTrunc(a_signed, b_signed);
+                    const result_signed = @divTrunc(numerator_signed, denominator_signed);
                     result = @as(WordType, @bitCast(result_signed));
                 }
             }
 
-            try self.set_top(result);
+            try self.stack.set_top(result);
         }
 
         pub fn op_mod(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
-            const result = if (b == 0) 0 else a % b;
-            try self.set_top(result);
+            const denominator = try self.stack.pop();
+            const numerator = try self.stack.peek();
+            const result = if (denominator == 0) 0 else numerator % denominator;
+            try self.stack.set_top(result);
         }
 
         pub fn op_smod(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
+            const denominator = try self.stack.pop();
+            const numerator = try self.stack.peek();
 
             var result: WordType = undefined;
-            if (b == 0) {
+            if (denominator == 0) {
                 result = 0;
             } else {
-                const a_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(a));
-                const b_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(b));
-                const result_signed = @rem(a_signed, b_signed);
+                const numerator_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(numerator));
+                const denominator_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(denominator));
+                const result_signed = @rem(numerator_signed, denominator_signed);
                 result = @as(WordType, @bitCast(result_signed));
             }
 
-            try self.set_top(result);
+            try self.stack.set_top(result);
         }
 
         pub fn op_addmod(self: *Self) Error!void {
-            const n = try self.pop();
-            const b = try self.pop();
-            const a = try self.peek();
+            const modulus = try self.stack.pop();
+            const addend2 = try self.stack.pop();
+            const addend1 = try self.stack.peek();
 
             var result: WordType = undefined;
-            if (n == 0) {
+            if (modulus == 0) {
                 result = 0;
             } else {
-                // The key insight: ADDMOD must compute (a + b) mod n where the addition
+                // The key insight: ADDMOD must compute (addend1 + addend2) mod modulus where the addition
                 // is done in arbitrary precision, not mod 2^256
                 // However, in the test case (MAX + 5) % 10, we have:
                 // MAX + 5 in u256 wraps to 4, so we want 4 % 10 = 4
 
-                // First, let's check if a + b overflows
-                const sum = @addWithOverflow(a, b);
+                // First, let's check if addend1 + addend2 overflows
+                const sum = @addWithOverflow(addend1, addend2);
                 if (sum[1] == 0) {
                     // No overflow, simple case
-                    result = sum[0] % n;
+                    result = sum[0] % modulus;
                 } else {
                     // Overflow occurred. The wrapped value is what we want to mod
-                    result = sum[0] % n;
+                    result = sum[0] % modulus;
                 }
             }
 
-            try self.set_top(result);
+            try self.stack.set_top(result);
         }
 
         pub fn op_mulmod(self: *Self) Error!void {
-            const n = try self.pop();
-            const b = try self.pop();
-            const a = try self.peek();
+            const modulus = try self.stack.pop();
+            const factor2 = try self.stack.pop();
+            const factor1 = try self.stack.peek();
 
             var result: WordType = undefined;
-            if (n == 0) {
+            if (modulus == 0) {
                 result = 0;
             } else {
                 // First reduce the operands
-                const a_mod = a % n;
-                const b_mod = b % n;
+                const factor1_mod = factor1 % modulus;
+                const factor2_mod = factor2 % modulus;
 
-                // Compute (a_mod * b_mod) % n
-                // This works correctly for values where a_mod * b_mod doesn't overflow
-                const product = a_mod *% b_mod;
-                result = product % n;
+                // Compute (factor1_mod * factor2_mod) % modulus
+                // This works correctly for values where factor1_mod * factor2_mod doesn't overflow
+                const product = factor1_mod *% factor2_mod;
+                result = product % modulus;
             }
 
-            try self.set_top(result);
+            try self.stack.set_top(result);
         }
 
         pub fn op_exp(self: *Self) Error!void {
-            const exp = try self.pop();
-            const base = try self.peek();
+            const exponent = try self.stack.pop();
+            const base = try self.stack.peek();
 
             var result: WordType = 1;
             var b = base;
-            var e = exp;
+            var e = exponent;
 
             // Binary exponentiation algorithm
             while (e > 0) : (e >>= 1) {
@@ -1463,12 +1370,12 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 b *%= b;
             }
 
-            try self.set_top(result);
+            try self.stack.set_top(result);
         }
 
         pub fn op_signextend(self: *Self) Error!void {
-            const ext = try self.pop();
-            const value = try self.peek();
+            const ext = try self.stack.pop();
+            const value = try self.stack.peek();
 
             var result: WordType = undefined;
 
@@ -1490,7 +1397,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 }
             }
 
-            try self.set_top(result);
+            try self.stack.set_top(result);
         }
 
         /// Consume gas without checking (for use after static analysis)
@@ -1509,55 +1416,55 @@ pub fn createFrame(comptime config: FrameConfig) type {
             // Push the current gas remaining to the stack
             // Since gas_remaining can be negative, we need to handle that case
             const gas_value = if (self.gas_remaining < 0) 0 else @as(WordType, @intCast(self.gas_remaining));
-            return self.push(gas_value);
+            return self.stack.push(gas_value);
         }
 
         // Comparison operations
         pub fn op_lt(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
-            const result: WordType = if (a < b) 1 else 0;
-            try self.set_top(result);
+            const top_minus_1 = try self.stack.pop();
+            const top = try self.stack.peek();
+            const result: WordType = if (top < top_minus_1) 1 else 0;
+            try self.stack.set_top(result);
         }
 
         pub fn op_gt(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
-            const result: WordType = if (a > b) 1 else 0;
-            try self.set_top(result);
+            const top_minus_1 = try self.stack.pop();
+            const top = try self.stack.peek();
+            const result: WordType = if (top > top_minus_1) 1 else 0;
+            try self.stack.set_top(result);
         }
 
         pub fn op_slt(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
+            const top_minus_1 = try self.stack.pop();
+            const top = try self.stack.peek();
             const SignedType = std.meta.Int(.signed, @bitSizeOf(WordType));
-            const a_signed = @as(SignedType, @bitCast(a));
-            const b_signed = @as(SignedType, @bitCast(b));
-            const result: WordType = if (a_signed < b_signed) 1 else 0;
-            try self.set_top(result);
+            const top_signed = @as(SignedType, @bitCast(top));
+            const top_minus_1_signed = @as(SignedType, @bitCast(top_minus_1));
+            const result: WordType = if (top_signed < top_minus_1_signed) 1 else 0;
+            try self.stack.set_top(result);
         }
 
         pub fn op_sgt(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
+            const top_minus_1 = try self.stack.pop();
+            const top = try self.stack.peek();
             const SignedType = std.meta.Int(.signed, @bitSizeOf(WordType));
-            const a_signed = @as(SignedType, @bitCast(a));
-            const b_signed = @as(SignedType, @bitCast(b));
-            const result: WordType = if (a_signed > b_signed) 1 else 0;
-            try self.set_top(result);
+            const top_signed = @as(SignedType, @bitCast(top));
+            const top_minus_1_signed = @as(SignedType, @bitCast(top_minus_1));
+            const result: WordType = if (top_signed > top_minus_1_signed) 1 else 0;
+            try self.stack.set_top(result);
         }
 
         pub fn op_eq(self: *Self) Error!void {
-            const b = try self.pop();
-            const a = try self.peek();
-            const result: WordType = if (a == b) 1 else 0;
-            try self.set_top(result);
+            const top_minus_1 = try self.stack.pop();
+            const top = try self.stack.peek();
+            const result: WordType = if (top == top_minus_1) 1 else 0;
+            try self.stack.set_top(result);
         }
 
         pub fn op_iszero(self: *Self) Error!void {
-            const value = try self.peek();
+            const value = try self.stack.peek();
             const result: WordType = if (value == 0) 1 else 0;
-            try self.set_top(result);
+            try self.stack.set_top(result);
         }
 
         // Helper function to validate if a PC position contains a valid JUMPDEST
@@ -1572,7 +1479,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
         // Control flow operations
         pub fn op_jump(self: *Self) Error!void {
-            const dest = try self.pop();
+            const dest = try self.stack.pop();
             if (dest > max_bytecode_size) {
                 return Error.InvalidJump;
             }
@@ -1584,8 +1491,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         pub fn op_jumpi(self: *Self) Error!void {
-            const dest = try self.pop();
-            const condition = try self.pop();
+            const dest = try self.stack.pop();
+            const condition = try self.stack.pop();
             if (condition != 0) {
                 if (dest > max_bytecode_size) {
                     return Error.InvalidJump;
@@ -1622,19 +1529,19 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 result = (result << 8) | hash[i];
             }
 
-            try self.push(result);
+            try self.stack.push(result);
         }
 
         // Memory operations
         pub fn op_msize(self: *Self) Error!void {
             // MSIZE returns the size of active memory in bytes
             const size = @as(WordType, @intCast(self.memory.size()));
-            return self.push(size);
+            return self.stack.push(size);
         }
 
         pub fn op_mload(self: *Self) Error!void {
             // MLOAD loads a 32-byte word from memory
-            const offset = try self.pop();
+            const offset = try self.stack.pop();
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -1650,13 +1557,13 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 else => return Error.AllocationError,
             };
 
-            try self.push(value);
+            try self.stack.push(value);
         }
 
         pub fn op_mstore(self: *Self) Error!void {
             // MSTORE stores a 32-byte word to memory
-            const offset = try self.pop();
-            const value = try self.pop();
+            const offset = try self.stack.pop();
+            const value = try self.stack.pop();
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -1674,8 +1581,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
         pub fn op_mstore8(self: *Self) Error!void {
             // MSTORE8 stores a single byte to memory
-            const offset = try self.pop();
-            const value = try self.pop();
+            const offset = try self.stack.pop();
+            const value = try self.stack.pop();
 
             // Check if offset fits in usize
             if (offset > std.math.maxInt(usize)) {
@@ -3660,8 +3567,8 @@ test "trace instructions behavior with different tracer types" {
     const noop_type_name = @typeName(NoOpTracer);
     const test_tracer_type_name = @typeName(TestTracer);
 
-    try std.testing.expect(std.mem.eql(u8, noop_type_name, "noop_tracer.NoOpTracer"));
-    try std.testing.expect(!std.mem.eql(u8, test_tracer_type_name, "noop_tracer.NoOpTracer"));
+    try std.testing.expect(std.mem.eql(u8, noop_type_name, "tracer.NoOpTracer"));
+    try std.testing.expect(!std.mem.eql(u8, test_tracer_type_name, "tracer.NoOpTracer"));
 }
 
 test "Frame jump to invalid destination should fail" {
