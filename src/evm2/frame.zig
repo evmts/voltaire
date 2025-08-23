@@ -3048,16 +3048,17 @@ test "Frame SWAP2-SWAP15 operations" {
     try std.testing.expectError(error.StackUnderflow, frame.stack.op_swap10());
 }
 
-// TODO: Update these tests for the new frame structure
-/* These tests reference fields that no longer exist in the Frame struct
-test "Frame op_selfdestruct marks contract for destruction" {
+test "Frame op_selfdestruct basic" {
+    // TODO: Update these tests for the new frame structure
+    return error.SkipZigTest;
     const allocator = std.testing.allocator;
     const Frame = createFrame(.{ .has_database = true });
     
     const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
     
     // Create database 
-    var memory_db = @import("memory_database.zig").MemoryDatabase.init(allocator);
+    const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+    var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
     
@@ -3092,15 +3093,16 @@ test "Frame op_selfdestruct marks contract for destruction" {
     try std.testing.expectEqualSlices(u8, &recipient, &stored_recipient.?);
 }
 
-// test "Frame op_selfdestruct with insufficient stack" {
+test "Frame op_selfdestruct with insufficient stack" {
     return error.SkipZigTest; // TODO: Update this test for the new frame structure
-    // const allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
     const Frame = createFrame(.{ .has_database = true });
     
     const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
     
     // Create database 
-    var memory_db = @import("memory_database.zig").MemoryDatabase.init(allocator);
+    const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+    var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
     
@@ -3111,15 +3113,17 @@ test "Frame op_selfdestruct marks contract for destruction" {
     try std.testing.expectError(error.StackUnderflow, frame.op_selfdestruct());
 }
 
-// test "Frame op_selfdestruct in static context" {
+/*
+test "Frame op_selfdestruct in static context" {
     return error.SkipZigTest; // TODO: Update this test for the new frame structure
-    // const allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
     const Frame = createFrame(.{ .has_database = true });
     
     const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
     
     // Create database 
-    var memory_db = @import("memory_database.zig").MemoryDatabase.init(allocator);
+    const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+    var memory_db = MemoryDatabase.init(allocator);
     defer memory_db.deinit();
     const db_interface = memory_db.to_database_interface();
     
@@ -5093,4 +5097,5 @@ fn mock_jump_handler(self: *anyopaque, stream: []usize, idx: usize) !void {
     _ = stream;
     _ = idx;
     unreachable; // Not executed in this test
+}
 }
