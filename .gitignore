@@ -92,6 +92,7 @@ _
 .zig-cache/
 zig-out/
 zig-cache/
+bin/
 
 # Python
 __pycache__/
