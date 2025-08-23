@@ -41,9 +41,9 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
     return struct {
         code: []const u8,
         allocator: std.mem.Allocator,
-        is_push_data: ?[]u8,
-        is_op_start: ?[]u8,
-        is_jumpdest: ?[]u8,
+        is_push_data: []u8,
+        is_op_start: []u8,
+        is_jumpdest: []u8,
         
         const Self = @This();
         pub const PcType = cfg.PcType();
@@ -52,9 +52,9 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             var self = Self{
                 .code = code,
                 .allocator = allocator,
-                .is_push_data = null,
-                .is_op_start = null,
-                .is_jumpdest = null,
+                .is_push_data = undefined,
+                .is_op_start = undefined,
+                .is_jumpdest = undefined,
             };
             
             // Build bitmaps and validate
@@ -64,9 +64,9 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
         }
         
         pub fn deinit(self: *Self) void {
-            if (self.is_push_data) |data| self.allocator.free(data);
-            if (self.is_op_start) |data| self.allocator.free(data);
-            if (self.is_jumpdest) |data| self.allocator.free(data);
+            self.allocator.free(self.is_push_data);
+            self.allocator.free(self.is_op_start);
+            self.allocator.free(self.is_jumpdest);
             self.* = undefined;
         }
         
