@@ -334,6 +334,12 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                             handler_op = if (n <= @sizeOf(usize)) PUSH_ADD_INLINE else PUSH_ADD_POINTER;
                             fused = true;
                         }
+                        // Check for PUSH+JUMP fusion
+                        else if (next_op == @intFromEnum(Opcode.JUMP)) {
+                            // Use appropriate fusion opcode
+                            handler_op = if (n <= @sizeOf(usize)) PUSH_JUMP_INLINE else PUSH_JUMP_POINTER;
+                            fused = true;
+                        }
                     }
                     
                     // Add handler pointer (normal or fused)
@@ -369,8 +375,54 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                     } else {
                         i += 1 + n;
                     }
+                } else if (op == @intFromEnum(Opcode.JUMPDEST)) {
+                    // JUMPDEST needs metadata
+                    try stream.append(@intFromPtr(handlers[op]));
+                    
+                    // Find the block metadata for this JUMPDEST
+                    var metadata_found = false;
+                    for (blocks) |block| {
+                        if (block.pc == i) {
+                            // Found the metadata for this JUMPDEST
+                            const jd_metadata = JumpDestMetadata{
+                                .gas = block.staticGasCharge,
+                                .min_stack = block.minStackHeight,
+                                .max_stack = block.maxStackHeight,
+                            };
+                            
+                            // On 64-bit systems, pack inline
+                            if (@sizeOf(usize) >= 8) {
+                                // Pack the metadata into a usize
+                                const metadata_bytes = std.mem.asBytes(&jd_metadata);
+                                var packed_value: usize = 0;
+                                @memcpy(std.mem.asBytes(&packed_value)[0..@sizeOf(JumpDestMetadata)], metadata_bytes);
+                                try stream.append(packed_value);
+                            } else {
+                                // On 32-bit systems, store in constants array
+                                const const_idx = constants.items.len;
+                                // Store metadata as bytes in a u256
+                                var value: Cfg.WordType = 0;
+                                const metadata_bytes = std.mem.asBytes(&jd_metadata);
+                                var j: usize = 0;
+                                while (j < @sizeOf(JumpDestMetadata)) : (j += 1) {
+                                    value = (value << 8) | metadata_bytes[@sizeOf(JumpDestMetadata) - 1 - j];
+                                }
+                                try constants.append(value);
+                                try stream.append(const_idx);
+                            }
+                            metadata_found = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!metadata_found) {
+                        // This shouldn't happen - every JUMPDEST should have metadata
+                        return error.MissingJumpDestMetadata;
+                    }
+                    
+                    i += 1;
                 } else {
-                    // Non-PUSH opcode - just add the handler
+                    // Other non-PUSH opcodes - just add the handler
                     try stream.append(@intFromPtr(handlers[op]));
                     i += 1;
                 }
@@ -814,4 +866,125 @@ test "fusion detection: PUSH+ADD pointer" {
     
     // Should have constant
     try std.testing.expectEqual(@as(usize, 1), plan.u256_constants.len);
+}
+
+test "fusion detection: PUSH+JUMP inline" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array with special fusion handler
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    handlers[PUSH_JUMP_INLINE] = &testFusionHandler;
+    
+    // PUSH1 4; JUMP (to a valid JUMPDEST)
+    const bytecode = [_]u8{ 
+        @intFromEnum(Opcode.PUSH1), 0x04, 
+        @intFromEnum(Opcode.JUMP),
+        @intFromEnum(Opcode.STOP),
+        @intFromEnum(Opcode.JUMPDEST), // PC=4
+        @intFromEnum(Opcode.STOP)
+    };
+    var analysis = Analyzer.init(&bytecode);
+    
+    var plan = try analysis.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Should have fused handler + inline value + rest
+    try std.testing.expect(plan.instructionStream.len >= 2);
+    
+    // First should be the fusion handler
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
+    
+    // Second should be inline destination
+    try std.testing.expectEqual(@as(usize, 4), plan.instructionStream[1]);
+}
+
+test "fusion detection: PUSH+JUMP pointer" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array with special fusion handler
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    handlers[PUSH_JUMP_POINTER] = &testFusionHandler;
+    
+    // PUSH32 with large jump destination; JUMP
+    const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH32) } ++ 
+        [_]u8{0} ** 31 ++ [_]u8{40} ++ // Jump to PC=40
+        [_]u8{ @intFromEnum(Opcode.JUMP) } ++
+        [_]u8{@intFromEnum(Opcode.STOP)} ** 36 ++ // padding
+        [_]u8{ @intFromEnum(Opcode.JUMPDEST) }; // PC=40
+        
+    var analysis = Analyzer.init(&bytecode);
+    
+    var plan = try analysis.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Should have fused handler + pointer
+    try std.testing.expect(plan.instructionStream.len >= 2);
+    
+    // First should be the fusion handler
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
+    
+    // Second should be pointer to constant
+    try std.testing.expectEqual(@as(usize, 0), plan.instructionStream[1]);
+    
+    // Should have constant with value 40
+    try std.testing.expectEqual(@as(usize, 1), plan.u256_constants.len);
+    try std.testing.expectEqual(@as(u256, 40), plan.u256_constants[0]);
+}
+
+test "JumpDestMetadata handling: JUMPDEST instructions have metadata" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    
+    // Test bytecode with JUMPDEST (no fusion to avoid complexity)
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.JUMPDEST),     // PC 0: JUMPDEST
+        @intFromEnum(Opcode.PUSH1), 0x01,  // PC 1: PUSH1 1
+        @intFromEnum(Opcode.STOP),         // PC 3: STOP
+    };
+    
+    var analyzer = Analyzer.init(&bytecode);
+    var plan = try analyzer.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Find JUMPDEST in the instruction stream
+    // Currently, JUMPDEST instructions don't have metadata following them
+    // This test should fail once we check for metadata
+    
+    var found_jumpdest_without_metadata = false;
+    var i: usize = 0;
+    
+    while (i < plan.instructionStream.len) : (i += 1) {
+        const handler = plan.instructionStream[i];
+        
+        // Check if this is a JUMPDEST handler
+        if (handler == @intFromPtr(handlers[@intFromEnum(Opcode.JUMPDEST)])) {
+            // Check next slot - it should be metadata but currently isn't
+            if (i + 1 < plan.instructionStream.len) {
+                const next_value = plan.instructionStream[i + 1];
+                // If next is a handler pointer, then no metadata was added
+                if (next_value == @intFromPtr(handlers[@intFromEnum(Opcode.PUSH1)]) or
+                    next_value == @intFromPtr(handlers[@intFromEnum(Opcode.STOP)])) {
+                    found_jumpdest_without_metadata = true;
+                }
+            }
+            break;
+        }
+    }
+    
+    // This test should fail - we expect metadata but don't have it yet
+    try std.testing.expect(!found_jumpdest_without_metadata);
 }
