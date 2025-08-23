@@ -5,16 +5,35 @@ const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 
 /// Synthetic opcodes for fused operations.
-pub const PUSH_ADD_INLINE: u8 = 0xF5;
-pub const PUSH_ADD_POINTER: u8 = 0xF6;
-pub const PUSH_MUL_INLINE: u8 = 0xF7;
-pub const PUSH_MUL_POINTER: u8 = 0xF8;
-pub const PUSH_DIV_INLINE: u8 = 0xF9;
-pub const PUSH_DIV_POINTER: u8 = 0xFA;
-pub const PUSH_JUMP_INLINE: u8 = 0xFB;
-pub const PUSH_JUMP_POINTER: u8 = 0xFC;
-pub const PUSH_JUMPI_INLINE: u8 = 0xFD;
-pub const PUSH_JUMPI_POINTER: u8 = 0xFE;
+/// These values are chosen to avoid conflicts with standard EVM opcodes.
+/// The compile-time check below ensures no conflicts exist.
+pub const SyntheticOpcode = enum(u8) {
+    PUSH_ADD_INLINE = 0xB0,
+    PUSH_ADD_POINTER = 0xB1,
+    PUSH_MUL_INLINE = 0xB2,
+    PUSH_MUL_POINTER = 0xB3,
+    PUSH_DIV_INLINE = 0xB4,
+    PUSH_DIV_POINTER = 0xB5,
+    PUSH_JUMP_INLINE = 0xB6,
+    PUSH_JUMP_POINTER = 0xB7,
+    PUSH_JUMPI_INLINE = 0xB8,
+    PUSH_JUMPI_POINTER = 0xB9,
+};
+
+
+// Compile-time check to ensure synthetic opcodes don't overlap with normal opcodes
+comptime {
+    @setEvalBranchQuota(10000);
+    for (@typeInfo(SyntheticOpcode).@"enum".fields) |syn_field| {
+        // Try to convert the synthetic opcode value to a regular Opcode
+        if (std.meta.intToEnum(Opcode, syn_field.value) catch null) |conflicting_opcode| {
+            @compileError(std.fmt.comptimePrint(
+                "Synthetic opcode {s} (0x{X}) conflicts with normal opcode {s}",
+                .{ syn_field.name, syn_field.value, @tagName(conflicting_opcode) }
+            ));
+        } 
+    }
+}
 
 /// Metadata for JUMPDEST instructions.
 /// On 64-bit systems this fits in usize, on 32-bit it requires pointer.
@@ -34,7 +53,6 @@ pub const InstructionElement32 = packed union {
     jumpdest_pointer: *const JumpDestMetadata,
     inline_value: u32,
     pointer_index: u32,
-    pc_value: u32,
 };
 
 /// Instruction stream element for 64-bit platforms.
@@ -43,7 +61,6 @@ pub const InstructionElement64 = packed union {
     jumpdest_metadata: JumpDestMetadata,
     inline_value: u64,
     pointer_index: u64,
-    pc_value: u64,
 };
 
 /// Platform-specific instruction element selection.
@@ -68,6 +85,13 @@ pub const InterpreterPlanConfig = struct {
     /// Maximum bytecode size (determines PcType).
     maxBytecodeSize: u32 = 24_576,
     
+    /// Validate configuration at compile time.
+    fn validate(self: @This()) void {
+        if (@bitSizeOf(self.WordType) > 512) @compileError("WordType cannot exceed u512");
+        if (self.maxBytecodeSize > 65535) @compileError("maxBytecodeSize must be <= 65535");
+        if (self.maxBytecodeSize == 0) @compileError("maxBytecodeSize must be greater than 0");
+    }
+    
     /// Derived PC type based on max bytecode size.
     fn PcType(self: @This()) type {
         return if (self.maxBytecodeSize <= std.math.maxInt(u16)) u16 else u32;
@@ -76,10 +100,11 @@ pub const InterpreterPlanConfig = struct {
 
 /// Factory function to create an InterpreterPlan type with the given configuration.
 pub fn createInterpreterPlan(comptime cfg: InterpreterPlanConfig) type {
+    comptime cfg.validate();
     const PcType = cfg.PcType();
     const InstructionIndexType = PcType; // Can only have as many instructions as PCs
     
-    return struct {
+    const InterpreterPlan = struct {
         const Self = @This();
         
         /// Expose types for external use.
@@ -99,13 +124,41 @@ pub fn createInterpreterPlan(comptime cfg: InterpreterPlanConfig) type {
             idx: *InstructionIndexType,
             comptime opcode: anytype,
         ) blk: {
-            const op = if (@TypeOf(opcode) == Opcode) 
-                opcode 
-            else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
-                @field(Opcode, @tagName(opcode))
-            else 
-                @as(Opcode, @enumFromInt(opcode));
-            const MetadataType = switch (op) {
+            // Determine if this is a synthetic opcode or regular opcode
+            const is_synthetic = if (@TypeOf(opcode) == u8) blk2: {
+                const val = opcode;
+                // Check against known synthetic opcode values at compile time
+                break :blk2 switch (val) {
+                    @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER),
+                    @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER),
+                    @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
+                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER),
+                    @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) => true,
+                    else => false,
+                };
+            } else false;
+            
+            const MetadataType = if (is_synthetic) blk2: {
+                // Handle synthetic opcodes
+                const val = @as(u8, opcode);
+                const fusion_type = switch (val) {
+                    // Fusion opcodes follow same pattern as their PUSH equivalent
+                    @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), 
+                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE) => usize, // For simplicity, return usize for inline fusions
+                    @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
+                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) => *const WordType,
+                    else => @compileError("Unknown synthetic opcode"),
+                };
+                break :blk2 fusion_type;
+            } else blk2: {
+                // Handle regular opcodes
+                const op = if (@TypeOf(opcode) == Opcode) 
+                    opcode 
+                else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
+                    @field(Opcode, @tagName(opcode))
+                else 
+                    @compileError("Invalid opcode type");
+                const MetadataType2 = switch (op) {
                 // PUSH opcodes return granular types
                 .PUSH1 => u8,
                 .PUSH2 => u16,
@@ -130,21 +183,9 @@ pub fn createInterpreterPlan(comptime cfg: InterpreterPlanConfig) type {
                 .PC => PcType,
                 
                 // All other opcodes have no metadata
-                else => blk2: {
-                    // Check if it's a fusion opcode (passed as u8)
-                    if (@TypeOf(opcode) == u8) {
-                        const fusion_type = switch (opcode) {
-                            // Fusion opcodes follow same pattern as their PUSH equivalent
-                            PUSH_ADD_INLINE, PUSH_MUL_INLINE, PUSH_DIV_INLINE, 
-                            PUSH_JUMP_INLINE, PUSH_JUMPI_INLINE => usize, // For simplicity, return usize for inline fusions
-                            PUSH_ADD_POINTER, PUSH_MUL_POINTER, PUSH_DIV_POINTER,
-                            PUSH_JUMP_POINTER, PUSH_JUMPI_POINTER => *const WordType,
-                            else => @compileError("Fusion opcode has no metadata"),
-                        };
-                        break :blk2 fusion_type;
-                    }
-                    @compileError("Opcode has no metadata");
-                },
+                else => @compileError("Opcode has no metadata"),
+                };
+                break :blk2 MetadataType2;
             };
             break :blk MetadataType;
         } {
@@ -191,17 +232,17 @@ pub fn createInterpreterPlan(comptime cfg: InterpreterPlanConfig) type {
                         metadata_elem.jumpdest_pointer,
                     
                     // PC returns the PC value
-                    .PC => @as(PcType, @truncate(metadata_elem.pc_value)),
+                    .PC => @as(PcType, @truncate(metadata_elem.inline_value)),
                     
                     else => unreachable, // Compile error already prevents this
                 };
             } else if (@TypeOf(opcode) == u8) {
                 // Handle fusion opcodes (u8)
                 return switch (opcode) {
-                    PUSH_ADD_INLINE, PUSH_MUL_INLINE, PUSH_DIV_INLINE, 
-                    PUSH_JUMP_INLINE, PUSH_JUMPI_INLINE => metadata_elem.inline_value,
-                    PUSH_ADD_POINTER, PUSH_MUL_POINTER, PUSH_DIV_POINTER,
-                    PUSH_JUMP_POINTER, PUSH_JUMPI_POINTER => blk: {
+                    @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), 
+                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE) => metadata_elem.inline_value,
+                    @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
+                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) => blk: {
                         const idx_val = metadata_elem.pointer_index;
                         break :blk &self.u256_constants[idx_val];
                     },
@@ -222,13 +263,31 @@ pub fn createInterpreterPlan(comptime cfg: InterpreterPlanConfig) type {
             const current_idx = idx.*;
             const handler = self.instructionStream[current_idx].handler;
             
-            const op = if (@TypeOf(opcode) == Opcode) 
-                opcode 
-            else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
-                @field(Opcode, @tagName(opcode))
-            else 
-                @as(Opcode, @enumFromInt(opcode));
-            const has_metadata = switch (op) {
+            // Check if it's a synthetic opcode
+            const is_synthetic = if (@TypeOf(opcode) == u8) blk2: {
+                const val = opcode;
+                // Check against known synthetic opcode values at compile time
+                break :blk2 switch (val) {
+                    @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER),
+                    @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER),
+                    @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
+                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER),
+                    @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) => true,
+                    else => false,
+                };
+            } else false;
+            
+            const has_metadata = if (is_synthetic) blk2: {
+                // All synthetic opcodes have metadata
+                break :blk2 true;
+            } else blk2: {
+                const op = if (@TypeOf(opcode) == Opcode) 
+                    opcode 
+                else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
+                    @field(Opcode, @tagName(opcode))
+                else 
+                    @compileError("Invalid opcode type");
+                const result = switch (op) {
                 // PUSH opcodes have metadata (except PUSH0)
                 .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7,
                 .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15,
@@ -241,19 +300,11 @@ pub fn createInterpreterPlan(comptime cfg: InterpreterPlanConfig) type {
                 .PC => true,
                 // All other opcodes including PUSH0 have no metadata
                 else => false,
+                };
+                break :blk2 result;
             };
             
-            // Also check for fusion opcodes if it's a u8
-            const fusion_has_metadata = if (@TypeOf(opcode) == u8) switch (opcode) {
-                PUSH_ADD_INLINE, PUSH_ADD_POINTER,
-                PUSH_MUL_INLINE, PUSH_MUL_POINTER,
-                PUSH_DIV_INLINE, PUSH_DIV_POINTER,
-                PUSH_JUMP_INLINE, PUSH_JUMP_POINTER,
-                PUSH_JUMPI_INLINE, PUSH_JUMPI_POINTER => true,
-                else => false,
-            } else false;
-            
-            if (has_metadata or fusion_has_metadata) {
+            if (has_metadata) {
                 idx.* += 2;
             } else {
                 idx.* += 1;
@@ -270,4 +321,6 @@ pub fn createInterpreterPlan(comptime cfg: InterpreterPlanConfig) type {
             self.u256_constants = &.{};
         }
     };
+    
+    return InterpreterPlan;
 }

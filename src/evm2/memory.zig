@@ -174,6 +174,20 @@ pub fn createMemory(comptime config: MemoryConfig) type {
             return result;
         }
         
+        // EVM-compliant read that expands memory if needed
+        pub fn get_u256_evm(self: *Self, offset: usize) !u256 {
+            // Round up to next 32-byte word boundary for EVM compliance
+            const word_aligned_end = ((offset + 32 + 31) / 32) * 32;
+            try self.ensure_capacity(word_aligned_end);
+            
+            const slice = try self.get_slice(offset, 32);
+            var result: u256 = 0;
+            for (slice) |byte| {
+                result = (result << 8) | byte;
+            }
+            return result;
+        }
+        
         pub fn set_u256(self: *Self, offset: usize, value: u256) !void {
             var bytes: [32]u8 = undefined;
             var temp = value;

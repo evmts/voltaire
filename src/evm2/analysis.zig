@@ -9,17 +9,7 @@ const Opcode = opcode_data.Opcode;
 const interpreter_plan = @import("interpreter_plan.zig");
 
 // Re-export commonly used types from interpreter_plan
-pub const PUSH_ADD_INLINE = interpreter_plan.PUSH_ADD_INLINE;
-pub const PUSH_ADD_POINTER = interpreter_plan.PUSH_ADD_POINTER;
-pub const PUSH_MUL_INLINE = interpreter_plan.PUSH_MUL_INLINE;
-pub const PUSH_MUL_POINTER = interpreter_plan.PUSH_MUL_POINTER;
-pub const PUSH_DIV_INLINE = interpreter_plan.PUSH_DIV_INLINE;
-pub const PUSH_DIV_POINTER = interpreter_plan.PUSH_DIV_POINTER;
-pub const PUSH_JUMP_INLINE = interpreter_plan.PUSH_JUMP_INLINE;
-pub const PUSH_JUMP_POINTER = interpreter_plan.PUSH_JUMP_POINTER;
-pub const PUSH_JUMPI_INLINE = interpreter_plan.PUSH_JUMPI_INLINE;
-pub const PUSH_JUMPI_POINTER = interpreter_plan.PUSH_JUMPI_POINTER;
-
+pub const SyntheticOpcode = interpreter_plan.SyntheticOpcode;
 pub const JumpDestMetadata = interpreter_plan.JumpDestMetadata;
 pub const HandlerFn = interpreter_plan.HandlerFn;
 pub const InstructionElement = interpreter_plan.InstructionElement;
@@ -395,28 +385,28 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                         // Check for PUSH+ADD fusion
                         if (next_op == @intFromEnum(Opcode.ADD)) {
                             // Use appropriate fusion opcode
-                            handler_op = if (n <= @sizeOf(usize)) PUSH_ADD_INLINE else PUSH_ADD_POINTER;
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE) else @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER);
                             fused = true;
                         }
                         // Check for PUSH+MUL fusion
                         else if (next_op == @intFromEnum(Opcode.MUL)) {
-                            handler_op = if (n <= @sizeOf(usize)) PUSH_MUL_INLINE else PUSH_MUL_POINTER;
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE) else @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER);
                             fused = true;
                         }
                         // Check for PUSH+DIV fusion
                         else if (next_op == @intFromEnum(Opcode.DIV)) {
-                            handler_op = if (n <= @sizeOf(usize)) PUSH_DIV_INLINE else PUSH_DIV_POINTER;
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE) else @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER);
                             fused = true;
                         }
                         // Check for PUSH+JUMP fusion
                         else if (next_op == @intFromEnum(Opcode.JUMP)) {
                             // Use appropriate fusion opcode
-                            handler_op = if (n <= @sizeOf(usize)) PUSH_JUMP_INLINE else PUSH_JUMP_POINTER;
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE) else @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER);
                             fused = true;
                         }
                         // Check for PUSH+JUMPI fusion
                         else if (next_op == @intFromEnum(Opcode.JUMPI)) {
-                            handler_op = if (n <= @sizeOf(usize)) PUSH_JUMPI_INLINE else PUSH_JUMPI_POINTER;
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE) else @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER);
                             fused = true;
                         }
                     }
@@ -497,7 +487,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                 } else if (op == @intFromEnum(Opcode.PC)) {
                     // PC opcode needs to store the current program counter value
                     try stream.append(.{ .handler = handlers[op] });
-                    try stream.append(.{ .pc_value = @as(u64, i) });
+                    try stream.append(.{ .inline_value = @as(u64, i) });
                     i += 1;
                 } else {
                     // Other non-PUSH opcodes - just add the handler
@@ -705,24 +695,25 @@ test "analysis: init without allocator" {
 
 test "synthetic opcodes: constants defined" {
     // Test that synthetic opcodes are defined and have correct values
-    try std.testing.expect(PUSH_ADD_INLINE >= 0xF5);
-    try std.testing.expect(PUSH_ADD_POINTER >= 0xF5);
-    try std.testing.expect(PUSH_MUL_INLINE >= 0xF5);
-    try std.testing.expect(PUSH_MUL_POINTER >= 0xF5);
-    try std.testing.expect(PUSH_DIV_INLINE >= 0xF5);
-    try std.testing.expect(PUSH_DIV_POINTER >= 0xF5);
-    try std.testing.expect(PUSH_JUMP_INLINE >= 0xF5);
-    try std.testing.expect(PUSH_JUMP_POINTER >= 0xF5);
-    try std.testing.expect(PUSH_JUMPI_INLINE >= 0xF5);
-    try std.testing.expect(PUSH_JUMPI_POINTER >= 0xF5);
+    // They should be in the unused opcode range (0xB0-0xB9 in this case)
+    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE) == 0xB0);
+    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER) == 0xB1);
+    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE) == 0xB2);
+    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER) == 0xB3);
+    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE) == 0xB4);
+    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER) == 0xB5);
+    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE) == 0xB6);
+    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER) == 0xB7);
+    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE) == 0xB8);
+    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) == 0xB9);
     
     // Ensure no overlap between opcodes
     const opcodes = [_]u8{
-        PUSH_ADD_INLINE, PUSH_ADD_POINTER,
-        PUSH_MUL_INLINE, PUSH_MUL_POINTER,
-        PUSH_DIV_INLINE, PUSH_DIV_POINTER,
-        PUSH_JUMP_INLINE, PUSH_JUMP_POINTER,
-        PUSH_JUMPI_INLINE, PUSH_JUMPI_POINTER,
+        @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER),
+        @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER),
+        @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
+        @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER),
+        @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER),
     };
     
     var i: usize = 0;
@@ -869,7 +860,7 @@ test "getMetadata: PC returns PcType" {
     
     const stream = [_]InstructionElement{ 
         .{ .handler = &testMockHandler }, 
-        .{ .pc_value = 42 },
+        .{ .inline_value = 42 },
         .{ .handler = &testMockHandler } 
     };
     
@@ -904,7 +895,7 @@ test "getMetadata: fusion opcodes" {
         
         // Test fusion opcode metadata
         var idx: Analyzer.InstructionIndexT = 0;
-        const metadata = plan.getMetadata(&idx, PUSH_ADD_INLINE);
+        const metadata = plan.getMetadata(&idx, @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE));
         try std.testing.expectEqual(@as(usize, 5), metadata);
     }
 }
@@ -927,7 +918,7 @@ test "getNextInstruction: fusion opcodes advance correctly" {
     
     // Test fusion opcode advances correctly
     var idx: Analyzer.InstructionIndexT = 0;
-    const handler = plan.getNextInstruction(&idx, PUSH_ADD_INLINE);
+    const handler = plan.getNextInstruction(&idx, @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE));
     try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(handler));
     try std.testing.expectEqual(@as(Analyzer.InstructionIndexT, 2), idx);
 }
@@ -1026,7 +1017,7 @@ test "fusion detection: PUSH+ADD inline" {
         h.* = &testMockHandler;
     }
     
-    handlers[PUSH_ADD_INLINE] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE)] = &testFusionHandler;
     
     // PUSH1 5; ADD
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x05, @intFromEnum(Opcode.ADD) };
@@ -1055,7 +1046,7 @@ test "fusion detection: PUSH+ADD pointer" {
         h.* = &testMockHandler;
     }
     
-    handlers[PUSH_ADD_POINTER] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER)] = &testFusionHandler;
     
     // PUSH32 <big value>; ADD
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH32) } ++ 
@@ -1088,7 +1079,7 @@ test "fusion detection: PUSH+JUMP inline" {
     for (&handlers) |*h| {
         h.* = &testMockHandler;
     }
-    handlers[PUSH_JUMP_INLINE] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE)] = &testFusionHandler;
     
     // PUSH1 4; JUMP (to a valid JUMPDEST)
     const bytecode = [_]u8{ 
@@ -1122,7 +1113,7 @@ test "fusion detection: PUSH+JUMP pointer" {
     for (&handlers) |*h| {
         h.* = &testMockHandler;
     }
-    handlers[PUSH_JUMP_POINTER] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER)] = &testFusionHandler;
     
     // PUSH32 with large jump destination; JUMP
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH32) } ++ 
@@ -1249,8 +1240,8 @@ test "fusion detection: PUSH+MUL fusion" {
     for (&handlers) |*h| {
         h.* = &testMockHandler;
     }
-    handlers[PUSH_MUL_INLINE] = &testFusionHandler;
-    handlers[PUSH_MUL_POINTER] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER)] = &testFusionHandler;
     
     // Test PUSH1 5; MUL
     const bytecode = [_]u8{
@@ -1277,8 +1268,8 @@ test "fusion detection: PUSH+DIV fusion" {
     for (&handlers) |*h| {
         h.* = &testMockHandler;
     }
-    handlers[PUSH_DIV_INLINE] = &testFusionHandler;
-    handlers[PUSH_DIV_POINTER] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER)] = &testFusionHandler;
     
     // Test PUSH1 10; DIV
     const bytecode = [_]u8{
@@ -1305,8 +1296,8 @@ test "fusion detection: PUSH+JUMPI fusion" {
     for (&handlers) |*h| {
         h.* = &testMockHandler;
     }
-    handlers[PUSH_JUMPI_INLINE] = &testFusionHandler;
-    handlers[PUSH_JUMPI_POINTER] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER)] = &testFusionHandler;
     
     // Test PUSH1 8; JUMPI
     const bytecode = [_]u8{
@@ -1382,16 +1373,16 @@ test "integration: complex bytecode with all features" {
         h.* = &testMockHandler;
     }
     // Set fusion handlers
-    handlers[PUSH_ADD_INLINE] = &testFusionHandler;
-    handlers[PUSH_ADD_POINTER] = &testFusionHandler;
-    handlers[PUSH_MUL_INLINE] = &testFusionHandler;
-    handlers[PUSH_MUL_POINTER] = &testFusionHandler;
-    handlers[PUSH_DIV_INLINE] = &testFusionHandler;
-    handlers[PUSH_DIV_POINTER] = &testFusionHandler;
-    handlers[PUSH_JUMP_INLINE] = &testFusionHandler;
-    handlers[PUSH_JUMP_POINTER] = &testFusionHandler;
-    handlers[PUSH_JUMPI_INLINE] = &testFusionHandler;
-    handlers[PUSH_JUMPI_POINTER] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER)] = &testFusionHandler;
     
     // Complex bytecode with all features
     const bytecode = [_]u8{

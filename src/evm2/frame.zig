@@ -1370,8 +1370,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
             const offset_usize = @as(usize, @intCast(offset));
 
-            // Read 32 bytes from memory (memory handles expansion automatically)
-            const value = self.memory.get_u256(offset_usize) catch |err| switch (err) {
+            // Read 32 bytes from memory (EVM-compliant with automatic expansion)
+            const value = self.memory.get_u256_evm(offset_usize) catch |err| switch (err) {
                 memory_mod.MemoryError.OutOfBounds => return Error.OutOfBounds,
                 memory_mod.MemoryError.MemoryOverflow => return Error.OutOfBounds,
                 else => return Error.AllocationError,
