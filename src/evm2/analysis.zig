@@ -115,11 +115,17 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
         maxStackHeight: StackHeightType,
     };
 
+    // Jump table entry type
+    const JumpTableEntry = struct {
+        pc: PcType,
+        instruction_idx: PcType,
+    };
+    
     // Minimal data the interpreter needs at runtime.
     const AnalyzerPlan = struct {
         instructionStream: []usize,
         u256_constants: []Cfg.WordType,
-        jump_table: []struct { pc: PcType, instruction_idx: PcType },
+        jump_table: []JumpTableEntry,
         jumpDestMetadata: []AnalyzerBlock,
 
         /// Find the stream instruction index for a JUMPDEST at `pc`.
@@ -311,6 +317,9 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             var constants = std.ArrayList(Cfg.WordType).init(allocator);
             errdefer constants.deinit();
             
+            var jump_table_list = std.ArrayList(JumpTableEntry).init(allocator);
+            errdefer jump_table_list.deinit();
+            
             // Build instruction stream with handlers and metadata
             i = 0;
             while (i < N) {
@@ -376,6 +385,12 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                         i += 1 + n;
                     }
                 } else if (op == @intFromEnum(Opcode.JUMPDEST)) {
+                    // Add to jump table
+                    try jump_table_list.append(.{
+                        .pc = @intCast(i),
+                        .instruction_idx = @intCast(stream.items.len),
+                    });
+                    
                     // JUMPDEST needs metadata
                     try stream.append(@intFromPtr(handlers[op]));
                     
@@ -431,7 +446,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             return AnalyzerPlan{
                 .instructionStream = try stream.toOwnedSlice(),
                 .u256_constants = try constants.toOwnedSlice(),
-                .jump_table = &.{},
+                .jump_table = try jump_table_list.toOwnedSlice(),
                 .jumpDestMetadata = blocks,
             };
         }
@@ -987,4 +1002,43 @@ test "JumpDestMetadata handling: JUMPDEST instructions have metadata" {
     
     // This test should fail - we expect metadata but don't have it yet
     try std.testing.expect(!found_jumpdest_without_metadata);
+}
+
+test "dynamic jump table: unfused JUMP can lookup instruction index" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    
+    // Test bytecode with dynamic JUMP (value from stack, not fusion)
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.JUMPDEST),     // PC 0: entry point
+        @intFromEnum(Opcode.PUSH1), 0x06,  // PC 1: push jump destination
+        @intFromEnum(Opcode.PUSH1), 0x01,  // PC 3: push some value
+        @intFromEnum(Opcode.JUMP),         // PC 5: dynamic jump (not fused)
+        @intFromEnum(Opcode.JUMPDEST),     // PC 6: jump destination
+        @intFromEnum(Opcode.STOP),         // PC 7: stop
+    };
+    
+    var analyzer = Analyzer.init(&bytecode);
+    var plan = try analyzer.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // The jump table should have entries for both JUMPDESTs
+    try std.testing.expect(plan.jump_table.len >= 2);
+    
+    // Test binary search - lookup instruction index for PC 6
+    const instruction_idx = plan.lookupInstructionIdx(6);
+    try std.testing.expect(instruction_idx != null);
+    
+    // The instruction at that index should be JUMPDEST handler
+    if (instruction_idx) |idx| {
+        try std.testing.expect(idx < plan.instructionStream.len);
+        const handler = plan.instructionStream[idx];
+        try std.testing.expectEqual(@intFromPtr(handlers[@intFromEnum(Opcode.JUMPDEST)]), handler);
+    }
 }
