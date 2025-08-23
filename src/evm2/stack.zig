@@ -1,31 +1,5 @@
 const std = @import("std");
-
-pub const StackConfig = struct {
-    const Self = @This();
-
-    /// The maximum stack size for the evm. Defaults to 1024. Maximum supported is 4095
-    stack_size: u12 = 1024,
-    /// The size of a single word in the EVM - Defaults to u256. Supports any word size up to u512
-    WordType: type = u256,
-
-    /// StackIndexType: smallest integer type to index the stack
-    fn StackIndexType(self: Self) type {
-        return if (self.stack_size <= std.math.maxInt(u4))
-            u4
-        else if (self.stack_size <= std.math.maxInt(u8))
-            u8
-        else if (self.stack_size <= std.math.maxInt(u12))
-            u12
-        else
-            @compileError("StackConfig stack_size is too large! It must fit in a u12 bytes");
-    }
-
-    // Limits placed on the Stack
-    fn validate(self: Self) void {
-        if (self.stack_size > 4095) @compileError("stack_size cannot exceed 4095");
-        if (@bitSizeOf(self.WordType) > 512) @compileError("WordType cannot exceed u512");
-    }
-};
+pub const StackConfig = @import("stack_config.zig").StackConfig;
 
 pub fn createStack(comptime config: StackConfig) type {
     config.validate();
@@ -133,8 +107,60 @@ pub fn createStack(comptime config: StackConfig) type {
             return self.dup_n(1);
         }
 
+        pub fn op_dup2(self: *Self) Error!void {
+            return self.dup_n(2);
+        }
+
         pub fn op_dup3(self: *Self) Error!void {
             return self.dup_n(3);
+        }
+
+        pub fn op_dup4(self: *Self) Error!void {
+            return self.dup_n(4);
+        }
+
+        pub fn op_dup5(self: *Self) Error!void {
+            return self.dup_n(5);
+        }
+
+        pub fn op_dup6(self: *Self) Error!void {
+            return self.dup_n(6);
+        }
+
+        pub fn op_dup7(self: *Self) Error!void {
+            return self.dup_n(7);
+        }
+
+        pub fn op_dup8(self: *Self) Error!void {
+            return self.dup_n(8);
+        }
+
+        pub fn op_dup9(self: *Self) Error!void {
+            return self.dup_n(9);
+        }
+
+        pub fn op_dup10(self: *Self) Error!void {
+            return self.dup_n(10);
+        }
+
+        pub fn op_dup11(self: *Self) Error!void {
+            return self.dup_n(11);
+        }
+
+        pub fn op_dup12(self: *Self) Error!void {
+            return self.dup_n(12);
+        }
+
+        pub fn op_dup13(self: *Self) Error!void {
+            return self.dup_n(13);
+        }
+
+        pub fn op_dup14(self: *Self) Error!void {
+            return self.dup_n(14);
+        }
+
+        pub fn op_dup15(self: *Self) Error!void {
+            return self.dup_n(15);
         }
 
         pub fn op_dup16(self: *Self) Error!void {
@@ -158,6 +184,58 @@ pub fn createStack(comptime config: StackConfig) type {
 
         pub fn op_swap2(self: *Self) Error!void {
             return self.swap_n(2);
+        }
+
+        pub fn op_swap3(self: *Self) Error!void {
+            return self.swap_n(3);
+        }
+
+        pub fn op_swap4(self: *Self) Error!void {
+            return self.swap_n(4);
+        }
+
+        pub fn op_swap5(self: *Self) Error!void {
+            return self.swap_n(5);
+        }
+
+        pub fn op_swap6(self: *Self) Error!void {
+            return self.swap_n(6);
+        }
+
+        pub fn op_swap7(self: *Self) Error!void {
+            return self.swap_n(7);
+        }
+
+        pub fn op_swap8(self: *Self) Error!void {
+            return self.swap_n(8);
+        }
+
+        pub fn op_swap9(self: *Self) Error!void {
+            return self.swap_n(9);
+        }
+
+        pub fn op_swap10(self: *Self) Error!void {
+            return self.swap_n(10);
+        }
+
+        pub fn op_swap11(self: *Self) Error!void {
+            return self.swap_n(11);
+        }
+
+        pub fn op_swap12(self: *Self) Error!void {
+            return self.swap_n(12);
+        }
+
+        pub fn op_swap13(self: *Self) Error!void {
+            return self.swap_n(13);
+        }
+
+        pub fn op_swap14(self: *Self) Error!void {
+            return self.swap_n(14);
+        }
+
+        pub fn op_swap15(self: *Self) Error!void {
+            return self.swap_n(15);
         }
 
         pub fn op_swap16(self: *Self) Error!void {
