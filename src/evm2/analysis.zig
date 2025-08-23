@@ -343,10 +343,25 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                             handler_op = if (n <= @sizeOf(usize)) PUSH_ADD_INLINE else PUSH_ADD_POINTER;
                             fused = true;
                         }
+                        // Check for PUSH+MUL fusion
+                        else if (next_op == @intFromEnum(Opcode.MUL)) {
+                            handler_op = if (n <= @sizeOf(usize)) PUSH_MUL_INLINE else PUSH_MUL_POINTER;
+                            fused = true;
+                        }
+                        // Check for PUSH+DIV fusion
+                        else if (next_op == @intFromEnum(Opcode.DIV)) {
+                            handler_op = if (n <= @sizeOf(usize)) PUSH_DIV_INLINE else PUSH_DIV_POINTER;
+                            fused = true;
+                        }
                         // Check for PUSH+JUMP fusion
                         else if (next_op == @intFromEnum(Opcode.JUMP)) {
                             // Use appropriate fusion opcode
                             handler_op = if (n <= @sizeOf(usize)) PUSH_JUMP_INLINE else PUSH_JUMP_POINTER;
+                            fused = true;
+                        }
+                        // Check for PUSH+JUMPI fusion
+                        else if (next_op == @intFromEnum(Opcode.JUMPI)) {
+                            handler_op = if (n <= @sizeOf(usize)) PUSH_JUMPI_INLINE else PUSH_JUMPI_POINTER;
                             fused = true;
                         }
                     }
@@ -1041,4 +1056,106 @@ test "dynamic jump table: unfused JUMP can lookup instruction index" {
         const handler = plan.instructionStream[idx];
         try std.testing.expectEqual(@intFromPtr(handlers[@intFromEnum(Opcode.JUMPDEST)]), handler);
     }
+}
+
+test "fusion detection: PUSH+MUL fusion" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    handlers[PUSH_MUL_INLINE] = &testFusionHandler;
+    handlers[PUSH_MUL_POINTER] = &testFusionHandler;
+    
+    // Test PUSH1 5; MUL
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 5,
+        @intFromEnum(Opcode.MUL),
+    };
+    
+    var analyzer = Analyzer.init(&bytecode);
+    var plan = try analyzer.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Should have detected PUSH+MUL fusion
+    try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
+    try std.testing.expectEqual(@as(usize, 5), plan.instructionStream[1]);
+}
+
+test "fusion detection: PUSH+DIV fusion" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    handlers[PUSH_DIV_INLINE] = &testFusionHandler;
+    handlers[PUSH_DIV_POINTER] = &testFusionHandler;
+    
+    // Test PUSH1 10; DIV
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 10,
+        @intFromEnum(Opcode.DIV),
+    };
+    
+    var analyzer = Analyzer.init(&bytecode);
+    var plan = try analyzer.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Should have detected PUSH+DIV fusion
+    try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
+    try std.testing.expectEqual(@as(usize, 10), plan.instructionStream[1]);
+}
+
+test "fusion detection: PUSH+JUMPI fusion" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    handlers[PUSH_JUMPI_INLINE] = &testFusionHandler;
+    handlers[PUSH_JUMPI_POINTER] = &testFusionHandler;
+    
+    // Test PUSH1 8; JUMPI
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 0x01,  // condition
+        @intFromEnum(Opcode.PUSH1), 0x08,  // destination
+        @intFromEnum(Opcode.JUMPI),        // conditional jump
+        @intFromEnum(Opcode.STOP),         // fallthrough
+        @intFromEnum(Opcode.JUMPDEST),     // PC 8: jump destination
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    var analyzer = Analyzer.init(&bytecode);
+    var plan = try analyzer.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Should have PUSH1 1, then fused PUSH+JUMPI
+    try std.testing.expect(plan.instructionStream.len >= 4); // PUSH1, value, PUSH_JUMPI_INLINE, dest
+    
+    // Find the fusion handler
+    var found_fusion = false;
+    var i: usize = 0;
+    while (i < plan.instructionStream.len) : (i += 1) {
+        if (plan.instructionStream[i] == @intFromPtr(&testFusionHandler)) {
+            found_fusion = true;
+            // Next should be the destination value
+            if (i + 1 < plan.instructionStream.len) {
+                try std.testing.expectEqual(@as(usize, 8), plan.instructionStream[i + 1]);
+            }
+            break;
+        }
+    }
+    
+    try std.testing.expect(found_fusion);
 }
