@@ -21,9 +21,6 @@ pub const PUSH_JUMP_POINTER: u8 = 0xFC;
 pub const PUSH_JUMPI_INLINE: u8 = 0xFD;
 pub const PUSH_JUMPI_POINTER: u8 = 0xFE;
 
-// Metadata is stored directly as usize values or pointers
-// No wrapper structs needed - the opcode determines how to interpret the metadata
-
 /// Metadata for JUMPDEST instructions.
 /// On 64-bit systems this fits in usize, on 32-bit it requires pointer.
 pub const JumpDestMetadata = struct {
@@ -35,6 +32,16 @@ pub const JumpDestMetadata = struct {
 /// Handler function type for instruction execution.
 /// Takes frame, plan, and instruction index. Uses tail call recursion.
 pub const HandlerFn = fn (frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn;
+
+/// Untagged union for instruction stream elements.
+/// The opcode determines which field to access.
+pub const InstructionElement = union {
+    handler: *const HandlerFn,          // Function pointer for opcode handler
+    jumpdest_metadata: if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata)) JumpDestMetadata else *const JumpDestMetadata, // Direct on 64-bit, pointer on 32-bit
+    inline_value: usize,                // Inline constant for PUSH ops that fit
+    pointer_index: usize,               // Index into u256_constants for large values
+    pc_value: u16,                      // Original PC for PC opcode (always fits)
+};
 
 /// Compile-time configuration for the analyzer.
 pub const AnalysisConfig = struct {
@@ -97,7 +104,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
 
     // Minimal data the interpreter needs at runtime.
     const AnalyzerPlan = struct {
-        instructionStream: []usize,
+        instructionStream: []InstructionElement,
         u256_constants: []Cfg.WordType,
         // No jump_table - only used during generation
         // No jumpDestMetadata array - metadata is stored inline
@@ -108,9 +115,9 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             self: *const @This(),
             idx: *InstructionIndexType,
             comptime opcode: Opcode,
-        ) struct { metadata: usize, next_handler: *const HandlerFn } {
+        ) struct { metadata: InstructionElement, next_handler: *const HandlerFn } {
             const current_idx = idx.*;
-            const handler = @as(*const HandlerFn, @ptrFromInt(self.instructionStream[current_idx]));
+            const handler = self.instructionStream[current_idx].handler;
             
             // Determine if this opcode has metadata
             const has_metadata = switch (opcode) {
@@ -134,7 +141,8 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                 return .{ .metadata = metadata, .next_handler = handler };
             } else {
                 idx.* += 1;
-                return .{ .metadata = 0, .next_handler = handler };
+                // Return a zeroed metadata element for opcodes without metadata
+                return .{ .metadata = .{ .inline_value = 0 }, .next_handler = handler };
             }
         }
 
@@ -428,7 +436,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             allocator.free(jump_list);
 
             // Build instruction stream
-            var stream = std.ArrayList(usize).init(allocator);
+            var stream = std.ArrayList(InstructionElement).init(allocator);
             errdefer stream.deinit();
             
             var constants = std.ArrayList(Cfg.WordType).init(allocator);
@@ -481,7 +489,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                     }
                     
                     // Add handler pointer (normal or fused)
-                    try stream.append(@intFromPtr(handlers[handler_op]));
+                    try stream.append(.{ .handler = handlers[handler_op] });
                     
                     // Extract the push value
                     if (i + n < N) {
@@ -493,7 +501,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                             while (j < n and j < @sizeOf(usize)) : (j += 1) {
                                 value = (value << 8) | self.bytecode[i + 1 + j];
                             }
-                            try stream.append(value);
+                            try stream.append(.{ .inline_value = value });
                         } else {
                             // Too large - store in constants array
                             var value: Cfg.WordType = 0;
@@ -503,7 +511,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                             }
                             const const_idx = constants.items.len;
                             try constants.append(value);
-                            try stream.append(const_idx);
+                            try stream.append(.{ .pointer_index = const_idx });
                         }
                     }
                     
@@ -515,7 +523,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                     }
                 } else if (op == @intFromEnum(Opcode.JUMPDEST)) {
                     // JUMPDEST needs metadata
-                    try stream.append(@intFromPtr(handlers[op]));
+                    try stream.append(.{ .handler = handlers[op] });
                     
                     // Find the block metadata for this JUMPDEST
                     var metadata_found = false;
@@ -524,15 +532,11 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                             // Found the metadata for this JUMPDEST
                             const jd_metadata = block.metadata;
                             
-                            // On 64-bit systems, pack inline
-                            if (@sizeOf(usize) >= 8) {
-                                // Pack the metadata into a usize
-                                const metadata_bytes = std.mem.asBytes(&jd_metadata);
-                                var packed_value: usize = 0;
-                                @memcpy(std.mem.asBytes(&packed_value)[0..@sizeOf(JumpDestMetadata)], metadata_bytes);
-                                try stream.append(packed_value);
+                            // On 64-bit systems, store metadata directly
+                            if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata)) {
+                                try stream.append(.{ .jumpdest_metadata = jd_metadata });
                             } else {
-                                // On 32-bit systems, store in constants array
+                                // On 32-bit systems, store in constants array and use pointer
                                 const const_idx = constants.items.len;
                                 // Store metadata as bytes in a u256
                                 var value: Cfg.WordType = 0;
@@ -542,7 +546,9 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                                     value = (value << 8) | metadata_bytes[@sizeOf(JumpDestMetadata) - 1 - j];
                                 }
                                 try constants.append(value);
-                                try stream.append(const_idx);
+                                // Cast the index to a pointer to JumpDestMetadata
+                                const metadata_ptr = @as(*const JumpDestMetadata, @ptrFromInt(const_idx));
+                                try stream.append(.{ .jumpdest_metadata = metadata_ptr });
                             }
                             metadata_found = true;
                             break;
@@ -557,7 +563,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                     i += 1;
                 } else {
                     // Other non-PUSH opcodes - just add the handler
-                    try stream.append(@intFromPtr(handlers[op]));
+                    try stream.append(.{ .handler = handlers[op] });
                     i += 1;
                 }
             }
@@ -816,14 +822,14 @@ test "analyzer plan: new structure with instruction stream" {
     const Analyzer = createAnalyzer(.{});
     
     // Create a simple plan with handler pointers
-    const stream = [_]usize{ 
-        @intFromPtr(&testMockHandler), 
-        42,  // metadata
-        @intFromPtr(&testMockHandler) 
+    const stream = [_]InstructionElement{ 
+        .{ .handler = &testMockHandler }, 
+        .{ .inline_value = 42 },  // metadata
+        .{ .handler = &testMockHandler } 
     };
     
     var plan = Analyzer.Plan{
-        .instructionStream = try allocator.dupe(usize, &stream),
+        .instructionStream = try allocator.dupe(InstructionElement, &stream),
         .u256_constants = &.{},
     };
     defer plan.deinit(allocator);
@@ -836,14 +842,14 @@ test "analyzer plan: new structure with instruction stream" {
     var idx: Analyzer.InstructionIndexT = 0;
     const result = plan.getMetadataAndNextInstruction(&idx, .PUSH1);
     try std.testing.expectEqual(@intFromPtr(&testMockHandler), @intFromPtr(result.next_handler));
-    try std.testing.expectEqual(@as(usize, 42), result.metadata);
+    try std.testing.expectEqual(@as(usize, 42), result.metadata.inline_value);
     try std.testing.expectEqual(@as(Analyzer.InstructionIndexT, 2), idx);
     
     // Test with ADD (no metadata)
     idx = 2;
     const result2 = plan.getMetadataAndNextInstruction(&idx, .ADD);
     try std.testing.expectEqual(@intFromPtr(&testMockHandler), @intFromPtr(result2.next_handler));
-    try std.testing.expectEqual(@as(usize, 0), result2.metadata);
+    try std.testing.expectEqual(@as(usize, 0), result2.metadata.inline_value);
     try std.testing.expectEqual(@as(Analyzer.InstructionIndexT, 3), idx);
 }
 
@@ -868,7 +874,7 @@ test "create_instruction_stream: basic handler array" {
     try std.testing.expect(plan.instructionStream.len >= 2);
     
     // First should be the handler pointer
-    try std.testing.expectEqual(@intFromPtr(&testMockHandler), plan.instructionStream[0]);
+    try std.testing.expectEqual(@intFromPtr(&testMockHandler), @intFromPtr(plan.instructionStream[0].handler));
 }
 
 test "PUSH inline vs pointer: small values stored inline" {
@@ -893,7 +899,7 @@ test "PUSH inline vs pointer: small values stored inline" {
     
     // Second element should be the inline value
     const expected_value = if (@sizeOf(usize) == 8) @as(usize, 0x0102030405060708) else @as(usize, 0x01020304);
-    try std.testing.expectEqual(expected_value, plan.instructionStream[1]);
+    try std.testing.expectEqual(expected_value, plan.instructionStream[1].inline_value);
     
     // No u256 constants needed
     try std.testing.expectEqual(@as(usize, 0), plan.u256_constants.len);
@@ -924,7 +930,7 @@ test "PUSH inline vs pointer: large values use pointer" {
     try std.testing.expectEqual(@as(usize, 1), plan.u256_constants.len);
     
     // Second element should be pointer to constant (index 0)
-    try std.testing.expectEqual(@as(usize, 0), plan.instructionStream[1]);
+    try std.testing.expectEqual(@as(usize, 0), plan.instructionStream[1].pointer_index);
     
     // Verify the constant value
     const expected = std.math.maxInt(u256);
@@ -954,10 +960,10 @@ test "fusion detection: PUSH+ADD inline" {
     try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
     
     // First should be the fusion handler
-    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
     
     // Second should be inline value
-    try std.testing.expectEqual(@as(usize, 5), plan.instructionStream[1]);
+    try std.testing.expectEqual(@as(usize, 5), plan.instructionStream[1].inline_value);
 }
 
 test "fusion detection: PUSH+ADD pointer" {
@@ -985,10 +991,10 @@ test "fusion detection: PUSH+ADD pointer" {
     try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
     
     // First should be the fusion handler
-    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
     
     // Second should be pointer (index 0)
-    try std.testing.expectEqual(@as(usize, 0), plan.instructionStream[1]);
+    try std.testing.expectEqual(@as(usize, 0), plan.instructionStream[1].pointer_index);
     
     // Should have constant
     try std.testing.expectEqual(@as(usize, 1), plan.u256_constants.len);
@@ -1022,10 +1028,10 @@ test "fusion detection: PUSH+JUMP inline" {
     try std.testing.expect(plan.instructionStream.len >= 2);
     
     // First should be the fusion handler
-    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
     
     // Second should be inline destination
-    try std.testing.expectEqual(@as(usize, 4), plan.instructionStream[1]);
+    try std.testing.expectEqual(@as(usize, 4), plan.instructionStream[1].inline_value);
 }
 
 test "fusion detection: PUSH+JUMP pointer" {
@@ -1055,10 +1061,10 @@ test "fusion detection: PUSH+JUMP pointer" {
     try std.testing.expect(plan.instructionStream.len >= 2);
     
     // First should be the fusion handler
-    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
     
     // Second should be pointer to constant
-    try std.testing.expectEqual(@as(usize, 0), plan.instructionStream[1]);
+    try std.testing.expectEqual(@as(usize, 0), plan.instructionStream[1].pointer_index);
     
     // Should have constant with value 40
     try std.testing.expectEqual(@as(usize, 1), plan.u256_constants.len);
@@ -1094,16 +1100,16 @@ test "JumpDestMetadata handling: JUMPDEST instructions have metadata" {
     var i: usize = 0;
     
     while (i < plan.instructionStream.len) : (i += 1) {
-        const handler = plan.instructionStream[i];
+        const elem = plan.instructionStream[i];
         
         // Check if this is a JUMPDEST handler
-        if (handler == @intFromPtr(handlers[@intFromEnum(Opcode.JUMPDEST)])) {
-            // Check next slot - it should be metadata but currently isn't
+        if (@intFromPtr(elem.handler) == @intFromPtr(handlers[@intFromEnum(Opcode.JUMPDEST)])) {
+            // Check next slot - it should be metadata
             if (i + 1 < plan.instructionStream.len) {
-                const next_value = plan.instructionStream[i + 1];
+                const next_elem = plan.instructionStream[i + 1];
                 // If next is a handler pointer, then no metadata was added
-                if (next_value == @intFromPtr(handlers[@intFromEnum(Opcode.PUSH1)]) or
-                    next_value == @intFromPtr(handlers[@intFromEnum(Opcode.STOP)])) {
+                if (@intFromPtr(next_elem.handler) == @intFromPtr(handlers[@intFromEnum(Opcode.PUSH1)]) or
+                    @intFromPtr(next_elem.handler) == @intFromPtr(handlers[@intFromEnum(Opcode.STOP)])) {
                     found_jumpdest_without_metadata = true;
                 }
             }
@@ -1144,8 +1150,8 @@ test "dynamic jump table: unfused JUMP can lookup instruction index" {
     var found_jumpdests: usize = 0;
     var i: usize = 0;
     while (i < plan.instructionStream.len) {
-        const handler = plan.instructionStream[i];
-        if (handler == @intFromPtr(handlers[@intFromEnum(Opcode.JUMPDEST)])) {
+        const elem = plan.instructionStream[i];
+        if (@intFromPtr(elem.handler) == @intFromPtr(handlers[@intFromEnum(Opcode.JUMPDEST)])) {
             found_jumpdests += 1;
             i += 2; // Skip metadata
         } else {
@@ -1179,8 +1185,8 @@ test "fusion detection: PUSH+MUL fusion" {
     
     // Should have detected PUSH+MUL fusion
     try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
-    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
-    try std.testing.expectEqual(@as(usize, 5), plan.instructionStream[1]);
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
+    try std.testing.expectEqual(@as(usize, 5), plan.instructionStream[1].inline_value);
 }
 
 test "fusion detection: PUSH+DIV fusion" {
@@ -1207,8 +1213,8 @@ test "fusion detection: PUSH+DIV fusion" {
     
     // Should have detected PUSH+DIV fusion
     try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
-    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
-    try std.testing.expectEqual(@as(usize, 10), plan.instructionStream[1]);
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(plan.instructionStream[0].handler));
+    try std.testing.expectEqual(@as(usize, 10), plan.instructionStream[1].inline_value);
 }
 
 test "fusion detection: PUSH+JUMPI fusion" {
@@ -1244,11 +1250,11 @@ test "fusion detection: PUSH+JUMPI fusion" {
     var found_fusion = false;
     var i: usize = 0;
     while (i < plan.instructionStream.len) : (i += 1) {
-        if (plan.instructionStream[i] == @intFromPtr(&testFusionHandler)) {
+        if (@intFromPtr(plan.instructionStream[i].handler) == @intFromPtr(&testFusionHandler)) {
             found_fusion = true;
             // Next should be the destination value
             if (i + 1 < plan.instructionStream.len) {
-                try std.testing.expectEqual(@as(usize, 8), plan.instructionStream[i + 1]);
+                try std.testing.expectEqual(@as(usize, 8), plan.instructionStream[i + 1].inline_value);
             }
             break;
         }
@@ -1369,8 +1375,8 @@ test "integration: complex bytecode with all features" {
     var found_jumpdests: usize = 0;
     var j: usize = 0;
     while (j < plan.instructionStream.len) {
-        const handler = plan.instructionStream[j];
-        if (handler == @intFromPtr(handlers[@intFromEnum(Opcode.JUMPDEST)])) {
+        const elem = plan.instructionStream[j];
+        if (@intFromPtr(elem.handler) == @intFromPtr(handlers[@intFromEnum(Opcode.JUMPDEST)])) {
             found_jumpdests += 1;
             j += 2; // Skip metadata
         } else {
@@ -1390,7 +1396,7 @@ test "integration: complex bytecode with all features" {
     var fusion_count: usize = 0;
     var i: usize = 0;
     while (i < plan.instructionStream.len) : (i += 1) {
-        if (plan.instructionStream[i] == @intFromPtr(&testFusionHandler)) {
+        if (@intFromPtr(plan.instructionStream[i].handler) == @intFromPtr(&testFusionHandler)) {
             fusion_count += 1;
             i += 1; // Skip metadata
         }
