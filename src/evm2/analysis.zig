@@ -1159,3 +1159,117 @@ test "fusion detection: PUSH+JUMPI fusion" {
     
     try std.testing.expect(found_fusion);
 }
+
+test "integration: complex bytecode with all features" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    // Set fusion handlers
+    handlers[PUSH_ADD_INLINE] = &testFusionHandler;
+    handlers[PUSH_ADD_POINTER] = &testFusionHandler;
+    handlers[PUSH_MUL_INLINE] = &testFusionHandler;
+    handlers[PUSH_MUL_POINTER] = &testFusionHandler;
+    handlers[PUSH_DIV_INLINE] = &testFusionHandler;
+    handlers[PUSH_DIV_POINTER] = &testFusionHandler;
+    handlers[PUSH_JUMP_INLINE] = &testFusionHandler;
+    handlers[PUSH_JUMP_POINTER] = &testFusionHandler;
+    handlers[PUSH_JUMPI_INLINE] = &testFusionHandler;
+    handlers[PUSH_JUMPI_POINTER] = &testFusionHandler;
+    
+    // Complex bytecode with all features
+    const bytecode = [_]u8{
+        // Entry point
+        @intFromEnum(Opcode.JUMPDEST),     // PC 0: entry
+        
+        // Fusion: PUSH+ADD
+        @intFromEnum(Opcode.PUSH1), 0x05,  // PC 1: push 5
+        @intFromEnum(Opcode.ADD),          // PC 3: add (fused)
+        
+        // Large PUSH value (pointer)
+        @intFromEnum(Opcode.PUSH32),       // PC 4: push large value
+    } ++ [_]u8{0xFF} ** 32 ++ [_]u8{      // PC 5-36: 32 bytes of 0xFF
+        
+        // Fusion: PUSH+MUL 
+        @intFromEnum(Opcode.PUSH1), 0x02,  // PC 37: push 2
+        @intFromEnum(Opcode.MUL),          // PC 39: multiply (fused)
+        
+        // Dynamic jump preparation
+        @intFromEnum(Opcode.PUSH1), 0x30,  // PC 40: push jump dest (48)
+        
+        // Another operation to break fusion
+        @intFromEnum(Opcode.DUP1),         // PC 42: duplicate
+        
+        // Dynamic JUMP (not fused)
+        @intFromEnum(Opcode.JUMP),         // PC 43: jump
+        
+        // Some unreachable code
+        @intFromEnum(Opcode.INVALID),      // PC 44
+        @intFromEnum(Opcode.INVALID),      // PC 45
+        @intFromEnum(Opcode.INVALID),      // PC 46
+        @intFromEnum(Opcode.INVALID),      // PC 47
+        
+        // Jump destination
+        @intFromEnum(Opcode.JUMPDEST),     // PC 48: jump dest
+        
+        // Fusion: PUSH+DIV
+        @intFromEnum(Opcode.PUSH1), 0x04,  // PC 49: push 4
+        @intFromEnum(Opcode.DIV),          // PC 51: divide (fused)
+        
+        // Conditional jump setup
+        @intFromEnum(Opcode.PUSH1), 0x01,  // PC 52: push condition
+        @intFromEnum(Opcode.PUSH1), 0x3A,  // PC 54: push dest (58)
+        @intFromEnum(Opcode.JUMPI),        // PC 56: jumpi (fused)
+        
+        @intFromEnum(Opcode.INVALID),      // PC 57: skipped
+        
+        // Final destination
+        @intFromEnum(Opcode.JUMPDEST),     // PC 58: final dest
+        @intFromEnum(Opcode.STOP),         // PC 59: stop
+    };
+    
+    var analyzer = Analyzer.init(&bytecode);
+    var plan = try analyzer.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Verify we have all the features:
+    
+    // 1. Multiple JUMPDESTs in jump table
+    try std.testing.expect(plan.jump_table.len >= 3); // PC 0, 48, 58
+    
+    // 2. Large constant in u256_constants
+    try std.testing.expect(plan.u256_constants.len >= 1);
+    // Check the large value is all 0xFF
+    const large_val = plan.u256_constants[0];
+    const expected: u256 = std.math.maxInt(u256);
+    try std.testing.expectEqual(expected, large_val);
+    
+    // 3. Instruction stream has fusion handlers
+    var fusion_count: usize = 0;
+    var i: usize = 0;
+    while (i < plan.instructionStream.len) : (i += 1) {
+        if (plan.instructionStream[i] == @intFromPtr(&testFusionHandler)) {
+            fusion_count += 1;
+            i += 1; // Skip metadata
+        }
+    }
+    try std.testing.expect(fusion_count >= 4); // ADD, MUL, DIV, JUMPI fusions
+    
+    // 4. Jump table lookups work
+    const jump_idx_48 = plan.lookupInstructionIdx(48);
+    try std.testing.expect(jump_idx_48 != null);
+    
+    const jump_idx_58 = plan.lookupInstructionIdx(58);
+    try std.testing.expect(jump_idx_58 != null);
+    
+    // 5. Non-JUMPDEST lookup returns null
+    const jump_idx_10 = plan.lookupInstructionIdx(10);
+    try std.testing.expectEqual(@as(?usize, null), jump_idx_10);
+    
+    // 6. JumpDestMetadata exists
+    try std.testing.expect(plan.jumpDestMetadata.len > 0);
+}
