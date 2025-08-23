@@ -1,4 +1,4 @@
-/// InterpreterPlan: Runtime data structure for the EVM interpreter.
+/// Plan: Runtime data structure for the EVM interpreter.
 /// Contains the instruction stream (handler pointers + metadata) and constants.
 const std = @import("std");
 const opcode_data = @import("opcode_data.zig");
@@ -78,8 +78,8 @@ comptime {
     }
 }
 
-/// Configuration for the interpreter plan.
-pub const InterpreterPlanConfig = struct {
+/// Configuration for the plan.
+pub const PlanConfig = struct {
     /// Word type for the EVM (typically u256).
     WordType: type = u256,
     /// Maximum bytecode size (determines PcType).
@@ -98,13 +98,13 @@ pub const InterpreterPlanConfig = struct {
     }
 };
 
-/// Factory function to create an InterpreterPlan type with the given configuration.
-pub fn createInterpreterPlan(comptime cfg: InterpreterPlanConfig) type {
+/// Factory function to create a Plan type with the given configuration.
+pub fn createPlan(comptime cfg: PlanConfig) type {
     comptime cfg.validate();
     const PcType = cfg.PcType();
     const InstructionIndexType = PcType; // Can only have as many instructions as PCs
     
-    const InterpreterPlan = struct {
+    const Plan = struct {
         const Self = @This();
         
         /// Expose types for external use.
@@ -322,5 +322,373 @@ pub fn createInterpreterPlan(comptime cfg: InterpreterPlanConfig) type {
         }
     };
     
-    return InterpreterPlan;
+    return Plan;
+}
+
+// Test handler function that does nothing (for testing)
+fn testHandler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+    _ = frame;
+    _ = plan;
+    _ = idx;
+    unreachable; // Test handlers don't actually execute
+}
+
+test "SyntheticOpcode values are unique and non-conflicting" {
+    // Test that all synthetic opcodes have unique values
+    const opcodes = [_]u8{
+        @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE),
+        @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER),
+        @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE),
+        @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER),
+        @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE),
+        @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
+        @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE),
+        @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER),
+        @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE),
+        @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER),
+    };
+    
+    // Check for duplicates
+    for (opcodes, 0..) |op1, i| {
+        for (opcodes[i+1..]) |op2| {
+            try std.testing.expect(op1 != op2);
+        }
+    }
+    
+    // Verify expected values
+    try std.testing.expectEqual(@as(u8, 0xB0), @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xB1), @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xB2), @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xB3), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xB4), @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xB5), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xB6), @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xB7), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xB8), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xB9), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER));
+}
+
+test "JumpDestMetadata size and alignment" {
+    // Test that JumpDestMetadata is properly packed
+    try std.testing.expectEqual(@as(usize, 8), @sizeOf(JumpDestMetadata));
+    // On some platforms, packed structs might have larger alignment than expected
+    // Just verify it's a power of 2 and reasonable
+    const align_val = @alignOf(JumpDestMetadata);
+    try std.testing.expect(align_val >= 1 and align_val <= 8);
+    // Check if it's a power of 2
+    try std.testing.expect((align_val & (align_val - 1)) == 0);
+    
+    // Test field offsets
+    try std.testing.expectEqual(@as(usize, 0), @offsetOf(JumpDestMetadata, "gas"));
+    try std.testing.expectEqual(@as(usize, 4), @offsetOf(JumpDestMetadata, "min_stack"));
+    try std.testing.expectEqual(@as(usize, 6), @offsetOf(JumpDestMetadata, "max_stack"));
+}
+
+test "InstructionElement size equals usize" {
+    try std.testing.expectEqual(@sizeOf(usize), @sizeOf(InstructionElement));
+    
+    if (@sizeOf(usize) == 8) {
+        try std.testing.expectEqual(@sizeOf(InstructionElement64), @sizeOf(InstructionElement));
+    } else if (@sizeOf(usize) == 4) {
+        try std.testing.expectEqual(@sizeOf(InstructionElement32), @sizeOf(InstructionElement));
+    }
+}
+
+test "PlanConfig validation" {
+    // Valid configs should not cause compile errors
+    const valid_cfg = PlanConfig{
+        .WordType = u256,
+        .maxBytecodeSize = 24_576,
+    };
+    comptime valid_cfg.validate();
+    
+    // Test PcType selection
+    const small_cfg = PlanConfig{
+        .maxBytecodeSize = 100,
+    };
+    try std.testing.expectEqual(u16, small_cfg.PcType());
+    
+    const large_cfg = PlanConfig{
+        .maxBytecodeSize = 65_535,
+    };
+    try std.testing.expectEqual(u16, large_cfg.PcType());
+}
+
+test "Plan getMetadata for PUSH opcodes" {
+    const allocator = std.testing.allocator;
+    const Plan = createPlan(.{});
+    
+    // Create a plan with test data
+    var stream = std.ArrayList(InstructionElement).init(allocator);
+    defer stream.deinit();
+    
+    // PUSH1 with value 42
+    try stream.append(.{ .handler = &testHandler });
+    try stream.append(.{ .inline_value = 42 });
+    
+    // PUSH2 with value 0x1234
+    try stream.append(.{ .handler = &testHandler });
+    try stream.append(.{ .inline_value = 0x1234 });
+    
+    // PUSH8 with max value
+    try stream.append(.{ .handler = &testHandler });
+    try stream.append(.{ .inline_value = std.math.maxInt(u64) });
+    
+    var plan = Plan{
+        .instructionStream = try stream.toOwnedSlice(),
+        .u256_constants = &.{},
+    };
+    defer plan.deinit(allocator);
+    
+    // Test PUSH1
+    var idx: Plan.InstructionIndexT = 0;
+    const push1_val = plan.getMetadata(&idx, .PUSH1);
+    try std.testing.expectEqual(@as(u8, 42), push1_val);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexT, 2), idx);
+    
+    // Test PUSH2
+    const push2_val = plan.getMetadata(&idx, .PUSH2);
+    try std.testing.expectEqual(@as(u16, 0x1234), push2_val);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexT, 4), idx);
+    
+    // Test PUSH8
+    const push8_val = plan.getMetadata(&idx, .PUSH8);
+    try std.testing.expectEqual(@as(u64, std.math.maxInt(u64)), push8_val);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexT, 6), idx);
+}
+
+test "Plan getMetadata for large PUSH opcodes" {
+    const allocator = std.testing.allocator;
+    const Plan = createPlan(.{});
+    
+    // Create constants array
+    var constants = try allocator.alloc(Plan.WordType, 2);
+    defer allocator.free(constants);
+    constants[0] = 0x123456789ABCDEF0123456789ABCDEF0;
+    constants[1] = std.math.maxInt(u256);
+    
+    // Create instruction stream
+    var stream = std.ArrayList(InstructionElement).init(allocator);
+    defer stream.deinit();
+    
+    // PUSH32 pointing to constants[0]
+    try stream.append(.{ .handler = &testHandler });
+    try stream.append(.{ .pointer_index = 0 });
+    
+    // PUSH32 pointing to constants[1]
+    try stream.append(.{ .handler = &testHandler });
+    try stream.append(.{ .pointer_index = 1 });
+    
+    var plan = Plan{
+        .instructionStream = try stream.toOwnedSlice(),
+        .u256_constants = constants,
+    };
+    defer {
+        allocator.free(plan.instructionStream);
+        plan.instructionStream = &.{};
+        plan.u256_constants = &.{};
+    }
+    
+    // Test PUSH32
+    var idx: Plan.InstructionIndexT = 0;
+    const push32_ptr = plan.getMetadata(&idx, .PUSH32);
+    try std.testing.expectEqual(@as(u256, 0x123456789ABCDEF0123456789ABCDEF0), push32_ptr.*);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexT, 2), idx);
+    
+    // Test another PUSH32
+    const push32_ptr2 = plan.getMetadata(&idx, .PUSH32);
+    try std.testing.expectEqual(std.math.maxInt(u256), push32_ptr2.*);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexT, 4), idx);
+}
+
+test "Plan getMetadata for JUMPDEST" {
+    const allocator = std.testing.allocator;
+    const Plan = createPlan(.{});
+    
+    var stream = std.ArrayList(InstructionElement).init(allocator);
+    defer stream.deinit();
+    
+    const metadata = JumpDestMetadata{
+        .gas = 100,
+        .min_stack = 2,
+        .max_stack = 5,
+    };
+    
+    // On 64-bit platforms, metadata fits inline
+    if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata)) {
+        try stream.append(.{ .handler = &testHandler });
+        try stream.append(.{ .jumpdest_metadata = metadata });
+        
+        var plan = Plan{
+            .instructionStream = try stream.toOwnedSlice(),
+            .u256_constants = &.{},
+        };
+        defer plan.deinit(allocator);
+        
+        var idx: Plan.InstructionIndexT = 0;
+        const jumpdest_meta = plan.getMetadata(&idx, .JUMPDEST);
+        try std.testing.expectEqual(metadata.gas, jumpdest_meta.gas);
+        try std.testing.expectEqual(metadata.min_stack, jumpdest_meta.min_stack);
+        try std.testing.expectEqual(metadata.max_stack, jumpdest_meta.max_stack);
+        try std.testing.expectEqual(@as(Plan.InstructionIndexT, 2), idx);
+    }
+}
+
+test "Plan getMetadata for PC opcode" {
+    const allocator = std.testing.allocator;
+    const Plan = createPlan(.{});
+    
+    var stream = std.ArrayList(InstructionElement).init(allocator);
+    defer stream.deinit();
+    
+    // PC with value 1234
+    try stream.append(.{ .handler = &testHandler });
+    try stream.append(.{ .inline_value = 1234 });
+    
+    var plan = Plan{
+        .instructionStream = try stream.toOwnedSlice(),
+        .u256_constants = &.{},
+    };
+    defer plan.deinit(allocator);
+    
+    var idx: Plan.InstructionIndexT = 0;
+    const pc_val = plan.getMetadata(&idx, .PC);
+    try std.testing.expectEqual(@as(Plan.PcTypeT, 1234), pc_val);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexT, 2), idx);
+}
+
+test "Plan getMetadata for synthetic opcodes" {
+    const allocator = std.testing.allocator;
+    const Plan = createPlan(.{});
+    
+    // Create constants
+    var constants = try allocator.alloc(Plan.WordType, 1);
+    defer allocator.free(constants);
+    constants[0] = 0xDEADBEEF;
+    
+    var stream = std.ArrayList(InstructionElement).init(allocator);
+    defer stream.deinit();
+    
+    // PUSH_ADD_INLINE with inline value
+    try stream.append(.{ .handler = &testHandler });
+    try stream.append(.{ .inline_value = 999 });
+    
+    // PUSH_MUL_POINTER pointing to constant
+    try stream.append(.{ .handler = &testHandler });
+    try stream.append(.{ .pointer_index = 0 });
+    
+    var plan = Plan{
+        .instructionStream = try stream.toOwnedSlice(),
+        .u256_constants = constants,
+    };
+    defer {
+        allocator.free(plan.instructionStream);
+        plan.instructionStream = &.{};
+        plan.u256_constants = &.{};
+    }
+    
+    // Test PUSH_ADD_INLINE
+    var idx: Plan.InstructionIndexT = 0;
+    const inline_val = plan.getMetadata(&idx, @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE));
+    try std.testing.expectEqual(@as(usize, 999), inline_val);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexT, 2), idx);
+    
+    // Test PUSH_MUL_POINTER
+    const ptr_val = plan.getMetadata(&idx, @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER));
+    try std.testing.expectEqual(@as(u256, 0xDEADBEEF), ptr_val.*);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexT, 4), idx);
+}
+
+test "Plan getNextInstruction without metadata" {
+    const allocator = std.testing.allocator;
+    const Plan = createPlan(.{});
+    
+    var stream = std.ArrayList(InstructionElement).init(allocator);
+    defer stream.deinit();
+    
+    // ADD opcode (no metadata)
+    try stream.append(.{ .handler = &testHandler });
+    // Another opcode
+    const handler2: *const HandlerFn = &testHandler;
+    try stream.append(.{ .handler = handler2 });
+    
+    var plan = Plan{
+        .instructionStream = try stream.toOwnedSlice(),
+        .u256_constants = &.{},
+    };
+    defer plan.deinit(allocator);
+    
+    // Test opcode without metadata
+    var idx: Plan.InstructionIndexT = 0;
+    const handler = plan.getNextInstruction(&idx, .ADD);
+    try std.testing.expectEqual(&testHandler, handler);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexT, 1), idx);
+}
+
+test "Plan getNextInstruction with metadata" {
+    const allocator = std.testing.allocator;
+    const Plan = createPlan(.{});
+    
+    var stream = std.ArrayList(InstructionElement).init(allocator);
+    defer stream.deinit();
+    
+    // PUSH1 with metadata
+    try stream.append(.{ .handler = &testHandler });
+    try stream.append(.{ .inline_value = 42 });
+    // Next instruction
+    const handler2: *const HandlerFn = &testHandler;
+    try stream.append(.{ .handler = handler2 });
+    
+    var plan = Plan{
+        .instructionStream = try stream.toOwnedSlice(),
+        .u256_constants = &.{},
+    };
+    defer plan.deinit(allocator);
+    
+    // Test opcode with metadata
+    var idx: Plan.InstructionIndexT = 0;
+    const handler = plan.getNextInstruction(&idx, .PUSH1);
+    try std.testing.expectEqual(&testHandler, handler);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexT, 2), idx);
+}
+
+test "Plan deinit" {
+    const allocator = std.testing.allocator;
+    const Plan = createPlan(.{});
+    
+    var plan = Plan{
+        .instructionStream = try allocator.alloc(InstructionElement, 10),
+        .u256_constants = try allocator.alloc(Plan.WordType, 5),
+    };
+    
+    // Fill with dummy data
+    for (plan.instructionStream) |*elem| {
+        elem.* = .{ .handler = &testHandler };
+    }
+    for (plan.u256_constants) |*val| {
+        val.* = 0;
+    }
+    
+    // Deinit should free both arrays
+    plan.deinit(allocator);
+    try std.testing.expectEqual(@as(usize, 0), plan.instructionStream.len);
+    try std.testing.expectEqual(@as(usize, 0), plan.u256_constants.len);
+}
+
+test "Plan with different WordType" {
+    const Plan128 = createPlan(.{ .WordType = u128 });
+    try std.testing.expectEqual(u128, Plan128.WordType);
+    
+    const Plan512 = createPlan(.{ .WordType = u512 });
+    try std.testing.expectEqual(u512, Plan512.WordType);
+}
+
+test "Plan PcType selection based on maxBytecodeSize" {
+    const SmallPlan = createPlan(.{ .maxBytecodeSize = 1000 });
+    try std.testing.expectEqual(u16, SmallPlan.PcTypeT);
+    try std.testing.expectEqual(u16, SmallPlan.InstructionIndexT);
+    
+    const LargePlan = createPlan(.{ .maxBytecodeSize = 65535 });
+    try std.testing.expectEqual(u16, LargePlan.PcTypeT);
+    try std.testing.expectEqual(u16, LargePlan.InstructionIndexT);
 }
