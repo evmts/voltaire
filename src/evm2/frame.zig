@@ -487,6 +487,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             
+            std.log.warn("push3_handler: instruction_idx = {}, stream length = {}", .{ self.instruction_idx, plan_ptr.instructionStream.len });
             const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH3));
             try self.stack.push(value);
             
@@ -2557,6 +2558,8 @@ test "Frame interpret handles all PUSH opcodes correctly" {
         var frame = try Frame.init(allocator, &bytecode, 1000000);
         defer frame.deinit(allocator);
 
+        std.log.warn("\n=== PUSH3 Test Starting ===", .{});
+        std.log.warn("Bytecode: {any}", .{bytecode});
         try frame.interpret(allocator); // Handles STOP internally
         try std.testing.expectEqual(@as(u256, 0x123456), frame.stack.peek_unsafe());
     }
