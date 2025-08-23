@@ -263,9 +263,6 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
             idx: *InstructionIndexType,
             comptime opcode: anytype,
         ) *const HandlerFn {
-            const current_idx = idx.*;
-            const handler = self.instructionStream[current_idx].handler;
-            
             // Check if it's a synthetic opcode
             const is_synthetic = if (@TypeOf(opcode) == u8) blk2: {
                 const val = opcode;
@@ -307,9 +304,12 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
                 break :blk2 result;
             };
 
+            // Advance index FIRST
             idx.* += 1;
             if (has_metadata) idx.* += 1;
-            return handler;
+            
+            // Then return the handler at the new position
+            return self.instructionStream[idx.*].handler;
         }
         
         /// Get instruction index for a given PC value.
@@ -554,17 +554,19 @@ test "Plan getMetadata for PUSH opcodes" {
     var idx: Plan.InstructionIndexType = 0;
     const push1_val = plan.getMetadata(&idx, .PUSH1);
     try std.testing.expectEqual(@as(u8, 42), push1_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
     
     // Test PUSH2
+    idx = 2; // Move to PUSH2 handler position
     const push2_val = plan.getMetadata(&idx, .PUSH2);
     try std.testing.expectEqual(@as(u16, 0x1234), push2_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 4), idx);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
     
     // Test PUSH8
+    idx = 4; // Move to PUSH8 handler position
     const push8_val = plan.getMetadata(&idx, .PUSH8);
     try std.testing.expectEqual(@as(u64, std.math.maxInt(u64)), push8_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 6), idx);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 4), idx);
 }
 
 test "Plan getMetadata for large PUSH opcodes" {
@@ -604,12 +606,13 @@ test "Plan getMetadata for large PUSH opcodes" {
     var idx: Plan.InstructionIndexType = 0;
     const push32_ptr = plan.getMetadata(&idx, .PUSH32);
     try std.testing.expectEqual(@as(u256, 0x123456789ABCDEF0123456789ABCDEF0), push32_ptr.*);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
     
     // Test another PUSH32
+    idx = 2; // Move to next PUSH32 handler position
     const push32_ptr2 = plan.getMetadata(&idx, .PUSH32);
     try std.testing.expectEqual(std.math.maxInt(u256), push32_ptr2.*);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 4), idx);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
 }
 
 test "Plan getMetadata for JUMPDEST" {
@@ -642,7 +645,7 @@ test "Plan getMetadata for JUMPDEST" {
         try std.testing.expectEqual(metadata.gas, jumpdest_meta.gas);
         try std.testing.expectEqual(metadata.min_stack, jumpdest_meta.min_stack);
         try std.testing.expectEqual(metadata.max_stack, jumpdest_meta.max_stack);
-        try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
+        try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
     }
 }
 
@@ -667,7 +670,7 @@ test "Plan getMetadata for PC opcode" {
     var idx: Plan.InstructionIndexType = 0;
     const pc_val = plan.getMetadata(&idx, .PC);
     try std.testing.expectEqual(@as(Plan.PcType, 1234), pc_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
 }
 
 test "Plan getMetadata for synthetic opcodes" {
@@ -705,12 +708,13 @@ test "Plan getMetadata for synthetic opcodes" {
     var idx: Plan.InstructionIndexType = 0;
     const inline_val = plan.getMetadata(&idx, @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE));
     try std.testing.expectEqual(@as(usize, 999), inline_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
     
     // Test PUSH_MUL_POINTER
+    idx = 2; // Move to next handler position
     const ptr_val = plan.getMetadata(&idx, @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER));
     try std.testing.expectEqual(@as(u256, 0xDEADBEEF), ptr_val.*);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 4), idx);
+    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
 }
 
 test "Plan getNextInstruction without metadata" {
