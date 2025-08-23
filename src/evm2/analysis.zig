@@ -47,6 +47,9 @@ pub const JumpDestMetadata = struct {
     max_stack: i16,
 };
 
+/// Handler function type for instruction execution.
+pub const HandlerFn = fn () void;
+
 /// Compile-time configuration for the analyzer.
 pub const AnalysisConfig = struct {
     const Self = @This();
@@ -176,11 +179,11 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             return .{ .bytecode = bytecode };
         }
 
-        /// Analyze the bytecode and build a Plan.
+        /// Create instruction stream from bytecode and handler array.
         /// Pass 1: build temporary bitmaps (push-data, opcode-start, jumpdest).
-        /// Pass 2: allocate exact outputs and fill jumpList + blocks.
+        /// Pass 2: build instruction stream with handlers and metadata.
         /// All temporaries are freed before returning.
-        pub fn run(self: *Self, allocator: std.mem.Allocator) !AnalyzerPlan {
+        pub fn create_instruction_stream(self: *Self, allocator: std.mem.Allocator, handlers: [256]*const HandlerFn) !AnalyzerPlan {
             const N = self.bytecode.len;
             // Ephemeral bitmaps (bit-per-byte)
             const bitmap_bytes = (N + 7) >> 3;
@@ -301,9 +304,33 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             // Free unused jump_list
             allocator.free(jump_list);
 
-            // TODO: This is temporary - will be replaced by create_instruction_stream
+            // Build instruction stream
+            var stream = std.ArrayList(usize).init(allocator);
+            errdefer stream.deinit();
+            
+            // Simple implementation: just add handlers for now
+            i = 0;
+            while (i < N) {
+                const op = self.bytecode[i];
+                
+                // Add handler pointer
+                try stream.append(@intFromPtr(handlers[op]));
+                
+                // Handle PUSH opcodes
+                if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
+                    const n: usize = op - (@intFromEnum(Opcode.PUSH1) - 1);
+                    // For now, just store the value inline if it's PUSH1
+                    if (op == @intFromEnum(Opcode.PUSH1) and i + 1 < N) {
+                        try stream.append(self.bytecode[i + 1]);
+                    }
+                    i += 1 + n;
+                } else {
+                    i += 1;
+                }
+            }
+
             return AnalyzerPlan{
-                .instructionStream = &.{},
+                .instructionStream = try stream.toOwnedSlice(),
                 .u256_constants = &.{},
                 .jump_table = &.{},
                 .jumpDestMetadata = blocks,
@@ -355,6 +382,9 @@ fn markJumpdestSimd(bytecode: []const u8, is_push_data: []const u8, is_jumpdest:
     }
 }
 
+// Mock handler for tests
+fn testMockHandler() void {}
+
 test "analysis: bitmaps mark push-data and jumpdest correctly" {
     const allocator = std.testing.allocator;
     const Analyzer = createAnalyzer(.{});
@@ -363,7 +393,10 @@ test "analysis: bitmaps mark push-data and jumpdest correctly" {
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH2), 0xAA, 0xBB, @intFromEnum(Opcode.JUMPDEST), @intFromEnum(Opcode.STOP) };
     var analysis = Analyzer.init(&bytecode);
 
-    var plan = try analysis.run(allocator);
+    // Create dummy handlers for test
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    var plan = try analysis.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
 
     // Expect one jumpdest at pc=3
@@ -378,7 +411,10 @@ test "analysis: blocks and lookupInstrIdx basic" {
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.JUMPDEST), @intFromEnum(Opcode.STOP) };
     var analysis = Analyzer.init(&bytecode);
 
-    var plan = try analysis.run(allocator);
+    // Create dummy handlers for test
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    var plan = try analysis.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
 
     // blocks: entry + one at JUMPDEST
@@ -413,9 +449,12 @@ test "analysis: SIMD parity with scalar" {
     var a = AnalyzerSimd.init(&bc);
     var b = AnalyzerScalar.init(&bc);
 
-    var plan_simd = try a.run(allocator);
+    // Create dummy handlers for test
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    var plan_simd = try a.create_instruction_stream(allocator, handlers);
     defer plan_simd.deinit(allocator);
-    var plan_scalar = try b.run(allocator);
+    var plan_scalar = try b.create_instruction_stream(allocator, handlers);
     defer plan_scalar.deinit(allocator);
 
     try std.testing.expectEqual(plan_scalar.jumpDestMetadata.len, plan_simd.jumpDestMetadata.len);
@@ -439,7 +478,10 @@ test "analysis: static gas charge and stack height ranges" {
 
     const Analyzer = createAnalyzer(.{});
     var analysis = Analyzer.init(&bc);
-    var plan = try analysis.run(allocator);
+    // Create dummy handlers for test
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    var plan = try analysis.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
 
     // Expect two blocks: entry and one at JUMPDEST
@@ -461,7 +503,10 @@ test "analysis: lookupInstructionIdx returns null for non-dest" {
     const bc = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.STOP) };
     const Analyzer = createAnalyzer(.{});
     var analysis = Analyzer.init(&bc);
-    var plan = try analysis.run(allocator);
+    // Create dummy handlers for test
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    var plan = try analysis.create_instruction_stream(allocator, handlers);
     defer plan.deinit(allocator);
     try std.testing.expectEqual(@as(usize, 0), plan.jump_table.len);
     try std.testing.expect(plan.lookupInstructionIdx(@as(Analyzer.PcTypeT, 0)) == null);
@@ -572,4 +617,28 @@ test "analyzer plan: new structure with instruction stream" {
     const inst2 = plan.getNextInstruction(&ip);
     try std.testing.expectEqual(@as(usize, 42), inst2);
     try std.testing.expectEqual(@as(usize, 2), ip);
+}
+
+test "create_instruction_stream: basic handler array" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    
+    // Simple bytecode: PUSH1 5
+    const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x05 };
+    var analysis = Analyzer.init(&bytecode);
+    
+    var plan = try analysis.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Should have at least 2 instructions (handler + metadata)
+    try std.testing.expect(plan.instructionStream.len >= 2);
+    
+    // First should be the handler pointer
+    try std.testing.expectEqual(@intFromPtr(&testMockHandler), plan.instructionStream[0]);
 }
