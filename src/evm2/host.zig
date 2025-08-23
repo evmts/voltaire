@@ -2,81 +2,9 @@ const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 const hardfork = @import("../hardforks/hardfork.zig");
-
-/// Call result structure for EVM calls
-pub const CallResult = struct {
-    success: bool,
-    gas_left: u64,
-    output: []const u8,
-};
-
-/// Call operation parameters for different call types
-pub const CallParams = union(enum) {
-    /// Regular CALL operation
-    call: struct {
-        caller: Address,
-        to: Address,
-        value: u256,
-        input: []const u8,
-        gas: u64,
-    },
-    /// CALLCODE operation: execute external code with current storage/context
-    /// Executes code at `to`, but uses caller's storage and address context
-    callcode: struct {
-        caller: Address,
-        to: Address,
-        value: u256,
-        input: []const u8,
-        gas: u64,
-    },
-    /// DELEGATECALL operation (preserves caller context)
-    delegatecall: struct {
-        caller: Address, // Original caller, not current contract
-        to: Address,
-        input: []const u8,
-        gas: u64,
-    },
-    /// STATICCALL operation (read-only)
-    staticcall: struct {
-        caller: Address,
-        to: Address,
-        input: []const u8,
-        gas: u64,
-    },
-    /// CREATE operation
-    create: struct {
-        caller: Address,
-        value: u256,
-        init_code: []const u8,
-        gas: u64,
-    },
-    /// CREATE2 operation
-    create2: struct {
-        caller: Address,
-        value: u256,
-        init_code: []const u8,
-        salt: u256,
-        gas: u64,
-    },
-};
-
-/// Block information structure for Host interface
-pub const BlockInfo = struct {
-    /// Block number
-    number: u64,
-    /// Block timestamp
-    timestamp: u64,
-    /// Block difficulty
-    difficulty: u256,
-    /// Block gas limit
-    gas_limit: u64,
-    /// Coinbase (miner) address
-    coinbase: Address,
-    /// Base fee per gas (EIP-1559)
-    base_fee: u256,
-    /// Block hash of previous block
-    prev_randao: [32]u8,
-};
+const CallResult = @import("call_result.zig").CallResult;
+const CallParams = @import("call_params.zig").CallParams;
+const BlockInfo = @import("block_info.zig").BlockInfo;
 
 /// Host interface for external operations
 /// This provides the EVM with access to blockchain state and external services

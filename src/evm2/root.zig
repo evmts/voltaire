@@ -1,15 +1,16 @@
 const std = @import("std");
 
 // Import main modules
-pub const FrameConfig = @import("frame.zig").FrameConfig;
+pub const FrameConfig = @import("frame_config.zig").FrameConfig;
 pub const createFrame = @import("frame.zig").createFrame;
-pub const StackConfig = @import("stack.zig").StackConfig;
+pub const StackConfig = @import("stack_config.zig").StackConfig;
 pub const createStack = @import("stack.zig").createStack;
+pub const MemoryConfig = @import("memory_config.zig").MemoryConfig;
 pub const createPlanner = @import("planner.zig").createPlanner;
+pub const PlannerConfig = @import("planner_config.zig").PlannerConfig;
 pub const createPlan = @import("plan.zig").createPlan;
-pub const PlanConfig = @import("plan.zig").PlanConfig;
-pub const Interpreter = @import("interpreter.zig").Interpreter;
-pub const Dispatcher = @import("dispatcher.zig").Dispatcher;
+pub const PlanConfig = @import("plan_config.zig").PlanConfig;
+// pub const Interpreter = @import("interpreter.zig").Interpreter; // TODO: Add when interpreter.zig is created
 pub const Evm = @import("evm.zig").Evm;
 pub const Tracer = @import("tracer.zig").Tracer;
 pub const DetailedStructLog = @import("tracer.zig").DetailedStructLog;
@@ -31,8 +32,7 @@ test {
     _ = StackConfig;
     _ = createStack;
     _ = createPlanner;
-    _ = Interpreter;
-    _ = Dispatcher;
+    // _ = Interpreter;
     _ = Evm;
     _ = Tracer;
     _ = DetailedStructLog;
