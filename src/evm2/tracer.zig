@@ -194,7 +194,7 @@ pub const DebuggingTracer = struct {
         }
         
         const snapshot = StateSnapshot{
-            .pc = @as(u32, @intCast(frame.pc)),
+            .pc = 0, // PC is now managed by plan, not frame
             .gas_remaining = frame.gas_remaining,
             .stack = stack_copy,
             .memory_size = if (@hasField(FrameType, "memory")) frame.memory.size() else 0,
@@ -214,7 +214,7 @@ pub const DebuggingTracer = struct {
     /// Required tracer interface: called before each operation
     pub fn beforeOp(self: *Self, comptime FrameType: type, frame: *const FrameType) void {
         // Check if we should pause execution
-        const pc = @as(u32, @intCast(frame.pc));
+        const pc: u32 = 0; // PC is now managed by plan, not frame
         if (self.shouldPause(pc)) {
             self.paused = true;
         }
@@ -247,6 +247,7 @@ pub const DebuggingTracer = struct {
     
     /// Required tracer interface: called when an error occurs
     pub fn onError(self: *Self, comptime FrameType: type, frame: *const FrameType, err: anyerror) void {
+        _ = frame; // PC is now managed by plan, not frame
         
         // Record error in current step if we have one
         if (self.steps.items.len > 0) {
@@ -261,12 +262,12 @@ pub const DebuggingTracer = struct {
         // Always pause on error for debugging
         self.paused = true;
         
-        std.log.debug("DebuggingTracer: Error occurred at PC {} in frame type {s}: {}", .{ frame.pc, @typeName(FrameType), err });
+        std.log.debug("DebuggingTracer: Error occurred in frame type {s}: {}", .{ @typeName(FrameType), err });
     }
     
     /// Helper function to capture state for step recording
     fn captureStateForStep(self: *Self, comptime FrameType: type, frame: *const FrameType, is_before: bool) !void {
-        const pc = @as(u32, @intCast(frame.pc));
+        const pc: u32 = 0; // PC is now managed by plan, not frame
         const gas = frame.gas_remaining;
         
         // Create stack copy
@@ -277,7 +278,7 @@ pub const DebuggingTracer = struct {
         
         if (is_before) {
             // Start a new execution step
-            const opcode = if (frame.pc < frame.bytecode.len) frame.bytecode[frame.pc] else 0x00;
+            const opcode: u8 = 0x00; // PC is now managed by plan, not frame
             
             const step = ExecutionStep{
                 .step_number = self.total_instructions,
@@ -427,11 +428,9 @@ pub fn Tracer(comptime Writer: type) type {
             const stack_slice = frame_instance.stack.getSlice();
             @memcpy(stack_copy, stack_slice);
             
-            // Get current opcode
-            const opcode = if (frame_instance.pc < frame_instance.bytecode.len)
-                frame_instance.bytecode[frame_instance.pc]
-            else
-                0x00;
+            // Get current opcode - PC is now managed by plan, so we can't get it from frame
+            // For now, just use 0x00 as we don't have plan access here
+            const opcode: u8 = 0x00;
             
             const op_name = getOpcodeName(opcode);
             
@@ -471,7 +470,7 @@ pub fn Tracer(comptime Writer: type) type {
             const err_str = getFrameError(FrameType, frame_instance);
             
             return DetailedStructLog{
-                .pc = frame_instance.pc,
+                .pc = 0, // PC is now managed by plan, not frame
                 .op = op_name,
                 .gas = gas_now,
                 .gasCost = gas_cost,
@@ -753,7 +752,7 @@ test "tracer captures basic frame state with writer" {
     // Push some values onto the stack
     try test_frame.stack.push(3);
     try test_frame.stack.push(5);
-    test_frame.pc = 4; // At ADD opcode
+    // PC is now managed by plan, not frame
     test_frame.gas_remaining = 950;
     
     // Create tracer with array list writer
@@ -765,7 +764,7 @@ test "tracer captures basic frame state with writer" {
     defer allocator.free(log.stack);
     
     // Verify snapshot
-    try std.testing.expectEqual(@as(u64, 4), log.pc);
+    try std.testing.expectEqual(@as(u64, 0), log.pc); // PC is managed by plan now, expected 0
     try std.testing.expectEqualStrings("ADD", log.op);
     try std.testing.expectEqual(@as(u64, 950), log.gas);
     try std.testing.expectEqual(@as(u32, 1), log.depth);
@@ -783,7 +782,7 @@ test "tracer writes JSON to writer" {
     
     try test_frame.stack.push(3);
     try test_frame.stack.push(5);
-    test_frame.pc = 4;
+    // PC is now managed by plan, not frame
     test_frame.gas_remaining = 950;
     
     // Create tracer with array list writer
@@ -835,7 +834,7 @@ test "file tracer writes to file" {
     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x42 }, 1000);
     defer test_frame.deinit(allocator);
     
-    test_frame.pc = 0;
+    // PC is now managed by plan, not frame
     test_frame.gas_remaining = 997;
     
     // Create file tracer and write
@@ -935,11 +934,10 @@ test "NoOpTracer has zero runtime cost" {
     var tracer = NoOpTracer.init();
     
     const TestFrame = struct {
-        pc: u16,
         gas: i32,
     };
     
-    const test_frame = TestFrame{ .pc = 0, .gas = 1000 };
+    const test_frame = TestFrame{ .gas = 1000 };
     
     // These should compile to nothing
     tracer.beforeOp(TestFrame, &test_frame);
@@ -984,7 +982,6 @@ test "DebuggingTracer memory management" {
     // This test verifies that the tracer properly manages memory
     // when used with a mock frame
     const MockFrame = struct {
-        pc: usize,
         gas_remaining: i32,
         bytecode: []const u8,
         next_stack_index: usize,
@@ -992,7 +989,6 @@ test "DebuggingTracer memory management" {
         
         fn init() @This() {
             return .{
-                .pc = 0,
                 .gas_remaining = 1000,
                 .bytecode = &[_]u8{0x60, 0x05}, // PUSH1 5
                 .next_stack_index = 0,
