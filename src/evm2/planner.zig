@@ -61,33 +61,31 @@ pub const PlannerConfig = struct {
 /// Factory that returns a planner type specialized by PlannerConfig.
 pub fn createPlanner(comptime Cfg: PlannerConfig) type {
     Cfg.validate();
-    const PcType = Cfg.PcType();
-    const InstructionIndexType = PcType; // Can only have as many instructions as PCs but usually less
-    const StackHeightType = Cfg.StackHeightType();
     const VectorLength = Cfg.vector_length;
 
-    // Track blocks during analysis with temporary structure
-    const TempBlock = struct {
-        pc: PcType,
-        metadata: JumpDestMetadata,
-    };
-
-    // Create the Plan type for this planner
-    const PlanCfg = plan_mod.PlanConfig{
-        .WordType = Cfg.WordType,
-        .maxBytecodeSize = Cfg.maxBytecodeSize,
-    };
-    const PlanType = plan_mod.createPlan(PlanCfg);
-
-    // Simple LRU cache node - forward declare
-    const CacheNode = struct {
-        key_hash: u64,
-        plan: PlanType,
-        next: ?*@This(),
-        prev: ?*@This(),
-    };
-
     const Plan = struct {
+        const PcType = Cfg.PcType();
+        const InstructionIndexType = PcType; // Can only have as many instructions as PCs but usually less
+        const StackHeightType = Cfg.StackHeightType();
+
+        // Track blocks during analysis with temporary structure
+        const TempBlock = struct {
+            pc: PcType,
+            metadata: JumpDestMetadata,
+        };
+        const PlanCfg = plan_mod.PlanConfig{
+            .WordType = Cfg.WordType,
+            .maxBytecodeSize = Cfg.maxBytecodeSize,
+        };
+        // Simple LRU cache node - forward declare
+        const CacheNode = struct {
+            key_hash: u64,
+            plan: PlanType,
+            next: ?*@This(),
+            prev: ?*@This(),
+        };
+        const PlanType = plan_mod.createPlan(PlanCfg);
+
         const Self = @This();
         // Expose types for callers/tests.
         pub const BlockMeta = JumpDestMetadata;

@@ -74,25 +74,20 @@ pub const FrameConfig = struct {
 pub fn createFrame(comptime config: FrameConfig) type {
     config.validate();
 
-    const WordType = config.WordType;
-    const TracerType = config.TracerType;
-    const GasType = config.GasType();
-    const PcType = config.PcType();
-    const max_bytecode_size = config.max_bytecode_size;
-
-    const Memory = memory_mod.createMemory(.{
-        .initial_capacity = config.memory_initial_capacity,
-        .memory_limit = config.memory_limit,
-    });
-
-    const Stack = stack_mod.createStack(.{
-        .stack_size = config.stack_size,
-        .WordType = config.WordType,
-    });
-
     const Frame = struct {
-        pub const frame_config = config;
-
+        pub const WordType = config.WordType;
+        pub const TracerType = config.TracerType;
+        pub const GasType = config.GasType();
+        pub const PcType = config.PcType();
+        pub const max_bytecode_size = config.max_bytecode_size;
+        pub const Memory = memory_mod.createMemory(.{
+            .initial_capacity = config.memory_initial_capacity,
+            .memory_limit = config.memory_limit,
+        });
+        pub const Stack = stack_mod.createStack(.{
+            .stack_size = config.stack_size,
+            .WordType = config.WordType,
+        });
         pub const Error = error{
             StackOverflow,
             StackUnderflow,
@@ -173,7 +168,6 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
 
         pub fn interpret(self: *Self, allocator: std.mem.Allocator) !void {
-
             // First pass: analyze bytecode to count stream chunks and large push values
             var stream_chunk_count: usize = 0;
             var large_push_count: usize = 0;

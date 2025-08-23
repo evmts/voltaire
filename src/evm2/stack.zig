@@ -30,12 +30,11 @@ pub const StackConfig = struct {
 pub fn createStack(comptime config: StackConfig) type {
     config.validate();
 
-    const WordType = config.WordType;
-    const StackIndexType = config.StackIndexType();
-    const stack_size = config.stack_size;
 
     const Stack = struct {
-        pub const stack_config = config;
+        pub const WordType = config.WordType;
+        pub const IndexType = config.StackIndexType();
+        pub const stack_capacity = config.stack_size;
 
         pub const Error = error{
             StackOverflow,
@@ -45,11 +44,11 @@ pub fn createStack(comptime config: StackConfig) type {
 
         const Self = @This();
 
-        next_stack_index: StackIndexType,
-        stack: *[stack_size]WordType,
+        next_stack_index: IndexType,
+        stack: *[stack_capacity]WordType,
 
         pub fn init(allocator: std.mem.Allocator) Error!Self {
-            const stack_memory = allocator.alloc(WordType, stack_size) catch return Error.AllocationError;
+            const stack_memory = allocator.alloc(WordType, stack_capacity) catch return Error.AllocationError;
             errdefer allocator.free(stack_memory);
             @memset(std.mem.sliceAsBytes(stack_memory), 0);
             return Self{
@@ -59,18 +58,18 @@ pub fn createStack(comptime config: StackConfig) type {
         }
 
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-            allocator.free(@as([*]WordType, @ptrCast(self.stack))[0..stack_size]);
+            allocator.free(@as([*]WordType, @ptrCast(self.stack))[0..stack_capacity]);
         }
 
         pub fn push_unsafe(self: *Self, value: WordType) void {
             @branchHint(.likely);
-            std.debug.assert(self.next_stack_index < stack_size);
+            std.debug.assert(self.next_stack_index < stack_capacity);
             self.stack[self.next_stack_index] = value;
             self.next_stack_index += 1;
         }
 
         pub fn push(self: *Self, value: WordType) Error!void {
-            if (self.next_stack_index >= stack_size) {
+            if (self.next_stack_index >= stack_capacity) {
                 @branchHint(.cold);
                 return Error.StackOverflow;
             }
