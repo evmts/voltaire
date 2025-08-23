@@ -3,11 +3,49 @@
 ## Overview
 Transform the `run` method in analysis.zig to `create_instruction_stream` that builds an instruction stream with metadata using the handler array passed from Frame.
 
+## Handler Dispatch Pattern
+The dispatch method remains unchanged from the previous EVM implementation, using tail call recursion:
+1. Each handler receives `(frame: *Frame, plan: *const Plan, idx: *InstructionIndexType)`
+2. Handler executes its operation (no gas consumption - JUMPDEST handles block gas)
+3. Handler calls `plan.getMetadataAndNextInstruction(idx, comptime_opcode)` which:
+   - Returns metadata (if any) and next handler pointer
+   - Advances idx by 1 or 2 based on opcode
+   - Encapsulates all unsafe casting
+4. Handler tail calls next: `@call(.always_tail, result.next_handler, .{frame, plan, idx})`
+5. Never returns (Error!noreturn) - maintains call stack at constant depth
+
+Example handler for PUSH1 using Plan abstraction:
+```zig
+fn push1_handler(frame: *Frame, plan: *const Plan, idx: *InstructionIndexType) Error!noreturn {
+    const result = plan.getMetadataAndNextInstruction(idx, .PUSH1);
+    try frame.stack.push(result.metadata);
+    // idx already advanced by getMetadataAndNextInstruction
+    @call(.always_tail, result.next_handler, .{frame, plan, idx});
+}
+```
+
+Or for opcodes without metadata:
+```zig
+fn add_handler(frame: *Frame, plan: *const Plan, idx: *InstructionIndexType) Error!noreturn {
+    const b = try frame.stack.pop();
+    const a = try frame.stack.pop();
+    try frame.stack.push(a + b);
+    // Get next handler and advance idx
+    const result = plan.getMetadataAndNextInstruction(idx, .ADD);
+    @call(.always_tail, result.next_handler, .{frame, plan, idx});
+}
+```
+
+Note: Frame no longer has `pc` field - only tracks instruction index. Gas is consumed by JUMPDEST at block start.
+
 ## Development Steps
 
-### 1. Update Analysis struct signature (RED → GREEN)
+### 1. Update Analysis struct with cache (RED → GREEN)
 - [ ] Remove allocator from init
 - [ ] Remove deinit method
+- [ ] Add LRU cache to Analysis struct (similar to analysis_cache.zig but simpler)
+- [ ] Cache stores Plan structs keyed by bytecode hash
+- [ ] Delete analysis_cache.zig file - Analysis handles its own caching
 - [ ] Write test that calls `Analysis.init(bytecode)` without allocator
 - [ ] Run `zig build test-evm2` - should fail
 - [ ] Update init signature
@@ -19,31 +57,44 @@ Transform the `run` method in analysis.zig to `create_instruction_stream` that b
 - [ ] Add synthetic opcode constants starting at 0xF5 (avoiding Arbitrum/Optimism)
 - [ ] Run `zig build test-evm2` - should pass
 
-### 3. Define metadata structs (RED → GREEN)
+### 3. Define metadata structs and types (RED → GREEN)
 - [ ] Write test that creates metadata structs with proper sizing
 - [ ] Run `zig build test-evm2` - should fail
-- [ ] Define metadata structs:
-  - `PushInlineMetadata = struct { value: usize }`
-  - `PushPointerMetadata = struct { ptr: usize }`
-  - `JumpMetadata = struct { dest_idx: PcType, _padding: [padding_size]u8 }`
-  - `JumpDestMetadata = struct { gas: u32, min_stack: i16, max_stack: i16 }`
+- [ ] Define InstructionIndexType:
+  - `pub const InstructionIndexType = PcType` - we can only have as many instructions as PCs but usually less
+  - Use InstructionIndexType throughout instead of raw PcType for clarity
+- [ ] Define metadata approach:
+  - For PUSH/fusion opcodes: metadata is the value itself (usize) or pointer to u256_constants
+  - Replace AnalyzerBlock with `JumpDestMetadata = struct { gas: u32, min_stack: i16, max_stack: i16 }`
+  - On 64-bit: JumpDestMetadata fits in usize (8 bytes)
+  - On 32-bit: Store JumpDestMetadata in u256_constants and use pointer
+- [ ] Add `start: JumpDestMetadata` to Analysis - metadata for entry block (measure only up to first JUMPDEST if it exists at PC 0)
 - [ ] Run `zig build test-evm2` - should pass
 
 ### 4. Update AnalyzerPlan structure (RED → GREEN)
 - [ ] Write test expecting new Plan fields (instructionStream, u256_constants, jump_table)
 - [ ] Run `zig build test-evm2` - should fail
 - [ ] Update Plan to include:
-  - `instructionStream: []usize`
-  - `u256_constants: []WordType`
-  - `jump_table: []struct { pc: PcType, instruction_idx: PcType }`
+  - `instructionStream: []usize` - contains handler pointers and metadata
+  - `u256_constants: []WordType` - for values that don't fit in usize
+  - Remove `jump_table` - only used during generation, not at runtime
   - Remove `bytecodeLen`
-  - Rename `blocks` to `jumpDestMetadata`
-- [ ] Add `getMetadata` and `getNextInstruction` methods
+  - Remove `jumpDestMetadata` array - JUMPDEST metadata is stored inline or in u256_constants
+- [ ] Add abstraction method to Plan:
+  - `getMetadataAndNextInstruction(self: *const Plan, idx: *InstructionIndexType, comptime opcode: Opcode) struct { metadata: usize, next_handler: *const HandlerFn }`
+  - Advances instruction pointer by 1 or 2 based on opcode
+  - Handles casting metadata based on opcode type
+  - Encapsulates all unsafe pointer operations
 - [ ] Run `zig build test-evm2` - should pass
 
 ### 5. Create handler array type and basic create_instruction_stream (RED → GREEN)
 - [ ] Write test that calls `create_instruction_stream` with handler array
 - [ ] Run `zig build test-evm2` - should fail
+- [ ] Define handler function type:
+  - `pub const HandlerFn = fn (frame: *Frame, plan: *const Plan, idx: *InstructionIndexType) Error!noreturn`
+  - Handlers use tail call recursion: `@call(.always_tail, next_handler, .{frame, plan, idx})`
+  - Plan.getMetadataAndNextInstruction handles idx advancement
+  - All unsafe casting is encapsulated in Plan methods
 - [ ] Change `run` to `create_instruction_stream(self: *Self, allocator: Allocator, handlers: [256]*const HandlerFn)`
 - [ ] Implement basic stream building (no fusions yet)
 - [ ] Run `zig build test-evm2` - should pass
