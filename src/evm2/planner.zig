@@ -363,10 +363,18 @@ pub fn createPlanner(comptime Cfg: PlannerConfig) type {
             var constants = std.ArrayList(Cfg.WordType).init(allocator);
             errdefer constants.deinit();
             
+            // Build PC to instruction index mapping
+            var pc_map = std.AutoHashMap(PcType, InstructionIndexType).init(allocator);
+            errdefer pc_map.deinit();
+            
             // Build instruction stream with handlers and metadata
             i = 0;
             while (i < N) {
                 const op = self.bytecode[i];
+                
+                // Record PC to instruction index mapping
+                const current_instruction_idx = @as(InstructionIndexType, @intCast(stream.items.len));
+                try pc_map.put(@as(PcType, @intCast(i)), current_instruction_idx);
                 
                 // Handle PUSH opcodes
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
@@ -505,6 +513,7 @@ pub fn createPlanner(comptime Cfg: PlannerConfig) type {
             return PlanType{
                 .instructionStream = try stream.toOwnedSlice(),
                 .u256_constants = try constants.toOwnedSlice(),
+                .pc_to_instruction_idx = pc_map,
             };
         }
 
@@ -771,6 +780,7 @@ test "getMetadata: PUSH opcodes return correct granular types" {
         var plan = Planner.Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
+            .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
         
@@ -790,6 +800,7 @@ test "getMetadata: PUSH opcodes return correct granular types" {
         var plan = Planner.Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
+            .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
         
@@ -809,6 +820,7 @@ test "getMetadata: PUSH opcodes return correct granular types" {
         var plan = Planner.Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
+            .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
         
@@ -839,6 +851,7 @@ test "getMetadata: large PUSH opcodes return pointer to u256" {
     var plan = Planner.Plan{
         .instructionStream = try allocator.dupe(InstructionElement, &stream),
         .u256_constants = constants,
+        .pc_to_instruction_idx = null,
     };
     defer {
         // Only free instructionStream since we're managing constants separately
@@ -865,6 +878,7 @@ test "getMetadata: PC returns PcType" {
     var plan = Planner.Plan{
         .instructionStream = try allocator.dupe(InstructionElement, &stream),
         .u256_constants = &.{},
+        .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
     
@@ -888,6 +902,7 @@ test "getMetadata: fusion opcodes" {
         var plan = Planner.Plan{
             .instructionStream = try allocator.dupe(InstructionElement, &stream),
             .u256_constants = &.{},
+            .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
         
@@ -911,6 +926,7 @@ test "getNextInstruction: fusion opcodes advance correctly" {
     var plan = Planner.Plan{
         .instructionStream = try allocator.dupe(InstructionElement, &stream),
         .u256_constants = &.{},
+        .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
     

@@ -113,6 +113,9 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
         instructionStream: []InstructionElement,
         /// Constants array for values too large to fit inline.
         u256_constants: []WordType,
+        /// PC to instruction index mapping for jump operations.
+        /// Key is PC value, value is instruction stream index.
+        pc_to_instruction_idx: ?std.AutoHashMap(PcType, InstructionIndexType),
         
         /// Get metadata for opcodes that have it, properly typed based on the opcode.
         /// Returns the metadata at idx+1 and advances idx by 2.
@@ -306,10 +309,23 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
             return handler;
         }
         
+        /// Get instruction index for a given PC value.
+        /// Returns null if PC is not a valid instruction start.
+        pub fn getInstructionIndexForPc(self: *const Self, pc: PcType) ?InstructionIndexType {
+            if (self.pc_to_instruction_idx) |map| {
+                return map.get(pc);
+            }
+            return null;
+        }
+        
         /// Free Plan-owned slices.
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             if (self.instructionStream.len > 0) allocator.free(self.instructionStream);
             if (self.u256_constants.len > 0) allocator.free(self.u256_constants);
+            if (self.pc_to_instruction_idx) |*map| {
+                map.deinit();
+                self.pc_to_instruction_idx = null;
+            }
             self.instructionStream = &.{};
             self.u256_constants = &.{};
         }
@@ -430,6 +446,7 @@ test "Plan getMetadata for PUSH opcodes" {
     var plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
+        .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
     
@@ -475,6 +492,7 @@ test "Plan getMetadata for large PUSH opcodes" {
     var plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = constants,
+        .pc_to_instruction_idx = null,
     };
     defer {
         allocator.free(plan.instructionStream);
@@ -515,6 +533,7 @@ test "Plan getMetadata for JUMPDEST" {
         var plan = Plan{
             .instructionStream = try stream.toOwnedSlice(),
             .u256_constants = &.{},
+            .pc_to_instruction_idx = null,
         };
         defer plan.deinit(allocator);
         
@@ -541,6 +560,7 @@ test "Plan getMetadata for PC opcode" {
     var plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
+        .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
     
@@ -573,6 +593,7 @@ test "Plan getMetadata for synthetic opcodes" {
     var plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = constants,
+        .pc_to_instruction_idx = null,
     };
     defer {
         allocator.free(plan.instructionStream);
@@ -608,6 +629,7 @@ test "Plan getNextInstruction without metadata" {
     var plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
+        .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
     
@@ -635,6 +657,7 @@ test "Plan getNextInstruction with metadata" {
     var plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
+        .pc_to_instruction_idx = null,
     };
     defer plan.deinit(allocator);
     
@@ -652,6 +675,7 @@ test "Plan deinit" {
     var plan = Plan{
         .instructionStream = try allocator.alloc(InstructionElement, 10),
         .u256_constants = try allocator.alloc(Plan.WordType, 5),
+        .pc_to_instruction_idx = null,
     };
     
     // Fill with dummy data

@@ -5,6 +5,8 @@ const memory_mod = @import("memory.zig");
 const stack_mod = @import("stack.zig");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
+const planner_mod = @import("planner.zig");
+const plan_mod = @import("plan.zig");
 
 pub const FrameConfig = struct {
     const Self = @This();
@@ -74,6 +76,20 @@ pub const FrameConfig = struct {
 pub fn createFrame(comptime config: FrameConfig) type {
     config.validate();
 
+    // Create planner and plan types with matching configuration
+    const PlannerConfig = planner_mod.PlannerConfig{
+        .WordType = config.WordType,
+        .maxBytecodeSize = config.max_bytecode_size,
+        .stack_size = config.stack_size,
+    };
+    const Planner = planner_mod.createPlanner(PlannerConfig);
+    
+    const PlanConfig = plan_mod.PlanConfig{
+        .WordType = config.WordType,
+        .maxBytecodeSize = config.max_bytecode_size,
+    };
+    const Plan = plan_mod.createPlan(PlanConfig);
+
     const Frame = struct {
         pub const WordType = config.WordType;
         pub const TracerType = config.TracerType;
@@ -102,14 +118,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
         const Self = @This();
 
-        // Stream-based instruction format
-        // Instructions are stored as a stream of usize values where:
-        // - Simple ops (ADD, MUL, etc): 1 chunk [handler_ptr]
-        // - Ops with metadata: 2 chunks [handler_ptr, metadata]
-        const InstructionStream = []usize;
-        
-        // Handler function type for stream-based execution
-        const HandlerFn = *const fn (*Self, InstructionStream, usize) Error!noreturn;
+        // Use the plan's handler function type
+        const HandlerFn = plan_mod.HandlerFn;
 
         // Special trace instruction types
         const TraceInstruction = enum {
@@ -132,7 +142,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
         gas_remaining: GasType, // 4 or 8 bytes depending on block_gas_limit
         tracer: TracerType, // Tracer instance for execution tracing
         memory: Memory, // EVM memory
-        push_values_large: []WordType, // Storage for PUSH values that don't fit in usize
+        plan: ?Plan, // The analyzed instruction plan (null until interpret is called)
+        instruction_idx: Plan.InstructionIndexType, // Current instruction index in the plan
 
         pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: GasType) Error!Self {
             if (bytecode.len > max_bytecode_size) return Error.BytecodeTooLarge;
@@ -154,332 +165,279 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 .gas_remaining = gas_remaining,
                 .tracer = TracerType.init(),
                 .memory = memory,
-                .push_values_large = &.{}, // Will be allocated during interpret()
+                .plan = null, // Will be created during interpret()
+                .instruction_idx = 0,
             };
         }
 
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             self.stack.deinit(allocator);
             self.memory.deinit();
-            if (self.push_values_large.len > 0) {
-                allocator.free(self.push_values_large);
+            if (self.plan) |*plan| {
+                plan.deinit(allocator);
             }
         }
 
 
         pub fn interpret(self: *Self, allocator: std.mem.Allocator) !void {
-            // First pass: analyze bytecode to count stream chunks and large push values
-            var stream_chunk_count: usize = 0;
-            var large_push_count: usize = 0;
-            var pc_instruction_count: usize = 0;
-            var jump_instruction_count: usize = 0;
-            var i: usize = 0;
-
-            // Create a map of PC to instruction index for jumps
-            var pc_to_idx = std.AutoHashMap(usize, usize).init(allocator);
-            defer pc_to_idx.deinit();
-
-            while (i < self.bytecode.len) {
-                const opcode_byte = self.bytecode[i];
-                const opcode: Opcode = @enumFromInt(opcode_byte);
-
-                // Track PC to instruction mapping
-                try pc_to_idx.put(i, stream_chunk_count);
-
-                // Count stream chunks based on opcode type
-                if (opcode == Opcode.PC) {
-                    pc_instruction_count += 1;
-                    stream_chunk_count += 2; // handler + pc value
-                } else if (opcode == Opcode.JUMP or opcode == Opcode.JUMPI) {
-                    jump_instruction_count += 1;
-                    stream_chunk_count += 2; // handler + jump dest index
-                } else if (opcode_byte >= @intFromEnum(Opcode.PUSH1) and opcode_byte <= @intFromEnum(Opcode.PUSH32)) {
-                    const push_size = opcode_byte - (@intFromEnum(Opcode.PUSH1) - 1);
-                    
-                    // Read push value to determine if it fits inline
-                    if (push_size <= @sizeOf(usize)) {
-                        // Always fits inline
-                        stream_chunk_count += 2; // handler + inline value
-                    } else {
-                        // Need to check if value fits in usize
-                        var value: WordType = 0;
-                        var j: usize = 0;
-                        while (j < push_size and i + 1 + j < self.bytecode.len) : (j += 1) {
-                            value = (value << 8) | self.bytecode[i + 1 + j];
-                        }
-                        
-                        if (value <= std.math.maxInt(usize)) {
-                            stream_chunk_count += 2; // handler + inline value
-                        } else {
-                            stream_chunk_count += 2; // handler + pointer
-                            large_push_count += 1;
-                        }
-                    }
-                    
-                    i += push_size;
-                } else {
-                    // Simple opcodes
-                    stream_chunk_count += 1; // just handler
-                }
-
-                if (ENABLE_TRACING) {
-                    stream_chunk_count += 2; // trace_before and trace_after
-                }
-
-                i += 1;
+            // Create the planner and analyze the bytecode
+            var planner = Planner.init(self.bytecode);
+            
+            // Create handler array - all handlers will be updated to match plan's signature
+            var handlers: [256]*const HandlerFn = undefined;
+            
+            // Initialize all handlers to invalid by default
+            for (&handlers) |*h| {
+                h.* = &op_invalid_handler;
             }
-
-            // Add OUT_OF_BOUNDS handler
-            stream_chunk_count += 1;
-
-            // Allocate arrays
-            const stream = try allocator.alloc(usize, stream_chunk_count);
-            defer allocator.free(stream);
-
-            if (large_push_count > 0) {
-                self.push_values_large = try allocator.alloc(WordType, large_push_count);
+            
+            // Map opcodes to their handlers
+            handlers[@intFromEnum(Opcode.STOP)] = &op_stop_handler;
+            handlers[@intFromEnum(Opcode.ADD)] = &op_add_handler;
+            handlers[@intFromEnum(Opcode.MUL)] = &op_mul_handler;
+            handlers[@intFromEnum(Opcode.SUB)] = &op_sub_handler;
+            handlers[@intFromEnum(Opcode.DIV)] = &op_div_handler;
+            handlers[@intFromEnum(Opcode.SDIV)] = &op_sdiv_handler;
+            handlers[@intFromEnum(Opcode.MOD)] = &op_mod_handler;
+            handlers[@intFromEnum(Opcode.SMOD)] = &op_smod_handler;
+            handlers[@intFromEnum(Opcode.ADDMOD)] = &op_addmod_handler;
+            handlers[@intFromEnum(Opcode.MULMOD)] = &op_mulmod_handler;
+            handlers[@intFromEnum(Opcode.EXP)] = &op_exp_handler;
+            handlers[@intFromEnum(Opcode.SIGNEXTEND)] = &op_signextend_handler;
+            handlers[@intFromEnum(Opcode.LT)] = &op_lt_handler;
+            handlers[@intFromEnum(Opcode.GT)] = &op_gt_handler;
+            handlers[@intFromEnum(Opcode.SLT)] = &op_slt_handler;
+            handlers[@intFromEnum(Opcode.SGT)] = &op_sgt_handler;
+            handlers[@intFromEnum(Opcode.EQ)] = &op_eq_handler;
+            handlers[@intFromEnum(Opcode.ISZERO)] = &op_iszero_handler;
+            handlers[@intFromEnum(Opcode.AND)] = &op_and_handler;
+            handlers[@intFromEnum(Opcode.OR)] = &op_or_handler;
+            handlers[@intFromEnum(Opcode.XOR)] = &op_xor_handler;
+            handlers[@intFromEnum(Opcode.NOT)] = &op_not_handler;
+            handlers[@intFromEnum(Opcode.BYTE)] = &op_byte_handler;
+            handlers[@intFromEnum(Opcode.SHL)] = &op_shl_handler;
+            handlers[@intFromEnum(Opcode.SHR)] = &op_shr_handler;
+            handlers[@intFromEnum(Opcode.SAR)] = &op_sar_handler;
+            handlers[@intFromEnum(Opcode.POP)] = &op_pop_handler;
+            handlers[@intFromEnum(Opcode.MLOAD)] = &op_mload_handler;
+            handlers[@intFromEnum(Opcode.MSTORE)] = &op_mstore_handler;
+            handlers[@intFromEnum(Opcode.MSTORE8)] = &op_mstore8_handler;
+            handlers[@intFromEnum(Opcode.JUMP)] = &op_jump_handler;
+            handlers[@intFromEnum(Opcode.JUMPI)] = &op_jumpi_handler;
+            handlers[@intFromEnum(Opcode.PC)] = &op_pc_handler;
+            handlers[@intFromEnum(Opcode.MSIZE)] = &op_msize_handler;
+            handlers[@intFromEnum(Opcode.GAS)] = &op_gas_handler;
+            handlers[@intFromEnum(Opcode.JUMPDEST)] = &op_jumpdest_handler;
+            handlers[@intFromEnum(Opcode.PUSH0)] = &op_push0_handler;
+            
+            // PUSH1-PUSH32 handlers
+            handlers[@intFromEnum(Opcode.PUSH1)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH2)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH3)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH4)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH5)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH6)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH7)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH8)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH9)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH10)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH11)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH12)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH13)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH14)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH15)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH16)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH17)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH18)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH19)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH20)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH21)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH22)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH23)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH24)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH25)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH26)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH27)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH28)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH29)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH30)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH31)] = &push_handler;
+            handlers[@intFromEnum(Opcode.PUSH32)] = &push_handler;
+            
+            // DUP and SWAP handlers
+            var i: u8 = 1;
+            while (i <= 16) : (i += 1) {
+                handlers[@intFromEnum(Opcode.DUP1) + i - 1] = &op_dup_handler;
+                handlers[@intFromEnum(Opcode.SWAP1) + i - 1] = &op_swap_handler;
             }
-
-            // Second pass: build instruction stream
-            var stream_idx: usize = 0;
-            var large_push_idx: usize = 0;
-            i = 0;
-
-            while (i < self.bytecode.len) {
-                const opcode_byte = self.bytecode[i];
-                const pc = @as(PcType, @intCast(i));
-
-                // Insert trace_before handler if tracing is enabled
-                if (ENABLE_TRACING) {
-                    stream[stream_idx] = @intFromPtr(&trace_before_op_handler);
-                    stream_idx += 1;
-                }
-
-                // Build stream based on opcode
-                switch (opcode_byte) {
-                    // Simple opcodes - just store handler
-                    @intFromEnum(Opcode.STOP) => {
-                        stream[stream_idx] = @intFromPtr(&op_stop_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.ADD) => {
-                        stream[stream_idx] = @intFromPtr(&op_add_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.MUL) => {
-                        stream[stream_idx] = @intFromPtr(&op_mul_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.SUB) => {
-                        stream[stream_idx] = @intFromPtr(&op_sub_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.DIV) => {
-                        stream[stream_idx] = @intFromPtr(&op_div_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.SDIV) => {
-                        stream[stream_idx] = @intFromPtr(&op_sdiv_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.MOD) => {
-                        stream[stream_idx] = @intFromPtr(&op_mod_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.SMOD) => {
-                        stream[stream_idx] = @intFromPtr(&op_smod_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.ADDMOD) => {
-                        stream[stream_idx] = @intFromPtr(&op_addmod_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.MULMOD) => {
-                        stream[stream_idx] = @intFromPtr(&op_mulmod_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.EXP) => {
-                        stream[stream_idx] = @intFromPtr(&op_exp_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.SIGNEXTEND) => {
-                        stream[stream_idx] = @intFromPtr(&op_signextend_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.LT) => {
-                        stream[stream_idx] = @intFromPtr(&op_lt_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.GT) => {
-                        stream[stream_idx] = @intFromPtr(&op_gt_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.SLT) => {
-                        stream[stream_idx] = @intFromPtr(&op_slt_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.SGT) => {
-                        stream[stream_idx] = @intFromPtr(&op_sgt_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.EQ) => {
-                        stream[stream_idx] = @intFromPtr(&op_eq_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.ISZERO) => {
-                        stream[stream_idx] = @intFromPtr(&op_iszero_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.AND) => {
-                        stream[stream_idx] = @intFromPtr(&op_and_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.OR) => {
-                        stream[stream_idx] = @intFromPtr(&op_or_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.XOR) => {
-                        stream[stream_idx] = @intFromPtr(&op_xor_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.NOT) => {
-                        stream[stream_idx] = @intFromPtr(&op_not_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.BYTE) => {
-                        stream[stream_idx] = @intFromPtr(&op_byte_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.SHL) => {
-                        stream[stream_idx] = @intFromPtr(&op_shl_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.SHR) => {
-                        stream[stream_idx] = @intFromPtr(&op_shr_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.SAR) => {
-                        stream[stream_idx] = @intFromPtr(&op_sar_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.POP) => {
-                        stream[stream_idx] = @intFromPtr(&op_pop_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.MLOAD) => {
-                        stream[stream_idx] = @intFromPtr(&op_mload_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.MSTORE) => {
-                        stream[stream_idx] = @intFromPtr(&op_mstore_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.MSTORE8) => {
-                        stream[stream_idx] = @intFromPtr(&op_mstore8_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.JUMP) => {
-                        stream[stream_idx] = @intFromPtr(&op_jump_handler);
-                        stream[stream_idx + 1] = 0; // Placeholder for jump destination
-                        stream_idx += 2;
-                    },
-                    @intFromEnum(Opcode.JUMPI) => {
-                        stream[stream_idx] = @intFromPtr(&op_jumpi_handler);
-                        stream[stream_idx + 1] = 0; // Placeholder for jump destination
-                        stream_idx += 2;
-                    },
-                    @intFromEnum(Opcode.PC) => {
-                        stream[stream_idx] = @intFromPtr(&op_pc_handler);
-                        stream[stream_idx + 1] = pc; // Store PC value inline
-                        stream_idx += 2;
-                    },
-                    @intFromEnum(Opcode.MSIZE) => {
-                        stream[stream_idx] = @intFromPtr(&op_msize_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.GAS) => {
-                        stream[stream_idx] = @intFromPtr(&op_gas_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.JUMPDEST) => {
-                        stream[stream_idx] = @intFromPtr(&op_jumpdest_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.PUSH0) => {
-                        stream[stream_idx] = @intFromPtr(&op_push0_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.PUSH1)...@intFromEnum(Opcode.PUSH32) => {
-                        const push_size = opcode_byte - (@intFromEnum(Opcode.PUSH1) - 1);
-                        
-                        // Read push value
-                        var value: WordType = 0;
-                        var j: usize = 0;
-                        while (j < push_size and i + 1 + j < self.bytecode.len) : (j += 1) {
-                            value = (value << 8) | self.bytecode[i + 1 + j];
-                        }
-                        
-                        if (value <= std.math.maxInt(usize)) {
-                            // Inline value
-                            stream[stream_idx] = @intFromPtr(&push_inline_handler);
-                            stream[stream_idx + 1] = @intCast(value);
-                            stream_idx += 2;
-                        } else {
-                            // Store in array and use pointer
-                            self.push_values_large[large_push_idx] = value;
-                            stream[stream_idx] = @intFromPtr(&push_pointer_handler);
-                            stream[stream_idx + 1] = @intFromPtr(&self.push_values_large[large_push_idx]);
-                            large_push_idx += 1;
-                            stream_idx += 2;
-                        }
-                        
-                        i += push_size;
-                    },
-                    @intFromEnum(Opcode.DUP1)...@intFromEnum(Opcode.DUP16) => {
-                        stream[stream_idx] = @intFromPtr(&op_dup_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.SWAP1)...@intFromEnum(Opcode.SWAP16) => {
-                        stream[stream_idx] = @intFromPtr(&op_swap_handler);
-                        stream_idx += 1;
-                    },
-                    @intFromEnum(Opcode.INVALID) => {
-                        stream[stream_idx] = @intFromPtr(&op_invalid_handler);
-                        stream_idx += 1;
-                    },
-                    else => {
-                        stream[stream_idx] = @intFromPtr(&op_invalid_handler);
-                        stream_idx += 1;
-                    },
-                }
-
-                // Insert trace_after handler if tracing is enabled
-                if (ENABLE_TRACING) {
-                    stream[stream_idx] = @intFromPtr(&trace_after_op_handler);
-                    stream[stream_idx + 1] = pc;
-                    stream_idx += 2;
-                }
-
-                i += 1;
-            }
-
-            // Add OUT_OF_BOUNDS handler at the end
-            stream[stream_idx] = @intFromPtr(&out_of_bounds_handler);
-
-            // Start execution with first instruction
-            // execute_instruction never returns normally (it's noreturn)
-            // It will only exit by throwing an error
-            self.execute_instruction(stream[0..stream_idx + 1], 0) catch |err| return err;
+            
+            // Create the plan using our planner
+            self.plan = try planner.create_instruction_stream(allocator, handlers);
+            self.instruction_idx = 0;
+            
+            // Start execution with the first handler
+            const first_handler = self.plan.?.instructionStream[0].handler;
+            
+            // Start execution - handlers will throw STOP when done
+            first_handler(self, &self.plan.?, &self.instruction_idx) catch |err| {
+                if (err == Error.STOP) return; // Normal termination
+                return err;
+            };
             unreachable;
         }
 
-        fn execute_instruction(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
-            const handler = @as(HandlerFn, @ptrFromInt(stream[idx]));
-            return @call(.always_tail, handler, .{ self, stream, idx });
+        // Generic push handler that uses plan metadata
+        fn push_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+            
+            // Get the opcode to determine push size
+            const opcode = self.bytecode[self.pc];
+            const push_op = @as(Opcode, @enumFromInt(opcode));
+            
+            // Get the push value from plan metadata
+            const value = switch (push_op) {
+                .PUSH1 => @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH1)),
+                .PUSH2 => @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH2)),
+                .PUSH3 => @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH3)),
+                .PUSH4 => @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH4)),
+                .PUSH5 => @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH5)),
+                .PUSH6 => @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH6)),
+                .PUSH7 => @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH7)),
+                .PUSH8 => @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH8)),
+                .PUSH9 => blk: {
+                    const result = plan_ptr.getMetadata(idx_ptr, .PUSH9);
+                    if (@TypeOf(result) == *const WordType) {
+                        break :blk result.*;
+                    } else {
+                        break :blk @as(WordType, result);
+                    }
+                },
+                .PUSH10 => blk: {
+                    const result = plan_ptr.getMetadata(idx_ptr, .PUSH10);
+                    if (@TypeOf(result) == *const WordType) {
+                        break :blk result.*;
+                    } else {
+                        break :blk @as(WordType, result);
+                    }
+                },
+                .PUSH11 => blk: {
+                    const result = plan_ptr.getMetadata(idx_ptr, .PUSH11);
+                    if (@TypeOf(result) == *const WordType) {
+                        break :blk result.*;
+                    } else {
+                        break :blk @as(WordType, result);
+                    }
+                },
+                .PUSH12 => blk: {
+                    const result = plan_ptr.getMetadata(idx_ptr, .PUSH12);
+                    if (@TypeOf(result) == *const WordType) {
+                        break :blk result.*;
+                    } else {
+                        break :blk @as(WordType, result);
+                    }
+                },
+                .PUSH13 => blk: {
+                    const result = plan_ptr.getMetadata(idx_ptr, .PUSH13);
+                    if (@TypeOf(result) == *const WordType) {
+                        break :blk result.*;
+                    } else {
+                        break :blk @as(WordType, result);
+                    }
+                },
+                .PUSH14 => blk: {
+                    const result = plan_ptr.getMetadata(idx_ptr, .PUSH14);
+                    if (@TypeOf(result) == *const WordType) {
+                        break :blk result.*;
+                    } else {
+                        break :blk @as(WordType, result);
+                    }
+                },
+                .PUSH15 => blk: {
+                    const result = plan_ptr.getMetadata(idx_ptr, .PUSH15);
+                    if (@TypeOf(result) == *const WordType) {
+                        break :blk result.*;
+                    } else {
+                        break :blk @as(WordType, result);
+                    }
+                },
+                .PUSH16 => blk: {
+                    const result = plan_ptr.getMetadata(idx_ptr, .PUSH16);
+                    if (@TypeOf(result) == *const WordType) {
+                        break :blk result.*;
+                    } else {
+                        break :blk @as(WordType, result);
+                    }
+                },
+                .PUSH17 => plan_ptr.getMetadata(idx_ptr, .PUSH17).*,
+                .PUSH18 => plan_ptr.getMetadata(idx_ptr, .PUSH18).*,
+                .PUSH19 => plan_ptr.getMetadata(idx_ptr, .PUSH19).*,
+                .PUSH20 => plan_ptr.getMetadata(idx_ptr, .PUSH20).*,
+                .PUSH21 => plan_ptr.getMetadata(idx_ptr, .PUSH21).*,
+                .PUSH22 => plan_ptr.getMetadata(idx_ptr, .PUSH22).*,
+                .PUSH23 => plan_ptr.getMetadata(idx_ptr, .PUSH23).*,
+                .PUSH24 => plan_ptr.getMetadata(idx_ptr, .PUSH24).*,
+                .PUSH25 => plan_ptr.getMetadata(idx_ptr, .PUSH25).*,
+                .PUSH26 => plan_ptr.getMetadata(idx_ptr, .PUSH26).*,
+                .PUSH27 => plan_ptr.getMetadata(idx_ptr, .PUSH27).*,
+                .PUSH28 => plan_ptr.getMetadata(idx_ptr, .PUSH28).*,
+                .PUSH29 => plan_ptr.getMetadata(idx_ptr, .PUSH29).*,
+                .PUSH30 => plan_ptr.getMetadata(idx_ptr, .PUSH30).*,
+                .PUSH31 => plan_ptr.getMetadata(idx_ptr, .PUSH31).*,
+                .PUSH32 => plan_ptr.getMetadata(idx_ptr, .PUSH32).*,
+                else => unreachable,
+            };
+            
+            try self.stack.push(value);
+            
+            // Update PC based on push size
+            const push_size = opcode - (@intFromEnum(Opcode.PUSH1) - 1);
+            self.pc += push_size + 1;
+            
+            // Get next handler and continue - we need to pass a comptime-known opcode
+            const next_handler = switch (push_op) {
+                .PUSH0 => plan_ptr.getNextInstruction(idx_ptr, .PUSH0),
+                .PUSH1 => plan_ptr.getNextInstruction(idx_ptr, .PUSH1),
+                .PUSH2 => plan_ptr.getNextInstruction(idx_ptr, .PUSH2),
+                .PUSH3 => plan_ptr.getNextInstruction(idx_ptr, .PUSH3),
+                .PUSH4 => plan_ptr.getNextInstruction(idx_ptr, .PUSH4),
+                .PUSH5 => plan_ptr.getNextInstruction(idx_ptr, .PUSH5),
+                .PUSH6 => plan_ptr.getNextInstruction(idx_ptr, .PUSH6),
+                .PUSH7 => plan_ptr.getNextInstruction(idx_ptr, .PUSH7),
+                .PUSH8 => plan_ptr.getNextInstruction(idx_ptr, .PUSH8),
+                .PUSH9 => plan_ptr.getNextInstruction(idx_ptr, .PUSH9),
+                .PUSH10 => plan_ptr.getNextInstruction(idx_ptr, .PUSH10),
+                .PUSH11 => plan_ptr.getNextInstruction(idx_ptr, .PUSH11),
+                .PUSH12 => plan_ptr.getNextInstruction(idx_ptr, .PUSH12),
+                .PUSH13 => plan_ptr.getNextInstruction(idx_ptr, .PUSH13),
+                .PUSH14 => plan_ptr.getNextInstruction(idx_ptr, .PUSH14),
+                .PUSH15 => plan_ptr.getNextInstruction(idx_ptr, .PUSH15),
+                .PUSH16 => plan_ptr.getNextInstruction(idx_ptr, .PUSH16),
+                .PUSH17 => plan_ptr.getNextInstruction(idx_ptr, .PUSH17),
+                .PUSH18 => plan_ptr.getNextInstruction(idx_ptr, .PUSH18),
+                .PUSH19 => plan_ptr.getNextInstruction(idx_ptr, .PUSH19),
+                .PUSH20 => plan_ptr.getNextInstruction(idx_ptr, .PUSH20),
+                .PUSH21 => plan_ptr.getNextInstruction(idx_ptr, .PUSH21),
+                .PUSH22 => plan_ptr.getNextInstruction(idx_ptr, .PUSH22),
+                .PUSH23 => plan_ptr.getNextInstruction(idx_ptr, .PUSH23),
+                .PUSH24 => plan_ptr.getNextInstruction(idx_ptr, .PUSH24),
+                .PUSH25 => plan_ptr.getNextInstruction(idx_ptr, .PUSH25),
+                .PUSH26 => plan_ptr.getNextInstruction(idx_ptr, .PUSH26),
+                .PUSH27 => plan_ptr.getNextInstruction(idx_ptr, .PUSH27),
+                .PUSH28 => plan_ptr.getNextInstruction(idx_ptr, .PUSH28),
+                .PUSH29 => plan_ptr.getNextInstruction(idx_ptr, .PUSH29),
+                .PUSH30 => plan_ptr.getNextInstruction(idx_ptr, .PUSH30),
+                .PUSH31 => plan_ptr.getNextInstruction(idx_ptr, .PUSH31),
+                .PUSH32 => plan_ptr.getNextInstruction(idx_ptr, .PUSH32),
+                else => unreachable,
+            };
+            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
         }
 
-        fn op_stop_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
-            _ = stream;
+        fn op_stop_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            _ = plan;
             _ = idx;
 
             // Check final gas before stopping
@@ -489,7 +447,11 @@ pub fn createFrame(comptime config: FrameConfig) type {
             unreachable;
         }
 
-        fn op_add_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
+        fn op_add_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+            
             // Get opcode info for gas consumption
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.ADD)];
 
@@ -501,14 +463,16 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
             self.pc += 1;
 
-            // Move to next instruction in stream
-            const next_idx = idx + 1;
-            const next_handler = @as(HandlerFn, @ptrFromInt(stream[next_idx]));
-
-            return @call(.always_tail, next_handler, .{ self, stream, next_idx });
+            // Get next handler from plan
+            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .ADD);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
         }
 
-        fn op_mul_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
+        fn op_mul_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+            
             // Get opcode info for gas consumption
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MUL)];
 
@@ -520,213 +484,236 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
             self.pc += 1;
 
-            // Move to next instruction in stream
-            const next_idx = idx + 1;
-            const next_handler = @as(HandlerFn, @ptrFromInt(stream[next_idx]));
-
-            return @call(.always_tail, next_handler, .{ self, stream, next_idx });
+            // Get next handler from plan
+            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .MUL);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
         }
 
         // Generic handler for simple opcodes that just increment PC
-        fn makeSimpleHandler(comptime op: fn (*Self) Error!void) fn (*Self, InstructionStream, usize) Error!noreturn {
+        fn makeSimpleHandler(comptime op_fn: fn (*Self) Error!void, comptime opcode: Opcode) HandlerFn {
             return struct {
-                fn handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
+                fn handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+                    const self = @as(*Self, @ptrCast(@alignCast(frame)));
+                    const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+                    const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+
                     // Get opcode info for gas consumption
-                    std.debug.assert(self.pc < self.bytecode.len);
-                    const opcode = self.bytecode[self.pc];
-                    const opcode_info = opcode_data.OPCODE_INFO[opcode];
+                    const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(opcode)];
 
                     // Consume gas (unchecked since we validated in pre-analysis)
                     self.consumeGasUnchecked(opcode_info.gas_cost);
 
                     // Execute the operation
-                    try op(self);
+                    try op_fn(self);
 
                     self.pc += 1;
 
-                    const next_idx = idx + 1;
-                    const next_handler = @as(HandlerFn, @ptrFromInt(stream[next_idx]));
-
-                    return @call(.always_tail, next_handler, .{ self, stream, next_idx });
+                    // Get next handler from plan
+                    const next_handler = plan_ptr.getNextInstruction(idx_ptr, opcode);
+                    return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
                 }
             }.handler;
         }
 
         // Define all the simple handlers using the macro
-        const op_sub_handler = makeSimpleHandler(op_sub);
-        const op_div_handler = makeSimpleHandler(op_div);
-        const op_sdiv_handler = makeSimpleHandler(op_sdiv);
-        const op_mod_handler = makeSimpleHandler(op_mod);
-        const op_smod_handler = makeSimpleHandler(op_smod);
-        const op_addmod_handler = makeSimpleHandler(op_addmod);
-        const op_mulmod_handler = makeSimpleHandler(op_mulmod);
-        const op_exp_handler = makeSimpleHandler(op_exp);
-        const op_signextend_handler = makeSimpleHandler(op_signextend);
-        const op_lt_handler = makeSimpleHandler(op_lt);
-        const op_gt_handler = makeSimpleHandler(op_gt);
-        const op_slt_handler = makeSimpleHandler(op_slt);
-        const op_sgt_handler = makeSimpleHandler(op_sgt);
-        const op_eq_handler = makeSimpleHandler(op_eq);
-        const op_iszero_handler = makeSimpleHandler(op_iszero);
-        const op_and_handler = makeSimpleHandler(op_and);
-        const op_or_handler = makeSimpleHandler(op_or);
-        const op_xor_handler = makeSimpleHandler(op_xor);
-        const op_not_handler = makeSimpleHandler(op_not);
-        const op_byte_handler = makeSimpleHandler(op_byte);
-        const op_shl_handler = makeSimpleHandler(op_shl);
-        const op_shr_handler = makeSimpleHandler(op_shr);
-        const op_sar_handler = makeSimpleHandler(op_sar);
-        const op_pop_handler = makeSimpleHandler(op_pop);
+        const op_sub_handler = makeSimpleHandler(op_sub, .SUB);
+        const op_div_handler = makeSimpleHandler(op_div, .DIV);
+        const op_sdiv_handler = makeSimpleHandler(op_sdiv, .SDIV);
+        const op_mod_handler = makeSimpleHandler(op_mod, .MOD);
+        const op_smod_handler = makeSimpleHandler(op_smod, .SMOD);
+        const op_addmod_handler = makeSimpleHandler(op_addmod, .ADDMOD);
+        const op_mulmod_handler = makeSimpleHandler(op_mulmod, .MULMOD);
+        const op_exp_handler = makeSimpleHandler(op_exp, .EXP);
+        const op_signextend_handler = makeSimpleHandler(op_signextend, .SIGNEXTEND);
+        const op_lt_handler = makeSimpleHandler(op_lt, .LT);
+        const op_gt_handler = makeSimpleHandler(op_gt, .GT);
+        const op_slt_handler = makeSimpleHandler(op_slt, .SLT);
+        const op_sgt_handler = makeSimpleHandler(op_sgt, .SGT);
+        const op_eq_handler = makeSimpleHandler(op_eq, .EQ);
+        const op_iszero_handler = makeSimpleHandler(op_iszero, .ISZERO);
+        const op_and_handler = makeSimpleHandler(op_and, .AND);
+        const op_or_handler = makeSimpleHandler(op_or, .OR);
+        const op_xor_handler = makeSimpleHandler(op_xor, .XOR);
+        const op_not_handler = makeSimpleHandler(op_not, .NOT);
+        const op_byte_handler = makeSimpleHandler(op_byte, .BYTE);
+        const op_shl_handler = makeSimpleHandler(op_shl, .SHL);
+        const op_shr_handler = makeSimpleHandler(op_shr, .SHR);
+        const op_sar_handler = makeSimpleHandler(op_sar, .SAR);
+        const op_pop_handler = makeSimpleHandler(op_pop, .POP);
         // Handler for PC opcode with inline PC value
-        fn op_pc_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
-            const pc_value = stream[idx + 1]; // PC value is stored in next chunk
+        fn op_pc_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+            
+            // Get PC value from plan metadata
+            const pc_value = plan_ptr.getMetadata(idx_ptr, .PC);
             try self.stack.push(@as(WordType, @intCast(pc_value)));
             
             self.pc += 1;
 
-            // Skip the metadata chunk and move to next instruction
-            const next_idx = idx + 2;
-            const next_handler = @as(HandlerFn, @ptrFromInt(stream[next_idx]));
-
-            return @call(.always_tail, next_handler, .{ self, stream, next_idx });
+            // Get next handler from plan
+            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PC);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
         }
-        const op_gas_handler = makeSimpleHandler(op_gas);
-        const op_jumpdest_handler = makeSimpleHandler(op_jumpdest);
-        const op_push0_handler = makeSimpleHandler(op_push0);
-        const op_msize_handler = makeSimpleHandler(op_msize);
-        const op_mload_handler = makeSimpleHandler(op_mload);
-        const op_mstore_handler = makeSimpleHandler(op_mstore);
-        const op_mstore8_handler = makeSimpleHandler(op_mstore8);
-
-        // Handler for PUSH opcodes where value fits inline in stream
-        fn push_inline_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
-            const value = stream[idx + 1]; // Value is stored in next chunk
-            try self.stack.push(@as(WordType, @intCast(value)));
-            
-            // PC advances by the push size (determined during bytecode analysis)
-            // For now, we'll need to determine from bytecode
-            const opcode = self.bytecode[self.pc];
-            const push_size = if (opcode == @intFromEnum(Opcode.PUSH0)) 
-                0 
-            else if (opcode >= @intFromEnum(Opcode.PUSH1) and opcode <= @intFromEnum(Opcode.PUSH32))
-                opcode - (@intFromEnum(Opcode.PUSH1) - 1)
-            else
-                0; // Safety fallback, shouldn't happen if analysis is correct
-            self.pc += 1 + push_size;
-
-            // Skip the metadata chunk and move to next instruction
-            const next_idx = idx + 2;
-            const next_handler = @as(HandlerFn, @ptrFromInt(stream[next_idx]));
-
-            return @call(.always_tail, next_handler, .{ self, stream, next_idx });
-        }
-
-        // Handler for PUSH opcodes where value is stored via pointer
-        fn push_pointer_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
-            const ptr = @as(*const WordType, @ptrFromInt(stream[idx + 1]));
-            try self.stack.push(ptr.*);
-            
-            // PC advances by the push size
-            const opcode = self.bytecode[self.pc];
-            const push_size = opcode - (@intFromEnum(Opcode.PUSH1) - 1);
-            self.pc += 1 + push_size;
-
-            // Skip the metadata chunk and move to next instruction
-            const next_idx = idx + 2;
-            const next_handler = @as(HandlerFn, @ptrFromInt(stream[next_idx]));
-
-            return @call(.always_tail, next_handler, .{ self, stream, next_idx });
-        }
+        const op_gas_handler = makeSimpleHandler(op_gas, .GAS);
+        const op_jumpdest_handler = makeSimpleHandler(op_jumpdest, .JUMPDEST);
+        const op_push0_handler = makeSimpleHandler(op_push0, .PUSH0);
+        const op_msize_handler = makeSimpleHandler(op_msize, .MSIZE);
+        const op_mload_handler = makeSimpleHandler(op_mload, .MLOAD);
+        const op_mstore_handler = makeSimpleHandler(op_mstore, .MSTORE);
+        const op_mstore8_handler = makeSimpleHandler(op_mstore8, .MSTORE8);
 
 
 
-        fn op_invalid_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
-            _ = stream;
+
+        fn op_invalid_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            _ = plan;
             _ = idx;
             self.op_invalid() catch |err| return err;
             unreachable;
         }
 
-        fn out_of_bounds_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
-            _ = self;
-            _ = stream;
+        fn out_of_bounds_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            _ = frame;
+            _ = plan;
             _ = idx;
             return Error.OutOfBounds;
         }
 
         // Trace instruction handlers
-        fn trace_before_op_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
+        fn trace_before_op_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+            
             // Call tracer before operation
             self.tracer.beforeOp(Self, self);
 
-            // Continue to next instruction
-            const next_idx = idx + 1;
-            const next_handler = @as(HandlerFn, @ptrFromInt(stream[next_idx]));
-
-            return @call(.always_tail, next_handler, .{ self, stream, next_idx });
+            // Get the next handler - trace handlers don't have metadata
+            const next_handler = plan_ptr.instructionStream[idx_ptr.*].handler;
+            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
         }
 
-        fn trace_after_op_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
+        fn trace_after_op_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+            
             // Call tracer after operation
             self.tracer.afterOp(Self, self);
 
-            // Continue to next instruction
-            const next_idx = idx + 1;
-            const next_handler = @as(HandlerFn, @ptrFromInt(stream[next_idx]));
-
-            return @call(.always_tail, next_handler, .{ self, stream, next_idx });
+            // Get the next handler - trace handlers don't have metadata
+            const next_handler = plan_ptr.instructionStream[idx_ptr.*].handler;
+            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
         }
 
 
 
-        fn op_dup_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
+        fn op_dup_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+            
             std.debug.assert(self.pc < self.bytecode.len);
             const opcode = self.bytecode[self.pc];
             const n = opcode - (@intFromEnum(Opcode.DUP1) - 1);
             try self.stack.dup_n(n);
             self.pc += 1;
 
-            const next_idx = idx + 1;
-            const next_handler = @as(HandlerFn, @ptrFromInt(stream[next_idx]));
-
-            return @call(.always_tail, next_handler, .{ self, stream, next_idx });
+            // Get next handler from plan - need to switch on all DUP opcodes
+            const next_handler = switch (opcode) {
+                @intFromEnum(Opcode.DUP1) => plan_ptr.getNextInstruction(idx_ptr, .DUP1),
+                @intFromEnum(Opcode.DUP2) => plan_ptr.getNextInstruction(idx_ptr, .DUP2),
+                @intFromEnum(Opcode.DUP3) => plan_ptr.getNextInstruction(idx_ptr, .DUP3),
+                @intFromEnum(Opcode.DUP4) => plan_ptr.getNextInstruction(idx_ptr, .DUP4),
+                @intFromEnum(Opcode.DUP5) => plan_ptr.getNextInstruction(idx_ptr, .DUP5),
+                @intFromEnum(Opcode.DUP6) => plan_ptr.getNextInstruction(idx_ptr, .DUP6),
+                @intFromEnum(Opcode.DUP7) => plan_ptr.getNextInstruction(idx_ptr, .DUP7),
+                @intFromEnum(Opcode.DUP8) => plan_ptr.getNextInstruction(idx_ptr, .DUP8),
+                @intFromEnum(Opcode.DUP9) => plan_ptr.getNextInstruction(idx_ptr, .DUP9),
+                @intFromEnum(Opcode.DUP10) => plan_ptr.getNextInstruction(idx_ptr, .DUP10),
+                @intFromEnum(Opcode.DUP11) => plan_ptr.getNextInstruction(idx_ptr, .DUP11),
+                @intFromEnum(Opcode.DUP12) => plan_ptr.getNextInstruction(idx_ptr, .DUP12),
+                @intFromEnum(Opcode.DUP13) => plan_ptr.getNextInstruction(idx_ptr, .DUP13),
+                @intFromEnum(Opcode.DUP14) => plan_ptr.getNextInstruction(idx_ptr, .DUP14),
+                @intFromEnum(Opcode.DUP15) => plan_ptr.getNextInstruction(idx_ptr, .DUP15),
+                @intFromEnum(Opcode.DUP16) => plan_ptr.getNextInstruction(idx_ptr, .DUP16),
+                else => unreachable,
+            };
+            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
         }
 
-        fn op_swap_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
+        fn op_swap_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+            
             std.debug.assert(self.pc < self.bytecode.len);
             const opcode = self.bytecode[self.pc];
             const n = opcode - (@intFromEnum(Opcode.SWAP1) - 1);
             try self.stack.swap_n(n);
             self.pc += 1;
 
-            const next_idx = idx + 1;
-            const next_handler = @as(HandlerFn, @ptrFromInt(stream[next_idx]));
-
-            return @call(.always_tail, next_handler, .{ self, stream, next_idx });
+            // Get next handler from plan - need to switch on all SWAP opcodes
+            const next_handler = switch (opcode) {
+                @intFromEnum(Opcode.SWAP1) => plan_ptr.getNextInstruction(idx_ptr, .SWAP1),
+                @intFromEnum(Opcode.SWAP2) => plan_ptr.getNextInstruction(idx_ptr, .SWAP2),
+                @intFromEnum(Opcode.SWAP3) => plan_ptr.getNextInstruction(idx_ptr, .SWAP3),
+                @intFromEnum(Opcode.SWAP4) => plan_ptr.getNextInstruction(idx_ptr, .SWAP4),
+                @intFromEnum(Opcode.SWAP5) => plan_ptr.getNextInstruction(idx_ptr, .SWAP5),
+                @intFromEnum(Opcode.SWAP6) => plan_ptr.getNextInstruction(idx_ptr, .SWAP6),
+                @intFromEnum(Opcode.SWAP7) => plan_ptr.getNextInstruction(idx_ptr, .SWAP7),
+                @intFromEnum(Opcode.SWAP8) => plan_ptr.getNextInstruction(idx_ptr, .SWAP8),
+                @intFromEnum(Opcode.SWAP9) => plan_ptr.getNextInstruction(idx_ptr, .SWAP9),
+                @intFromEnum(Opcode.SWAP10) => plan_ptr.getNextInstruction(idx_ptr, .SWAP10),
+                @intFromEnum(Opcode.SWAP11) => plan_ptr.getNextInstruction(idx_ptr, .SWAP11),
+                @intFromEnum(Opcode.SWAP12) => plan_ptr.getNextInstruction(idx_ptr, .SWAP12),
+                @intFromEnum(Opcode.SWAP13) => plan_ptr.getNextInstruction(idx_ptr, .SWAP13),
+                @intFromEnum(Opcode.SWAP14) => plan_ptr.getNextInstruction(idx_ptr, .SWAP14),
+                @intFromEnum(Opcode.SWAP15) => plan_ptr.getNextInstruction(idx_ptr, .SWAP15),
+                @intFromEnum(Opcode.SWAP16) => plan_ptr.getNextInstruction(idx_ptr, .SWAP16),
+                else => unreachable,
+            };
+            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
         }
 
-        fn op_jump_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
+        fn op_jump_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+            
             const dest = try self.stack.pop();
 
             if (dest > max_bytecode_size) {
                 return Error.InvalidJump;
             }
 
-            const dest_pc = @as(usize, @intCast(dest));
-            if (!self.is_valid_jump_dest(dest_pc)) {
+            const dest_pc = @as(Plan.PcType, @intCast(dest));
+            if (!self.is_valid_jump_dest(@as(usize, dest_pc))) {
                 return Error.InvalidJump;
             }
 
             self.pc = @intCast(dest);
 
-            // The destination index is stored in the next chunk
-            const dest_idx = stream[idx + 1];
-            const dest_handler = @as(HandlerFn, @ptrFromInt(stream[dest_idx]));
-
-            return @call(.always_tail, dest_handler, .{ self, stream, dest_idx });
+            // Look up the instruction index for the destination PC
+            if (plan_ptr.getInstructionIndexForPc(dest_pc)) |new_idx| {
+                idx_ptr.* = new_idx;
+                // Get the handler at the destination
+                const dest_handler = plan_ptr.instructionStream[new_idx].handler;
+                return @call(.always_tail, dest_handler, .{ self, plan_ptr, idx_ptr });
+            } else {
+                // PC is not a valid instruction start (e.g., middle of PUSH data)
+                return Error.InvalidJump;
+            }
         }
 
-        fn op_jumpi_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
+        fn op_jumpi_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+            const self = @as(*Self, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+            
             const dest = try self.stack.pop();
             const condition = try self.stack.pop();
 
@@ -734,24 +721,27 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 if (dest > max_bytecode_size) {
                     return Error.InvalidJump;
                 }
-                const dest_pc = @as(usize, @intCast(dest));
-                if (!self.is_valid_jump_dest(dest_pc)) {
+                const dest_pc = @as(Plan.PcType, @intCast(dest));
+                if (!self.is_valid_jump_dest(@as(usize, dest_pc))) {
                     return Error.InvalidJump;
                 }
                 self.pc = @intCast(dest);
 
-                // The destination index is stored in the next chunk
-                const dest_idx = stream[idx + 1];
-                const dest_handler = @as(HandlerFn, @ptrFromInt(stream[dest_idx]));
-
-                return @call(.always_tail, dest_handler, .{ self, stream, dest_idx });
+                // Look up the instruction index for the destination PC
+                if (plan_ptr.getInstructionIndexForPc(dest_pc)) |new_idx| {
+                    idx_ptr.* = new_idx;
+                    // Get the handler at the destination
+                    const dest_handler = plan_ptr.instructionStream[new_idx].handler;
+                    return @call(.always_tail, dest_handler, .{ self, plan_ptr, idx_ptr });
+                } else {
+                    // PC is not a valid instruction start (e.g., middle of PUSH data)
+                    return Error.InvalidJump;
+                }
             } else {
                 // Condition is false, continue to next instruction
                 self.pc += 1;
-                const next_idx = idx + 2; // Skip the metadata chunk
-                const next_handler = @as(HandlerFn, @ptrFromInt(stream[next_idx]));
-
-                return @call(.always_tail, next_handler, .{ self, stream, next_idx });
+                const next_handler = plan_ptr.getNextInstruction(idx_ptr, .JUMPI);
+                return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
             }
         }
 
