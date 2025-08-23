@@ -21,6 +21,32 @@ pub const PUSH_JUMP_POINTER: u8 = 0xFC;
 pub const PUSH_JUMPI_INLINE: u8 = 0xFD;
 pub const PUSH_JUMPI_POINTER: u8 = 0xFE;
 
+/// Metadata for inline PUSH values (fits in usize).
+pub const PushInlineMetadata = struct {
+    value: usize,
+};
+
+/// Metadata for PUSH values that require pointer (larger than usize).
+pub const PushPointerMetadata = struct {
+    ptr: usize,
+};
+
+/// Metadata for JUMP instructions with padding to ensure usize alignment.
+pub fn JumpMetadata(comptime PcType: type) type {
+    return struct {
+        dest_idx: PcType,
+        _padding: [@sizeOf(usize) - @sizeOf(PcType)]u8,
+    };
+}
+
+/// Metadata for JUMPDEST instructions.
+/// On 64-bit systems this fits in usize, on 32-bit it requires pointer.
+pub const JumpDestMetadata = struct {
+    gas: u32,
+    min_stack: i16,
+    max_stack: i16,
+};
+
 /// Compile-time configuration for the analyzer.
 pub const AnalysisConfig = struct {
     const Self = @This();
@@ -470,5 +496,36 @@ test "synthetic opcodes: constants defined" {
         while (j < opcodes.len) : (j += 1) {
             try std.testing.expect(opcodes[i] != opcodes[j]);
         }
+    }
+}
+
+test "metadata structs: proper sizing and fields" {
+    const Analyzer = createAnalyzer(.{});
+    const PcType = Analyzer.PcTypeT;
+    
+    // Test PushInlineMetadata size and fields
+    const inline_meta = PushInlineMetadata{ .value = 42 };
+    try std.testing.expectEqual(@sizeOf(usize), @sizeOf(PushInlineMetadata));
+    try std.testing.expectEqual(@as(usize, 42), inline_meta.value);
+    
+    // Test PushPointerMetadata size and fields
+    const ptr_meta = PushPointerMetadata{ .ptr = 0xDEADBEEF };
+    try std.testing.expectEqual(@sizeOf(usize), @sizeOf(PushPointerMetadata));
+    try std.testing.expectEqual(@as(usize, 0xDEADBEEF), ptr_meta.ptr);
+    
+    // Test JumpMetadata with proper padding
+    const jump_meta = JumpMetadata(PcType){ .dest_idx = 100, ._padding = undefined };
+    try std.testing.expectEqual(@sizeOf(usize), @sizeOf(JumpMetadata(PcType)));
+    try std.testing.expectEqual(@as(PcType, 100), jump_meta.dest_idx);
+    
+    // Test JumpDestMetadata
+    const jd_meta = JumpDestMetadata{ .gas = 1000, .min_stack = -5, .max_stack = 10 };
+    try std.testing.expectEqual(@as(u32, 1000), jd_meta.gas);
+    try std.testing.expectEqual(@as(i16, -5), jd_meta.min_stack);
+    try std.testing.expectEqual(@as(i16, 10), jd_meta.max_stack);
+    
+    // Verify JumpDestMetadata fits in usize on 64-bit
+    if (@sizeOf(usize) >= 8) {
+        try std.testing.expect(@sizeOf(JumpDestMetadata) <= @sizeOf(usize));
     }
 }
