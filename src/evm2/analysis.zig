@@ -7,6 +7,20 @@ const std = @import("std");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 
+/// Synthetic opcodes for fused operations.
+/// Starting at 0xF5 to avoid conflicts with EVM and L2 extensions.
+/// Arbitrum uses 0x10-0x13, Optimism uses various ranges.
+pub const PUSH_ADD_INLINE: u8 = 0xF5;
+pub const PUSH_ADD_POINTER: u8 = 0xF6;
+pub const PUSH_MUL_INLINE: u8 = 0xF7;
+pub const PUSH_MUL_POINTER: u8 = 0xF8;
+pub const PUSH_DIV_INLINE: u8 = 0xF9;
+pub const PUSH_DIV_POINTER: u8 = 0xFA;
+pub const PUSH_JUMP_INLINE: u8 = 0xFB;
+pub const PUSH_JUMP_POINTER: u8 = 0xFC;
+pub const PUSH_JUMPI_INLINE: u8 = 0xFD;
+pub const PUSH_JUMPI_POINTER: u8 = 0xFE;
+
 /// Compile-time configuration for the analyzer.
 pub const AnalysisConfig = struct {
     const Self = @This();
@@ -426,4 +440,35 @@ test "analysis: init without allocator" {
     const analysis = Analyzer.init(&bytecode);
     // No deinit should be needed
     try std.testing.expect(analysis.bytecode.len == 3);
+}
+
+test "synthetic opcodes: constants defined" {
+    // Test that synthetic opcodes are defined and have correct values
+    try std.testing.expect(PUSH_ADD_INLINE >= 0xF5);
+    try std.testing.expect(PUSH_ADD_POINTER >= 0xF5);
+    try std.testing.expect(PUSH_MUL_INLINE >= 0xF5);
+    try std.testing.expect(PUSH_MUL_POINTER >= 0xF5);
+    try std.testing.expect(PUSH_DIV_INLINE >= 0xF5);
+    try std.testing.expect(PUSH_DIV_POINTER >= 0xF5);
+    try std.testing.expect(PUSH_JUMP_INLINE >= 0xF5);
+    try std.testing.expect(PUSH_JUMP_POINTER >= 0xF5);
+    try std.testing.expect(PUSH_JUMPI_INLINE >= 0xF5);
+    try std.testing.expect(PUSH_JUMPI_POINTER >= 0xF5);
+    
+    // Ensure no overlap between opcodes
+    const opcodes = [_]u8{
+        PUSH_ADD_INLINE, PUSH_ADD_POINTER,
+        PUSH_MUL_INLINE, PUSH_MUL_POINTER,
+        PUSH_DIV_INLINE, PUSH_DIV_POINTER,
+        PUSH_JUMP_INLINE, PUSH_JUMP_POINTER,
+        PUSH_JUMPI_INLINE, PUSH_JUMPI_POINTER,
+    };
+    
+    var i: usize = 0;
+    while (i < opcodes.len) : (i += 1) {
+        var j = i + 1;
+        while (j < opcodes.len) : (j += 1) {
+            try std.testing.expect(opcodes[i] != opcodes[j]);
+        }
+    }
 }
