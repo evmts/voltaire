@@ -190,8 +190,11 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
             break :blk MetadataType;
         } {
             const current_idx = idx.*;
+            if (current_idx + 1 >= self.instructionStream.len) {
+                @panic("getMetadata: trying to read metadata past end of instruction stream");
+            }
             const metadata_elem = self.instructionStream[current_idx + 1];
-            idx.* += 2;
+            // DO NOT advance idx here - only getNextInstruction should advance
             
             // Handle regular opcodes
             if (@TypeOf(opcode) == Opcode or @typeInfo(@TypeOf(opcode)) == .enum_literal) {
@@ -316,6 +319,104 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
                 return map.get(pc);
             }
             return null;
+        }
+        
+        /// Pretty print the plan for debugging.
+        pub fn debugPrint(self: *const Self) void {
+            std.debug.print("\n=== Plan Debug Visualization ===\n", .{});
+            std.debug.print("Instruction Stream Length: {}\n", .{self.instructionStream.len});
+            std.debug.print("Constants Length: {}\n", .{self.u256_constants.len});
+            
+            if (self.pc_to_instruction_idx) |map| {
+                std.debug.print("PC Mappings: {} entries\n", .{map.count()});
+            } else {
+                std.debug.print("PC Mappings: none\n", .{});
+            }
+            
+            std.debug.print("\nInstruction Stream:\n", .{});
+            var i: InstructionIndexType = 0;
+            while (i < self.instructionStream.len) : (i += 1) {
+                const elem = self.instructionStream[i];
+                
+                // Check if this is a handler or metadata
+                if (@intFromPtr(elem.handler) > 0x10000) {
+                    // This is a handler pointer
+                    std.debug.print("  [{d:4}] Handler: ", .{i});
+                    
+                    // Try to identify the handler by checking against known handlers
+                    // We'll need to pass handlers array to make this more accurate
+                    // For now, just show the pointer
+                    std.debug.print("0x{x}\n", .{@intFromPtr(elem.handler)});
+                } else {
+                    // This is metadata
+                    std.debug.print("  [{d:4}] Metadata: ", .{i});
+                    
+                    // Check what type of metadata
+                    if (@sizeOf(usize) == 8) {
+                        // Could be inline value or jumpdest metadata
+                        const as_u64 = elem.inline_value;
+                        if (as_u64 <= 0xFFFFFFFF) {
+                            std.debug.print("inline_value = 0x{x} ({})", .{ as_u64, as_u64 });
+                        } else {
+                            // Might be jumpdest metadata
+                            const as_jumpdest = elem.jumpdest_metadata;
+                            std.debug.print("jumpdest {{ gas: {}, min_stack: {}, max_stack: {} }}", .{
+                                as_jumpdest.gas,
+                                as_jumpdest.min_stack,
+                                as_jumpdest.max_stack,
+                            });
+                        }
+                    } else {
+                        // 32-bit or pointer index
+                        if (elem.pointer_index < self.u256_constants.len) {
+                            std.debug.print("pointer_index = {} -> 0x{x}", .{ 
+                                elem.pointer_index, 
+                                self.u256_constants[elem.pointer_index] 
+                            });
+                        } else {
+                            std.debug.print("inline_value = 0x{x} ({})", .{ 
+                                elem.inline_value, 
+                                elem.inline_value 
+                            });
+                        }
+                    }
+                    std.debug.print("\n", .{});
+                }
+            }
+            
+            if (self.u256_constants.len > 0) {
+                std.debug.print("\nConstants Array:\n", .{});
+                for (self.u256_constants, 0..) |constant, idx| {
+                    std.debug.print("  [{}] = 0x{x}\n", .{ idx, constant });
+                }
+            }
+            
+            if (self.pc_to_instruction_idx) |map| {
+                std.debug.print("\nPC to Instruction Mappings:\n", .{});
+                var iter = map.iterator();
+                var entries = std.ArrayList(struct { pc: PcType, idx: InstructionIndexType }).init(std.heap.page_allocator);
+                defer entries.deinit();
+                
+                // Collect entries for sorting
+                while (iter.next()) |entry| {
+                    entries.append(.{ .pc = entry.key_ptr.*, .idx = entry.value_ptr.* }) catch {};
+                }
+                
+                // Sort by PC
+                const Entry = @TypeOf(entries.items[0]);
+                std.sort.block(Entry, entries.items, {}, struct {
+                    fn lessThan(_: void, a: Entry, b: Entry) bool {
+                        return a.pc < b.pc;
+                    }
+                }.lessThan);
+                
+                // Print sorted entries
+                for (entries.items) |entry| {
+                    std.debug.print("  PC {d:4} -> Instruction {d:4}\n", .{ entry.pc, entry.idx });
+                }
+            }
+            
+            std.debug.print("=================================\n\n", .{});
         }
         
         /// Free Plan-owned slices.

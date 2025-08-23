@@ -175,6 +175,115 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 plan.deinit(allocator);
             }
         }
+        
+        /// Pretty print the frame state for debugging.
+        pub fn pretty_print(self: *const Self) void {
+            std.log.warn("\n=== Frame State ===\n", .{});
+            std.log.warn("Gas Remaining: {}\n", .{self.gas_remaining});
+            std.log.warn("Instruction Index: {}\n", .{self.instruction_idx});
+            std.log.warn("Bytecode Length: {}\n", .{self.bytecode.len});
+            
+            // Show bytecode (first 50 bytes or less)
+            const show_bytes = @min(self.bytecode.len, 50);
+            std.log.warn("Bytecode (first {} bytes): ", .{show_bytes});
+            for (self.bytecode[0..show_bytes]) |byte| {
+                std.log.warn("{x:0>2} ", .{byte});
+            }
+            if (self.bytecode.len > 50) {
+                std.log.warn("... ({} more bytes)", .{self.bytecode.len - 50});
+            }
+            std.log.warn("\n", .{});
+            
+            // Stack state
+            std.log.warn("\nStack (size={}, capacity={}):\n", .{ self.stack.next_stack_index, Stack.stack_capacity });
+            if (self.stack.next_stack_index == 0) {
+                std.log.warn("  [empty]\n", .{});
+            } else {
+                // Show top 10 stack items
+                const show_items = @min(self.stack.next_stack_index, 10);
+                var i: usize = 0;
+                while (i < show_items) : (i += 1) {
+                    const idx = self.stack.next_stack_index - 1 - i;
+                    const value = self.stack.stack[idx];
+                    if (i == 0) {
+                        std.log.warn("  [{d:3}] 0x{x:0>64} <- TOP\n", .{ idx, value });
+                    } else {
+                        std.log.warn("  [{d:3}] 0x{x:0>64}\n", .{ idx, value });
+                    }
+                }
+                if (self.stack.next_stack_index > 10) {
+                    std.log.warn("  ... ({} more items)\n", .{self.stack.next_stack_index - 10});
+                }
+            }
+            
+            // Memory state
+            std.log.warn("\nMemory (size={}):\n", .{self.memory.size()});
+            if (self.memory.size() == 0) {
+                std.log.warn("  [empty]\n", .{});
+            } else {
+                // Show first 256 bytes of memory in hex dump format
+                const show_mem = @min(self.memory.size(), 256);
+                var offset: usize = 0;
+                while (offset < show_mem) : (offset += 32) {
+                    const end = @min(offset + 32, show_mem);
+                    std.log.warn("  0x{x:0>4}: ", .{offset});
+                    
+                    // Hex bytes
+                    var i = offset;
+                    while (i < end) : (i += 1) {
+                        const byte = self.memory.get_byte(i) catch 0;
+                        std.log.warn("{x:0>2} ", .{byte});
+                    }
+                    
+                    // Pad if less than 32 bytes
+                    if (end - offset < 32) {
+                        var pad = end - offset;
+                        while (pad < 32) : (pad += 1) {
+                            std.log.warn("   ", .{});
+                        }
+                    }
+                    
+                    // ASCII representation
+                    std.log.warn(" |", .{});
+                    i = offset;
+                    while (i < end) : (i += 1) {
+                        const byte = self.memory.get_byte(i) catch 0;
+                        if (byte >= 32 and byte <= 126) {
+                            std.log.warn("{c}", .{byte});
+                        } else {
+                            std.log.warn(".", .{});
+                        }
+                    }
+                    std.log.warn("|\n", .{});
+                }
+                if (self.memory.size() > 256) {
+                    std.log.warn("  ... ({} more bytes)\n", .{self.memory.size() - 256});
+                }
+            }
+            
+            // Plan info
+            if (self.plan) |plan| {
+                std.log.warn("\nPlan: Present (use plan.debugPrint() for details)\n", .{});
+                // Get current PC if possible
+                if (plan.pc_to_instruction_idx) |map| {
+                    // Find PC for current instruction index
+                    var iter = map.iterator();
+                    while (iter.next()) |entry| {
+                        if (entry.value_ptr.* == self.instruction_idx) {
+                            std.log.warn("Current PC: {} (instruction index: {})\n", .{ 
+                                entry.key_ptr.*, 
+                                self.instruction_idx 
+                            });
+                            break;
+                        }
+                    }
+                }
+            } else {
+                std.log.warn("\nPlan: Not created yet\n", .{});
+            }
+            
+            std.log.warn("===================\n\n", .{});
+        }
 
 
         pub fn interpret(self: *Self, allocator: std.mem.Allocator) !void {
@@ -298,9 +407,34 @@ pub fn createFrame(comptime config: FrameConfig) type {
             handlers[@intFromEnum(Opcode.SWAP15)] = &swap15_handler;
             handlers[@intFromEnum(Opcode.SWAP16)] = &swap16_handler;
             
+            // Fusion handlers
+            handlers[@intFromEnum(plan_mod.SyntheticOpcode.PUSH_ADD_INLINE)] = &push_add_inline_handler;
+            handlers[@intFromEnum(plan_mod.SyntheticOpcode.PUSH_ADD_POINTER)] = &push_add_pointer_handler;
+            handlers[@intFromEnum(plan_mod.SyntheticOpcode.PUSH_MUL_INLINE)] = &push_mul_inline_handler;
+            handlers[@intFromEnum(plan_mod.SyntheticOpcode.PUSH_MUL_POINTER)] = &push_mul_pointer_handler;
+            handlers[@intFromEnum(plan_mod.SyntheticOpcode.PUSH_DIV_INLINE)] = &push_div_inline_handler;
+            handlers[@intFromEnum(plan_mod.SyntheticOpcode.PUSH_DIV_POINTER)] = &push_div_pointer_handler;
+            handlers[@intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMP_INLINE)] = &push_jump_inline_handler;
+            handlers[@intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMP_POINTER)] = &push_jump_pointer_handler;
+            handlers[@intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMPI_INLINE)] = &push_jumpi_inline_handler;
+            handlers[@intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMPI_POINTER)] = &push_jumpi_pointer_handler;
+            
+            // Debug: Check if handlers are set correctly
+            std.log.warn("Handler check:", .{});
+            std.log.warn("  ADD (0x01) handler: {*}", .{handlers[0x01]});
+            std.log.warn("  op_add_handler addr: {*}", .{&op_add_handler});
+            std.log.warn("  STOP (0x00) handler: {*}", .{handlers[0x00]});
+            std.log.warn("  PUSH_ADD_INLINE handler: {*}", .{handlers[@intFromEnum(plan_mod.SyntheticOpcode.PUSH_ADD_INLINE)]});
+            std.log.warn("  push_add_inline_handler addr: {*}", .{&push_add_inline_handler});
+            
             // Create the plan using our planner
             self.plan = try planner.create_instruction_stream(allocator, handlers);
             self.instruction_idx = 0;
+            
+            // Debug print the plan in debug builds
+            if (builtin.mode == .Debug) {
+                self.plan.?.debugPrint();
+            }
             
             // Start execution with the first handler
             const first_handler = self.plan.?.instructionStream[0].handler;
@@ -882,8 +1016,15 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
         fn op_invalid_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            _ = plan;
-            _ = idx;
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
+            
+            std.log.warn("\n=== InvalidOpcode Debug ===", .{});
+            std.log.warn("Instruction index: {}", .{idx_ptr.*});
+            std.log.warn("Bytecode: {any}", .{self.bytecode});
+            std.log.warn("Instruction stream length: {}", .{plan_ptr.instructionStream.len});
+            std.log.warn("==================\n", .{});
+            
             self.op_invalid() catch |err| return err;
             unreachable;
         }
@@ -3699,7 +3840,68 @@ test "Frame op_keccak256 hash computation" {
     try std.testing.expectEqual(expected_hello, hello_hash);
 }
 
+test "Debug planner instruction stream creation" {
+    std.testing.log_level = .warn;
+    // This test helps debug why interpret is hitting InvalidOpcode
+    const allocator = std.testing.allocator;
+    
+    // Create minimal bytecode: PUSH1 42, STOP
+    const bytecode = [_]u8{ 0x60, 0x2A, 0x00 };
+    
+    // Create planner directly
+    const PlannerConfig = planner_mod.PlannerConfig{
+        .maxBytecodeSize = 24_576,
+    };
+    const Planner = planner_mod.createPlanner(PlannerConfig);
+    
+    var planner = Planner.init(&bytecode);
+    
+    // Create handler array with debug logging
+    var handlers: [256]*const plan_mod.HandlerFn = undefined;
+    const Frame = createFrame(.{});
+    
+    // Initialize all to invalid
+    for (&handlers) |*h| {
+        h.* = &Frame.op_invalid_handler;
+    }
+    
+    // Set specific handlers we need
+    handlers[@intFromEnum(Opcode.PUSH1)] = &Frame.push1_handler;
+    handlers[@intFromEnum(Opcode.STOP)] = &Frame.op_stop_handler;
+    
+    const plan = try planner.create_instruction_stream(allocator, handlers);
+    defer {
+        var mut_plan = plan;
+        mut_plan.deinit(allocator);
+    }
+    
+    std.log.warn("\n=== Planner Debug ===", .{});
+    std.log.warn("Bytecode: {any}", .{bytecode});
+    std.log.warn("Instruction stream length: {}", .{plan.instructionStream.len});
+    std.log.warn("Constants length: {}", .{plan.u256_constants.len});
+    
+    // Log each element - check if it's a handler or metadata
+    for (plan.instructionStream, 0..) |elem, i| {
+        // Try to interpret as handler first
+        const maybe_handler = elem.handler;
+        if (@intFromPtr(maybe_handler) < 0x1000) {
+            // This is likely inline data, not a handler pointer
+            std.log.warn("  [{}] Inline value: {}", .{i, elem.inline_value});
+        } else if (maybe_handler == &Frame.push1_handler) {
+            std.log.warn("  [{}] PUSH1 handler", .{i});
+        } else if (maybe_handler == &Frame.op_stop_handler) {
+            std.log.warn("  [{}] STOP handler", .{i});
+        } else if (maybe_handler == &Frame.op_invalid_handler) {
+            std.log.warn("  [{}] INVALID handler", .{i});
+        } else {
+            std.log.warn("  [{}] Unknown handler: {*}", .{i, elem.handler});
+        }
+    }
+    std.log.warn("==================\n", .{});
+}
+
 test "Frame interpret basic execution" {
+    std.testing.log_level = .warn;
     const allocator = std.testing.allocator;
     const Frame = createFrame(.{});
 
@@ -3708,8 +3910,15 @@ test "Frame interpret basic execution" {
     var frame = try Frame.init(allocator, &bytecode, 1000000);
     defer frame.deinit(allocator);
 
+    std.log.warn("\n=== Frame interpret basic execution test ===", .{});
+    std.log.warn("Initial frame state:", .{});
+    frame.pretty_print();
+
     // interpret should execute until STOP
     try frame.interpret(allocator); // Handles STOP internally
+    
+    std.log.warn("\nFinal frame state after interpret():", .{});
+    frame.pretty_print();
 
     // Check final stack state
     try std.testing.expectEqual(@as(u256, 52), frame.stack.peek_unsafe()); // 42 + 10 = 52
