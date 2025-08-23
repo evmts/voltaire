@@ -609,8 +609,8 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                                     value = (value << 8) | metadata_bytes[@sizeOf(JumpDestMetadata) - 1 - j];
                                 }
                                 try constants.append(value);
-                                // Cast the index to a pointer to JumpDestMetadata
-                                const metadata_ptr = @as(*const JumpDestMetadata, @ptrFromInt(const_idx));
+                                // Get pointer to the actual location in the constants array
+                                const metadata_ptr = @as(*const JumpDestMetadata, @ptrCast(&constants.items[const_idx]));
                                 try stream.append(.{ .jumpdest_pointer = metadata_ptr });
                             }
                             metadata_found = true;
@@ -623,6 +623,11 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                         return error.MissingJumpDestMetadata;
                     }
                     
+                    i += 1;
+                } else if (op == @intFromEnum(Opcode.PC)) {
+                    // PC opcode needs to store the current program counter value
+                    try stream.append(.{ .handler = handlers[op] });
+                    try stream.append(.{ .pc_value = @as(u64, i) });
                     i += 1;
                 } else {
                     // Other non-PUSH opcodes - just add the handler
