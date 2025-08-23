@@ -316,12 +316,28 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             while (i < N) {
                 const op = self.bytecode[i];
                 
-                // Add handler pointer
-                try stream.append(@intFromPtr(handlers[op]));
-                
                 // Handle PUSH opcodes
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
                     const n: usize = op - (@intFromEnum(Opcode.PUSH1) - 1);
+                    
+                    // Check for fusion opportunities
+                    const next_pc = i + 1 + n;
+                    var fused = false;
+                    var handler_op = op;
+                    
+                    if (next_pc < N) {
+                        const next_op = self.bytecode[next_pc];
+                        
+                        // Check for PUSH+ADD fusion
+                        if (next_op == @intFromEnum(Opcode.ADD)) {
+                            // Use appropriate fusion opcode
+                            handler_op = if (n <= @sizeOf(usize)) PUSH_ADD_INLINE else PUSH_ADD_POINTER;
+                            fused = true;
+                        }
+                    }
+                    
+                    // Add handler pointer (normal or fused)
+                    try stream.append(@intFromPtr(handlers[handler_op]));
                     
                     // Extract the push value
                     if (i + n < N) {
@@ -346,8 +362,16 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                             try stream.append(const_idx);
                         }
                     }
-                    i += 1 + n;
+                    
+                    // Skip the next instruction if we fused
+                    if (fused and next_pc < N) {
+                        i = next_pc + 1;
+                    } else {
+                        i += 1 + n;
+                    }
                 } else {
+                    // Non-PUSH opcode - just add the handler
+                    try stream.append(@intFromPtr(handlers[op]));
                     i += 1;
                 }
             }
@@ -407,6 +431,9 @@ fn markJumpdestSimd(bytecode: []const u8, is_push_data: []const u8, is_jumpdest:
 
 // Mock handler for tests
 fn testMockHandler() void {}
+
+// Test fusion handler
+fn testFusionHandler() void {}
 
 test "analysis: bitmaps mark push-data and jumpdest correctly" {
     const allocator = std.testing.allocator;
@@ -724,4 +751,67 @@ test "PUSH inline vs pointer: large values use pointer" {
     // Verify the constant value
     const expected = std.math.maxInt(u256);
     try std.testing.expectEqual(expected, plan.u256_constants[0]);
+}
+
+test "fusion detection: PUSH+ADD inline" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array with special fusion handler
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    
+    handlers[PUSH_ADD_INLINE] = &testFusionHandler;
+    
+    // PUSH1 5; ADD
+    const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x05, @intFromEnum(Opcode.ADD) };
+    var analysis = Analyzer.init(&bytecode);
+    
+    var plan = try analysis.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Should have fused handler + inline value  
+    try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
+    
+    // First should be the fusion handler
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
+    
+    // Second should be inline value
+    try std.testing.expectEqual(@as(usize, 5), plan.instructionStream[1]);
+}
+
+test "fusion detection: PUSH+ADD pointer" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array with special fusion handler
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    
+    handlers[PUSH_ADD_POINTER] = &testFusionHandler;
+    
+    // PUSH32 <big value>; ADD
+    const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH32) } ++ 
+        [_]u8{0xFF} ** 32 ++ // 32 bytes
+        [_]u8{ @intFromEnum(Opcode.ADD) };
+    var analysis = Analyzer.init(&bytecode);
+    
+    var plan = try analysis.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Should have fused handler + pointer
+    try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
+    
+    // First should be the fusion handler
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), plan.instructionStream[0]);
+    
+    // Second should be pointer (index 0)
+    try std.testing.expectEqual(@as(usize, 0), plan.instructionStream[1]);
+    
+    // Should have constant
+    try std.testing.expectEqual(@as(usize, 1), plan.u256_constants.len);
 }
