@@ -6,106 +6,23 @@
 const std = @import("std");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
+const interpreter_plan = @import("interpreter_plan.zig");
 
-/// Synthetic opcodes for fused operations.
-/// Starting at 0xF5 to avoid conflicts with EVM and L2 extensions.
-/// Arbitrum uses 0x10-0x13, Optimism uses various ranges.
-pub const PUSH_ADD_INLINE: u8 = 0xF5;
-pub const PUSH_ADD_POINTER: u8 = 0xF6;
-pub const PUSH_MUL_INLINE: u8 = 0xF7;
-pub const PUSH_MUL_POINTER: u8 = 0xF8;
-pub const PUSH_DIV_INLINE: u8 = 0xF9;
-pub const PUSH_DIV_POINTER: u8 = 0xFA;
-pub const PUSH_JUMP_INLINE: u8 = 0xFB;
-pub const PUSH_JUMP_POINTER: u8 = 0xFC;
-pub const PUSH_JUMPI_INLINE: u8 = 0xFD;
-pub const PUSH_JUMPI_POINTER: u8 = 0xFE;
+// Re-export commonly used types from interpreter_plan
+pub const PUSH_ADD_INLINE = interpreter_plan.PUSH_ADD_INLINE;
+pub const PUSH_ADD_POINTER = interpreter_plan.PUSH_ADD_POINTER;
+pub const PUSH_MUL_INLINE = interpreter_plan.PUSH_MUL_INLINE;
+pub const PUSH_MUL_POINTER = interpreter_plan.PUSH_MUL_POINTER;
+pub const PUSH_DIV_INLINE = interpreter_plan.PUSH_DIV_INLINE;
+pub const PUSH_DIV_POINTER = interpreter_plan.PUSH_DIV_POINTER;
+pub const PUSH_JUMP_INLINE = interpreter_plan.PUSH_JUMP_INLINE;
+pub const PUSH_JUMP_POINTER = interpreter_plan.PUSH_JUMP_POINTER;
+pub const PUSH_JUMPI_INLINE = interpreter_plan.PUSH_JUMPI_INLINE;
+pub const PUSH_JUMPI_POINTER = interpreter_plan.PUSH_JUMPI_POINTER;
 
-/// Metadata for JUMPDEST instructions.
-/// On 64-bit systems this fits in usize, on 32-bit it requires pointer.
-pub const JumpDestMetadata = packed struct {
-    gas: u32,
-    min_stack: i16,
-    max_stack: i16,
-};
-
-/// Handler function type for instruction execution.
-/// Takes frame, plan, and instruction index. Uses tail call recursion.
-pub const HandlerFn = fn (frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn;
-
-/// Instruction stream element for 32-bit platforms.
-/// 
-/// The instruction stream is a linear array of usize-sized elements that the
-/// interpreter executes sequentially. Most elements are function pointers to
-/// opcode handlers, but some opcodes require metadata (like PUSH constants or
-/// JUMPDEST gas costs) which follows immediately after the handler pointer.
-/// 
-/// This untagged union ensures zero-overhead abstraction - each element is
-/// exactly 4 bytes with no runtime type information. The executing opcode
-/// knows at compile-time what metadata (if any) follows its handler.
-pub const InstructionElement32 = packed union {
-    handler: *const HandlerFn,          // Function pointer for opcode handler
-    jumpdest_pointer: *const JumpDestMetadata, // Pointer to metadata in u256_constants
-    inline_value: u32,                  // Inline constant for PUSH ops that fit
-    pointer_index: u32,                 // Index into u256_constants for large values
-    pc_value: u32,                      // Original PC for PC opcode
-};
-
-/// Instruction stream element for 64-bit platforms.
-/// 
-/// The instruction stream is a linear array of usize-sized elements that the
-/// interpreter executes sequentially. Most elements are function pointers to
-/// opcode handlers, but some opcodes require metadata (like PUSH constants or
-/// JUMPDEST gas costs) which follows immediately after the handler pointer.
-/// 
-/// This untagged union ensures zero-overhead abstraction - each element is
-/// exactly 8 bytes with no runtime type information. The executing opcode
-/// knows at compile-time what metadata (if any) follows its handler.
-/// 
-/// On 64-bit platforms, JumpDestMetadata (8 bytes) fits directly in the stream,
-/// avoiding the indirection required on 32-bit platforms.
-pub const InstructionElement64 = packed union {
-    handler: *const HandlerFn,          // Function pointer for opcode handler
-    jumpdest_metadata: JumpDestMetadata, // Direct metadata (8 bytes)
-    inline_value: u64,                  // Inline constant for PUSH ops that fit
-    pointer_index: u64,                 // Index into u256_constants for large values
-    pc_value: u64,                      // Original PC for PC opcode
-};
-
-/// Instruction stream element type - platform-specific selection.
-/// 
-/// The EVM bytecode is transformed into a stream of these elements during
-/// analysis. Each element is exactly usize-sized, creating a dense array
-/// that can be executed with minimal memory access and no decoding overhead.
-/// 
-/// Example instruction stream for "PUSH1 0x05 ADD":
-/// - [0]: handler pointer for PUSH1_ADD_INLINE (fusion optimization)
-/// - [1]: inline_value = 5
-/// 
-/// Example for "JUMPDEST PUSH1 0x10":
-/// - [0]: handler pointer for JUMPDEST
-/// - [1]: jumpdest_metadata with gas cost and stack requirements
-/// - [2]: handler pointer for PUSH1
-/// - [3]: inline_value = 16
-pub const InstructionElement = if (@sizeOf(usize) == 8)
-    InstructionElement64
-else if (@sizeOf(usize) == 4)
-    InstructionElement32
-else
-    @compileError("Unsupported platform: usize must be 32 or 64 bits");
-
-// Compile-time verification that InstructionElement fits in usize
-comptime {
-    if (@sizeOf(InstructionElement) != @sizeOf(usize)) {
-        const elem_size = @sizeOf(InstructionElement);
-        const usize_size = @sizeOf(usize);
-        const jumpdest_size = @sizeOf(JumpDestMetadata);
-        @compileError(std.fmt.comptimePrint(
-            "InstructionElement size ({}) must equal usize ({}) for zero-overhead abstraction. JumpDestMetadata size: {}",
-            .{ elem_size, usize_size, jumpdest_size }
-        ));
-    }
-}
+pub const JumpDestMetadata = interpreter_plan.JumpDestMetadata;
+pub const HandlerFn = interpreter_plan.HandlerFn;
+pub const InstructionElement = interpreter_plan.InstructionElement;
 
 /// Compile-time configuration for the analyzer.
 pub const AnalysisConfig = struct {
@@ -165,197 +82,17 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
         metadata: JumpDestMetadata,
     };
 
-    // Minimal data the interpreter needs at runtime.
-    const AnalyzerPlan = struct {
-        /// A cache friendly stream of data mostly consisting of function pointers to opcode handlers but also metadata
-        instructionStream: []InstructionElement,
-        /// InstructionStream is of size usize. If metadata is larger than usize it is stored on this constants array and we store a pointer on instructionstream
-        u256_constants: []Cfg.WordType,
-
-        /// Get metadata for opcodes that have it, properly typed based on the opcode.
-        /// Returns the metadata at idx+1 and advances idx by 2.
-        pub fn getMetadata(
-            self: *const @This(),
-            idx: *InstructionIndexType,
-            comptime opcode: anytype,
-        ) blk: {
-            const op = if (@TypeOf(opcode) == Opcode) 
-                opcode 
-            else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
-                @field(Opcode, @tagName(opcode))
-            else 
-                @as(Opcode, @enumFromInt(opcode));
-            const MetadataType = switch (op) {
-                // PUSH opcodes return granular types
-                .PUSH1 => u8,
-                .PUSH2 => u16,
-                .PUSH3 => u24,
-                .PUSH4 => u32,
-                .PUSH5 => u40,
-                .PUSH6 => u48,
-                .PUSH7 => u56,
-                .PUSH8 => u64,
-                // Larger PUSH opcodes return pointer to u256 or inline based on platform
-                .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16 => if (@sizeOf(usize) >= 16) u128 else *const u256,
-                .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
-                .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => *const u256,
-                
-                // JUMPDEST returns metadata struct or pointer
-                .JUMPDEST => if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata))
-                    JumpDestMetadata
-                else
-                    *const JumpDestMetadata,
-                
-                // PC returns the original PC value
-                .PC => PcType,
-                
-                // All other opcodes have no metadata
-                else => blk2: {
-                    // Check if it's a fusion opcode (passed as u8)
-                    if (@TypeOf(opcode) == u8) {
-                        const fusion_type = switch (opcode) {
-                            // Fusion opcodes follow same pattern as their PUSH equivalent
-                            PUSH_ADD_INLINE, PUSH_MUL_INLINE, PUSH_DIV_INLINE, 
-                            PUSH_JUMP_INLINE, PUSH_JUMPI_INLINE => usize, // For simplicity, return usize for inline fusions
-                            PUSH_ADD_POINTER, PUSH_MUL_POINTER, PUSH_DIV_POINTER,
-                            PUSH_JUMP_POINTER, PUSH_JUMPI_POINTER => *const u256,
-                            else => @compileError("Fusion opcode has no metadata"),
-                        };
-                        break :blk2 fusion_type;
-                    }
-                    @compileError("Opcode has no metadata");
-                },
-            };
-            break :blk MetadataType;
-        } {
-            const current_idx = idx.*;
-            const metadata_elem = self.instructionStream[current_idx + 1];
-            idx.* += 2;
-            
-            // Handle regular opcodes
-            if (@TypeOf(opcode) == Opcode or @typeInfo(@TypeOf(opcode)) == .enum_literal) {
-                const actual_op = if (@TypeOf(opcode) == Opcode) 
-                    opcode 
-                else 
-                    @field(Opcode, @tagName(opcode));
-                return switch (actual_op) {
-                    // PUSH opcodes return the inline value with correct type
-                    .PUSH1 => @as(u8, @truncate(metadata_elem.inline_value)),
-                    .PUSH2 => @as(u16, @truncate(metadata_elem.inline_value)),
-                    .PUSH3 => @as(u24, @truncate(metadata_elem.inline_value)),
-                    .PUSH4 => @as(u32, @truncate(metadata_elem.inline_value)),
-                    .PUSH5 => @as(u40, @truncate(metadata_elem.inline_value)),
-                    .PUSH6 => @as(u48, @truncate(metadata_elem.inline_value)),
-                    .PUSH7 => @as(u56, @truncate(metadata_elem.inline_value)),
-                    .PUSH8 => @as(u64, @truncate(metadata_elem.inline_value)),
-                    
-                    // Larger PUSH opcodes
-                    .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16 => {
-                        if (@sizeOf(usize) >= 16) {
-                            return @as(u128, @truncate(metadata_elem.inline_value));
-                        } else {
-                            const idx_val = metadata_elem.pointer_index;
-                            return &self.u256_constants[idx_val];
-                        }
-                    },
-                    .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
-                    .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
-                        const idx_val = metadata_elem.pointer_index;
-                        return &self.u256_constants[idx_val];
-                    },
-                    
-                    // JUMPDEST returns the metadata directly or via pointer
-                    .JUMPDEST => if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata))
-                        metadata_elem.jumpdest_metadata
-                    else
-                        metadata_elem.jumpdest_pointer,
-                    
-                    // PC returns the PC value
-                    .PC => @as(PcType, @truncate(metadata_elem.pc_value)),
-                    
-                    else => unreachable, // Compile error already prevents this
-                };
-            } else if (@TypeOf(opcode) == u8) {
-                // Handle fusion opcodes (u8)
-                return switch (opcode) {
-                    PUSH_ADD_INLINE, PUSH_MUL_INLINE, PUSH_DIV_INLINE, 
-                    PUSH_JUMP_INLINE, PUSH_JUMPI_INLINE => metadata_elem.inline_value,
-                    PUSH_ADD_POINTER, PUSH_MUL_POINTER, PUSH_DIV_POINTER,
-                    PUSH_JUMP_POINTER, PUSH_JUMPI_POINTER => blk: {
-                        const idx_val = metadata_elem.pointer_index;
-                        break :blk &self.u256_constants[idx_val];
-                    },
-                    else => unreachable,
-                };
-            } else {
-                @compileError("Unexpected opcode type");
-            }
-        }
-        
-        /// Get the next instruction handler and advance the instruction pointer.
-        /// Advances by 1 or 2 based on whether the opcode has metadata.
-        pub fn getNextInstruction(
-            self: *const @This(),
-            idx: *InstructionIndexType,
-            comptime opcode: anytype,
-        ) *const HandlerFn {
-            const current_idx = idx.*;
-            const handler = self.instructionStream[current_idx].handler;
-            
-            const op = if (@TypeOf(opcode) == Opcode) 
-                opcode 
-            else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
-                @field(Opcode, @tagName(opcode))
-            else 
-                @as(Opcode, @enumFromInt(opcode));
-            const has_metadata = switch (op) {
-                // PUSH opcodes have metadata (except PUSH0)
-                .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7,
-                .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15,
-                .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23,
-                .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31,
-                .PUSH32,
-                // JUMPDEST has metadata
-                .JUMPDEST,
-                // PC has metadata (the original PC value)
-                .PC => true,
-                // All other opcodes including PUSH0 have no metadata
-                else => false,
-            };
-            
-            // Also check for fusion opcodes if it's a u8
-            const fusion_has_metadata = if (@TypeOf(opcode) == u8) switch (opcode) {
-                PUSH_ADD_INLINE, PUSH_ADD_POINTER,
-                PUSH_MUL_INLINE, PUSH_MUL_POINTER,
-                PUSH_DIV_INLINE, PUSH_DIV_POINTER,
-                PUSH_JUMP_INLINE, PUSH_JUMP_POINTER,
-                PUSH_JUMPI_INLINE, PUSH_JUMPI_POINTER => true,
-                else => false,
-            } else false;
-            
-            if (has_metadata or fusion_has_metadata) {
-                idx.* += 2;
-            } else {
-                idx.* += 1;
-            }
-            
-            return handler;
-        }
-
-        /// Free Plan-owned slices.
-        pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
-            if (self.instructionStream.len > 0) allocator.free(self.instructionStream);
-            if (self.u256_constants.len > 0) allocator.free(self.u256_constants);
-            self.instructionStream = &.{};
-            self.u256_constants = &.{};
-        }
-
+    // Create the InterpreterPlan type for this analyzer
+    const InterpreterPlanConfig = interpreter_plan.InterpreterPlanConfig{
+        .WordType = Cfg.WordType,
+        .maxBytecodeSize = Cfg.maxBytecodeSize,
     };
+    const InterpreterPlan = interpreter_plan.createInterpreterPlan(InterpreterPlanConfig);
 
     // Simple LRU cache node - forward declare
     const CacheNode = struct {
         key_hash: u64,
-        plan: AnalyzerPlan,
+        plan: InterpreterPlan,
         next: ?*@This(),
         prev: ?*@This(),
     };
@@ -364,7 +101,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
         const Self = @This();
         // Expose types for callers/tests.
         pub const BlockMeta = JumpDestMetadata;
-        pub const Plan = AnalyzerPlan;
+        pub const Plan = InterpreterPlan;
         pub const PcTypeT = PcType;
         pub const InstructionIndexT = InstructionIndexType;
 
@@ -425,7 +162,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
         }
         
         /// Get plan from cache or analyze.
-        pub fn getOrAnalyze(self: *Self, bytecode: []const u8, handlers: [256]*const HandlerFn) !*const AnalyzerPlan {
+        pub fn getOrAnalyze(self: *Self, bytecode: []const u8, handlers: [256]*const HandlerFn) !*const InterpreterPlan {
             if (self.cache_map == null) {
                 // No cache - analyze directly
                 self.bytecode = bytecode;
@@ -469,7 +206,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             if (self.cache_tail == null) self.cache_tail = node;
         }
         
-        fn addToCache(self: *Self, key: u64, plan: AnalyzerPlan) !void {
+        fn addToCache(self: *Self, key: u64, plan: InterpreterPlan) !void {
             // Evict if necessary
             if (self.cache_count >= self.cache_capacity) {
                 if (self.cache_tail) |tail| {
@@ -504,7 +241,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
         /// Pass 1: build temporary bitmaps (push-data, opcode-start, jumpdest).
         /// Pass 2: build instruction stream with handlers and metadata.
         /// All temporaries are freed before returning.
-        pub fn create_instruction_stream(self: *Self, allocator: std.mem.Allocator, handlers: [256]*const HandlerFn) !AnalyzerPlan {
+        pub fn create_instruction_stream(self: *Self, allocator: std.mem.Allocator, handlers: [256]*const HandlerFn) !InterpreterPlan {
             const N = self.bytecode.len;
             // Ephemeral bitmaps (bit-per-byte)
             const bitmap_bytes = (N + 7) >> 3;
@@ -777,7 +514,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             // Free blocks as we don't need them at runtime
             allocator.free(blocks);
             
-            return AnalyzerPlan{
+            return InterpreterPlan{
                 .instructionStream = try stream.toOwnedSlice(),
                 .u256_constants = try constants.toOwnedSlice(),
             };

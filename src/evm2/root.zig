@@ -6,7 +6,8 @@ pub const createFrame = @import("frame.zig").createFrame;
 pub const StackConfig = @import("stack.zig").StackConfig;
 pub const createStack = @import("stack.zig").createStack;
 pub const createAnalyzer = @import("analysis.zig").createAnalyzer;
-// Cache is now integrated into Analysis struct
+pub const createInterpreterPlan = @import("interpreter_plan.zig").createInterpreterPlan;
+pub const InterpreterPlanConfig = @import("interpreter_plan.zig").InterpreterPlanConfig;
 pub const Interpreter = @import("interpreter.zig").Interpreter;
 pub const Dispatcher = @import("dispatcher.zig").Dispatcher;
 pub const Evm = @import("evm.zig").Evm;
