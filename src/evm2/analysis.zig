@@ -23,7 +23,7 @@ pub const PUSH_JUMPI_POINTER: u8 = 0xFE;
 
 /// Metadata for JUMPDEST instructions.
 /// On 64-bit systems this fits in usize, on 32-bit it requires pointer.
-pub const JumpDestMetadata = struct {
+pub const JumpDestMetadata = packed struct {
     gas: u32,
     min_stack: i16,
     max_stack: i16,
@@ -33,15 +33,46 @@ pub const JumpDestMetadata = struct {
 /// Takes frame, plan, and instruction index. Uses tail call recursion.
 pub const HandlerFn = fn (frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn;
 
-/// Untagged union for instruction stream elements.
-/// The opcode determines which field to access.
-pub const InstructionElement = union {
+/// Untagged union for 32-bit platforms.
+/// All metadata is stored as pointers/indices.
+pub const InstructionElement32 = packed union {
     handler: *const HandlerFn,          // Function pointer for opcode handler
-    jumpdest_metadata: if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata)) JumpDestMetadata else *const JumpDestMetadata, // Direct on 64-bit, pointer on 32-bit
-    inline_value: usize,                // Inline constant for PUSH ops that fit
-    pointer_index: usize,               // Index into u256_constants for large values
-    pc_value: u16,                      // Original PC for PC opcode (always fits)
+    jumpdest_pointer: *const JumpDestMetadata, // Pointer to metadata in u256_constants
+    inline_value: u32,                  // Inline constant for PUSH ops that fit
+    pointer_index: u32,                 // Index into u256_constants for large values
+    pc_value: u32,                      // Original PC for PC opcode
 };
+
+/// Untagged union for 64-bit platforms.
+/// JumpDestMetadata fits directly in 8 bytes.
+pub const InstructionElement64 = packed union {
+    handler: *const HandlerFn,          // Function pointer for opcode handler
+    jumpdest_metadata: JumpDestMetadata, // Direct metadata (8 bytes)
+    inline_value: u64,                  // Inline constant for PUSH ops that fit
+    pointer_index: u64,                 // Index into u256_constants for large values
+    pc_value: u64,                      // Original PC for PC opcode
+};
+
+/// Select the appropriate InstructionElement based on platform.
+pub const InstructionElement = if (@sizeOf(usize) == 8)
+    InstructionElement64
+else if (@sizeOf(usize) == 4)
+    InstructionElement32
+else
+    @compileError("Unsupported platform: usize must be 32 or 64 bits");
+
+// Compile-time verification that InstructionElement fits in usize
+comptime {
+    if (@sizeOf(InstructionElement) != @sizeOf(usize)) {
+        const elem_size = @sizeOf(InstructionElement);
+        const usize_size = @sizeOf(usize);
+        const jumpdest_size = @sizeOf(JumpDestMetadata);
+        @compileError(std.fmt.comptimePrint(
+            "InstructionElement size ({}) must equal usize ({}) for zero-overhead abstraction. JumpDestMetadata size: {}",
+            .{ elem_size, usize_size, jumpdest_size }
+        ));
+    }
+}
 
 /// Compile-time configuration for the analyzer.
 pub const AnalysisConfig = struct {
@@ -533,7 +564,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                             const jd_metadata = block.metadata;
                             
                             // On 64-bit systems, store metadata directly
-                            if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata)) {
+                            if (@sizeOf(usize) == 8) {
                                 try stream.append(.{ .jumpdest_metadata = jd_metadata });
                             } else {
                                 // On 32-bit systems, store in constants array and use pointer
@@ -548,7 +579,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                                 try constants.append(value);
                                 // Cast the index to a pointer to JumpDestMetadata
                                 const metadata_ptr = @as(*const JumpDestMetadata, @ptrFromInt(const_idx));
-                                try stream.append(.{ .jumpdest_metadata = metadata_ptr });
+                                try stream.append(.{ .jumpdest_pointer = metadata_ptr });
                             }
                             metadata_found = true;
                             break;
