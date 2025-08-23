@@ -563,18 +563,16 @@ fn markJumpdestSimd(bytecode: []const u8, is_push_data: []const u8, is_jumpdest:
 }
 
 // Mock handler for tests
-fn testMockHandler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+fn testMockHandler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
     _ = frame;
     _ = plan;
-    _ = idx;
     unreachable; // Test handlers don't actually execute
 }
 
 // Test fusion handler
-fn testFusionHandler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+fn testFusionHandler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
     _ = frame;
     _ = plan;
-    _ = idx;
     unreachable; // Test handlers don't actually execute
 }
 

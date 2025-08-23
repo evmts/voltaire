@@ -44,8 +44,8 @@ pub const JumpDestMetadata = packed struct {
 };
 
 /// Handler function type for instruction execution.
-/// Takes frame, plan, and instruction index. Uses tail call recursion.
-pub const HandlerFn = fn (frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn;
+/// Takes frame and plan. Uses tail call recursion.
+pub const HandlerFn = fn (frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn;
 
 /// Instruction stream element for 32-bit platforms.
 pub const InstructionElement32 = packed union {
@@ -436,10 +436,9 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
 }
 
 // Test handler function that does nothing (for testing)
-fn testHandler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+fn testHandler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
     _ = frame;
     _ = plan;
-    _ = idx;
     unreachable; // Test handlers don't actually execute
 }
 

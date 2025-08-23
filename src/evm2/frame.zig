@@ -440,7 +440,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             const first_handler = self.plan.?.instructionStream[0].handler;
             
             // Start execution - handlers will throw STOP when done
-            first_handler(self, &self.plan.?, &self.instruction_idx) catch |err| {
+            first_handler(self, &self.plan.?) catch |err| {
                 if (err == Error.STOP) return; // Normal termination
                 return err;
             };
@@ -448,452 +448,418 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         // Individual PUSH handlers
-        fn push0_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push0_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.push(0);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH0);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH0);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push1_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push1_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value = @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH1));
+            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH1));
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH1);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH1);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push2_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value = @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH2));
+            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH2));
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH2);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH2);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         // PUSH3-PUSH8 handlers - these fit inline in InstructionElement (up to usize)
         // On 32-bit systems: PUSH1-PUSH4 fit inline
         // On 64-bit systems: PUSH1-PUSH8 fit inline
-        fn push3_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value = @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH3));
+            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH3));
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH3);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH3);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push4_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value = @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH4));
+            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH4));
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH4);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH4);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push5_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push5_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             if (comptime @sizeOf(plan_mod.InstructionElement) == @sizeOf(u64)) {
                 // 64-bit platform - fits inline
-                const value = @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH5));
+                const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH5));
                 try self.stack.push(value);
             } else {
                 // 32-bit platform - need pointer
-                const result = plan_ptr.getMetadata(idx_ptr, .PUSH5);
+                const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH5);
                 const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
                 try self.stack.push(value);
             }
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH5);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH5);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push6_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push6_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             if (comptime @sizeOf(plan_mod.InstructionElement) == @sizeOf(u64)) {
                 // 64-bit platform - fits inline
-                const value = @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH6));
+                const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH6));
                 try self.stack.push(value);
             } else {
                 // 32-bit platform - need pointer
-                const result = plan_ptr.getMetadata(idx_ptr, .PUSH6);
+                const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH6);
                 const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
                 try self.stack.push(value);
             }
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH6);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH6);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push7_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push7_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             if (comptime @sizeOf(plan_mod.InstructionElement) == @sizeOf(u64)) {
                 // 64-bit platform - fits inline
-                const value = @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH7));
+                const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH7));
                 try self.stack.push(value);
             } else {
                 // 32-bit platform - need pointer
-                const result = plan_ptr.getMetadata(idx_ptr, .PUSH7);
+                const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH7);
                 const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
                 try self.stack.push(value);
             }
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH7);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH7);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push8_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push8_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             if (comptime @sizeOf(plan_mod.InstructionElement) == @sizeOf(u64)) {
                 // 64-bit platform - fits inline
-                const value = @as(WordType, plan_ptr.getMetadata(idx_ptr, .PUSH8));
+                const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH8));
                 try self.stack.push(value);
             } else {
                 // 32-bit platform - need pointer
-                const result = plan_ptr.getMetadata(idx_ptr, .PUSH8);
+                const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH8);
                 const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
                 try self.stack.push(value);
             }
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH8);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH8);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         // PUSH9-PUSH16 handlers - these MAY fit inline on 64-bit systems
         // The plan.getMetadata will return either inline value or pointer based on platform
-        fn push9_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push9_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const result = plan_ptr.getMetadata(idx_ptr, .PUSH9);
+            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH9);
             const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH9);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH9);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         // Similar handlers for PUSH10-PUSH16
-        fn push10_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push10_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const result = plan_ptr.getMetadata(idx_ptr, .PUSH10);
+            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH10);
             const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH10);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH10);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push11_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push11_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const result = plan_ptr.getMetadata(idx_ptr, .PUSH11);
+            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH11);
             const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH11);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH11);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push12_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push12_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const result = plan_ptr.getMetadata(idx_ptr, .PUSH12);
+            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH12);
             const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH12);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH12);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push13_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push13_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const result = plan_ptr.getMetadata(idx_ptr, .PUSH13);
+            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH13);
             const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH13);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH13);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push14_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push14_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const result = plan_ptr.getMetadata(idx_ptr, .PUSH14);
+            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH14);
             const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH14);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH14);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push15_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push15_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const result = plan_ptr.getMetadata(idx_ptr, .PUSH15);
+            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH15);
             const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH15);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH15);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push16_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push16_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const result = plan_ptr.getMetadata(idx_ptr, .PUSH16);
+            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH16);
             const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
             try self.stack.push(value);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH16);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH16);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
         
         // PUSH17-PUSH32 handlers - these ALWAYS use pointers
-        fn push17_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push17_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH17);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH17);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH17);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH17);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push18_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push18_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH18);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH18);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH18);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH18);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push19_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push19_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH19);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH19);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH19);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH19);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push20_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push20_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH20);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH20);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH20);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH20);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push21_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push21_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH21);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH21);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH21);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH21);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push22_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push22_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH22);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH22);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH22);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH22);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push23_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push23_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH23);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH23);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH23);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH23);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push24_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push24_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH24);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH24);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH24);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH24);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push25_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push25_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH25);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH25);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH25);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH25);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push26_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push26_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH26);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH26);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH26);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH26);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push27_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push27_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH27);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH27);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH27);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH27);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push28_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push28_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH28);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH28);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH28);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH28);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push29_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push29_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH29);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH29);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH29);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH29);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push30_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push30_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH30);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH30);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH30);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH30);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push31_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push31_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH31);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH31);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH31);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH31);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push32_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push32_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, .PUSH32);
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH32);
             try self.stack.push(value_ptr.*);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PUSH32);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH32);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn op_stop_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn op_stop_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             _ = plan;
-            _ = idx;
 
             // Check final gas before stopping
             try self.checkGas();
@@ -902,10 +868,9 @@ pub fn createFrame(comptime config: FrameConfig) type {
             unreachable;
         }
 
-        fn op_add_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn op_add_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             // Get opcode info for gas consumption
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.ADD)];
@@ -917,14 +882,13 @@ pub fn createFrame(comptime config: FrameConfig) type {
             try self.op_add();
 
             // Get next handler from plan
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .ADD);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .ADD);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn op_mul_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn op_mul_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             // Get opcode info for gas consumption
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MUL)];
@@ -936,17 +900,16 @@ pub fn createFrame(comptime config: FrameConfig) type {
             try self.op_mul();
 
             // Get next handler from plan
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .MUL);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .MUL);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         // Generic handler for simple opcodes that just increment PC
         fn makeSimpleHandler(comptime op_fn: fn (*Self) Error!void, comptime opcode: Opcode) HandlerFn {
             return struct {
-                fn handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+                fn handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
                     const self = @as(*Self, @ptrCast(@alignCast(frame)));
                     const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-                    const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
 
                     // Get opcode info for gas consumption
                     const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(opcode)];
@@ -958,8 +921,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
                     try op_fn(self);
 
                     // Get next handler from plan
-                    const next_handler = plan_ptr.getNextInstruction(idx_ptr, opcode);
-                    return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+                    const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, opcode);
+                    return @call(.always_tail, next_handler, .{ self, plan_ptr });
                 }
             }.handler;
         }
@@ -990,18 +953,17 @@ pub fn createFrame(comptime config: FrameConfig) type {
         const op_sar_handler = makeSimpleHandler(op_sar, .SAR);
         const op_pop_handler = makeSimpleHandler(op_pop, .POP);
         // Handler for PC opcode with inline PC value
-        fn op_pc_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn op_pc_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             // Get PC value from plan metadata
-            const pc_value = plan_ptr.getMetadata(idx_ptr, .PC);
+            const pc_value = plan_ptr.getMetadata(&self.instruction_idx, .PC);
             try self.stack.push(@as(WordType, @intCast(pc_value)));
             
             // Get next handler from plan
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .PC);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PC);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
         const op_gas_handler = makeSimpleHandler(op_gas, .GAS);
         const op_jumpdest_handler = makeSimpleHandler(op_jumpdest, .JUMPDEST);
@@ -1014,13 +976,12 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
 
 
-        fn op_invalid_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn op_invalid_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             std.log.warn("\n=== InvalidOpcode Debug ===", .{});
-            std.log.warn("Instruction index: {}", .{idx_ptr.*});
+            std.log.warn("Instruction index: {}", .{self.instruction_idx});
             std.log.warn("Bytecode: {any}", .{self.bytecode});
             std.log.warn("Instruction stream length: {}", .{plan_ptr.instructionStream.len});
             std.log.warn("==================\n", .{});
@@ -1037,448 +998,407 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         // Trace instruction handlers
-        fn trace_before_op_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn trace_before_op_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             // Call tracer before operation
             self.tracer.beforeOp(Self, self);
 
             // Get the next handler - trace handlers don't have metadata
-            const next_handler = plan_ptr.instructionStream[idx_ptr.*].handler;
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.instructionStream[&self.instruction_idx.*].handler;
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn trace_after_op_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn trace_after_op_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             // Call tracer after operation
             self.tracer.afterOp(Self, self);
 
             // Get the next handler - trace handlers don't have metadata
-            const next_handler = plan_ptr.instructionStream[idx_ptr.*].handler;
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.instructionStream[&self.instruction_idx.*].handler;
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
 
 
-        fn dup1_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup1_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(1);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP1);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP1);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup2_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(2);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP2);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP2);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup3_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(3);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP3);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP3);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup4_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(4);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP4);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP4);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup5_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup5_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(5);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP5);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP5);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup6_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup6_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(6);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP6);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP6);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup7_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup7_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(7);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP7);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP7);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup8_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup8_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(8);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP8);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP8);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup9_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup9_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(9);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP9);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP9);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup10_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup10_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(10);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP10);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP10);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup11_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup11_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(11);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP11);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP11);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup12_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup12_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(12);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP12);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP12);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup13_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup13_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(13);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP13);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP13);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup14_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup14_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(14);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP14);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP14);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup15_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup15_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(15);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP15);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP15);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn dup16_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn dup16_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.dup_n(16);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .DUP16);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP16);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap1_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap1_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(1);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP1);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP1);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap2_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(2);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP2);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP2);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap3_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(3);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP3);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP3);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap4_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(4);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP4);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP4);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap5_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap5_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(5);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP5);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP5);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap6_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap6_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(6);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP6);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP6);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap7_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap7_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(7);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP7);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP7);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap8_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap8_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(8);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP8);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP8);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap9_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap9_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(9);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP9);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP9);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap10_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap10_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(10);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP10);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP10);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap11_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap11_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(11);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP11);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP11);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap12_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap12_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(12);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP12);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP12);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap13_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap13_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(13);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP13);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP13);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap14_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap14_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(14);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP14);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP14);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap15_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap15_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(15);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP15);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP15);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn swap16_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn swap16_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             try self.stack.swap_n(16);
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, .SWAP16);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP16);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         // Fusion handlers for PUSH+ADD
-        fn push_add_inline_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push_add_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value = @as(WordType, plan_ptr.getMetadata(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_ADD_INLINE)));
+            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_ADD_INLINE)));
             const b = try self.stack.pop();
             const result = b +% value;
             try self.stack.push(result);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_ADD_INLINE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_ADD_INLINE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push_add_pointer_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push_add_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_ADD_POINTER));
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_ADD_POINTER));
             const b = try self.stack.pop();
             const result = b +% value_ptr.*;
             try self.stack.push(result);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_ADD_POINTER));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_ADD_POINTER));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         // Fusion handlers for PUSH+MUL
-        fn push_mul_inline_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push_mul_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value = @as(WordType, plan_ptr.getMetadata(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_MUL_INLINE)));
+            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_MUL_INLINE)));
             const b = try self.stack.pop();
             const result = b *% value;
             try self.stack.push(result);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_MUL_INLINE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_MUL_INLINE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push_mul_pointer_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push_mul_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_MUL_POINTER));
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_MUL_POINTER));
             const b = try self.stack.pop();
             const result = b *% value_ptr.*;
             try self.stack.push(result);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_MUL_POINTER));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_MUL_POINTER));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         // Fusion handlers for PUSH+DIV
-        fn push_div_inline_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push_div_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value = @as(WordType, plan_ptr.getMetadata(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_DIV_INLINE)));
+            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_DIV_INLINE)));
             const b = try self.stack.pop();
             const result = if (value == 0) 0 else b / value;
             try self.stack.push(result);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_DIV_INLINE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_DIV_INLINE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
-        fn push_div_pointer_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push_div_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const value_ptr = plan_ptr.getMetadata(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_DIV_POINTER));
+            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_DIV_POINTER));
             const b = try self.stack.pop();
             const result = if (value_ptr.* == 0) 0 else b / value_ptr.*;
             try self.stack.push(result);
             
-            const next_handler = plan_ptr.getNextInstruction(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_DIV_POINTER));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_DIV_POINTER));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
 
         // Fusion handlers for PUSH+JUMP
-        fn push_jump_inline_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push_jump_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const dest = @as(WordType, plan_ptr.getMetadata(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMP_INLINE)));
+            const dest = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMP_INLINE)));
             
             if (dest > max_bytecode_size) {
                 return Error.InvalidJump;
@@ -1491,17 +1411,16 @@ pub fn createFrame(comptime config: FrameConfig) type {
             };
             
             // Jump to the destination
-            idx_ptr.* = dest_idx;
+            self.instruction_idx = dest_idx;
             const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-            return @call(.always_tail, jump_handler, .{ self, plan_ptr, idx_ptr });
+            return @call(.always_tail, jump_handler, .{ self, plan_ptr });
         }
 
-        fn push_jump_pointer_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push_jump_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const dest_ptr = plan_ptr.getMetadata(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMP_POINTER));
+            const dest_ptr = plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMP_POINTER));
             const dest = dest_ptr.*;
             
             if (dest > max_bytecode_size) {
@@ -1515,18 +1434,17 @@ pub fn createFrame(comptime config: FrameConfig) type {
             };
             
             // Jump to the destination
-            idx_ptr.* = dest_idx;
+            self.instruction_idx = dest_idx;
             const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-            return @call(.always_tail, jump_handler, .{ self, plan_ptr, idx_ptr });
+            return @call(.always_tail, jump_handler, .{ self, plan_ptr });
         }
 
         // Fusion handlers for PUSH+JUMPI
-        fn push_jumpi_inline_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push_jumpi_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const dest = @as(WordType, plan_ptr.getMetadata(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMPI_INLINE)));
+            const dest = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMPI_INLINE)));
             const condition = try self.stack.pop();
             
             if (condition != 0) {
@@ -1541,22 +1459,21 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 };
                 
                 // Jump to the destination
-                idx_ptr.* = dest_idx;
+                self.instruction_idx = dest_idx;
                 const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-                return @call(.always_tail, jump_handler, .{ self, plan_ptr, idx_ptr });
+                return @call(.always_tail, jump_handler, .{ self, plan_ptr });
             } else {
                 // Condition is false, continue to next instruction
-                const next_handler = plan_ptr.getNextInstruction(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMPI_INLINE));
-                return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+                const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMPI_INLINE));
+                return @call(.always_tail, next_handler, .{ self, plan_ptr });
             }
         }
 
-        fn push_jumpi_pointer_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn push_jumpi_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
-            const dest_ptr = plan_ptr.getMetadata(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMPI_POINTER));
+            const dest_ptr = plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMPI_POINTER));
             const dest = dest_ptr.*;
             const condition = try self.stack.pop();
             
@@ -1572,20 +1489,19 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 };
                 
                 // Jump to the destination
-                idx_ptr.* = dest_idx;
+                self.instruction_idx = dest_idx;
                 const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-                return @call(.always_tail, jump_handler, .{ self, plan_ptr, idx_ptr });
+                return @call(.always_tail, jump_handler, .{ self, plan_ptr });
             } else {
                 // Condition is false, continue to next instruction
-                const next_handler = plan_ptr.getNextInstruction(idx_ptr, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMPI_POINTER));
-                return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+                const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(plan_mod.SyntheticOpcode.PUSH_JUMPI_POINTER));
+                return @call(.always_tail, next_handler, .{ self, plan_ptr });
             }
         }
 
-        fn op_jump_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn op_jump_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             const dest = try self.stack.pop();
 
@@ -1602,20 +1518,19 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
             // Look up the instruction index for the destination PC
             if (plan_ptr.getInstructionIndexForPc(dest_pc)) |new_idx| {
-                idx_ptr.* = new_idx;
+                self.instruction_idx = new_idx;
                 // Get the handler at the destination
                 const dest_handler = plan_ptr.instructionStream[new_idx].handler;
-                return @call(.always_tail, dest_handler, .{ self, plan_ptr, idx_ptr });
+                return @call(.always_tail, dest_handler, .{ self, plan_ptr });
             } else {
                 // PC is not a valid instruction start (e.g., middle of PUSH data)
                 return Error.InvalidJump;
             }
         }
 
-        fn op_jumpi_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
+        fn op_jumpi_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Self, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const idx_ptr = @as(*Plan.InstructionIndexType, @ptrCast(@alignCast(idx)));
             
             const dest = try self.stack.pop();
             const condition = try self.stack.pop();
@@ -1632,10 +1547,10 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
                 // Look up the instruction index for the destination PC
                 if (plan_ptr.getInstructionIndexForPc(dest_pc)) |new_idx| {
-                    idx_ptr.* = new_idx;
+                    self.instruction_idx = new_idx;
                     // Get the handler at the destination
                     const dest_handler = plan_ptr.instructionStream[new_idx].handler;
-                    return @call(.always_tail, dest_handler, .{ self, plan_ptr, idx_ptr });
+                    return @call(.always_tail, dest_handler, .{ self, plan_ptr });
                 } else {
                     // PC is not a valid instruction start (e.g., middle of PUSH data)
                     return Error.InvalidJump;
@@ -1643,8 +1558,8 @@ pub fn createFrame(comptime config: FrameConfig) type {
             } else {
                 // Condition is false, continue to next instruction
                 // PC update is handled by plan through instruction index update
-                const next_handler = plan_ptr.getNextInstruction(idx_ptr, .JUMPI);
-                return @call(.always_tail, next_handler, .{ self, plan_ptr, idx_ptr });
+                const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .JUMPI);
+                return @call(.always_tail, next_handler, .{ self, plan_ptr });
             }
         }
 
