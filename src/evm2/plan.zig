@@ -1,39 +1,9 @@
 /// Plan: Runtime data structure for the EVM interpreter.
 /// Contains the instruction stream (handler pointers + metadata) and constants.
 const std = @import("std");
-const opcode_data = @import("opcode_data.zig");
-const Opcode = opcode_data.Opcode;
-
-/// Synthetic opcodes for fused operations.
-/// These values are chosen to avoid conflicts with standard EVM opcodes.
-/// The compile-time check below ensures no conflicts exist.
-pub const SyntheticOpcode = enum(u8) {
-    PUSH_ADD_INLINE = 0xB0,
-    PUSH_ADD_POINTER = 0xB1,
-    PUSH_MUL_INLINE = 0xB2,
-    PUSH_MUL_POINTER = 0xB3,
-    PUSH_DIV_INLINE = 0xB4,
-    PUSH_DIV_POINTER = 0xB5,
-    PUSH_JUMP_INLINE = 0xB6,
-    PUSH_JUMP_POINTER = 0xB7,
-    PUSH_JUMPI_INLINE = 0xB8,
-    PUSH_JUMPI_POINTER = 0xB9,
-};
-
-
-// Compile-time check to ensure synthetic opcodes don't overlap with normal opcodes
-comptime {
-    @setEvalBranchQuota(10000);
-    for (@typeInfo(SyntheticOpcode).@"enum".fields) |syn_field| {
-        // Try to convert the synthetic opcode value to a regular Opcode
-        if (std.meta.intToEnum(Opcode, syn_field.value) catch null) |conflicting_opcode| {
-            @compileError(std.fmt.comptimePrint(
-                "Synthetic opcode {s} (0x{X}) conflicts with normal opcode {s}",
-                .{ syn_field.name, syn_field.value, @tagName(conflicting_opcode) }
-            ));
-        } 
-    }
-}
+const Opcode = @import("opcode.zig").Opcode;
+pub const PlanConfig = @import("plan_config.zig").PlanConfig;
+pub const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
 
 /// Metadata for JUMPDEST instructions.
 /// On 64-bit systems this fits in usize, on 32-bit it requires pointer.
@@ -78,25 +48,6 @@ comptime {
     }
 }
 
-/// Configuration for the plan.
-pub const PlanConfig = struct {
-    /// Word type for the EVM (typically u256).
-    WordType: type = u256,
-    /// Maximum bytecode size (determines PcType).
-    maxBytecodeSize: u32 = 24_576,
-    
-    /// Validate configuration at compile time.
-    fn validate(self: @This()) void {
-        if (@bitSizeOf(self.WordType) > 512) @compileError("WordType cannot exceed u512");
-        if (self.maxBytecodeSize > 65535) @compileError("maxBytecodeSize must be <= 65535");
-        if (self.maxBytecodeSize == 0) @compileError("maxBytecodeSize must be greater than 0");
-    }
-    
-    /// Derived PC type based on max bytecode size.
-    fn PcType(self: @This()) type {
-        return if (self.maxBytecodeSize <= std.math.maxInt(u16)) u16 else u32;
-    }
-};
 
 /// Factory function to create a Plan type with the given configuration.
 pub fn createPlan(comptime cfg: PlanConfig) type {
@@ -117,143 +68,167 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
         /// Key is PC value, value is instruction stream index.
         pc_to_instruction_idx: ?std.AutoHashMap(PcType, InstructionIndexType),
         
-        /// Get metadata for opcodes that have it, properly typed based on the opcode.
-        /// Returns the metadata at idx+1 and advances idx by 2.
+        /// Get metadata for opcodes that have it.
         pub fn getMetadata(
             self: *const Self,
             idx: *InstructionIndexType,
             comptime opcode: anytype,
         ) blk: {
-            // Determine if this is a synthetic opcode or regular opcode
-            const is_synthetic = if (@TypeOf(opcode) == u8) blk2: {
-                const val = opcode;
-                // Check against known synthetic opcode values at compile time
-                break :blk2 switch (val) {
-                    @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER),
-                    @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER),
-                    @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
-                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER),
-                    @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) => true,
-                    else => false,
-                };
-            } else false;
-            
-            const MetadataType = if (is_synthetic) blk2: {
-                // Handle synthetic opcodes
-                const val = @as(u8, opcode);
-                const fusion_type = switch (val) {
-                    // Fusion opcodes follow same pattern as their PUSH equivalent
-                    @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), 
-                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE) => usize, // For simplicity, return usize for inline fusions
-                    @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
-                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) => *const WordType,
-                    else => @compileError("Unknown synthetic opcode"),
-                };
-                break :blk2 fusion_type;
-            } else blk2: {
-                // Handle regular opcodes
-                const op = if (@TypeOf(opcode) == Opcode) 
-                    opcode 
+            // Convert opcode to u8 value for uniform handling
+            const opcode_value = blk2: {
+                break :blk2 if (@TypeOf(opcode) == u8)
+                    opcode
+                else if (@TypeOf(opcode) == Opcode)
+                    @intFromEnum(opcode)
+                else if (@TypeOf(opcode) == OpcodeSynthetic)
+                    @intFromEnum(opcode)
                 else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
-                    @field(Opcode, @tagName(opcode))
-                else 
+                    @intFromEnum(@field(Opcode, @tagName(opcode)))
+                else
                     @compileError("Invalid opcode type");
-                const MetadataType2 = switch (op) {
-                // PUSH opcodes return granular types
-                .PUSH1 => u8,
-                .PUSH2 => u16,
-                .PUSH3 => u24,
-                .PUSH4 => u32,
-                .PUSH5 => u40,
-                .PUSH6 => u48,
-                .PUSH7 => u56,
-                .PUSH8 => u64,
-                // Larger PUSH opcodes return pointer to u256 or inline based on platform
-                .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16 => if (@sizeOf(usize) >= 16) u128 else *const WordType,
-                .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
-                .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => *const WordType,
+            };
                 
-                // JUMPDEST returns metadata struct or pointer
-                .JUMPDEST => if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata))
+            // Determine metadata type based on opcode value
+            const MetadataType = switch (opcode_value) {
+                // PUSH opcodes return different types based on size
+                @intFromEnum(Opcode.PUSH1) => u8,
+                @intFromEnum(Opcode.PUSH2) => u16,
+                @intFromEnum(Opcode.PUSH3) => u24,
+                @intFromEnum(Opcode.PUSH4) => u32,
+                @intFromEnum(Opcode.PUSH5) => u40,
+                @intFromEnum(Opcode.PUSH6) => u48,
+                @intFromEnum(Opcode.PUSH7) => u56,
+                @intFromEnum(Opcode.PUSH8) => u64,
+                // Larger PUSH opcodes return inline or pointer based on platform
+                @intFromEnum(Opcode.PUSH9), @intFromEnum(Opcode.PUSH10), @intFromEnum(Opcode.PUSH11), @intFromEnum(Opcode.PUSH12),
+                @intFromEnum(Opcode.PUSH13), @intFromEnum(Opcode.PUSH14), @intFromEnum(Opcode.PUSH15), @intFromEnum(Opcode.PUSH16),
+                @intFromEnum(Opcode.PUSH17), @intFromEnum(Opcode.PUSH18), @intFromEnum(Opcode.PUSH19), @intFromEnum(Opcode.PUSH20),
+                @intFromEnum(Opcode.PUSH21), @intFromEnum(Opcode.PUSH22), @intFromEnum(Opcode.PUSH23), @intFromEnum(Opcode.PUSH24),
+                @intFromEnum(Opcode.PUSH25), @intFromEnum(Opcode.PUSH26), @intFromEnum(Opcode.PUSH27), @intFromEnum(Opcode.PUSH28),
+                @intFromEnum(Opcode.PUSH29), @intFromEnum(Opcode.PUSH30), @intFromEnum(Opcode.PUSH31), @intFromEnum(Opcode.PUSH32) => if (@sizeOf(usize) == 8)
+                    inline_value: {
+                        const push_bytes = opcode_value - (@intFromEnum(Opcode.PUSH1) - 1);
+                        if (push_bytes <= 8) {
+                            break :inline_value u64;
+                        } else {
+                            break :inline_value *const WordType;
+                        }
+                    }
+                else
+                    *const WordType,
+                
+                // Synthetic fusion opcodes
+                @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) => if (@sizeOf(usize) == 8) u64 else u32,
+                
+                @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER) => *const WordType,
+                
+                // JUMPDEST returns metadata inline or via pointer
+                @intFromEnum(Opcode.JUMPDEST) => if (@sizeOf(usize) == 8)
                     JumpDestMetadata
                 else
                     *const JumpDestMetadata,
                 
                 // PC returns the original PC value
-                .PC => PcType,
+                @intFromEnum(Opcode.PC) => PcType,
                 
                 // All other opcodes have no metadata
                 else => @compileError("Opcode has no metadata"),
-                };
-                break :blk2 MetadataType2;
             };
             break :blk MetadataType;
         } {
-            const current_idx = idx.*;
-            if (current_idx + 1 >= self.instructionStream.len) {
-                @panic("getMetadata: trying to read metadata past end of instruction stream");
+            // Get metadata from the next element in instruction stream
+            const metadata_idx = idx.* + 1;
+            if (metadata_idx >= self.instructionStream.len) {
+                @panic("getMetadata: trying to read past end of instruction stream");
             }
-            const metadata_elem = self.instructionStream[current_idx + 1];
-            // DO NOT advance idx here - only getNextInstruction should advance
             
-            // Handle regular opcodes
-            if (@TypeOf(opcode) == Opcode or @typeInfo(@TypeOf(opcode)) == .enum_literal) {
-                const actual_op = if (@TypeOf(opcode) == Opcode) 
-                    opcode 
-                else 
-                    @field(Opcode, @tagName(opcode));
-                return switch (actual_op) {
-                    // PUSH opcodes return the inline value with correct type
-                    .PUSH1 => @as(u8, @truncate(metadata_elem.inline_value)),
-                    .PUSH2 => @as(u16, @truncate(metadata_elem.inline_value)),
-                    .PUSH3 => @as(u24, @truncate(metadata_elem.inline_value)),
-                    .PUSH4 => @as(u32, @truncate(metadata_elem.inline_value)),
-                    .PUSH5 => @as(u40, @truncate(metadata_elem.inline_value)),
-                    .PUSH6 => @as(u48, @truncate(metadata_elem.inline_value)),
-                    .PUSH7 => @as(u56, @truncate(metadata_elem.inline_value)),
-                    .PUSH8 => @as(u64, @truncate(metadata_elem.inline_value)),
-                    
-                    // Larger PUSH opcodes
-                    .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16 => {
-                        if (@sizeOf(usize) >= 16) {
-                            return @as(u128, @truncate(metadata_elem.inline_value));
+            const elem = self.instructionStream[metadata_idx];
+            
+            // Extract the right type based on compile-time knowledge
+            // Need to re-determine the type since we can't access the block expression result
+            const opcode_value = comptime blk2: {
+                break :blk2 if (@TypeOf(opcode) == u8)
+                    opcode
+                else if (@TypeOf(opcode) == Opcode)
+                    @intFromEnum(opcode)
+                else if (@TypeOf(opcode) == OpcodeSynthetic)
+                    @intFromEnum(opcode)
+                else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
+                    @intFromEnum(@field(Opcode, @tagName(opcode)))
+                else
+                    @compileError("Invalid opcode type");
+            };
+            
+            // Return based on the opcode's metadata type  
+            return switch (comptime opcode_value) {
+                @intFromEnum(Opcode.PUSH1) => @as(u8, @intCast(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH2) => @as(u16, @intCast(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH3) => @as(u24, @intCast(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH4) => @as(u32, @intCast(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH5) => @as(u40, @intCast(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH6) => @as(u48, @intCast(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH7) => @as(u56, @intCast(elem.inline_value)),
+                @intFromEnum(Opcode.PUSH8) => elem.inline_value,
+                
+                // Larger PUSH opcodes
+                @intFromEnum(Opcode.PUSH9), @intFromEnum(Opcode.PUSH10), @intFromEnum(Opcode.PUSH11), @intFromEnum(Opcode.PUSH12),
+                @intFromEnum(Opcode.PUSH13), @intFromEnum(Opcode.PUSH14), @intFromEnum(Opcode.PUSH15), @intFromEnum(Opcode.PUSH16),
+                @intFromEnum(Opcode.PUSH17), @intFromEnum(Opcode.PUSH18), @intFromEnum(Opcode.PUSH19), @intFromEnum(Opcode.PUSH20),
+                @intFromEnum(Opcode.PUSH21), @intFromEnum(Opcode.PUSH22), @intFromEnum(Opcode.PUSH23), @intFromEnum(Opcode.PUSH24),
+                @intFromEnum(Opcode.PUSH25), @intFromEnum(Opcode.PUSH26), @intFromEnum(Opcode.PUSH27), @intFromEnum(Opcode.PUSH28),
+                @intFromEnum(Opcode.PUSH29), @intFromEnum(Opcode.PUSH30), @intFromEnum(Opcode.PUSH31), @intFromEnum(Opcode.PUSH32) => blk: {
+                    if (@sizeOf(usize) == 8) {
+                        const push_bytes = opcode_value - (@intFromEnum(Opcode.PUSH1) - 1);
+                        if (push_bytes <= 8) {
+                            break :blk elem.inline_value;
                         } else {
-                            const idx_val = metadata_elem.pointer_index;
-                            return &self.u256_constants[idx_val];
+                            const pointer_idx = elem.pointer_index;
+                            if (pointer_idx >= self.u256_constants.len) {
+                                @panic("getMetadata: pointer index out of bounds");
+                            }
+                            break :blk &self.u256_constants[pointer_idx];
                         }
-                    },
-                    .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
-                    .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
-                        const idx_val = metadata_elem.pointer_index;
-                        return &self.u256_constants[idx_val];
-                    },
-                    
-                    // JUMPDEST returns the metadata directly or via pointer
-                    .JUMPDEST => if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata))
-                        metadata_elem.jumpdest_metadata
-                    else
-                        metadata_elem.jumpdest_pointer,
-                    
-                    // PC returns the PC value
-                    .PC => @as(PcType, @truncate(metadata_elem.inline_value)),
-                    
-                    else => unreachable, // Compile error already prevents this
-                };
-            } else if (@TypeOf(opcode) == u8) {
-                // Handle fusion opcodes (u8)
-                return switch (opcode) {
-                    @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), 
-                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE) => metadata_elem.inline_value,
-                    @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
-                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) => blk: {
-                        const idx_val = metadata_elem.pointer_index;
-                        break :blk &self.u256_constants[idx_val];
-                    },
-                    else => unreachable,
-                };
-            } else {
-                @compileError("Unexpected opcode type");
-            }
+                    } else {
+                        const pointer_idx = elem.pointer_index;
+                        if (pointer_idx >= self.u256_constants.len) {
+                            @panic("getMetadata: pointer index out of bounds");
+                        }
+                        break :blk &self.u256_constants[pointer_idx];
+                    }
+                },
+                
+                // Synthetic opcodes
+                @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) => if (@sizeOf(usize) == 8) elem.inline_value else @as(u32, @intCast(elem.inline_value)),
+                
+                @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER) => blk: {
+                    const pointer_idx = elem.pointer_index;
+                    if (pointer_idx >= self.u256_constants.len) {
+                        @panic("getMetadata: pointer index out of bounds");
+                    }
+                    break :blk &self.u256_constants[pointer_idx];
+                },
+                
+                @intFromEnum(Opcode.JUMPDEST) => if (@sizeOf(usize) == 8) elem.jumpdest_metadata else elem.jumpdest_pointer.*,
+                @intFromEnum(Opcode.PC) => @as(PcType, @intCast(elem.inline_value)),
+                
+                else => @compileError("Opcode has no metadata"),
+            };
         }
         
         /// Get the next instruction handler and advance the instruction pointer.
@@ -263,53 +238,54 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
             idx: *InstructionIndexType,
             comptime opcode: anytype,
         ) *const HandlerFn {
-            // Check if it's a synthetic opcode
-            const is_synthetic = if (@TypeOf(opcode) == u8) blk2: {
-                const val = opcode;
-                // Check against known synthetic opcode values at compile time
-                break :blk2 switch (val) {
-                    @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER),
-                    @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER),
-                    @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
-                    @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER),
-                    @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) => true,
-                    else => false,
-                };
-            } else false;
-            
-            const has_metadata = if (is_synthetic) blk2: {
-                // All synthetic opcodes have metadata
-                break :blk2 true;
-            } else blk2: {
-                const op = if (@TypeOf(opcode) == Opcode) 
-                    opcode 
+            // Convert opcode to u8 value for uniform handling
+            const opcode_value = blk: {
+                break :blk if (@TypeOf(opcode) == u8)
+                    opcode
+                else if (@TypeOf(opcode) == Opcode)
+                    @intFromEnum(opcode)
+                else if (@TypeOf(opcode) == OpcodeSynthetic)
+                    @intFromEnum(opcode)
                 else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
-                    @field(Opcode, @tagName(opcode))
-                else 
+                    @intFromEnum(@field(Opcode, @tagName(opcode)))
+                else
                     @compileError("Invalid opcode type");
-                const result = switch (op) {
+            };
+                
+            // Check if opcode has metadata
+            const has_metadata = comptime switch (opcode_value) {
                 // PUSH opcodes have metadata (except PUSH0)
-                .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7,
-                .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15,
-                .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23,
-                .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31,
-                .PUSH32,
+                @intFromEnum(Opcode.PUSH1), @intFromEnum(Opcode.PUSH2), @intFromEnum(Opcode.PUSH3), @intFromEnum(Opcode.PUSH4),
+                @intFromEnum(Opcode.PUSH5), @intFromEnum(Opcode.PUSH6), @intFromEnum(Opcode.PUSH7), @intFromEnum(Opcode.PUSH8),
+                @intFromEnum(Opcode.PUSH9), @intFromEnum(Opcode.PUSH10), @intFromEnum(Opcode.PUSH11), @intFromEnum(Opcode.PUSH12),
+                @intFromEnum(Opcode.PUSH13), @intFromEnum(Opcode.PUSH14), @intFromEnum(Opcode.PUSH15), @intFromEnum(Opcode.PUSH16),
+                @intFromEnum(Opcode.PUSH17), @intFromEnum(Opcode.PUSH18), @intFromEnum(Opcode.PUSH19), @intFromEnum(Opcode.PUSH20),
+                @intFromEnum(Opcode.PUSH21), @intFromEnum(Opcode.PUSH22), @intFromEnum(Opcode.PUSH23), @intFromEnum(Opcode.PUSH24),
+                @intFromEnum(Opcode.PUSH25), @intFromEnum(Opcode.PUSH26), @intFromEnum(Opcode.PUSH27), @intFromEnum(Opcode.PUSH28),
+                @intFromEnum(Opcode.PUSH29), @intFromEnum(Opcode.PUSH30), @intFromEnum(Opcode.PUSH31), @intFromEnum(Opcode.PUSH32),
+                // Synthetic fusion opcodes all have metadata
+                @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
+                @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
                 // JUMPDEST has metadata
-                .JUMPDEST,
+                @intFromEnum(Opcode.JUMPDEST),
                 // PC has metadata (the original PC value)
-                .PC => true,
+                @intFromEnum(Opcode.PC) => true,
                 // All other opcodes including PUSH0 have no metadata
                 else => false,
-                };
-                break :blk2 result;
             };
 
-            // Advance index FIRST
+            // Get the current handler before advancing
+            const handler = self.instructionStream[idx.*].handler;
+            
+            // Advance index
             idx.* += 1;
             if (has_metadata) idx.* += 1;
             
-            // Then return the handler at the new position
-            return self.instructionStream[idx.*].handler;
+            // Return the handler
+            return handler;
         }
         
         /// Get instruction index for a given PC value.
@@ -321,44 +297,30 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
             return null;
         }
         
-        /// Pretty print the plan for debugging.
+        /// Debug print the plan structure.
         pub fn debugPrint(self: *const Self) void {
-            std.debug.print("\n=== Plan Debug Visualization ===\n", .{});
+            std.debug.print("\n=== Plan Debug Info ===\n", .{});
             std.debug.print("Instruction Stream Length: {}\n", .{self.instructionStream.len});
-            std.debug.print("Constants Length: {}\n", .{self.u256_constants.len});
-            
+            std.debug.print("Constants Array Length: {}\n", .{self.u256_constants.len});
             if (self.pc_to_instruction_idx) |map| {
                 std.debug.print("PC Mappings: {} entries\n", .{map.count()});
             } else {
                 std.debug.print("PC Mappings: none\n", .{});
             }
-            
             std.debug.print("\nInstruction Stream:\n", .{});
             var i: InstructionIndexType = 0;
             while (i < self.instructionStream.len) : (i += 1) {
                 const elem = self.instructionStream[i];
-                
-                // Check if this is a handler or metadata
                 if (@intFromPtr(elem.handler) > 0x10000) {
-                    // This is a handler pointer
                     std.debug.print("  [{d:4}] Handler: ", .{i});
-                    
-                    // Try to identify the handler by checking against known handlers
-                    // We'll need to pass handlers array to make this more accurate
-                    // For now, just show the pointer
                     std.debug.print("0x{x}\n", .{@intFromPtr(elem.handler)});
                 } else {
-                    // This is metadata
                     std.debug.print("  [{d:4}] Metadata: ", .{i});
-                    
-                    // Check what type of metadata
                     if (@sizeOf(usize) == 8) {
-                        // Could be inline value or jumpdest metadata
                         const as_u64 = elem.inline_value;
                         if (as_u64 <= 0xFFFFFFFF) {
                             std.debug.print("inline_value = 0x{x} ({})", .{ as_u64, as_u64 });
                         } else {
-                            // Might be jumpdest metadata
                             const as_jumpdest = elem.jumpdest_metadata;
                             std.debug.print("jumpdest {{ gas: {}, min_stack: {}, max_stack: {} }}", .{
                                 as_jumpdest.gas,
@@ -367,7 +329,6 @@ pub fn createPlan(comptime cfg: PlanConfig) type {
                             });
                         }
                     } else {
-                        // 32-bit or pointer index
                         if (elem.pointer_index < self.u256_constants.len) {
                             std.debug.print("pointer_index = {} -> 0x{x}", .{ 
                                 elem.pointer_index, 
@@ -442,40 +403,6 @@ fn testHandler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
     unreachable; // Test handlers don't actually execute
 }
 
-test "SyntheticOpcode values are unique and non-conflicting" {
-    // Test that all synthetic opcodes have unique values
-    const opcodes = [_]u8{
-        @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE),
-        @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE),
-        @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE),
-        @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE),
-        @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE),
-        @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER),
-    };
-    
-    // Check for duplicates
-    for (opcodes, 0..) |op1, i| {
-        for (opcodes[i+1..]) |op2| {
-            try std.testing.expect(op1 != op2);
-        }
-    }
-    
-    // Verify expected values
-    try std.testing.expectEqual(@as(u8, 0xB0), @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB1), @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB2), @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB3), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB4), @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB5), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB6), @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB7), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER));
-    try std.testing.expectEqual(@as(u8, 0xB8), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE));
-    try std.testing.expectEqual(@as(u8, 0xB9), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER));
-}
 
 test "JumpDestMetadata size and alignment" {
     // Test that JumpDestMetadata is properly packed
@@ -583,11 +510,11 @@ test "Plan getMetadata for large PUSH opcodes" {
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
     
-    // PUSH32 pointing to constants[0]
+    // PUSH32 with pointer to first constant
     try stream.append(.{ .handler = &testHandler });
     try stream.append(.{ .pointer_index = 0 });
     
-    // PUSH32 pointing to constants[1]
+    // PUSH20 with pointer to second constant
     try stream.append(.{ .handler = &testHandler });
     try stream.append(.{ .pointer_index = 1 });
     
@@ -596,69 +523,108 @@ test "Plan getMetadata for large PUSH opcodes" {
         .u256_constants = constants,
         .pc_to_instruction_idx = null,
     };
-    defer {
-        allocator.free(plan.instructionStream);
-        plan.instructionStream = &.{};
-        plan.u256_constants = &.{};
-    }
+    defer plan.deinit(allocator);
     
     // Test PUSH32
     var idx: Plan.InstructionIndexType = 0;
     const push32_ptr = plan.getMetadata(&idx, .PUSH32);
-    try std.testing.expectEqual(@as(u256, 0x123456789ABCDEF0123456789ABCDEF0), push32_ptr.*);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
+    try std.testing.expectEqual(constants[0], push32_ptr.*);
     
-    // Test another PUSH32
-    idx = 2; // Move to next PUSH32 handler position
-    const push32_ptr2 = plan.getMetadata(&idx, .PUSH32);
-    try std.testing.expectEqual(std.math.maxInt(u256), push32_ptr2.*);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
+    // Test PUSH20
+    idx = 2;
+    const push20_ptr = plan.getMetadata(&idx, .PUSH20);
+    try std.testing.expectEqual(constants[1], push20_ptr.*);
+}
+
+test "Plan getMetadata for synthetic opcodes" {
+    const allocator = std.testing.allocator;
+    const Plan = createPlan(.{});
+    
+    // Create constants array
+    var constants = try allocator.alloc(Plan.WordType, 1);
+    defer allocator.free(constants);
+    constants[0] = 0xDEADBEEF;
+    
+    // Create instruction stream
+    var stream = std.ArrayList(InstructionElement).init(allocator);
+    defer stream.deinit();
+    
+    // PUSH_ADD_INLINE with inline value
+    try stream.append(.{ .handler = &testHandler });
+    try stream.append(.{ .inline_value = 999 });
+    
+    // PUSH_MUL_POINTER with pointer
+    try stream.append(.{ .handler = &testHandler });
+    try stream.append(.{ .pointer_index = 0 });
+    
+    var plan = Plan{
+        .instructionStream = try stream.toOwnedSlice(),
+        .u256_constants = constants,
+        .pc_to_instruction_idx = null,
+    };
+    defer plan.deinit(allocator);
+    
+    // Test PUSH_ADD_INLINE
+    var idx: Plan.InstructionIndexType = 0;
+    const inline_val = plan.getMetadata(&idx, OpcodeSynthetic.PUSH_ADD_INLINE);
+    if (@sizeOf(usize) == 8) {
+        try std.testing.expectEqual(@as(u64, 999), inline_val);
+    } else {
+        try std.testing.expectEqual(@as(u32, 999), inline_val);
+    }
+    
+    // Test PUSH_MUL_POINTER
+    idx = 2;
+    const ptr_val = plan.getMetadata(&idx, OpcodeSynthetic.PUSH_MUL_POINTER);
+    try std.testing.expectEqual(constants[0], ptr_val.*);
 }
 
 test "Plan getMetadata for JUMPDEST" {
     const allocator = std.testing.allocator;
     const Plan = createPlan(.{});
     
+    // Create instruction stream
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
     
-    const metadata = JumpDestMetadata{
-        .gas = 100,
-        .min_stack = 2,
-        .max_stack = 5,
-    };
-    
-    // On 64-bit platforms, metadata fits inline
-    if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata)) {
+    if (@sizeOf(usize) == 8) {
+        // On 64-bit, JUMPDEST metadata fits inline
         try stream.append(.{ .handler = &testHandler });
-        try stream.append(.{ .jumpdest_metadata = metadata });
-        
-        var plan = Plan{
-            .instructionStream = try stream.toOwnedSlice(),
-            .u256_constants = &.{},
-            .pc_to_instruction_idx = null,
-        };
-        defer plan.deinit(allocator);
-        
-        var idx: Plan.InstructionIndexType = 0;
-        const jumpdest_meta = plan.getMetadata(&idx, .JUMPDEST);
-        try std.testing.expectEqual(metadata.gas, jumpdest_meta.gas);
-        try std.testing.expectEqual(metadata.min_stack, jumpdest_meta.min_stack);
-        try std.testing.expectEqual(metadata.max_stack, jumpdest_meta.max_stack);
-        try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
+        try stream.append(.{ .jumpdest_metadata = .{
+            .gas = 100,
+            .min_stack = -5,
+            .max_stack = 10,
+        }});
+    } else {
+        // On 32-bit, need to use pointer (skipping for simplicity in test)
+        return;
     }
+    
+    var plan = Plan{
+        .instructionStream = try stream.toOwnedSlice(),
+        .u256_constants = &.{},
+        .pc_to_instruction_idx = null,
+    };
+    defer plan.deinit(allocator);
+    
+    var idx: Plan.InstructionIndexType = 0;
+    const jumpdest_meta = plan.getMetadata(&idx, .JUMPDEST);
+    try std.testing.expectEqual(@as(u32, 100), jumpdest_meta.gas);
+    try std.testing.expectEqual(@as(i16, -5), jumpdest_meta.min_stack);
+    try std.testing.expectEqual(@as(i16, 10), jumpdest_meta.max_stack);
 }
 
 test "Plan getMetadata for PC opcode" {
     const allocator = std.testing.allocator;
     const Plan = createPlan(.{});
     
+    // Create instruction stream
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
     
-    // PC with value 1234
+    // PC with original PC value
     try stream.append(.{ .handler = &testHandler });
-    try stream.append(.{ .inline_value = 1234 });
+    try stream.append(.{ .inline_value = 42 }); // Original PC was 42
     
     var plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
@@ -669,66 +635,24 @@ test "Plan getMetadata for PC opcode" {
     
     var idx: Plan.InstructionIndexType = 0;
     const pc_val = plan.getMetadata(&idx, .PC);
-    try std.testing.expectEqual(@as(Plan.PcType, 1234), pc_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
+    try std.testing.expectEqual(@as(Plan.PcType, 42), pc_val);
 }
 
-test "Plan getMetadata for synthetic opcodes" {
+test "Plan getNextInstruction advances correctly" {
     const allocator = std.testing.allocator;
     const Plan = createPlan(.{});
     
-    // Create constants
-    var constants = try allocator.alloc(Plan.WordType, 1);
-    defer allocator.free(constants);
-    constants[0] = 0xDEADBEEF;
-    
+    // Create instruction stream
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
     
-    // PUSH_ADD_INLINE with inline value
+    // ADD (no metadata)
     try stream.append(.{ .handler = &testHandler });
-    try stream.append(.{ .inline_value = 999 });
-    
-    // PUSH_MUL_POINTER pointing to constant
+    // PUSH1 (has metadata)
     try stream.append(.{ .handler = &testHandler });
-    try stream.append(.{ .pointer_index = 0 });
-    
-    var plan = Plan{
-        .instructionStream = try stream.toOwnedSlice(),
-        .u256_constants = constants,
-        .pc_to_instruction_idx = null,
-    };
-    defer {
-        allocator.free(plan.instructionStream);
-        plan.instructionStream = &.{};
-        plan.u256_constants = &.{};
-    }
-    
-    // Test PUSH_ADD_INLINE
-    var idx: Plan.InstructionIndexType = 0;
-    const inline_val = plan.getMetadata(&idx, @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE));
-    try std.testing.expectEqual(@as(usize, 999), inline_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
-    
-    // Test PUSH_MUL_POINTER
-    idx = 2; // Move to next handler position
-    const ptr_val = plan.getMetadata(&idx, @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER));
-    try std.testing.expectEqual(@as(u256, 0xDEADBEEF), ptr_val.*);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
-}
-
-test "Plan getNextInstruction without metadata" {
-    const allocator = std.testing.allocator;
-    const Plan = createPlan(.{});
-    
-    var stream = std.ArrayList(InstructionElement).init(allocator);
-    defer stream.deinit();
-    
-    // ADD opcode (no metadata)
+    try stream.append(.{ .inline_value = 5 });
+    // MUL (no metadata)
     try stream.append(.{ .handler = &testHandler });
-    // Another opcode
-    const handler2: *const HandlerFn = &testHandler;
-    try stream.append(.{ .handler = handler2 });
     
     var plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
@@ -737,79 +661,72 @@ test "Plan getNextInstruction without metadata" {
     };
     defer plan.deinit(allocator);
     
-    // Test opcode without metadata
+    // Test advancing from ADD (no metadata)
     var idx: Plan.InstructionIndexType = 0;
-    const handler = plan.getNextInstruction(&idx, .ADD);
-    try std.testing.expectEqual(&testHandler, handler);
+    const handler1 = plan.getNextInstruction(&idx, .ADD);
+    try std.testing.expectEqual(@intFromPtr(&testHandler), @intFromPtr(handler1));
     try std.testing.expectEqual(@as(Plan.InstructionIndexType, 1), idx);
+    
+    // Test advancing from PUSH1 (has metadata)
+    const handler2 = plan.getNextInstruction(&idx, .PUSH1);
+    try std.testing.expectEqual(@intFromPtr(&testHandler), @intFromPtr(handler2));
+    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 3), idx); // Skipped metadata
+    
+    // Test advancing from MUL (no metadata)
+    const handler3 = plan.getNextInstruction(&idx, .MUL);
+    try std.testing.expectEqual(@intFromPtr(&testHandler), @intFromPtr(handler3));
+    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 4), idx);
 }
 
-test "Plan getNextInstruction with metadata" {
+test "Plan getInstructionIndexForPc" {
     const allocator = std.testing.allocator;
     const Plan = createPlan(.{});
     
-    var stream = std.ArrayList(InstructionElement).init(allocator);
-    defer stream.deinit();
+    // Create PC mapping
+    var map = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator);
+    defer map.deinit();
     
-    // PUSH1 with metadata
-    try stream.append(.{ .handler = &testHandler });
-    try stream.append(.{ .inline_value = 42 });
-    // Next instruction
-    const handler2: *const HandlerFn = &testHandler;
-    try stream.append(.{ .handler = handler2 });
+    try map.put(0, 0);   // PC 0 -> Instruction 0
+    try map.put(1, 1);   // PC 1 -> Instruction 1
+    try map.put(3, 3);   // PC 3 -> Instruction 3 (skipped PC 2 due to PUSH data)
     
     var plan = Plan{
-        .instructionStream = try stream.toOwnedSlice(),
+        .instructionStream = &.{},
         .u256_constants = &.{},
-        .pc_to_instruction_idx = null,
+        .pc_to_instruction_idx = map,
     };
-    defer plan.deinit(allocator);
     
-    // Test opcode with metadata
-    var idx: Plan.InstructionIndexType = 0;
-    const handler = plan.getNextInstruction(&idx, .PUSH1);
-    try std.testing.expectEqual(&testHandler, handler);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
+    // Test valid PCs
+    try std.testing.expectEqual(@as(?Plan.InstructionIndexType, 0), plan.getInstructionIndexForPc(0));
+    try std.testing.expectEqual(@as(?Plan.InstructionIndexType, 1), plan.getInstructionIndexForPc(1));
+    try std.testing.expectEqual(@as(?Plan.InstructionIndexType, 3), plan.getInstructionIndexForPc(3));
+    
+    // Test invalid PC
+    try std.testing.expectEqual(@as(?Plan.InstructionIndexType, null), plan.getInstructionIndexForPc(2));
+    try std.testing.expectEqual(@as(?Plan.InstructionIndexType, null), plan.getInstructionIndexForPc(99));
 }
 
-test "Plan deinit" {
+test "Plan deinit frees resources" {
     const allocator = std.testing.allocator;
     const Plan = createPlan(.{});
     
+    // Create resources
+    const stream = try allocator.alloc(InstructionElement, 10);
+    const constants = try allocator.alloc(Plan.WordType, 5);
+    var map = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator);
+    try map.put(0, 0);
+    
     var plan = Plan{
-        .instructionStream = try allocator.alloc(InstructionElement, 10),
-        .u256_constants = try allocator.alloc(Plan.WordType, 5),
-        .pc_to_instruction_idx = null,
+        .instructionStream = stream,
+        .u256_constants = constants,
+        .pc_to_instruction_idx = map,
     };
     
-    // Fill with dummy data
-    for (plan.instructionStream) |*elem| {
-        elem.* = .{ .handler = &testHandler };
-    }
-    for (plan.u256_constants) |*val| {
-        val.* = 0;
-    }
-    
-    // Deinit should free both arrays
+    // Deinit should free all resources
     plan.deinit(allocator);
+    
+    // Verify fields are reset
     try std.testing.expectEqual(@as(usize, 0), plan.instructionStream.len);
     try std.testing.expectEqual(@as(usize, 0), plan.u256_constants.len);
-}
-
-test "Plan with different WordType" {
-    const Plan128 = createPlan(.{ .WordType = u128 });
-    try std.testing.expectEqual(u128, Plan128.WordType);
-    
-    const Plan512 = createPlan(.{ .WordType = u512 });
-    try std.testing.expectEqual(u512, Plan512.WordType);
-}
-
-test "Plan PcType selection based on maxBytecodeSize" {
-    const SmallPlan = createPlan(.{ .maxBytecodeSize = 1000 });
-    try std.testing.expectEqual(u16, SmallPlan.PcType);
-    try std.testing.expectEqual(u16, SmallPlan.InstructionIndexType);
-    
-    const LargePlan = createPlan(.{ .maxBytecodeSize = 65535 });
-    try std.testing.expectEqual(u16, LargePlan.PcType);
-    try std.testing.expectEqual(u16, LargePlan.InstructionIndexType);
+    try std.testing.expectEqual(@as(?std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType), null), plan.pc_to_instruction_idx);
 }

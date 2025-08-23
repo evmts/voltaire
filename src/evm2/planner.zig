@@ -7,56 +7,14 @@ const std = @import("std");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 const plan_mod = @import("plan.zig");
+pub const PlannerConfig = @import("planner_config.zig").PlannerConfig;
 
 // Re-export commonly used types from plan
-pub const SyntheticOpcode = plan_mod.SyntheticOpcode;
+pub const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
 pub const JumpDestMetadata = plan_mod.JumpDestMetadata;
 pub const HandlerFn = plan_mod.HandlerFn;
 pub const InstructionElement = plan_mod.InstructionElement;
 
-/// Compile-time configuration for the planner.
-pub const PlannerConfig = struct {
-    const Self = @This();
-
-    /// EVM word type (mirrors runtime WordType).
-    WordType: type = u256,
-    /// Maximum allowed bytecode size used to pick PcType.
-    maxBytecodeSize: u32 = 24_576,
-    /// Optional: future cache control (no cache is implemented yet).
-    enableLruCache: bool = true,
-    /// Vector length for SIMD (number of u8 lanes); defaults to target suggestion.
-    /// When null, scalar path is used.
-    vector_length: ?comptime_int = std.simd.suggestVectorLength(u8),
-    /// Match stack sizing philosophy with stack.zig / FrameConfig.
-    stack_size: u12 = 1024,
-
-    /// PcType: chosen program-counter type (u16 or u32) from maxBytecodeSize.
-    fn PcType(self: Self) type {
-        return if (self.maxBytecodeSize <= std.math.maxInt(u16)) u16 else u32;
-    }
-    /// StackIndexType: unsigned stack index type (u4/u8/u12) from stack_size.
-    fn StackIndexType(self: Self) type {
-        return if (self.stack_size <= std.math.maxInt(u4))
-            u4
-        else if (self.stack_size <= std.math.maxInt(u8))
-            u8
-        else if (self.stack_size <= std.math.maxInt(u12))
-            u12
-        else
-            @compileError("PlannerConfig stack_size is too large to model compactly");
-    }
-    /// StackHeightType: signed stack height type (one extra bit for deltas).
-    fn StackHeightType(self: Self) type {
-        const IndexT = self.StackIndexType();
-        return std.meta.Int(.signed, @bitSizeOf(IndexT) + 1);
-    }
-    /// Validate config bounds (compile-time errors when violated).
-    fn validate(self: Self) void {
-        if (self.stack_size > 4095) @compileError("stack_size cannot exceed 4095");
-        if (@bitSizeOf(self.WordType) > 512) @compileError("WordType cannot exceed u512");
-        if (self.maxBytecodeSize > 65535) @compileError("maxBytecodeSize must be <= 65535");
-    }
-};
 
 /// Factory that returns a planner type specialized by PlannerConfig.
 pub fn createPlanner(comptime Cfg: PlannerConfig) type {
@@ -391,28 +349,28 @@ pub fn createPlanner(comptime Cfg: PlannerConfig) type {
                         // Check for PUSH+ADD fusion
                         if (next_op == @intFromEnum(Opcode.ADD)) {
                             // Use appropriate fusion opcode
-                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE) else @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER);
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER);
                             fused = true;
                         }
                         // Check for PUSH+MUL fusion
                         else if (next_op == @intFromEnum(Opcode.MUL)) {
-                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE) else @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER);
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER);
                             fused = true;
                         }
                         // Check for PUSH+DIV fusion
                         else if (next_op == @intFromEnum(Opcode.DIV)) {
-                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE) else @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER);
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER);
                             fused = true;
                         }
                         // Check for PUSH+JUMP fusion
                         else if (next_op == @intFromEnum(Opcode.JUMP)) {
                             // Use appropriate fusion opcode
-                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE) else @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER);
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER);
                             fused = true;
                         }
                         // Check for PUSH+JUMPI fusion
                         else if (next_op == @intFromEnum(Opcode.JUMPI)) {
-                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE) else @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER);
+                            handler_op = if (n <= @sizeOf(usize)) @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) else @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER);
                             fused = true;
                         }
                     }
@@ -514,6 +472,56 @@ pub fn createPlanner(comptime Cfg: PlannerConfig) type {
                 .instructionStream = try stream.toOwnedSlice(),
                 .u256_constants = try constants.toOwnedSlice(),
                 .pc_to_instruction_idx = pc_map,
+            };
+        }
+
+        /// Create minimal plan with only bitmap analysis.
+        /// This is used for lightweight execution without optimization.
+        pub fn create_minimal_plan(self: *Self, allocator: std.mem.Allocator, handlers: [256]*const HandlerFn) !plan_mod.PlanMinimal {
+            const N = self.bytecode.len;
+            // Allocate bitmaps (bit-per-byte)
+            const bitmap_bytes = (N + 7) >> 3;
+            const is_push_data = try allocator.alloc(u8, bitmap_bytes);
+            errdefer allocator.free(is_push_data);
+            const is_op_start = try allocator.alloc(u8, bitmap_bytes);
+            errdefer allocator.free(is_op_start);
+            const is_jumpdest = try allocator.alloc(u8, bitmap_bytes);
+            errdefer allocator.free(is_jumpdest);
+            @memset(is_push_data, 0);
+            @memset(is_op_start, 0);
+            @memset(is_jumpdest, 0);
+
+            // Pass 1: scan bytecode to fill opcode-start and push-data bitmaps
+            var i: usize = 0;
+            while (i < N) : (i += 1) {
+                // setBit(is_op_start, i)
+                is_op_start[i >> 3] |= @as(u8, 1) << @intCast(i & 7);
+                const op = self.bytecode[i];
+                if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
+                    const n: usize = op - (@intFromEnum(Opcode.PUSH1) - 1);
+                    var j: usize = 0;
+                    while (j < n and i + 1 + j < N) : (j += 1) {
+                        const idx = i + 1 + j;
+                        is_push_data[idx >> 3] |= @as(u8, 1) << @intCast(idx & 7);
+                    }
+                    i += n; // loop's i += 1 advances over opcode byte
+                    continue;
+                }
+            }
+
+            // Mark JUMPDEST positions (0x5B) excluding push-data bytes
+            if (comptime VectorLength) |L| {
+                markJumpdestSimd(self.bytecode, is_push_data, is_jumpdest, L);
+            } else {
+                markJumpdestScalar(self.bytecode, is_push_data, is_jumpdest);
+            }
+
+            return plan_mod.PlanMinimal{
+                .bytecode = self.bytecode,
+                .is_push_data = is_push_data,
+                .is_op_start = is_op_start,
+                .is_jumpdest = is_jumpdest,
+                .handlers = handlers,
             };
         }
 
@@ -701,24 +709,24 @@ test "planner: init without allocator" {
 test "synthetic opcodes: constants defined" {
     // Test that synthetic opcodes are defined and have correct values
     // They should be in the unused opcode range (0xB0-0xB9 in this case)
-    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE) == 0xB0);
-    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER) == 0xB1);
-    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE) == 0xB2);
-    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER) == 0xB3);
-    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE) == 0xB4);
-    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER) == 0xB5);
-    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE) == 0xB6);
-    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER) == 0xB7);
-    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE) == 0xB8);
-    try std.testing.expect(@intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER) == 0xB9);
+    try std.testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE) == 0xB0);
+    try std.testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER) == 0xB1);
+    try std.testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE) == 0xB2);
+    try std.testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER) == 0xB3);
+    try std.testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE) == 0xB4);
+    try std.testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER) == 0xB5);
+    try std.testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE) == 0xB6);
+    try std.testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER) == 0xB7);
+    try std.testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE) == 0xB8);
+    try std.testing.expect(@intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER) == 0xB9);
     
     // Ensure no overlap between opcodes
     const opcodes = [_]u8{
-        @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE), @intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE), @intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE), @intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER),
-        @intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE), @intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER),
+        @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER),
+        @intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER),
+        @intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER),
+        @intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
+        @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
     };
     
     var i: usize = 0;
@@ -906,7 +914,7 @@ test "getMetadata: fusion opcodes" {
         
         // Test fusion opcode metadata
         var idx: Planner.InstructionIndexT = 0;
-        const metadata = plan.getMetadata(&idx, @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE));
+        const metadata = plan.getMetadata(&idx, @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE));
         try std.testing.expectEqual(@as(usize, 5), metadata);
     }
 }
@@ -930,7 +938,7 @@ test "getNextInstruction: fusion opcodes advance correctly" {
     
     // Test fusion opcode advances correctly
     var idx: Planner.InstructionIndexT = 0;
-    const handler = plan.getNextInstruction(&idx, @intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE));
+    const handler = plan.getNextInstruction(&idx, @intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE));
     try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(handler));
     try std.testing.expectEqual(@as(Planner.InstructionIndexT, 2), idx);
 }
@@ -1029,7 +1037,7 @@ test "fusion detection: PUSH+ADD inline" {
         h.* = &testMockHandler;
     }
     
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE)] = &testFusionHandler;
     
     // PUSH1 5; ADD
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x05, @intFromEnum(Opcode.ADD) };
@@ -1058,7 +1066,7 @@ test "fusion detection: PUSH+ADD pointer" {
         h.* = &testMockHandler;
     }
     
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER)] = &testFusionHandler;
     
     // PUSH32 <big value>; ADD
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH32) } ++ 
@@ -1091,7 +1099,7 @@ test "fusion detection: PUSH+JUMP inline" {
     for (&handlers) |*h| {
         h.* = &testMockHandler;
     }
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE)] = &testFusionHandler;
     
     // PUSH1 4; JUMP (to a valid JUMPDEST)
     const bytecode = [_]u8{ 
@@ -1125,7 +1133,7 @@ test "fusion detection: PUSH+JUMP pointer" {
     for (&handlers) |*h| {
         h.* = &testMockHandler;
     }
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER)] = &testFusionHandler;
     
     // PUSH32 with large jump destination; JUMP
     const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH32) } ++ 
@@ -1252,8 +1260,8 @@ test "fusion detection: PUSH+MUL fusion" {
     for (&handlers) |*h| {
         h.* = &testMockHandler;
     }
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER)] = &testFusionHandler;
     
     // Test PUSH1 5; MUL
     const bytecode = [_]u8{
@@ -1280,8 +1288,8 @@ test "fusion detection: PUSH+DIV fusion" {
     for (&handlers) |*h| {
         h.* = &testMockHandler;
     }
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER)] = &testFusionHandler;
     
     // Test PUSH1 10; DIV
     const bytecode = [_]u8{
@@ -1308,8 +1316,8 @@ test "fusion detection: PUSH+JUMPI fusion" {
     for (&handlers) |*h| {
         h.* = &testMockHandler;
     }
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER)] = &testFusionHandler;
     
     // Test PUSH1 8; JUMPI
     const bytecode = [_]u8{
@@ -1385,16 +1393,16 @@ test "integration: complex bytecode with all features" {
         h.* = &testMockHandler;
     }
     // Set fusion handlers
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_ADD_INLINE)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_ADD_POINTER)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_MUL_INLINE)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_MUL_POINTER)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_DIV_INLINE)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_DIV_POINTER)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMP_INLINE)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMP_POINTER)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMPI_INLINE)] = &testFusionHandler;
-    handlers[@intFromEnum(SyntheticOpcode.PUSH_JUMPI_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_ADD_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_ADD_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_MUL_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_MUL_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_DIV_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_DIV_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_JUMP_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE)] = &testFusionHandler;
+    handlers[@intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER)] = &testFusionHandler;
     
     // Complex bytecode with all features
     const bytecode = [_]u8{
