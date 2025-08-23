@@ -88,18 +88,11 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
     const StackHeightType = Cfg.StackHeightType();
     const VectorLength = Cfg.vector_length;
 
-    // Per-basic-block metadata (entry is blocks[0], then one per JUMPDEST).
-    const AnalyzerBlock = struct {
-        /// Bytecode PC of the block start (0 for entry, else JUMPDEST PC).
+    // Removed AnalyzerBlock - using JumpDestMetadata directly
+    // Track blocks during analysis with temporary structure
+    const TempBlock = struct {
         pc: PcType,
-        /// IR instruction index where this block begins in the stream.
-        instructionIndex: usize,
-        /// Sum of fixed gas costs inside the block (u32).
-        staticGasCharge: u32,
-        /// Minimum stack height observed while walking the block.
-        minStackHeight: StackHeightType,
-        /// Maximum stack height observed while walking the block.
-        maxStackHeight: StackHeightType,
+        metadata: JumpDestMetadata,
     };
 
     // Minimal data the interpreter needs at runtime.
@@ -166,7 +159,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
     const Analysis = struct {
         const Self = @This();
         // Expose types for callers/tests.
-        pub const BlockMeta = AnalyzerBlock;
+        pub const BlockMeta = JumpDestMetadata;
         pub const Plan = AnalyzerPlan;
         pub const PcTypeT = PcType;
         pub const InstructionIndexT = InstructionIndexType;
@@ -355,7 +348,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             // Allocate outputs
             var jump_list = try allocator.alloc(PcType, num_jumpdests);
             errdefer allocator.free(jump_list);
-            var blocks = try allocator.alloc(AnalyzerBlock, num_blocks);
+            var blocks = try allocator.alloc(TempBlock, num_blocks);
             errdefer allocator.free(blocks);
 
             // Build jump_list (sorted PCs)
@@ -372,7 +365,10 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             // Pass 2: build blocks and compute instructionIndex parity, static gas, and stack ranges
             var stream_idx: usize = 0;
             var block_idx: usize = 0;
-            blocks[0] = .{ .pc = 0, .instructionIndex = 0, .staticGasCharge = 0, .minStackHeight = 0, .maxStackHeight = 0 };
+            blocks[0] = .{ 
+                .pc = 0, 
+                .metadata = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } 
+            };
             var static_gas_accum: u64 = 0; // accumulate in u64 to avoid overflow, clamp to u32 on store
             var stack_height: i32 = 0;
             var min_stack_height: StackHeightType = 0;
@@ -386,12 +382,15 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                 const is_dest = (is_jumpdest[i >> 3] & (@as(u8, 1) << @intCast(i & 7))) != 0;
                 if (is_start and is_dest) {
                     // finalize previous block (for entry this is zeros)
-                    blocks[block_idx].staticGasCharge = @as(u32, @intCast(@min(static_gas_accum, @as(u64, std.math.maxInt(u32)))));
-                    blocks[block_idx].minStackHeight = min_stack_height;
-                    blocks[block_idx].maxStackHeight = max_stack_height;
+                    blocks[block_idx].metadata.gas = @as(u32, @intCast(@min(static_gas_accum, @as(u64, std.math.maxInt(u32)))));
+                    blocks[block_idx].metadata.min_stack = min_stack_height;
+                    blocks[block_idx].metadata.max_stack = max_stack_height;
                     // start new block
                     block_idx += 1;
-                    blocks[block_idx] = .{ .pc = @as(PcType, @intCast(i)), .instructionIndex = stream_idx, .staticGasCharge = 0, .minStackHeight = 0, .maxStackHeight = 0 };
+                    blocks[block_idx] = .{ 
+                        .pc = @as(PcType, @intCast(i)), 
+                        .metadata = .{ .gas = 0, .min_stack = 0, .max_stack = 0 } 
+                    };
                     static_gas_accum = 0;
                     stack_height = 0;
                     min_stack_height = 0;
@@ -420,9 +419,9 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                 }
             }
             // finalize last block
-            blocks[block_idx].staticGasCharge = @as(u32, @intCast(@min(static_gas_accum, @as(u64, std.math.maxInt(u32)))));
-            blocks[block_idx].minStackHeight = min_stack_height;
-            blocks[block_idx].maxStackHeight = max_stack_height;
+            blocks[block_idx].metadata.gas = @as(u32, @intCast(@min(static_gas_accum, @as(u64, std.math.maxInt(u32)))));
+            blocks[block_idx].metadata.min_stack = min_stack_height;
+            blocks[block_idx].metadata.max_stack = max_stack_height;
             std.debug.assert(block_idx + 1 == num_blocks);
 
             // Free unused jump_list
@@ -523,11 +522,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                     for (blocks) |block| {
                         if (block.pc == i) {
                             // Found the metadata for this JUMPDEST
-                            const jd_metadata = JumpDestMetadata{
-                                .gas = block.staticGasCharge,
-                                .min_stack = block.minStackHeight,
-                                .max_stack = block.maxStackHeight,
-                            };
+                            const jd_metadata = block.metadata;
                             
                             // On 64-bit systems, pack inline
                             if (@sizeOf(usize) >= 8) {
@@ -569,11 +564,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
 
             // Update entry block metadata (stop at first JUMPDEST if at PC 0)
             if (blocks.len > 0) {
-                self.start = .{
-                    .gas = blocks[0].staticGasCharge,
-                    .min_stack = blocks[0].minStackHeight,
-                    .max_stack = blocks[0].maxStackHeight,
-                };
+                self.start = blocks[0].metadata;
             }
             
             // Free blocks as we don't need them at runtime
