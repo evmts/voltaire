@@ -308,7 +308,10 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
             var stream = std.ArrayList(usize).init(allocator);
             errdefer stream.deinit();
             
-            // Simple implementation: just add handlers for now
+            var constants = std.ArrayList(Cfg.WordType).init(allocator);
+            errdefer constants.deinit();
+            
+            // Build instruction stream with handlers and metadata
             i = 0;
             while (i < N) {
                 const op = self.bytecode[i];
@@ -319,9 +322,29 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                 // Handle PUSH opcodes
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
                     const n: usize = op - (@intFromEnum(Opcode.PUSH1) - 1);
-                    // For now, just store the value inline if it's PUSH1
-                    if (op == @intFromEnum(Opcode.PUSH1) and i + 1 < N) {
-                        try stream.append(self.bytecode[i + 1]);
+                    
+                    // Extract the push value
+                    if (i + n < N) {
+                        // Decide if value fits inline or needs pointer
+                        if (n <= @sizeOf(usize)) {
+                            // Fits inline - build value from bytes
+                            var value: usize = 0;
+                            var j: usize = 0;
+                            while (j < n and j < @sizeOf(usize)) : (j += 1) {
+                                value = (value << 8) | self.bytecode[i + 1 + j];
+                            }
+                            try stream.append(value);
+                        } else {
+                            // Too large - store in constants array
+                            var value: Cfg.WordType = 0;
+                            var j: usize = 0;
+                            while (j < n) : (j += 1) {
+                                value = (value << 8) | self.bytecode[i + 1 + j];
+                            }
+                            const const_idx = constants.items.len;
+                            try constants.append(value);
+                            try stream.append(const_idx);
+                        }
                     }
                     i += 1 + n;
                 } else {
@@ -331,7 +354,7 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
 
             return AnalyzerPlan{
                 .instructionStream = try stream.toOwnedSlice(),
-                .u256_constants = &.{},
+                .u256_constants = try constants.toOwnedSlice(),
                 .jump_table = &.{},
                 .jumpDestMetadata = blocks,
             };
@@ -641,4 +664,64 @@ test "create_instruction_stream: basic handler array" {
     
     // First should be the handler pointer
     try std.testing.expectEqual(@intFromPtr(&testMockHandler), plan.instructionStream[0]);
+}
+
+test "PUSH inline vs pointer: small values stored inline" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    
+    // PUSH8 with value that fits in usize (8 bytes = 64 bits)
+    const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH8), 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+    var analysis = Analyzer.init(&bytecode);
+    
+    var plan = try analysis.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Should have handler + inline value
+    try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
+    
+    // Second element should be the inline value
+    const expected_value = if (@sizeOf(usize) == 8) @as(usize, 0x0102030405060708) else @as(usize, 0x01020304);
+    try std.testing.expectEqual(expected_value, plan.instructionStream[1]);
+    
+    // No u256 constants needed
+    try std.testing.expectEqual(@as(usize, 0), plan.u256_constants.len);
+}
+
+test "PUSH inline vs pointer: large values use pointer" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Create handler array
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    
+    // PUSH32 with large value
+    const bytecode = [_]u8{ @intFromEnum(Opcode.PUSH32) } ++ 
+        [_]u8{0xFF} ** 32; // 32 bytes of 0xFF
+    var analysis = Analyzer.init(&bytecode);
+    
+    var plan = try analysis.create_instruction_stream(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Should have handler + pointer
+    try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
+    
+    // Should have one u256 constant
+    try std.testing.expectEqual(@as(usize, 1), plan.u256_constants.len);
+    
+    // Second element should be pointer to constant (index 0)
+    try std.testing.expectEqual(@as(usize, 0), plan.instructionStream[1]);
+    
+    // Verify the constant value
+    const expected = std.math.maxInt(u256);
+    try std.testing.expectEqual(expected, plan.u256_constants[0]);
 }
