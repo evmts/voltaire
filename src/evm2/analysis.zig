@@ -159,7 +159,6 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
     const StackHeightType = Cfg.StackHeightType();
     const VectorLength = Cfg.vector_length;
 
-    // Removed AnalyzerBlock - using JumpDestMetadata directly
     // Track blocks during analysis with temporary structure
     const TempBlock = struct {
         pc: PcType,
@@ -168,10 +167,10 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
 
     // Minimal data the interpreter needs at runtime.
     const AnalyzerPlan = struct {
+        /// A cache friendly stream of data mostly consisting of function pointers to opcode handlers but also metadata
         instructionStream: []InstructionElement,
+        /// InstructionStream is of size usize. If metadata is larger than usize it is stored on this constants array and we store a pointer on instructionstream
         u256_constants: []Cfg.WordType,
-        // No jump_table - only used during generation
-        // No jumpDestMetadata array - metadata is stored inline
 
         /// Get metadata and next instruction, advancing the instruction pointer.
         /// The opcode determines how metadata is interpreted and whether to advance by 1 or 2.
