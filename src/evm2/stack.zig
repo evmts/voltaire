@@ -4,7 +4,7 @@ pub const StackConfig = struct {
     const Self = @This();
 
     /// The maximum stack size for the evm. Defaults to 1024. Maximum supported is 4095
-    stack_size: usize = 1024,
+    stack_size: u12 = 1024,
     /// The size of a single word in the EVM - Defaults to u256. Supports any word size up to u512
     WordType: type = u256,
 

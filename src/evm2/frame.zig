@@ -9,7 +9,7 @@ const Opcode = opcode_data.Opcode;
 pub const FrameConfig = struct {
     const Self = @This();
     /// The maximum stack size for the evm. Defaults to 1024
-    stack_size: usize = 1024,
+    stack_size: u12 = 1024,
     /// The size of a single word in the EVM - Defaults to u256
     WordType: type = u256,
     /// The maximum amount of bytes allowed in contract code
@@ -54,7 +54,7 @@ pub const FrameConfig = struct {
     }
     /// The amount of data the frame plans on allocating based on config
     fn get_requested_alloc(self: Self) u32 {
-        return @as(u32, @intCast(self.stack_size * @sizeOf(self.WordType)));
+        return @as(u32, self.stack_size) * @as(u32, @intCast(@sizeOf(self.WordType)));
     }
 
     // Limits placed on the Frame
@@ -114,7 +114,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
         const InstructionStream = []usize;
         
         // Handler function type for stream-based execution
-        const HandlerFn = *const fn (*Self, InstructionStream, usize) Error!void;
+        const HandlerFn = *const fn (*Self, InstructionStream, usize) Error!noreturn;
 
         // Special trace instruction types
         const TraceInstruction = enum {
@@ -473,25 +473,29 @@ pub fn createFrame(comptime config: FrameConfig) type {
             stream[stream_idx] = @intFromPtr(&out_of_bounds_handler);
 
             // Start execution with first instruction
-            return self.execute_instruction(stream[0..stream_idx + 1], 0);
+            // execute_instruction never returns normally (it's noreturn)
+            // It will only exit by throwing an error
+            self.execute_instruction(stream[0..stream_idx + 1], 0) catch |err| return err;
+            unreachable;
         }
 
-        fn execute_instruction(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn execute_instruction(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             const handler = @as(HandlerFn, @ptrFromInt(stream[idx]));
             return @call(.always_tail, handler, .{ self, stream, idx });
         }
 
-        fn op_stop_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn op_stop_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             _ = stream;
             _ = idx;
 
             // Check final gas before stopping
             try self.checkGas();
 
-            return self.op_stop();
+            self.op_stop() catch |err| return err;
+            unreachable;
         }
 
-        fn op_add_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn op_add_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             // Get opcode info for gas consumption
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.ADD)];
 
@@ -510,7 +514,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next_handler, .{ self, stream, next_idx });
         }
 
-        fn op_mul_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn op_mul_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             // Get opcode info for gas consumption
             const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MUL)];
 
@@ -530,9 +534,9 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         // Generic handler for simple opcodes that just increment PC
-        fn makeSimpleHandler(comptime op: fn (*Self) Error!void) fn (*Self, InstructionStream, usize) Error!void {
+        fn makeSimpleHandler(comptime op: fn (*Self) Error!void) fn (*Self, InstructionStream, usize) Error!noreturn {
             return struct {
-                fn handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+                fn handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
                     // Get opcode info for gas consumption
                     std.debug.assert(self.pc < self.bytecode.len);
                     const opcode = self.bytecode[self.pc];
@@ -580,7 +584,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
         const op_sar_handler = makeSimpleHandler(op_sar);
         const op_pop_handler = makeSimpleHandler(op_pop);
         // Handler for PC opcode with inline PC value
-        fn op_pc_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn op_pc_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             const pc_value = stream[idx + 1]; // PC value is stored in next chunk
             try self.stack.push(@as(WordType, @intCast(pc_value)));
             
@@ -601,7 +605,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
         const op_mstore8_handler = makeSimpleHandler(op_mstore8);
 
         // Handler for PUSH opcodes where value fits inline in stream
-        fn push_inline_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn push_inline_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             const value = stream[idx + 1]; // Value is stored in next chunk
             try self.stack.push(@as(WordType, @intCast(value)));
             
@@ -624,7 +628,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         // Handler for PUSH opcodes where value is stored via pointer
-        fn push_pointer_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn push_pointer_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             const ptr = @as(*const WordType, @ptrFromInt(stream[idx + 1]));
             try self.stack.push(ptr.*);
             
@@ -642,13 +646,14 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
 
 
-        fn op_invalid_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn op_invalid_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             _ = stream;
             _ = idx;
-            return self.op_invalid();
+            self.op_invalid() catch |err| return err;
+            unreachable;
         }
 
-        fn out_of_bounds_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn out_of_bounds_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             _ = self;
             _ = stream;
             _ = idx;
@@ -656,7 +661,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
         }
 
         // Trace instruction handlers
-        fn trace_before_op_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn trace_before_op_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             // Call tracer before operation
             self.tracer.beforeOp(Self, self);
 
@@ -667,7 +672,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next_handler, .{ self, stream, next_idx });
         }
 
-        fn trace_after_op_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn trace_after_op_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             // Call tracer after operation
             self.tracer.afterOp(Self, self);
 
@@ -680,7 +685,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
 
 
 
-        fn op_dup_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn op_dup_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             std.debug.assert(self.pc < self.bytecode.len);
             const opcode = self.bytecode[self.pc];
             const n = opcode - (@intFromEnum(Opcode.DUP1) - 1);
@@ -693,7 +698,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next_handler, .{ self, stream, next_idx });
         }
 
-        fn op_swap_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn op_swap_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             std.debug.assert(self.pc < self.bytecode.len);
             const opcode = self.bytecode[self.pc];
             const n = opcode - (@intFromEnum(Opcode.SWAP1) - 1);
@@ -706,7 +711,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, next_handler, .{ self, stream, next_idx });
         }
 
-        fn op_jump_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn op_jump_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             const dest = try self.stack.pop();
 
             if (dest > max_bytecode_size) {
@@ -727,7 +732,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             return @call(.always_tail, dest_handler, .{ self, stream, dest_idx });
         }
 
-        fn op_jumpi_handler(self: *Self, stream: InstructionStream, idx: usize) Error!void {
+        fn op_jumpi_handler(self: *Self, stream: InstructionStream, idx: usize) Error!noreturn {
             const dest = try self.stack.pop();
             const condition = try self.stack.pop();
 

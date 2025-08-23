@@ -121,7 +121,7 @@ pub const AnalysisConfig = struct {
     /// When null, scalar path is used.
     vector_length: ?comptime_int = std.simd.suggestVectorLength(u8),
     /// Match stack sizing philosophy with stack.zig / FrameConfig.
-    stack_size: usize = 1024,
+    stack_size: u12 = 1024,
 
     /// PcType: chosen program-counter type (u16 or u32) from maxBytecodeSize.
     fn PcType(self: Self) type {
