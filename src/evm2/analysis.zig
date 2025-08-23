@@ -33,8 +33,16 @@ pub const JumpDestMetadata = packed struct {
 /// Takes frame, plan, and instruction index. Uses tail call recursion.
 pub const HandlerFn = fn (frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn;
 
-/// Untagged union for 32-bit platforms.
-/// All metadata is stored as pointers/indices.
+/// Instruction stream element for 32-bit platforms.
+/// 
+/// The instruction stream is a linear array of usize-sized elements that the
+/// interpreter executes sequentially. Most elements are function pointers to
+/// opcode handlers, but some opcodes require metadata (like PUSH constants or
+/// JUMPDEST gas costs) which follows immediately after the handler pointer.
+/// 
+/// This untagged union ensures zero-overhead abstraction - each element is
+/// exactly 4 bytes with no runtime type information. The executing opcode
+/// knows at compile-time what metadata (if any) follows its handler.
 pub const InstructionElement32 = packed union {
     handler: *const HandlerFn,          // Function pointer for opcode handler
     jumpdest_pointer: *const JumpDestMetadata, // Pointer to metadata in u256_constants
@@ -43,8 +51,19 @@ pub const InstructionElement32 = packed union {
     pc_value: u32,                      // Original PC for PC opcode
 };
 
-/// Untagged union for 64-bit platforms.
-/// JumpDestMetadata fits directly in 8 bytes.
+/// Instruction stream element for 64-bit platforms.
+/// 
+/// The instruction stream is a linear array of usize-sized elements that the
+/// interpreter executes sequentially. Most elements are function pointers to
+/// opcode handlers, but some opcodes require metadata (like PUSH constants or
+/// JUMPDEST gas costs) which follows immediately after the handler pointer.
+/// 
+/// This untagged union ensures zero-overhead abstraction - each element is
+/// exactly 8 bytes with no runtime type information. The executing opcode
+/// knows at compile-time what metadata (if any) follows its handler.
+/// 
+/// On 64-bit platforms, JumpDestMetadata (8 bytes) fits directly in the stream,
+/// avoiding the indirection required on 32-bit platforms.
 pub const InstructionElement64 = packed union {
     handler: *const HandlerFn,          // Function pointer for opcode handler
     jumpdest_metadata: JumpDestMetadata, // Direct metadata (8 bytes)
@@ -53,7 +72,21 @@ pub const InstructionElement64 = packed union {
     pc_value: u64,                      // Original PC for PC opcode
 };
 
-/// Select the appropriate InstructionElement based on platform.
+/// Instruction stream element type - platform-specific selection.
+/// 
+/// The EVM bytecode is transformed into a stream of these elements during
+/// analysis. Each element is exactly usize-sized, creating a dense array
+/// that can be executed with minimal memory access and no decoding overhead.
+/// 
+/// Example instruction stream for "PUSH1 0x05 ADD":
+/// - [0]: handler pointer for PUSH1_ADD_INLINE (fusion optimization)
+/// - [1]: inline_value = 5
+/// 
+/// Example for "JUMPDEST PUSH1 0x10":
+/// - [0]: handler pointer for JUMPDEST
+/// - [1]: jumpdest_metadata with gas cost and stack requirements
+/// - [2]: handler pointer for PUSH1
+/// - [3]: inline_value = 16
 pub const InstructionElement = if (@sizeOf(usize) == 8)
     InstructionElement64
 else if (@sizeOf(usize) == 4)
