@@ -1,6 +1,8 @@
 const std = @import("std");
 const Opcode = @import("opcode.zig").Opcode;
 pub const PlanConfig = @import("plan_config.zig").PlanConfig;
+const createBytecode = @import("bytecode.zig").createBytecode;
+const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
 
 /// Handler function type for opcodes.
 pub const HandlerFn = fn (frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn;
@@ -32,11 +34,13 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
         pub const PcType = cfg.PcType();
         pub const InstructionIndexType = PcType;
         pub const WordType = cfg.WordType;
+        
+        const Self = @This();
     
     /// Get metadata for opcodes that have it, reading directly from bytecode.
     /// For PlanMinimal, idx is the PC value, not an instruction index.
     pub fn getMetadata(
-        self: *const PlanMinimal,
+        self: *const Self,
         idx: *InstructionIndexType,
         comptime opcode: anytype,
     ) blk: {
@@ -178,7 +182,7 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
     /// Get the next instruction handler and advance the PC.
     /// For PlanMinimal, this reads the opcode at current PC and returns handler.
     pub fn getNextInstruction(
-        self: *const PlanMinimal,
+        self: *const Self,
         idx: *InstructionIndexType,
         comptime opcode: anytype,
     ) *const HandlerFn {
@@ -245,26 +249,26 @@ pub fn createPlanMinimal(comptime cfg: PlanConfig) type {
     
     /// Get instruction index for a given PC value.
     /// For PlanMinimal, instruction index equals PC.
-    pub fn getInstructionIndexForPc(self: *const PlanMinimal, pc: PcType) ?InstructionIndexType {
+    pub fn getInstructionIndexForPc(self: *const Self, pc: PcType) ?InstructionIndexType {
         _ = self;
         // In minimal plan, instruction index is the same as PC
         return pc;
     }
     
     /// Check if a PC is a valid JUMPDEST.
-    pub fn isValidJumpDest(self: *const PlanMinimal, pc: usize) bool {
+    pub fn isValidJumpDest(self: *const Self, pc: usize) bool {
         if (pc >= self.bytecode.len) return false;
         return (self.is_jumpdest[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
     }
     
     /// Check if a PC is an opcode start (not push data).
-    pub fn isOpcodeStart(self: *const PlanMinimal, pc: usize) bool {
+    pub fn isOpcodeStart(self: *const Self, pc: usize) bool {
         if (pc >= self.bytecode.len) return false;
         return (self.is_op_start[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
     }
     
         /// Free the allocated bitmaps.
-        pub fn deinit(self: *PlanMinimal, allocator: std.mem.Allocator) void {
+        pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             if (self.is_push_data.len > 0) allocator.free(self.is_push_data);
             if (self.is_op_start.len > 0) allocator.free(self.is_op_start);
             if (self.is_jumpdest.len > 0) allocator.free(self.is_jumpdest);

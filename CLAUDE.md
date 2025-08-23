@@ -604,6 +604,42 @@ This will enable all debug logging statements in the code being tested, which is
 - **Version control tracks history** - there's no need to preserve old code as comments
 - **Clean codebase only** - the codebase should only contain active, working code
 
+## Source Control Best Practices
+
+### CRITICAL: Git is Our Only Source Control
+
+**ABSOLUTE MANDATE**: We use Git for version control. The following practices are FORBIDDEN:
+
+1. **NEVER comment out code** - Delete it completely, Git preserves history
+2. **NEVER comment out tests** - If a test is failing, fix it or understand why
+3. **NEVER create .bak files** - Git handles version history, not manual backups
+4. **NEVER use comments as source control** - Comments are for documentation, not history
+
+### Handling Failing Tests
+
+**FORBIDDEN PRACTICES**:
+- ❌ Commenting out failing tests to make the build pass
+- ❌ Deleting tests that expose bugs
+- ❌ Skipping tests without understanding the root cause
+- ❌ Creating backup files of tests before modifying them
+
+**REQUIRED PRACTICES**:
+- ✅ Fix the code that causes tests to fail
+- ✅ If a test is invalid, update it to match correct behavior
+- ✅ Use Git to track all changes, including test modifications
+- ✅ Every test must pass - no exceptions
+
+### Why This Matters
+
+1. **Commented code creates confusion** - Is it still needed? Why was it disabled?
+2. **Backup files pollute the codebase** - Git already tracks all history
+3. **Disabled tests hide regressions** - Every test exists for a reason
+4. **Clean code is professional** - The codebase should only contain active, working code
+
+### ENFORCEMENT
+
+Creating .bak files or commenting out code/tests demonstrates unprofessional development practices and violates our source control principles.
+
 ## EVM2 Frame.zig Navigation Guide
 
 ### File Structure Overview for `src/evm2/frame.zig` (~2000+ lines)

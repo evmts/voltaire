@@ -45,6 +45,7 @@ pub fn createFrame(comptime config: FrameConfig) type {
             InvalidOpcode,
             OutOfBounds,
             OutOfGas,
+            WriteProtection,
         };
 
         const Self = @This();
@@ -95,7 +96,6 @@ pub fn createFrame(comptime config: FrameConfig) type {
         pub fn pretty_print(self: *const Self) void {
             std.log.warn("\n=== Frame State ===\n", .{});
             std.log.warn("Gas Remaining: {}\n", .{self.gas_remaining});
-            std.log.warn("Instruction Index: {}\n", .{self.instruction_idx});
             std.log.warn("Bytecode Length: {}\n", .{self.bytecode.len});
             
             // Show bytecode (first 50 bytes or less)
@@ -176,1320 +176,10 @@ pub fn createFrame(comptime config: FrameConfig) type {
                 }
             }
             
-            // Plan info
-            if (self.plan) |plan| {
-                std.log.warn("\nPlan: Present (use plan.debugPrint() for details)\n", .{});
-                // Get current PC if possible
-                if (plan.pc_to_instruction_idx) |map| {
-                    // Find PC for current instruction index
-                    var iter = map.iterator();
-                    while (iter.next()) |entry| {
-                        if (entry.value_ptr.* == self.instruction_idx) {
-                            std.log.warn("Current PC: {} (instruction index: {})\n", .{ 
-                                entry.key_ptr.*, 
-                                self.instruction_idx 
-                            });
-                            break;
-                        }
-                    }
-                }
-            } else {
-                std.log.warn("\nPlan: Not created yet\n", .{});
-            }
             
             std.log.warn("===================\n\n", .{});
         }
 
-
-        pub fn interpret(self: *Self, allocator: std.mem.Allocator) !void {
-            // Create the planner and analyze the bytecode
-            var planner = Planner.init(self.bytecode);
-            
-            // Create handler array - all handlers will be updated to match plan's signature
-            var handlers: [256]*const HandlerFn = undefined;
-            
-            // Initialize all handlers to invalid by default
-            for (&handlers) |*h| {
-                h.* = &op_invalid_handler;
-            }
-            
-            // Map opcodes to their handlers
-            handlers[@intFromEnum(Opcode.STOP)] = &op_stop_handler;
-            handlers[@intFromEnum(Opcode.ADD)] = &op_add_handler;
-            handlers[@intFromEnum(Opcode.MUL)] = &op_mul_handler;
-            handlers[@intFromEnum(Opcode.SUB)] = &op_sub_handler;
-            handlers[@intFromEnum(Opcode.DIV)] = &op_div_handler;
-            handlers[@intFromEnum(Opcode.SDIV)] = &op_sdiv_handler;
-            handlers[@intFromEnum(Opcode.MOD)] = &op_mod_handler;
-            handlers[@intFromEnum(Opcode.SMOD)] = &op_smod_handler;
-            handlers[@intFromEnum(Opcode.ADDMOD)] = &op_addmod_handler;
-            handlers[@intFromEnum(Opcode.MULMOD)] = &op_mulmod_handler;
-            handlers[@intFromEnum(Opcode.EXP)] = &op_exp_handler;
-            handlers[@intFromEnum(Opcode.SIGNEXTEND)] = &op_signextend_handler;
-            handlers[@intFromEnum(Opcode.LT)] = &op_lt_handler;
-            handlers[@intFromEnum(Opcode.GT)] = &op_gt_handler;
-            handlers[@intFromEnum(Opcode.SLT)] = &op_slt_handler;
-            handlers[@intFromEnum(Opcode.SGT)] = &op_sgt_handler;
-            handlers[@intFromEnum(Opcode.EQ)] = &op_eq_handler;
-            handlers[@intFromEnum(Opcode.ISZERO)] = &op_iszero_handler;
-            handlers[@intFromEnum(Opcode.AND)] = &op_and_handler;
-            handlers[@intFromEnum(Opcode.OR)] = &op_or_handler;
-            handlers[@intFromEnum(Opcode.XOR)] = &op_xor_handler;
-            handlers[@intFromEnum(Opcode.NOT)] = &op_not_handler;
-            handlers[@intFromEnum(Opcode.BYTE)] = &op_byte_handler;
-            handlers[@intFromEnum(Opcode.SHL)] = &op_shl_handler;
-            handlers[@intFromEnum(Opcode.SHR)] = &op_shr_handler;
-            handlers[@intFromEnum(Opcode.SAR)] = &op_sar_handler;
-            handlers[@intFromEnum(Opcode.POP)] = &op_pop_handler;
-            handlers[@intFromEnum(Opcode.MLOAD)] = &op_mload_handler;
-            handlers[@intFromEnum(Opcode.MSTORE)] = &op_mstore_handler;
-            handlers[@intFromEnum(Opcode.MSTORE8)] = &op_mstore8_handler;
-            handlers[@intFromEnum(Opcode.MCOPY)] = &op_mcopy_handler;
-            handlers[@intFromEnum(Opcode.SLOAD)] = &op_sload_handler;
-            handlers[@intFromEnum(Opcode.SSTORE)] = &op_sstore_handler;
-            handlers[@intFromEnum(Opcode.TLOAD)] = &op_tload_handler;
-            handlers[@intFromEnum(Opcode.TSTORE)] = &op_tstore_handler;
-            handlers[@intFromEnum(Opcode.SELFDESTRUCT)] = &op_selfdestruct_handler;
-            handlers[@intFromEnum(Opcode.JUMP)] = &op_jump_handler;
-            handlers[@intFromEnum(Opcode.JUMPI)] = &op_jumpi_handler;
-            handlers[@intFromEnum(Opcode.PC)] = &op_pc_handler;
-            handlers[@intFromEnum(Opcode.MSIZE)] = &op_msize_handler;
-            handlers[@intFromEnum(Opcode.GAS)] = &op_gas_handler;
-            handlers[@intFromEnum(Opcode.JUMPDEST)] = &op_jumpdest_handler;
-            handlers[@intFromEnum(Opcode.PUSH0)] = &push0_handler;
-            
-            // PUSH1-PUSH32 handlers
-            handlers[@intFromEnum(Opcode.PUSH1)] = &push1_handler;
-            handlers[@intFromEnum(Opcode.PUSH2)] = &push2_handler;
-            handlers[@intFromEnum(Opcode.PUSH3)] = &push3_handler;
-            handlers[@intFromEnum(Opcode.PUSH4)] = &push4_handler;
-            handlers[@intFromEnum(Opcode.PUSH5)] = &push5_handler;
-            handlers[@intFromEnum(Opcode.PUSH6)] = &push6_handler;
-            handlers[@intFromEnum(Opcode.PUSH7)] = &push7_handler;
-            handlers[@intFromEnum(Opcode.PUSH8)] = &push8_handler;
-            handlers[@intFromEnum(Opcode.PUSH9)] = &push9_handler;
-            handlers[@intFromEnum(Opcode.PUSH10)] = &push10_handler;
-            handlers[@intFromEnum(Opcode.PUSH11)] = &push11_handler;
-            handlers[@intFromEnum(Opcode.PUSH12)] = &push12_handler;
-            handlers[@intFromEnum(Opcode.PUSH13)] = &push13_handler;
-            handlers[@intFromEnum(Opcode.PUSH14)] = &push14_handler;
-            handlers[@intFromEnum(Opcode.PUSH15)] = &push15_handler;
-            handlers[@intFromEnum(Opcode.PUSH16)] = &push16_handler;
-            handlers[@intFromEnum(Opcode.PUSH17)] = &push17_handler;
-            handlers[@intFromEnum(Opcode.PUSH18)] = &push18_handler;
-            handlers[@intFromEnum(Opcode.PUSH19)] = &push19_handler;
-            handlers[@intFromEnum(Opcode.PUSH20)] = &push20_handler;
-            handlers[@intFromEnum(Opcode.PUSH21)] = &push21_handler;
-            handlers[@intFromEnum(Opcode.PUSH22)] = &push22_handler;
-            handlers[@intFromEnum(Opcode.PUSH23)] = &push23_handler;
-            handlers[@intFromEnum(Opcode.PUSH24)] = &push24_handler;
-            handlers[@intFromEnum(Opcode.PUSH25)] = &push25_handler;
-            handlers[@intFromEnum(Opcode.PUSH26)] = &push26_handler;
-            handlers[@intFromEnum(Opcode.PUSH27)] = &push27_handler;
-            handlers[@intFromEnum(Opcode.PUSH28)] = &push28_handler;
-            handlers[@intFromEnum(Opcode.PUSH29)] = &push29_handler;
-            handlers[@intFromEnum(Opcode.PUSH30)] = &push30_handler;
-            handlers[@intFromEnum(Opcode.PUSH31)] = &push31_handler;
-            handlers[@intFromEnum(Opcode.PUSH32)] = &push32_handler;
-            
-            // DUP handlers
-            handlers[@intFromEnum(Opcode.DUP1)] = &dup1_handler;
-            handlers[@intFromEnum(Opcode.DUP2)] = &dup2_handler;
-            handlers[@intFromEnum(Opcode.DUP3)] = &dup3_handler;
-            handlers[@intFromEnum(Opcode.DUP4)] = &dup4_handler;
-            handlers[@intFromEnum(Opcode.DUP5)] = &dup5_handler;
-            handlers[@intFromEnum(Opcode.DUP6)] = &dup6_handler;
-            handlers[@intFromEnum(Opcode.DUP7)] = &dup7_handler;
-            handlers[@intFromEnum(Opcode.DUP8)] = &dup8_handler;
-            handlers[@intFromEnum(Opcode.DUP9)] = &dup9_handler;
-            handlers[@intFromEnum(Opcode.DUP10)] = &dup10_handler;
-            handlers[@intFromEnum(Opcode.DUP11)] = &dup11_handler;
-            handlers[@intFromEnum(Opcode.DUP12)] = &dup12_handler;
-            handlers[@intFromEnum(Opcode.DUP13)] = &dup13_handler;
-            handlers[@intFromEnum(Opcode.DUP14)] = &dup14_handler;
-            handlers[@intFromEnum(Opcode.DUP15)] = &dup15_handler;
-            handlers[@intFromEnum(Opcode.DUP16)] = &dup16_handler;
-            
-            // SWAP handlers
-            handlers[@intFromEnum(Opcode.SWAP1)] = &swap1_handler;
-            handlers[@intFromEnum(Opcode.SWAP2)] = &swap2_handler;
-            handlers[@intFromEnum(Opcode.SWAP3)] = &swap3_handler;
-            handlers[@intFromEnum(Opcode.SWAP4)] = &swap4_handler;
-            handlers[@intFromEnum(Opcode.SWAP5)] = &swap5_handler;
-            handlers[@intFromEnum(Opcode.SWAP6)] = &swap6_handler;
-            handlers[@intFromEnum(Opcode.SWAP7)] = &swap7_handler;
-            handlers[@intFromEnum(Opcode.SWAP8)] = &swap8_handler;
-            handlers[@intFromEnum(Opcode.SWAP9)] = &swap9_handler;
-            handlers[@intFromEnum(Opcode.SWAP10)] = &swap10_handler;
-            handlers[@intFromEnum(Opcode.SWAP11)] = &swap11_handler;
-            handlers[@intFromEnum(Opcode.SWAP12)] = &swap12_handler;
-            handlers[@intFromEnum(Opcode.SWAP13)] = &swap13_handler;
-            handlers[@intFromEnum(Opcode.SWAP14)] = &swap14_handler;
-            handlers[@intFromEnum(Opcode.SWAP15)] = &swap15_handler;
-            handlers[@intFromEnum(Opcode.SWAP16)] = &swap16_handler;
-            
-            // Fusion handlers
-            handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_INLINE)] = &push_add_inline_handler;
-            handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_POINTER)] = &push_add_pointer_handler;
-            handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_INLINE)] = &push_mul_inline_handler;
-            handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_POINTER)] = &push_mul_pointer_handler;
-            handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_DIV_INLINE)] = &push_div_inline_handler;
-            handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_DIV_POINTER)] = &push_div_pointer_handler;
-            handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMP_INLINE)] = &push_jump_inline_handler;
-            handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMP_POINTER)] = &push_jump_pointer_handler;
-            handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_INLINE)] = &push_jumpi_inline_handler;
-            handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_POINTER)] = &push_jumpi_pointer_handler;
-            
-            // Debug: Check if handlers are set correctly
-            std.log.warn("Handler check:", .{});
-            std.log.warn("  ADD (0x01) handler: {*}", .{handlers[0x01]});
-            std.log.warn("  op_add_handler addr: {*}", .{&op_add_handler});
-            std.log.warn("  STOP (0x00) handler: {*}", .{handlers[0x00]});
-            std.log.warn("  PUSH_ADD_INLINE handler: {*}", .{handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_INLINE)]});
-            std.log.warn("  push_add_inline_handler addr: {*}", .{&push_add_inline_handler});
-            
-            // Create the plan using our planner
-            self.plan = try planner.create_instruction_stream(allocator, handlers);
-            self.instruction_idx = 0;
-            
-            // Debug print the plan in debug builds
-            if (builtin.mode == .Debug) {
-                self.plan.?.debugPrint();
-            }
-            
-            // Start execution with the first handler
-            const first_handler = self.plan.?.instructionStream[0].handler;
-            
-            // Start execution - handlers will throw STOP when done
-            first_handler(self, &self.plan.?) catch |err| {
-                if (err == Error.STOP) return; // Normal termination
-                return err;
-            };
-            unreachable;
-        }
-
-        // Individual PUSH handlers
-        fn push0_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.push(0);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH0);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push1_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH1));
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH1);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH2));
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH2);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        // PUSH3-PUSH8 handlers - these fit inline in InstructionElement (up to usize)
-        // On 32-bit systems: PUSH1-PUSH4 fit inline
-        // On 64-bit systems: PUSH1-PUSH8 fit inline
-        fn push3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            std.log.warn("push3_handler: instruction_idx = {}, stream length = {}", .{ self.instruction_idx, plan_ptr.instructionStream.len });
-            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH3));
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH3);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH4));
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH4);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push5_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            if (comptime @sizeOf(plan_mod.InstructionElement) == @sizeOf(u64)) {
-                // 64-bit platform - fits inline
-                const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH5));
-                try self.stack.push(value);
-            } else {
-                // 32-bit platform - need pointer
-                const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH5);
-                const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-                try self.stack.push(value);
-            }
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH5);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push6_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            if (comptime @sizeOf(plan_mod.InstructionElement) == @sizeOf(u64)) {
-                // 64-bit platform - fits inline
-                const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH6));
-                try self.stack.push(value);
-            } else {
-                // 32-bit platform - need pointer
-                const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH6);
-                const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-                try self.stack.push(value);
-            }
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH6);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push7_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            if (comptime @sizeOf(plan_mod.InstructionElement) == @sizeOf(u64)) {
-                // 64-bit platform - fits inline
-                const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH7));
-                try self.stack.push(value);
-            } else {
-                // 32-bit platform - need pointer
-                const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH7);
-                const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-                try self.stack.push(value);
-            }
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH7);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push8_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            if (comptime @sizeOf(plan_mod.InstructionElement) == @sizeOf(u64)) {
-                // 64-bit platform - fits inline
-                const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, .PUSH8));
-                try self.stack.push(value);
-            } else {
-                // 32-bit platform - need pointer
-                const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH8);
-                const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-                try self.stack.push(value);
-            }
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH8);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        // PUSH9-PUSH16 handlers - these MAY fit inline on 64-bit systems
-        // The plan.getMetadata will return either inline value or pointer based on platform
-        fn push9_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH9);
-            const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH9);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        // Similar handlers for PUSH10-PUSH16
-        fn push10_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH10);
-            const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH10);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push11_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH11);
-            const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH11);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push12_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH12);
-            const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH12);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push13_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH13);
-            const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH13);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push14_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH14);
-            const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH14);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push15_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH15);
-            const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH15);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push16_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const result = plan_ptr.getMetadata(&self.instruction_idx, .PUSH16);
-            const value = if (@TypeOf(result) == *const WordType) result.* else @as(WordType, result);
-            try self.stack.push(value);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH16);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-        
-        // PUSH17-PUSH32 handlers - these ALWAYS use pointers
-        fn push17_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH17);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH17);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push18_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH18);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH18);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push19_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH19);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH19);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push20_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH20);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH20);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push21_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH21);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH21);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push22_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH22);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH22);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push23_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH23);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH23);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push24_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH24);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH24);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push25_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH25);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH25);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push26_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH26);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH26);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push27_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH27);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH27);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push28_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH28);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH28);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push29_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH29);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH29);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push30_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH30);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH30);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push31_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH31);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH31);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push32_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, .PUSH32);
-            try self.stack.push(value_ptr.*);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PUSH32);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn op_stop_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            _ = plan;
-
-            // Check final gas before stopping
-            try self.checkGas();
-
-            self.op_stop() catch |err| return err;
-            unreachable;
-        }
-
-        fn op_add_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            // Get opcode info for gas consumption
-            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.ADD)];
-
-            // Consume gas (unchecked since we validated in pre-analysis)
-            self.consumeGasUnchecked(opcode_info.gas_cost);
-
-            // Execute the operation
-            try self.op_add();
-
-            // Get next handler from plan
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .ADD);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn op_mul_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            // Get opcode info for gas consumption
-            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MUL)];
-
-            // Consume gas (unchecked since we validated in pre-analysis)
-            self.consumeGasUnchecked(opcode_info.gas_cost);
-
-            // Execute the operation
-            try self.op_mul();
-
-            // Get next handler from plan
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .MUL);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        // Generic handler for simple opcodes that just increment PC
-        fn makeSimpleHandler(comptime op_fn: fn (*Self) Error!void, comptime opcode: Opcode) HandlerFn {
-            return struct {
-                fn handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-                    const self = @as(*Self, @ptrCast(@alignCast(frame)));
-                    const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-
-                    // Get opcode info for gas consumption
-                    const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(opcode)];
-
-                    // Consume gas (unchecked since we validated in pre-analysis)
-                    self.consumeGasUnchecked(opcode_info.gas_cost);
-
-                    // Execute the operation
-                    try op_fn(self);
-
-                    // Get next handler from plan
-                    const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, opcode);
-                    return @call(.always_tail, next_handler, .{ self, plan_ptr });
-                }
-            }.handler;
-        }
-
-        // Define all the simple handlers using the macro
-        const op_sub_handler = makeSimpleHandler(op_sub, .SUB);
-        const op_div_handler = makeSimpleHandler(op_div, .DIV);
-        const op_sdiv_handler = makeSimpleHandler(op_sdiv, .SDIV);
-        const op_mod_handler = makeSimpleHandler(op_mod, .MOD);
-        const op_smod_handler = makeSimpleHandler(op_smod, .SMOD);
-        const op_addmod_handler = makeSimpleHandler(op_addmod, .ADDMOD);
-        const op_mulmod_handler = makeSimpleHandler(op_mulmod, .MULMOD);
-        const op_exp_handler = makeSimpleHandler(op_exp, .EXP);
-        const op_signextend_handler = makeSimpleHandler(op_signextend, .SIGNEXTEND);
-        const op_lt_handler = makeSimpleHandler(op_lt, .LT);
-        const op_gt_handler = makeSimpleHandler(op_gt, .GT);
-        const op_slt_handler = makeSimpleHandler(op_slt, .SLT);
-        const op_sgt_handler = makeSimpleHandler(op_sgt, .SGT);
-        const op_eq_handler = makeSimpleHandler(op_eq, .EQ);
-        const op_iszero_handler = makeSimpleHandler(op_iszero, .ISZERO);
-        const op_and_handler = makeSimpleHandler(op_and, .AND);
-        const op_or_handler = makeSimpleHandler(op_or, .OR);
-        const op_xor_handler = makeSimpleHandler(op_xor, .XOR);
-        const op_not_handler = makeSimpleHandler(op_not, .NOT);
-        const op_byte_handler = makeSimpleHandler(op_byte, .BYTE);
-        const op_shl_handler = makeSimpleHandler(op_shl, .SHL);
-        const op_shr_handler = makeSimpleHandler(op_shr, .SHR);
-        const op_sar_handler = makeSimpleHandler(op_sar, .SAR);
-        const op_pop_handler = makeSimpleHandler(op_pop, .POP);
-        // Handler for PC opcode with inline PC value
-        fn op_pc_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            // Get PC value from plan metadata
-            const pc_value = plan_ptr.getMetadata(&self.instruction_idx, .PC);
-            try self.stack.push(@as(WordType, @intCast(pc_value)));
-            
-            // Get next handler from plan
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .PC);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-        const op_gas_handler = makeSimpleHandler(op_gas, .GAS);
-        const op_jumpdest_handler = makeSimpleHandler(op_jumpdest, .JUMPDEST);
-        const op_push0_handler = makeSimpleHandler(op_push0, .PUSH0);
-        const op_msize_handler = makeSimpleHandler(op_msize, .MSIZE);
-        const op_mload_handler = makeSimpleHandler(op_mload, .MLOAD);
-        const op_mstore_handler = makeSimpleHandler(op_mstore, .MSTORE);
-        const op_mstore8_handler = makeSimpleHandler(op_mstore8, .MSTORE8);
-        const op_mcopy_handler = makeSimpleHandler(op_mcopy, .MCOPY);
-        const op_sload_handler = makeSimpleHandler(op_sload, .SLOAD);
-        const op_sstore_handler = makeSimpleHandler(op_sstore, .SSTORE);
-        const op_tload_handler = makeSimpleHandler(op_tload, .TLOAD);
-        const op_tstore_handler = makeSimpleHandler(op_tstore, .TSTORE);
-        const op_selfdestruct_handler = makeSimpleHandler(op_selfdestruct, .SELFDESTRUCT);
-
-
-
-
-        fn op_invalid_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            std.log.warn("\n=== InvalidOpcode Debug ===", .{});
-            std.log.warn("Instruction index: {}", .{self.instruction_idx});
-            std.log.warn("Bytecode: {any}", .{self.bytecode});
-            std.log.warn("Instruction stream length: {}", .{plan_ptr.instructionStream.len});
-            std.log.warn("==================\n", .{});
-            
-            self.op_invalid() catch |err| return err;
-            unreachable;
-        }
-
-        fn out_of_bounds_handler(frame: *anyopaque, plan: *const anyopaque, idx: *anyopaque) anyerror!noreturn {
-            _ = frame;
-            _ = plan;
-            _ = idx;
-            return Error.OutOfBounds;
-        }
-
-        // Trace instruction handlers
-        fn trace_before_op_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            // Call tracer before operation
-            self.tracer.beforeOp(Self, self);
-
-            // Get the next handler - trace handlers don't have metadata
-            const next_handler = plan_ptr.instructionStream[&self.instruction_idx.*].handler;
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn trace_after_op_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            // Call tracer after operation
-            self.tracer.afterOp(Self, self);
-
-            // Get the next handler - trace handlers don't have metadata
-            const next_handler = plan_ptr.instructionStream[&self.instruction_idx.*].handler;
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-
-
-        fn dup1_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(1);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP1);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(2);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP2);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(3);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP3);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(4);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP4);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup5_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(5);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP5);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup6_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(6);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP6);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup7_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(7);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP7);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup8_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(8);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP8);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup9_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(9);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP9);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup10_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(10);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP10);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup11_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(11);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP11);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup12_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(12);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP12);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup13_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(13);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP13);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup14_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(14);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP14);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup15_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(15);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP15);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn dup16_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.dup_n(16);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .DUP16);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap1_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(1);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP1);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(2);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP2);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(3);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP3);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(4);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP4);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap5_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(5);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP5);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap6_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(6);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP6);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap7_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(7);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP7);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap8_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(8);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP8);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap9_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(9);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP9);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap10_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(10);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP10);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap11_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(11);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP11);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap12_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(12);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP12);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap13_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(13);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP13);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap14_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(14);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP14);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap15_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(15);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP15);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn swap16_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            try self.stack.swap_n(16);
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .SWAP16);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        // Fusion handlers for PUSH+ADD
-        fn push_add_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_INLINE)));
-            const b = try self.stack.pop();
-            const result = b +% value;
-            try self.stack.push(result);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_INLINE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push_add_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_POINTER));
-            const b = try self.stack.pop();
-            const result = b +% value_ptr.*;
-            try self.stack.push(result);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_POINTER));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        // Fusion handlers for PUSH+MUL
-        fn push_mul_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_INLINE)));
-            const b = try self.stack.pop();
-            const result = b *% value;
-            try self.stack.push(result);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_INLINE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push_mul_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_POINTER));
-            const b = try self.stack.pop();
-            const result = b *% value_ptr.*;
-            try self.stack.push(result);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_POINTER));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        // Fusion handlers for PUSH+DIV
-        fn push_div_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_DIV_INLINE)));
-            const b = try self.stack.pop();
-            const result = if (value == 0) 0 else b / value;
-            try self.stack.push(result);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_DIV_INLINE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        fn push_div_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const value_ptr = plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_DIV_POINTER));
-            const b = try self.stack.pop();
-            const result = if (value_ptr.* == 0) 0 else b / value_ptr.*;
-            try self.stack.push(result);
-            
-            const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_DIV_POINTER));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
-        }
-
-        // Fusion handlers for PUSH+JUMP
-        fn push_jump_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const dest = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMP_INLINE)));
-            
-            if (dest > max_bytecode_size) {
-                return Error.InvalidJump;
-            }
-            const dest_pc = @as(Plan.PcType, @intCast(dest));
-            
-            // Check if it's a valid jump destination
-            const dest_idx = plan_ptr.getInstructionIndexForPc(dest_pc) orelse {
-                return Error.InvalidJump;
-            };
-            
-            // Jump to the destination
-            self.instruction_idx = dest_idx;
-            const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-            return @call(.always_tail, jump_handler, .{ self, plan_ptr });
-        }
-
-        fn push_jump_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const dest_ptr = plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMP_POINTER));
-            const dest = dest_ptr.*;
-            
-            if (dest > max_bytecode_size) {
-                return Error.InvalidJump;
-            }
-            const dest_pc = @as(Plan.PcType, @intCast(dest));
-            
-            // Check if it's a valid jump destination
-            const dest_idx = plan_ptr.getInstructionIndexForPc(dest_pc) orelse {
-                return Error.InvalidJump;
-            };
-            
-            // Jump to the destination
-            self.instruction_idx = dest_idx;
-            const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-            return @call(.always_tail, jump_handler, .{ self, plan_ptr });
-        }
-
-        // Fusion handlers for PUSH+JUMPI
-        fn push_jumpi_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const dest = @as(WordType, plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_INLINE)));
-            const condition = try self.stack.pop();
-            
-            if (condition != 0) {
-                if (dest > max_bytecode_size) {
-                    return Error.InvalidJump;
-                }
-                const dest_pc = @as(Plan.PcType, @intCast(dest));
-                
-                // Check if it's a valid jump destination
-                const dest_idx = plan_ptr.getInstructionIndexForPc(dest_pc) orelse {
-                    return Error.InvalidJump;
-                };
-                
-                // Jump to the destination
-                self.instruction_idx = dest_idx;
-                const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-                return @call(.always_tail, jump_handler, .{ self, plan_ptr });
-            } else {
-                // Condition is false, continue to next instruction
-                const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_INLINE));
-                return @call(.always_tail, next_handler, .{ self, plan_ptr });
-            }
-        }
-
-        fn push_jumpi_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const dest_ptr = plan_ptr.getMetadata(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_POINTER));
-            const dest = dest_ptr.*;
-            const condition = try self.stack.pop();
-            
-            if (condition != 0) {
-                if (dest > max_bytecode_size) {
-                    return Error.InvalidJump;
-                }
-                const dest_pc = @as(Plan.PcType, @intCast(dest));
-                
-                // Check if it's a valid jump destination
-                const dest_idx = plan_ptr.getInstructionIndexForPc(dest_pc) orelse {
-                    return Error.InvalidJump;
-                };
-                
-                // Jump to the destination
-                self.instruction_idx = dest_idx;
-                const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-                return @call(.always_tail, jump_handler, .{ self, plan_ptr });
-            } else {
-                // Condition is false, continue to next instruction
-                const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_POINTER));
-                return @call(.always_tail, next_handler, .{ self, plan_ptr });
-            }
-        }
-
-        fn op_jump_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const dest = try self.stack.pop();
-
-            if (dest > max_bytecode_size) {
-                return Error.InvalidJump;
-            }
-
-            const dest_pc = @as(Plan.PcType, @intCast(dest));
-            if (!self.is_valid_jump_dest(@as(usize, dest_pc))) {
-                return Error.InvalidJump;
-            }
-
-            // PC update is handled by plan through instruction index update
-
-            // Look up the instruction index for the destination PC
-            if (plan_ptr.getInstructionIndexForPc(dest_pc)) |new_idx| {
-                self.instruction_idx = new_idx;
-                // Get the handler at the destination
-                const dest_handler = plan_ptr.instructionStream[new_idx].handler;
-                return @call(.always_tail, dest_handler, .{ self, plan_ptr });
-            } else {
-                // PC is not a valid instruction start (e.g., middle of PUSH data)
-                return Error.InvalidJump;
-            }
-        }
-
-        fn op_jumpi_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Self, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            
-            const dest = try self.stack.pop();
-            const condition = try self.stack.pop();
-
-            if (condition != 0) {
-                if (dest > max_bytecode_size) {
-                    return Error.InvalidJump;
-                }
-                const dest_pc = @as(Plan.PcType, @intCast(dest));
-                if (!self.is_valid_jump_dest(@as(usize, dest_pc))) {
-                    return Error.InvalidJump;
-                }
-                // PC update is handled by plan through instruction index update
-
-                // Look up the instruction index for the destination PC
-                if (plan_ptr.getInstructionIndexForPc(dest_pc)) |new_idx| {
-                    self.instruction_idx = new_idx;
-                    // Get the handler at the destination
-                    const dest_handler = plan_ptr.instructionStream[new_idx].handler;
-                    return @call(.always_tail, dest_handler, .{ self, plan_ptr });
-                } else {
-                    // PC is not a valid instruction start (e.g., middle of PUSH data)
-                    return Error.InvalidJump;
-                }
-            } else {
-                // Condition is false, continue to next instruction
-                // PC update is handled by plan through instruction index update
-                const next_handler = plan_ptr.getNextInstruction(&self.instruction_idx, .JUMPI);
-                return @call(.always_tail, next_handler, .{ self, plan_ptr });
-            }
-        }
 
 
         pub fn op_pc(self: *Self) Error!void {
@@ -2784,58 +1474,59 @@ test "Frame op_push31 reads 31 bytes from bytecode" {
     // PC advancement is now handled by plan, not frame
 }
 
-test "Frame interpret handles all PUSH opcodes correctly" {
-    const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
-
-    // Test PUSH3 through interpreter
-    {
-        const bytecode = [_]u8{ 0x62, 0x12, 0x34, 0x56, 0x00 }; // PUSH3 0x123456 STOP
-        var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
-        defer frame.deinit(allocator);
-
-        std.log.warn("\n=== PUSH3 Test Starting ===", .{});
-        std.log.warn("Bytecode: {any}", .{bytecode});
-        try frame.interpret(allocator); // Handles STOP internally
-        try std.testing.expectEqual(@as(u256, 0x123456), frame.stack.peek_unsafe());
-    }
-
-    // Test PUSH10 through interpreter
-    {
-        var bytecode: [12]u8 = undefined;
-        bytecode[0] = 0x69; // PUSH10
-        for (1..11) |i| {
-            bytecode[i] = @as(u8, @intCast(i));
-        }
-        bytecode[11] = 0x00; // STOP
-
-        var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
-        defer frame.deinit(allocator);
-
-        try frame.interpret(allocator); // Handles STOP internally
-
-        var expected: u256 = 0;
-        for (1..11) |i| {
-            expected = (expected << 8) | @as(u256, i);
-        }
-        try std.testing.expectEqual(expected, frame.stack.peek_unsafe());
-    }
-
-    // Test PUSH20 through interpreter
-    {
-        var bytecode: [22]u8 = undefined;
-        bytecode[0] = 0x73; // PUSH20
-        for (1..21) |i| {
-            bytecode[i] = @as(u8, @intCast(255 - i));
-        }
-        bytecode[21] = 0x00; // STOP
-
-        var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
-        defer frame.deinit(allocator);
-
-        try frame.interpret(allocator); // Handles STOP internally
-    }
-}
+// TODO: Move this test to frame_interpreter.zig
+// test "Frame interpret handles all PUSH opcodes correctly" {
+//     const allocator = std.testing.allocator;
+//     const Frame = createFrame(.{});
+// 
+//     // Test PUSH3 through interpreter
+//     {
+//         const bytecode = [_]u8{ 0x62, 0x12, 0x34, 0x56, 0x00 }; // PUSH3 0x123456 STOP
+//         var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+//         defer frame.deinit(allocator);
+// 
+//         std.log.warn("\n=== PUSH3 Test Starting ===", .{});
+//         std.log.warn("Bytecode: {any}", .{bytecode});
+//         try frame.interpret(allocator); // Handles STOP internally
+//         try std.testing.expectEqual(@as(u256, 0x123456), frame.stack.peek_unsafe());
+//     }
+// 
+//     // Test PUSH10 through interpreter
+//     {
+//         var bytecode: [12]u8 = undefined;
+//         bytecode[0] = 0x69; // PUSH10
+//         for (1..11) |i| {
+//             bytecode[i] = @as(u8, @intCast(i));
+//         }
+//         bytecode[11] = 0x00; // STOP
+// 
+//         var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+//         defer frame.deinit(allocator);
+// 
+//         try frame.interpret(allocator); // Handles STOP internally
+// 
+//         var expected: u256 = 0;
+//         for (1..11) |i| {
+//             expected = (expected << 8) | @as(u256, i);
+//         }
+//         try std.testing.expectEqual(expected, frame.stack.peek_unsafe());
+//     }
+// 
+//     // Test PUSH20 through interpreter
+//     {
+//         var bytecode: [22]u8 = undefined;
+//         bytecode[0] = 0x73; // PUSH20
+//         for (1..21) |i| {
+//             bytecode[i] = @as(u8, @intCast(255 - i));
+//         }
+//         bytecode[21] = 0x00; // STOP
+// 
+//         var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+//         defer frame.deinit(allocator);
+// 
+//         try frame.interpret(allocator); // Handles STOP internally
+//     }
+// }
 
 test "Frame op_dup1 duplicates top stack item" {
     const allocator = std.testing.allocator;
@@ -3051,97 +1742,95 @@ test "Frame SWAP2-SWAP15 operations" {
 test "Frame op_selfdestruct basic" {
     // TODO: Update these tests for the new frame structure
     return error.SkipZigTest;
-    const allocator = std.testing.allocator;
-    const Frame = createFrame(.{ .has_database = true });
-    
-    const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
-    
-    // Create database 
-    const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-    const db_interface = memory_db.to_database_interface();
-    
-    var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface);
-    defer frame.deinit(allocator);
-    
-    // Set contract address and balance
-    frame.contract_address = [_]u8{0x11} ++ [_]u8{0} ** 19;
-    const account = @import("database_interface.zig").Account{
-        .balance = 1000,
-        .nonce = 1,
-        .code_hash = [_]u8{0} ** 32,
-        .storage_root = [_]u8{0} ** 32,
-    };
-    try db_interface.set_account(frame.contract_address, account);
-    
-    // Push recipient address to stack
-    const recipient = [_]u8{0x22} ++ [_]u8{0} ** 19;
-    const recipient_u256 = @as(u256, @bitCast(recipient ++ [_]u8{0} ** 12));
-    frame.stack.push_unsafe(recipient_u256);
-    
-    // Execute SELFDESTRUCT
-    try frame.op_selfdestruct();
-    
-    // Verify contract is marked for destruction
-    try std.testing.expect(frame.self_destruct != null);
-    try std.testing.expect(frame.self_destruct.?.is_marked_for_destruction(frame.contract_address));
-    
-    // Verify recipient is correct
-    const stored_recipient = frame.self_destruct.?.get_recipient(frame.contract_address);
-    try std.testing.expect(stored_recipient != null);
-    try std.testing.expectEqualSlices(u8, &recipient, &stored_recipient.?);
+    // const allocator = std.testing.allocator;
+    // const Frame = createFrame(.{ .has_database = true });
+    // 
+    // const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
+    // 
+    // // Create database 
+    // const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+    // var memory_db = MemoryDatabase.init(allocator);
+    // defer memory_db.deinit();
+    // const db_interface = memory_db.to_database_interface();
+    // 
+    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface);
+    // defer frame.deinit(allocator);
+    // 
+    // // Set contract address and balance
+    // frame.contract_address = [_]u8{0x11} ++ [_]u8{0} ** 19;
+    // const account = @import("database_interface.zig").Account{
+    //     .balance = 1000,
+    //     .nonce = 1,
+    //     .code_hash = [_]u8{0} ** 32,
+    //     .storage_root = [_]u8{0} ** 32,
+    // };
+    // try db_interface.set_account(frame.contract_address, account);
+    // 
+    // // Push recipient address to stack
+    // const recipient = [_]u8{0x22} ++ [_]u8{0} ** 19;
+    // const recipient_u256 = @as(u256, @bitCast(recipient ++ [_]u8{0} ** 12));
+    // frame.stack.push_unsafe(recipient_u256);
+    // 
+    // // Execute SELFDESTRUCT
+    // try frame.op_selfdestruct();
+    // 
+    // // Verify contract is marked for destruction
+    // try std.testing.expect(frame.self_destruct != null);
+    // try std.testing.expect(frame.self_destruct.?.is_marked_for_destruction(frame.contract_address));
+    // 
+    // // Verify recipient is correct
+    // const stored_recipient = frame.self_destruct.?.get_recipient(frame.contract_address);
+    // try std.testing.expect(stored_recipient != null);
+    // try std.testing.expectEqualSlices(u8, &recipient, &stored_recipient.?);
 }
 
 test "Frame op_selfdestruct with insufficient stack" {
     return error.SkipZigTest; // TODO: Update this test for the new frame structure
-    const allocator = std.testing.allocator;
-    const Frame = createFrame(.{ .has_database = true });
-    
-    const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
-    
-    // Create database 
-    const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-    const db_interface = memory_db.to_database_interface();
-    
-    var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface);
-    defer frame.deinit(allocator);
-    
-    // Don't push anything to stack
-    try std.testing.expectError(error.StackUnderflow, frame.op_selfdestruct());
+    // const allocator = std.testing.allocator;
+    // const Frame = createFrame(.{ .has_database = true });
+    // 
+    // const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
+    // 
+    // // Create database 
+    // const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+    // var memory_db = MemoryDatabase.init(allocator);
+    // defer memory_db.deinit();
+    // const db_interface = memory_db.to_database_interface();
+    // 
+    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface);
+    // defer frame.deinit(allocator);
+    // 
+    // // Don't push anything to stack
+    // try std.testing.expectError(error.StackUnderflow, frame.op_selfdestruct());
 }
 
-/*
 test "Frame op_selfdestruct in static context" {
     return error.SkipZigTest; // TODO: Update this test for the new frame structure
-    const allocator = std.testing.allocator;
-    const Frame = createFrame(.{ .has_database = true });
-    
-    const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
-    
-    // Create database 
-    const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-    var memory_db = MemoryDatabase.init(allocator);
-    defer memory_db.deinit();
-    const db_interface = memory_db.to_database_interface();
-    
-    var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface);
-    defer frame.deinit(allocator);
-    
-    // Set static context
-    frame.is_static = true;
-    
-    // Push recipient address to stack
-    const recipient = [_]u8{0x22} ++ [_]u8{0} ** 19;
-    const recipient_u256 = @as(u256, @bitCast(recipient ++ [_]u8{0} ** 12));
-    frame.stack.push_unsafe(recipient_u256);
-    
-    // Should fail with WriteProtection error
-    try std.testing.expectError(error.WriteProtection, frame.op_selfdestruct());
+    // const allocator = std.testing.allocator;
+    // const Frame = createFrame(.{ .has_database = true });
+    // 
+    // const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
+    // 
+    // // Create database 
+    // const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+    // var memory_db = MemoryDatabase.init(allocator);
+    // defer memory_db.deinit();
+    // const db_interface = memory_db.to_database_interface();
+    // 
+    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface);
+    // defer frame.deinit(allocator);
+    // 
+    // // Set static context
+    // frame.is_static = true;
+    // 
+    // // Push recipient address to stack
+    // const recipient = [_]u8{0x22} ++ [_]u8{0} ** 19;
+    // const recipient_u256 = @as(u256, @bitCast(recipient ++ [_]u8{0} ** 12));
+    // frame.stack.push_unsafe(recipient_u256);
+    // 
+    // // Should fail with WriteProtection error
+    // try std.testing.expectError(error.WriteProtection, frame.op_selfdestruct());
 }
-*/
 
 test "Frame init validates bytecode size" {
     const allocator = std.testing.allocator;
@@ -4196,151 +2885,157 @@ test "Frame op_keccak256 hash computation" {
     try std.testing.expectEqual(expected_hello, hello_hash);
 }
 
-test "Debug planner instruction stream creation" {
-    std.testing.log_level = .warn;
-    // This test helps debug why interpret is hitting InvalidOpcode
-    const allocator = std.testing.allocator;
-    
-    // Create minimal bytecode: PUSH1 42, STOP
-    const bytecode = [_]u8{ 0x60, 0x2A, 0x00 };
-    
-    // Create planner directly
-    const PlannerConfig = planner_mod.PlannerConfig{
-        .maxBytecodeSize = 24_576,
-    };
-    const Planner = planner_mod.createPlanner(PlannerConfig);
-    
-    var planner = Planner.init(&bytecode);
-    
-    // Create handler array with debug logging
-    var handlers: [256]*const plan_mod.HandlerFn = undefined;
-    const Frame = createFrame(.{});
-    
-    // Initialize all to invalid
-    for (&handlers) |*h| {
-        h.* = &Frame.op_invalid_handler;
-    }
-    
-    // Set specific handlers we need
-    handlers[@intFromEnum(Opcode.PUSH1)] = &Frame.push1_handler;
-    handlers[@intFromEnum(Opcode.STOP)] = &Frame.op_stop_handler;
-    
-    const plan = try planner.create_instruction_stream(allocator, handlers);
-    defer {
-        var mut_plan = plan;
-        mut_plan.deinit(allocator);
-    }
-    
-    std.log.warn("\n=== Planner Debug ===", .{});
-    std.log.warn("Bytecode: {any}", .{bytecode});
-    std.log.warn("Instruction stream length: {}", .{plan.instructionStream.len});
-    std.log.warn("Constants length: {}", .{plan.u256_constants.len});
-    
-    // Log each element - check if it's a handler or metadata
-    for (plan.instructionStream, 0..) |elem, i| {
-        // Try to interpret as handler first
-        const maybe_handler = elem.handler;
-        if (@intFromPtr(maybe_handler) < 0x1000) {
-            // This is likely inline data, not a handler pointer
-            std.log.warn("  [{}] Inline value: {}", .{i, elem.inline_value});
-        } else if (maybe_handler == &Frame.push1_handler) {
-            std.log.warn("  [{}] PUSH1 handler", .{i});
-        } else if (maybe_handler == &Frame.op_stop_handler) {
-            std.log.warn("  [{}] STOP handler", .{i});
-        } else if (maybe_handler == &Frame.op_invalid_handler) {
-            std.log.warn("  [{}] INVALID handler", .{i});
-        } else {
-            std.log.warn("  [{}] Unknown handler: {*}", .{i, elem.handler});
-        }
-    }
-    std.log.warn("==================\n", .{});
-}
+// TODO: Move this test to frame_interpreter.zig
+// test "Debug planner instruction stream creation" {
+//     std.testing.log_level = .warn;
+//     // This test helps debug why interpret is hitting InvalidOpcode
+//     const allocator = std.testing.allocator;
+//     
+//     // Create minimal bytecode: PUSH1 42, STOP
+//     const bytecode = [_]u8{ 0x60, 0x2A, 0x00 };
+//     
+//     // Create planner directly
+//     const PlannerConfig = planner_mod.PlannerConfig{
+//         .maxBytecodeSize = 24_576,
+//     };
+//     const PlannerType = planner_mod.createPlanner(PlannerConfig);
+//     
+//     var planner = PlannerType.init(&bytecode);
+//     
+//     // Create handler array with debug logging
+//     var handlers: [256]*const plan_mod.HandlerFn = undefined;
+//     const Frame = createFrame(.{});
+//     
+//     // Initialize all to invalid
+//     for (handlers[0..]) |*h| {
+//         h.* = &Frame.op_invalid_handler;
+//     }
+//     
+//     // Set specific handlers we need
+//     handlers[@intFromEnum(Opcode.PUSH1)] = &Frame.push1_handler;
+//     handlers[@intFromEnum(Opcode.STOP)] = &Frame.op_stop_handler;
+//     
+//     const plan = try planner.create_instruction_stream(allocator, handlers);
+//     defer {
+//         var mut_plan = plan;
+//         mut_plan.deinit(allocator);
+//     }
+//     
+//     std.log.warn("\n=== Planner Debug ===", .{});
+//     std.log.warn("Bytecode: {any}", .{bytecode});
+//     std.log.warn("Instruction stream length: {}", .{plan.instructionStream.len});
+//     std.log.warn("Constants length: {}", .{plan.u256_constants.len});
+//     
+//     // Log each element - check if it's a handler or metadata
+//     for (plan.instructionStream, 0..) |elem, i| {
+//         // Try to interpret as handler first
+//         const maybe_handler = elem.handler;
+//         if (@intFromPtr(maybe_handler) < 0x1000) {
+//             // This is likely inline data, not a handler pointer
+//             std.log.warn("  [{}] Inline value: {}", .{i, elem.inline_value});
+//         } else if (maybe_handler == &Frame.push1_handler) {
+//             std.log.warn("  [{}] PUSH1 handler", .{i});
+//         } else if (maybe_handler == &Frame.op_stop_handler) {
+//             std.log.warn("  [{}] STOP handler", .{i});
+//         } else if (maybe_handler == &Frame.op_invalid_handler) {
+//             std.log.warn("  [{}] INVALID handler", .{i});
+//         } else {
+//             std.log.warn("  [{}] Unknown handler: {*}", .{i, elem.handler});
+//         }
+//     }
+//     std.log.warn("==================\n", .{});
+// }
 
-test "Frame interpret basic execution" {
-    std.testing.log_level = .warn;
-    const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
+// TODO: Move this test to frame_interpreter.zig
+// test "Frame interpret basic execution" {
+//     std.testing.log_level = .warn;
+//     const allocator = std.testing.allocator;
+//     const Frame = createFrame(.{});
+// 
+//     // Simple bytecode: PUSH1 42, PUSH1 10, ADD, STOP
+//     const bytecode = [_]u8{ 0x60, 0x2A, 0x60, 0x0A, 0x01, 0x00 };
+//     var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+//     defer frame.deinit(allocator);
+// 
+//     std.log.warn("\n=== Frame interpret basic execution test ===", .{});
+//     std.log.warn("Initial frame state:", .{});
+//     frame.pretty_print();
+// 
+//     // interpret should execute until STOP
+//     try frame.interpret(allocator); // Handles STOP internally
+//     
+//     std.log.warn("\nFinal frame state after interpret():", .{});
+//     frame.pretty_print();
+// 
+//     // Check final stack state
+//     try std.testing.expectEqual(@as(u256, 52), frame.stack.peek_unsafe()); // 42 + 10 = 52
+// }
 
-    // Simple bytecode: PUSH1 42, PUSH1 10, ADD, STOP
-    const bytecode = [_]u8{ 0x60, 0x2A, 0x60, 0x0A, 0x01, 0x00 };
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
-    defer frame.deinit(allocator);
+// TODO: Move this test to frame_interpreter.zig
+// test "Frame interpret OUT_OF_BOUNDS error" {
+//     const allocator = std.testing.allocator;
+//     const Frame = createFrame(.{});
+// 
+//     // Bytecode without explicit STOP: PUSH1 5
+//     // The planner should handle this gracefully but for now add STOP
+//     const bytecode = [_]u8{ 0x60, 0x05, 0x00 }; // PUSH1 5 STOP
+//     var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+//     defer frame.deinit(allocator);
+// 
+//     // Should execute normally
+//     try frame.interpret(allocator);
+//     try std.testing.expectEqual(@as(u256, 5), frame.stack.peek_unsafe());
+// }
 
-    std.log.warn("\n=== Frame interpret basic execution test ===", .{});
-    std.log.warn("Initial frame state:", .{});
-    frame.pretty_print();
+// TODO: Move this test to frame_interpreter.zig
+// test "Frame interpret invalid opcode" {
+//     const allocator = std.testing.allocator;
+//     const Frame = createFrame(.{});
+// 
+//     // Bytecode with invalid opcode: 0xFE (INVALID)
+//     const bytecode = [_]u8{0xFE};
+//     var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+//     defer frame.deinit(allocator);
+// 
+//     // Should return InvalidOpcode error
+//     const result = frame.interpret(allocator);
+//     try std.testing.expectError(error.InvalidOpcode, result);
+// }
 
-    // interpret should execute until STOP
-    try frame.interpret(allocator); // Handles STOP internally
-    
-    std.log.warn("\nFinal frame state after interpret():", .{});
-    frame.pretty_print();
+// TODO: Move this test to frame_interpreter.zig
+// test "Frame interpret PUSH values metadata" {
+//     const allocator = std.testing.allocator;
+//     const Frame = createFrame(.{});
+// 
+//     // Test PUSH1 with value stored in metadata
+//     const bytecode = [_]u8{ 0x60, 0xFF, 0x00 }; // PUSH1 255, STOP
+//     var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+//     defer frame.deinit(allocator);
+// 
+//     const result = frame.interpret(allocator);
+//     try std.testing.expectError(error.STOP, result);
+// 
+//     // Check that 255 was pushed
+//     try std.testing.expectEqual(@as(u256, 255), frame.stack.peek_unsafe());
+// }
 
-    // Check final stack state
-    try std.testing.expectEqual(@as(u256, 52), frame.stack.peek_unsafe()); // 42 + 10 = 52
-}
-
-test "Frame interpret OUT_OF_BOUNDS error" {
-    const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
-
-    // Bytecode without explicit STOP: PUSH1 5
-    // The planner should handle this gracefully but for now add STOP
-    const bytecode = [_]u8{ 0x60, 0x05, 0x00 }; // PUSH1 5 STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
-    defer frame.deinit(allocator);
-
-    // Should execute normally
-    try frame.interpret(allocator);
-    try std.testing.expectEqual(@as(u256, 5), frame.stack.peek_unsafe());
-}
-
-test "Frame interpret invalid opcode" {
-    const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
-
-    // Bytecode with invalid opcode: 0xFE (INVALID)
-    const bytecode = [_]u8{0xFE};
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
-    defer frame.deinit(allocator);
-
-    // Should return InvalidOpcode error
-    const result = frame.interpret(allocator);
-    try std.testing.expectError(error.InvalidOpcode, result);
-}
-
-test "Frame interpret PUSH values metadata" {
-    const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
-
-    // Test PUSH1 with value stored in metadata
-    const bytecode = [_]u8{ 0x60, 0xFF, 0x00 }; // PUSH1 255, STOP
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
-    defer frame.deinit(allocator);
-
-    const result = frame.interpret(allocator);
-    try std.testing.expectError(error.STOP, result);
-
-    // Check that 255 was pushed
-    try std.testing.expectEqual(@as(u256, 255), frame.stack.peek_unsafe());
-}
-
-test "Frame interpret complex bytecode sequence" {
-    const allocator = std.testing.allocator;
-    const Frame = createFrame(.{});
-
-    // PUSH1 5, PUSH1 3, ADD, PUSH1 2, MUL, STOP
-    // Should compute (5 + 3) * 2 = 16
-    const bytecode = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01, 0x60, 0x02, 0x02, 0x00 };
-    var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
-    defer frame.deinit(allocator);
-
-    const result = frame.interpret(allocator);
-    try std.testing.expectError(error.STOP, result);
-
-    // Check final result
-    try std.testing.expectEqual(@as(u256, 16), frame.stack.peek_unsafe());
-}
+// TODO: Move this test to frame_interpreter.zig
+// test "Frame interpret complex bytecode sequence" {
+//     const allocator = std.testing.allocator;
+//     const Frame = createFrame(.{});
+// 
+//     // PUSH1 5, PUSH1 3, ADD, PUSH1 2, MUL, STOP
+//     // Should compute (5 + 3) * 2 = 16
+//     const bytecode = [_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01, 0x60, 0x02, 0x02, 0x00 };
+//     var frame = try Frame.init(allocator, &bytecode, 1000000, void{});
+//     defer frame.deinit(allocator);
+// 
+//     const result = frame.interpret(allocator);
+//     try std.testing.expectError(error.STOP, result);
+// 
+//     // Check final result
+//     try std.testing.expectEqual(@as(u256, 16), frame.stack.peek_unsafe());
+// }
 
 test "Frame interpret JUMP to JUMPDEST" {
     return error.SkipZigTest; // TODO: Re-enable after implementing jump destination resolution
@@ -5098,4 +3793,4 @@ fn mock_jump_handler(self: *anyopaque, stream: []usize, idx: usize) !void {
     _ = idx;
     unreachable; // Not executed in this test
 }
-}
+
