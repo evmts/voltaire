@@ -422,9 +422,10 @@ pub fn Tracer(comptime Writer: type) type {
         
         pub fn snapshot(self: *Self, comptime FrameType: type, frame_instance: *const FrameType) !DetailedStructLog {
             // Capture stack
-            const stack_size = frame_instance.next_stack_index;
+            const stack_size = frame_instance.stack.size();
             const stack_copy = try self.allocator.alloc(u256, stack_size);
-            @memcpy(stack_copy, frame_instance.stack[0..stack_size]);
+            const stack_slice = frame_instance.stack.getSlice();
+            @memcpy(stack_copy, stack_slice);
             
             // Get current opcode
             const opcode = if (frame_instance.pc < frame_instance.bytecode.len)
@@ -750,8 +751,8 @@ test "tracer captures basic frame state with writer" {
     defer test_frame.deinit(allocator);
     
     // Push some values onto the stack
-    try test_frame.push(3);
-    try test_frame.push(5);
+    try test_frame.stack.push(3);
+    try test_frame.stack.push(5);
     test_frame.pc = 4; // At ADD opcode
     test_frame.gas_remaining = 950;
     
@@ -780,8 +781,8 @@ test "tracer writes JSON to writer" {
     var test_frame = try Frame.init(allocator, &[_]u8{ 0x60, 0x05, 0x60, 0x03, 0x01 }, 1000);
     defer test_frame.deinit(allocator);
     
-    try test_frame.push(3);
-    try test_frame.push(5);
+    try test_frame.stack.push(3);
+    try test_frame.stack.push(5);
     test_frame.pc = 4;
     test_frame.gas_remaining = 950;
     
@@ -911,8 +912,8 @@ test "tracer handles large stack values in JSON" {
     var test_frame = try Frame.init(allocator, &[_]u8{0x00}, 1000);
     defer test_frame.deinit(allocator);
     
-    try test_frame.push(std.math.maxInt(u256));
-    try test_frame.push(0xdeadbeef);
+    try test_frame.stack.push(std.math.maxInt(u256));
+    try test_frame.stack.push(0xdeadbeef);
     
     var output = std.ArrayList(u8).init(allocator);
     defer output.deinit();

@@ -8,8 +8,8 @@ pub const StackConfig = struct {
     /// The size of a single word in the EVM - Defaults to u256. Supports any word size up to u512
     WordType: type = u256,
 
-    /// Returns the smallest type necessary given the size of the stack for the index
-    fn get_stack_index_type(self: Self) type {
+    /// StackIndexType: smallest integer type to index the stack
+    fn StackIndexType(self: Self) type {
         return if (self.stack_size <= std.math.maxInt(u4))
             u4
         else if (self.stack_size <= std.math.maxInt(u8))
@@ -23,7 +23,7 @@ pub const StackConfig = struct {
     // Limits placed on the Stack
     fn validate(self: Self) void {
         if (self.stack_size > 4095) @compileError("stack_size cannot exceed 4095");
-        if (@bitSizeOf(self.WordType) > 256) @compileError("WordType cannot exceed u256");
+        if (@bitSizeOf(self.WordType) > 512) @compileError("WordType cannot exceed u512");
     }
 };
 
@@ -31,7 +31,7 @@ pub fn createStack(comptime config: StackConfig) type {
     config.validate();
 
     const WordType = config.WordType;
-    const StackIndexType = config.get_stack_index_type();
+    const StackIndexType = config.StackIndexType();
     const stack_size = config.stack_size;
 
     const Stack = struct {
@@ -62,7 +62,7 @@ pub fn createStack(comptime config: StackConfig) type {
             allocator.free(@as([*]WordType, @ptrCast(self.stack))[0..stack_size]);
         }
 
-        fn push_unsafe(self: *Self, value: WordType) void {
+        pub fn push_unsafe(self: *Self, value: WordType) void {
             @branchHint(.likely);
             std.debug.assert(self.next_stack_index < stack_size);
             self.stack[self.next_stack_index] = value;
@@ -77,7 +77,7 @@ pub fn createStack(comptime config: StackConfig) type {
             self.push_unsafe(value);
         }
 
-        fn pop_unsafe(self: *Self) WordType {
+        pub fn pop_unsafe(self: *Self) WordType {
             @branchHint(.likely);
             std.debug.assert(self.next_stack_index != 0);
             self.next_stack_index -= 1;
@@ -92,7 +92,7 @@ pub fn createStack(comptime config: StackConfig) type {
             return self.pop_unsafe();
         }
 
-        fn set_top_unsafe(self: *Self, value: WordType) void {
+        pub fn set_top_unsafe(self: *Self, value: WordType) void {
             @branchHint(.likely);
             std.debug.assert(self.next_stack_index > 0);
             self.stack[self.next_stack_index - 1] = value;
@@ -106,7 +106,7 @@ pub fn createStack(comptime config: StackConfig) type {
             self.set_top_unsafe(value);
         }
 
-        fn peek_unsafe(self: *const Self) WordType {
+        pub fn peek_unsafe(self: *const Self) WordType {
             @branchHint(.likely);
             std.debug.assert(self.next_stack_index > 0);
             return self.stack[self.next_stack_index - 1];
@@ -121,7 +121,7 @@ pub fn createStack(comptime config: StackConfig) type {
         }
 
         // Generic dup function for DUP1-DUP16
-        fn dup_n(self: *Self, n: u8) Error!void {
+        pub fn dup_n(self: *Self, n: u8) Error!void {
             if (self.next_stack_index < n) {
                 @branchHint(.cold);
                 return Error.StackUnderflow;
@@ -143,7 +143,7 @@ pub fn createStack(comptime config: StackConfig) type {
         }
 
         // Generic swap function for SWAP1-SWAP16
-        fn swap_n(self: *Self, n: u8) Error!void {
+        pub fn swap_n(self: *Self, n: u8) Error!void {
             if (self.next_stack_index < n + 1) {
                 @branchHint(.cold);
                 return Error.StackUnderflow;
@@ -163,6 +163,15 @@ pub fn createStack(comptime config: StackConfig) type {
 
         pub fn op_swap16(self: *Self) Error!void {
             return self.swap_n(16);
+        }
+        
+        // Accessors for tracer
+        pub fn size(self: *const Self) usize {
+            return self.next_stack_index;
+        }
+        
+        pub fn getSlice(self: *const Self) []const WordType {
+            return self.stack[0..self.next_stack_index];
         }
     };
 
