@@ -172,20 +172,145 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
         /// InstructionStream is of size usize. If metadata is larger than usize it is stored on this constants array and we store a pointer on instructionstream
         u256_constants: []Cfg.WordType,
 
-        /// Get metadata and next instruction, advancing the instruction pointer.
-        /// The opcode determines how metadata is interpreted and whether to advance by 1 or 2.
-        pub fn getMetadataAndNextInstruction(
+        /// Get metadata for opcodes that have it, properly typed based on the opcode.
+        /// Returns the metadata at idx+1 and advances idx by 2.
+        pub fn getMetadata(
             self: *const @This(),
             idx: *InstructionIndexType,
-            comptime opcode: Opcode,
-        ) struct { metadata: InstructionElement, next_handler: *const HandlerFn } {
+            comptime opcode: anytype,
+        ) blk: {
+            const op = if (@TypeOf(opcode) == Opcode) 
+                opcode 
+            else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
+                @field(Opcode, @tagName(opcode))
+            else 
+                @as(Opcode, @enumFromInt(opcode));
+            const MetadataType = switch (op) {
+                // PUSH opcodes return granular types
+                .PUSH1 => u8,
+                .PUSH2 => u16,
+                .PUSH3 => u24,
+                .PUSH4 => u32,
+                .PUSH5 => u40,
+                .PUSH6 => u48,
+                .PUSH7 => u56,
+                .PUSH8 => u64,
+                // Larger PUSH opcodes return pointer to u256 or inline based on platform
+                .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16 => if (@sizeOf(usize) >= 16) u128 else *const u256,
+                .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
+                .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => *const u256,
+                
+                // JUMPDEST returns metadata struct or pointer
+                .JUMPDEST => if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata))
+                    JumpDestMetadata
+                else
+                    *const JumpDestMetadata,
+                
+                // PC returns the original PC value
+                .PC => PcType,
+                
+                // All other opcodes have no metadata
+                else => blk2: {
+                    // Check if it's a fusion opcode (passed as u8)
+                    if (@TypeOf(opcode) == u8) {
+                        const fusion_type = switch (opcode) {
+                            // Fusion opcodes follow same pattern as their PUSH equivalent
+                            PUSH_ADD_INLINE, PUSH_MUL_INLINE, PUSH_DIV_INLINE, 
+                            PUSH_JUMP_INLINE, PUSH_JUMPI_INLINE => usize, // For simplicity, return usize for inline fusions
+                            PUSH_ADD_POINTER, PUSH_MUL_POINTER, PUSH_DIV_POINTER,
+                            PUSH_JUMP_POINTER, PUSH_JUMPI_POINTER => *const u256,
+                            else => @compileError("Fusion opcode has no metadata"),
+                        };
+                        break :blk2 fusion_type;
+                    }
+                    @compileError("Opcode has no metadata");
+                },
+            };
+            break :blk MetadataType;
+        } {
+            const current_idx = idx.*;
+            const metadata_elem = self.instructionStream[current_idx + 1];
+            idx.* += 2;
+            
+            // Handle regular opcodes
+            if (@TypeOf(opcode) == Opcode or @typeInfo(@TypeOf(opcode)) == .enum_literal) {
+                const actual_op = if (@TypeOf(opcode) == Opcode) 
+                    opcode 
+                else 
+                    @field(Opcode, @tagName(opcode));
+                return switch (actual_op) {
+                    // PUSH opcodes return the inline value with correct type
+                    .PUSH1 => @as(u8, @truncate(metadata_elem.inline_value)),
+                    .PUSH2 => @as(u16, @truncate(metadata_elem.inline_value)),
+                    .PUSH3 => @as(u24, @truncate(metadata_elem.inline_value)),
+                    .PUSH4 => @as(u32, @truncate(metadata_elem.inline_value)),
+                    .PUSH5 => @as(u40, @truncate(metadata_elem.inline_value)),
+                    .PUSH6 => @as(u48, @truncate(metadata_elem.inline_value)),
+                    .PUSH7 => @as(u56, @truncate(metadata_elem.inline_value)),
+                    .PUSH8 => @as(u64, @truncate(metadata_elem.inline_value)),
+                    
+                    // Larger PUSH opcodes
+                    .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15, .PUSH16 => {
+                        if (@sizeOf(usize) >= 16) {
+                            return @as(u128, @truncate(metadata_elem.inline_value));
+                        } else {
+                            const idx_val = metadata_elem.pointer_index;
+                            return &self.u256_constants[idx_val];
+                        }
+                    },
+                    .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23, .PUSH24,
+                    .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31, .PUSH32 => {
+                        const idx_val = metadata_elem.pointer_index;
+                        return &self.u256_constants[idx_val];
+                    },
+                    
+                    // JUMPDEST returns the metadata directly or via pointer
+                    .JUMPDEST => if (@sizeOf(usize) >= @sizeOf(JumpDestMetadata))
+                        metadata_elem.jumpdest_metadata
+                    else
+                        metadata_elem.jumpdest_pointer,
+                    
+                    // PC returns the PC value
+                    .PC => @as(PcType, @truncate(metadata_elem.pc_value)),
+                    
+                    else => unreachable, // Compile error already prevents this
+                };
+            } else if (@TypeOf(opcode) == u8) {
+                // Handle fusion opcodes (u8)
+                return switch (opcode) {
+                    PUSH_ADD_INLINE, PUSH_MUL_INLINE, PUSH_DIV_INLINE, 
+                    PUSH_JUMP_INLINE, PUSH_JUMPI_INLINE => metadata_elem.inline_value,
+                    PUSH_ADD_POINTER, PUSH_MUL_POINTER, PUSH_DIV_POINTER,
+                    PUSH_JUMP_POINTER, PUSH_JUMPI_POINTER => blk: {
+                        const idx_val = metadata_elem.pointer_index;
+                        break :blk &self.u256_constants[idx_val];
+                    },
+                    else => unreachable,
+                };
+            } else {
+                @compileError("Unexpected opcode type");
+            }
+        }
+        
+        /// Get the next instruction handler and advance the instruction pointer.
+        /// Advances by 1 or 2 based on whether the opcode has metadata.
+        pub fn getNextInstruction(
+            self: *const @This(),
+            idx: *InstructionIndexType,
+            comptime opcode: anytype,
+        ) *const HandlerFn {
             const current_idx = idx.*;
             const handler = self.instructionStream[current_idx].handler;
             
-            // Determine if this opcode has metadata
-            const has_metadata = switch (opcode) {
-                // PUSH opcodes have metadata
-                .PUSH0, .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7,
+            const op = if (@TypeOf(opcode) == Opcode) 
+                opcode 
+            else if (@typeInfo(@TypeOf(opcode)) == .enum_literal)
+                @field(Opcode, @tagName(opcode))
+            else 
+                @as(Opcode, @enumFromInt(opcode));
+            const has_metadata = switch (op) {
+                // PUSH opcodes have metadata (except PUSH0)
+                .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7,
                 .PUSH8, .PUSH9, .PUSH10, .PUSH11, .PUSH12, .PUSH13, .PUSH14, .PUSH15,
                 .PUSH16, .PUSH17, .PUSH18, .PUSH19, .PUSH20, .PUSH21, .PUSH22, .PUSH23,
                 .PUSH24, .PUSH25, .PUSH26, .PUSH27, .PUSH28, .PUSH29, .PUSH30, .PUSH31,
@@ -194,19 +319,27 @@ pub fn createAnalyzer(comptime Cfg: AnalysisConfig) type {
                 .JUMPDEST,
                 // PC has metadata (the original PC value)
                 .PC => true,
-                // All other opcodes have no metadata
+                // All other opcodes including PUSH0 have no metadata
                 else => false,
             };
             
-            if (has_metadata) {
-                const metadata = self.instructionStream[current_idx + 1];
+            // Also check for fusion opcodes if it's a u8
+            const fusion_has_metadata = if (@TypeOf(opcode) == u8) switch (opcode) {
+                PUSH_ADD_INLINE, PUSH_ADD_POINTER,
+                PUSH_MUL_INLINE, PUSH_MUL_POINTER,
+                PUSH_DIV_INLINE, PUSH_DIV_POINTER,
+                PUSH_JUMP_INLINE, PUSH_JUMP_POINTER,
+                PUSH_JUMPI_INLINE, PUSH_JUMPI_POINTER => true,
+                else => false,
+            } else false;
+            
+            if (has_metadata or fusion_has_metadata) {
                 idx.* += 2;
-                return .{ .metadata = metadata, .next_handler = handler };
             } else {
                 idx.* += 1;
-                // Return a zeroed metadata element for opcodes without metadata
-                return .{ .metadata = .{ .inline_value = 0 }, .next_handler = handler };
             }
+            
+            return handler;
         }
 
         /// Free Plan-owned slices.
@@ -885,14 +1018,121 @@ test "metadata structs: proper sizing and fields" {
     }
 }
 
-test "analyzer plan: new structure with instruction stream" {
+test "getMetadata: PUSH0 has no metadata" {
+    // This test should fail to compile because PUSH0 has no metadata
+    // Uncomment to verify compile error:
+    // const Analyzer = createAnalyzer(.{});
+    // var plan = Analyzer.Plan{ .instructionStream = &.{}, .u256_constants = &.{} };
+    // var idx: Analyzer.InstructionIndexT = 0;
+    // const metadata = plan.getMetadata(&idx, .PUSH0); // Should @compileError
+}
+
+test "getMetadata: PUSH opcodes return correct granular types" {
     const allocator = std.testing.allocator;
     const Analyzer = createAnalyzer(.{});
     
-    // Create a simple plan with handler pointers
+    // Test that enum literal handling works
+    // @compileLog(@TypeOf(.PUSH1)); // This would show it's @Type(.enum_literal)
+    
+    // Test PUSH1 returns u8
+    {
+        const stream = [_]InstructionElement{ 
+            .{ .handler = &testMockHandler }, 
+            .{ .inline_value = 0xFF },
+            .{ .handler = &testMockHandler } 
+        };
+        
+        var plan = Analyzer.Plan{
+            .instructionStream = try allocator.dupe(InstructionElement, &stream),
+            .u256_constants = &.{},
+        };
+        defer plan.deinit(allocator);
+        
+        var idx: Analyzer.InstructionIndexT = 0;
+        const metadata = plan.getMetadata(&idx, .PUSH1);
+        try std.testing.expectEqual(@as(u8, 0xFF), metadata);
+    }
+    
+    // Test PUSH2 returns u16
+    {
+        const stream = [_]InstructionElement{ 
+            .{ .handler = &testMockHandler }, 
+            .{ .inline_value = 0xFFFF },
+            .{ .handler = &testMockHandler } 
+        };
+        
+        var plan = Analyzer.Plan{
+            .instructionStream = try allocator.dupe(InstructionElement, &stream),
+            .u256_constants = &.{},
+        };
+        defer plan.deinit(allocator);
+        
+        var idx: Analyzer.InstructionIndexT = 0;
+        const metadata = plan.getMetadata(&idx, .PUSH2);
+        try std.testing.expectEqual(@as(u16, 0xFFFF), metadata);
+    }
+    
+    // Test PUSH8 returns u64
+    {
+        const stream = [_]InstructionElement{ 
+            .{ .handler = &testMockHandler }, 
+            .{ .inline_value = 0xFFFFFFFFFFFFFFFF },
+            .{ .handler = &testMockHandler } 
+        };
+        
+        var plan = Analyzer.Plan{
+            .instructionStream = try allocator.dupe(InstructionElement, &stream),
+            .u256_constants = &.{},
+        };
+        defer plan.deinit(allocator);
+        
+        var idx: Analyzer.InstructionIndexT = 0;
+        const metadata = plan.getMetadata(&idx, .PUSH8);
+        try std.testing.expectEqual(@as(u64, 0xFFFFFFFFFFFFFFFF), metadata);
+    }
+}
+
+test "getMetadata: large PUSH opcodes return pointer to u256" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    // Test PUSH32 returns *const u256
+    const big_value: u256 = std.math.maxInt(u256);
+    
     const stream = [_]InstructionElement{ 
         .{ .handler = &testMockHandler }, 
-        .{ .inline_value = 42 },  // metadata
+        .{ .pointer_index = 0 }, // Index into constants
+        .{ .handler = &testMockHandler } 
+    };
+    
+    // Allocate constants properly
+    var constants = try allocator.alloc(u256, 1);
+    defer allocator.free(constants);
+    constants[0] = big_value;
+    
+    var plan = Analyzer.Plan{
+        .instructionStream = try allocator.dupe(InstructionElement, &stream),
+        .u256_constants = constants,
+    };
+    defer {
+        // Only free instructionStream since we're managing constants separately
+        allocator.free(plan.instructionStream);
+        plan.instructionStream = &.{};
+        plan.u256_constants = &.{};
+    }
+    
+    var idx: Analyzer.InstructionIndexT = 0;
+    const metadata_ptr = plan.getMetadata(&idx, .PUSH32);
+    try std.testing.expectEqual(big_value, metadata_ptr.*);
+}
+
+test "getMetadata: PC returns PcType" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    const stream = [_]InstructionElement{ 
+        .{ .handler = &testMockHandler }, 
+        .{ .pc_value = 42 },
         .{ .handler = &testMockHandler } 
     };
     
@@ -902,23 +1142,57 @@ test "analyzer plan: new structure with instruction stream" {
     };
     defer plan.deinit(allocator);
     
-    // Test fields exist and have correct values
-    try std.testing.expectEqual(@as(usize, 3), plan.instructionStream.len);
-    try std.testing.expectEqual(@as(usize, 0), plan.u256_constants.len);
-    
-    // Test getMetadataAndNextInstruction method with PUSH1 (has metadata)
     var idx: Analyzer.InstructionIndexT = 0;
-    const result = plan.getMetadataAndNextInstruction(&idx, .PUSH1);
-    try std.testing.expectEqual(@intFromPtr(&testMockHandler), @intFromPtr(result.next_handler));
-    try std.testing.expectEqual(@as(usize, 42), result.metadata.inline_value);
-    try std.testing.expectEqual(@as(Analyzer.InstructionIndexT, 2), idx);
+    const pc = plan.getMetadata(&idx, .PC);
+    try std.testing.expectEqual(@as(Analyzer.PcTypeT, 42), pc);
+}
+
+test "getMetadata: fusion opcodes" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
     
-    // Test with ADD (no metadata)
-    idx = 2;
-    const result2 = plan.getMetadataAndNextInstruction(&idx, .ADD);
-    try std.testing.expectEqual(@intFromPtr(&testMockHandler), @intFromPtr(result2.next_handler));
-    try std.testing.expectEqual(@as(usize, 0), result2.metadata.inline_value);
-    try std.testing.expectEqual(@as(Analyzer.InstructionIndexT, 3), idx);
+    // Test PUSH_ADD_INLINE fusion - should work like PUSH1
+    {
+        const stream = [_]InstructionElement{ 
+            .{ .handler = &testFusionHandler }, 
+            .{ .inline_value = 5 },
+            .{ .handler = &testMockHandler } 
+        };
+        
+        var plan = Analyzer.Plan{
+            .instructionStream = try allocator.dupe(InstructionElement, &stream),
+            .u256_constants = &.{},
+        };
+        defer plan.deinit(allocator);
+        
+        // Test fusion opcode metadata
+        var idx: Analyzer.InstructionIndexT = 0;
+        const metadata = plan.getMetadata(&idx, PUSH_ADD_INLINE);
+        try std.testing.expectEqual(@as(usize, 5), metadata);
+    }
+}
+
+test "getNextInstruction: fusion opcodes advance correctly" {
+    const allocator = std.testing.allocator;
+    const Analyzer = createAnalyzer(.{});
+    
+    const stream = [_]InstructionElement{ 
+        .{ .handler = &testFusionHandler }, // PUSH_ADD_INLINE
+        .{ .inline_value = 5 },              // metadata
+        .{ .handler = &testMockHandler },    // next instruction
+    };
+    
+    var plan = Analyzer.Plan{
+        .instructionStream = try allocator.dupe(InstructionElement, &stream),
+        .u256_constants = &.{},
+    };
+    defer plan.deinit(allocator);
+    
+    // Test fusion opcode advances correctly
+    var idx: Analyzer.InstructionIndexT = 0;
+    const handler = plan.getNextInstruction(&idx, PUSH_ADD_INLINE);
+    try std.testing.expectEqual(@intFromPtr(&testFusionHandler), @intFromPtr(handler));
+    try std.testing.expectEqual(@as(Analyzer.InstructionIndexT, 2), idx);
 }
 
 test "create_instruction_stream: basic handler array" {
