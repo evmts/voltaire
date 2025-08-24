@@ -8198,3 +8198,516 @@ test "Access list pre-warming effects on CALL/SLOAD/SSTORE" {
     // The gas cost depends on the EVM's implementation of warm vs cold for SSTORE
     try std.testing.expect(gas_used_warm_sstore >= 5000); // At least warm SSTORE cost
 }
+
+// ============================================================================
+// COMPREHENSIVE _calculate_call_gas METHOD TESTS
+// ============================================================================
+
+test "_calculate_call_gas - basic warm call costs" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    const test_address = Address.fromInt(0x1234);
+    
+    // Test 1: Basic warm call (no value transfer, not static)
+    const basic_cost = frame._calculate_call_gas(test_address, 0, false);
+    try std.testing.expectEqual(GasConstants.CALL_BASE_COST, basic_cost);
+    
+    // Test 2: Call with value transfer (not static)
+    const value_cost = frame._calculate_call_gas(test_address, 1000, false);
+    try std.testing.expectEqual(GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST, value_cost);
+    
+    // Test 3: Static call with value (value should be ignored)
+    const static_cost = frame._calculate_call_gas(test_address, 1000, true);
+    try std.testing.expectEqual(GasConstants.CALL_BASE_COST, static_cost);
+    
+    // Test 4: Zero value transfer should not add transfer cost
+    const zero_value_cost = frame._calculate_call_gas(test_address, 0, false);
+    try std.testing.expectEqual(GasConstants.CALL_BASE_COST, zero_value_cost);
+}
+
+test "_calculate_call_gas - edge case values" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    const test_address = Address.fromInt(0x5678);
+    
+    // Test 1: Maximum u256 value
+    const max_value_cost = frame._calculate_call_gas(test_address, std.math.maxInt(u256), false);
+    try std.testing.expectEqual(GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST, max_value_cost);
+    
+    // Test 2: Value = 1 (minimum non-zero)
+    const min_value_cost = frame._calculate_call_gas(test_address, 1, false);
+    try std.testing.expectEqual(GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST, min_value_cost);
+    
+    // Test 3: Static context should never add value transfer cost, even with max value
+    const static_max_value_cost = frame._calculate_call_gas(test_address, std.math.maxInt(u256), true);
+    try std.testing.expectEqual(GasConstants.CALL_BASE_COST, static_max_value_cost);
+}
+
+// ============================================================================
+// CALL OPCODE GAS INTEGRATION TESTS
+// ============================================================================
+
+test "CALL gas integration - sufficient gas scenario" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    mock_host.call_result = CallResult.success_empty(50000);
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    const initial_gas = frame.gas_remaining;
+    
+    // Setup CALL stack: [gas, address, value, input_offset, input_size, output_offset, output_size]
+    try frame.stack.push(0); // output_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // value (no value transfer)
+    try frame.stack.push(0x1234); // address
+    try frame.stack.push(60000); // gas
+    
+    // Execute CALL
+    try frame.op_call();
+    
+    // Verify success
+    const result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), result);
+    
+    // Verify gas was consumed (base cost should be deducted)
+    const gas_consumed = initial_gas - frame.gas_remaining;
+    try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST);
+}
+
+test "CALL gas integration - insufficient gas scenario" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    // Set initial gas to less than base call cost
+    var frame = try F.init(allocator, &bytecode, 50, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    // Setup CALL stack with minimal parameters
+    try frame.stack.push(0); // output_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // value
+    try frame.stack.push(0x1234); // address
+    try frame.stack.push(30000); // gas (more than available)
+    
+    // Execute CALL - should fail due to insufficient gas
+    try frame.op_call();
+    
+    // Verify failure (returns 0)
+    const result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), result);
+}
+
+test "CALL gas integration - value transfer with stipend" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    mock_host.call_result = CallResult.success_empty(50000);
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    const initial_gas = frame.gas_remaining;
+    
+    // Setup CALL stack with value transfer
+    try frame.stack.push(0); // output_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(1000); // value (trigger value transfer)
+    try frame.stack.push(0x1234); // address
+    try frame.stack.push(50000); // gas
+    
+    // Execute CALL
+    try frame.op_call();
+    
+    // Verify success
+    const result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), result);
+    
+    // Verify value transfer gas cost was applied
+    const gas_consumed = initial_gas - frame.gas_remaining;
+    const expected_base_cost = GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST;
+    try std.testing.expect(gas_consumed >= expected_base_cost);
+}
+
+// ============================================================================
+// DELEGATECALL GAS INTEGRATION TESTS
+// ============================================================================
+
+test "DELEGATECALL gas integration - no value transfer cost" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    mock_host.call_result = CallResult.success_empty(40000);
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    const initial_gas = frame.gas_remaining;
+    
+    // Setup DELEGATECALL stack: [gas, address, input_offset, input_size, output_offset, output_size]
+    try frame.stack.push(0); // output_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0x5678); // address
+    try frame.stack.push(50000); // gas
+    
+    // Execute DELEGATECALL
+    try frame.op_delegatecall();
+    
+    // Verify success
+    const result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), result);
+    
+    // Verify only base cost was applied (no value transfer cost)
+    const gas_consumed = initial_gas - frame.gas_remaining;
+    try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST);
+    try std.testing.expect(gas_consumed < GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST);
+}
+
+// ============================================================================
+// STATICCALL GAS INTEGRATION TESTS
+// ============================================================================
+
+test "STATICCALL gas integration - static context enforced" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    mock_host.call_result = CallResult.success_empty(30000);
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    const initial_gas = frame.gas_remaining;
+    
+    // Setup STATICCALL stack: [gas, address, input_offset, input_size, output_offset, output_size]
+    try frame.stack.push(0); // output_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0x9ABC); // address
+    try frame.stack.push(40000); // gas
+    
+    // Execute STATICCALL
+    try frame.op_staticcall();
+    
+    // Verify success
+    const result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), result);
+    
+    // Verify only base cost was applied (static context prevents value transfer)
+    const gas_consumed = initial_gas - frame.gas_remaining;
+    try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST);
+    try std.testing.expect(gas_consumed < GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST);
+}
+
+// ============================================================================
+// GAS BOUNDARY CONDITION TESTS
+// ============================================================================
+
+test "Call opcodes - exact gas boundary conditions" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    
+    // Test 1: Exactly enough gas for base cost
+    var frame1 = try F.init(allocator, &bytecode, GasConstants.CALL_BASE_COST, db_interface, host);
+    defer frame1.deinit(allocator);
+    
+    try frame1.stack.push(0); // output_size
+    try frame1.stack.push(0); // output_offset
+    try frame1.stack.push(0); // input_size
+    try frame1.stack.push(0); // input_offset
+    try frame1.stack.push(0); // value
+    try frame1.stack.push(0x1000); // address
+    try frame1.stack.push(1000); // gas
+    
+    // Should fail because we need gas for the call plus EIP-150 forwarding
+    try frame1.op_call();
+    const result1 = try frame1.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), result1);
+    
+    // Test 2: Just below required gas
+    var frame2 = try F.init(allocator, &bytecode, GasConstants.CALL_BASE_COST - 1, db_interface, host);
+    defer frame2.deinit(allocator);
+    
+    try frame2.stack.push(0); // output_size
+    try frame2.stack.push(0); // output_offset
+    try frame2.stack.push(0); // input_size
+    try frame2.stack.push(0); // input_offset
+    try frame2.stack.push(0); // value
+    try frame2.stack.push(0x2000); // address
+    try frame2.stack.push(1000); // gas
+    
+    try frame2.op_call();
+    const result2 = try frame2.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), result2);
+}
+
+test "Value transfer gas - boundary conditions" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    
+    // Test: Exactly enough gas for value transfer call
+    const required_gas = GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST + 1000; // +1000 for forwarding
+    var frame = try F.init(allocator, &bytecode, required_gas, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    try frame.stack.push(0); // output_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(1); // value (minimal non-zero value)
+    try frame.stack.push(0x3000); // address
+    try frame.stack.push(500); // gas for forwarding
+    
+    try frame.op_call();
+    const result = try frame.stack.pop();
+    
+    // Should still fail because we need room for EIP-150 calculations
+    try std.testing.expectEqual(@as(u256, 0), result);
+}
+
+// ============================================================================
+// EIP-150 GAS FORWARDING COMPLIANCE TESTS
+// ============================================================================
+
+test "EIP-150 compliance - 63/64 rule with base gas deduction" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    mock_host.call_result = CallResult.success_empty(10000);
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    const initial_gas: u64 = 64000; // Chosen to make 63/64 calculation clear
+    var frame = try F.init(allocator, &bytecode, initial_gas, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    try frame.stack.push(0); // output_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // value
+    try frame.stack.push(0x4000); // address
+    try frame.stack.push(50000); // gas (high request)
+    
+    try frame.op_call();
+    
+    const result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), result);
+    
+    // Verify base gas was consumed first, then EIP-150 rule applied
+    const gas_remaining = frame.gas_remaining;
+    const gas_consumed = initial_gas - gas_remaining;
+    
+    // Should have consumed at least the base cost
+    try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST);
+    
+    // Remaining gas should reflect the 1/64 retention after base cost deduction
+    const gas_after_base = initial_gas - GasConstants.CALL_BASE_COST;
+    const expected_remaining_approx = gas_after_base / 64;
+    
+    // Allow some tolerance for forwarded gas calculations
+    try std.testing.expect(gas_remaining <= expected_remaining_approx + 100);
+}
+
+// ============================================================================
+// COMPREHENSIVE EDGE CASE TESTS
+// ============================================================================
+
+test "Call gas calculation - all parameter combinations" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    const test_address = Address.fromInt(0x1111);
+    
+    // Test all combinations of value and static context
+    const test_cases = [_]struct {
+        value: u256,
+        is_static: bool,
+        expected_includes_value_cost: bool,
+        description: []const u8,
+    }{
+        .{ .value = 0, .is_static = false, .expected_includes_value_cost = false, .description = "no value, not static" },
+        .{ .value = 1, .is_static = false, .expected_includes_value_cost = true, .description = "with value, not static" },
+        .{ .value = 0, .is_static = true, .expected_includes_value_cost = false, .description = "no value, static" },
+        .{ .value = 1, .is_static = true, .expected_includes_value_cost = false, .description = "with value, static" },
+        .{ .value = 1000000, .is_static = false, .expected_includes_value_cost = true, .description = "large value, not static" },
+        .{ .value = 1000000, .is_static = true, .expected_includes_value_cost = false, .description = "large value, static" },
+    };
+    
+    for (test_cases) |case| {
+        const cost = frame._calculate_call_gas(test_address, case.value, case.is_static);
+        
+        const expected_cost = if (case.expected_includes_value_cost)
+            GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST
+        else
+            GasConstants.CALL_BASE_COST;
+        
+        try std.testing.expectEqual(expected_cost, cost);
+    }
+}
+
+test "Gas accounting precision - no gas leaks" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    mock_host.call_result = CallResult.success_empty(20000); // Return some gas
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    const initial_gas: u64 = 50000;
+    var frame = try F.init(allocator, &bytecode, initial_gas, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    try frame.stack.push(0); // output_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // value
+    try frame.stack.push(0x5000); // address
+    try frame.stack.push(30000); // gas
+    
+    try frame.op_call();
+    
+    const result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), result);
+    
+    // Verify gas accounting is consistent
+    const final_gas = frame.gas_remaining;
+    const total_consumed = initial_gas - final_gas;
+    
+    // Should have consumed at least the base cost
+    try std.testing.expect(total_consumed >= GasConstants.CALL_BASE_COST);
+    
+    // Should not have consumed more than reasonable
+    try std.testing.expect(total_consumed <= initial_gas);
+    
+    // Final gas should be positive
+    try std.testing.expect(final_gas > 0);
+}
+
+test "Maximum gas parameter handling" {
+    const allocator = std.testing.allocator;
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    // Test with maximum u256 gas parameter (should be clamped to u64)
+    try frame.stack.push(0); // output_size
+    try frame.stack.push(0); // output_offset
+    try frame.stack.push(0); // input_size
+    try frame.stack.push(0); // input_offset
+    try frame.stack.push(0); // value
+    try frame.stack.push(0x6000); // address
+    try frame.stack.push(std.math.maxInt(u256)); // maximum gas parameter
+    
+    // Should not crash and should handle gracefully
+    try frame.op_call();
+    
+    const result = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), result); // Should fail due to gas checks
+}
