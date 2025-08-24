@@ -1,6 +1,7 @@
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 
+// TODO: Currently used in host which is unused
 /// Call operation parameters for different call types
 pub const CallParams = union(enum) {
     /// Regular CALL operation

@@ -77,7 +77,7 @@ pub const BytecodeStats = struct {
             try writer.print("Jumps ({} total, {} backwards):\n", .{ self.jumps.len, self.backwards_jumps });
             for (self.jumps) |jump| {
                 const direction = if (jump.target < jump.pc) "↑" else "↓";
-                try writer.print("  PC {} {} target 0x{x}\n", .{ jump.pc, direction, jump.target });
+                try writer.print("  PC {} {s} target 0x{x}\n", .{ jump.pc, direction, jump.target });
             }
             try writer.writeAll("\n");
         }

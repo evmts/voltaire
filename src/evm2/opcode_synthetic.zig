@@ -15,6 +15,8 @@ pub const OpcodeSynthetic = enum(u8) {
     PUSH_JUMP_POINTER = 0xB7,
     PUSH_JUMPI_INLINE = 0xB8,
     PUSH_JUMPI_POINTER = 0xB9,
+    PUSH_SUB_INLINE = 0xBA,
+    PUSH_SUB_POINTER = 0xBB,
 };
 
 // Compile-time check to ensure synthetic opcodes don't overlap with normal opcodes
@@ -43,6 +45,8 @@ test "OpcodeSynthetic values are unique and non-conflicting" {
         @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER),
         @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE),
         @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER),
+        @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE),
+        @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER),
     };
     for (opcodes, 0..) |op1, i| {
         for (opcodes[i+1..]) |op2| {
@@ -59,5 +63,7 @@ test "OpcodeSynthetic values are unique and non-conflicting" {
     try std.testing.expectEqual(@as(u8, 0xB7), @intFromEnum(OpcodeSynthetic.PUSH_JUMP_POINTER));
     try std.testing.expectEqual(@as(u8, 0xB8), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_INLINE));
     try std.testing.expectEqual(@as(u8, 0xB9), @intFromEnum(OpcodeSynthetic.PUSH_JUMPI_POINTER));
+    try std.testing.expectEqual(@as(u8, 0xBA), @intFromEnum(OpcodeSynthetic.PUSH_SUB_INLINE));
+    try std.testing.expectEqual(@as(u8, 0xBB), @intFromEnum(OpcodeSynthetic.PUSH_SUB_POINTER));
 }
 
