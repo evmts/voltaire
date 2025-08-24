@@ -146,7 +146,7 @@ pub fn Stack(comptime config: StackConfig) type {
         // DUP1-DUP16 operations generated via comptime metaprogramming
         // This replaces 16 manually written functions with a single comptime loop
         comptime {
-            inline for (1..17) |n| {
+            for (1..17) |n| {
                 const func_name = std.fmt.comptimePrint("dup{d}", .{n});
                 @field(@This(), func_name) = createDupFunction(n);
             }
@@ -176,7 +176,7 @@ pub fn Stack(comptime config: StackConfig) type {
         // SWAP1-SWAP16 operations generated via comptime metaprogramming
         // This replaces 16 manually written functions with a single comptime loop
         comptime {
-            inline for (1..17) |n| {
+            for (1..17) |n| {
                 const func_name = std.fmt.comptimePrint("swap{d}", .{n});
                 @field(@This(), func_name) = createSwapFunction(n);
             }
