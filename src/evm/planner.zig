@@ -1228,8 +1228,9 @@ test "JumpDestMetadata handling: JUMPDEST instructions have metadata" {
         @intFromEnum(Opcode.STOP),         // PC 3: STOP
     };
     
-    var planner = try Planner(.{}).init(allocator, &bytecode);
-    var plan = try planner.create_instruction_stream(allocator, handlers);
+    var planner = try Planner(.{}).init(allocator, 2);
+    defer planner.deinit();
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     defer plan.deinit(allocator);
     
     // Find JUMPDEST in the instruction stream
@@ -1281,8 +1282,9 @@ test "dynamic jump table: unfused JUMP can lookup instruction index" {
         @intFromEnum(Opcode.STOP),         // PC 7: stop
     };
     
-    var planner = try Planner(.{}).init(allocator, &bytecode);
-    var plan = try planner.create_instruction_stream(allocator, handlers);
+    var planner = try Planner(.{}).init(allocator, 2);
+    defer planner.deinit();
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     defer plan.deinit(allocator);
     
     // Dynamic jump support is handled during execution, not in the plan
@@ -1319,8 +1321,9 @@ test "fusion detection: PUSH+MUL fusion" {
         @intFromEnum(Opcode.MUL),
     };
     
-    var planner = try Planner(.{}).init(allocator, &bytecode);
-    var plan = try planner.create_instruction_stream(allocator, handlers);
+    var planner = try Planner(.{}).init(allocator, 2);
+    defer planner.deinit();
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     defer plan.deinit(allocator);
     
     // Should have detected PUSH+MUL fusion
@@ -1347,8 +1350,9 @@ test "fusion detection: PUSH+DIV fusion" {
         @intFromEnum(Opcode.DIV),
     };
     
-    var planner = try Planner(.{}).init(allocator, &bytecode);
-    var plan = try planner.create_instruction_stream(allocator, handlers);
+    var planner = try Planner(.{}).init(allocator, 2);
+    defer planner.deinit();
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     defer plan.deinit(allocator);
     
     // Should have detected PUSH+DIV fusion
@@ -1379,8 +1383,9 @@ test "fusion detection: PUSH+JUMPI fusion" {
         @intFromEnum(Opcode.STOP),
     };
     
-    var planner = try Planner(.{}).init(allocator, &bytecode);
-    var plan = try planner.create_instruction_stream(allocator, handlers);
+    var planner = try Planner(.{}).init(allocator, 2);
+    defer planner.deinit();
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     defer plan.deinit(allocator);
     
     // Should have PUSH1 1, then fused PUSH+JUMPI
@@ -1449,7 +1454,7 @@ test "analysis cache: stores and reuses plans" {
     _ = Planner(.{});
     
     // Create planner with cache
-    var planner = try Planner(.{}).initWithCache(allocator, 2);
+    var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
     
     // Create handler array
@@ -1488,7 +1493,7 @@ test "analysis cache: clear cache functionality" {
     _ = Planner(.{});
     
     // Create planner with cache
-    var planner = try Planner(.{}).initWithCache(allocator, 4);
+    var planner = try Planner(.{}).init(allocator, 4);
     defer planner.deinit();
     
     // Create handler array
@@ -1588,8 +1593,9 @@ test "integration: complex bytecode with all features" {
         @intFromEnum(Opcode.STOP),         // PC 59: stop
     };
     
-    var planner = try Planner(.{}).init(allocator, &bytecode);
-    var plan = try planner.create_instruction_stream(allocator, handlers);
+    var planner = try Planner(.{}).init(allocator, 2);
+    defer planner.deinit();
+    const plan = try planner.getOrAnalyze(&bytecode, handlers);
     defer plan.deinit(allocator);
     
     // Verify we have all the features:
