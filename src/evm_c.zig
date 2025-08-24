@@ -1,6 +1,24 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+// Disable all logging for WASM to avoid Thread/IO dependencies
+pub const std_options = std.Options{
+    .logFn = struct {
+        pub fn logFn(
+            comptime message_level: std.log.Level,
+            comptime scope: @TypeOf(.enum_literal),
+            comptime format: []const u8,
+            args: anytype,
+        ) void {
+            _ = message_level;
+            _ = scope;
+            _ = format;
+            _ = args;
+            // No-op for WASM
+        }
+    }.logFn,
+};
+
 const evm_root = @import("evm");
 const primitives = @import("primitives");
 
