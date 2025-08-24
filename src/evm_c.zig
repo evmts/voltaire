@@ -4,32 +4,17 @@ const builtin = @import("builtin");
 const evm_root = @import("evm");
 const primitives = @import("primitives");
 
-// Custom log function for WASM that avoids Thread dependencies
-pub const std_options: std.Options = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding)
-    .{ .logFn = wasmLogFn }
-else
-    .{};
-
-fn wasmLogFn(
-    comptime message_level: std.log.Level,
-    comptime scope: @TypeOf(.enum_literal),
-    comptime format: []const u8,
-    args: anytype,
-) void {
-    _ = message_level;
-    _ = scope;
-    _ = format;
-    _ = args;
-    // No-op for WASM to avoid Thread/IO dependencies
-}
-
 // Simple inline logging that compiles out for freestanding WASM
 fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
-    _ = level;
     _ = scope;
-    _ = format;
-    _ = args;
-    // Logging disabled for WASM to avoid Thread dependencies
+    if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+        switch (level) {
+            .err => std.log.err("[evm_c] " ++ format, args),
+            .warn => std.log.warn("[evm_c] " ++ format, args),
+            .info => std.log.info("[evm_c] " ++ format, args),
+            .debug => std.log.debug("[evm_c] " ++ format, args),
+        }
+    }
 }
 
 const DefaultEvm = evm_root.DefaultEvm;
@@ -431,6 +416,7 @@ export fn guillotine_u256_from_u64(value: u64, out_u256: ?*GuillotineU256) void 
 
 // Frame API exports for direct frame manipulation
 // These are separate from the main EVM API and allow low-level frame control
+
 
 // Frame handle type
 const FrameHandle = struct {

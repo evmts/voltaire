@@ -79,32 +79,17 @@ const evm_root = @import("evm");
 const primitives = @import("primitives");
 const provider = @import("provider");
 
-// Custom log function for WASM that avoids Thread dependencies
-pub const std_options: std.Options = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding)
-    .{ .logFn = wasmLogFn }
-else
-    .{};
-
-fn wasmLogFn(
-    comptime message_level: std.log.Level,
-    comptime scope: @TypeOf(.enum_literal),
-    comptime format: []const u8,
-    args: anytype,
-) void {
-    _ = message_level;
-    _ = scope;
-    _ = format;
-    _ = args;
-    // No-op for WASM to avoid Thread/IO dependencies
-}
-
 // Simple inline logging that compiles out for freestanding WASM
 fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
-    _ = level;
     _ = scope;
-    _ = format;
-    _ = args;
-    // Logging disabled for WASM to avoid Thread dependencies
+    if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
+        switch (level) {
+            .err => std.log.err("[guillotine_c] " ++ format, args),
+            .warn => std.log.warn("[guillotine_c] " ++ format, args),
+            .info => std.log.info("[guillotine_c] " ++ format, args),
+            .debug => std.log.debug("[guillotine_c] " ++ format, args),
+        }
+    }
 }
 const MemoryDatabase = evm_root.MemoryDatabase;
 const BlockInfo = evm_root.BlockInfo;
