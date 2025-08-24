@@ -89,8 +89,8 @@ pub fn Memory(comptime config: MemoryConfig) type {
         
         pub fn ensure_capacity(self: *Self, new_size: usize) !void {
             const required_total = self.checkpoint + new_size;
-            if (@call(.always_inline, @import("builtin").expect, .{ required_total > MEMORY_LIMIT, false })) return MemoryError.MemoryOverflow;
-            if (@call(.always_inline, @import("builtin").expect, .{ required_total > self.buffer_ptr.items.len, false })) {
+            if (required_total > MEMORY_LIMIT) return MemoryError.MemoryOverflow;
+            if (required_total > self.buffer_ptr.items.len) {
                 const old_len = self.buffer_ptr.items.len;
                 try self.buffer_ptr.resize(required_total);
                 @memset(self.buffer_ptr.items[old_len..], 0);
@@ -131,7 +131,7 @@ pub fn Memory(comptime config: MemoryConfig) type {
         
         pub fn get_slice(self: *const Self, offset: usize, len: usize) MemoryError![]const u8 {
             const end = offset + len;
-            if (@call(.always_inline, @import("builtin").expect, .{ end > self.size(), false })) return MemoryError.OutOfBounds;
+            if (end > self.size()) return MemoryError.OutOfBounds;
             const start_idx = self.checkpoint + offset;
             return self.buffer_ptr.items[start_idx..start_idx + len];
         }
@@ -188,14 +188,14 @@ pub fn Memory(comptime config: MemoryConfig) type {
         }
         
         fn calculate_memory_cost(words: u64) u64 {
-            return 3 * words + (words * words) >> 9;  // Bit shift instead of / 512
+            return 3 * words + ((words * words) >> 9);  // Bit shift instead of / 512
         }
         pub fn get_expansion_cost(self: *Self, new_size: u64) u64 {
             const current_size = @as(u64, @intCast(self.size()));
-            if (@call(.always_inline, @import("builtin").expect, .{ new_size <= current_size, true })) return 0;
+            if (new_size <= current_size) return 0;
             const new_words = (new_size + 31) >> 5;  // Bit shift instead of / 32
             const current_words = (current_size + 31) >> 5;  // Bit shift instead of / 32
-            if (@call(.always_inline, @import("builtin").expect, .{ new_size <= self.cached_expansion.last_size, false })) return 0;
+            if (new_size <= self.cached_expansion.last_size) return 0;
             const new_cost = calculate_memory_cost(new_words);
             const current_cost = calculate_memory_cost(current_words);
             const expansion_cost = new_cost - current_cost;
@@ -424,13 +424,16 @@ test "Memory concurrent child memories" {
     try std.testing.expectEqual(child1.checkpoint, child2.checkpoint);
     try std.testing.expectEqual(@as(usize, 3), child1.checkpoint);
     
-    // Add different data to each child
+    // Add data to first child
     const child1_data = [_]u8{0x11, 0x22};
-    const child2_data = [_]u8{0x33, 0x44, 0x55, 0x66};
     try child1.set_data(0, &child1_data);
+    try std.testing.expectEqual(@as(usize, 2), child1.size());
+    
+    // Add data to second child - this will extend the buffer further
+    const child2_data = [_]u8{0x33, 0x44, 0x55, 0x66};
     try child2.set_data(0, &child2_data);
     
-    // Verify independent sizes and data
+    // Verify child sizes - child1 size is now affected by buffer growth
     try std.testing.expectEqual(@as(usize, 2), child1.size());
     try std.testing.expectEqual(@as(usize, 4), child2.size());
     
