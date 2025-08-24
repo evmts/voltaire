@@ -314,13 +314,13 @@ pub export fn evm_frame_stack_capacity(frame_ptr: ?*anyopaque) u32 {
 /// Get remaining gas
 pub export fn evm_frame_get_gas_remaining(frame_ptr: ?*anyopaque) u64 {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0));
-    return handle.interpreter.frame.gas_manager.gasRemaining();
+    return @max(handle.interpreter.frame.gas_remaining, 0);
 }
 
 /// Get gas used so far
 pub export fn evm_frame_get_gas_used(frame_ptr: ?*anyopaque) u64 {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr orelse return 0));
-    const remaining = handle.interpreter.frame.gas_manager.gasRemaining();
+    const remaining = @max(handle.interpreter.frame.gas_remaining, 0);
     return handle.initial_gas - remaining;
 }
 

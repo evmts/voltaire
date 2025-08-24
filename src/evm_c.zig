@@ -534,7 +534,7 @@ export fn evm_frame_get_gas_remaining(frame_ptr: ?*anyopaque) u64 {
     if (frame_ptr == null) return 0;
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
     const frame = handle.frame;
-    return @intCast(@max(0, frame.gas_manager.rawRemaining()));
+    return @intCast(@max(0, frame.gas_remaining));
 }
 
 /// Get used gas in the frame
@@ -545,7 +545,7 @@ export fn evm_frame_get_gas_used(frame_ptr: ?*anyopaque) u64 {
     const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
     const frame = handle.frame;
     // Calculate used gas from initial gas and remaining gas
-    const remaining = @max(0, frame.gas_manager.rawRemaining());
+    const remaining = @max(0, frame.gas_remaining);
     return handle.initial_gas - @as(u64, @intCast(remaining));
 }
 
@@ -629,8 +629,7 @@ export fn evm_frame_reset(frame_ptr: ?*anyopaque, new_gas: u64) c_int {
     // Reset stack by resetting the pointer to the base
     frame.stack.stack_ptr = frame.stack.stack_base;
     frame.memory.clear();
-    frame.gas_manager = DefaultFrame.GasManagerType.init(@intCast(new_gas)) catch {
-        return @intFromEnum(FrameError.FRAME_ERROR_OUT_OF_GAS);
+    frame.gas_remaining = @as(DefaultFrame.GasType, @intCast(new_gas));
     };
     
     return @intFromEnum(FrameError.FRAME_OK);
