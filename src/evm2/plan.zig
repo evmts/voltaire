@@ -13,6 +13,20 @@ pub const JumpDestMetadata = packed struct {
     max_stack: i16,
 };
 
+// Comptime assertions for JumpDestMetadata
+comptime {
+    // Verify packed struct is exactly 8 bytes
+    std.debug.assert(@sizeOf(JumpDestMetadata) == 8);
+    
+    // On 64-bit platforms, this should fit in a usize
+    if (@sizeOf(usize) == 8) {
+        std.debug.assert(@sizeOf(JumpDestMetadata) <= @sizeOf(usize));
+    }
+    
+    // Ensure no padding in packed struct
+    std.debug.assert(@bitSizeOf(JumpDestMetadata) == 64);
+}
+
 /// Handler function type for instruction execution.
 /// Takes frame and plan. Uses tail call recursion.
 pub const HandlerFn = fn (frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn;
@@ -45,6 +59,15 @@ else
 comptime {
     if (@sizeOf(InstructionElement) != @sizeOf(usize)) {
         @compileError("InstructionElement must be exactly usize-sized");
+    }
+    
+    // Verify specific platform sizes
+    if (@sizeOf(usize) == 8) {
+        std.debug.assert(@sizeOf(InstructionElement64) == 8);
+        std.debug.assert(@alignOf(InstructionElement64) == 8);
+    } else if (@sizeOf(usize) == 4) {
+        std.debug.assert(@sizeOf(InstructionElement32) == 4);
+        std.debug.assert(@alignOf(InstructionElement32) == 4);
     }
 }
 
