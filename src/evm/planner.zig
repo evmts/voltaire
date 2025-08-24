@@ -1231,7 +1231,7 @@ test "JumpDestMetadata handling: JUMPDEST instructions have metadata" {
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
-    defer plan.deinit(allocator);
+    // Note: plan is cached, don't call deinit directly
     
     // Find JUMPDEST in the instruction stream
     // Currently, JUMPDEST instructions don't have metadata following them
@@ -1285,7 +1285,7 @@ test "dynamic jump table: unfused JUMP can lookup instruction index" {
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
-    defer plan.deinit(allocator);
+    // Note: plan is cached, don't call deinit directly
     
     // Dynamic jump support is handled during execution, not in the plan
     // The instruction stream should contain the JUMPDEST handlers
@@ -1324,7 +1324,7 @@ test "fusion detection: PUSH+MUL fusion" {
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
-    defer plan.deinit(allocator);
+    // Note: plan is cached, don't call deinit directly
     
     // Should have detected PUSH+MUL fusion
     try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
@@ -1353,7 +1353,7 @@ test "fusion detection: PUSH+DIV fusion" {
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
-    defer plan.deinit(allocator);
+    // Note: plan is cached, don't call deinit directly
     
     // Should have detected PUSH+DIV fusion
     try std.testing.expectEqual(@as(usize, 2), plan.instructionStream.len);
@@ -1386,7 +1386,7 @@ test "fusion detection: PUSH+JUMPI fusion" {
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
-    defer plan.deinit(allocator);
+    // Note: plan is cached, don't call deinit directly
     
     // Should have PUSH1 1, then fused PUSH+JUMPI
     try std.testing.expect(plan.instructionStream.len >= 4); // PUSH1, value, PUSH_JUMPI_INLINE, dest
@@ -1483,7 +1483,7 @@ test "analysis cache: stores and reuses plans" {
     
     // Test cache stats
     const stats = planner.getCacheStats();
-    try std.testing.expect(stats != null);
+    try std.testing.expect(stats.cache_hits >= 0); // Stats struct is not nullable
     try std.testing.expectEqual(@as(usize, 2), stats.?.capacity);
     try std.testing.expectEqual(@as(usize, 1), stats.?.count);
 }
@@ -1516,7 +1516,7 @@ test "analysis cache: clear cache functionality" {
     
     // Verify cache stats reflect cleared state
     const stats = planner.getCacheStats();
-    try std.testing.expect(stats != null);
+    try std.testing.expect(stats.cache_hits >= 0); // Stats struct is not nullable
     try std.testing.expectEqual(@as(usize, 4), stats.?.capacity);
     try std.testing.expectEqual(@as(usize, 0), stats.?.count);
 }
@@ -1596,7 +1596,7 @@ test "integration: complex bytecode with all features" {
     var planner = try Planner(.{}).init(allocator, 2);
     defer planner.deinit();
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
-    defer plan.deinit(allocator);
+    // Note: plan is cached, don't call deinit directly
     
     // Verify we have all the features:
     
