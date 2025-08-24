@@ -79,6 +79,10 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
         cache_tail: ?*CacheNode,
         cache_count: usize,
         
+        // Cache statistics
+        cache_hits: usize,
+        cache_misses: usize,
+        
         // Special metadata for entry block
         start: JumpDestMetadata,
 
@@ -93,6 +97,8 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                 .cache_head = null,
                 .cache_tail = null,
                 .cache_count = 0,
+                .cache_hits = 0,
+                .cache_misses = 0,
                 .start = .{ .gas = 0, .min_stack = 0, .max_stack = 0 },
             };
         }
@@ -131,12 +137,14 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             
             // Check cache
             if (self.cache_map.get(key)) |node| {
-                // Move to front
+                // Cache hit
+                self.cache_hits += 1;
                 self.moveToFront(node);
                 return &node.plan;
             }
             
-            // Miss - analyze and cache
+            // Cache miss - analyze and cache
+            self.cache_misses += 1;
             self.bytecode = try BytecodeType.init(self.allocator, bytecode);
             const plan = try self.create_instruction_stream(self.allocator, handlers);
             

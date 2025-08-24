@@ -1072,40 +1072,6 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
         }
 
-        pub fn selfdestruct(self: *Self) Error!void {
-            // Check if we're in a static context via host interface
-            if (self.host) |host| {
-                if (host.get_is_static()) {
-                    return Error.WriteProtection;
-                }
-            }
-
-            // Pop recipient address from stack
-            const recipient_u256 = try self.stack.pop();
-
-            // Convert u256 to address (take the lower 20 bytes)
-            var recipient_addr: Address = undefined;
-            var temp = recipient_u256;
-            for (0..20) |i| {
-                recipient_addr[19 - i] = @truncate(temp);
-                temp >>= 8;
-            }
-
-            // Get or create self destruct tracker
-            if (self.self_destruct == null) {
-                // This would normally be passed in from the execution context
-                // For now, return an error as we need proper context setup
-                return Error.InvalidOpcode;
-            }
-
-            // Mark this contract for destruction
-            self.self_destruct.?.mark_for_destruction(self.contract_address, recipient_addr) catch {
-                return Error.AllocationError;
-            };
-
-            // SELFDESTRUCT terminates execution
-            return Error.STOP;
-        }
 
         // LOG operations
         fn make_log(self: *Self, comptime num_topics: u8, allocator: std.mem.Allocator) Error!void {
@@ -2171,7 +2137,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
             const gas_stipend = if (value > 0) @as(u64, 2300) else 0; // Gas stipend for value transfer
-            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const remaining_gas = @as(u64, @intCast(@max(self.gas_remaining, 0)));
             const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = @min(gas_u64, max_forward_gas) + gas_stipend;
 
@@ -2283,7 +2249,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             self.gas_remaining -= @as(GasType, @intCast(base_call_gas));
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
-            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const remaining_gas = @as(u64, @intCast(@max(self.gas_remaining, 0)));
             const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = @min(gas_u64, max_forward_gas);
 
@@ -2396,7 +2362,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             self.gas_remaining -= @as(GasType, @intCast(base_call_gas));
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
-            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const remaining_gas = @as(u64, @intCast(@max(self.gas_remaining, 0)));
             const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = @min(gas_u64, max_forward_gas);
 
@@ -2473,7 +2439,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 self.memory.get_slice(offset_usize, size_usize) catch &[_]u8{};
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
-            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const remaining_gas = @as(u64, @intCast(@max(self.gas_remaining, 0)));
             const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = max_forward_gas;
 
@@ -2556,7 +2522,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 self.memory.get_slice(offset_usize, size_usize) catch &[_]u8{};
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
-            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const remaining_gas = @as(u64, @intCast(@max(self.gas_remaining, 0)));
             const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = max_forward_gas;
 

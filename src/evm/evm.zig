@@ -211,6 +211,45 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
             self.logs.deinit();
         }
+        
+        /// Transfer value between accounts with proper balance checks and error handling
+        fn transfer_value(self: *Self, from: Address, to: Address, value: u256, snapshot_id: JournalType.SnapshotIdType) !void {
+            if (value == 0) return; // No transfer needed
+            
+            // Get and check caller account
+            var from_account = self.database.get_account(from) catch |err| {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return err;
+            } orelse {
+                // Caller account doesn't exist, cannot transfer
+                self.journal.revert_to_snapshot(snapshot_id);
+                return error.InsufficientBalance;
+            };
+            
+            if (from_account.balance < value) {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return error.InsufficientBalance;
+            }
+            
+            // Deduct from caller
+            from_account.balance -= value;
+            self.database.set_account(from, from_account) catch |err| {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return err;
+            };
+            
+            // Add to recipient
+            var to_account = self.database.get_account(to) catch |err| {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return err;
+            } orelse DEFAULT_ACCOUNT;
+            
+            to_account.balance += value;
+            self.database.set_account(to, to_account) catch |err| {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return err;
+            };
+        }
 
         /// Execute an EVM operation.
         ///
