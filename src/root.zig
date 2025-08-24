@@ -81,15 +81,11 @@ const provider = @import("provider");
 
 // Simple inline logging that compiles out for freestanding WASM
 fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
+    _ = level;
     _ = scope;
-    if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
-        switch (level) {
-            .err => std.log.err("[guillotine_c] " ++ format, args),
-            .warn => std.log.warn("[guillotine_c] " ++ format, args),
-            .info => std.log.info("[guillotine_c] " ++ format, args),
-            .debug => std.log.debug("[guillotine_c] " ++ format, args),
-        }
-    }
+    _ = format;
+    _ = args;
+    // Logging disabled for WASM to avoid Thread dependencies
 }
 const MemoryDatabase = evm_root.MemoryDatabase;
 const BlockInfo = evm_root.BlockInfo;
@@ -97,8 +93,10 @@ const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
 
 // Global allocator for WASM environment
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const allocator = if (builtin.target.cpu.arch == .wasm32) std.heap.wasm_allocator else gpa.allocator();
+const allocator = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding)
+    std.heap.page_allocator
+else
+    std.heap.c_allocator;
 
 // Global VM instance and associated memory database
 var vm_instance: ?*evm_root.DefaultEvm = null;
