@@ -1,8 +1,19 @@
-# Journal Documentation
+# Journal
 
-## Overview
+Configurable state change tracking for EVM transaction rollback.
 
-The Journal system provides configurable state change tracking for EVM transaction execution, enabling proper transaction rollback and revert functionality. It records all state modifications during execution and supports efficient snapshot-based rollback for nested calls and transaction failures.
+## Synopsis
+
+```zig
+const JournalType = Journal(config);
+const snapshot = journal.create_snapshot();
+try journal.record_storage_change(snapshot, address, key, original);
+journal.revert_to_snapshot(snapshot);
+```
+
+## Description
+
+Records state modifications during execution. Supports efficient snapshot-based rollback for nested calls and transaction failures. Provides comprehensive tracking of storage, balance, nonce, code, and account lifecycle changes.
 
 ## Architecture & Design
 

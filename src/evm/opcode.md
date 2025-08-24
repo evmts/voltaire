@@ -1,8 +1,18 @@
-# Opcode Documentation
+# Opcode
 
-## Overview
+Comprehensive EVM opcode support with optimization extensions.
 
-The EVM opcode system provides comprehensive support for Ethereum Virtual Machine operations, including standard EVM opcodes, synthetic fusion opcodes for optimization, and detailed metadata for gas calculation and stack validation. The implementation supports all EVM opcodes through the latest hard forks and includes performance-oriented extensions.
+## Synopsis
+
+```zig
+const is_push = opcode.isPush();
+const size = opcode.pushSize();
+const info = OPCODE_INFO[@intFromEnum(opcode)];
+```
+
+## Description
+
+Provides standard EVM opcodes, synthetic fusion opcodes for optimization, and detailed metadata for gas calculation and stack validation. Supports all EVM opcodes through latest hard forks with performance-oriented extensions.
 
 ## Architecture & Design
 

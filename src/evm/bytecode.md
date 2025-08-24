@@ -1,8 +1,19 @@
-# Bytecode Documentation
+# Bytecode
 
-## Overview
+Secure, high-performance EVM bytecode representation and analysis.
 
-The Bytecode module provides secure, high-performance EVM bytecode representation and analysis. It implements a two-phase security model: rigorous validation of untrusted bytecode followed by optimized execution with precomputed bitmaps. The module supports EIP-170 contract size limits, EIP-3860 initcode restrictions, Solidity metadata parsing, and SIMD-accelerated pattern detection for optimization opportunities.
+## Synopsis
+
+```zig
+const BytecodeType = Bytecode(config);
+var bytecode = try BytecodeType.init(allocator, code);
+const is_valid = bytecode.isValidJumpDest(pc);
+const opcode = bytecode.getOpcode(pc);
+```
+
+## Description
+
+Two-phase security model with rigorous validation followed by optimized execution using precomputed bitmaps. Supports EIP-170 contract size limits, EIP-3860 initcode restrictions, Solidity metadata parsing, and SIMD-accelerated pattern detection.
 
 ## Architecture & Design
 

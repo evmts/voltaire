@@ -1,8 +1,18 @@
-# Access List Documentation
+# Access List
 
-## Overview
+EIP-2929 warm/cold access tracking for EVM gas optimization.
 
-The Access List implements EIP-2929 warm/cold access tracking for gas optimization in the Ethereum Virtual Machine. It maintains separate collections of accessed addresses and storage slots, providing significantly reduced gas costs for subsequent accesses to the same resources. The module is configurable for different gas cost structures and supports pre-warming for transaction initialization.
+## Synopsis
+
+```zig
+const AccessListType = createAccessList(config);
+var access_list = AccessListType.init(allocator);
+const gas_cost = try access_list.access_address(address);
+```
+
+## Description
+
+Implements EIP-2929 warm/cold access tracking. Maintains collections of accessed addresses and storage slots for reduced gas costs on subsequent accesses. Configurable gas cost structures with transaction pre-warming support.
 
 ## Architecture & Design
 
