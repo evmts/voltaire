@@ -385,7 +385,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             // Push the contract address as u256
             const address = primitives.Address.to_u256(self.contract_address);
-            try self.stack.push(address);
+            try self.stack.push(@as(WordType, @intCast(address)));
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.ADDRESS));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -415,7 +415,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             self.consumeGasUnchecked(opcode_info.gas_cost);
             
             // Push balance to stack
-            try self.stack.push(balance);
+            try self.stack.push(@as(WordType, @intCast(balance)));
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BALANCE));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -442,7 +442,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const origin = primitives.Address.to_u256(primitives.ZERO_ADDRESS);
             
             // Push origin to stack
-            try self.stack.push(origin);
+            try self.stack.push(@as(WordType, @intCast(origin)));
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.ORIGIN));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -469,7 +469,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const caller_u256 = primitives.Address.to_u256(primitives.ZERO_ADDRESS);
             
             // Push caller to stack
-            try self.stack.push(caller_u256);
+            try self.stack.push(@as(WordType, @intCast(caller_u256)));
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLER));
             return dispatchNext(next_handler, self, plan_ptr);
@@ -2432,7 +2432,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 var address_bytes: [20]u8 = undefined;
                 @memcpy(&address_bytes, result.output[0..20]);
                 const address = primitives.Address.to_u256(address_bytes);
-                try self.stack.push(address);
+                try self.stack.push(@as(WordType, @intCast(address)));
             } else {
                 // Push 0 on failure
                 try self.stack.push(0);
@@ -2768,10 +2768,10 @@ test "FrameInterpreter arithmetic edge cases - large ADDMOD and MULMOD" {
     
     // First PUSH32 for large_val
     bytecode[idx] = 0x7F; idx += 1;
-    std.mem.writeInt(u256, bytecode[idx..idx+32], large_val, .big); idx += 32;
+    std.mem.writeInt(u256, bytecode[idx..][0..32], large_val, .big); idx += 32;
     // Second PUSH32 for large_val
     bytecode[idx] = 0x7F; idx += 1;
-    std.mem.writeInt(u256, bytecode[idx..idx+32], large_val, .big); idx += 32;
+    std.mem.writeInt(u256, bytecode[idx..][0..32], large_val, .big); idx += 32;
     // PUSH1 7
     bytecode[idx] = 0x60; idx += 1;
     bytecode[idx] = 0x07; idx += 1;
@@ -2816,10 +2816,10 @@ test "FrameInterpreter comparison operations - LT and GT boundary values" {
     
     // PUSH32 (almost_max)
     bytecode[idx] = 0x7F; idx += 1;
-    std.mem.writeInt(u256, bytecode[idx..idx+32], almost_max, .big); idx += 32;
+    std.mem.writeInt(u256, bytecode[idx..][0..32], almost_max, .big); idx += 32;
     // PUSH32 (max_u256)
     bytecode[idx] = 0x7F; idx += 1;
-    std.mem.writeInt(u256, bytecode[idx..idx+32], max_u256, .big); idx += 32;
+    std.mem.writeInt(u256, bytecode[idx..][0..32], max_u256, .big); idx += 32;
     // GT
     bytecode[idx] = 0x11; idx += 1;
     // STOP
@@ -2847,7 +2847,7 @@ test "FrameInterpreter comparison operations - signed comparisons SLT and SGT" {
     bytecode[idx] = 0x01; idx += 1;
     // PUSH32 (neg_one)
     bytecode[idx] = 0x7F; idx += 1;
-    std.mem.writeInt(u256, bytecode[idx..idx+32], neg_one, .big); idx += 32;
+    std.mem.writeInt(u256, bytecode[idx..][0..32], neg_one, .big); idx += 32;
     // SLT
     bytecode[idx] = 0x12; idx += 1;
     // STOP
@@ -2867,10 +2867,10 @@ test "FrameInterpreter comparison operations - signed comparisons SLT and SGT" {
     
     // PUSH32 (neg_ten)
     bytecode2[idx] = 0x7F; idx += 1;
-    std.mem.writeInt(u256, bytecode2[idx..idx+32], neg_ten, .big); idx += 32;
+    std.mem.writeInt(u256, bytecode2[idx..][0..32], neg_ten, .big); idx += 32;
     // PUSH32 (neg_five)
     bytecode2[idx] = 0x7F; idx += 1;
-    std.mem.writeInt(u256, bytecode2[idx..idx+32], neg_five, .big); idx += 32;
+    std.mem.writeInt(u256, bytecode2[idx..][0..32], neg_five, .big); idx += 32;
     // SGT
     bytecode2[idx] = 0x13; idx += 1;
     // STOP
@@ -3029,7 +3029,8 @@ test "FrameInterpreter CREATE operation - memory expansion cost" {
     
     // Verify gas was consumed for memory expansion
     // CREATE base cost (32000) + init code cost (32 * 200) + memory expansion
-    const gas_used = @as(u64, @intCast(initial_gas - interpreter.frame.gas_remaining));
+    const gas_remaining = interpreter.frame.gas_manager.gasRemaining();
+    const gas_used = initial_gas - gas_remaining;
     try std.testing.expect(gas_used > 32000 + 6400); // More than base + init code cost
 }
 
@@ -3065,10 +3066,10 @@ test "FrameInterpreter comparison operations - EQ and ISZERO" {
     
     // PUSH32 (large_val)
     bytecode[idx] = 0x7F; idx += 1;
-    std.mem.writeInt(u256, bytecode[idx..idx+32], large_val, .big); idx += 32;
+    std.mem.writeInt(u256, bytecode[idx..][0..32], large_val, .big); idx += 32;
     // PUSH32 (large_val) - same value
     bytecode[idx] = 0x7F; idx += 1;
-    std.mem.writeInt(u256, bytecode[idx..idx+32], large_val, .big); idx += 32;
+    std.mem.writeInt(u256, bytecode[idx..][0..32], large_val, .big); idx += 32;
     // EQ
     bytecode[idx] = 0x14; idx += 1;
     // STOP
@@ -3205,7 +3206,7 @@ test "FrameInterpreter bitwise operations - shift operations SHL, SHR, SAR" {
     
     // PUSH32 (neg_eight)
     bytecode[idx] = 0x7F; idx += 1;
-    std.mem.writeInt(u256, bytecode[idx..idx+32], neg_eight, .big); idx += 32;
+    std.mem.writeInt(u256, bytecode[idx..][0..32], neg_eight, .big); idx += 32;
     // PUSH1 1 (shift amount)
     bytecode[idx] = 0x60; idx += 1;
     bytecode[idx] = 0x01; idx += 1;
@@ -3571,7 +3572,7 @@ test "FrameInterpreter plan execution - instruction stream validation" {
     
     // Verify initial state
     try std.testing.expectEqual(@as(@TypeOf(interpreter.instruction_idx), 0), interpreter.instruction_idx);
-    try std.testing.expectEqual(@as(usize, 0), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 0), interpreter.frame.stack.size());
     
     // Execute and verify final state
     try interpreter.interpret();
@@ -3612,7 +3613,7 @@ test "FrameInterpreter plan execution - PC to instruction mapping" {
     
     // Verify computation: (255 + 0x1234 + 0xABCDEF) * something... 
     // The exact result depends on operation order, just verify execution completed
-    try std.testing.expect(interpreter.frame.stack.len() > 0);
+    try std.testing.expect(interpreter.frame.stack.size() > 0);
 }
 
 test "FrameInterpreter JUMP execution - valid destinations" {
@@ -3771,7 +3772,7 @@ test "FrameInterpreter handler state consistency" {
     
     // Verify final state: 10 * 15 = 150
     try std.testing.expectEqual(@as(u256, 150), interpreter.frame.stack.peek_unsafe());
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
 }
 
 test "FrameInterpreter complex execution - nested operations" {
@@ -3797,7 +3798,7 @@ test "FrameInterpreter complex execution - nested operations" {
     try interpreter.interpret();
     
     try std.testing.expectEqual(@as(u256, 15), interpreter.frame.stack.peek_unsafe());
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
 }
 
 test "FrameInterpreter complex execution - loop simulation" {
@@ -3855,7 +3856,7 @@ test "FrameInterpreter error recovery - stack underflow during execution" {
     try std.testing.expectError(error.StackUnderflow, interpreter.interpret());
     
     // Verify stack state after error
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
     try std.testing.expectEqual(@as(u256, 1), interpreter.frame.stack.peek_unsafe());
 }
 
@@ -3878,7 +3879,7 @@ test "FrameInterpreter error recovery - invalid opcode handling" {
     try std.testing.expectError(error.InvalidOpcode, interpreter.interpret());
     
     // Verify stack state was preserved until invalid opcode
-    try std.testing.expectEqual(@as(usize, 2), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 2), interpreter.frame.stack.size());
     try std.testing.expectEqual(@as(u256, 16), interpreter.frame.stack.peek_unsafe());
 }
 
@@ -3925,7 +3926,7 @@ test "FrameInterpreter stack overflow during execution" {
     try std.testing.expectError(error.StackOverflow, interpreter.interpret());
     
     // Stack should be at capacity
-    try std.testing.expectEqual(@as(usize, 3), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 3), interpreter.frame.stack.size());
 }
 
 test "FrameInterpreter memory operations integration" {
@@ -3990,7 +3991,7 @@ test "FrameInterpreter multiple execution attempts" {
     
     // Second execution attempt should work (interpreter resets state)
     // Note: This may not be the intended behavior, but we test current behavior
-    const initial_stack_len = interpreter.frame.stack.len();
+    const initial_stack_len = interpreter.frame.stack.size();
     const initial_gas = interpreter.frame.gas_manager.gasRemaining();
     
     // Verify that state is as expected after first execution
@@ -4013,7 +4014,7 @@ test "FrameInterpreter zero-length bytecode" {
     // Test that we handle this gracefully (either success or expected error)
     if (result) {
         // Success case - verify clean state
-        try std.testing.expectEqual(@as(usize, 0), interpreter.frame.stack.len());
+        try std.testing.expectEqual(@as(usize, 0), interpreter.frame.stack.size());
     } else |err| {
         // Error case - verify it's an expected error type
         try std.testing.expect(err == error.OutOfBounds or err == error.InvalidOpcode or err == error.STOP);
@@ -4065,7 +4066,7 @@ test "FrameInterpreter host interface - multiple host calls" {
     try interpreter.interpret();
 
     // Should have 4 values on stack
-    try std.testing.expectEqual(@as(usize, 4), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 4), interpreter.frame.stack.size());
 
     // Check that all host operations pushed values (exact values depend on host mock)
     const callvalue = interpreter.frame.stack.pop_unsafe();
@@ -4237,7 +4238,7 @@ test "FrameInterpreter bytecode parsing - truncated PUSH instructions" {
     const result3 = interpreter3.interpret();
     if (result3) {
         // If it succeeds, should have some data
-        try std.testing.expect(interpreter3.frame.stack.len() > 0);
+        try std.testing.expect(interpreter3.frame.stack.size() > 0);
     } else |err| {
         try std.testing.expect(err == error.TruncatedPush or err == error.OutOfBounds or err == error.InvalidOpcode);
     }
@@ -4292,7 +4293,7 @@ test "FrameInterpreter bytecode parsing - boundary instruction sequences" {
     try interpreter.interpret();
     
     // Should have 1000 values of 1 on the stack
-    try std.testing.expectEqual(@as(usize, 1000), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1000), interpreter.frame.stack.size());
     try std.testing.expectEqual(@as(u256, 1), interpreter.frame.stack.peek_unsafe());
 }
 
@@ -4322,7 +4323,7 @@ test "FrameInterpreter plan metadata - mixed PUSH sizes validation" {
     try interpreter.interpret();
     
     // Should have 5 values on stack: PUSH0, PUSH1, PUSH3, PUSH6, PUSH16
-    try std.testing.expectEqual(@as(usize, 5), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 5), interpreter.frame.stack.size());
     
     // Verify the PUSH16 value (top of stack)
     var expected_push16: u256 = 0;
@@ -4370,7 +4371,7 @@ test "FrameInterpreter plan metadata - instruction stream consistency" {
     
     // Verify execution completed correctly
     // Stack should have: (5 + 10) * 5 = 75 and 15 (from DUP operations)
-    try std.testing.expectEqual(@as(usize, 2), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 2), interpreter.frame.stack.size());
 }
 
 // 5. HANDLER ERROR PROPAGATION CHAIN ⭐⭐⭐⭐
@@ -4416,7 +4417,7 @@ test "FrameInterpreter handler error propagation - stack underflow chain" {
     try std.testing.expectError(error.StackUnderflow, interpreter.interpret());
     
     // Verify stack state at error point
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
     try std.testing.expectEqual(@as(u256, 1), interpreter.frame.stack.peek_unsafe());
 }
 
@@ -4466,7 +4467,7 @@ test "FrameInterpreter multi-config - small stack size" {
     
     try interpreter.interpret();
     
-    try std.testing.expectEqual(@as(usize, 2), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 2), interpreter.frame.stack.size());
     try std.testing.expectEqual(@as(u256, 5), interpreter.frame.stack.peek_unsafe()); // 2 + 3 = 5
 }
 
@@ -4548,13 +4549,7 @@ test "FrameInterpreter database integration - SLOAD/SSTORE operations" {
     defer frame_interpreter.deinit(allocator);
     
     // Execute SSTORE operation
-    const result = frame_interpreter.interpret();
-    
-    // Should complete successfully
-    switch (result) {
-        .success => {},
-        else => try std.testing.expect(false),
-    }
+    try frame_interpreter.interpret();
 }
 
 test "FrameInterpreter database integration - storage boundary conditions" {
@@ -4572,11 +4567,7 @@ test "FrameInterpreter database integration - storage boundary conditions" {
     var frame_interpreter = try FrameInterpreter(.{ .has_database = true }).init(allocator, &bytecode_slot0, 100000, db_interface);
     defer frame_interpreter.deinit(allocator);
     
-    const result = frame_interpreter.interpret();
-    switch (result) {
-        .success => {},
-        else => try std.testing.expect(false),
-    }
+    try frame_interpreter.interpret();
     
     // Test SLOAD from slot 0 - SLOAD: PUSH1 0x00 SLOAD STOP  
     const bytecode_load = [_]u8{ 0x60, 0x00, 0x54, 0x00 };
@@ -4617,7 +4608,7 @@ test "FrameInterpreter stress test - long execution sequence" {
     
     // Should have sum of 100 ones = 100
     try std.testing.expectEqual(@as(u256, 100), interpreter.frame.stack.peek_unsafe());
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
 }
 
 test "FrameInterpreter stress test - maximum stack usage" {
@@ -4641,7 +4632,7 @@ test "FrameInterpreter stress test - maximum stack usage" {
     try interpreter.interpret();
     
     // Should have 1023 items on stack after DUP1, POP sequence
-    try std.testing.expectEqual(@as(usize, 1023), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1023), interpreter.frame.stack.size());
 }
 
 test "FrameInterpreter stress test - memory intensive operations" {
@@ -4759,5 +4750,5 @@ test "FrameInterpreter instruction transitions - stack manipulation chains" {
     
     // Should have 10 * 50 = 500
     try std.testing.expectEqual(@as(u256, 500), interpreter.frame.stack.peek_unsafe());
-    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.len());
+    try std.testing.expectEqual(@as(usize, 1), interpreter.frame.stack.size());
 }
