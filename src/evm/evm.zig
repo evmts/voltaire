@@ -325,11 +325,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 snapshot_id,
             ) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
-                return switch (err) {
-                    error.Stop => CallResult.success_empty(0),
-                    error.RevertExecution => CallResult.failure(0),
-                    else => CallResult.failure(0),
-                };
+                return CallResult.failure(0);
             };
             
             if (!result.success) {
@@ -390,11 +386,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 snapshot_id,
             ) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
-                return switch (err) {
-                    error.Stop => CallResult.success_empty(0),
-                    error.RevertExecution => CallResult.failure(0),
-                    else => CallResult.failure(0),
-                };
+                return CallResult.failure(0);
             };
             
             if (!result.success) {
@@ -457,11 +449,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 snapshot_id,
             ) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
-                return switch (err) {
-                    error.Stop => CallResult.success_empty(0),
-                    error.RevertExecution => CallResult.failure(0),
-                    else => CallResult.failure(0),
-                };
+                return CallResult.failure(0);
             };
             
             if (!result.success) {
@@ -522,12 +510,8 @@ pub fn Evm(comptime config: EvmConfig) type {
                 snapshot_id,
             ) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
-                return switch (err) {
-                    error.Stop => CallResult.success_empty(0),
-                    error.RevertExecution => CallResult.failure(0),
-                    error.StaticCallViolation => CallResult.failure(0), // Write attempted in static
-                    else => CallResult.failure(0),
-                };
+                // In static context, any error is a failure
+                return CallResult.failure(0);
             };
             
             if (!result.success) {
@@ -589,7 +573,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
             
             // Track created contract for EIP-6780
-            try self.created_contracts.add(contract_address);
+            try self.created_contracts.mark_created(contract_address);
             
             // Gas cost for CREATE2
             const GasConstants = primitives.GasConstants;
@@ -616,11 +600,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 snapshot_id,
             ) catch |err| {
                 self.journal.revert_to_snapshot(snapshot_id);
-                return switch (err) {
-                    error.Stop => CallResult.success_empty(0),
-                    error.RevertExecution => CallResult.failure(0),
-                    else => CallResult.failure(0),
-                };
+                return CallResult.failure(0);
             };
             
             if (!result.success) {
@@ -666,7 +646,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             value: u256,
             is_static: bool,
             snapshot_id: JournalType.SnapshotIdType,
-        ) Error!CallResult {
+        ) !CallResult {
             _ = snapshot_id;
             _ = input;
             _ = address;
