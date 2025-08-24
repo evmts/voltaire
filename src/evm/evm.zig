@@ -1479,6 +1479,7 @@ test "EVM call() entry point method" {
         .gas_limit = 30000000,
         .coinbase = ZERO_ADDRESS,
         .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
     };
     
     const tx_context = TransactionContext{
@@ -1531,6 +1532,7 @@ test "EVM call() method routes to different handlers" {
         .gas_limit = 30000000,
         .coinbase = ZERO_ADDRESS,
         .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
     };
     
     const tx_context = TransactionContext{
@@ -1643,6 +1645,7 @@ test "EVM call_regular handler basic functionality" {
         .gas_limit = 30000000,
         .coinbase = ZERO_ADDRESS,
         .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
     };
     
     const tx_context = TransactionContext{
@@ -1715,6 +1718,7 @@ test "EVM staticcall handler prevents state changes" {
         .gas_limit = 30000000,
         .coinbase = ZERO_ADDRESS,
         .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
     };
     
     const tx_context = TransactionContext{
@@ -1785,6 +1789,7 @@ test "EVM delegatecall handler preserves caller context" {
         .gas_limit = 30000000,
         .coinbase = ZERO_ADDRESS,
         .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
     };
     
     const original_caller: Address = [_]u8{0xAA} ++ [_]u8{0} ** 19;
