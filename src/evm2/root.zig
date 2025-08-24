@@ -2,9 +2,9 @@ const std = @import("std");
 
 // Import main modules
 pub const FrameConfig = @import("frame_config.zig").FrameConfig;
-pub const createFrame = @import("frame.zig").createFrame;
+pub const Frame = @import("frame.zig").Frame;
 pub const StackConfig = @import("stack_config.zig").StackConfig;
-pub const createStack = @import("stack.zig").createStack;
+pub const Stack = @import("stack.zig").Stack;
 pub const MemoryConfig = @import("memory_config.zig").MemoryConfig;
 pub const createPlanner = @import("planner.zig").createPlanner;
 pub const PlannerConfig = @import("planner_config.zig").PlannerConfig;
@@ -35,7 +35,7 @@ pub const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
 pub const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 pub const Hardfork = @import("hardfork.zig").Hardfork;
 pub const Host = @import("host.zig").Host;
-pub const createMemory = @import("memory.zig").createMemory;
+pub const Memory = @import("memory.zig").Memory;
 pub const MemoryError = @import("memory.zig").MemoryError;
 pub const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 pub const Opcode = @import("opcode.zig").Opcode;
@@ -48,9 +48,9 @@ pub const createFrameInterpreter = @import("frame_interpreter.zig").createFrameI
 test {
     // Test main modules
     _ = FrameConfig;
-    _ = createFrame;
+    _ = Frame;
     _ = StackConfig;
-    _ = createStack;
+    _ = Stack;
     _ = createPlanner;
     // _ = Interpreter;
     _ = Evm;
@@ -68,7 +68,7 @@ test {
     _ = DatabaseInterface;
     _ = Hardfork;
     _ = Host;
-    _ = createMemory;
+    _ = Memory;
     _ = MemoryDatabase;
     _ = Opcode;
     _ = opcode_synthetic;
