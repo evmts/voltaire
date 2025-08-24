@@ -91,6 +91,87 @@ pub fn createFrame(comptime config: FrameConfig) type {
             self.memory.deinit();
         }
         
+        /// Create a deep copy of the frame.
+        /// This is used by DebugPlan to create a sidecar frame for validation.
+        pub fn copy(self: *const Self, allocator: std.mem.Allocator) Error!Self {
+            // Copy stack
+            var new_stack = Stack.init(allocator) catch {
+                return Error.AllocationError;
+            };
+            errdefer new_stack.deinit(allocator);
+            
+            // Copy stack contents
+            @memcpy(new_stack.stack[0..self.stack.next_stack_index], self.stack.stack[0..self.stack.next_stack_index]);
+            new_stack.next_stack_index = self.stack.next_stack_index;
+            
+            // Copy memory
+            var new_memory = Memory.init(allocator) catch {
+                return Error.AllocationError;
+            };
+            errdefer new_memory.deinit();
+            
+            // Copy memory contents
+            if (self.memory.len() > 0) {
+                new_memory.resize(self.memory.len()) catch {
+                    return Error.AllocationError;
+                };
+                @memcpy(new_memory.data()[0..self.memory.len()], self.memory.data()[0..self.memory.len()]);
+            }
+            
+            return Self{
+                .stack = new_stack,
+                .bytecode = self.bytecode, // Bytecode is immutable, share reference
+                .gas_remaining = self.gas_remaining,
+                .tracer = self.tracer, // Tracer can be shared for NoOpTracer
+                .memory = new_memory,
+                .database = self.database,
+                .contract_address = self.contract_address,
+                .is_static = self.is_static,
+                .self_destruct = self.self_destruct,
+            };
+        }
+        
+        /// Compare two frames for equality.
+        /// Used by DebugPlan to validate execution.
+        pub fn assertEqual(self: *const Self, other: *const Self) void {
+            // Compare gas
+            if (self.gas_remaining != other.gas_remaining) {
+                std.debug.panic("Frame.assertEqual: gas mismatch: {} vs {}", .{ self.gas_remaining, other.gas_remaining });
+            }
+            
+            // Compare stack
+            if (self.stack.next_stack_index != other.stack.next_stack_index) {
+                std.debug.panic("Frame.assertEqual: stack size mismatch: {} vs {}", .{ self.stack.next_stack_index, other.stack.next_stack_index });
+            }
+            for (0..self.stack.next_stack_index) |i| {
+                if (self.stack.stack[i] != other.stack.stack[i]) {
+                    std.debug.panic("Frame.assertEqual: stack[{}] mismatch: {} vs {}", .{ i, self.stack.stack[i], other.stack.stack[i] });
+                }
+            }
+            
+            // Compare memory
+            if (self.memory.len() != other.memory.len()) {
+                std.debug.panic("Frame.assertEqual: memory size mismatch: {} vs {}", .{ self.memory.len(), other.memory.len() });
+            }
+            if (self.memory.len() > 0) {
+                const self_data = self.memory.data();
+                const other_data = other.memory.data();
+                for (0..self.memory.len()) |i| {
+                    if (self_data[i] != other_data[i]) {
+                        std.debug.panic("Frame.assertEqual: memory[{}] mismatch: {} vs {}", .{ i, self_data[i], other_data[i] });
+                    }
+                }
+            }
+            
+            // Compare execution context
+            if (!std.mem.eql(u8, &self.contract_address, &other.contract_address)) {
+                std.debug.panic("Frame.assertEqual: contract_address mismatch", .{});
+            }
+            if (self.is_static != other.is_static) {
+                std.debug.panic("Frame.assertEqual: is_static mismatch: {} vs {}", .{ self.is_static, other.is_static });
+            }
+        }
+        
         /// Pretty print the frame state for debugging.
         pub fn pretty_print(self: *const Self) void {
             std.log.warn("\n=== Frame State ===\n", .{});
