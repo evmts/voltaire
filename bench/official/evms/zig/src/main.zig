@@ -144,7 +144,10 @@ pub fn main() !void {
         const end_time = std.time.nanoTimestamp();
         
         // Free the result output to prevent memory leak and use-after-free
-        defer if (result.output.len > 0) allocator.free(result.output);
+        defer if (result.output.len > 0) {
+            std.debug.print("DEBUG: Freeing output of len {}\n", .{result.output.len});
+            allocator.free(result.output);
+        }
         
         if (!result.success) {
             std.debug.print("Contract execution failed\n", .{});
