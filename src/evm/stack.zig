@@ -1,18 +1,21 @@
-/// High-performance EVM stack with pointer-based downward growth
-/// 
-/// Implements the EVM stack model with:
-/// - Downward growth: stack pointer moves toward lower addresses
-/// - Cache alignment: 64-byte alignment for optimal CPU performance
-/// - Bounds checking: both safe and unsafe variants for performance
-/// - Smart sizing: automatically selects index type based on stack capacity
-/// - Zero-overhead abstractions: unsafe operations when bounds pre-validated
-/// 
-/// The stack supports up to 1024 256-bit words as per EVM specification.
-/// Growth pattern: push decrements pointer, pop increments pointer.
+//! High-performance EVM stack implementation.
+//!
+//! Pointer-based stack with downward growth for optimal CPU cache performance.
+//! Supports up to 1024 256-bit words as per EVM specification.
+//!
+//! Key features:
+//! - 64-byte cache line alignment
+//! - Safe and unsafe operation variants
+//! - Automatic index type selection based on capacity
+//! - Zero-cost abstractions through compile-time configuration
 const std = @import("std");
 
 const StackConfig = @import("stack_config.zig").StackConfig;
 
+/// Creates a configured stack type.
+///
+/// The stack grows downward: push decrements pointer, pop increments.
+/// This design optimizes for CPU cache locality and branch prediction.
 pub fn Stack(comptime config: StackConfig) type {
     config.validate();
 
@@ -38,6 +41,10 @@ pub fn Stack(comptime config: StackConfig) type {
         stack_limit: [*]WordType,
         stack: *[stack_capacity]WordType align(64),
 
+        /// Initialize a new stack with allocated memory.
+        ///
+        /// Allocates cache-aligned memory and sets up pointer boundaries.
+        /// Stack pointer starts at the top (highest address) and grows downward.
         pub fn init(allocator: std.mem.Allocator) Error!Self {
             const stack_memory = allocator.alloc(WordType, stack_capacity) catch return Error.AllocationError;
             errdefer allocator.free(stack_memory);
