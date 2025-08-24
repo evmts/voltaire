@@ -87,7 +87,7 @@ test "GasManagerConfig validation" {
         .enable_gas_logging = true,
     };
     comptime custom_config.validate();
-    try std.testing.expectEqual(i64, custom_config.GasType());
+    try std.testing.expectEqual(i32, custom_config.GasType()); // 100M still fits in i32
 }
 
 test "GasManagerConfig default values" {

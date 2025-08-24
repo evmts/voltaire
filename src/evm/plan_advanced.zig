@@ -2494,7 +2494,7 @@ test "Plan extreme configuration edge cases" {
         .stack_size = 1,
         .WordType = u64,
         .max_bytecode_size = 1,
-        .blockGasLimit = 21000,
+        .block_gas_limit = 21000,
     };
     
     const Planner = @import("planner.zig").createPlanner(min_config);
@@ -2706,17 +2706,17 @@ test "Plan cross-platform compatibility - InstructionElement size behavior" {
         description: []const u8,
     }{
         .{
-            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 255, .blockGasLimit = 21000 },
+            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 255, .block_gas_limit = 21000 },
             .expected_pc_type = u8,
             .description = "Small bytecode should use u8 PC",
         },
         .{
-            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 65535, .blockGasLimit = 21000 },
+            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 65535, .block_gas_limit = 21000 },
             .expected_pc_type = u16,
             .description = "Medium bytecode should use u16 PC",
         },
         .{
-            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 24576, .blockGasLimit = 30_000_000 },
+            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 24576, .block_gas_limit = 30_000_000 },
             .expected_pc_type = u16,
             .description = "EVM max bytecode should use u16 PC",
         },
@@ -3096,28 +3096,28 @@ test "Plan configuration boundary and mutation stress testing" {
     }{
         // Minimum valid config
         .{
-            .config = .{ .stack_size = 1, .WordType = u64, .max_bytecode_size = 1, .blockGasLimit = 21000 },
+            .config = .{ .stack_size = 1, .WordType = u64, .max_bytecode_size = 1, .block_gas_limit = 21000 },
             .should_succeed = true,
             .description = "Minimum valid configuration",
         },
         
         // EVM standard config
         .{
-            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 24576, .blockGasLimit = 30_000_000 },
+            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 24576, .block_gas_limit = 30_000_000 },
             .should_succeed = true,
             .description = "Standard EVM configuration",
         },
         
         // Large config
         .{
-            .config = .{ .stack_size = 2048, .WordType = u256, .max_bytecode_size = 65535, .blockGasLimit = 100_000_000 },
+            .config = .{ .stack_size = 2048, .WordType = u256, .max_bytecode_size = 65535, .block_gas_limit = 100_000_000 },
             .should_succeed = true,
             .description = "Large configuration",
         },
         
         // Edge case: exactly at u16 boundary
         .{
-            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 65535, .blockGasLimit = 30_000_000 },
+            .config = .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 65535, .block_gas_limit = 30_000_000 },
             .should_succeed = true,
             .description = "u16 boundary configuration",
         },
@@ -3164,7 +3164,7 @@ test "Plan configuration boundary and mutation stress testing" {
         .stack_size = 1024,
         .WordType = u256,
         .max_bytecode_size = 1000,
-        .blockGasLimit = 30_000_000,
+        .block_gas_limit = 30_000_000,
     };
     
     // Test with different WordTypes
@@ -3389,9 +3389,9 @@ test "Plan caching and lifecycle management validation" {
     
     // Test 2: Plan lifecycle with different configurations
     const lifecycle_configs = [_]PlanConfig{
-        .{ .stack_size = 256, .WordType = u128, .max_bytecode_size = 1000, .blockGasLimit = 21000 },
-        .{ .stack_size = 512, .WordType = u256, .max_bytecode_size = 2000, .blockGasLimit = 30_000_000 },
-        .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 24576, .blockGasLimit = 100_000_000 },
+        .{ .stack_size = 256, .WordType = u128, .max_bytecode_size = 1000, .block_gas_limit = 21000 },
+        .{ .stack_size = 512, .WordType = u256, .max_bytecode_size = 2000, .block_gas_limit = 30_000_000 },
+        .{ .stack_size = 1024, .WordType = u256, .max_bytecode_size = 24576, .block_gas_limit = 100_000_000 },
     };
     
     for (lifecycle_configs) |config| {
