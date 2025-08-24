@@ -50,13 +50,13 @@ export fn evm_bytecode_create(data: [*]const u8, len: usize) ?*BytecodeHandle {
     
     // Create bytecode instance
     handle.* = BytecodeHandle{
-        .bytecode = Bytecode.init(bytecode_data) catch {
+        .bytecode = Bytecode.init(allocator, bytecode_data) catch {
             allocator.free(bytecode_data);
             allocator.destroy(handle);
             return null;
         },
         .bytecode_data = bytecode_data,
-        .is_analyzed = false,
+        .is_analyzed = true, // init already analyzes
     };
     
     return handle;
@@ -76,13 +76,11 @@ export fn evm_bytecode_destroy(handle: ?*BytecodeHandle) void {
 
 /// Analyze bytecode to identify jump destinations
 /// @param handle Bytecode handle
-/// @return 0 on success, error code on failure
+/// @return 0 on success, error code on failure (already analyzed on creation)
 export fn evm_bytecode_analyze(handle: ?*BytecodeHandle) c_int {
     const h = handle orelse return -1;
-    
-    h.bytecode.analyze() catch return -2;
+    // Bytecode is already analyzed during init
     h.is_analyzed = true;
-    
     return 0;
 }
 
@@ -106,7 +104,7 @@ export fn evm_bytecode_is_valid_jumpdest(handle: ?*const BytecodeHandle, pc: u32
 /// @return Length in bytes, or 0 on error
 export fn evm_bytecode_get_length(handle: ?*const BytecodeHandle) usize {
     const h = handle orelse return 0;
-    return h.bytecode.code.len;
+    return h.bytecode.runtime_code.len;
 }
 
 /// Get opcode at specific PC
@@ -116,8 +114,8 @@ export fn evm_bytecode_get_length(handle: ?*const BytecodeHandle) usize {
 export fn evm_bytecode_get_opcode(handle: ?*const BytecodeHandle, pc: u32) u8 {
     const h = handle orelse return 0xFE;
     
-    if (pc >= h.bytecode.code.len) return 0xFE;
-    return h.bytecode.code[@intCast(pc)];
+    if (pc >= h.bytecode.runtime_code.len) return 0xFE;
+    return h.bytecode.runtime_code[@intCast(pc)];
 }
 
 /// Get raw bytecode data
@@ -128,8 +126,8 @@ export fn evm_bytecode_get_opcode(handle: ?*const BytecodeHandle, pc: u32) u8 {
 export fn evm_bytecode_get_data(handle: ?*const BytecodeHandle, out: [*]u8, max_len: usize) usize {
     const h = handle orelse return 0;
     
-    const copy_len = @min(h.bytecode.code.len, max_len);
-    @memcpy(out[0..copy_len], h.bytecode.code[0..copy_len]);
+    const copy_len = @min(h.bytecode.runtime_code.len, max_len);
+    @memcpy(out[0..copy_len], h.bytecode.runtime_code[0..copy_len]);
     
     return copy_len;
 }
@@ -158,7 +156,7 @@ export fn evm_bytecode_get_stats(handle: ?*const BytecodeHandle, stats_out: ?*CB
     const h = handle orelse return -1;
     const stats = stats_out orelse return -2;
     
-    const bytecode_stats = BytecodeStats.analyze(h.bytecode.code) catch return -3;
+    const bytecode_stats = BytecodeStats.analyze(h.bytecode.runtime_code) catch return -3;
     
     stats.* = CBytecodeStats{
         .total_opcodes = @intCast(bytecode_stats.total_opcodes),
@@ -184,7 +182,7 @@ export fn evm_bytecode_get_stats(handle: ?*const BytecodeHandle, stats_out: ?*CB
 export fn evm_bytecode_is_valid(handle: ?*const BytecodeHandle) c_int {
     const h = handle orelse return 0;
     
-    for (h.bytecode.code) |byte| {
+    for (h.bytecode.runtime_code) |byte| {
         _ = std.meta.intToEnum(Opcode, byte) catch return 0;
     }
     

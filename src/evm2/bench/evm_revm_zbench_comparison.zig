@@ -88,7 +88,6 @@ fn benchmark_evm2_arithmetic_contract(allocator: std.mem.Allocator) void {
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .difficulty = 0,
         .coinbase = ZERO_ADDRESS,
-        .basefee = 0,
     };
     
     const context = evm2_mod.Evm(.{}).TransactionContext{
@@ -129,7 +128,6 @@ fn benchmark_evm2_storage_contract(allocator: std.mem.Allocator) void {
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .difficulty = 0,
         .coinbase = ZERO_ADDRESS,
-        .basefee = 0,
     };
     
     const context = evm2_mod.Evm(.{}).TransactionContext{
@@ -170,7 +168,6 @@ fn benchmark_evm2_stack_contract(allocator: std.mem.Allocator) void {
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .difficulty = 0,
         .coinbase = ZERO_ADDRESS,
-        .basefee = 0,
     };
     
     const context = evm2_mod.Evm(.{}).TransactionContext{
@@ -211,7 +208,6 @@ fn benchmark_evm2_memory_contract(allocator: std.mem.Allocator) void {
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .difficulty = 0,
         .coinbase = ZERO_ADDRESS,
-        .basefee = 0,
     };
     
     const context = evm2_mod.Evm(.{}).TransactionContext{
@@ -249,7 +245,7 @@ fn benchmark_legacy_evm_arithmetic_contract(allocator: std.mem.Allocator) void {
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null) catch return;
+    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
     defer vm.deinit();
     
     var contract = evm_legacy.Contract.init(allocator, &ARITHMETIC_CONTRACT, .{ .address = TEST_ADDRESS_2 }) catch return;
@@ -267,7 +263,7 @@ fn benchmark_legacy_evm_storage_contract(allocator: std.mem.Allocator) void {
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null) catch return;
+    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
     defer vm.deinit();
     
     var contract = evm_legacy.Contract.init(allocator, &STORAGE_CONTRACT, .{ .address = TEST_ADDRESS_2 }) catch return;
@@ -285,7 +281,7 @@ fn benchmark_legacy_evm_stack_contract(allocator: std.mem.Allocator) void {
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null) catch return;
+    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
     defer vm.deinit();
     
     var contract = evm_legacy.Contract.init(allocator, &STACK_CONTRACT, .{ .address = TEST_ADDRESS_2 }) catch return;
@@ -303,7 +299,7 @@ fn benchmark_legacy_evm_memory_contract(allocator: std.mem.Allocator) void {
     defer memory_db.deinit();
     
     const db_interface = memory_db.to_database_interface();
-    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null) catch return;
+    var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
     defer vm.deinit();
     
     var contract = evm_legacy.Contract.init(allocator, &MEMORY_CONTRACT, .{ .address = TEST_ADDRESS_2 }) catch return;
@@ -337,7 +333,6 @@ fn benchmark_revm_arithmetic_contract(allocator: std.mem.Allocator) void {
     
     var result = vm.call(TEST_ADDRESS_1, TEST_ADDRESS_2, 0, &.{}, BENCHMARK_GAS_LIMIT) catch return;
     defer result.deinit();
-    _ = result;
 }
 
 fn benchmark_revm_storage_contract(allocator: std.mem.Allocator) void {
@@ -357,7 +352,6 @@ fn benchmark_revm_storage_contract(allocator: std.mem.Allocator) void {
     
     var result = vm.call(TEST_ADDRESS_1, TEST_ADDRESS_2, 0, &.{}, BENCHMARK_GAS_LIMIT) catch return;
     defer result.deinit();
-    _ = result;
 }
 
 fn benchmark_revm_stack_contract(allocator: std.mem.Allocator) void {
@@ -377,7 +371,6 @@ fn benchmark_revm_stack_contract(allocator: std.mem.Allocator) void {
     
     var result = vm.call(TEST_ADDRESS_1, TEST_ADDRESS_2, 0, &.{}, BENCHMARK_GAS_LIMIT) catch return;
     defer result.deinit();
-    _ = result;
 }
 
 fn benchmark_revm_memory_contract(allocator: std.mem.Allocator) void {
@@ -397,7 +390,6 @@ fn benchmark_revm_memory_contract(allocator: std.mem.Allocator) void {
     
     var result = vm.call(TEST_ADDRESS_1, TEST_ADDRESS_2, 0, &.{}, BENCHMARK_GAS_LIMIT) catch return;
     defer result.deinit();
-    _ = result;
 }
 
 // ============================================================================

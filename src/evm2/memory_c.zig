@@ -277,7 +277,7 @@ export fn evm_memory_copy(handle: ?*MemoryHandle, dest: u32, src: u32, len: u32)
 /// @param len Number of bytes to zero
 /// @return Error code
 export fn evm_memory_zero(handle: ?*MemoryHandle, offset: u32, len: u32) c_int {
-    const h = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
+    _ = handle orelse return EVM_MEMORY_ERROR_NULL_POINTER;
     
     const zeros = allocator.alloc(u8, len) catch return EVM_MEMORY_ERROR_OUT_OF_MEMORY;
     defer allocator.free(zeros);
