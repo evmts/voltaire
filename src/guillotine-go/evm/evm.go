@@ -13,6 +13,7 @@ import (
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 typedef struct {
     uint8_t bytes[20];

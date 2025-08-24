@@ -6,6 +6,7 @@ package guillotine
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 // Zig-exported C functions
 typedef struct {
