@@ -186,3 +186,22 @@ src/cli/evm-debugger
 # Performance and comparison reports (generated files)
 EVM2_Performance_Report.md
 *-comparison.md
+
+# Test files and debug artifacts in root directory
+test_*
+/test_*
+
+# Swift build artifacts
+**/.build/
+
+# Bun lock files
+bun.lock
+**/bun.lock
+
+# TypeScript/JavaScript build artifacts
+**/src/core/
+**/src/test/
+
+# Compiled binaries without extensions (common in development)
+test_benchmark_debug
+test_hyperfine
