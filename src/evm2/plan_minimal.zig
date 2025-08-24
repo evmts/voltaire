@@ -772,3 +772,446 @@ test "PlanMinimal integration with bytecode analysis" {
     const pc_val = plan.getMetadata(&idx, .PC);
     try std.testing.expectEqual(@as(PlanMinimalType.PcType, 13), pc_val);
 }
+
+test "PlanMinimal sequential navigation stress test" {
+    const allocator = std.testing.allocator;
+    const PlanMinimalType = PlanMinimal(.{});
+    
+    // Create bytecode with many sequential opcodes
+    var bytecode_list = std.ArrayList(u8).init(allocator);
+    defer bytecode_list.deinit();
+    
+    // Add various opcodes in sequence
+    for (0..50) |i| {
+        if (i % 10 == 0) {
+            // Add a JUMPDEST every 10 opcodes
+            try bytecode_list.append(@intFromEnum(Opcode.JUMPDEST));
+        } else if (i % 5 == 0) {
+            // Add a PUSH2 with data
+            try bytecode_list.append(@intFromEnum(Opcode.PUSH2));
+            try bytecode_list.append(@intCast(i & 0xFF));
+            try bytecode_list.append(@intCast((i >> 8) & 0xFF));
+        } else {
+            // Add simple opcodes
+            const simple_opcodes = [_]Opcode{ .ADD, .MUL, .SUB, .DIV, .MOD, .DUP1, .SWAP1 };
+            const opcode = simple_opcodes[i % simple_opcodes.len];
+            try bytecode_list.append(@intFromEnum(opcode));
+        }
+    }
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testHandler;
+    }
+    
+    var plan = try PlanMinimalType.init(allocator, bytecode_list.items, handlers);
+    defer plan.deinit();
+    
+    // Navigate through the entire bytecode
+    var idx: PlanMinimalType.InstructionIndexType = 0;
+    var instruction_count: usize = 0;
+    
+    while (idx < plan.bytecode.len()) {
+        const current_opcode = plan.bytecode.raw()[idx];
+        const next_handler = plan.handlers[current_opcode];
+        
+        // Verify handler is valid
+        try std.testing.expectEqual(@intFromPtr(&testHandler), @intFromPtr(next_handler));
+        
+        // Track instruction count
+        instruction_count += 1;
+        
+        // Advance to next instruction based on current opcode
+        if (current_opcode >= @intFromEnum(Opcode.PUSH1) and current_opcode <= @intFromEnum(Opcode.PUSH32)) {
+            const push_bytes = current_opcode - (@intFromEnum(Opcode.PUSH1) - 1);
+            idx = @intCast(idx + 1 + push_bytes);
+        } else {
+            idx += 1;
+        }
+    }
+    
+    // Verify we processed expected number of instructions
+    try std.testing.expect(instruction_count > 0);
+}
+
+test "PlanMinimal all PUSH opcodes metadata extraction" {
+    const allocator = std.testing.allocator;
+    const PlanMinimalType = PlanMinimal(.{});
+    
+    // Test PUSH5, PUSH6, PUSH7 which weren't tested before
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH5), 0x11, 0x22, 0x33, 0x44, 0x55,
+        @intFromEnum(Opcode.PUSH6), 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF,
+        @intFromEnum(Opcode.PUSH7), 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testHandler;
+    }
+    
+    var plan = try PlanMinimalType.init(allocator, &bytecode, handlers);
+    defer plan.deinit();
+    
+    // Test PUSH5
+    var idx: PlanMinimalType.InstructionIndexType = 0;
+    const push5_val = plan.getMetadata(&idx, .PUSH5);
+    try std.testing.expectEqual(@as(u40, 0x1122334455), push5_val);
+    
+    // Test PUSH6
+    idx = 6;
+    const push6_val = plan.getMetadata(&idx, .PUSH6);
+    try std.testing.expectEqual(@as(u48, 0xAABBCCDDEEFF), push6_val);
+    
+    // Test PUSH7
+    idx = 13;
+    const push7_val = plan.getMetadata(&idx, .PUSH7);
+    try std.testing.expectEqual(@as(u56, 0x01020304050607), push7_val);
+}
+
+test "PlanMinimal consecutive JUMPDEST handling" {
+    const allocator = std.testing.allocator;
+    const PlanMinimalType = PlanMinimal(.{});
+    
+    // Bytecode with consecutive JUMPDESTs
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.PUSH1), 0x01,
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testHandler;
+    }
+    
+    var plan = try PlanMinimalType.init(allocator, &bytecode, handlers);
+    defer plan.deinit();
+    
+    // All JUMPDESTs should be valid
+    try std.testing.expect(plan.isValidJumpDest(0));
+    try std.testing.expect(plan.isValidJumpDest(1));
+    try std.testing.expect(plan.isValidJumpDest(2));
+    try std.testing.expect(plan.isValidJumpDest(5));
+    try std.testing.expect(plan.isValidJumpDest(6));
+    
+    // Non-JUMPDEST locations should be invalid
+    try std.testing.expect(!plan.isValidJumpDest(3)); // PUSH1
+    try std.testing.expect(!plan.isValidJumpDest(4)); // push data
+    try std.testing.expect(!plan.isValidJumpDest(7)); // STOP
+}
+
+test "PlanMinimal bytecode ending with PUSH without data" {
+    const allocator = std.testing.allocator;
+    const PlanMinimalType = PlanMinimal(.{});
+    
+    // Test various truncated PUSH at end of bytecode
+    const truncated_cases = [_]struct {
+        bytecode: []const u8,
+        expected_opcodes: []const usize,
+    }{
+        .{
+            .bytecode = &[_]u8{ @intFromEnum(Opcode.ADD), @intFromEnum(Opcode.PUSH1) },
+            .expected_opcodes = &[_]usize{ 0, 1 },
+        },
+        .{
+            .bytecode = &[_]u8{ @intFromEnum(Opcode.PUSH32) },
+            .expected_opcodes = &[_]usize{ 0 },
+        },
+        .{
+            .bytecode = &[_]u8{ @intFromEnum(Opcode.DUP1), @intFromEnum(Opcode.PUSH16), 0xFF },
+            .expected_opcodes = &[_]usize{ 0, 1 },
+        },
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testHandler;
+    }
+    
+    for (truncated_cases) |test_case| {
+        var plan = try PlanMinimalType.init(allocator, test_case.bytecode, handlers);
+        defer plan.deinit();
+        
+        // Verify expected opcodes are marked correctly
+        for (test_case.expected_opcodes) |pc| {
+            try std.testing.expect(plan.isOpcodeStart(pc));
+        }
+        
+        // Verify push data bytes are marked as non-opcode
+        for (0..test_case.bytecode.len) |pc| {
+            const is_expected = for (test_case.expected_opcodes) |expected_pc| {
+                if (pc == expected_pc) break true;
+            } else false;
+            
+            if (!is_expected) {
+                try std.testing.expect(!plan.isOpcodeStart(pc));
+            }
+        }
+    }
+}
+
+test "PlanMinimal JUMPDEST metadata access" {
+    const allocator = std.testing.allocator;
+    const PlanMinimalType = PlanMinimal(.{});
+    
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.ADD),
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testHandler;
+    }
+    
+    var plan = try PlanMinimalType.init(allocator, &bytecode, handlers);
+    defer plan.deinit();
+    
+    // Test getting JUMPDEST metadata from different positions
+    var idx: PlanMinimalType.InstructionIndexType = 0;
+    const jumpdest_meta1 = plan.getMetadata(&idx, .JUMPDEST);
+    try std.testing.expectEqual(@as(u32, 0), jumpdest_meta1.gas);
+    try std.testing.expectEqual(@as(u16, 0), jumpdest_meta1.min_stack);
+    try std.testing.expectEqual(@as(u16, 0), jumpdest_meta1.max_stack);
+    
+    idx = 1;
+    const jumpdest_meta2 = plan.getMetadata(&idx, .JUMPDEST);
+    try std.testing.expectEqual(@as(u32, 0), jumpdest_meta2.gas);
+    
+    idx = 3;
+    const jumpdest_meta3 = plan.getMetadata(&idx, .JUMPDEST);
+    try std.testing.expectEqual(@as(u32, 0), jumpdest_meta3.gas);
+}
+
+test "PlanMinimal getNextInstruction with varied opcodes" {
+    const allocator = std.testing.allocator;
+    const PlanMinimalType = PlanMinimal(.{});
+    
+    // Bytecode with various opcodes to test navigation
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PC),
+        @intFromEnum(Opcode.JUMPDEST),
+        @intFromEnum(Opcode.PUSH4), 0xDE, 0xAD, 0xBE, 0xEF,
+        @intFromEnum(Opcode.DUP1),
+        @intFromEnum(Opcode.SWAP1),
+        @intFromEnum(Opcode.PC),
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testHandler;
+    }
+    
+    var plan = try PlanMinimalType.init(allocator, &bytecode, handlers);
+    defer plan.deinit();
+    
+    var idx: PlanMinimalType.InstructionIndexType = 0;
+    
+    // PC -> JUMPDEST
+    _ = plan.getNextInstruction(&idx, .PC);
+    try std.testing.expectEqual(@as(PlanMinimalType.InstructionIndexType, 1), idx);
+    
+    // JUMPDEST -> PUSH4
+    _ = plan.getNextInstruction(&idx, .JUMPDEST);
+    try std.testing.expectEqual(@as(PlanMinimalType.InstructionIndexType, 2), idx);
+    
+    // PUSH4 -> DUP1 (skips 4 bytes of data)
+    _ = plan.getNextInstruction(&idx, .PUSH4);
+    try std.testing.expectEqual(@as(PlanMinimalType.InstructionIndexType, 7), idx);
+    
+    // DUP1 -> SWAP1
+    _ = plan.getNextInstruction(&idx, .DUP1);
+    try std.testing.expectEqual(@as(PlanMinimalType.InstructionIndexType, 8), idx);
+    
+    // SWAP1 -> PC
+    _ = plan.getNextInstruction(&idx, .SWAP1);
+    try std.testing.expectEqual(@as(PlanMinimalType.InstructionIndexType, 9), idx);
+    
+    // PC -> STOP
+    _ = plan.getNextInstruction(&idx, .PC);
+    try std.testing.expectEqual(@as(PlanMinimalType.InstructionIndexType, 10), idx);
+}
+
+test "PlanMinimal bytecode boundary edge cases" {
+    const allocator = std.testing.allocator;
+    const PlanMinimalType = PlanMinimal(.{});
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testHandler;
+    }
+    
+    // Test single opcode bytecode
+    const single_opcode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var plan1 = try PlanMinimalType.init(allocator, &single_opcode, handlers);
+    defer plan1.deinit();
+    
+    try std.testing.expect(plan1.isOpcodeStart(0));
+    try std.testing.expect(!plan1.isValidJumpDest(0));
+    
+    // Test single JUMPDEST
+    const single_jumpdest = [_]u8{@intFromEnum(Opcode.JUMPDEST)};
+    var plan2 = try PlanMinimalType.init(allocator, &single_jumpdest, handlers);
+    defer plan2.deinit();
+    
+    try std.testing.expect(plan2.isOpcodeStart(0));
+    try std.testing.expect(plan2.isValidJumpDest(0));
+    
+    // Test exactly at size boundary
+    const max_u8 = 255;
+    var boundary_bytecode = try allocator.alloc(u8, max_u8);
+    defer allocator.free(boundary_bytecode);
+    
+    // Fill with NOPs and end with JUMPDEST
+    @memset(boundary_bytecode[0..max_u8-1], @intFromEnum(Opcode.ORIGIN)); // Using ORIGIN as a simple opcode
+    boundary_bytecode[max_u8-1] = @intFromEnum(Opcode.JUMPDEST);
+    
+    var plan3 = try PlanMinimalType.init(allocator, boundary_bytecode, handlers);
+    defer plan3.deinit();
+    
+    try std.testing.expect(plan3.isOpcodeStart(0));
+    try std.testing.expect(plan3.isOpcodeStart(max_u8-1));
+    try std.testing.expect(plan3.isValidJumpDest(max_u8-1));
+}
+
+test "PlanMinimal getInstructionIndexForPc edge cases" {
+    const allocator = std.testing.allocator;
+    const PlanMinimalType = PlanMinimal(.{});
+    
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH2), 0x12, 0x34,
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testHandler;
+    }
+    
+    var plan = try PlanMinimalType.init(allocator, &bytecode, handlers);
+    defer plan.deinit();
+    
+    // Test all valid PC values
+    for (0..bytecode.len) |pc| {
+        const idx = plan.getInstructionIndexForPc(@intCast(pc));
+        try std.testing.expectEqual(@as(PlanMinimalType.InstructionIndexType, @intCast(pc)), idx);
+    }
+    
+    // Test beyond bytecode length
+    const beyond_idx = plan.getInstructionIndexForPc(@intCast(bytecode.len + 10));
+    try std.testing.expectEqual(@as(PlanMinimalType.InstructionIndexType, @intCast(bytecode.len + 10)), beyond_idx);
+    
+    // Test maximum PC value
+    const max_pc: PlanMinimalType.PcType = std.math.maxInt(PlanMinimalType.PcType);
+    const max_idx = plan.getInstructionIndexForPc(max_pc);
+    try std.testing.expectEqual(max_pc, max_idx);
+}
+
+test "PlanMinimal stress test with maximum PUSH data patterns" {
+    const allocator = std.testing.allocator;
+    const PlanMinimalType = PlanMinimal(.{});
+    
+    // Create bytecode with alternating PUSH8 and JUMPDEST
+    var bytecode_list = std.ArrayList(u8).init(allocator);
+    defer bytecode_list.deinit();
+    
+    // Pattern: PUSH8 <8 bytes> JUMPDEST (repeated)
+    for (0..10) |i| {
+        try bytecode_list.append(@intFromEnum(Opcode.PUSH8));
+        // Add 8 bytes of data, some being JUMPDEST opcodes
+        for (0..8) |j| {
+            if (j % 3 == 0) {
+                try bytecode_list.append(@intFromEnum(Opcode.JUMPDEST)); // Fake JUMPDEST in data
+            } else {
+                try bytecode_list.append(@intCast((i * 8 + j) & 0xFF));
+            }
+        }
+        try bytecode_list.append(@intFromEnum(Opcode.JUMPDEST)); // Real JUMPDEST
+    }
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testHandler;
+    }
+    
+    var plan = try PlanMinimalType.init(allocator, bytecode_list.items, handlers);
+    defer plan.deinit();
+    
+    // Verify only the real JUMPDESTs are detected
+    var pc: usize = 0;
+    for (0..10) |i| {
+        // PUSH8 opcode
+        try std.testing.expect(plan.isOpcodeStart(pc));
+        try std.testing.expect(!plan.isValidJumpDest(pc));
+        pc += 1;
+        
+        // 8 bytes of push data (none should be valid jumpdests)
+        for (0..8) |_| {
+            try std.testing.expect(!plan.isOpcodeStart(pc));
+            try std.testing.expect(!plan.isValidJumpDest(pc));
+            pc += 1;
+        }
+        
+        // Real JUMPDEST
+        try std.testing.expect(plan.isOpcodeStart(pc));
+        try std.testing.expect(plan.isValidJumpDest(pc));
+        pc += 1;
+        
+        _ = i;
+    }
+}
+
+test "PlanMinimal handler array bounds" {
+    const allocator = std.testing.allocator;
+    const PlanMinimalType = PlanMinimal(.{});
+    
+    // Test all possible opcode values
+    var bytecode_list = std.ArrayList(u8).init(allocator);
+    defer bytecode_list.deinit();
+    
+    // Add all valid opcodes (0x00 to 0xFF)
+    for (0..256) |opcode| {
+        try bytecode_list.append(@intCast(opcode));
+        // Add data for PUSH opcodes
+        if (opcode >= @intFromEnum(Opcode.PUSH1) and opcode <= @intFromEnum(Opcode.PUSH32)) {
+            const push_size = opcode - @intFromEnum(Opcode.PUSH1) + 1;
+            for (0..push_size) |_| {
+                try bytecode_list.append(0);
+            }
+        }
+    }
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testHandler;
+    }
+    
+    var plan = try PlanMinimalType.init(allocator, bytecode_list.items, handlers);
+    defer plan.deinit();
+    
+    // Navigate through and verify all handlers are accessible
+    var idx: PlanMinimalType.InstructionIndexType = 0;
+    while (idx < plan.bytecode.len()) {
+        const opcode = plan.bytecode.raw()[idx];
+        const handler = plan.handlers[opcode];
+        try std.testing.expectEqual(@intFromPtr(&testHandler), @intFromPtr(handler));
+        
+        // Skip to next opcode
+        if (opcode >= @intFromEnum(Opcode.PUSH1) and opcode <= @intFromEnum(Opcode.PUSH32)) {
+            const push_size = opcode - @intFromEnum(Opcode.PUSH1) + 1;
+            idx = @intCast(idx + 1 + push_size);
+        } else {
+            idx += 1;
+        }
+    }
+}

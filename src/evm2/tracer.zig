@@ -231,7 +231,6 @@ pub const DebuggingTracer = struct {
     
     /// Required tracer interface: called after each operation
     pub fn afterOp(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
-        _ = opcode;
         // Update statistics
         self.total_instructions += 1;
         
