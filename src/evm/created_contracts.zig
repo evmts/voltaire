@@ -169,7 +169,7 @@ test "created contracts edge case addresses" {
     try std.testing.expect(created.was_created_in_tx(max_addr));
     
     // Minimum non-zero address
-    const min_addr = Address{ .bytes = [_]u8{0} ** 19 ++ [_]u8{1} };
+    const min_addr: Address = [_]u8{0} ** 19 ++ [_]u8{1};
     try created.mark_created(min_addr);
     try std.testing.expect(created.was_created_in_tx(min_addr));
     
@@ -205,6 +205,6 @@ test "created contracts large number of addresses" {
     
     // Verify an address not added is not found
     const not_added_bytes = std.mem.toBytes(@as(u160, count));
-    const not_added = Address{ .bytes = not_added_bytes };
+    const not_added: Address = not_added_bytes;
     try std.testing.expect(!created.was_created_in_tx(not_added));
 }
