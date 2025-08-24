@@ -4519,24 +4519,17 @@ test "CREATE interaction - deployed contract can be called" {
             .timestamp = 1000,
             .difficulty = 100,
             .gas_limit = 30_000_000,
-            .coinbase = Address{0} ** 20,
+            .coinbase = ZERO_ADDRESS,
             .base_fee = 1_000_000_000,
             .prev_randao = [_]u8{0} ** 32,
         },
         TransactionContext{
-            .nonce = 0,
-            .gas_price = 20_000_000_000,
             .gas_limit = 10_000_000,
-            .to = null,
-            .value = 0,
-            .data = &[_]u8{},
+            .coinbase = ZERO_ADDRESS,
             .chain_id = 1,
-            .origin = Address{0x01} ** 20,
-            .blob_hashes = &[_][32]u8{},
-            .max_fee_per_blob_gas = null,
         },
         20_000_000_000,
-        Address{0x01} ** 20,
+        [_]u8{0x01} ** 20,
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -4574,7 +4567,7 @@ test "CREATE interaction - deployed contract can be called" {
     // Deploy the contract
     const create_result = try evm_instance.call(.{
         .create = .{
-            .caller = Address{0x01} ** 20,
+            .caller = [_]u8{0x01} ** 20,
             .value = 0,
             .init_code = init_code.items,
             .gas = 1_000_000,
@@ -4592,7 +4585,7 @@ test "CREATE interaction - deployed contract can be called" {
     // Step 2: Call the deployed contract
     const call_result = try evm_instance.call(.{
         .call = .{
-            .caller = Address{0x01} ** 20,
+            .caller = [_]u8{0x01} ** 20,
             .to = contract_address,
             .value = 0,
             .input = &[_]u8{}, // No input data
@@ -4627,24 +4620,17 @@ test "CREATE interaction - factory creates and initializes child contracts" {
             .timestamp = 1000,
             .difficulty = 100,
             .gas_limit = 30_000_000,
-            .coinbase = Address{0} ** 20,
+            .coinbase = ZERO_ADDRESS,
             .base_fee = 1_000_000_000,
             .prev_randao = [_]u8{0} ** 32,
         },
         TransactionContext{
-            .nonce = 0,
-            .gas_price = 20_000_000_000,
             .gas_limit = 10_000_000,
-            .to = null,
-            .value = 0,
-            .data = &[_]u8{},
+            .coinbase = ZERO_ADDRESS,
             .chain_id = 1,
-            .origin = Address{0x01} ** 20,
-            .blob_hashes = &[_][32]u8{},
-            .max_fee_per_blob_gas = null,
         },
         20_000_000_000,
-        Address{0x01} ** 20,
+        [_]u8{0x01} ** 20,
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -4738,7 +4724,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     
     const factory_result = try evm_instance.call(.{
         .call = .{
-            .caller = Address{0x01} ** 20,
+            .caller = [_]u8{0x01} ** 20,
             .to = null, // Contract creation
             .value = 0,
             .input = deploy_data.items,
@@ -4756,7 +4742,7 @@ test "CREATE interaction - factory creates and initializes child contracts" {
     // Call child contract to verify initialization
     const verify_result = try evm_instance.call(.{
         .call = .{
-            .caller = Address{0x01} ** 20,
+            .caller = [_]u8{0x01} ** 20,
             .to = child_address,
             .value = 0,
             .input = &[_]u8{},
@@ -4790,24 +4776,17 @@ test "CREATE interaction - contract creates contract that creates contract" {
             .timestamp = 1000,
             .difficulty = 100,
             .gas_limit = 30_000_000,
-            .coinbase = Address{0} ** 20,
+            .coinbase = ZERO_ADDRESS,
             .base_fee = 1_000_000_000,
             .prev_randao = [_]u8{0} ** 32,
         },
         TransactionContext{
-            .nonce = 0,
-            .gas_price = 20_000_000_000,
             .gas_limit = 20_000_000,
-            .to = null,
-            .value = 0,
-            .data = &[_]u8{},
+            .coinbase = ZERO_ADDRESS,
             .chain_id = 1,
-            .origin = Address{0x01} ** 20,
-            .blob_hashes = &[_][32]u8{},
-            .max_fee_per_blob_gas = null,
         },
         20_000_000_000,
-        Address{0x01} ** 20,
+        [_]u8{0x01} ** 20,
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -4920,7 +4899,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     // Execute level 1
     const result1 = try evm_instance.call(.{
         .call = .{
-            .caller = Address{0x01} ** 20,
+            .caller = [_]u8{0x01} ** 20,
             .to = null,
             .value = 0,
             .input = level1_code.items,
@@ -4932,7 +4911,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     try std.testing.expect(result1.success);
     
     // Get level 2 address from storage
-    const level2_addr_u256 = evm_instance.get_storage(Address{0x01} ** 20, 0);
+    const level2_addr_u256 = evm_instance.get_storage([_]u8{0x01} ** 20, 0);
     var level2_addr: Address = undefined;
     const bytes = std.mem.toBytes(level2_addr_u256);
     @memcpy(&level2_addr, bytes[12..32]);
@@ -4940,7 +4919,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     // Call level 2 to get level 3 address
     const result2 = try evm_instance.call(.{
         .call = .{
-            .caller = Address{0x01} ** 20,
+            .caller = [_]u8{0x01} ** 20,
             .to = level2_addr,
             .value = 0,
             .input = &[_]u8{},
@@ -4958,7 +4937,7 @@ test "CREATE interaction - contract creates contract that creates contract" {
     // Call level 3 to verify it returns 99
     const result3 = try evm_instance.call(.{
         .call = .{
-            .caller = Address{0x01} ** 20,
+            .caller = [_]u8{0x01} ** 20,
             .to = level3_addr,
             .value = 0,
             .input = &[_]u8{},
@@ -4991,24 +4970,17 @@ test "CREATE interaction - created contract modifies parent storage" {
             .timestamp = 1000,
             .difficulty = 100,
             .gas_limit = 30_000_000,
-            .coinbase = Address{0} ** 20,
+            .coinbase = ZERO_ADDRESS,
             .base_fee = 1_000_000_000,
             .prev_randao = [_]u8{0} ** 32,
         },
         TransactionContext{
-            .nonce = 0,
-            .gas_price = 20_000_000_000,
             .gas_limit = 10_000_000,
-            .to = null,
-            .value = 0,
-            .data = &[_]u8{},
+            .coinbase = ZERO_ADDRESS,
             .chain_id = 1,
-            .origin = Address{0x01} ** 20,
-            .blob_hashes = &[_][32]u8{},
-            .max_fee_per_blob_gas = null,
         },
         20_000_000_000,
-        Address{0x01} ** 20,
+        [_]u8{0x01} ** 20,
         .CANCUN,
     );
     defer evm_instance.deinit();
@@ -5101,7 +5073,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     // Deploy parent contract
     const deploy_result = try evm_instance.call(.{
         .call = .{
-            .caller = Address{0x01} ** 20,
+            .caller = [_]u8{0x01} ** 20,
             .to = null,
             .value = 0,
             .input = parent_code.items,
@@ -5113,7 +5085,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     try std.testing.expect(deploy_result.success);
     
     // Get parent address (deterministic based on sender nonce)
-    const parent_addr = Address{0x01} ** 20; // Simplified for test
+    const parent_addr = [_]u8{0x01} ** 20; // Simplified for test
     
     // Get child address from parent's storage
     const child_addr_u256 = evm_instance.get_storage(parent_addr, 1);
@@ -5128,7 +5100,7 @@ test "CREATE interaction - created contract modifies parent storage" {
     // Call child contract, which should call back to parent
     const call_result = try evm_instance.call(.{
         .call = .{
-            .caller = Address{0x02} ** 20,
+            .caller = [_]u8{0x02} ** 20,
             .to = child_addr,
             .value = 0,
             .input = &[_]u8{},
