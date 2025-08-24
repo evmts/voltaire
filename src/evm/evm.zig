@@ -1370,7 +1370,7 @@ test "EVM call() method routes to different handlers" {
     _ = evm.call(create2_params) catch {};
 }
 
-test "EVM call_regular handler basic functionality" {
+test "EVM call_handler basic functionality" {
     const testing = std.testing;
     const allocator = testing.allocator;
     
@@ -1410,7 +1410,7 @@ test "EVM call_regular handler basic functionality" {
     var evm = try DefaultEvm.init(allocator, db_interface, block_info, tx_context, 0, ZERO_ADDRESS, .BERLIN);
     defer evm.deinit();
     
-    // Test call_regular directly (once it's implemented)
+    // Test call_handler directly (once it's implemented)
     const params = struct {
         caller: Address,
         to: Address,
@@ -1426,7 +1426,7 @@ test "EVM call_regular handler basic functionality" {
     };
     
     // For now this will return error.InvalidJump as it's not implemented
-    const result = evm.call_regular(params) catch |err| {
+    const result = evm.call_handler(params) catch |err| {
         try testing.expectEqual(DefaultEvm.Error.InvalidJump, err);
         return;
     };
