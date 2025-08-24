@@ -10,15 +10,15 @@ const plan_minimal_mod = @import("plan_minimal.zig");
 const Planner = @import("planner.zig").Planner;
 // REVM integration disabled - module not available
 
-// Import u256 type
-const u256 = @import("primitives").u256;
+// Import primitives
+const primitives = @import("primitives");
 
 /// Metadata for REVM trace validation
 pub const RevmTraceData = struct {
     pc: u64,
     opcode: u8,
-    stack_before: []const u256,
-    stack_after: []const u256,
+    stack_before: []const primitives.u256,
+    stack_after: []const primitives.u256,
     memory_before: []const u8,
     memory_after: []const u8,
     gas_remaining: u64,
@@ -37,15 +37,15 @@ const RevmTraceEntry = struct {
     pc: u64,
     op: u8,
     gas: u64,
-    stack: []const u256,
-    stack_after: ?[]const u256 = null,
+    stack: []const primitives.u256,
+    stack_after: ?[]const primitives.u256 = null,
     memory: ?[]const u8 = null,
     memory_after: ?[]const u8 = null,
 };
 
 /// Complete frame state for comparison
 pub const FrameState = struct {
-    stack: []u256,
+    stack: []primitives.u256,
     stack_height: usize,
     memory: []u8,
     memory_size: usize,
@@ -141,6 +141,9 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
         revm_trace: ?[]RevmTraceData = null,
         /// Current trace index
         trace_index: usize = 0,
+        /// Storage for debug handler contexts (pre-allocated pool)
+        debug_contexts: []DebugHandlerContext,
+        next_context_idx: usize = 0,
         
         /// Initialize a DebugPlan with advanced and minimal plans.
         pub fn init(
@@ -536,7 +539,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
         
         /// Debug handler result for interception
         pub const DebugHandlerResult = union(enum) {
-            continue: struct {
+            continue_execution: struct {
                 next_handler: *const HandlerFn,
                 instruction_idx: InstructionIndexType,
             },
@@ -544,7 +547,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
                 reason: []const u8,
                 gas_remaining: i64,
             },
-            error: anyerror,
+            execution_error: anyerror,
         };
         
         /// Handler context for debug execution
@@ -577,16 +580,12 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
                 // TODO: Execute minimal plan opcodes in parallel and compare
                 
                 // Return continuation - in real implementation this would come from handler
-                return DebugHandlerResult{ .continue = .{
+                return DebugHandlerResult{ .continue_execution = .{
                     .next_handler = self.original_handler,
                     .instruction_idx = self.instruction_idx + 1,
                 }};
             }
         };
-        
-        /// Storage for debug handler contexts (pre-allocated pool)
-        debug_contexts: []DebugHandlerContext,
-        next_context_idx: usize = 0,
         
         /// Execute sidecar opcodes on the minimal plan
         fn executeSidecarOpcodes(
@@ -619,7 +618,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             // TODO: Compare sidecar frame state with main frame state
             _ = frame_before;
             
-            return DebugHandlerResult{ .continue = .{
+            return DebugHandlerResult{ .continue_execution = .{
                 .next_handler = ctx.original_handler,
                 .instruction_idx = ctx.instruction_idx + 1,
             }};

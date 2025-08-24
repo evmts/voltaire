@@ -624,7 +624,6 @@ test "PlanConfig validation" {
 
 test "Plan getMetadata for PUSH opcodes" {
     const allocator = std.testing.allocator;
-    const PlanType = Plan(.{});
     
     // Create a plan with test data
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -642,7 +641,7 @@ test "Plan getMetadata for PUSH opcodes" {
     try stream.append(.{ .handler = &testHandler });
     try stream.append(.{ .inline_value = std.math.maxInt(u64) });
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -673,7 +672,7 @@ test "Plan getMetadata for large PUSH opcodes" {
     const PlanType = Plan(.{});
     
     // Create constants array
-    var constants = try allocator.alloc(Plan.WordType, 2);
+    var constants = try allocator.alloc(PlanType.WordType, 2);
     defer allocator.free(constants);
     constants[0] = 0x123456789ABCDEF0123456789ABCDEF0;
     constants[1] = std.math.maxInt(u256);
@@ -690,7 +689,7 @@ test "Plan getMetadata for large PUSH opcodes" {
     try stream.append(.{ .handler = &testHandler });
     try stream.append(.{ .pointer_index = 1 });
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = constants,
         .pc_to_instruction_idx = null,
@@ -716,7 +715,6 @@ test "Plan getMetadata for large PUSH opcodes" {
 
 test "Plan getMetadata for JUMPDEST" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
     
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
@@ -732,7 +730,7 @@ test "Plan getMetadata for JUMPDEST" {
         try stream.append(.{ .handler = &testHandler });
         try stream.append(.{ .jumpdest_metadata = metadata });
         
-        var plan = Plan{
+        const plan = Plan{
             .instructionStream = try stream.toOwnedSlice(),
             .u256_constants = &.{},
             .pc_to_instruction_idx = null,
@@ -750,7 +748,6 @@ test "Plan getMetadata for JUMPDEST" {
 
 test "Plan getMetadata for PC opcode" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
     
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
@@ -759,7 +756,7 @@ test "Plan getMetadata for PC opcode" {
     try stream.append(.{ .handler = &testHandler });
     try stream.append(.{ .inline_value = 1234 });
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -774,10 +771,10 @@ test "Plan getMetadata for PC opcode" {
 
 test "Plan getMetadata for synthetic opcodes" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create constants
-    var constants = try allocator.alloc(Plan.WordType, 1);
+    var constants = try allocator.alloc(PlanType.WordType, 1);
     defer allocator.free(constants);
     constants[0] = 0xDEADBEEF;
     
@@ -792,7 +789,7 @@ test "Plan getMetadata for synthetic opcodes" {
     try stream.append(.{ .handler = &testHandler });
     try stream.append(.{ .pointer_index = 0 });
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = constants,
         .pc_to_instruction_idx = null,
@@ -818,7 +815,6 @@ test "Plan getMetadata for synthetic opcodes" {
 
 test "Plan getNextInstruction without metadata" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
     
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
@@ -829,7 +825,7 @@ test "Plan getNextInstruction without metadata" {
     const handler2: *const HandlerFn = &testHandler;
     try stream.append(.{ .handler = handler2 });
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -845,7 +841,6 @@ test "Plan getNextInstruction without metadata" {
 
 test "Plan getNextInstruction with metadata" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
     
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
@@ -857,7 +852,7 @@ test "Plan getNextInstruction with metadata" {
     const handler2: *const HandlerFn = &testHandler;
     try stream.append(.{ .handler = handler2 });
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -873,11 +868,11 @@ test "Plan getNextInstruction with metadata" {
 
 test "Plan deinit" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = try allocator.alloc(InstructionElement, 10),
-        .u256_constants = try allocator.alloc(Plan.WordType, 5),
+        .u256_constants = try allocator.alloc(PlanType.WordType, 5),
         .pc_to_instruction_idx = null,
     };
     
@@ -1287,10 +1282,9 @@ test "PlanMinimal PC opcode returns correct value" {
 
 test "Plan error boundary conditions" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
     
     // Test empty instruction stream
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = &.{},
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -1307,7 +1301,7 @@ test "Plan error boundary conditions" {
 
 test "Plan PC to instruction mapping" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create PC mapping
     var pc_map = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator);
@@ -1322,7 +1316,7 @@ test "Plan PC to instruction mapping" {
     defer stream.deinit();
     try stream.resize(10); // Make sure we have enough instructions
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = stream.items,
         .u256_constants = &.{},
         .pc_to_instruction_idx = pc_map,
@@ -1341,7 +1335,7 @@ test "Plan PC to instruction mapping" {
 
 test "Plan synthetic opcodes comprehensive" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Test all synthetic opcode variants
     const synthetic_opcodes = [_]u8{
@@ -1358,7 +1352,7 @@ test "Plan synthetic opcodes comprehensive" {
     };
     
     // Create constants array
-    var constants = try allocator.alloc(Plan.WordType, 5);
+    const constants = try allocator.alloc(PlanType.WordType, 5);
     defer allocator.free(constants);
     for (constants, 0..) |*c, i| {
         c.* = @as(u256, @intCast(1000 + i));
@@ -1384,7 +1378,7 @@ test "Plan synthetic opcodes comprehensive" {
         }
     }
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = constants,
         .pc_to_instruction_idx = null,
@@ -1421,11 +1415,11 @@ test "Plan synthetic opcodes comprehensive" {
 
 test "Plan large instruction stream" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create a large instruction stream to test memory handling
     const stream_size = 1000;
-    var stream = try allocator.alloc(InstructionElement, stream_size);
+    const stream = try allocator.alloc(InstructionElement, stream_size);
     defer allocator.free(stream);
     
     // Fill with alternating handlers and metadata
@@ -1437,13 +1431,13 @@ test "Plan large instruction stream" {
         }
     }
     
-    var large_constants = try allocator.alloc(Plan.WordType, 100);
+    const large_constants = try allocator.alloc(PlanType.WordType, 100);
     defer allocator.free(large_constants);
     for (large_constants, 0..) |*c, i| {
         c.* = @as(u256, @intCast(i * i));
     }
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = stream,
         .u256_constants = large_constants,
         .pc_to_instruction_idx = null,
@@ -1470,16 +1464,16 @@ test "Plan large instruction stream" {
 
 test "Plan memory management stress test" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create and destroy multiple plans to test memory management
     for (0..20) |cycle| {
         const stream_size = 10 + cycle;
         const constants_size = 5 + (cycle % 10);
         
-        var plan = Plan{
+        const plan = Plan{
             .instructionStream = try allocator.alloc(InstructionElement, stream_size),
-            .u256_constants = try allocator.alloc(Plan.WordType, constants_size),
+            .u256_constants = try allocator.alloc(PlanType.WordType, constants_size),
             .pc_to_instruction_idx = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator),
         };
         
@@ -1523,7 +1517,7 @@ test "Plan memory management stress test" {
 
 test "Plan platform-specific InstructionElement handling" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Test that InstructionElement behaves correctly on current platform
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -1545,7 +1539,7 @@ test "Plan platform-specific InstructionElement handling" {
         try stream.append(.{ .jumpdest_pointer = metadata });
     }
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = stream.items,
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -1575,7 +1569,7 @@ test "Plan platform-specific InstructionElement handling" {
 
 test "Plan getNextInstruction edge cases" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
@@ -1585,7 +1579,7 @@ test "Plan getNextInstruction edge cases" {
     try stream.append(.{ .inline_value = 42 });       // idx 1 (metadata)
     try stream.append(.{ .handler = &testHandler });  // idx 2
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -1607,7 +1601,7 @@ test "Plan getNextInstruction edge cases" {
 
 test "Plan debugPrint functionality" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create a simple plan for debug printing
     var stream = std.ArrayList(InstructionElement).init(allocator);
@@ -1617,7 +1611,7 @@ test "Plan debugPrint functionality" {
     try stream.append(.{ .inline_value = 42 });
     try stream.append(.{ .handler = &testHandler });
     
-    var constants = try allocator.alloc(Plan.WordType, 2);
+    var constants = try allocator.alloc(PlanType.WordType, 2);
     defer allocator.free(constants);
     constants[0] = 0xDEADBEEF;
     constants[1] = 0xCAFEBABE;
@@ -1627,7 +1621,7 @@ test "Plan debugPrint functionality" {
     try pc_map.put(0, 0);
     try pc_map.put(10, 2);
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = constants,
         .pc_to_instruction_idx = pc_map,
@@ -1666,10 +1660,10 @@ test "Plan configuration validation comprehensive" {
     
     inline for (valid_configs) |cfg| {
         comptime cfg.validate();
-        const Plan = Plan(cfg);
+        const PlanType = Plan(cfg);
         
         // Test type selections
-        try std.testing.expectEqual(cfg.WordType, Plan.WordType);
+        try std.testing.expectEqual(cfg.WordType, PlanType.WordType);
         if (cfg.maxBytecodeSize <= 65535) {
             try std.testing.expectEqual(u16, Plan.PcType);
         } else {
@@ -1680,7 +1674,7 @@ test "Plan configuration validation comprehensive" {
     
     // Test creating plans with different configs
     const Plan128 = Plan(.{ .WordType = u128 });
-    var plan128 = Plan128{
+    const plan128 = Plan128{
         .instructionStream = &.{},
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -1688,7 +1682,7 @@ test "Plan configuration validation comprehensive" {
     try std.testing.expectEqual(u128, @TypeOf(plan128.u256_constants).Elem);
     
     const Plan512 = Plan(.{ .WordType = u512 });
-    var plan512 = Plan512{
+    const plan512 = Plan512{
         .instructionStream = &.{},
         .u256_constants = &.{},
         .pc_to_instruction_idx = null,
@@ -1698,13 +1692,13 @@ test "Plan configuration validation comprehensive" {
 
 test "Plan integration with all opcode types" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Create comprehensive instruction stream covering all opcode categories
     var stream = std.ArrayList(InstructionElement).init(allocator);
     defer stream.deinit();
     
-    var constants = try allocator.alloc(Plan.WordType, 10);
+    var constants = try allocator.alloc(PlanType.WordType, 10);
     defer allocator.free(constants);
     for (constants, 0..) |*c, i| {
         c.* = @as(u256, @intCast(0x1000 + i));
@@ -1712,7 +1706,7 @@ test "Plan integration with all opcode types" {
     
     // Regular PUSH opcodes (PUSH1-PUSH8)
     const small_push_opcodes = [_]Opcode{ .PUSH1, .PUSH2, .PUSH3, .PUSH4, .PUSH5, .PUSH6, .PUSH7, .PUSH8 };
-    for (small_push_opcodes, 0..) |opcode, i| {
+    for (small_push_opcodes, 0..) |opcode, _| {
         try stream.append(.{ .handler = &testHandler });
         try stream.append(.{ .inline_value = @as(usize, 10 + i) });
     }
@@ -1745,7 +1739,7 @@ test "Plan integration with all opcode types" {
     try stream.append(.{ .handler = &testHandler });
     try stream.append(.{ .pointer_index = 5 });
     
-    var plan = Plan{
+    const plan = Plan{
         .instructionStream = try stream.toOwnedSlice(),
         .u256_constants = constants,
         .pc_to_instruction_idx = null,
@@ -1758,7 +1752,7 @@ test "Plan integration with all opcode types" {
     
     // Test all small PUSH opcodes
     var idx: Plan.InstructionIndexType = 0;
-    for (small_push_opcodes, 0..) |opcode, i| {
+    for (small_push_opcodes, 0..) |opcode, _| {
         const metadata = plan.getMetadata(&idx, opcode);
         const expected: usize = 10 + i;
         
@@ -1875,7 +1869,7 @@ test "Plan and PlanMinimal interoperability" {
 
 test "Plan extreme edge cases and error resilience" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Test with zero-size arrays
     var empty_plan = Plan{
@@ -1910,15 +1904,15 @@ test "Plan extreme edge cases and error resilience" {
 
 test "Plan comprehensive deinit behavior" {
     const allocator = std.testing.allocator;
-    const Plan = Plan(.{});
+    const PlanType = Plan(.{});
     
     // Test deinit with various configurations
     const test_sizes = [_]usize{ 0, 1, 10, 100, 1000 };
     
     for (test_sizes) |size| {
-        var plan = Plan{
+        const plan = Plan{
             .instructionStream = if (size > 0) try allocator.alloc(InstructionElement, size) else &.{},
-            .u256_constants = if (size > 0) try allocator.alloc(Plan.WordType, size / 2 + 1) else &.{},
+            .u256_constants = if (size > 0) try allocator.alloc(PlanType.WordType, size / 2 + 1) else &.{},
             .pc_to_instruction_idx = if (size > 10) std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator) else null,
         };
         
@@ -2173,7 +2167,7 @@ test "Plan synthetic opcode edge cases and error handling" {
     
     // Test all 10 synthetic opcodes with edge cases
     const synthetic_tests = [_]struct {
-        synthetic: SyntheticOpcode,
+        synthetic: OpcodeSynthetic,
         description: []const u8,
     }{
         .{ .synthetic = .PUSH_ADD, .description = "PUSH1 1 ADD" },
