@@ -142,7 +142,7 @@ pub fn execute_ecrecover(allocator: std.mem.Allocator, input: []const u8, gas_li
     @memcpy(padded_input[0..copy_len], input[0..copy_len]);
 
     // Parse input: hash(32) + v(32) + r(32) + s(32)
-    // const hash = padded_input[0..32];  // TODO: Use this when implementing proper ECDSA recovery
+    const hash = padded_input[0..32];
     const v_bytes = padded_input[32..64];
     const r_bytes = padded_input[64..96];
     const s_bytes = padded_input[96..128];
@@ -179,9 +179,12 @@ pub fn execute_ecrecover(allocator: std.mem.Allocator, input: []const u8, gas_li
     const r = bytesToU256(r_bytes);
     const s = bytesToU256(s_bytes);
 
-    // Validate r and s are in valid range (1 <= r,s < n)
-    const secp256k1_n: u256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
-    if (r == 0 or r >= secp256k1_n or s == 0 or s >= secp256k1_n) {
+    // Convert v to recovery_id (0 or 1)
+    const recovery_id = v - 27;
+
+    // Use the actual secp256k1 implementation from crypto module
+    const address = crypto.secp256k1.unaudited_recover_address(hash, recovery_id, r, s) catch {
+        // Return zero address on recovery failure
         const empty_output = try allocator.alloc(u8, 32);
         @memset(empty_output, 0);
         return PrecompileOutput{
@@ -189,15 +192,12 @@ pub fn execute_ecrecover(allocator: std.mem.Allocator, input: []const u8, gas_li
             .gas_used = required_gas,
             .success = true,
         };
-    }
+    };
 
-    // For now, return zero address for invalid signatures (placeholder implementation)
-    // A complete implementation would use proper secp256k1 recovery
+    // Format output: 20-byte address + 12 zero bytes padding
     const output = try allocator.alloc(u8, 32);
     @memset(output, 0);
-    
-    // TODO: Implement proper ECDSA signature recovery
-    // This is a placeholder that returns zero address for all inputs
+    @memcpy(output[12..32], &address);
 
     return PrecompileOutput{
         .output = output,
@@ -252,10 +252,14 @@ pub fn execute_ripemd160(allocator: std.mem.Allocator, input: []const u8, gas_li
     const output = try allocator.alloc(u8, 32);
     @memset(output, 0);
 
-    // TODO: Implement proper RIPEMD-160 hash
-    // For now, use a placeholder that zeros the output
-    // A complete implementation would use proper RIPEMD-160
-    @memset(output[12..32], 0);
+    // Use the actual RIPEMD160 implementation from crypto module
+    var hasher = crypto.ripemd160.RIPEMD160.init();
+    hasher.update(input);
+    var hash: [20]u8 = undefined;
+    hasher.final(&hash);
+    
+    // Copy the 20-byte hash to the output with 12 bytes of padding at the front
+    @memcpy(output[12..32], &hash);
 
     return PrecompileOutput{
         .output = output,
@@ -350,34 +354,16 @@ pub fn execute_modexp(allocator: std.mem.Allocator, input: []const u8, gas_limit
     // Perform modular exponentiation
     const output = try allocator.alloc(u8, mod_len);
     
-    // TODO: Implement proper modular exponentiation
-    // For now, use a simple placeholder implementation
-    if (mod_len == 1 and base.len == 1 and exp.len == 1 and mod.len == 1) {
-        // Simple case for small numbers
-        const base_val = if (base.len > 0) base[0] else 0;
-        const exp_val = if (exp.len > 0) exp[0] else 0;
-        const mod_val = if (mod.len > 0) mod[0] else 1;
-        
-        if (mod_val == 0) {
-            @memset(output, 0);
-        } else {
-            var result: u64 = 1;
-            var base_mod = @as(u64, base_val) % mod_val;
-            var exp_remaining = exp_val;
-            
-            while (exp_remaining > 0) {
-                if (exp_remaining & 1 == 1) {
-                    result = (result * base_mod) % mod_val;
-                }
-                base_mod = (base_mod * base_mod) % mod_val;
-                exp_remaining >>= 1;
-            }
-            output[0] = @intCast(result);
-        }
-    } else {
-        // For larger numbers, return zero (placeholder)
+    // Use the actual modexp implementation from crypto module
+    crypto.modexp.unaudited_modexp(allocator, base, exp, mod, output) catch {
+        // On error, return zeros (following EVM spec)
         @memset(output, 0);
-    }
+        return PrecompileOutput{
+            .output = output,
+            .gas_used = required_gas,
+            .success = true,
+        };
+    };
 
     return PrecompileOutput{
         .output = output,
@@ -588,16 +574,31 @@ pub fn execute_blake2f(allocator: std.mem.Allocator, input: []const u8, gas_limi
     const output = try allocator.alloc(u8, 64);
     
     // Parse input components
-    const h = input[4..68];   // 64 bytes state
-    const m = input[68..196]; // 128 bytes message  
-    const t = input[196..212]; // 16 bytes counter
+    const h_bytes = input[4..68];   // 64 bytes state (8 x u64)
+    const m_bytes = input[68..196]; // 128 bytes message (16 x u64)
+    const t_bytes = input[196..212]; // 16 bytes counter (2 x u64)
     
-    // TODO: Implement proper BLAKE2F compression
-    // For now, return zero output (placeholder implementation)
-    _ = h;
-    _ = m;
-    _ = t;
-    @memset(output, 0);
+    // Convert bytes to u64 arrays (little-endian as per spec)
+    var h: [8]u64 = undefined;
+    var m: [16]u64 = undefined;
+    var t: [2]u64 = undefined;
+    
+    for (0..8) |i| {
+        h[i] = std.mem.readInt(u64, h_bytes[i * 8..][0..8], .little);
+    }
+    for (0..16) |i| {
+        m[i] = std.mem.readInt(u64, m_bytes[i * 8..][0..8], .little);
+    }
+    t[0] = std.mem.readInt(u64, t_bytes[0..8], .little);
+    t[1] = std.mem.readInt(u64, t_bytes[8..16], .little);
+    
+    // Use the actual blake2f implementation from crypto module
+    crypto.blake2.unaudited_blake2f_compress(&h, &m, t, f != 0, rounds);
+    
+    // Convert result back to bytes (little-endian)
+    for (0..8) |i| {
+        std.mem.writeInt(u64, output[i * 8..][0..8], h[i], .little);
+    }
 
     return PrecompileOutput{
         .output = output,
