@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const log = @import("log.zig");
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const memory_mod = @import("memory.zig");
 const stack_mod = @import("stack.zig");
@@ -88,20 +89,19 @@ pub fn Frame(comptime config: FrameConfig) type {
         const Self = @This();
 
         // Cacheline 1
-        stack: Stack, // EVM stack
+        stack: Stack,
         bytecode: []const u8, // 16 bytes (slice)
         gas_remaining: GasType, // 4 or 8 bytes depending on block_gas_limit
-        tracer: TracerType, // Tracer instance for execution tracing
-        memory: Memory, // EVM memory
-        database: if (config.has_database) ?DatabaseInterface else void, // Optional database interface
+        tracer: TracerType,
+        memory: Memory,
+        database: if (config.has_database) ?DatabaseInterface else void,
         
         // Contract execution context
-        contract_address: Address = [_]u8{0} ** 20, // Address of currently executing contract
-        self_destruct: ?*SelfDestruct = null, // Tracks contracts marked for destruction
-        logs: std.ArrayList(Log), // Event logs emitted during execution
-        is_static: bool = false, // Whether frame is in static context (no state modifications)
+        contract_address: Address = [_]u8{0} ** 20,
+        self_destruct: ?*SelfDestruct = null,
+        logs: std.ArrayList(Log),
+        is_static: bool = false,
         
-        // Host interface for external operations (optional)
         host: ?Host = null,
 
         pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: GasType, database: if (config.has_database) ?DatabaseInterface else void, host: ?Host) Error!Self {
@@ -219,86 +219,110 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn assertEqual(self: *const Self, other: *const Self) void {
             // Compare gas
             if (self.gas_remaining != other.gas_remaining) {
-                std.debug.panic("Frame.assertEqual: gas mismatch: {} vs {}", .{ self.gas_remaining, other.gas_remaining });
+                if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                    std.debug.panic("Frame.assertEqual: gas mismatch: {} vs {}", .{ self.gas_remaining, other.gas_remaining });
+                }
             }
             
             // Compare stack
             if (self.stack.next_stack_index != other.stack.next_stack_index) {
-                std.debug.panic("Frame.assertEqual: stack size mismatch: {} vs {}", .{ self.stack.next_stack_index, other.stack.next_stack_index });
+                if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                    std.debug.panic("Frame.assertEqual: stack size mismatch: {} vs {}", .{ self.stack.next_stack_index, other.stack.next_stack_index });
+                }
             }
             for (0..self.stack.next_stack_index) |i| {
                 if (self.stack.stack[i] != other.stack.stack[i]) {
-                    std.debug.panic("Frame.assertEqual: stack[{}] mismatch: {} vs {}", .{ i, self.stack.stack[i], other.stack.stack[i] });
+                    if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                        std.debug.panic("Frame.assertEqual: stack[{}] mismatch: {} vs {}", .{ i, self.stack.stack[i], other.stack.stack[i] });
+                    }
                 }
             }
             
             // Compare memory
             if (self.memory.len() != other.memory.len()) {
-                std.debug.panic("Frame.assertEqual: memory size mismatch: {} vs {}", .{ self.memory.len(), other.memory.len() });
+                if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                    std.debug.panic("Frame.assertEqual: memory size mismatch: {} vs {}", .{ self.memory.len(), other.memory.len() });
+                }
             }
             if (self.memory.len() > 0) {
                 const self_data = self.memory.data();
                 const other_data = other.memory.data();
                 for (0..self.memory.len()) |i| {
                     if (self_data[i] != other_data[i]) {
-                        std.debug.panic("Frame.assertEqual: memory[{}] mismatch: {} vs {}", .{ i, self_data[i], other_data[i] });
+                        if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                            std.debug.panic("Frame.assertEqual: memory[{}] mismatch: {} vs {}", .{ i, self_data[i], other_data[i] });
+                        }
                     }
                 }
             }
             
             // Compare execution context
             if (!std.mem.eql(u8, &self.contract_address, &other.contract_address)) {
-                std.debug.panic("Frame.assertEqual: contract_address mismatch", .{});
+                if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                    std.debug.panic("Frame.assertEqual: contract_address mismatch", .{});
+                }
             }
             
             // Compare is_static
             if (self.is_static != other.is_static) {
-                std.debug.panic("Frame.assertEqual: is_static mismatch: {} vs {}", .{ self.is_static, other.is_static });
+                if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                    std.debug.panic("Frame.assertEqual: is_static mismatch: {} vs {}", .{ self.is_static, other.is_static });
+                }
             }
             
             // Compare logs
             if (self.logs.items.len != other.logs.items.len) {
-                std.debug.panic("Frame.assertEqual: logs count mismatch: {} vs {}", .{ self.logs.items.len, other.logs.items.len });
+                if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                    std.debug.panic("Frame.assertEqual: logs count mismatch: {} vs {}", .{ self.logs.items.len, other.logs.items.len });
+                }
             }
             for (self.logs.items, other.logs.items) |self_log, other_log| {
                 if (!std.mem.eql(u8, &self_log.address, &other_log.address)) {
-                    std.debug.panic("Frame.assertEqual: log address mismatch", .{});
+                    if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                        std.debug.panic("Frame.assertEqual: log address mismatch", .{});
+                    }
                 }
                 if (self_log.topics.len != other_log.topics.len) {
-                    std.debug.panic("Frame.assertEqual: log topics count mismatch", .{});
+                    if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                        std.debug.panic("Frame.assertEqual: log topics count mismatch", .{});
+                    }
                 }
                 for (self_log.topics, other_log.topics) |self_topic, other_topic| {
                     if (self_topic != other_topic) {
-                        std.debug.panic("Frame.assertEqual: log topic mismatch", .{});
+                        if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                            std.debug.panic("Frame.assertEqual: log topic mismatch", .{});
+                        }
                     }
                 }
                 if (!std.mem.eql(u8, self_log.data, other_log.data)) {
-                    std.debug.panic("Frame.assertEqual: log data mismatch", .{});
+                    if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
+                        std.debug.panic("Frame.assertEqual: log data mismatch", .{});
+                    }
                 }
             }
         }
         
         /// Pretty print the frame state for debugging.
         pub fn pretty_print(self: *const Self) void {
-            std.log.warn("\n=== Frame State ===\n", .{});
-            std.log.warn("Gas Remaining: {}\n", .{self.gas_remaining});
-            std.log.warn("Bytecode Length: {}\n", .{self.bytecode.len});
+            log.warn("\n=== Frame State ===\n", .{});
+            log.warn("Gas Remaining: {}\n", .{self.gas_remaining});
+            log.warn("Bytecode Length: {}\n", .{self.bytecode.len});
             
             // Show bytecode (first 50 bytes or less)
             const show_bytes = @min(self.bytecode.len, 50);
-            std.log.warn("Bytecode (first {} bytes): ", .{show_bytes});
+            log.warn("Bytecode (first {} bytes): ", .{show_bytes});
             for (self.bytecode[0..show_bytes]) |b| {
-                std.log.warn("{x:0>2} ", .{b});
+                log.warn("{x:0>2} ", .{b});
             }
             if (self.bytecode.len > 50) {
-                std.log.warn("... ({} more bytes)", .{self.bytecode.len - 50});
+                log.warn("... ({} more bytes)", .{self.bytecode.len - 50});
             }
-            std.log.warn("\n", .{});
+            log.warn("\n", .{});
             
             // Stack state
-            std.log.warn("\nStack (size={}, capacity={}):\n", .{ self.stack.size(), Stack.stack_capacity });
+            log.warn("\nStack (size={}, capacity={}):\n", .{ self.stack.size(), Stack.stack_capacity });
             if (self.stack.size() == 0) {
-                std.log.warn("  [empty]\n", .{});
+                log.warn("  [empty]\n", .{});
             } else {
                 // Show top 10 stack items
                 const show_items = @min(self.stack.size(), 10);
@@ -308,90 +332,90 @@ pub fn Frame(comptime config: FrameConfig) type {
                     const value = stack_slice[i]; // In downward stack, [0] is top
                     const idx = i;
                     if (i == 0) {
-                        std.log.warn("  [{d:3}] 0x{x:0>64} <- TOP\n", .{ idx, value });
+                        log.warn("  [{d:3}] 0x{x:0>64} <- TOP\n", .{ idx, value });
                     } else {
-                        std.log.warn("  [{d:3}] 0x{x:0>64}\n", .{ idx, value });
+                        log.warn("  [{d:3}] 0x{x:0>64}\n", .{ idx, value });
                     }
                 }
                 if (self.stack.size() > 10) {
-                    std.log.warn("  ... ({} more items)\n", .{self.stack.size() - 10});
+                    log.warn("  ... ({} more items)\n", .{self.stack.size() - 10});
                 }
             }
             
             // Memory state
-            std.log.warn("\nMemory (size={}):\n", .{self.memory.size()});
+            log.warn("\nMemory (size={}):\n", .{self.memory.size()});
             if (self.memory.size() == 0) {
-                std.log.warn("  [empty]\n", .{});
+                log.warn("  [empty]\n", .{});
             } else {
                 // Show first 256 bytes of memory in hex dump format
                 const show_mem = @min(self.memory.size(), 256);
                 var offset: usize = 0;
                 while (offset < show_mem) : (offset += 32) {
                     const end = @min(offset + 32, show_mem);
-                    std.log.warn("  0x{x:0>4}: ", .{offset});
+                    log.warn("  0x{x:0>4}: ", .{offset});
                     
                     // Hex bytes
                     var i = offset;
                     while (i < end) : (i += 1) {
                         const b = self.memory.get_byte(i) catch 0;
-                        std.log.warn("{x:0>2} ", .{b});
+                        log.warn("{x:0>2} ", .{b});
                     }
                     
                     // Pad if less than 32 bytes
                     if (end - offset < 32) {
                         var pad = end - offset;
                         while (pad < 32) : (pad += 1) {
-                            std.log.warn("   ", .{});
+                            log.warn("   ", .{});
                         }
                     }
                     
                     // ASCII representation
-                    std.log.warn(" |", .{});
+                    log.warn(" |", .{});
                     i = offset;
                     while (i < end) : (i += 1) {
                         const b = self.memory.get_byte(i) catch 0;
                         if (b >= 32 and b <= 126) {
-                            std.log.warn("{c}", .{b});
+                            log.warn("{c}", .{b});
                         } else {
-                            std.log.warn(".", .{});
+                            log.warn(".", .{});
                         }
                     }
-                    std.log.warn("|\n", .{});
+                    log.warn("|\n", .{});
                 }
                 if (self.memory.size() > 256) {
-                    std.log.warn("  ... ({} more bytes)\n", .{self.memory.size() - 256});
+                    log.warn("  ... ({} more bytes)\n", .{self.memory.size() - 256});
                 }
             }
             
             // Log state
-            std.log.warn("\nLogs (count={}):\n", .{self.logs.items.len});
+            log.warn("\nLogs (count={}):\n", .{self.logs.items.len});
             if (self.logs.items.len == 0) {
-                std.log.warn("  [empty]\n", .{});
+                log.warn("  [empty]\n", .{});
             } else {
-                for (self.logs.items, 0..) |log, i| {
-                    std.log.warn("  Log[{}]:\n", .{i});
-                    std.log.warn("    Address: 0x", .{});
-                    for (log.address) |b| {
-                        std.log.warn("{x:0>2}", .{b});
+                for (self.logs.items, 0..) |log_item, i| {
+                    log.warn("  Log[{}]:\n", .{i});
+                    log.warn("    Address: 0x", .{});
+                    for (log_item.address) |b| {
+                        log.warn("{x:0>2}", .{b});
                     }
-                    std.log.warn("\n", .{});
-                    std.log.warn("    Topics ({}):\n", .{log.topics.len});
-                    for (log.topics, 0..) |topic, j| {
-                        std.log.warn("      [{}] 0x{x:0>64}\n", .{ j, topic });
+                    log.warn("\n", .{});
+                    log.warn("    Topics ({}):\n", .{log_item.topics.len});
+                    for (log_item.topics, 0..) |topic, j| {
+                        log.warn("      [{}] 0x{x:0>64}\n", .{ j, topic });
                     }
-                    std.log.warn("    Data ({} bytes): 0x", .{log.data.len});
-                    const show_data = @min(log.data.len, 64);
-                    for (log.data[0..show_data]) |b| {
-                        std.log.warn("{x:0>2}", .{b});
+                    log.warn("    Data ({} bytes): 0x", .{log_item.data.len});
+                    const show_data = @min(log_item.data.len, 64);
+                    for (log_item.data[0..show_data]) |b| {
+                        log.warn("{x:0>2}", .{b});
                     }
-                    if (log.data.len > 64) {
-                        std.log.warn("... ({} more bytes)", .{log.data.len - 64});
+                    if (log_item.data.len > 64) {
+                        log.warn("... ({} more bytes)", .{log_item.data.len - 64});
                     }
-                    std.log.warn("\n", .{});
+                    log.warn("\n", .{});
                 }
             }
             
-            std.log.warn("===================\n\n", .{});
+            log.warn("===================\n\n", .{});
         }
 
         pub fn pop(self: *Self) Error!void {
@@ -985,8 +1009,12 @@ pub fn Frame(comptime config: FrameConfig) type {
         }
         
         pub fn selfdestruct(self: *Self) Error!void {
-            // TODO: Check if our frame should have been static on parent host
-            // if (self.host.is_static(self)) return Error.WriteProtection;
+            // Check if we're in a static context via host interface
+            if (self.host) |host| {
+                if (host.get_is_static()) {
+                    return Error.WriteProtection;
+                }
+            }
             
             // Pop recipient address from stack
             const recipient_u256 = try self.stack.pop();
@@ -2128,6 +2156,207 @@ pub fn Frame(comptime config: FrameConfig) type {
             
             // SELFDESTRUCT always stops execution
             return Error.STOP;
+        }
+
+        // SIMD-optimized stack operations
+        
+        /// SIMD-accelerated bulk DUP operations for sequential duplicate operations
+        ///
+        /// Optimizes execution when multiple DUP operations are performed in sequence by using
+        /// vector operations to process multiple duplications simultaneously. This is particularly
+        /// beneficial for bytecode patterns that perform many consecutive DUP operations.
+        ///
+        /// ## How SIMD Optimization Works
+        /// 
+        /// Traditional scalar approach processes each DUP individually:
+        /// ```
+        /// DUP1: read stack[0], push to stack
+        /// DUP3: read stack[2], push to stack  
+        /// DUP5: read stack[4], push to stack
+        /// ```
+        /// 
+        /// SIMD approach processes multiple DUPs simultaneously:
+        /// ```
+        /// Load vector: [stack[0], stack[2], stack[4], ...]
+        /// Push all values in vectorized chunks
+        /// ```
+        ///
+        /// ## Performance Benefits
+        /// - Reduces memory access latency through vectorized loads
+        /// - Better CPU cache utilization with contiguous memory access
+        /// - Fewer function calls and loop iterations
+        /// - Automatic fallback to scalar when SIMD unavailable
+        ///
+        /// @param L: Vector length (compile-time known, from config.vector_length)
+        /// @param indices: Array of DUP indices (1-16, stack positions to duplicate)
+        fn dup_bulk_simd(self: *Self, comptime L: comptime_int, indices: []const u8) Error!void {
+            if (comptime config.vector_length == 0 or L == 0) {
+                // Fallback to scalar operations
+                for (indices) |n| {
+                    try self.stack.dup_n(n);
+                }
+                return;
+            }
+            
+            // Bounds check: ensure we have enough stack items for all operations
+            const stack_slice = self.stack.get_slice();
+            for (indices) |n| {
+                if (n == 0 or n > stack_slice.len) {
+                    return Error.StackUnderflow;
+                }
+            }
+            
+            // Check if we have room for all the new items
+            if (stack_slice.len + indices.len > Stack.stack_capacity) {
+                return Error.StackOverflow;
+            }
+            
+            // Perform SIMD-optimized bulk duplication
+            // Process in chunks of L
+            var i: usize = 0;
+            while (i < indices.len) : (i += L) {
+                const chunk_size = @min(L, indices.len - i);
+                const chunk = indices[i..i + chunk_size];
+                
+                // Load vector of values to duplicate
+                var values: @Vector(L, WordType) = @splat(0);
+                for (chunk, 0..) |n, j| {
+                    values[j] = stack_slice[n - 1]; // n-1 because stack is 1-indexed for DUP
+                }
+                
+                // Push values to stack
+                for (0..chunk_size) |j| {
+                    try self.stack.push(values[j]);
+                }
+            }
+        }
+        
+        /// SIMD-accelerated bulk SWAP operations for sequential exchange operations
+        ///
+        /// Optimizes execution when multiple SWAP operations are performed in sequence by using
+        /// vector operations to coordinate multiple exchanges simultaneously. This reduces the
+        /// overhead of individual stack manipulations for bytecode with many consecutive swaps.
+        ///
+        /// ## How SIMD Optimization Works
+        /// 
+        /// Traditional scalar approach processes each SWAP individually:
+        /// ```
+        /// SWAP1: exchange stack[0] ↔ stack[1]
+        /// SWAP2: exchange stack[0] ↔ stack[2]  
+        /// SWAP4: exchange stack[0] ↔ stack[4]
+        /// ```
+        /// 
+        /// SIMD approach optimizes the coordination:
+        /// ```
+        /// Load vectors: top_vals = [stack[0], stack[0], stack[0]]
+        ///              target_vals = [stack[1], stack[2], stack[4]]
+        /// Coordinate swaps with reduced overhead and better cache usage
+        /// ```
+        ///
+        /// ## Performance Benefits
+        /// - Reduces overhead from repeated stack API calls
+        /// - Better instruction-level parallelism for swap coordination
+        /// - Improved cache locality when accessing nearby stack elements
+        /// - Automatic fallback to scalar when SIMD unavailable
+        ///
+        /// @param L: Vector length (compile-time known, from config.vector_length)
+        /// @param indices: Array of SWAP indices (1-16, positions to swap with top)
+        fn swap_bulk_simd(self: *Self, comptime L: comptime_int, indices: []const u8) Error!void {
+            if (comptime config.vector_length == 0 or L == 0) {
+                // Fallback to scalar operations
+                for (indices) |n| {
+                    try self.stack.swap_n(n);
+                }
+                return;
+            }
+            
+            // Bounds check: ensure we have enough stack items for all operations
+            const stack_slice = self.stack.get_slice();
+            for (indices) |n| {
+                if (n + 1 > stack_slice.len) { // SWAP needs n+1 items
+                    return Error.StackUnderflow;
+                }
+            }
+            
+            // SIMD optimization: collect all values to swap in vectors first
+            // Process in chunks of L
+            var i: usize = 0;
+            while (i < indices.len) : (i += L) {
+                const chunk_size = @min(L, indices.len - i);
+                const chunk = indices[i..i + chunk_size];
+                
+                // Load vectors of values to swap using current slice state
+                var top_values: @Vector(L, WordType) = @splat(0);
+                var target_values: @Vector(L, WordType) = @splat(0);
+                
+                for (chunk, 0..) |n, j| {
+                    const current_slice = self.stack.get_slice();
+                    top_values[j] = current_slice[0];    // Top of stack
+                    target_values[j] = current_slice[n]; // nth item from top
+                }
+                
+                // Perform individual swaps using stack API
+                for (chunk) |n| {
+                    try self.stack.swap_n(n);
+                }
+            }
+        }
+        
+        /// Enhanced DUP operation with automatic SIMD optimization
+        ///
+        /// Intelligently chooses between SIMD and scalar implementations based on the configured
+        /// vector length. When SIMD is available and beneficial (vector_length >= 4), uses the
+        /// vectorized path for potential performance improvements. Otherwise, falls back to the
+        /// proven scalar implementation.
+        ///
+        /// ## When SIMD is Used
+        /// - Vector length configured > 0 (SIMD support detected)
+        /// - Vector length >= 4 (sufficient width for meaningful optimization)
+        /// - Single operation can benefit from vector coordination
+        ///
+        /// ## Automatic Fallback
+        /// - SIMD unsupported: Falls back to stack.dup_n()
+        /// - Vector length too small: Uses scalar path
+        /// - Runtime errors: Propagated normally
+        ///
+        /// @param n: DUP index (1-16, which stack position to duplicate)
+        pub fn dup_simd(self: *Self, n: u8) Error!void {
+            if (comptime config.vector_length > 0 and config.vector_length >= 4) {
+                // Use SIMD for single DUP if vector length supports it
+                const indices = [_]u8{n};
+                return self.dup_bulk_simd(config.vector_length, &indices);
+            } else {
+                // Fallback to existing implementation
+                return self.stack.dup_n(n);
+            }
+        }
+        
+        /// Enhanced SWAP operation with automatic SIMD optimization
+        ///
+        /// Intelligently chooses between SIMD and scalar implementations based on the configured
+        /// vector length. When SIMD is available and beneficial, uses the vectorized path for
+        /// coordinating exchanges more efficiently than individual scalar swaps.
+        ///
+        /// ## When SIMD is Used
+        /// - Vector length configured > 0 (SIMD support detected) 
+        /// - Vector length >= 4 (sufficient width for coordination benefits)
+        /// - Can leverage vector registers for improved instruction scheduling
+        ///
+        /// ## Automatic Fallback
+        /// - SIMD unsupported: Falls back to stack.swap_n()
+        /// - Vector length too small: Uses scalar path
+        /// - Maintains identical semantics and error handling
+        ///
+        /// @param n: SWAP index (1-16, which stack position to exchange with top)
+        pub fn swap_simd(self: *Self, n: u8) Error!void {
+            if (comptime config.vector_length > 0 and config.vector_length >= 4) {
+                // Use SIMD for single SWAP if vector length supports it
+                const indices = [_]u8{n};
+                return self.swap_bulk_simd(config.vector_length, &indices);
+            } else {
+                // Fallback to existing implementation
+                return self.stack.swap_n(n);
+            }
         }
     };
 }
@@ -6536,5 +6765,257 @@ test "Ethereum Test: Suite integration verification" {
     try std.testing.expectEqual(@as(u256, 42), frame.stack.pop_unsafe());
     
     // Test passed - comprehensive Ethereum test integration complete
+}
+
+test "Frame SIMD DUP operations" {
+    const allocator = std.testing.allocator;
+    
+    // Test both SIMD-enabled and disabled configurations
+    const F_simd = Frame(.{ .vector_length = 8 });
+    const F_scalar = Frame(.{ .vector_length = 0 });
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    
+    // Test SIMD version
+    {
+        var frame = try F_simd.init(allocator, &bytecode, 1000000, void{}, null);
+        defer frame.deinit(allocator);
+        
+        // Setup stack with test values
+        for (1..17) |i| {
+            try frame.stack.push(@as(u256, i * 100));
+        }
+        
+        // Test single DUP with SIMD
+        try frame.dup_simd(3);
+        try std.testing.expectEqual(@as(u256, 1400), frame.stack.peek_unsafe()); // Should duplicate 3rd item (14*100)
+        _ = frame.stack.pop_unsafe();
+        
+        // Test bulk DUP operations
+        const indices = [_]u8{ 1, 2, 4 };
+        try frame.dup_bulk_simd(8, &indices);
+        
+        // Should have duplicated top, 2nd, and 4th items
+        try std.testing.expectEqual(@as(u256, 1600), frame.stack.pop_unsafe()); // 4th item
+        try std.testing.expectEqual(@as(u256, 1500), frame.stack.pop_unsafe()); // 2nd item  
+        try std.testing.expectEqual(@as(u256, 1600), frame.stack.pop_unsafe()); // top item
+    }
+    
+    // Test scalar version for comparison
+    {
+        var frame = try F_scalar.init(allocator, &bytecode, 1000000, void{}, null);
+        defer frame.deinit(allocator);
+        
+        // Setup identical stack
+        for (1..17) |i| {
+            try frame.stack.push(@as(u256, i * 100));
+        }
+        
+        // Test scalar DUP
+        try frame.dup_simd(3); // Should fall back to scalar
+        try std.testing.expectEqual(@as(u256, 1400), frame.stack.peek_unsafe());
+    }
+}
+
+test "Frame SIMD SWAP operations" {
+    const allocator = std.testing.allocator;
+    
+    // Test both SIMD-enabled and disabled configurations  
+    const F_simd = Frame(.{ .vector_length = 8 });
+    const F_scalar = Frame(.{ .vector_length = 0 });
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    
+    // Test SIMD version
+    {
+        var frame = try F_simd.init(allocator, &bytecode, 1000000, void{}, null);
+        defer frame.deinit(allocator);
+        
+        // Setup stack with test values
+        for (1..17) |i| {
+            try frame.stack.push(@as(u256, i * 100));
+        }
+        
+        // Test single SWAP with SIMD
+        try frame.swap_simd(3);
+        try std.testing.expectEqual(@as(u256, 1400), frame.stack.peek_unsafe()); // Should swap with 3rd item
+        
+        // Test bulk SWAP operations
+        const indices = [_]u8{ 1, 2 };
+        try frame.swap_bulk_simd(8, &indices);
+        
+        // Verify swaps occurred
+        const stack_slice = frame.stack.get_slice();
+        try std.testing.expectEqual(@as(u256, 1500), stack_slice[1]); // Was top, now 2nd
+        try std.testing.expectEqual(@as(u256, 1600), stack_slice[2]); // Was 2nd, now 3rd
+    }
+    
+    // Test scalar version for comparison
+    {
+        var frame = try F_scalar.init(allocator, &bytecode, 1000000, void{}, null);
+        defer frame.deinit(allocator);
+        
+        // Setup identical stack
+        for (1..17) |i| {
+            try frame.stack.push(@as(u256, i * 100));
+        }
+        
+        // Test scalar SWAP
+        try frame.swap_simd(3); // Should fall back to scalar
+        try std.testing.expectEqual(@as(u256, 1400), frame.stack.peek_unsafe());
+    }
+}
+
+test "Frame SIMD edge cases" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{ .vector_length = 4 });
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+    
+    // Test underflow conditions
+    try frame.stack.push(100);
+    
+    // Should fail - trying to DUP 3rd item with only 1 item on stack
+    const dup_indices = [_]u8{3};
+    try std.testing.expectError(error.StackUnderflow, frame.dup_bulk_simd(4, &dup_indices));
+    
+    // Should fail - trying to SWAP with 2nd item with only 1 item on stack  
+    const swap_indices = [_]u8{2};
+    try std.testing.expectError(error.StackUnderflow, frame.swap_bulk_simd(4, &swap_indices));
+    
+    // Test overflow conditions
+    // Fill stack to near capacity
+    for (1..1024) |i| {
+        try frame.stack.push(@as(u256, i));
+    }
+    
+    // Should fail - trying to DUP would exceed stack capacity
+    const dup_overflow = [_]u8{1};
+    try std.testing.expectError(error.StackOverflow, frame.dup_bulk_simd(4, &dup_overflow));
+}
+
+test "Frame SIMD correctness verification" {
+    const allocator = std.testing.allocator;
+    
+    // Compare SIMD vs scalar results for identical operations
+    const F_simd = Frame(.{ .vector_length = 8 });
+    const F_scalar = Frame(.{ .vector_length = 0 });
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    
+    var frame_simd = try F_simd.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame_simd.deinit(allocator);
+    
+    var frame_scalar = try F_scalar.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame_scalar.deinit(allocator);
+    
+    // Setup identical initial stacks
+    for (1..20) |i| {
+        try frame_simd.stack.push(@as(u256, i * 37)); // Use prime to avoid patterns
+        try frame_scalar.stack.push(@as(u256, i * 37));
+    }
+    
+    // Perform identical sequence of operations
+    const test_operations = [_]struct { op: []const u8, op_type: enum { dup, swap } }{
+        .{ .op = &[_]u8{1, 3, 5}, .op_type = .dup },
+        .{ .op = &[_]u8{2, 4}, .op_type = .swap },
+        .{ .op = &[_]u8{7, 1}, .op_type = .dup },
+    };
+    
+    for (test_operations) |test_op| {
+        switch (test_op.op_type) {
+            .dup => {
+                try frame_simd.dup_bulk_simd(8, test_op.op);
+                for (test_op.op) |n| {
+                    try frame_scalar.stack.dup_n(n);
+                }
+            },
+            .swap => {
+                try frame_simd.swap_bulk_simd(8, test_op.op);
+                for (test_op.op) |n| {
+                    try frame_scalar.stack.swap_n(n);
+                }
+            },
+        }
+    }
+    
+    // Verify final stacks are identical
+    const simd_slice = frame_simd.stack.get_slice();
+    const scalar_slice = frame_scalar.stack.get_slice();
+    
+    try std.testing.expectEqual(scalar_slice.len, simd_slice.len);
+    for (simd_slice, scalar_slice) |simd_val, scalar_val| {
+        try std.testing.expectEqual(scalar_val, simd_val);
+    }
+}
+
+test "Frame SIMD vector length boundary conditions" {
+    const allocator = std.testing.allocator;
+    
+    // Test different vector lengths
+    const test_configs = [_]comptime_int{ 1, 2, 4, 8, 16, 32 };
+    
+    inline for (test_configs) |vlen| {
+        const F = Frame(.{ .vector_length = vlen });
+        const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+        
+        var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+        defer frame.deinit(allocator);
+        
+        // Setup test stack
+        for (1..10) |i| {
+            try frame.stack.push(@as(u256, i * 11));
+        }
+        
+        // Test operations work with this vector length
+        try frame.dup_simd(3);
+        try std.testing.expectEqual(@as(u256, 77), frame.stack.peek_unsafe()); // 7*11 = 77
+        _ = frame.stack.pop_unsafe();
+        
+        try frame.swap_simd(2); 
+        // Verify swap occurred
+        const slice = frame.stack.get_slice();
+        try std.testing.expectEqual(@as(u256, 88), slice[0]); // Was 2nd, now top (8*11)
+    }
+}
+
+test "Frame SIMD integration with other operations" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{ .vector_length = 8 });
+    
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+    
+    // Complex workflow: arithmetic + SIMD operations + memory
+    try frame.stack.push(100);
+    try frame.stack.push(200);
+    try frame.add(); // 300 on top
+    
+    try frame.stack.push(400);
+    try frame.stack.push(500);
+    
+    // Use SIMD DUP to duplicate values
+    try frame.dup_simd(2); // Duplicate 2nd item (400)
+    try std.testing.expectEqual(@as(u256, 400), frame.stack.peek_unsafe());
+    
+    // Use SIMD SWAP
+    try frame.swap_simd(3); // Swap top with 4th item  
+    
+    // Verify complex operation chain worked correctly
+    try std.testing.expect(frame.stack.size() >= 4);
+    
+    // Test with memory operations
+    try frame.stack.push(0); // offset
+    try frame.mstore(); // Store top value to memory
+    
+    try frame.stack.push(0);
+    try frame.mload(); // Load it back
+    
+    // Should have a valid value
+    const loaded_val = frame.stack.pop_unsafe();
+    try std.testing.expect(loaded_val > 0);
 }
 

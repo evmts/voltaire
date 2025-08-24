@@ -34,6 +34,7 @@ pub const EVM_ERROR_ALLOCATION: c_int = -7;
 pub const EVM_ERROR_BYTECODE_TOO_LARGE: c_int = -8;
 pub const EVM_ERROR_STOP: c_int = -9;
 pub const EVM_ERROR_NULL_POINTER: c_int = -10;
+pub const EVM_ERROR_WRITE_PROTECTION: c_int = -11;
 
 // ============================================================================
 // INTERNAL HELPERS
@@ -50,6 +51,7 @@ pub fn zigErrorToCError(err: anytype) c_int {
         error.AllocationError => EVM_ERROR_ALLOCATION,
         error.BytecodeTooLarge => EVM_ERROR_BYTECODE_TOO_LARGE,
         error.STOP => EVM_ERROR_STOP,
+        error.WriteProtection => EVM_ERROR_WRITE_PROTECTION,
     };
 }
 
@@ -264,7 +266,6 @@ export fn evm_frame_stack_size(frame_ptr: ?*anyopaque) u32 {
 /// Get maximum stack capacity
 export fn evm_frame_stack_capacity(frame_ptr: ?*anyopaque) u32 {
     _ = frame_ptr;
-    // Default frame config uses 1024 stack size
     return 1024;
 }
 
