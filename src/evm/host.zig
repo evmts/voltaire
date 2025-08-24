@@ -462,6 +462,7 @@ pub const MockHost = struct {
     allocator: std.mem.Allocator,
     logs: std.ArrayList(LogEntry),
     storage: std.AutoHashMap(StorageKey, u256),
+    return_data: []const u8,
 
     pub const LogEntry = struct {
         contract_address: Address,
@@ -479,6 +480,7 @@ pub const MockHost = struct {
             .allocator = allocator,
             .logs = std.ArrayList(LogEntry).init(allocator),
             .storage = std.AutoHashMap(StorageKey, u256).init(allocator),
+            .return_data = &.{},
         };
     }
 
@@ -669,10 +671,9 @@ pub const MockHost = struct {
         return primitives.ZERO_ADDRESS;
     }
 
+    // DEPRECATED: Use get_call_value instead
     pub fn get_value(self: *MockHost) u256 {
-        _ = self;
-        // Mock implementation - return zero value
-        return 0;
+        return self.get_call_value();
     }
 
     pub fn get_input_buffer(self: *MockHost) []const u8 {
