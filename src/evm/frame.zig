@@ -2189,9 +2189,11 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Update gas accounting
             const gas_cost = forwarded_gas - result.gas_left;
-            if (!self.gas_manager.tryConsume(gas_cost)) {
+            if (self.gas_remaining >= @as(GasType, @intCast(gas_cost))) {
+                self.gas_remaining -= @as(GasType, @intCast(gas_cost));
+            } else {
                 // If gas cost exceeds remaining, consume all remaining gas
-                _ = self.gas_manager.tryConsume(self.gas_manager.gasRemaining());
+                self.gas_remaining = 0;
             }
         }
 
@@ -2300,9 +2302,11 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Update gas accounting
             const gas_cost = forwarded_gas - result.gas_left;
-            if (!self.gas_manager.tryConsume(gas_cost)) {
+            if (self.gas_remaining >= @as(GasType, @intCast(gas_cost))) {
+                self.gas_remaining -= @as(GasType, @intCast(gas_cost));
+            } else {
                 // If gas cost exceeds remaining, consume all remaining gas
-                _ = self.gas_manager.tryConsume(self.gas_manager.gasRemaining());
+                self.gas_remaining = 0;
             }
         }
 
@@ -2404,9 +2408,11 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Update gas accounting
             const gas_cost = forwarded_gas - result.gas_left;
-            if (!self.gas_manager.tryConsume(gas_cost)) {
+            if (self.gas_remaining >= @as(GasType, @intCast(gas_cost))) {
+                self.gas_remaining -= @as(GasType, @intCast(gas_cost));
+            } else {
                 // If gas cost exceeds remaining, consume all remaining gas
-                _ = self.gas_manager.tryConsume(self.gas_manager.gasRemaining());
+                self.gas_remaining = 0;
             }
         }
 
@@ -2484,9 +2490,11 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Update gas accounting
             const gas_cost = forwarded_gas - result.gas_left;
-            if (!self.gas_manager.tryConsume(gas_cost)) {
+            if (self.gas_remaining >= @as(GasType, @intCast(gas_cost))) {
+                self.gas_remaining -= @as(GasType, @intCast(gas_cost));
+            } else {
                 // If gas cost exceeds remaining, consume all remaining gas
-                _ = self.gas_manager.tryConsume(self.gas_manager.gasRemaining());
+                self.gas_remaining = 0;
             }
         }
 
@@ -2566,9 +2574,11 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Update gas accounting
             const gas_cost = forwarded_gas - result.gas_left;
-            if (!self.gas_manager.tryConsume(gas_cost)) {
+            if (self.gas_remaining >= @as(GasType, @intCast(gas_cost))) {
+                self.gas_remaining -= @as(GasType, @intCast(gas_cost));
+            } else {
                 // If gas cost exceeds remaining, consume all remaining gas
-                _ = self.gas_manager.tryConsume(self.gas_manager.gasRemaining());
+                self.gas_remaining = 0;
             }
         }
 
