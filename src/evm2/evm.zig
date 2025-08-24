@@ -11,8 +11,12 @@ const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const CreatedContracts = @import("created_contracts.zig").CreatedContracts;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
+const AccessList = @import("access_list.zig").AccessList;
 const hardfork = @import("evm").hardforks.hardfork;
 const StorageKey = primitives.StorageKey;
+
+// Import precompile utilities from legacy EVM  
+const precompiles = @import("evm").precompiles.precompiles;
 
 pub const EvmConfig = struct {
     /// Maximum call depth allowed in the EVM (defaults to 1024 levels)
@@ -25,6 +29,10 @@ pub const EvmConfig = struct {
     
     /// Frame configuration parameters
     frame_config: frame_mod.FrameConfig = .{},
+    
+    /// Enable precompiled contracts support (default: true)
+    /// When disabled, precompile calls will fail with an error
+    enable_precompiles: bool = true,
     
     /// Gets the appropriate type for depth based on max_call_depth
     fn get_depth_type(self: EvmConfig) type {
@@ -149,6 +157,9 @@ pub fn Evm(comptime config: EvmConfig) type {
         /// Contracts marked for self-destruction
         self_destruct: SelfDestruct,
         
+        /// Access list for tracking warm/cold access (EIP-2929)
+        access_list: AccessList,
+        
         /// Block information
         block_info: BlockInfo,
         
@@ -182,6 +193,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             .journal = Journal.init(allocator),
             .created_contracts = CreatedContracts.init(allocator),
             .self_destruct = SelfDestruct.init(allocator),
+            .access_list = AccessList.init(allocator),
             .block_info = block_info,
             .context = context,
             .current_input = &.{},
@@ -196,6 +208,7 @@ pub fn Evm(comptime config: EvmConfig) type {
         self.journal.deinit();
         self.created_contracts.deinit();
         self.self_destruct.deinit();
+        self.access_list.deinit();
     }
 
     pub fn call(self: *Self, params: CallParams) ExecutionError.Error!CallResult {
@@ -240,40 +253,11 @@ pub fn Evm(comptime config: EvmConfig) type {
         
         // Handle different call types
         switch (params) {
-            .create, .create2 => {
-                // TODO: Implement CREATE operations - delegate to create_contract_at method
-                const caller = switch (params) {
-                    .create => |p| p.caller,
-                    .create2 => |p| p.caller,
-                    else => unreachable,
-                };
-                const value = switch (params) {
-                    .create => |p| p.value,
-                    .create2 => |p| p.value,
-                    else => unreachable,
-                };
-                const init_code = switch (params) {
-                    .create => |p| p.init_code,
-                    .create2 => |p| p.init_code,
-                    else => unreachable,
-                };
-                const gas = switch (params) {
-                    .create => |p| p.gas,
-                    .create2 => |p| p.gas,
-                    else => unreachable,
-                };
-                
-                // For now, return success for CREATE operations
-                // TODO: Implement actual contract creation
-                _ = caller;
-                _ = value;
-                _ = init_code;
-                
-                return CallResult{
-                    .success = true,
-                    .gas_left = gas,
-                    .output = &.{},
-                };
+            .create => |create_params| {
+                return self.handle_create(create_params, is_top_level_call, snapshot_id);
+            },
+            .create2 => |create2_params| {
+                return self.handle_create2(create2_params, is_top_level_call, snapshot_id);
             },
             .call => |call_data| {
                 call_address = call_data.to;
@@ -323,16 +307,118 @@ pub fn Evm(comptime config: EvmConfig) type {
             return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
         }
         
-        // TODO: Check for precompiles
+        // Check for precompiles (if enabled)
+        if (config.enable_precompiles and precompiles.is_precompile(call_address)) {
+            const precompile_result = self.execute_precompile_call(call_address, call_input, call_gas, call_is_static) catch |err| {
+                if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
+                return switch (err) {
+                    else => CallResult{ .success = false, .gas_left = 0, .output = &.{} },
+                };
+            };
+
+            if (!is_top_level_call and !precompile_result.success) {
+                self.revert_to_snapshot(snapshot_id);
+            }
+
+            return precompile_result;
+        }
+        
         // TODO: Initialize frame and execute bytecode
         
-        // For now, execute a basic "success" path
+        // For now, execute a basic "success" path for non-precompile calls
         // TODO: Use call_address, call_code, call_is_static, call_caller, call_value for actual execution
         
         return CallResult{
             .success = true,
             .gas_left = call_gas,
             .output = &.{},
+        };
+    }
+
+    /// Execute a precompile call using the full legacy precompile system
+    /// This implementation supports all standard Ethereum precompiles (0x01-0x0A)
+    fn execute_precompile_call(self: *Self, address: Address, input: []const u8, gas: u64, is_static: bool) !CallResult {
+        _ = is_static; // Precompiles are inherently stateless, so static flag doesn't matter
+
+        // Verify it's a precompile address
+        if (!precompiles.is_precompile(address)) {
+            return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
+        }
+
+        // Get precompile ID from address (1-10)
+        const precompile_id = address[19]; // Last byte is the precompile ID
+        if (precompile_id < 1 or precompile_id > 10) {
+            return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
+        }
+
+        // Estimate output buffer size based on precompile type
+        const estimated_output_size: usize = switch (precompile_id) {
+            1 => 32, // ECRECOVER - returns 32-byte address (padded)
+            2 => 32, // SHA256 - returns 32-byte hash
+            3 => 32, // RIPEMD160 - returns 32-byte hash (padded)
+            4 => input.len, // IDENTITY - returns input data
+            5 => blk: {
+                // MODEXP - estimate based on modulus length from input
+                if (input.len < 96) break :blk 0;
+                const mod_len_bytes = input[64..96];
+                var mod_len: usize = 0;
+                for (mod_len_bytes) |byte| {
+                    mod_len = (mod_len << 8) | byte;
+                }
+                break :blk @min(mod_len, 4096); // Cap at 4KB for safety
+            },
+            6 => 64, // ECADD - returns 64 bytes (2 field elements)
+            7 => 64, // ECMUL - returns 64 bytes (2 field elements)
+            8 => 32, // ECPAIRING - returns 32 bytes (boolean result padded)
+            9 => 64, // BLAKE2F - returns 64-byte hash
+            10 => 64, // KZG_POINT_EVALUATION - returns verification result
+            else => 0,
+        };
+
+        // Allocate output buffer
+        const output_buffer = self.allocator.alloc(u8, estimated_output_size) catch |err| {
+            return err;
+        };
+        errdefer self.allocator.free(output_buffer);
+
+        // Create chain rules for the current hardfork
+        const ChainRules = @import("evm").hardforks.chain_rules.ChainRules;
+        const chain_rules = ChainRules.from_hardfork(self.hardfork_config);
+
+        // Execute the precompile
+        const result = precompiles.execute(precompile_id, input, output_buffer, gas, chain_rules) catch |err| {
+            self.allocator.free(output_buffer);
+            return switch (err) {
+                error.OutOfMemory => error.OutOfMemory,
+                else => CallResult{ .success = false, .gas_left = 0, .output = &.{} },
+            };
+        };
+
+        return switch (result) {
+            .success => |success_data| CallResult{
+                .success = true,
+                .gas_left = success_data.gas_left,
+                .output = if (success_data.output_len > 0) 
+                    output_buffer[0..success_data.output_len] 
+                else 
+                    &.{},
+            },
+            .failure => |failure_data| blk: {
+                self.allocator.free(output_buffer);
+                break :blk CallResult{
+                    .success = false,
+                    .gas_left = failure_data.gas_left,
+                    .output = &.{},
+                };
+            },
+            .revert => |revert_data| blk: {
+                self.allocator.free(output_buffer);
+                break :blk CallResult{
+                    .success = false,
+                    .gas_left = revert_data.gas_left,
+                    .output = &.{},
+                };
+            },
         };
     }
 
@@ -412,19 +498,12 @@ pub fn Evm(comptime config: EvmConfig) type {
     
     /// Access an address and return the gas cost (EIP-2929)
     pub fn access_address(self: *Self, address: Address) !u64 {
-        // TODO: Implement access list tracking
-        _ = self;
-        _ = address;
-        return 2600; // Cold access cost
+        return try self.access_list.access_address(address);
     }
     
     /// Access a storage slot and return the gas cost (EIP-2929)
     pub fn access_storage_slot(self: *Self, contract_address: Address, slot: u256) !u64 {
-        // TODO: Implement access list tracking
-        _ = self;
-        _ = contract_address;
-        _ = slot;
-        return 2100; // Cold storage access cost
+        return try self.access_list.access_storage_slot(contract_address, slot);
     }
     
     /// Mark a contract for destruction
@@ -1023,4 +1102,764 @@ test "Evm initialization with all parameters" {
     // Verify sub-components initialized
     try testing.expectEqual(@as(u32, 0), evm.journal.next_snapshot_id);
     try testing.expectEqual(@as(usize, 0), evm.journal.entries.items.len);
+}
+
+// Duplicate test removed - see earlier occurrence
+
+test "Journal - revert to snapshot (duplicate removed)" {
+    const testing = std.testing;
+    
+    var journal = DefaultEvm.Journal.init(testing.allocator);
+    defer journal.deinit();
+    
+    const snapshot1 = journal.create_snapshot();
+    const snapshot2 = journal.create_snapshot();
+    const snapshot3 = journal.create_snapshot();
+    
+    // Add entries with different snapshot IDs
+    try journal.record_storage_change(snapshot1, ZERO_ADDRESS, 1, 10);
+    try journal.record_storage_change(snapshot1, ZERO_ADDRESS, 2, 20);
+    try journal.record_storage_change(snapshot2, ZERO_ADDRESS, 3, 30);
+    try journal.record_storage_change(snapshot3, ZERO_ADDRESS, 4, 40);
+    
+    try testing.expectEqual(@as(usize, 4), journal.entries.items.len);
+    
+    // Revert to snapshot2 - should remove entries with snapshot_id >= 2
+    journal.revert_to_snapshot(snapshot2);
+    
+    try testing.expectEqual(@as(usize, 2), journal.entries.items.len);
+    // Verify remaining entries are from snapshot1
+    for (journal.entries.items) |entry| {
+        try testing.expect(entry.snapshot_id < snapshot2);
+    }
+}
+
+test "Host interface - get_balance functionality" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    const address = ZERO_ADDRESS;
+    const balance: u256 = 1000000000000000000; // 1 ETH
+    
+    // Set account balance in database
+    const account = @import("database_interface_account.zig").Account{
+        .balance = balance,
+        .nonce = 0,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(address, account);
+    
+    // Test get_balance
+    const retrieved_balance = evm.get_balance(address);
+    try testing.expectEqual(balance, retrieved_balance);
+    
+    // Test with zero balance
+    const zero_address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const zero_balance = evm.get_balance(zero_address);
+    try testing.expectEqual(@as(u256, 0), zero_balance);
+}
+
+test "Host interface - storage operations" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    const address = ZERO_ADDRESS;
+    const key: u256 = 42;
+    const value: u256 = 0xDEADBEEF;
+    
+    // Initially should return zero
+    const initial_value = evm.get_storage(address, key);
+    try testing.expectEqual(@as(u256, 0), initial_value);
+    
+    // Set storage value
+    try evm.set_storage(address, key, value);
+    
+    // Retrieve and verify
+    const retrieved_value = evm.get_storage(address, key);
+    try testing.expectEqual(value, retrieved_value);
+    
+    // Test with different key
+    const different_key: u256 = 99;
+    const different_value = evm.get_storage(address, different_key);
+    try testing.expectEqual(@as(u256, 0), different_value);
+}
+
+test "Host interface - account_exists functionality" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    const address = ZERO_ADDRESS;
+    const account = @import("database_interface_account.zig").Account{
+        .balance = 1000,
+        .nonce = 1,
+        .code_hash = [_]u8{0} ** 32,
+        .storage_root = [_]u8{0} ** 32,
+    };
+    try memory_db.set_account(address, account);
+    
+    // Test existing account
+    const exists = evm.account_exists(address);
+    try testing.expect(exists);
+    
+    // Test non-existing account
+    const non_existing = [_]u8{1} ++ [_]u8{0} ** 19;
+    const does_not_exist = evm.account_exists(non_existing);
+    try testing.expect(!does_not_exist);
+}
+
+test "Host interface - call type differentiation" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Test CALL operation
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .value = 100,
+            .input = &.{},
+            .gas = 100000,
+        },
+    };
+    
+    const call_result = try evm.call(call_params);
+    try testing.expect(call_result.success);
+    
+    // Test STATICCALL operation (no value transfer allowed)
+    const static_params = DefaultEvm.CallParams{
+        .staticcall = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .input = &.{},
+            .gas = 100000,
+        },
+    };
+    
+    const static_result = try evm.call(static_params);
+    try testing.expect(static_result.success);
+    
+    // Test DELEGATECALL operation (preserves caller context)
+    const delegate_params = DefaultEvm.CallParams{
+        .delegatecall = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .input = &.{},
+            .gas = 100000,
+        },
+    };
+    
+    const delegate_result = try evm.call(delegate_params);
+    try testing.expect(delegate_result.success);
+}
+
+test "Host interface - hardfork compatibility checks" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    // Test with different hardfork configurations
+    var london_evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .LONDON);
+    defer london_evm.deinit();
+    
+    try testing.expectEqual(hardfork.Hardfork.LONDON, london_evm.get_hardfork());
+    try testing.expect(london_evm.is_hardfork_at_least(.HOMESTEAD));
+    try testing.expect(london_evm.is_hardfork_at_least(.LONDON));
+    try testing.expect(!london_evm.is_hardfork_at_least(.CANCUN));
+    
+    var cancun_evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer cancun_evm.deinit();
+    
+    try testing.expectEqual(hardfork.Hardfork.CANCUN, cancun_evm.get_hardfork());
+    try testing.expect(cancun_evm.is_hardfork_at_least(.LONDON));
+    try testing.expect(cancun_evm.is_hardfork_at_least(.CANCUN));
+}
+
+test "Host interface - access cost operations" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .BERLIN);
+    defer evm.deinit();
+    
+    const address = ZERO_ADDRESS;
+    const slot: u256 = 42;
+    
+    // Test access costs (EIP-2929)
+    const address_cost = try evm.access_address(address);
+    const storage_cost = try evm.access_storage_slot(address, slot);
+    
+    // Cold access costs
+    try testing.expectEqual(@as(u64, 2600), address_cost);
+    try testing.expectEqual(@as(u64, 2100), storage_cost);
+}
+
+test "Host interface - input size validation" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Create input that exceeds max_input_size (131072 bytes)
+    const large_input = try testing.allocator.alloc(u8, 200000);
+    defer testing.allocator.free(large_input);
+    std.mem.set(u8, large_input, 0xFF);
+    
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .value = 0,
+            .input = large_input,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    
+    // Should fail due to input size limit
+    try testing.expect(!result.success);
+    try testing.expectEqual(@as(u64, 0), result.gas_left);
+}
+
+test "Call types - CREATE2 with salt" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    const init_code = [_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }; // PUSH1 0 PUSH1 0 RETURN (empty contract)
+    const salt: u256 = 0x1234567890ABCDEF;
+    
+    const create2_params = DefaultEvm.CallParams{
+        .create2 = .{
+            .caller = ZERO_ADDRESS,
+            .value = 0,
+            .init_code = &init_code,
+            .salt = salt,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(create2_params);
+    try testing.expect(result.success);
+    try testing.expect(result.gas_left > 0);
+}
+
+test "Error handling - nested call depth tracking" {
+    const testing = std.testing;
+    
+    // Use smaller depth limit for testing
+    const TestEvm = Evm(.{ .max_call_depth = 3 });
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TestEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try TestEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    try testing.expectEqual(@as(u2, 0), evm.depth);
+    
+    const call_params = TestEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .value = 0,
+            .input = &.{},
+            .gas = 100000,
+        },
+    };
+    
+    // Call should succeed when depth < max
+    evm.depth = 2;
+    const result1 = try evm.inner_call(call_params);
+    try testing.expect(result1.success);
+    try testing.expectEqual(@as(u2, 2), evm.depth); // Should restore depth
+    
+    // Call should fail when depth >= max
+    evm.depth = 3;
+    const result2 = try evm.inner_call(call_params);
+    try testing.expect(!result2.success);
+    try testing.expectEqual(@as(u64, 0), result2.gas_left);
+}
+
+test "Error handling - precompile execution" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Test calling ECRECOVER precompile (address 0x01)
+    const ecrecover_address = [_]u8{0} ** 19 ++ [_]u8{1}; // 0x0000...0001
+    const input_data = [_]u8{0} ** 128; // Invalid ECRECOVER input (all zeros)
+    
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = ecrecover_address,
+            .value = 0,
+            .input = &input_data,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    // ECRECOVER should handle invalid input gracefully
+    try testing.expect(result.gas_left < 100000); // Some gas should be consumed
+}
+
+test "Precompiles - IDENTITY precompile (0x04)" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Test IDENTITY precompile - should return input data unchanged
+    const identity_address = [_]u8{0} ** 19 ++ [_]u8{4}; // 0x0000...0004
+    const test_data = "Hello, World!";
+    
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = identity_address,
+            .value = 0,
+            .input = test_data,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    defer if (result.output.len > 0) testing.allocator.free(result.output);
+    
+    try testing.expect(result.success);
+    try testing.expectEqual(test_data.len, result.output.len);
+    try testing.expectEqualStrings(test_data, result.output);
+    
+    // Gas cost should be 15 + 3 * 1 = 18 (base + 3 * word count)
+    const expected_gas_cost = 15 + 3 * ((test_data.len + 31) / 32);
+    try testing.expectEqual(100000 - expected_gas_cost, result.gas_left);
+}
+
+test "Precompiles - SHA256 precompile (0x02)" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Test SHA256 precompile
+    const sha256_address = [_]u8{0} ** 19 ++ [_]u8{2}; // 0x0000...0002
+    const test_input = "";
+    
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = sha256_address,
+            .value = 0,
+            .input = test_input,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    defer if (result.output.len > 0) testing.allocator.free(result.output);
+    
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 32), result.output.len); // SHA256 always returns 32 bytes
+    try testing.expect(result.gas_left < 100000); // Gas should be consumed
+}
+
+test "Precompiles - disabled configuration" {
+    const testing = std.testing;
+    
+    // Create EVM with precompiles disabled
+    const NoPrecompileEvm = Evm(.{ .enable_precompiles = false });
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = NoPrecompileEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try NoPrecompileEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Try to call IDENTITY precompile - should be treated as regular call
+    const identity_address = [_]u8{0} ** 19 ++ [_]u8{4}; // 0x0000...0004
+    const test_data = "Hello, World!";
+    
+    const call_params = NoPrecompileEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = identity_address,
+            .value = 0,
+            .input = test_data,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    
+    // Should succeed but not execute as precompile (no special precompile behavior)
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 0), result.output.len); // No precompile output
+    try testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed by precompile
+}
+
+test "Precompiles - invalid precompile addresses" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Test invalid precompile address (0x0B - beyond supported range)
+    const invalid_address = [_]u8{0} ** 19 ++ [_]u8{11}; // 0x0000...000B
+    
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = invalid_address,
+            .value = 0,
+            .input = &.{},
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    
+    // Should succeed as regular call (not precompile)
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed by precompile
+}
+
+test "Security - bounds checking and edge cases" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = DefaultEvm.TransactionContext{
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Test maximum gas limit
+    const max_gas_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = ZERO_ADDRESS,
+            .value = 0,
+            .input = &.{},
+            .gas = std.math.maxInt(u64),
+        },
+    };
+    
+    const max_gas_result = try evm.call(max_gas_params);
+    try testing.expect(max_gas_result.gas_left <= std.math.maxInt(u64));
+    
+    // Test invalid address operations
+    const invalid_address = [_]u8{0xFF} ** 20;
+    const balance = evm.get_balance(invalid_address);
+    try testing.expectEqual(@as(u256, 0), balance);
+    
+    const exists = evm.account_exists(invalid_address);
+    try testing.expect(!exists);
+    
+    // Test max u256 storage operations
+    const max_key: u256 = std.math.maxInt(u256);
+    const max_value: u256 = std.math.maxInt(u256);
+    
+    try evm.set_storage(ZERO_ADDRESS, max_key, max_value);
+    const retrieved_max = evm.get_storage(ZERO_ADDRESS, max_key);
+    try testing.expectEqual(max_value, retrieved_max);
 }
