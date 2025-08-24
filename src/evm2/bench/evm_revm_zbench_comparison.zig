@@ -84,10 +84,12 @@ fn benchmark_evm2_arithmetic_contract(allocator: std.mem.Allocator) void {
     
     const block_info = evm2_mod.BlockInfo{
         .number = 1,
-        .timestamp = 1000,
+        .timestamp = 1640995200,
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .difficulty = 0,
         .coinbase = ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
     };
     
     const context = evm2_mod.Evm(.{}).TransactionContext{
@@ -124,10 +126,12 @@ fn benchmark_evm2_storage_contract(allocator: std.mem.Allocator) void {
     
     const block_info = evm2_mod.BlockInfo{
         .number = 1,
-        .timestamp = 1000,
+        .timestamp = 1640995200,
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .difficulty = 0,
         .coinbase = ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
     };
     
     const context = evm2_mod.Evm(.{}).TransactionContext{
@@ -164,10 +168,12 @@ fn benchmark_evm2_stack_contract(allocator: std.mem.Allocator) void {
     
     const block_info = evm2_mod.BlockInfo{
         .number = 1,
-        .timestamp = 1000,
+        .timestamp = 1640995200,
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .difficulty = 0,
         .coinbase = ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
     };
     
     const context = evm2_mod.Evm(.{}).TransactionContext{
@@ -204,10 +210,12 @@ fn benchmark_evm2_memory_contract(allocator: std.mem.Allocator) void {
     
     const block_info = evm2_mod.BlockInfo{
         .number = 1,
-        .timestamp = 1000,
+        .timestamp = 1640995200,
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .difficulty = 0,
         .coinbase = ZERO_ADDRESS,
+        .base_fee = 0,
+        .prev_randao = [_]u8{0} ** 32,
     };
     
     const context = evm2_mod.Evm(.{}).TransactionContext{
@@ -248,8 +256,7 @@ fn benchmark_legacy_evm_arithmetic_contract(allocator: std.mem.Allocator) void {
     var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
     defer vm.deinit();
     
-    var contract = evm_legacy.Contract.init(allocator, &ARITHMETIC_CONTRACT, .{ .address = TEST_ADDRESS_2 }) catch return;
-    defer contract.deinit(allocator, null);
+    var contract = evm_legacy.Contract.init(TEST_ADDRESS_1, 0, &ARITHMETIC_CONTRACT, BENCHMARK_GAS_LIMIT);
     
     var frame = evm_legacy.Frame.init(allocator, &vm, BENCHMARK_GAS_LIMIT, contract, TEST_ADDRESS_1, &.{}) catch return;
     defer frame.deinit();
@@ -266,8 +273,7 @@ fn benchmark_legacy_evm_storage_contract(allocator: std.mem.Allocator) void {
     var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
     defer vm.deinit();
     
-    var contract = evm_legacy.Contract.init(allocator, &STORAGE_CONTRACT, .{ .address = TEST_ADDRESS_2 }) catch return;
-    defer contract.deinit(allocator, null);
+    var contract = evm_legacy.Contract.init(TEST_ADDRESS_1, 0, &STORAGE_CONTRACT, BENCHMARK_GAS_LIMIT);
     
     var frame = evm_legacy.Frame.init(allocator, &vm, BENCHMARK_GAS_LIMIT, contract, TEST_ADDRESS_1, &.{}) catch return;
     defer frame.deinit();
@@ -284,8 +290,7 @@ fn benchmark_legacy_evm_stack_contract(allocator: std.mem.Allocator) void {
     var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
     defer vm.deinit();
     
-    var contract = evm_legacy.Contract.init(allocator, &STACK_CONTRACT, .{ .address = TEST_ADDRESS_2 }) catch return;
-    defer contract.deinit(allocator, null);
+    var contract = evm_legacy.Contract.init(TEST_ADDRESS_1, 0, &STACK_CONTRACT, BENCHMARK_GAS_LIMIT);
     
     var frame = evm_legacy.Frame.init(allocator, &vm, BENCHMARK_GAS_LIMIT, contract, TEST_ADDRESS_1, &.{}) catch return;
     defer frame.deinit();
@@ -302,8 +307,7 @@ fn benchmark_legacy_evm_memory_contract(allocator: std.mem.Allocator) void {
     var vm = evm_legacy.Evm.init(allocator, db_interface, null, null, null, null) catch return;
     defer vm.deinit();
     
-    var contract = evm_legacy.Contract.init(allocator, &MEMORY_CONTRACT, .{ .address = TEST_ADDRESS_2 }) catch return;
-    defer contract.deinit(allocator, null);
+    var contract = evm_legacy.Contract.init(TEST_ADDRESS_1, 0, &MEMORY_CONTRACT, BENCHMARK_GAS_LIMIT);
     
     var frame = evm_legacy.Frame.init(allocator, &vm, BENCHMARK_GAS_LIMIT, contract, TEST_ADDRESS_1, &.{}) catch return;
     defer frame.deinit();

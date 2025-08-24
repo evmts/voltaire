@@ -1,7 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const log = @import("log.zig");
-const NoOpTracer = @import("tracer.zig").NoOpTracer;
 const memory_mod = @import("memory.zig");
 const stack_mod = @import("stack.zig");
 const opcode_data = @import("opcode_data.zig");
@@ -140,6 +139,27 @@ pub fn Frame(comptime config: FrameConfig) type {
                 allocator.free(log_entry.data);
             }
             self.logs.deinit();
+        }
+        
+        /// Helper function to call tracer beforeOp if tracer is configured
+        pub inline fn traceBeforeOp(self: *Self, pc: u32, opcode: u8) void {
+            if (comptime config.TracerType != null) {
+                self.tracer.beforeOp(pc, opcode, Self, self);
+            }
+        }
+        
+        /// Helper function to call tracer afterOp if tracer is configured
+        pub inline fn traceAfterOp(self: *Self, pc: u32, opcode: u8) void {
+            if (comptime config.TracerType != null) {
+                self.tracer.afterOp(pc, opcode, Self, self);
+            }
+        }
+        
+        /// Helper function to call tracer onError if tracer is configured
+        pub inline fn traceOnError(self: *Self, pc: u32, err: anyerror) void {
+            if (comptime config.TracerType != null) {
+                self.tracer.onError(pc, err, Self, self);
+            }
         }
         
         /// Create a deep copy of the frame.
