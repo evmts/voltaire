@@ -1281,8 +1281,6 @@ test "PlanMinimal PC opcode returns correct value" {
 }
 
 test "Plan error boundary conditions" {
-    const allocator = std.testing.allocator;
-    
     // Test empty instruction stream
     const plan = Plan{
         .instructionStream = &.{},

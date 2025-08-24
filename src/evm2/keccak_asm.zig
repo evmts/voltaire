@@ -74,7 +74,11 @@ pub fn keccak256_batch(inputs: [][]const u8, outputs: [][32]u8) !void {
     }
     
     // Create arrays of pointers and lengths for C interface
-    const allocator = std.heap.c_allocator;
+    // Use page allocator for WASM, c_allocator for other targets
+    const allocator = if (comptime (builtin.target.cpu.arch == .wasm32))
+        std.heap.page_allocator
+    else
+        std.heap.c_allocator;
     const input_ptrs = try allocator.alloc([*c]const u8, inputs.len);
     defer allocator.free(input_ptrs);
     

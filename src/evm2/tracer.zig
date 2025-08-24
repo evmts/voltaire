@@ -377,6 +377,7 @@ pub const TracerConfig = struct {
     capture_memory: MemoryCaptureMode = .none,
     memory_prefix: usize = 0,                  // bytes to capture when mode is .prefix
     compute_gas_cost: bool = false,            // compute per-step gas deltas
+    capture_each_op: bool = false,             // capture snapshot after each operation
 };
 
 pub const DetailedStructLog = struct {
@@ -486,6 +487,31 @@ pub fn Tracer(comptime Writer: type) type {
             try self.writeJson(&log);
         }
         
+        pub fn beforeOp(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
+            _ = self;
+            _ = pc;
+            _ = opcode;
+            _ = frame;
+            // Generic tracer doesn't do anything on beforeOp by default
+        }
+        
+        pub fn afterOp(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
+            // Optionally capture snapshot after each operation
+            if (self.cfg.capture_each_op) {
+                self.writeSnapshot(pc, opcode, FrameType, frame) catch |err| {
+                    std.log.warn("Failed to write snapshot: {}", .{err});
+                };
+            }
+        }
+        
+        pub fn onError(self: *Self, pc: u32, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
+            _ = self;
+            _ = pc;
+            _ = err;
+            _ = frame;
+            // Generic tracer doesn't do anything on error by default
+        }
+        
         pub fn writeJson(self: *Self, log: *const DetailedStructLog) !void {
             try self.writer.print(
                 "{{\"pc\":{},\"op\":\"{s}\",\"gas\":{},\"gasCost\":{},\"depth\":{},\"stack\":[",
@@ -568,12 +594,24 @@ pub const LoggingTracer = struct {
         };
     }
     
-    pub fn snapshot(self: *LoggingTracer, comptime FrameType: type, frame_instance: *const FrameType) !DetailedStructLog {
-        return self.base.snapshot(FrameType, frame_instance);
+    pub fn snapshot(self: *LoggingTracer, pc: u32, opcode: u8, comptime FrameType: type, frame_instance: *const FrameType) !DetailedStructLog {
+        return self.base.snapshot(pc, opcode, FrameType, frame_instance);
     }
     
-    pub fn writeSnapshot(self: *LoggingTracer, comptime FrameType: type, frame_instance: *const FrameType) !void {
-        return self.base.writeSnapshot(FrameType, frame_instance);
+    pub fn writeSnapshot(self: *LoggingTracer, pc: u32, opcode: u8, comptime FrameType: type, frame_instance: *const FrameType) !void {
+        return self.base.writeSnapshot(pc, opcode, FrameType, frame_instance);
+    }
+    
+    pub fn beforeOp(self: *LoggingTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
+        self.base.beforeOp(pc, opcode, FrameType, frame);
+    }
+    
+    pub fn afterOp(self: *LoggingTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
+        self.base.afterOp(pc, opcode, FrameType, frame);
+    }
+    
+    pub fn onError(self: *LoggingTracer, pc: u32, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
+        self.base.onError(pc, err, FrameType, frame);
     }
 };
 
@@ -602,12 +640,24 @@ pub const FileTracer = struct {
         self.file.close();
     }
     
-    pub fn snapshot(self: *FileTracer, comptime FrameType: type, frame_instance: *const FrameType) !DetailedStructLog {
-        return self.base.snapshot(FrameType, frame_instance);
+    pub fn snapshot(self: *FileTracer, pc: u32, opcode: u8, comptime FrameType: type, frame_instance: *const FrameType) !DetailedStructLog {
+        return self.base.snapshot(pc, opcode, FrameType, frame_instance);
     }
     
-    pub fn writeSnapshot(self: *FileTracer, comptime FrameType: type, frame_instance: *const FrameType) !void {
-        return self.base.writeSnapshot(FrameType, frame_instance);
+    pub fn writeSnapshot(self: *FileTracer, pc: u32, opcode: u8, comptime FrameType: type, frame_instance: *const FrameType) !void {
+        return self.base.writeSnapshot(pc, opcode, FrameType, frame_instance);
+    }
+    
+    pub fn beforeOp(self: *FileTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
+        self.base.beforeOp(pc, opcode, FrameType, frame);
+    }
+    
+    pub fn afterOp(self: *FileTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
+        self.base.afterOp(pc, opcode, FrameType, frame);
+    }
+    
+    pub fn onError(self: *FileTracer, pc: u32, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
+        self.base.onError(pc, err, FrameType, frame);
     }
 };
 
