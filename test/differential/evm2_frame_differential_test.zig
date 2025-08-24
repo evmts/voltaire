@@ -83,7 +83,7 @@ test "EVM2 Frame ADD opcode 5 + 10 = 15" {
     defer frame.deinit(allocator);
 
     // Create interpreter for the frame
-    const Interpreter = evm2.FrameInterpreter(Frame);
+    const Interpreter = evm2.createFrameInterpreter(.{});
     var interpreter = Interpreter.init(&frame);
 
     const frame_result = interpreter.interpret();
@@ -157,7 +157,7 @@ test "EVM2 Frame simple PUSH and STOP" {
     defer frame.deinit(allocator);
 
     // Create interpreter for the frame
-    const Interpreter = evm2.FrameInterpreter(Frame);
+    const Interpreter = evm2.createFrameInterpreter(.{});
     var interpreter = Interpreter.init(&frame);
 
     const result = interpreter.interpret();

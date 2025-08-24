@@ -1486,7 +1486,7 @@ test "Bytecode.countBitsInRange - basic functionality" {
     try std.testing.expectEqual(@as(usize, 0), BytecodeDefault.countBitsInRange(bitmap, 10, 10));
 }
 
-test "BytecodeDefault.findNextSetBit - basic functionality" {
+test "Bytecode.findNextSetBit - basic functionality" {
     const allocator = std.testing.allocator;
     // Create a simple bitmap for testing
     var bitmap = try allocator.alloc(u8, 4);
