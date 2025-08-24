@@ -67,8 +67,8 @@ pub export fn evm_stack_destroy(handle: ?*StackHandle) void {
 /// @return Error code
 pub export fn evm_stack_reset(handle: ?*StackHandle) c_int {
     const h = handle orelse return EVM_STACK_ERROR_NULL_POINTER;
-    // Reset stack by moving pointer back to base
-    h.stack.stack_ptr = h.stack.stack_base + DefaultStackConfig.stack_size;
+    // Reset stack by moving pointer back to base (empty state: stack_ptr == stack_base)
+    h.stack.stack_ptr = h.stack.stack_base;
     return EVM_STACK_SUCCESS;
 }
 

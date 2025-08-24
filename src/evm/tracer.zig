@@ -322,7 +322,7 @@ pub const DebuggingTracer = struct {
             if (self.steps.items.len > 0) {
                 const current_step = &self.steps.items[self.steps.items.len - 1];
                 current_step.gas_after = @as(i32, @intCast(gas));
-                current_step.gas_cost = @intCast(@max(0, current_step.gas_before - gas));
+                current_step.gas_cost = @intCast(@max(0, current_step.gas_before - @as(i32, @intCast(gas))));
                 current_step.stack_after = stack_copy;
                 current_step.memory_size_after = if (@hasField(FrameType, "memory")) frame.memory.size() else 0;
             } else {
