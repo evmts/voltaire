@@ -1,39 +1,36 @@
 import Foundation
 import GuillotineC
-import GuillotineEVM
+import GuillotinePrimitives
+import GuillotineEVM  // This import might cause the hang
 
 @main
 struct BasicTest {
     static func main() {
-        print("🔬 Step-by-step debugging...")
+        print("🎯 SUCCESS: Reached main() with GuillotineC + GuillotinePrimitives + GuillotineEVM")
         
-        // Step 1: Test basic C functions
-        print("Step 1: Testing guillotine_version()...")
-        let version = String(cString: guillotine_version()!)
-        print("✅ Version: \(version)")
+        // Test C functions
+        print("📋 Version: \(String(cString: guillotine_version()!))")
         
-        print("Step 2: Testing guillotine_is_initialized()...")
-        let isInit = guillotine_is_initialized()
-        print("✅ Is initialized: \(isInit)")
+        // Test primitives
+        let address: Address = "0x1234567890123456789012345678901234567890"
+        let value = U256.ether(1.0)
+        let bytes: Bytes = [0x60, 0x42]
         
-        // Step 3: Test thread-safe creation (this might hang)
-        print("Step 3: Creating GuillotineEVMThreadSafe...")
+        print("🏠 Address: \(address)")
+        print("💰 Value: \(value)")
+        print("📦 Bytes: \(bytes)")
+        
+        print("✅ GuillotineC + GuillotinePrimitives + GuillotineEVM import work!")
+        print("🧪 Now testing thread-safe EVM class instantiation...")
+        
+        // Test thread-safe EVM class
         do {
             let evm = try GuillotineEVMThreadSafe()
-            print("✅ Thread-safe EVM created successfully!")
-            
-            // Step 4: Test static methods
-            print("Step 4: Testing static methods...")
-            print("  Version: \(GuillotineEVMThreadSafe.version)")
-            print("  Initialized: \(GuillotineEVMThreadSafe.isInitialized)")
-            print("✅ Static methods work!")
-            
-            print("\n🎉 SUCCESS: Thread-safe implementation works!")
-            
+            print("✅ GuillotineEVMThreadSafe instantiation successful!")
+            print("📋 EVM Version: \(GuillotineEVMThreadSafe.version)")
+            print("🔄 EVM Initialized: \(GuillotineEVMThreadSafe.isInitialized)")
         } catch {
-            print("❌ Failed at GuillotineEVMThreadSafe creation: \(error)")
+            print("❌ GuillotineEVMThreadSafe instantiation failed: \(error)")
         }
-        
-        print("🏁 Test completed without hanging!")
     }
 }
