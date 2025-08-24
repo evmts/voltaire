@@ -149,7 +149,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             // Generate DUP handlers using comptime
             const dup_handlers = comptime blk: {
-                var result: [16]HandlerFnType = undefined;
+                var result: [16]HandlerFn = undefined;
                 var i: u8 = 1;
                 while (i <= 16) : (i += 1) {
                     result[i - 1] = generateDupHandler(i);
@@ -163,22 +163,22 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.DUP1) + dup_i - 1));
                 handlers[@intFromEnum(opcode)] = &dup_handlers[dup_i - 1];
             }
-            handlers[@intFromEnum(Opcode.SWAP1)] = &swap1_handler;
-            handlers[@intFromEnum(Opcode.SWAP2)] = &swap2_handler;
-            handlers[@intFromEnum(Opcode.SWAP3)] = &swap3_handler;
-            handlers[@intFromEnum(Opcode.SWAP4)] = &swap4_handler;
-            handlers[@intFromEnum(Opcode.SWAP5)] = &swap5_handler;
-            handlers[@intFromEnum(Opcode.SWAP6)] = &swap6_handler;
-            handlers[@intFromEnum(Opcode.SWAP7)] = &swap7_handler;
-            handlers[@intFromEnum(Opcode.SWAP8)] = &swap8_handler;
-            handlers[@intFromEnum(Opcode.SWAP9)] = &swap9_handler;
-            handlers[@intFromEnum(Opcode.SWAP10)] = &swap10_handler;
-            handlers[@intFromEnum(Opcode.SWAP11)] = &swap11_handler;
-            handlers[@intFromEnum(Opcode.SWAP12)] = &swap12_handler;
-            handlers[@intFromEnum(Opcode.SWAP13)] = &swap13_handler;
-            handlers[@intFromEnum(Opcode.SWAP14)] = &swap14_handler;
-            handlers[@intFromEnum(Opcode.SWAP15)] = &swap15_handler;
-            handlers[@intFromEnum(Opcode.SWAP16)] = &swap16_handler;
+            // Generate SWAP handlers using comptime
+            const swap_handlers = comptime blk: {
+                var result: [16]HandlerFnType = undefined;
+                var i: u8 = 1;
+                while (i <= 16) : (i += 1) {
+                    result[i - 1] = generateSwapHandler(i);
+                }
+                break :blk result;
+            };
+            
+            // Assign SWAP handlers
+            comptime var swap_i: u8 = 1;
+            inline while (swap_i <= 16) : (swap_i += 1) {
+                const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.SWAP1) + swap_i - 1));
+                handlers[@intFromEnum(opcode)] = &swap_handlers[swap_i - 1];
+            }
             handlers[@intFromEnum(Opcode.LOG0)] = &op_log0_handler;
             handlers[@intFromEnum(Opcode.LOG1)] = &op_log1_handler;
             handlers[@intFromEnum(Opcode.LOG2)] = &op_log2_handler;

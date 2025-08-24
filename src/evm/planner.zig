@@ -1682,5 +1682,65 @@ test "integration: complex bytecode with all features" {
     try std.testing.expect(plan.instructionStream.len > 0);
 }
 
+test "cache hit ratio tracking" {
+    const allocator = std.testing.allocator;
+    
+    var planner = try Planner(.{}).init(allocator, 2);
+    defer planner.deinit();
+    
+    const bytecode1 = [_]u8{0x60, 0x01, 0x00}; // PUSH1 1, STOP
+    const bytecode2 = [_]u8{0x60, 0x02, 0x00}; // PUSH1 2, STOP
+    
+    var handlers = testHandlerTable();
+    
+    // Initial stats - no requests yet
+    var stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 0), stats.hits);
+    try std.testing.expectEqual(@as(usize, 0), stats.misses);
+    try std.testing.expectEqual(@as(usize, 0), stats.total_requests);
+    try std.testing.expectEqual(@as(f64, 0.0), stats.hit_ratio);
+    
+    // First access - miss
+    _ = try planner.getOrAnalyze(&bytecode1, handlers, Hardfork.DEFAULT);
+    stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 0), stats.hits);
+    try std.testing.expectEqual(@as(usize, 1), stats.misses);
+    try std.testing.expectEqual(@as(usize, 1), stats.total_requests);
+    try std.testing.expectEqual(@as(f64, 0.0), stats.hit_ratio);
+    
+    // Second access to same bytecode - hit
+    _ = try planner.getOrAnalyze(&bytecode1, handlers, Hardfork.DEFAULT);
+    stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 1), stats.hits);
+    try std.testing.expectEqual(@as(usize, 1), stats.misses);
+    try std.testing.expectEqual(@as(usize, 2), stats.total_requests);
+    try std.testing.expectEqual(@as(f64, 0.5), stats.hit_ratio);
+    
+    // Different bytecode - miss
+    _ = try planner.getOrAnalyze(&bytecode2, handlers, Hardfork.DEFAULT);
+    stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 1), stats.hits);
+    try std.testing.expectEqual(@as(usize, 2), stats.misses);
+    try std.testing.expectEqual(@as(usize, 3), stats.total_requests);
+    try std.testing.expectApproxEqRel(@as(f64, 1.0/3.0), stats.hit_ratio, 0.001);
+    
+    // Access first bytecode again - hit
+    _ = try planner.getOrAnalyze(&bytecode1, handlers, Hardfork.DEFAULT);
+    stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 2), stats.hits);
+    try std.testing.expectEqual(@as(usize, 2), stats.misses);
+    try std.testing.expectEqual(@as(usize, 4), stats.total_requests);
+    try std.testing.expectEqual(@as(f64, 0.5), stats.hit_ratio);
+    
+    // Clear cache resets statistics
+    planner.clearCache();
+    stats = planner.getCacheStats();
+    try std.testing.expectEqual(@as(usize, 0), stats.hits);
+    try std.testing.expectEqual(@as(usize, 0), stats.misses);
+    try std.testing.expectEqual(@as(usize, 0), stats.total_requests);
+    try std.testing.expectEqual(@as(f64, 0.0), stats.hit_ratio);
+    try std.testing.expectEqual(@as(usize, 0), stats.count);
+}
+
 // Export the factory function for creating Planner types
 pub const createPlanner = Planner;
