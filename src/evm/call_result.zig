@@ -75,11 +75,23 @@ pub const CallResult = struct {
         if (self.gas_left > original_gas) return 0; // Sanity check
         return original_gas - self.gas_left;
     }
+    
+    /// Clean up all memory associated with logs
+    /// Must be called when CallResult contains owned log data
+    pub fn deinitLogs(self: *CallResult, allocator: std.mem.Allocator) void {
+        for (self.logs) |log| {
+            allocator.free(log.topics);
+            allocator.free(log.data);
+        }
+        allocator.free(self.logs);
+        self.logs = &.{};
+    }
 };
 
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
+const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 
 /// Log entry structure for EVM events
 pub const Log = struct {
@@ -234,12 +246,12 @@ test "CallResult log memory management - proper cleanup" {
     
     const logs = try allocator.alloc(Log, 2);
     logs[0] = Log{
-        .address = Address.ZERO,
+        .address = ZERO_ADDRESS,
         .topics = topics1,
         .data = data1,
     };
     logs[1] = Log{
-        .address = Address.ZERO,
+        .address = ZERO_ADDRESS,
         .topics = topics2,
         .data = data2,
     };
