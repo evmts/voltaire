@@ -46,7 +46,7 @@ class InvalidBytecodeError(GuillotineError):
     pass
 
 
-class InsufficientGasError(ExecutionError):
+class OutOfGasError(ExecutionError):
     """Raised when execution runs out of gas."""
     pass
 
