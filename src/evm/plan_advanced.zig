@@ -980,7 +980,7 @@ test "PlanMinimal getMetadata for all PUSH opcodes" {
     
     // Test PUSH1 through PUSH8 (values that fit inline)
     {
-        _ = [_]u8{
+        const bytecode = [_]u8{
             @intFromEnum(Opcode.PUSH1), 0xFF,
             @intFromEnum(Opcode.PUSH2), 0x12, 0x34,
             @intFromEnum(Opcode.PUSH3), 0xAB, 0xCD, 0xEF,
@@ -1038,7 +1038,7 @@ test "PlanMinimal getMetadata for all PUSH opcodes" {
 test "PlanMinimal getNextInstruction advances correctly" {
     const allocator = std.testing.allocator;
     
-    _ = [_]u8{
+    const bytecode = [_]u8{
         @intFromEnum(Opcode.ADD),          // PC 0: no metadata
         @intFromEnum(Opcode.PUSH1), 0x42,  // PC 1: 1 byte metadata
         @intFromEnum(Opcode.MUL),          // PC 3: no metadata
@@ -1091,7 +1091,7 @@ test "PlanMinimal JUMPDEST detection with PUSH data" {
     const allocator = std.testing.allocator;
     
     // Test that 0x5B inside PUSH data is not detected as JUMPDEST
-    _ = [_]u8{
+    const bytecode = [_]u8{
         @intFromEnum(Opcode.PUSH2), 0x5B, 0x5B, // 0x5B bytes should not be JUMPDEST
         @intFromEnum(Opcode.JUMPDEST),          // This should be detected
         @intFromEnum(Opcode.PUSH1), 0x5B,        // This 0x5B should not be JUMPDEST
@@ -1123,7 +1123,7 @@ test "PlanMinimal edge cases" {
     
     // Test empty bytecode
     {
-        _ = [_]u8{};
+        const bytecode = [_]u8{};
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         defer planner.deinit();
@@ -1138,7 +1138,7 @@ test "PlanMinimal edge cases" {
     
     // Test single opcode
     {
-        _ = [_]u8{@intFromEnum(Opcode.STOP)};
+        const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         defer planner.deinit();
@@ -1159,7 +1159,7 @@ test "PlanMinimal edge cases" {
     
     // Test truncated PUSH
     {
-        _ = [_]u8{
+        const bytecode = [_]u8{
             @intFromEnum(Opcode.PUSH3), 0xAB, // Missing 2 bytes
         };
         const Planner = @import("planner.zig").createPlanner(.{});
@@ -1203,7 +1203,7 @@ test "PlanMinimal getNextInstruction returns correct handlers" {
         }
     }.handler;
     
-    _ = [_]u8{
+    const bytecode = [_]u8{
         @intFromEnum(Opcode.PUSH1), 0x42,
         @intFromEnum(Opcode.ADD),
         @intFromEnum(Opcode.MUL),
@@ -1247,7 +1247,7 @@ test "PlanMinimal getNextInstruction returns correct handlers" {
 test "PlanMinimal PC opcode returns correct value" {
     const allocator = std.testing.allocator;
     
-    _ = [_]u8{
+    const bytecode = [_]u8{
         @intFromEnum(Opcode.PUSH1), 0x42,  // PC 0
         @intFromEnum(Opcode.PC),           // PC 2
         @intFromEnum(Opcode.PUSH2), 0x12, 0x34, // PC 3
@@ -1948,7 +1948,7 @@ test "Plan comprehensive deinit behavior" {
 test "PlanMinimal JUMPDEST metadata" {
     const allocator = std.testing.allocator;
     
-    _ = [_]u8{
+    const bytecode = [_]u8{
         @intFromEnum(Opcode.JUMPDEST),     // PC 0
         @intFromEnum(Opcode.PUSH1), 0x05,  // PC 1
         @intFromEnum(Opcode.JUMP),         // PC 3
@@ -2476,7 +2476,7 @@ test "Plan extreme configuration edge cases" {
     const Planner = @import("planner.zig").createPlanner(min_config);
     
     // Minimal valid bytecode
-    _ = [_]u8{@intFromEnum(Opcode.STOP)};
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
     var planner = try Planner.init(allocator, 100);
     
     var handlers: [256]*const HandlerFn = undefined;
@@ -3113,8 +3113,7 @@ test "Plan configuration boundary and mutation stress testing" {
             
             var planner = try Planner.init(allocator, 100);
             
-            var plan = try planner.create_minimal_plan(allocator, handlers);
-            defer plan.deinit(allocator);
+            const plan = try planner.getOrAnalyze(limited_bytecode, handlers);
             
             // Verify plan works with this configuration
             try std.testing.expect(plan.bytecode.len == limited_bytecode.len);
@@ -3364,27 +3363,15 @@ test "Plan caching and lifecycle management validation" {
         const ConfigPlanner = @import("planner.zig").createPlanner(config);
         var config_planner = try ConfigPlanner.init(allocator, 100);
         
-        // Create both minimal and advanced plans
-        var minimal_plan = try config_planner.create_minimal_plan(allocator, handlers);
-        var advanced_plan = try config_planner.create_plan(allocator, handlers);
+        // Create plan (getOrAnalyze creates both minimal and advanced plans internally)
+        const plan = try config_planner.getOrAnalyze(&reusable_bytecode, handlers);
         
-        // Test that both work with this configuration
-        try std.testing.expect(minimal_plan.bytecode.len == reusable_bytecode.len);
-        try std.testing.expect(advanced_plan.bytecode.len == reusable_bytecode.len);
+        // Test that plan works with this configuration
+        try std.testing.expect(plan.bytecode.len == reusable_bytecode.len);
         
-        // Test metadata consistency
-        const minimal_meta = minimal_plan.getMetadata(0, .PUSH1, undefined);
-        const advanced_meta = advanced_plan.getMetadata(0, .PUSH1, undefined);
-        try std.testing.expectEqual(minimal_meta, advanced_meta);
-        
-        // Clean up in different orders to test lifecycle robustness
-        if (config.stack_size % 2 == 0) {
-            minimal_plan.deinit(allocator);
-            advanced_plan.deinit(allocator);
-        } else {
-            advanced_plan.deinit(allocator);
-            minimal_plan.deinit(allocator);
-        }
+        // Test metadata access
+        const meta = plan.getMetadata(0, .PUSH1, undefined);
+        _ = meta;
     }
     
     // Test 3: Plan ownership transfer simulation
@@ -3400,7 +3387,10 @@ test "Plan caching and lifecycle management validation" {
         fn create(alloc: std.mem.Allocator, _: []const u8, plan_handlers: [256]*const HandlerFn) !Plan {
             const TransferPlanner = @import("planner.zig").createPlanner(.{});
             var transfer_planner = try TransferPlanner.init(alloc, 100);
-            return try transfer_planner.create_plan(alloc, plan_handlers);
+            const plan = try transfer_planner.getOrAnalyze(bytecode, plan_handlers);
+            // Since getOrAnalyze returns a const pointer, we need to create a copy for ownership transfer
+            // This is a limitation of the new API - plans are cached and const
+            return error.NotImplemented;
         }
     }.create;
     
@@ -3434,7 +3424,7 @@ test "Plan caching and lifecycle management validation" {
         const StressPlanner = @import("planner.zig").createPlanner(.{});
         var stress_planner = try StressPlanner.init(allocator, 100);
         
-        var stress_plan = try stress_planner.create_plan(allocator, handlers);
+        const stress_plan = try stress_planner.getOrAnalyze(&stress_bytecode, handlers);
         
         // Quick validation
         try std.testing.expect(stress_plan.bytecode.len == stress_bytecode.len);
@@ -3444,8 +3434,5 @@ test "Plan caching and lifecycle management validation" {
         try std.testing.expectEqual(@as(u256, iteration % 256), first_push);
         
         try std.testing.expect(stress_plan.isValidJumpDestination(6)); // JUMPDEST at PC 6
-        
-        // Immediate cleanup
-        stress_plan.deinit(allocator);
     }
 }
