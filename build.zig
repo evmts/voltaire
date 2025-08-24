@@ -340,15 +340,34 @@ pub fn build(b: *std.Build) void {
         .root_source_file = "src/evm_c.zig",
         .dest_sub_path = "guillotine-evm.wasm",
     }, wasm_evm_lib_mod);
+    
+    // EVM2 WASM build
+    const wasm_evm2_mod = wasm.createWasmModule(b, "src/evm2/root.zig", wasm_target, wasm_optimize);
+    wasm_evm2_mod.addImport("primitives", wasm_primitives_mod);
+    wasm_evm2_mod.addImport("evm", wasm_evm_mod);
+    wasm_evm2_mod.addImport("crypto", wasm_crypto_mod);
+    wasm_evm2_mod.addImport("build_options", build_options_mod);
+    
+    const wasm_evm2_lib_mod = wasm.createWasmModule(b, "src/evm2/root_c.zig", wasm_target, wasm_optimize);
+    wasm_evm2_lib_mod.addImport("primitives", wasm_primitives_mod);
+    wasm_evm2_lib_mod.addImport("evm", wasm_evm_mod);
+    wasm_evm2_lib_mod.addImport("evm2", wasm_evm2_mod);
+    
+    const wasm_evm2_build = wasm.buildWasmExecutable(b, .{
+        .name = "guillotine-evm2",
+        .root_source_file = "src/evm2/root_c.zig",
+        .dest_sub_path = "guillotine-evm2.wasm",
+    }, wasm_evm2_lib_mod);
 
-    // Add step to report WASM bundle sizes for all three builds
+    // Add step to report WASM bundle sizes for all builds
     const wasm_size_step = wasm.addWasmSizeReportStep(
         b,
-        &[_][]const u8{ "guillotine.wasm", "guillotine-primitives.wasm", "guillotine-evm.wasm" },
+        &[_][]const u8{ "guillotine.wasm", "guillotine-primitives.wasm", "guillotine-evm.wasm", "guillotine-evm2.wasm" },
         &[_]*std.Build.Step{
             &wasm_lib_build.install.step,
             &wasm_primitives_build.install.step,
             &wasm_evm_build.install.step,
+            &wasm_evm2_build.install.step,
         },
     );
 
@@ -361,6 +380,9 @@ pub fn build(b: *std.Build) void {
 
     const wasm_evm_step = b.step("wasm-evm", "Build EVM-only WASM library");
     wasm_evm_step.dependOn(&wasm_evm_build.install.step);
+    
+    const wasm_evm2_step = b.step("wasm-evm2", "Build EVM2-only WASM library");
+    wasm_evm2_step.dependOn(&wasm_evm2_build.install.step);
 
     // Debug WASM build for analysis
     const wasm_debug_mod = wasm.createWasmModule(b, "src/root.zig", wasm_target, .Debug);

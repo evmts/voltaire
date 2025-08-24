@@ -13,26 +13,27 @@ pub const NoOpTracer = struct {
         return .{};
     }
     
-    pub fn beforeOp(self: *NoOpTracer, comptime FrameType: type, frame: *const FrameType) void {
+    pub fn beforeOp(self: *NoOpTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
+        _ = pc;
+        _ = opcode;
         _ = frame;
         // FrameType is used in the function signature, no need to discard
     }
     
-    pub fn afterOp(self: *NoOpTracer, comptime FrameType: type, frame: *const FrameType) void {
+    pub fn afterOp(self: *NoOpTracer, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
+        _ = pc;
+        _ = opcode;
         _ = frame;
         // FrameType is used in the function signature, no need to discard
     }
     
-    pub fn onError(self: *NoOpTracer, comptime FrameType: type, frame: *const FrameType, err: anyerror) void {
+    pub fn onError(self: *NoOpTracer, pc: u32, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
+        _ = pc;
+        _ = err;
         _ = frame;
-        // No-op tracer doesn't do anything with errors
-        // But we need to use it to avoid compiler error
-        if (false) {
-            std.debug.print("Error: {}\n", .{err});
-        }
         // FrameType is used in the function signature, no need to discard
     }
 };
@@ -185,7 +186,7 @@ pub const DebuggingTracer = struct {
     }
     
     /// Create a snapshot of the current state
-    pub fn captureState(self: *Self, comptime FrameType: type, frame: *const FrameType) !void {
+    pub fn captureState(self: *Self, pc: u32, comptime FrameType: type, frame: *const FrameType) !void {
         // Get current stack contents
         const stack_copy = try self.allocator.alloc(u256, frame.next_stack_index);
         for (0..frame.next_stack_index) |i| {
@@ -194,7 +195,7 @@ pub const DebuggingTracer = struct {
         }
         
         const snapshot = StateSnapshot{
-            .pc = 0, // PC is now managed by plan, not frame
+            .pc = pc,
             .gas_remaining = frame.gas_remaining,
             .stack = stack_copy,
             .memory_size = if (@hasField(FrameType, "memory")) frame.memory.size() else 0,
@@ -212,9 +213,8 @@ pub const DebuggingTracer = struct {
     }
     
     /// Required tracer interface: called before each operation
-    pub fn beforeOp(self: *Self, comptime FrameType: type, frame: *const FrameType) void {
+    pub fn beforeOp(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
         // Check if we should pause execution
-        const pc: u32 = 0; // PC is now managed by plan, not frame
         if (self.shouldPause(pc)) {
             self.paused = true;
         }
@@ -224,30 +224,32 @@ pub const DebuggingTracer = struct {
         // and requiring explicit resume calls
         
         // Capture state before operation for step recording
-        self.captureStateForStep(FrameType, frame, true) catch |err| {
+        self.captureStateForStep(pc, opcode, FrameType, frame, true) catch |err| {
             std.log.warn("Failed to capture before state: {}", .{err});
         };
     }
     
     /// Required tracer interface: called after each operation
-    pub fn afterOp(self: *Self, comptime FrameType: type, frame: *const FrameType) void {
+    pub fn afterOp(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType) void {
+        _ = opcode;
         // Update statistics
         self.total_instructions += 1;
         
         // Capture state after operation to complete the step record
-        self.captureStateForStep(FrameType, frame, false) catch |err| {
+        self.captureStateForStep(pc, opcode, FrameType, frame, false) catch |err| {
             std.log.warn("Failed to capture after state: {}", .{err});
         };
         
         // Create state snapshot if configured
-        self.captureState(FrameType, frame) catch |err| {
+        self.captureState(pc, FrameType, frame) catch |err| {
             std.log.warn("Failed to capture state snapshot: {}", .{err});
         };
     }
     
     /// Required tracer interface: called when an error occurs
-    pub fn onError(self: *Self, comptime FrameType: type, frame: *const FrameType, err: anyerror) void {
-        _ = frame; // PC is now managed by plan, not frame
+    pub fn onError(self: *Self, pc: u32, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
+        _ = frame;
+        _ = pc;
         
         // Record error in current step if we have one
         if (self.steps.items.len > 0) {
@@ -266,8 +268,7 @@ pub const DebuggingTracer = struct {
     }
     
     /// Helper function to capture state for step recording
-    fn captureStateForStep(self: *Self, comptime FrameType: type, frame: *const FrameType, is_before: bool) !void {
-        const pc: u32 = 0; // PC is now managed by plan, not frame
+    fn captureStateForStep(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType, is_before: bool) !void {
         const gas = frame.gas_remaining;
         
         // Create stack copy
@@ -278,8 +279,6 @@ pub const DebuggingTracer = struct {
         
         if (is_before) {
             // Start a new execution step
-            const opcode: u8 = 0x00; // PC is now managed by plan, not frame
-            
             const step = ExecutionStep{
                 .step_number = self.total_instructions,
                 .pc = pc,
@@ -421,16 +420,12 @@ pub fn Tracer(comptime Writer: type) type {
             };
         }
         
-        pub fn snapshot(self: *Self, comptime FrameType: type, frame_instance: *const FrameType) !DetailedStructLog {
+        pub fn snapshot(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame_instance: *const FrameType) !DetailedStructLog {
             // Capture stack
             const stack_size = frame_instance.stack.size();
             const stack_copy = try self.allocator.alloc(u256, stack_size);
             const stack_slice = frame_instance.stack.get_slice();
             @memcpy(stack_copy, stack_slice);
-            
-            // Get current opcode - PC is now managed by plan, so we can't get it from frame
-            // For now, just use 0x00 as we don't have plan access here
-            const opcode: u8 = 0x00;
             
             const op_name = getOpcodeName(opcode);
             
@@ -470,7 +465,7 @@ pub fn Tracer(comptime Writer: type) type {
             const err_str = getFrameError(FrameType, frame_instance);
             
             return DetailedStructLog{
-                .pc = 0, // PC is now managed by plan, not frame
+                .pc = @as(u64, pc),
                 .op = op_name,
                 .gas = gas_now,
                 .gasCost = gas_cost,
@@ -483,8 +478,8 @@ pub fn Tracer(comptime Writer: type) type {
             };
         }
         
-        pub fn writeSnapshot(self: *Self, comptime FrameType: type, frame_instance: *const FrameType) !void {
-            const log = try self.snapshot(FrameType, frame_instance);
+        pub fn writeSnapshot(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame_instance: *const FrameType) !void {
+            const log = try self.snapshot(pc, opcode, FrameType, frame_instance);
             defer self.allocator.free(log.stack);
             defer if (log.memory) |m| self.allocator.free(m);
             

@@ -61,7 +61,6 @@ pub fn Frame(comptime config: FrameConfig) type {
 
     return struct {
         pub const WordType = config.WordType;
-        pub const TracerType = config.TracerType;
         pub const GasType = config.GasType();
         pub const PcType = config.PcType();
         pub const Memory = memory_mod.Memory(.{
@@ -92,7 +91,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         stack: Stack,
         bytecode: []const u8, // 16 bytes (slice)
         gas_remaining: GasType, // 4 or 8 bytes depending on block_gas_limit
-        tracer: TracerType,
+        tracer: if (config.TracerType) |T| T else void,
         memory: Memory,
         database: if (config.has_database) ?DatabaseInterface else void,
         
@@ -124,7 +123,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .stack = stack,
                 .bytecode = bytecode,
                 .gas_remaining = gas_remaining,
-                .tracer = TracerType.init(),
+                .tracer = if (config.TracerType) |T| T.init() else {},
                 .memory = memory,
                 .database = database,
                 .logs = logs,
@@ -136,9 +135,9 @@ pub fn Frame(comptime config: FrameConfig) type {
             self.stack.deinit(allocator);
             self.memory.deinit();
             // Free log data
-            for (self.logs.items) |log| {
-                allocator.free(log.topics);
-                allocator.free(log.data);
+            for (self.logs.items) |log_entry| {
+                allocator.free(log_entry.topics);
+                allocator.free(log_entry.data);
             }
             self.logs.deinit();
         }
@@ -174,22 +173,22 @@ pub fn Frame(comptime config: FrameConfig) type {
             var new_logs = std.ArrayList(Log).init(allocator);
             errdefer new_logs.deinit();
             
-            for (self.logs.items) |log| {
+            for (self.logs.items) |log_entry| {
                 // Allocate and copy topics
-                const topics_copy = allocator.alloc(u256, log.topics.len) catch {
+                const topics_copy = allocator.alloc(u256, log_entry.topics.len) catch {
                     return Error.AllocationError;
                 };
-                @memcpy(topics_copy, log.topics);
+                @memcpy(topics_copy, log_entry.topics);
                 
                 // Allocate and copy data
-                const data_copy = allocator.alloc(u8, log.data.len) catch {
+                const data_copy = allocator.alloc(u8, log_entry.data.len) catch {
                     allocator.free(topics_copy);
                     return Error.AllocationError;
                 };
-                @memcpy(data_copy, log.data);
+                @memcpy(data_copy, log_entry.data);
                 
                 new_logs.append(Log{
-                    .address = log.address,
+                    .address = log_entry.address,
                     .topics = topics_copy,
                     .data = data_copy,
                 }) catch {
@@ -203,7 +202,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .stack = new_stack,
                 .bytecode = self.bytecode, // Bytecode is immutable, share reference
                 .gas_remaining = self.gas_remaining,
-                .tracer = self.tracer, // Tracer can be shared for NoOpTracer
+                .tracer = if (config.TracerType) |_| self.tracer else {},
                 .memory = new_memory,
                 .database = self.database,
                 .contract_address = self.contract_address,
@@ -282,19 +281,19 @@ pub fn Frame(comptime config: FrameConfig) type {
                         std.debug.panic("Frame.assertEqual: log address mismatch", .{});
                     }
                 }
-                if (self_log.topics.len != other_log.topics.len) {
+                if (self_log_entry.topics.len != other_log_entry.topics.len) {
                     if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
                         std.debug.panic("Frame.assertEqual: log topics count mismatch", .{});
                     }
                 }
-                for (self_log.topics, other_log.topics) |self_topic, other_topic| {
+                for (self_log_entry.topics, other_log_entry.topics) |self_topic, other_topic| {
                     if (self_topic != other_topic) {
                         if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
                             std.debug.panic("Frame.assertEqual: log topic mismatch", .{});
                         }
                     }
                 }
-                if (!std.mem.eql(u8, self_log.data, other_log.data)) {
+                if (!std.mem.eql(u8, self_log_entry.data, other_log_entry.data)) {
                     if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
                         std.debug.panic("Frame.assertEqual: log data mismatch", .{});
                     }
@@ -4855,12 +4854,12 @@ test "Frame LOG0 operation" {
     
     // Verify log was created
     try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
-    const log = frame.logs.items[0];
+    const log_entry = frame.logs.items[0];
     
     // Check log properties
-    try std.testing.expectEqual(frame.contract_address, log.address);
-    try std.testing.expectEqual(@as(usize, 0), log.topics.len); // LOG0 has no topics
-    try std.testing.expectEqualSlices(u8, test_data, log.data);
+    try std.testing.expectEqual(frame.contract_address, log_entry.address);
+    try std.testing.expectEqual(@as(usize, 0), log_entry.topics.len); // LOG0 has no topics
+    try std.testing.expectEqualSlices(u8, test_data, log_entry.data);
 }
 
 test "Frame LOG1 operation with topic" {
@@ -4893,13 +4892,13 @@ test "Frame LOG1 operation with topic" {
     
     // Verify log was created
     try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
-    const log = frame.logs.items[0];
+    const log_entry = frame.logs.items[0];
     
     // Check log properties
-    try std.testing.expectEqual(frame.contract_address, log.address);
-    try std.testing.expectEqual(@as(usize, 1), log.topics.len);
-    try std.testing.expectEqual(topic1, log.topics[0]);
-    try std.testing.expectEqualSlices(u8, &test_data, log.data);
+    try std.testing.expectEqual(frame.contract_address, log_entry.address);
+    try std.testing.expectEqual(@as(usize, 1), log_entry.topics.len);
+    try std.testing.expectEqual(topic1, log_entry.topics[0]);
+    try std.testing.expectEqualSlices(u8, &test_data, log_entry.data);
 }
 
 test "Frame LOG4 operation with multiple topics" {
@@ -4929,16 +4928,16 @@ test "Frame LOG4 operation with multiple topics" {
     
     // Verify log was created
     try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
-    const log = frame.logs.items[0];
+    const log_entry = frame.logs.items[0];
     
     // Check log properties
-    try std.testing.expectEqual(frame.contract_address, log.address);
-    try std.testing.expectEqual(@as(usize, 4), log.topics.len);
-    try std.testing.expectEqual(topic1, log.topics[0]);
-    try std.testing.expectEqual(topic2, log.topics[1]);
-    try std.testing.expectEqual(topic3, log.topics[2]);
-    try std.testing.expectEqual(topic4, log.topics[3]);
-    try std.testing.expectEqual(@as(usize, 0), log.data.len); // Empty data
+    try std.testing.expectEqual(frame.contract_address, log_entry.address);
+    try std.testing.expectEqual(@as(usize, 4), log_entry.topics.len);
+    try std.testing.expectEqual(topic1, log_entry.topics[0]);
+    try std.testing.expectEqual(topic2, log_entry.topics[1]);
+    try std.testing.expectEqual(topic3, log_entry.topics[2]);
+    try std.testing.expectEqual(topic4, log_entry.topics[3]);
+    try std.testing.expectEqual(@as(usize, 0), log_entry.data.len); // Empty data
 }
 
 test "Frame LOG in static context fails" {
@@ -5539,7 +5538,7 @@ test "Frame log operations edge cases - maximum topics and static context" {
     // Verify log was created with correct size
     try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
     const large_log = frame.logs.items[0];
-    try std.testing.expectEqual(max_data_size, large_log.data.len);
+    try std.testing.expectEqual(max_data_size, large_log_entry.data.len);
 }
 
 test "Frame initialization edge cases - various configurations" {
