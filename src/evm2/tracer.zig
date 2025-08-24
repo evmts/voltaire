@@ -915,19 +915,19 @@ test "tracer with gas cost computation" {
     
     // First snapshot - no previous gas, so cost should be 0
     test_frame.gas_remaining = 1000;
-    const log1 = try tracer.snapshot(Frame, &test_frame);
+    const log1 = try tracer.snapshot(0, 0x60, Frame, &test_frame); // PUSH1
     defer allocator.free(log1.stack);
     try std.testing.expectEqual(@as(u64, 0), log1.gasCost);
     
     // Second snapshot - gas decreased by 3
     test_frame.gas_remaining = 997;
-    const log2 = try tracer.snapshot(Frame, &test_frame);
+    const log2 = try tracer.snapshot(1, 0x60, Frame, &test_frame); // PUSH1
     defer allocator.free(log2.stack);
     try std.testing.expectEqual(@as(u64, 3), log2.gasCost);
     
     // Third snapshot - gas decreased by 21
     test_frame.gas_remaining = 976;
-    const log3 = try tracer.snapshot(Frame, &test_frame);
+    const log3 = try tracer.snapshot(2, 0x01, Frame, &test_frame); // ADD
     defer allocator.free(log3.stack);
     try std.testing.expectEqual(@as(u64, 21), log3.gasCost);
 }
@@ -943,7 +943,7 @@ test "tracer handles empty stack with JSON output" {
     defer output.deinit();
     
     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
-    try tracer.writeSnapshot(Frame, &test_frame);
+    try tracer.writeSnapshot(0, 0x00, Frame, &test_frame); // STOP
     
     const json = output.items;
     try std.testing.expect(std.mem.indexOf(u8, json, "\"stack\":[]") != null);
@@ -963,7 +963,7 @@ test "tracer handles large stack values in JSON" {
     defer output.deinit();
     
     var tracer = Tracer(std.ArrayList(u8).Writer).init(allocator, output.writer());
-    try tracer.writeSnapshot(Frame, &test_frame);
+    try tracer.writeSnapshot(0, 0x00, Frame, &test_frame); // STOP
     
     const json = output.items;
     try std.testing.expect(std.mem.indexOf(u8, json, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff") != null);
@@ -985,9 +985,9 @@ test "NoOpTracer has zero runtime cost" {
     const test_frame = TestFrame{ .gas = 1000 };
     
     // These should compile to nothing
-    tracer.beforeOp(TestFrame, &test_frame);
-    tracer.afterOp(TestFrame, &test_frame);
-    tracer.onError(TestFrame, &test_frame, error.TestError);
+    tracer.beforeOp(0, 0x00, TestFrame, &test_frame);
+    tracer.afterOp(0, 0x00, TestFrame, &test_frame);
+    tracer.onError(0, error.TestError, TestFrame, &test_frame);
 }
 
 test "DebuggingTracer basic functionality" {
