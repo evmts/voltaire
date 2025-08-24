@@ -71,7 +71,7 @@ export fn evm_init() c_int {
     };
 
     // Initialize with default configuration
-    const block_info = evm_root.DefaultBlockInfo.init();
+    const block_info = evm_root.BlockInfo.init();
     const tx_context = evm_root.TransactionContext{
         .gas_limit = 30_000_000,
         .coinbase = primitives.ZERO_ADDRESS,
@@ -141,8 +141,18 @@ export fn evm_execute(
     const target_address = primitives.ZERO_ADDRESS; // Use zero address for contract execution
 
     // Set bytecode in state
-    vm.db.set_code(target_address, bytecode) catch |err| {
+    const code_hash = vm.database.set_code(bytecode) catch |err| {
         log(.err, .evm_c, "Failed to set bytecode: {}", .{err});
+        result_ptr.success = 0;
+        result_ptr.error_code = @intFromEnum(EvmError.EVM_ERROR_EXECUTION_FAILED);
+        return @intFromEnum(EvmError.EVM_ERROR_EXECUTION_FAILED);
+    };
+    
+    // Create account with the code
+    var account = evm_root.Account.zero();
+    account.code_hash = code_hash;
+    vm.database.set_account(target_address, account) catch |err| {
+        log(.err, .evm_c, "Failed to set account: {}", .{err});
         result_ptr.success = 0;
         result_ptr.error_code = @intFromEnum(EvmError.EVM_ERROR_EXECUTION_FAILED);
         return @intFromEnum(EvmError.EVM_ERROR_EXECUTION_FAILED);
@@ -168,11 +178,11 @@ export fn evm_execute(
     };
 
     // Fill result structure
-    result_ptr.success = if (run_result.is_success()) 1 else 0;
-    result_ptr.gas_used = run_result.gas_used;
-    if (run_result.return_data.len > 0) {
-        result_ptr.return_data_ptr = run_result.return_data.ptr;
-        result_ptr.return_data_len = run_result.return_data.len;
+    result_ptr.success = if (run_result.success) 1 else 0;
+    result_ptr.gas_used = @intCast(gas_limit - run_result.gas_left);
+    if (run_result.output.len > 0) {
+        result_ptr.return_data_ptr = run_result.output.ptr;
+        result_ptr.return_data_len = run_result.output.len;
     } else {
         const empty: []const u8 = &[_]u8{};
         result_ptr.return_data_ptr = empty.ptr;
@@ -180,7 +190,7 @@ export fn evm_execute(
     }
     result_ptr.error_code = @intFromEnum(EvmError.EVM_OK);
 
-    log(.info, .evm_c, "Execution completed: success={}, gas_used={}", .{ run_result.is_success(), run_result.gas_used });
+    log(.info, .evm_c, "Execution completed: success={}, gas_used={}", .{ run_result.success, gas_limit - run_result.gas_left });
     return @intFromEnum(EvmError.EVM_OK);
 }
 
@@ -252,7 +262,7 @@ export fn guillotine_vm_create() ?*GuillotineVm {
     };
     
     // Initialize with default configuration
-    const block_info = evm_root.DefaultBlockInfo.init();
+    const block_info = evm_root.BlockInfo.init();
     const tx_context = evm_root.TransactionContext{
         .gas_limit = 30_000_000,
         .coinbase = primitives.ZERO_ADDRESS,
@@ -292,7 +302,13 @@ export fn guillotine_set_balance(vm: ?*GuillotineVm, address: ?*const Guillotine
     const addr = address.?.bytes;
     const value = u256_from_bytes(&balance.?.bytes);
     
-    state.vm.state.set_balance(addr, value) catch return false;
+    // Get current account or create new one
+    var account = state.vm.database.get_account(addr) catch return false;
+    if (account == null) {
+        account = evm_root.Account.zero();
+    }
+    account.?.balance = value;
+    state.vm.database.set_account(addr, account.?) catch return false;
     return true;
 }
 
@@ -303,7 +319,16 @@ export fn guillotine_set_code(vm: ?*GuillotineVm, address: ?*const GuillotineAdd
     const addr = address.?.bytes;
     
     const code_slice = if (code) |c| c[0..code_len] else &[_]u8{};
-    state.vm.state.set_code(addr, code_slice) catch return false;
+    // Set code and update account
+    const code_hash = state.vm.database.set_code(code_slice) catch return false;
+    
+    // Get current account or create new one
+    var account = state.vm.database.get_account(addr) catch return false;
+    if (account == null) {
+        account = evm_root.Account.zero();
+    }
+    account.?.code_hash = code_hash;
+    state.vm.database.set_account(addr, account.?) catch return false;
     return true;
 }
 
@@ -329,7 +354,6 @@ export fn guillotine_execute(
     
     const state: *VmState = @ptrCast(@alignCast(vm.?));
     const from_addr = from.?.bytes;
-    _ = to; // TODO: Use this when implementing CALL operations
     const value_u256 = if (value) |v| u256_from_bytes(&v.bytes) else 0;
     const input_slice = if (input) |i| i[0..input_len] else &[_]u8{};
     
@@ -353,13 +377,13 @@ export fn guillotine_execute(
         return result;
     };
     
-    result.success = exec_result.is_success();
-    result.gas_used = exec_result.gas_used;
+    result.success = exec_result.success;
+    result.gas_used = gas_limit - exec_result.gas_left;
     
     // Copy output if any
-    if (exec_result.return_data.len > 0) {
-        const output_copy = state.allocator.alloc(u8, exec_result.return_data.len) catch return result;
-        @memcpy(output_copy, exec_result.return_data);
+    if (exec_result.output.len > 0) {
+        const output_copy = state.allocator.alloc(u8, exec_result.output.len) catch return result;
+        @memcpy(output_copy, exec_result.output);
         result.output = output_copy.ptr;
         result.output_len = output_copy.len;
     }
