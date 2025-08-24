@@ -19,8 +19,8 @@ fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), co
 
 const DefaultEvm = evm_root.DefaultEvm;
 const MemoryDatabase = evm_root.MemoryDatabase;
-const Frame = evm_root.Frame;
-const Contract = evm_root.Contract;
+const CallParams = evm_root.CallParams;
+const CallResult = evm_root.CallResult;
 const Address = primitives.Address.Address;
 
 // Use page allocator for WASM (no libc dependency)
@@ -71,11 +71,15 @@ export fn evm_init() c_int {
     };
 
     // Initialize with default configuration
-    const block_info = evm_root.BlockInfo{};
-    const tx_context = evm_root.TransactionContext{};
+    const block_info = evm_root.DefaultBlockInfo.init();
+    const tx_context = evm_root.TransactionContext{
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
     const gas_price = 0;
-    const origin = primitives.Address.ZERO_ADDRESS;
-    const hardfork = evm_root.HardFork.CANCUN;
+    const origin = primitives.ZERO_ADDRESS;
+    const hardfork = evm_root.Hardfork.CANCUN;
     
     vm.* = DefaultEvm.init(allocator, db_interface, block_info, tx_context, gas_price, origin, hardfork) catch |err| {
         log(.err, .evm_c, "Failed to initialize VM: {}", .{err});
@@ -250,11 +254,15 @@ export fn guillotine_vm_create() ?*GuillotineVm {
     };
     
     // Initialize with default configuration
-    const block_info = evm_root.BlockInfo{};
-    const tx_context = evm_root.TransactionContext{};
+    const block_info = evm_root.DefaultBlockInfo.init();
+    const tx_context = evm_root.TransactionContext{
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
     const gas_price = 0;
-    const origin = primitives.Address.ZERO_ADDRESS;
-    const hardfork = evm_root.HardFork.CANCUN;
+    const origin = primitives.ZERO_ADDRESS;
+    const hardfork = evm_root.Hardfork.CANCUN;
     
     state.vm.* = DefaultEvm.init(allocator, db_interface, block_info, tx_context, gas_price, origin, hardfork) catch {
         state.memory_db.deinit();
