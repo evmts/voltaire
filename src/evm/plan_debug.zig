@@ -158,12 +158,12 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
                 .maxBytecodeSize = cfg.maxBytecodeSize,
             };
             const PlannerType = Planner(planner_cfg);
-            var planner = try PlannerType.init(allocator, bytecode);
+            var planner = try PlannerType.init(allocator, 100);
             defer planner.deinit();
             
             // Create advanced plan
-            const advanced_plan = try planner.create_instruction_stream(allocator, handlers);
-            errdefer advanced_plan.deinit(allocator);
+            const advanced_plan_ptr = try planner.getOrAnalyze(bytecode, handlers);
+            const advanced_plan = advanced_plan_ptr.*;
             
             // Create minimal plan
             const minimal_plan = try MinimalPlan.init(allocator, bytecode, handlers);
