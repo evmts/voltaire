@@ -1,3 +1,6 @@
+//go:build !mock
+// +build !mock
+
 package main
 
 import (
