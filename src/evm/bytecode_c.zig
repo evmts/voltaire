@@ -310,7 +310,7 @@ pub export fn evm_bytecode_opcode_name(opcode_value: u8) [*:0]const u8 {
         .COINBASE => "COINBASE",
         .TIMESTAMP => "TIMESTAMP",
         .NUMBER => "NUMBER",
-        .PREVRANDAO => "PREVRANDAO",
+        .DIFFICULTY => "DIFFICULTY",
         .GASLIMIT => "GASLIMIT",
         .CHAINID => "CHAINID",
         .SELFBALANCE => "SELFBALANCE",
