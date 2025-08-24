@@ -17,7 +17,7 @@ fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), co
     }
 }
 
-const Evm = evm_root.Evm;
+const DefaultEvm = evm_root.DefaultEvm;
 const MemoryDatabase = evm_root.MemoryDatabase;
 const Frame = evm_root.Frame;
 const Contract = evm_root.Contract;
@@ -30,7 +30,7 @@ else
     std.heap.c_allocator;
 
 // Global VM instance
-var vm_instance: ?*Evm = null;
+var vm_instance: ?*DefaultEvm = null;
 
 // C-compatible error codes
 const EvmError = enum(c_int) {
@@ -65,13 +65,19 @@ export fn evm_init() c_int {
     var memory_db = MemoryDatabase.init(allocator);
     const db_interface = memory_db.to_database_interface();
 
-    const vm = allocator.create(Evm) catch {
+    const vm = allocator.create(DefaultEvm) catch {
         log(.err, .evm_c, "Failed to allocate memory for VM", .{});
         return @intFromEnum(EvmError.EVM_ERROR_MEMORY);
     };
 
-    var builder = evm_root.EvmBuilder.init(allocator, db_interface);
-    vm.* = builder.build() catch |err| {
+    // Initialize with default configuration
+    const block_info = evm_root.BlockInfo{};
+    const tx_context = evm_root.TransactionContext{};
+    const gas_price = 0;
+    const origin = primitives.Address.ZERO_ADDRESS;
+    const hardfork = evm_root.HardFork.CANCUN;
+    
+    vm.* = DefaultEvm.init(allocator, db_interface, block_info, tx_context, gas_price, origin, hardfork) catch |err| {
         log(.err, .evm_c, "Failed to initialize VM: {}", .{err});
         allocator.destroy(vm);
         return @intFromEnum(EvmError.EVM_ERROR_MEMORY);
@@ -218,7 +224,7 @@ pub const GuillotineExecutionResult = extern struct {
 
 // Internal VM structure
 const VmState = struct {
-    vm: *Evm,
+    vm: *DefaultEvm,
     memory_db: *MemoryDatabase,
     allocator: std.mem.Allocator,
 };
@@ -236,16 +242,21 @@ export fn guillotine_vm_create() ?*GuillotineVm {
     state.memory_db.* = MemoryDatabase.init(allocator);
     
     const db_interface = state.memory_db.to_database_interface();
-    state.vm = allocator.create(Evm) catch {
+    state.vm = allocator.create(DefaultEvm) catch {
         state.memory_db.deinit();
         allocator.destroy(state.memory_db);
         allocator.destroy(state);
         return null;
     };
     
-    // Create EvmBuilder and build with defaults
-    var builder = evm_root.EvmBuilder.init(allocator, db_interface);
-    state.vm.* = builder.build() catch {
+    // Initialize with default configuration
+    const block_info = evm_root.BlockInfo{};
+    const tx_context = evm_root.TransactionContext{};
+    const gas_price = 0;
+    const origin = primitives.Address.ZERO_ADDRESS;
+    const hardfork = evm_root.HardFork.CANCUN;
+    
+    state.vm.* = DefaultEvm.init(allocator, db_interface, block_info, tx_context, gas_price, origin, hardfork) catch {
         state.memory_db.deinit();
         allocator.destroy(state.memory_db);
         allocator.destroy(state.vm);
@@ -312,7 +323,7 @@ export fn guillotine_execute(
     
     const state: *VmState = @ptrCast(@alignCast(vm.?));
     const from_addr = from.?.bytes;
-    const to_addr = if (to) |t| t.bytes else primitives.Address.ZERO_ADDRESS;
+    _ = to; // TODO: Use this when implementing CALL operations
     const value_u256 = if (value) |v| u256_from_bytes(&v.bytes) else 0;
     const input_slice = if (input) |i| i[0..input_len] else &[_]u8{};
     
