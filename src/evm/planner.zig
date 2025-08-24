@@ -1484,7 +1484,7 @@ test "analysis cache: stores and reuses plans" {
     
     // Test cache stats
     const stats = planner.getCacheStats();
-    try std.testing.expect(stats.cache_hits >= 0); // Stats struct is not nullable
+    try std.testing.expect(stats.count >= 0); // Stats struct is not nullable
     try std.testing.expectEqual(@as(usize, 2), stats.?.capacity);
     try std.testing.expectEqual(@as(usize, 1), stats.?.count);
 }
@@ -1517,7 +1517,7 @@ test "analysis cache: clear cache functionality" {
     
     // Verify cache stats reflect cleared state
     const stats = planner.getCacheStats();
-    try std.testing.expect(stats.cache_hits >= 0); // Stats struct is not nullable
+    try std.testing.expect(stats.count >= 0); // Stats struct is not nullable
     try std.testing.expectEqual(@as(usize, 4), stats.?.capacity);
     try std.testing.expectEqual(@as(usize, 0), stats.?.count);
 }
