@@ -81,6 +81,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             InvalidOpcode,
             OutOfBounds,
             OutOfGas,
+            GasOverflow,
+            InvalidAmount,
             WriteProtection,
         };
         pub const max_bytecode_size = config.max_bytecode_size;
@@ -125,7 +127,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             var output_data = std.ArrayList(u8).init(allocator);
             errdefer output_data.deinit();
 
-            var gas_mgr = try GasManagerType.init(gas_remaining);
+            const gas_mgr = try GasManagerType.init(@as(u64, @intCast(@max(gas_remaining, 0))));
             
             return Self{
                 .stack = stack,
@@ -928,7 +930,6 @@ pub fn Frame(comptime config: FrameConfig) type {
             if (copy_gas > std.math.maxInt(GasType)) {
                 return Error.OutOfGas;
             }
-            const copy_gas_typed = @as(GasType, @intCast(copy_gas));
 
             try self.gas_manager.consume(copy_gas);
 
@@ -2199,16 +2200,17 @@ pub fn Frame(comptime config: FrameConfig) type {
             const base_call_gas = self._calculate_call_gas(address, 0, false);
             
             // Check if we have enough gas for the base call cost
-            if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
+            if (!self.gas_manager.hasGas(base_call_gas)) {
                 try self.stack.push(0);
                 return;
             }
             
             // Consume base call gas
-            self.gas_remaining -= @as(GasType, @intCast(base_call_gas));
+            self.gas_manager.consumeUnchecked(base_call_gas);
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
-            const max_forward_gas = self.gas_remaining - (self.gas_remaining / 64);
+            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = @min(gas_u64, max_forward_gas);
 
             // Create snapshot for potential revert
@@ -9132,6 +9134,644 @@ test "_calculate_call_gas database error handling" {
     const test_address = Address.from_u256(0x999);
     const gas_cost = frame._calculate_call_gas(test_address, 0, false);
     
-    // For now, should use placeholder logic
-    try std.testing.expect(gas_cost >= GasConstants.CALL_BASE_COST);
+    // Should include new account cost since address doesn't exist
+    const expected = GasConstants.CALL_BASE_COST + GasConstants.CALL_NEW_ACCOUNT_COST;
+    try std.testing.expectEqual(expected, gas_cost);
+}
+
+// ============================================================================
+// COMPREHENSIVE ACCOUNT EXISTENCE DETECTION TESTS
+// ============================================================================
+
+test "_calculate_call_gas account states - empty account (all zeros)" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    // Create a completely empty account (nonce=0, balance=0, empty code)
+    const empty_address = Address.from_u256(0x111111);
+    const empty_account = DatabaseInterface.Account{
+        .nonce = 0,
+        .balance = 0,
+        .code_hash = primitives.EMPTY_CODE_HASH,
+        .storage_root = primitives.EMPTY_TRIE_ROOT,
+    };
+    try memory_db.set_account(empty_address, empty_account);
+
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+
+    const gas_cost = frame._calculate_call_gas(empty_address, 0, false);
+    
+    // Empty account should be considered new (include new account cost)
+    const expected = GasConstants.CALL_BASE_COST + GasConstants.CALL_NEW_ACCOUNT_COST;
+    try std.testing.expectEqual(expected, gas_cost);
+}
+
+test "_calculate_call_gas account states - minimal balance account" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    // Account with minimal balance (1 wei)
+    const balance_address = Address.from_u256(0x222222);
+    const balance_account = DatabaseInterface.Account{
+        .nonce = 0,
+        .balance = 1,
+        .code_hash = primitives.EMPTY_CODE_HASH,
+        .storage_root = primitives.EMPTY_TRIE_ROOT,
+    };
+    try memory_db.set_account(balance_address, balance_account);
+
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+
+    const gas_cost = frame._calculate_call_gas(balance_address, 0, false);
+    
+    // Account with balance exists (no new account cost)
+    const expected = GasConstants.CALL_BASE_COST;
+    try std.testing.expectEqual(expected, gas_cost);
+}
+
+test "_calculate_call_gas account states - high nonce account" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    // Account with high nonce but no balance
+    const nonce_address = Address.from_u256(0x333333);
+    const nonce_account = DatabaseInterface.Account{
+        .nonce = 1000,
+        .balance = 0,
+        .code_hash = primitives.EMPTY_CODE_HASH,
+        .storage_root = primitives.EMPTY_TRIE_ROOT,
+    };
+    try memory_db.set_account(nonce_address, nonce_account);
+
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+
+    const gas_cost = frame._calculate_call_gas(nonce_address, 0, false);
+    
+    // Account with high nonce exists (no new account cost)
+    const expected = GasConstants.CALL_BASE_COST;
+    try std.testing.expectEqual(expected, gas_cost);
+}
+
+test "_calculate_call_gas account states - complex contract account" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    // Complex contract with code, balance, and nonce
+    const contract_address = Address.from_u256(0x444444);
+    const contract_code = [_]u8{ 0x60, 0x42, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xF3 }; // Returns 0x42
+    const code_hash = primitives.keccak256(&contract_code);
+    const contract_account = DatabaseInterface.Account{
+        .nonce = 1,
+        .balance = 1000000,
+        .code_hash = code_hash,
+        .storage_root = primitives.EMPTY_TRIE_ROOT,
+    };
+    try memory_db.set_account(contract_address, contract_account);
+
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+
+    const gas_cost = frame._calculate_call_gas(contract_address, 0, false);
+    
+    // Complex contract clearly exists (no new account cost)
+    const expected = GasConstants.CALL_BASE_COST;
+    try std.testing.expectEqual(expected, gas_cost);
+}
+
+test "_calculate_call_gas account states - boundary values" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+
+    // Test various boundary conditions
+    const test_cases = [_]struct {
+        nonce: u64,
+        balance: u256,
+        should_be_new: bool,
+        description: []const u8,
+    }{
+        .{ .nonce = 0, .balance = 0, .should_be_new = true, .description = "zero nonce, zero balance" },
+        .{ .nonce = 1, .balance = 0, .should_be_new = false, .description = "min nonce, zero balance" },
+        .{ .nonce = 0, .balance = 1, .should_be_new = false, .description = "zero nonce, min balance" },
+        .{ .nonce = std.math.maxInt(u64), .balance = 0, .should_be_new = false, .description = "max nonce, zero balance" },
+        .{ .nonce = 0, .balance = std.math.maxInt(u256), .should_be_new = false, .description = "zero nonce, max balance" },
+    };
+
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+
+    for (test_cases, 0..) |case, i| {
+        const test_address = Address.from_u256(0x500000 + i);
+        const test_account = DatabaseInterface.Account{
+            .nonce = case.nonce,
+            .balance = case.balance,
+            .code_hash = primitives.EMPTY_CODE_HASH,
+            .storage_root = primitives.EMPTY_TRIE_ROOT,
+        };
+        try memory_db.set_account(test_address, test_account);
+
+        const gas_cost = frame._calculate_call_gas(test_address, 0, false);
+        
+        const expected = if (case.should_be_new) 
+            GasConstants.CALL_BASE_COST + GasConstants.CALL_NEW_ACCOUNT_COST
+        else 
+            GasConstants.CALL_BASE_COST;
+            
+        try std.testing.expectEqual(expected, gas_cost);
+    }
+}
+
+test "_calculate_call_gas no database interface" {
+    const allocator = std.testing.allocator;
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    // Create frame without database interface
+    const F = Frame(.{ .has_database = false });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, {}, host);
+    defer frame.deinit(allocator);
+
+    const test_address = Address.from_u256(0x999999);
+    const gas_cost = frame._calculate_call_gas(test_address, 0, false);
+    
+    // Without database, should assume new account
+    const expected = GasConstants.CALL_BASE_COST + GasConstants.CALL_NEW_ACCOUNT_COST;
+    try std.testing.expectEqual(expected, gas_cost);
+}
+
+test "_calculate_call_gas massive address values" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+
+    // Test with maximum possible address values
+    const max_address = from_u256(std.math.maxInt(u256));
+    const gas_cost = frame._calculate_call_gas(max_address, 0, false);
+    
+    // Should handle massive addresses gracefully (account doesn't exist)
+    const expected = GasConstants.CALL_BASE_COST + GasConstants.CALL_NEW_ACCOUNT_COST;
+    try std.testing.expectEqual(expected, gas_cost);
+}
+
+// ============================================================================
+// COMPREHENSIVE ACCESS LIST INTEGRATION TESTS
+// ============================================================================
+
+test "_calculate_call_gas precompile address detection - all precompiles" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+
+    // Test all standard precompile addresses (0x01 to 0x0A)
+    const precompile_addresses = [_]u256{
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+    };
+
+    for (precompile_addresses) |addr_value| {
+        const precompile_addr = Address.from_u256(addr_value);
+        const gas_cost = frame._calculate_call_gas(precompile_addr, 0, false);
+        
+        // Precompiles are never considered new accounts
+        const expected = GasConstants.CALL_BASE_COST;
+        try std.testing.expectEqual(expected, gas_cost);
+        
+        // Also verify the helper function works
+        try std.testing.expect(frame.is_precompile_address(precompile_addr));
+    }
+}
+
+test "_calculate_call_gas precompile vs regular addresses" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHost.init();
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+
+    const test_cases = [_]struct {
+        address: u256,
+        is_precompile: bool,
+        description: []const u8,
+    }{
+        .{ .address = 0, .is_precompile = false, .description = "zero address" },
+        .{ .address = 1, .is_precompile = true, .description = "ecrecover" },
+        .{ .address = 5, .is_precompile = true, .description = "modexp" },
+        .{ .address = 10, .is_precompile = true, .description = "point_evaluation" },
+        .{ .address = 11, .is_precompile = false, .description = "just above precompiles" },
+        .{ .address = 0x1000, .is_precompile = false, .description = "regular contract address" },
+        .{ .address = 0x100000000000000001, .is_precompile = false, .description = "high address ending in 1" },
+    };
+
+    for (test_cases) |case| {
+        const test_address = Address.from_u256(case.address);
+        const gas_cost = frame._calculate_call_gas(test_address, 0, false);
+        
+        const expected = if (case.is_precompile)
+            GasConstants.CALL_BASE_COST  // Precompiles are never new
+        else 
+            GasConstants.CALL_BASE_COST + GasConstants.CALL_NEW_ACCOUNT_COST; // Non-existent regular accounts
+            
+        try std.testing.expectEqual(expected, gas_cost);
+        try std.testing.expectEqual(case.is_precompile, frame.is_precompile_address(test_address));
+    }
+}
+
+// Mock Host that simulates access list behavior for testing
+const MockHostWithAccessList = struct {
+    is_berlin_or_later: bool = true,
+    cold_addresses: std.AutoHashMap(Address, void),
+    allocator: std.mem.Allocator,
+
+    pub fn init(allocator: std.mem.Allocator) MockHostWithAccessList {
+        return MockHostWithAccessList{
+            .cold_addresses = std.AutoHashMap(Address, void).init(allocator),
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: *MockHostWithAccessList) void {
+        self.cold_addresses.deinit();
+    }
+
+    pub fn set_hardfork_berlin(self: *MockHostWithAccessList, is_berlin: bool) void {
+        self.is_berlin_or_later = is_berlin;
+    }
+
+    pub fn set_address_cold(self: *MockHostWithAccessList, address: Address) !void {
+        try self.cold_addresses.put(address, {});
+    }
+
+    pub fn to_host(self: *MockHostWithAccessList) Host {
+        const vtable = &Host.VTable{
+            .get_balance = mock_get_balance,
+            .account_exists = mock_account_exists,
+            .get_code = mock_get_code,
+            .get_block_info = mock_get_block_info,
+            .emit_log = mock_emit_log,
+            .inner_call = mock_inner_call,
+            .register_created_contract = mock_register_created_contract,
+            .was_created_in_tx = mock_was_created_in_tx,
+            .create_snapshot = mock_create_snapshot,
+            .revert_to_snapshot = mock_revert_to_snapshot,
+            .record_storage_change = mock_record_storage_change,
+            .get_original_storage = mock_get_original_storage,
+            .access_address = mock_access_address,
+            .access_storage_slot = mock_access_storage_slot,
+            .mark_for_destruction = mock_mark_for_destruction,
+            .get_input = mock_get_input,
+            .is_hardfork_at_least = mock_is_hardfork_at_least,
+            .get_hardfork = mock_get_hardfork,
+            .get_is_static = mock_get_is_static,
+            .get_depth = mock_get_depth,
+            .get_storage = mock_get_storage,
+            .set_storage = mock_set_storage,
+            .get_gas_price = mock_get_gas_price,
+            .get_return_data = mock_get_return_data,
+            .get_chain_id = mock_get_chain_id,
+            .get_block_hash = mock_get_block_hash,
+            .get_blob_hash = mock_get_blob_hash,
+            .get_blob_base_fee = mock_get_blob_base_fee,
+        };
+        
+        return Host{
+            .ptr = @ptrCast(self),
+            .vtable = vtable,
+        };
+    }
+
+    fn mock_access_address(ptr: *anyopaque, address: Address) anyerror!u64 {
+        const self: *MockHostWithAccessList = @ptrCast(@alignCast(ptr));
+        
+        if (self.cold_addresses.contains(address)) {
+            // Remove from cold list (now it's warm)
+            _ = self.cold_addresses.remove(address);
+            return primitives.GasConstants.COLD_ACCOUNT_ACCESS_COST;
+        } else {
+            // Already warm
+            return primitives.GasConstants.WARM_ACCOUNT_ACCESS_COST;
+        }
+    }
+
+    fn mock_is_hardfork_at_least(ptr: *anyopaque, target: @import("hardfork.zig").Hardfork) bool {
+        const self: *MockHostWithAccessList = @ptrCast(@alignCast(ptr));
+        return target == .BERLIN and self.is_berlin_or_later;
+    }
+
+    // Minimal implementations for other required vtable functions
+    fn mock_get_balance(ptr: *anyopaque, address: Address) u256 { _ = ptr; _ = address; return 0; }
+    fn mock_account_exists(ptr: *anyopaque, address: Address) bool { _ = ptr; _ = address; return false; }
+    fn mock_get_code(ptr: *anyopaque, address: Address) []const u8 { _ = ptr; _ = address; return &[_]u8{}; }
+    fn mock_get_block_info(ptr: *anyopaque) @import("block_info.zig").DefaultBlockInfo { _ = ptr; return @import("block_info.zig").DefaultBlockInfo{}; }
+    fn mock_emit_log(ptr: *anyopaque, contract_address: Address, topics: []const u256, data: []const u8) void { _ = ptr; _ = contract_address; _ = topics; _ = data; }
+    fn mock_inner_call(ptr: *anyopaque, params: *const @import("call_params.zig").CallParams) anyerror!@import("call_result.zig").CallResult { 
+        _ = ptr; _ = params; 
+        return @import("call_result.zig").CallResult{ .success = true, .gas_refunded = 0, .return_value = &[_]u8{} }; 
+    }
+    fn mock_register_created_contract(ptr: *anyopaque, address: Address) anyerror!void { _ = ptr; _ = address; }
+    fn mock_was_created_in_tx(ptr: *anyopaque, address: Address) bool { _ = ptr; _ = address; return false; }
+    fn mock_create_snapshot(ptr: *anyopaque) u32 { _ = ptr; return 0; }
+    fn mock_revert_to_snapshot(ptr: *anyopaque, snapshot_id: u32) void { _ = ptr; _ = snapshot_id; }
+    fn mock_record_storage_change(ptr: *anyopaque, address: Address, slot: u256, original_value: u256) anyerror!void { _ = ptr; _ = address; _ = slot; _ = original_value; }
+    fn mock_get_original_storage(ptr: *anyopaque, address: Address, slot: u256) ?u256 { _ = ptr; _ = address; _ = slot; return null; }
+    fn mock_access_storage_slot(ptr: *anyopaque, contract_address: Address, slot: u256) anyerror!u64 { _ = ptr; _ = contract_address; _ = slot; return 100; }
+    fn mock_mark_for_destruction(ptr: *anyopaque, contract_address: Address, recipient: Address) anyerror!void { _ = ptr; _ = contract_address; _ = recipient; }
+    fn mock_get_input(ptr: *anyopaque) []const u8 { _ = ptr; return &[_]u8{}; }
+    fn mock_get_hardfork(ptr: *anyopaque) @import("hardfork.zig").Hardfork { _ = ptr; return .BERLIN; }
+    fn mock_get_is_static(ptr: *anyopaque) bool { _ = ptr; return false; }
+    fn mock_get_depth(ptr: *anyopaque) u11 { _ = ptr; return 0; }
+    fn mock_get_storage(ptr: *anyopaque, address: Address, slot: u256) u256 { _ = ptr; _ = address; _ = slot; return 0; }
+    fn mock_set_storage(ptr: *anyopaque, address: Address, slot: u256, value: u256) anyerror!void { _ = ptr; _ = address; _ = slot; _ = value; }
+    fn mock_get_gas_price(ptr: *anyopaque) u256 { _ = ptr; return 0; }
+    fn mock_get_return_data(ptr: *anyopaque) []const u8 { _ = ptr; return &[_]u8{}; }
+    fn mock_get_chain_id(ptr: *anyopaque) u16 { _ = ptr; return 1; }
+    fn mock_get_block_hash(ptr: *anyopaque, block_number: u64) ?[32]u8 { _ = ptr; _ = block_number; return null; }
+    fn mock_get_blob_hash(ptr: *anyopaque, index: u256) ?[32]u8 { _ = ptr; _ = index; return null; }
+    fn mock_get_blob_base_fee(ptr: *anyopaque) u256 { _ = ptr; return 0; }
+};
+
+test "_calculate_call_gas cold vs warm access patterns" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    var mock_host = MockHostWithAccessList.init(allocator);
+    defer mock_host.deinit();
+    mock_host.set_hardfork_berlin(true); // Enable Berlin hardfork
+    
+    // Set up some addresses as cold (first access)
+    const cold_address = Address.from_u256(0x1000);
+    const warm_address = Address.from_u256(0x2000);
+    try mock_host.set_address_cold(cold_address);
+    // warm_address is not in cold list, so it's warm
+    
+    const host = mock_host.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+
+    // Test cold access
+    const cold_gas_cost = frame._calculate_call_gas(cold_address, 0, false);
+    
+    // Test warm access  
+    const warm_gas_cost = frame._calculate_call_gas(warm_address, 0, false);
+    
+    // Cold access should be more expensive than warm access
+    try std.testing.expect(cold_gas_cost >= warm_gas_cost);
+}
+
+test "_calculate_call_gas hardfork compatibility - pre-Berlin vs Berlin" {
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const test_address = Address.from_u256(0x12345);
+    
+    // Test 1: Pre-Berlin hardfork (no cold/warm distinction)
+    var mock_host_pre_berlin = MockHostWithAccessList.init(allocator);
+    defer mock_host_pre_berlin.deinit();
+    mock_host_pre_berlin.set_hardfork_berlin(false); // Pre-Berlin
+    try mock_host_pre_berlin.set_address_cold(test_address);
+    
+    const host_pre_berlin = mock_host_pre_berlin.to_host();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame_pre_berlin = try F.init(allocator, &bytecode, 100000, db_interface, host_pre_berlin);
+    defer frame_pre_berlin.deinit(allocator);
+
+    const pre_berlin_cost = frame_pre_berlin._calculate_call_gas(test_address, 0, false);
+    
+    // Test 2: Berlin hardfork (with cold/warm distinction)
+    var mock_host_berlin = MockHostWithAccessList.init(allocator);
+    defer mock_host_berlin.deinit();
+    mock_host_berlin.set_hardfork_berlin(true); // Berlin
+    try mock_host_berlin.set_address_cold(test_address);
+    
+    const host_berlin = mock_host_berlin.to_host();
+    
+    var frame_berlin = try F.init(allocator, &bytecode, 100000, db_interface, host_berlin);
+    defer frame_berlin.deinit(allocator);
+
+    const berlin_cost = frame_berlin._calculate_call_gas(test_address, 0, false);
+    
+    // Berlin should have cold access costs, pre-Berlin should not
+    try std.testing.expect(berlin_cost >= pre_berlin_cost);
+}
+
+test "_calculate_call_gas comprehensive edge cases and integration scenarios" {
+    // Test complex combinations and edge cases
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    
+    // Test 1: Maximum gas cost scenario - value transfer to new cold account
+    {
+        const new_addr = Address.from_u256(0xdeadbeef);
+        var mock_host = MockHostWithAccessList.init(allocator);
+        defer mock_host.deinit();
+        mock_host.set_hardfork_berlin(true);
+        try mock_host.set_address_cold(new_addr);
+        
+        const host = mock_host.to_host();
+        var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+        defer frame.deinit(allocator);
+        
+        const max_gas = frame._calculate_call_gas(new_addr, 1000, false);
+        // Should include: base + value transfer + new account + cold access
+        // Expected: 700 + 9000 + 25000 + 2600 = 37300
+        try std.testing.expectEqual(@as(u64, 37300), max_gas);
+    }
+    
+    // Test 2: Static call ignores value transfer
+    {
+        const any_addr = Address.from_u256(0x123456);
+        var mock_host = MockHostWithAccessList.init(allocator);
+        defer mock_host.deinit();
+        mock_host.set_hardfork_berlin(true);
+        try mock_host.set_address_cold(any_addr);
+        
+        const host = mock_host.to_host();
+        var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+        defer frame.deinit(allocator);
+        
+        // Static call should ignore value even if non-zero
+        const static_gas = frame._calculate_call_gas(any_addr, 1000, true);
+        // Should only include: base + cold access (no value transfer for static)
+        // Expected: 700 + 2600 = 3300
+        try std.testing.expectEqual(@as(u64, 3300), static_gas);
+    }
+    
+    // Test 3: Precompile address handling
+    {
+        const precompile_addr = Address.from_u256(0x05); // MODEXP precompile
+        var mock_host = MockHostWithAccessList.init(allocator);
+        defer mock_host.deinit();
+        mock_host.set_hardfork_berlin(true);
+        mock_host.mark_warm(precompile_addr); // Precompiles are usually warm
+        
+        const host = mock_host.to_host();
+        var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+        defer frame.deinit(allocator);
+        
+        const precompile_gas = frame._calculate_call_gas(precompile_addr, 500, false);
+        // Precompile is never "new account", should have warm access
+        // Expected: 700 + 9000 + 100 = 9800
+        try std.testing.expectEqual(@as(u64, 9800), precompile_gas);
+    }
+    
+    // Test 4: Account existence boundary cases
+    {
+        const boundary_addr = Address.from_u256(0xbbbbb);
+        
+        // Create account with minimal balance (should be considered existing)
+        try memory_db.set_account(boundary_addr, .{
+            .nonce = 0,
+            .balance = 1, // Non-zero balance = exists
+            .code_hash = primitives.EMPTY_CODE_HASH,
+            .code = &.{},
+        });
+        
+        var mock_host = MockHostWithAccessList.init(allocator);
+        defer mock_host.deinit();
+        mock_host.set_hardfork_berlin(true);
+        try mock_host.set_address_cold(boundary_addr);
+        
+        const host = mock_host.to_host();
+        var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+        defer frame.deinit(allocator);
+        
+        const existing_gas = frame._calculate_call_gas(boundary_addr, 0, false);
+        // Account exists, so no new account cost
+        // Expected: 700 + 2600 = 3300
+        try std.testing.expectEqual(@as(u64, 3300), existing_gas);
+    }
+}
+
+test "_calculate_call_gas performance and consistency validation" {
+    // Test performance characteristics and repeated operations
+    const allocator = std.testing.allocator;
+    
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = memory_db.to_database_interface();
+    
+    const F = Frame(.{ .has_database = true });
+    const bytecode = [_]u8{0x00}; // STOP
+    
+    var mock_host = MockHostWithAccessList.init(allocator);
+    defer mock_host.deinit();
+    mock_host.set_hardfork_berlin(true);
+    
+    const host = mock_host.to_host();
+    var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
+    defer frame.deinit(allocator);
+    
+    // Test multiple calls to same address (should maintain consistency)
+    const test_addr = Address.from_u256(0xcafebabe);
+    try mock_host.set_address_cold(test_addr);
+    
+    const gas1 = frame._calculate_call_gas(test_addr, 0, false);
+    const gas2 = frame._calculate_call_gas(test_addr, 0, false);
+    const gas3 = frame._calculate_call_gas(test_addr, 0, false);
+    
+    // All calls should return consistent results
+    try std.testing.expectEqual(gas1, gas2);
+    try std.testing.expectEqual(gas2, gas3);
+    
+    // Test with different value amounts
+    const gas_no_value = frame._calculate_call_gas(test_addr, 0, false);
+    const gas_small_value = frame._calculate_call_gas(test_addr, 1, false);
+    const gas_large_value = frame._calculate_call_gas(test_addr, std.math.maxInt(u256), false);
+    
+    // Value transfer cost should be consistent regardless of amount
+    const value_cost = gas_small_value - gas_no_value;
+    try std.testing.expectEqual(value_cost, gas_large_value - gas_no_value);
+    try std.testing.expectEqual(@as(u64, 9000), value_cost);
 }

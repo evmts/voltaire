@@ -2217,8 +2217,8 @@ test "Plan memory fragmentation resistance" {
     
     // Create many small plans to test memory fragmentation
     const num_plans = 100;
-    var plans: [num_plans]*const Planner.Plan = undefined;
     const Planner = @import("planner.zig").createPlanner(.{});
+    var plans: [num_plans]*const Planner.Plan = undefined;
     var planners: [num_plans]Planner = undefined;
     
     // Small bytecode pattern
@@ -2275,7 +2275,7 @@ test "Plan bytecode validation and malformed input handling" {
         var planner = try Planner.init(allocator, 100);
         
         // Should be able to create plan even with malformed bytecode
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(test_case.bytecode, handlers);
         
         // Basic validation that plan was created
         try std.testing.expect(plan.bytecode.len == test_case.bytecode.len);
@@ -2511,7 +2511,7 @@ test "Plan error recovery and resilience testing" {
         var planner = try Planner.init(allocator, 100);
         
         // Should be able to create plan without crashing
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(test_bytecode, handlers);
         
         // Basic integrity check
         try std.testing.expect(plan.bytecode.len == test_bytecode.len);
@@ -2636,7 +2636,7 @@ test "Plan real-world contract patterns - ERC20 and DeFi bytecode" {
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(&pattern.bytecode, handlers);
         
         // Validate plan was created successfully
         try std.testing.expect(plan.bytecode.len == pattern.bytecode.len);
@@ -2791,7 +2791,7 @@ test "Plan comprehensive JUMPDEST analysis with pathological patterns" {
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(pattern.bytecode, handlers);
         
         // Verify valid JUMPDEST detection
         for (pattern.valid_jumpdests) |valid_pc| {
@@ -3143,7 +3143,7 @@ test "Plan configuration boundary and mutation stress testing" {
         const Planner = @import("planner.zig").createPlanner(config);
         var planner = try Planner.init(allocator, 100);
         
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(&test_bytecode, handlers);
         
         try std.testing.expect(plan.bytecode.len == test_bytecode.len);
     }
@@ -3220,7 +3220,7 @@ test "Plan bytecode analysis completeness validation" {
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(pattern.bytecode, handlers);
         
         // Test comprehensive analysis capabilities
         
@@ -3330,7 +3330,7 @@ test "Plan caching and lifecycle management validation" {
     for (0..num_concurrent_plans) |i| {
         const PlannerType2 = @import("planner.zig").createPlanner(.{});
         planners[i] = try PlannerType2.init(allocator, &reusable_bytecode);
-        plans[i] = try planners[i].getOrAnalyze(&bytecode, handlers);
+        plans[i] = try planners[i].getOrAnalyze(&reusable_bytecode, handlers);
     }
     
     // Verify all plans work independently
@@ -3387,7 +3387,7 @@ test "Plan caching and lifecycle management validation" {
         fn create(alloc: std.mem.Allocator, _: []const u8, plan_handlers: [256]*const HandlerFn) !Plan {
             const TransferPlanner = @import("planner.zig").createPlanner(.{});
             var transfer_planner = try TransferPlanner.init(alloc, 100);
-            const plan = try transfer_planner.getOrAnalyze(bytecode, plan_handlers);
+            _ = try transfer_planner.getOrAnalyze(&[_]u8{0x60, 0x01, 0x00}, plan_handlers);
             // Since getOrAnalyze returns a const pointer, we need to create a copy for ownership transfer
             // This is a limitation of the new API - plans are cached and const
             return error.NotImplemented;
