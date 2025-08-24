@@ -17,8 +17,17 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const crypto = @import("crypto");
-const build_options = @import("build_options");
+// Imports temporarily disabled due to module availability issues in test contexts
+// TODO: Re-enable when precompile implementation is complete
+// const crypto = @import("crypto");
+// const build_options = @import("build_options");
+
+// Temporary fallback constants
+const build_options = struct {
+    pub const no_precompiles = false;
+    pub const no_bn254 = false;
+    pub const enable_tracing = false;
+};
 
 /// Precompile addresses (Ethereum mainnet)
 pub const ECRECOVER_ADDRESS = primitives.Address.from_u256(1);

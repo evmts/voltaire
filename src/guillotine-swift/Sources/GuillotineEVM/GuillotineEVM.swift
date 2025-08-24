@@ -20,7 +20,7 @@ public actor GuillotineEVM {
             throw ExecutionError.internalError("Failed to create VM instance")
         }
         
-        self.vmPtr = OpaquePointer(vm)
+        self.vmPtr = vm
         self.isInitialized = true
     }
     
