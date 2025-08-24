@@ -37,9 +37,9 @@ pub fn Memory(comptime config: MemoryConfig) type {
         buffer_ptr: *std.ArrayList(u8),
         allocator: std.mem.Allocator,
         owns_buffer: bool,
-        cached_expansion: struct {
-            last_size: u64,
-            last_words: u64,
+        cached_expansion: packed struct {
+            last_size: u32,  // Reduced from u64 - EVM memory limit is 2^24 bytes
+            last_words: u32, // Reduced from u64 - matches last_size / 32
             last_cost: u64,
         } = .{ .last_size = 0, .last_words = 0, .last_cost = 0 },
         
@@ -89,8 +89,8 @@ pub fn Memory(comptime config: MemoryConfig) type {
         
         pub fn ensure_capacity(self: *Self, new_size: usize) !void {
             const required_total = self.checkpoint + new_size;
-            if (required_total > MEMORY_LIMIT) return MemoryError.MemoryOverflow;
-            if (required_total > self.buffer_ptr.items.len) {
+            if (@call(.always_inline, @import("builtin").expect, .{ required_total > MEMORY_LIMIT, false })) return MemoryError.MemoryOverflow;
+            if (@call(.always_inline, @import("builtin").expect, .{ required_total > self.buffer_ptr.items.len, false })) {
                 const old_len = self.buffer_ptr.items.len;
                 try self.buffer_ptr.resize(required_total);
                 @memset(self.buffer_ptr.items[old_len..], 0);
@@ -101,7 +101,7 @@ pub fn Memory(comptime config: MemoryConfig) type {
         pub fn set_data_evm(self: *Self, offset: usize, data: []const u8) !void {
             const end = offset + data.len;
             // Round up to next 32-byte word boundary for EVM compliance
-            const word_aligned_end = ((end + 31) / 32) * 32;
+            const word_aligned_end = ((end + 31) >> 5) << 5;
             try self.ensure_capacity(word_aligned_end);
             const start_idx = self.checkpoint + offset;
             @memcpy(self.buffer_ptr.items[start_idx..start_idx + data.len], data);
@@ -112,7 +112,7 @@ pub fn Memory(comptime config: MemoryConfig) type {
             try self.set_data_evm(offset, &bytes);
         }
         
-        pub fn set_u256_evm(self: *Self, offset: usize, value: u256) !void {
+        fn u256_to_bytes(value: u256) [32]u8 {
             var bytes: [32]u8 = undefined;
             var temp = value;
             var i: usize = 32;
@@ -121,12 +121,17 @@ pub fn Memory(comptime config: MemoryConfig) type {
                 bytes[i] = @truncate(temp);
                 temp >>= 8;
             }
+            return bytes;
+        }
+
+        pub fn set_u256_evm(self: *Self, offset: usize, value: u256) !void {
+            const bytes = u256_to_bytes(value);
             try self.set_data_evm(offset, &bytes);
         }
         
         pub fn get_slice(self: *const Self, offset: usize, len: usize) MemoryError![]const u8 {
             const end = offset + len;
-            if (end > self.size()) return MemoryError.OutOfBounds;
+            if (@call(.always_inline, @import("builtin").expect, .{ end > self.size(), false })) return MemoryError.OutOfBounds;
             const start_idx = self.checkpoint + offset;
             return self.buffer_ptr.items[start_idx..start_idx + len];
         }
@@ -148,32 +153,27 @@ pub fn Memory(comptime config: MemoryConfig) type {
             self.cached_expansion = .{ .last_size = 0, .last_words = 0, .last_cost = 0 };
         }
         
+        fn bytes_to_u256(bytes: []const u8) u256 {
+            var result: u256 = 0;
+            for (bytes) |byte| result = (result << 8) | byte;
+            return result;
+        }
+
         pub fn get_u256(self: *const Self, offset: usize) !u256 {
             const slice = try self.get_slice(offset, 32);
-            var result: u256 = 0;
-            for (slice) |byte| result = (result << 8) | byte;
-            return result;
+            return bytes_to_u256(slice);
         }
         
         // EVM-compliant read that expands memory if needed
         pub fn get_u256_evm(self: *Self, offset: usize) !u256 {
-            const word_aligned_end = ((offset + 32 + 31) / 32) * 32;
+            const word_aligned_end = ((offset + 32 + 31) >> 5) << 5;
             try self.ensure_capacity(word_aligned_end);
             const slice = try self.get_slice(offset, 32);
-            var result: u256 = 0;
-            for (slice) |byte| result = (result << 8) | byte;
-            return result;
+            return bytes_to_u256(slice);
         }
         
         pub fn set_u256(self: *Self, offset: usize, value: u256) !void {
-            var bytes: [32]u8 = undefined;
-            var temp = value;
-            var i: usize = 32;
-            while (i > 0) {
-                i -= 1;
-                bytes[i] = @truncate(temp);
-                temp >>= 8;
-            }
+            const bytes = u256_to_bytes(value);
             try self.set_data(offset, &bytes);
         }
         
@@ -188,19 +188,19 @@ pub fn Memory(comptime config: MemoryConfig) type {
         }
         
         fn calculate_memory_cost(words: u64) u64 {
-            return 3 * words + (words * words) / 512;
+            return 3 * words + (words * words) >> 9;  // Bit shift instead of / 512
         }
         pub fn get_expansion_cost(self: *Self, new_size: u64) u64 {
             const current_size = @as(u64, @intCast(self.size()));
-            if (new_size <= current_size) return 0;
+            if (@call(.always_inline, @import("builtin").expect, .{ new_size <= current_size, true })) return 0;
             const new_words = (new_size + 31) >> 5;  // Bit shift instead of / 32
             const current_words = (current_size + 31) >> 5;  // Bit shift instead of / 32
-            if (new_size <= self.cached_expansion.last_size) return 0;
+            if (@call(.always_inline, @import("builtin").expect, .{ new_size <= self.cached_expansion.last_size, false })) return 0;
             const new_cost = calculate_memory_cost(new_words);
             const current_cost = calculate_memory_cost(current_words);
             const expansion_cost = new_cost - current_cost;
-            self.cached_expansion.last_size = new_size;
-            self.cached_expansion.last_words = new_words;
+            self.cached_expansion.last_size = @intCast(new_size);
+            self.cached_expansion.last_words = @intCast(new_words);
             self.cached_expansion.last_cost = new_cost;
             return expansion_cost;
         }
@@ -399,4 +399,51 @@ test "Memory large data operations" {
     try std.testing.expectEqualSlices(u8, large_data[256..512], chunk2);
     try std.testing.expectEqualSlices(u8, large_data[512..768], chunk3);
     try std.testing.expectEqualSlices(u8, large_data[768..1024], chunk4);
+}
+
+test "Memory concurrent child memories" {
+    const allocator = std.testing.allocator;
+    const Mem = Memory(.{});
+    var parent = try Mem.init(allocator);
+    defer parent.deinit();
+    
+    // Add data to parent
+    const parent_data = [_]u8{0x01, 0x02, 0x03};
+    try parent.set_data(0, &parent_data);
+    try std.testing.expectEqual(@as(usize, 3), parent.size());
+    
+    // Create two child memories from same parent
+    var child1 = try parent.init_child();
+    defer child1.deinit();
+    var child2 = try parent.init_child();
+    defer child2.deinit();
+    
+    // Both children should start with empty size but same checkpoint
+    try std.testing.expectEqual(@as(usize, 0), child1.size());
+    try std.testing.expectEqual(@as(usize, 0), child2.size());
+    try std.testing.expectEqual(child1.checkpoint, child2.checkpoint);
+    try std.testing.expectEqual(@as(usize, 3), child1.checkpoint);
+    
+    // Add different data to each child
+    const child1_data = [_]u8{0x11, 0x22};
+    const child2_data = [_]u8{0x33, 0x44, 0x55, 0x66};
+    try child1.set_data(0, &child1_data);
+    try child2.set_data(0, &child2_data);
+    
+    // Verify independent sizes and data
+    try std.testing.expectEqual(@as(usize, 2), child1.size());
+    try std.testing.expectEqual(@as(usize, 4), child2.size());
+    
+    const read1 = try child1.get_slice(0, 2);
+    const read2 = try child2.get_slice(0, 4);
+    try std.testing.expectEqualSlices(u8, &child1_data, read1);
+    try std.testing.expectEqualSlices(u8, &child2_data, read2);
+    
+    // Verify underlying buffer grew correctly
+    try std.testing.expectEqual(@as(usize, 7), parent.buffer_ptr.items.len); // 3 + 4 (larger child)
+    
+    // Parent should see all data in buffer
+    try std.testing.expectEqual(@as(usize, 7), parent.size());
+    const parent_view = try parent.get_slice(0, 3);
+    try std.testing.expectEqualSlices(u8, &parent_data, parent_view);
 }
