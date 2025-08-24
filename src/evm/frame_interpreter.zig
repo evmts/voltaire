@@ -386,6 +386,69 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }.handler;
         }
         
+        // Helper function to assign basic opcode handlers
+        inline fn assignBasicHandlers(handlers: *[256]*const HandlerFn) void {
+            // Arithmetic operations
+            const arithmetic_ops = .{
+                .{ Opcode.ADD, &op_add_handler },
+                .{ Opcode.MUL, &op_mul_handler },
+                .{ Opcode.SUB, &op_sub_handler },
+                .{ Opcode.DIV, &op_div_handler },
+                .{ Opcode.SDIV, &op_sdiv_handler },
+                .{ Opcode.MOD, &op_mod_handler },
+                .{ Opcode.SMOD, &op_smod_handler },
+                .{ Opcode.ADDMOD, &op_addmod_handler },
+                .{ Opcode.MULMOD, &op_mulmod_handler },
+                .{ Opcode.EXP, &op_exp_handler },
+                .{ Opcode.SIGNEXTEND, &op_signextend_handler },
+            };
+            
+            // Comparison operations
+            const comparison_ops = .{
+                .{ Opcode.LT, &op_lt_handler },
+                .{ Opcode.GT, &op_gt_handler },
+                .{ Opcode.SLT, &op_slt_handler },
+                .{ Opcode.SGT, &op_sgt_handler },
+                .{ Opcode.EQ, &op_eq_handler },
+                .{ Opcode.ISZERO, &op_iszero_handler },
+            };
+            
+            // Bitwise operations
+            const bitwise_ops = .{
+                .{ Opcode.AND, &op_and_handler },
+                .{ Opcode.OR, &op_or_handler },
+                .{ Opcode.XOR, &op_xor_handler },
+                .{ Opcode.NOT, &op_not_handler },
+                .{ Opcode.BYTE, &op_byte_handler },
+                .{ Opcode.SHL, &op_shl_handler },
+                .{ Opcode.SHR, &op_shr_handler },
+                .{ Opcode.SAR, &op_sar_handler },
+            };
+            
+            // Memory operations
+            const memory_ops = .{
+                .{ Opcode.MLOAD, &op_mload_handler },
+                .{ Opcode.MSTORE, &op_mstore_handler },
+                .{ Opcode.MSTORE8, &op_mstore8_handler },
+                .{ Opcode.MSIZE, &op_msize_handler },
+                .{ Opcode.MCOPY, &op_mcopy_handler },
+            };
+            
+            // Assign handlers using comptime
+            inline for (arithmetic_ops) |op| {
+                handlers[@intFromEnum(op[0])] = op[1];
+            }
+            inline for (comparison_ops) |op| {
+                handlers[@intFromEnum(op[0])] = op[1];
+            }
+            inline for (bitwise_ops) |op| {
+                handlers[@intFromEnum(op[0])] = op[1];
+            }
+            inline for (memory_ops) |op| {
+                handlers[@intFromEnum(op[0])] = op[1];
+            }
+        }
+        
         // PUSH handlers are now generated at comptime in the init function
         // DUP handlers are now generated at comptime in the init function
         // SWAP handlers are now generated at comptime in the init function

@@ -10168,5 +10168,5 @@ test "_calculate_call_gas E2E: Real world scenario - contract calling contract" 
     // Total consumed should be 3300 + 9800 + 3300 = 16400
     const total_consumed = token_call_gas + precompile_gas + static_token_gas;
     try std.testing.expectEqual(@as(u64, 16400), total_consumed);
-    try std.testing.expectEqual(@as(u64, 100000 - 16400), frame.gas_remaining);
+    try std.testing.expectEqual(@as(i32, 100000 - 16400), frame.gas_remaining);
 }
