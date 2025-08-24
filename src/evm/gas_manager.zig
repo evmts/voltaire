@@ -186,17 +186,17 @@ pub fn GasManager(comptime config: GasManagerConfig) type {
         }
         
         /// Get gas consumption statistics for debugging
-        pub fn getStats(self: *const Self) GasStats {
+        pub fn getStats(self: *const Self, initial_gas: u64) GasStats {
             const remaining = self.gasRemaining();
+            const consumed = initial_gas - remaining;
             const max_gas = @as(u64, @intCast(config.maxGas()));
-            const consumed = max_gas - remaining;
             
             return GasStats{
                 .remaining = remaining,
                 .consumed = consumed,
                 .max_gas = max_gas,
-                .utilization_percent = if (max_gas > 0) (consumed * 100) / max_gas else 0,
-                .is_low = remaining < (max_gas / 10), // Less than 10% remaining
+                .utilization_percent = if (initial_gas > 0) (consumed * 100) / initial_gas else 0,
+                .is_low = remaining < (initial_gas / 10), // Less than 10% of initial remaining
             };
         }
     };
@@ -523,7 +523,7 @@ test "GasManager getStats method" {
     var gas_mgr = try TestGasManager.init(1000);
     
     // Test initial stats
-    var stats = gas_mgr.getStats();
+    var stats = gas_mgr.getStats(1000);
     try std.testing.expectEqual(@as(u64, 1000), stats.remaining);
     try std.testing.expectEqual(@as(u64, 0), stats.consumed);
     try std.testing.expectEqual(@as(u64, 30_000_000), stats.max_gas); // Default config
@@ -532,19 +532,20 @@ test "GasManager getStats method" {
     
     // Test after consumption
     try gas_mgr.consume(600);
-    stats = gas_mgr.getStats();
+    stats = gas_mgr.getStats(1000);
     try std.testing.expectEqual(@as(u64, 400), stats.remaining);
     try std.testing.expectEqual(@as(u64, 600), stats.consumed);
-    try std.testing.expect(!stats.is_low); // Still above 10%
+    try std.testing.expectEqual(@as(u64, 60), stats.utilization_percent);
+    try std.testing.expect(!stats.is_low); // Still above 10% of initial
     
     // Test low gas condition with smaller manager
-    const SmallGasManager = GasManager(.{ .block_gas_limit = 1000 });
+    const SmallGasManager = GasManager(.{ .block_gas_limit = 2000 });
     var small_mgr = try SmallGasManager.init(1000);
     try small_mgr.consume(950); // Leave only 50, which is 5% of 1000
-    stats = small_mgr.getStats();
+    stats = small_mgr.getStats(1000);
     try std.testing.expectEqual(@as(u64, 50), stats.remaining);
     try std.testing.expectEqual(@as(u64, 950), stats.consumed);
-    try std.testing.expectEqual(@as(u64, 1000), stats.max_gas);
+    try std.testing.expectEqual(@as(u64, 2000), stats.max_gas);
     try std.testing.expectEqual(@as(u64, 95), stats.utilization_percent);
-    try std.testing.expect(stats.is_low); // Less than 10% remaining
+    try std.testing.expect(stats.is_low); // Less than 10% of initial remaining
 }

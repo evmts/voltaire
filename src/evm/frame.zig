@@ -20,6 +20,9 @@ const CallParams = @import("call_params.zig").CallParams;
 const CallResult = @import("call_result.zig").CallResult;
 const logs = @import("logs.zig");
 const Log = logs.Log;
+const gas_manager_mod = @import("gas_manager.zig");
+const GasManager = gas_manager_mod.GasManager;
+const GasError = gas_manager_mod.GasError;
 
 /// Frame is a lightweight execution context for EVM operations.
 ///
@@ -66,6 +69,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             .stack_size = config.stack_size,
             .WordType = config.WordType,
         });
+        pub const GasManagerType = GasManager(config.gasManagerConfig());
         pub const Error = error{
             StackOverflow,
             StackUnderflow,
@@ -86,7 +90,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         // Cacheline 1
         stack: Stack,
         bytecode: []const u8, // 16 bytes (slice)
-        gas_remaining: GasType, // 4 or 8 bytes depending on block_gas_limit
+        gas_manager: GasManagerType, // Centralized gas tracking
         tracer: if (config.TracerType) |T| T else void,
         memory: Memory,
         database: if (config.has_database) ?DatabaseInterface else void,

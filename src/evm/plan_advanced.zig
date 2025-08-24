@@ -2426,7 +2426,7 @@ test "Plan instruction stream integrity validation" {
     const allocator = std.testing.allocator;
     
     // Create complex bytecode with nested patterns
-    _ = [_]u8{
+    const bytecode = [_]u8{
         // Pattern 1: Multiple PUSH operations
         @intFromEnum(Opcode.PUSH1), 0x01,
         @intFromEnum(Opcode.PUSH2), 0x02, 0x03,
@@ -2723,7 +2723,7 @@ test "Plan cross-platform compatibility - InstructionElement size behavior" {
     };
     
     // Simple bytecode for testing
-    _ = [_]u8{
+    const bytecode = [_]u8{
         @intFromEnum(Opcode.PUSH1), 0x42,
         @intFromEnum(Opcode.DUP1),
         @intFromEnum(Opcode.ADD),
