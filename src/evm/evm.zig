@@ -1425,17 +1425,13 @@ test "EVM call_handler basic functionality" {
         .gas = 1000000,
     };
     
-    // For now this will return error.InvalidJump as it's not implemented
-    const result = evm.call_handler(params) catch |err| {
-        try testing.expectEqual(DefaultEvm.Error.InvalidJump, err);
-        return;
-    };
+    // This should now work with the implemented handler
+    const result = try evm.call_handler(params);
     
-    // Once implemented, we'd expect:
-    // try testing.expect(result.success);
-    // try testing.expect(result.gas_left > 0);
-    // try testing.expectEqual(@as(usize, 0), result.output.len);
-    _ = result;
+    // The implemented handler should work correctly
+    try testing.expect(result.success);
+    try testing.expect(result.gas_left > 0);
+    try testing.expectEqual(@as(usize, 0), result.output.len);
 }
 
 test "EVM staticcall handler prevents state changes" {
