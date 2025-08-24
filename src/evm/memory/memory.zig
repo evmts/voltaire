@@ -65,6 +65,21 @@ cached_expansion: struct {
     last_cost: u64,
 } = .{ .last_size = 0, .last_words = 0, .last_cost = 0 },
 
+// Comptime assertions for Memory struct
+comptime {
+    // Document expected size on 64-bit platforms
+    // usize + u64 + pointer + allocator + bool + expansion cache
+    if (@sizeOf(usize) == 8) {
+        // Basic fields: 8 + 8 + 8 + 16 + 1 = 41 bytes
+        // Expansion cache: 3 * 8 = 24 bytes
+        // Total with padding should be reasonably small
+        std.debug.assert(@sizeOf(Memory) <= 128); // Allow for padding
+    }
+    
+    // Ensure proper alignment for efficient access
+    std.debug.assert(@alignOf(Memory) >= @alignOf(u64));
+}
+
 /// Initializes the root Memory context that owns the shared buffer.
 /// This is the safe API that eliminates the undefined pointer footgun.
 pub fn init(
