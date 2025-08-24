@@ -814,7 +814,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 return precompile_result;
             }
 
-            const execution_result = self.execute_bytecode(
+            const execution_result = self.execute_frame(
                 call_code,
                 call_input,
                 call_gas,
@@ -822,7 +822,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                 call_caller,
                 call_value,
                 call_is_static,
-                is_top_level_call,
                 snapshot_id,
             ) catch |err| {
                 if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
@@ -914,103 +913,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             }
         }
 
-        /// Execute bytecode using the Frame system with planner optimization
-        fn execute_bytecode(
-            self: *Self,
-            code: []const u8,
-            input: []const u8,
-            gas: u64,
-            contract_address: Address,
-            caller: Address,
-            value: u256,
-            is_static: bool,
-            comptime is_top_level: bool,
-            snapshot_id: JournalType.SnapshotIdType,
-        ) !CallResult {
-            _ = input; // Used by frame via host.get_input()
-            _ = caller; // Used by frame via host.get_caller() - requires Host interface extension
-            _ = value; // Used by frame via host.get_call_value() - requires Host interface extension
-            _ = is_top_level; // Used for nested call depth tracking
-            _ = snapshot_id; // Used for state rollback via host interface
-            if (code.len == 0) {
-                return CallResult{
-                    .success = true,
-                    .gas_left = gas,
-                    .output = &.{},
-                };
-            }
-
-            if (code.len == 1 and code[0] == 0x00) {
-                // STOP opcode - successful termination
-                return CallResult{
-                    .success = true,
-                    .gas_left = gas - 3, // STOP costs 3 gas
-                    .output = &.{},
-                };
-            }
-
-            // Create FrameInterpreter to execute the code
-            const FrameInterpreterType = frame_interpreter_mod.createFrameInterpreter(config.frame_config);
-            var interpreter = FrameInterpreterType.init(self.allocator, code, @intCast(gas), self.database) catch |err| {
-                return switch (err) {
-                    error.BytecodeTooLarge => CallResult{
-                        .success = false,
-                        .gas_left = 0,
-                        .output = &.{},
-                    },
-                    else => return err,
-                };
-            };
-            defer interpreter.deinit(self.allocator);
-
-            // Set frame properties through the interpreter
-            interpreter.frame.contract_address = contract_address;
-            interpreter.frame.is_static = is_static;
-            interpreter.frame.host = self.to_host();
-
-            if (self.depth > 0) {
-                self.static_stack[self.depth - 1] = is_static;
-            }
-
-            // Execute the interpreter
-            interpreter.interpret() catch |err| {
-                return switch (err) {
-                    error.STOP => CallResult{
-                        .success = true,
-                        .gas_left = @intCast(@max(0, interpreter.frame.gas_remaining)),
-                        .output = interpreter.frame.output_data.items,
-                    },
-                    error.REVERT => CallResult{
-                        .success = false,
-                        .gas_left = @intCast(@max(0, interpreter.frame.gas_remaining)),
-                        .output = interpreter.frame.output_data.items,
-                    },
-                    error.OutOfGas => CallResult{
-                        .success = false,
-                        .gas_left = 0,
-                        .output = &.{},
-                    },
-                    error.StackOverflow, error.StackUnderflow => CallResult{
-                        .success = false,
-                        .gas_left = @intCast(@max(0, interpreter.frame.gas_remaining)),
-                        .output = &.{},
-                    },
-                    error.InvalidJump, error.InvalidOpcode => CallResult{
-                        .success = false,
-                        .gas_left = @intCast(@max(0, interpreter.frame.gas_remaining)),
-                        .output = &.{},
-                    },
-                    else => return err,
-                };
-            };
-
-            // Execution completed successfully
-            return CallResult{
-                .success = true,
-                .gas_left = @intCast(@max(0, interpreter.frame.gas_remaining)),
-                .output = interpreter.frame.output_data.items,
-            };
-        }
 
         /// Handle CREATE contract creation
         fn handle_create(self: *Self, params: anytype, comptime is_top_level_call: bool, snapshot_id: JournalType.SnapshotIdType) !CallResult {
@@ -1096,7 +998,7 @@ pub fn Evm(comptime config: EvmConfig) type {
             try self.register_created_contract(contract_address);
 
             // Execute initialization code to get deployed bytecode
-            const init_result = try self.execute_bytecode(
+            const init_result = try self.execute_frame(
                 init_code,
                 &.{}, // Empty input for init code
                 remaining_gas,
@@ -1104,7 +1006,6 @@ pub fn Evm(comptime config: EvmConfig) type {
                 caller,
                 value,
                 false, // Not static
-                false, // Not top level
                 snapshot_id,
             );
 
