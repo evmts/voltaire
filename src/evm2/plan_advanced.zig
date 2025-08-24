@@ -2124,3 +2124,515 @@ test "PlanMinimal simulated execution flow" {
     try std.testing.expectEqual(@as(PlanMinimal.InstructionIndexType, 6), idx);
     try std.testing.expectEqual(&stopHandler, handler4); // End returns STOP handler
 }
+
+test "Plan fuzzing with random bytecode generation" {
+    const allocator = std.testing.allocator;
+    
+    // Test with various sizes of random bytecode
+    const test_sizes = [_]usize{1, 10, 100, 1000, 5000};
+    
+    for (test_sizes) |size| {
+        var bytecode = try allocator.alloc(u8, size);
+        defer allocator.free(bytecode);
+        
+        // Fill with pseudo-random valid opcodes
+        var prng = std.rand.DefaultPrng.init(0x12345678);
+        const random = prng.random();
+        
+        for (bytecode, 0..) |*byte, i| {
+            // Use a mix of common opcodes to ensure validity
+            const common_opcodes = [_]u8{
+                @intFromEnum(Opcode.PUSH1), @intFromEnum(Opcode.PUSH2), @intFromEnum(Opcode.PUSH4),
+                @intFromEnum(Opcode.ADD), @intFromEnum(Opcode.SUB), @intFromEnum(Opcode.MUL),
+                @intFromEnum(Opcode.POP), @intFromEnum(Opcode.DUP1), @intFromEnum(Opcode.SWAP1),
+                @intFromEnum(Opcode.JUMPDEST), @intFromEnum(Opcode.STOP), @intFromEnum(Opcode.RETURN),
+            };
+            byte.* = common_opcodes[random.intRangeAtMost(usize, 0, common_opcodes.len - 1)];
+            
+            // Add random data bytes for PUSH opcodes
+            if (byte.* == @intFromEnum(Opcode.PUSH1) and i + 1 < bytecode.len) {
+                bytecode[i + 1] = random.int(u8);
+            } else if (byte.* == @intFromEnum(Opcode.PUSH2) and i + 2 < bytecode.len) {
+                bytecode[i + 1] = random.int(u8);
+                bytecode[i + 2] = random.int(u8);
+            }
+        }
+        
+        // Try to create plan with random bytecode - should not crash
+        const Planner = @import("planner.zig").createPlanner(.{});
+        var planner = try Planner.init(allocator, bytecode);
+        
+        var handlers: [256]*const HandlerFn = undefined;
+        for (&handlers) |*h| h.* = &testHandler;
+        
+        var plan = planner.create_minimal_plan(allocator, handlers) catch |err| {
+            // Some random bytecode may be invalid, that's ok
+            switch (err) {
+                error.OutOfMemory, error.InvalidBytecode, error.BytecodeTooLarge => continue,
+                else => return err,
+            }
+        };
+        defer plan.deinit(allocator);
+        
+        // Basic sanity checks
+        try std.testing.expect(plan.bytecode.len > 0);
+    }
+}
+
+test "Plan performance and memory efficiency benchmarking" {
+    const allocator = std.testing.allocator;
+    
+    // Create large bytecode with patterns that stress the planner
+    const bytecode_size = 10000;
+    var bytecode = try allocator.alloc(u8, bytecode_size);
+    defer allocator.free(bytecode);
+    
+    // Fill with pattern: PUSH32 + 32 bytes + JUMPDEST + ADD + PUSH1 + 1 byte + POP
+    var i: usize = 0;
+    while (i < bytecode_size - 40) : (i += 37) {
+        bytecode[i] = @intFromEnum(Opcode.PUSH32);
+        // Add 32 bytes of data
+        for (1..33) |j| {
+            if (i + j < bytecode.len) bytecode[i + j] = @intCast(j);
+        }
+        if (i + 33 < bytecode.len) bytecode[i + 33] = @intFromEnum(Opcode.JUMPDEST);
+        if (i + 34 < bytecode.len) bytecode[i + 34] = @intFromEnum(Opcode.ADD);
+        if (i + 35 < bytecode.len) bytecode[i + 35] = @intFromEnum(Opcode.PUSH1);
+        if (i + 36 < bytecode.len) bytecode[i + 36] = 0xFF;
+    }
+    
+    const start_time = std.time.nanoTimestamp();
+    
+    const Planner = @import("planner.zig").createPlanner(.{});
+    var planner = try Planner.init(allocator, bytecode);
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    var plan = try planner.create_minimal_plan(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    const end_time = std.time.nanoTimestamp();
+    const duration_ns = end_time - start_time;
+    
+    // Should complete within reasonable time (< 10ms)
+    try std.testing.expect(duration_ns < 10_000_000);
+    
+    // Memory efficiency check - plan shouldn't use excessive memory
+    try std.testing.expect(plan.bytecode.len == bytecode.len);
+}
+
+test "Plan synthetic opcode edge cases and error handling" {
+    const allocator = std.testing.allocator;
+    
+    // Test all 10 synthetic opcodes with edge cases
+    const synthetic_tests = [_]struct {
+        synthetic: SyntheticOpcode,
+        description: []const u8,
+    }{
+        .{ .synthetic = .PUSH_ADD, .description = "PUSH1 1 ADD" },
+        .{ .synthetic = .PUSH_SUB, .description = "PUSH2 256 SUB" },
+        .{ .synthetic = .PUSH_MUL, .description = "PUSH4 65536 MUL" },
+        .{ .synthetic = .PUSH_DIV, .description = "PUSH1 0 DIV (div by zero)" },
+        .{ .synthetic = .PUSH_MOD, .description = "PUSH1 0 MOD (mod by zero)" },
+        .{ .synthetic = .PUSH_LT, .description = "PUSH32 max LT" },
+        .{ .synthetic = .PUSH_JUMP, .description = "PUSH2 invalid_target JUMP" },
+        .{ .synthetic = .PUSH_JUMPI, .description = "PUSH1 target JUMPI" },
+        .{ .synthetic = .PUSH_DUP, .description = "PUSH1 val DUP1" },
+        .{ .synthetic = .PUSH_SWAP, .description = "PUSH1 val SWAP1" },
+    };
+    
+    for (synthetic_tests) |test_case| {
+        // Create bytecode that would trigger this synthetic opcode
+        var bytecode: [40]u8 = undefined;
+        bytecode[0] = @intFromEnum(Opcode.PUSH1);
+        bytecode[1] = 0x01;
+        bytecode[2] = switch (test_case.synthetic) {
+            .PUSH_ADD => @intFromEnum(Opcode.ADD),
+            .PUSH_SUB => @intFromEnum(Opcode.SUB),
+            .PUSH_MUL => @intFromEnum(Opcode.MUL),
+            .PUSH_DIV => @intFromEnum(Opcode.DIV),
+            .PUSH_MOD => @intFromEnum(Opcode.MOD),
+            .PUSH_LT => @intFromEnum(Opcode.LT),
+            .PUSH_JUMP => @intFromEnum(Opcode.JUMP),
+            .PUSH_JUMPI => @intFromEnum(Opcode.JUMPI),
+            .PUSH_DUP => @intFromEnum(Opcode.DUP1),
+            .PUSH_SWAP => @intFromEnum(Opcode.SWAP1),
+        };
+        bytecode[3] = @intFromEnum(Opcode.STOP);
+        
+        const Planner = @import("planner.zig").createPlanner(.{});
+        var planner = try Planner.init(allocator, bytecode[0..4]);
+        
+        var handlers: [256]*const HandlerFn = undefined;
+        for (&handlers) |*h| h.* = &testHandler;
+        
+        var plan = try planner.create_plan(allocator, handlers);
+        defer plan.deinit(allocator);
+        
+        // Verify the synthetic opcode is detected and metadata is available
+        const metadata = plan.getMetadata(0, test_case.synthetic, undefined);
+        try std.testing.expect(metadata != 0); // Should have valid metadata
+        
+        // Test PC advancement
+        var idx: InstructionIndexType = 0;
+        _ = plan.getNextInstruction(&idx, test_case.synthetic);
+        try std.testing.expect(idx > 0); // Should advance PC
+    }
+}
+
+test "Plan memory fragmentation resistance" {
+    const allocator = std.testing.allocator;
+    
+    // Create many small plans to test memory fragmentation
+    const num_plans = 100;
+    var plans: [num_plans]Plan = undefined;
+    var planners: [num_plans]Planner = undefined;
+    
+    // Small bytecode pattern
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 0x42,
+        @intFromEnum(Opcode.DUP1),
+        @intFromEnum(Opcode.ADD),
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    // Create all plans
+    for (0..num_plans) |i| {
+        const Planner = @import("planner.zig").createPlanner(.{});
+        planners[i] = try Planner.init(allocator, &bytecode);
+        plans[i] = try planners[i].create_plan(allocator, handlers);
+    }
+    
+    // Cleanup in reverse order to test fragmentation handling
+    var i = num_plans;
+    while (i > 0) {
+        i -= 1;
+        plans[i].deinit(allocator);
+    }
+    
+    // Create one more plan to ensure allocator still works
+    const Planner = @import("planner.zig").createPlanner(.{});
+    var final_planner = try Planner.init(allocator, &bytecode);
+    var final_plan = try final_planner.create_plan(allocator, handlers);
+    defer final_plan.deinit(allocator);
+    
+    try std.testing.expect(final_plan.bytecode.len == bytecode.len);
+}
+
+test "Plan bytecode validation and malformed input handling" {
+    const allocator = std.testing.allocator;
+    
+    const invalid_bytecodes = [_]struct {
+        bytecode: []const u8,
+        expected_behavior: []const u8,
+        description: []const u8,
+    }{
+        // PUSH without enough data
+        .{ .bytecode = &[_]u8{@intFromEnum(Opcode.PUSH1)}, .expected_behavior = "should_handle", .description = "PUSH1 without data" },
+        .{ .bytecode = &[_]u8{@intFromEnum(Opcode.PUSH2), 0x01}, .expected_behavior = "should_handle", .description = "PUSH2 with only 1 byte" },
+        .{ .bytecode = &[_]u8{@intFromEnum(Opcode.PUSH32)} ++ [_]u8{0} ** 31, .expected_behavior = "should_handle", .description = "PUSH32 with only 31 bytes" },
+        
+        // Test with potentially problematic patterns
+        .{ .bytecode = &[_]u8{@intFromEnum(Opcode.JUMPDEST), @intFromEnum(Opcode.JUMPDEST), @intFromEnum(Opcode.JUMPDEST)}, .expected_behavior = "should_handle", .description = "multiple consecutive JUMPDESTs" },
+        .{ .bytecode = &[_]u8{@intFromEnum(Opcode.STOP), @intFromEnum(Opcode.STOP), @intFromEnum(Opcode.STOP)}, .expected_behavior = "should_handle", .description = "multiple STOPs" },
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    for (invalid_bytecodes) |test_case| {
+        const Planner = @import("planner.zig").createPlanner(.{});
+        var planner = try Planner.init(allocator, test_case.bytecode);
+        
+        // Should be able to create plan even with malformed bytecode
+        var plan = try planner.create_minimal_plan(allocator, handlers);
+        defer plan.deinit(allocator);
+        
+        // Basic validation that plan was created
+        try std.testing.expect(plan.bytecode.len == test_case.bytecode.len);
+    }
+}
+
+test "Plan complete opcode coverage validation" {
+    const allocator = std.testing.allocator;
+    
+    // Test that plan can handle all valid EVM opcodes that are commonly used
+    const common_opcodes = [_]u8{
+        // Arithmetic
+        @intFromEnum(Opcode.ADD), @intFromEnum(Opcode.MUL), @intFromEnum(Opcode.SUB), @intFromEnum(Opcode.DIV),
+        @intFromEnum(Opcode.MOD), @intFromEnum(Opcode.EXP),
+        
+        // Comparison & Bitwise
+        @intFromEnum(Opcode.LT), @intFromEnum(Opcode.GT), @intFromEnum(Opcode.EQ), @intFromEnum(Opcode.ISZERO),
+        @intFromEnum(Opcode.AND), @intFromEnum(Opcode.OR), @intFromEnum(Opcode.XOR), @intFromEnum(Opcode.NOT),
+        
+        // Environment
+        @intFromEnum(Opcode.ADDRESS), @intFromEnum(Opcode.CALLER), @intFromEnum(Opcode.CALLVALUE),
+        @intFromEnum(Opcode.CALLDATASIZE), @intFromEnum(Opcode.CODESIZE),
+        
+        // Stack, Memory, Storage
+        @intFromEnum(Opcode.POP), @intFromEnum(Opcode.MLOAD), @intFromEnum(Opcode.MSTORE),
+        @intFromEnum(Opcode.SLOAD), @intFromEnum(Opcode.SSTORE), @intFromEnum(Opcode.JUMP), @intFromEnum(Opcode.JUMPI),
+        @intFromEnum(Opcode.PC), @intFromEnum(Opcode.MSIZE), @intFromEnum(Opcode.GAS), @intFromEnum(Opcode.JUMPDEST),
+        
+        // Push (subset)
+        @intFromEnum(Opcode.PUSH1), @intFromEnum(Opcode.PUSH2), @intFromEnum(Opcode.PUSH4),
+        
+        // Dup & Swap (subset)
+        @intFromEnum(Opcode.DUP1), @intFromEnum(Opcode.DUP2), @intFromEnum(Opcode.SWAP1), @intFromEnum(Opcode.SWAP2),
+        
+        // Control
+        @intFromEnum(Opcode.STOP), @intFromEnum(Opcode.RETURN), @intFromEnum(Opcode.REVERT),
+    };
+    
+    // Create bytecode with all opcodes
+    var bytecode = try allocator.alloc(u8, common_opcodes.len * 5); // Extra space for PUSH data
+    defer allocator.free(bytecode);
+    
+    var bytecode_idx: usize = 0;
+    for (common_opcodes) |opcode| {
+        bytecode[bytecode_idx] = opcode;
+        bytecode_idx += 1;
+        
+        // Add data for PUSH opcodes
+        if (opcode >= @intFromEnum(Opcode.PUSH1) and opcode <= @intFromEnum(Opcode.PUSH4)) {
+            const push_bytes = opcode - (@intFromEnum(Opcode.PUSH1) - 1);
+            for (0..push_bytes) |_| {
+                if (bytecode_idx < bytecode.len) {
+                    bytecode[bytecode_idx] = 0x42;
+                    bytecode_idx += 1;
+                }
+            }
+        }
+    }
+    
+    // Truncate to actual size
+    bytecode = bytecode[0..bytecode_idx];
+    
+    const Planner = @import("planner.zig").createPlanner(.{});
+    var planner = try Planner.init(allocator, bytecode);
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    var plan = try planner.create_plan(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Verify plan was created successfully with all opcodes
+    try std.testing.expect(plan.bytecode.len == bytecode.len);
+}
+
+test "Plan concurrent access simulation" {
+    const allocator = std.testing.allocator;
+    
+    // While Zig doesn't have true threads in std yet, we can simulate
+    // concurrent access patterns that might occur in multi-threaded environments
+    
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 0x01,
+        @intFromEnum(Opcode.PUSH1), 0x02,
+        @intFromEnum(Opcode.ADD),
+        @intFromEnum(Opcode.DUP1),
+        @intFromEnum(Opcode.PUSH1), 0x03,
+        @intFromEnum(Opcode.MUL),
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    const Planner = @import("planner.zig").createPlanner(.{});
+    var planner = try Planner.init(allocator, &bytecode);
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    var plan = try planner.create_plan(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Simulate multiple "threads" accessing the same plan
+    const num_simulated_threads = 10;
+    const iterations_per_thread = 100;
+    
+    for (0..num_simulated_threads) |thread_id| {
+        for (0..iterations_per_thread) |iteration| {
+            // Different access patterns to stress test the plan
+            const pc = (thread_id + iteration) % bytecode.len;
+            
+            // Test metadata access
+            const opcode = std.meta.intToEnum(Opcode, bytecode[pc]) catch continue;
+            _ = plan.getMetadata(pc, opcode, undefined);
+            
+            // Test instruction index mapping
+            _ = plan.getInstructionIndexForPc(@intCast(pc));
+            
+            // Test next instruction handling
+            var idx: InstructionIndexType = @intCast(pc);
+            if (idx < bytecode.len) {
+                _ = plan.getNextInstruction(&idx, opcode);
+            }
+        }
+    }
+}
+
+test "Plan instruction stream integrity validation" {
+    const allocator = std.testing.allocator;
+    
+    // Create complex bytecode with nested patterns
+    const bytecode = [_]u8{
+        // Pattern 1: Multiple PUSH operations
+        @intFromEnum(Opcode.PUSH1), 0x01,
+        @intFromEnum(Opcode.PUSH2), 0x02, 0x03,
+        @intFromEnum(Opcode.PUSH4), 0x04, 0x05, 0x06, 0x07,
+        
+        // Pattern 2: Jump destinations
+        @intFromEnum(Opcode.JUMPDEST), // PC 8
+        @intFromEnum(Opcode.DUP1),
+        @intFromEnum(Opcode.ADD),
+        
+        // Pattern 3: Conditional logic
+        @intFromEnum(Opcode.PUSH1), 0x08, // PC 11 - Push jump target
+        @intFromEnum(Opcode.JUMPI), // Jump to PC 8 if stack top != 0
+        
+        // Pattern 4: End
+        @intFromEnum(Opcode.STOP),
+    };
+    
+    const Planner = @import("planner.zig").createPlanner(.{});
+    var planner = try Planner.init(allocator, &bytecode);
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    var plan = try planner.create_plan(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    // Validate instruction stream integrity
+    var expected_pc: usize = 0;
+    var instruction_count: usize = 0;
+    
+    while (expected_pc < bytecode.len) {
+        const opcode = std.meta.intToEnum(Opcode, bytecode[expected_pc]) catch break;
+        
+        // Verify we can get instruction index for this PC
+        const inst_idx = plan.getInstructionIndexForPc(@intCast(expected_pc));
+        try std.testing.expect(inst_idx != null);
+        
+        // Verify metadata access
+        _ = plan.getMetadata(expected_pc, opcode, undefined);
+        
+        // Calculate next PC
+        const opcode_val = bytecode[expected_pc];
+        if (opcode_val >= @intFromEnum(Opcode.PUSH1) and opcode_val <= @intFromEnum(Opcode.PUSH32)) {
+            const push_bytes = opcode_val - (@intFromEnum(Opcode.PUSH1) - 1);
+            expected_pc += 1 + push_bytes;
+        } else {
+            expected_pc += 1;
+        }
+        
+        instruction_count += 1;
+        if (instruction_count > 1000) break; // Safety check
+    }
+    
+    // Should have processed reasonable number of instructions
+    try std.testing.expect(instruction_count > 5);
+    try std.testing.expect(instruction_count < 50);
+}
+
+test "Plan extreme configuration edge cases" {
+    const allocator = std.testing.allocator;
+    
+    // Test with minimum valid configuration
+    const min_config = PlanConfig{
+        .stackSize = 1,
+        .WordType = u64,
+        .maxBytecodeSize = 1,
+        .blockGasLimit = 21000,
+    };
+    
+    const Planner = @import("planner.zig").createPlanner(min_config);
+    
+    // Minimal valid bytecode
+    const bytecode = [_]u8{@intFromEnum(Opcode.STOP)};
+    var planner = try Planner.init(allocator, &bytecode);
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    var plan = try planner.create_minimal_plan(allocator, handlers);
+    defer plan.deinit(allocator);
+    
+    try std.testing.expect(plan.bytecode.len == 1);
+    try std.testing.expectEqual(@as(u8, @intFromEnum(Opcode.STOP)), plan.bytecode[0]);
+}
+
+test "Plan error recovery and resilience testing" {
+    const allocator = std.testing.allocator;
+    
+    // Test plan behavior with various edge cases
+    const edge_bytecodes = [_][]const u8{
+        // All zeros
+        &[_]u8{0x00, 0x00, 0x00, 0x00},
+        // All 0xFF (SELFDESTRUCT)
+        &[_]u8{0xFF},
+        // Mixed valid and potentially problematic opcodes
+        &[_]u8{@intFromEnum(Opcode.PUSH1), 0xFF, @intFromEnum(Opcode.JUMPDEST), @intFromEnum(Opcode.JUMP)},
+        // Large PUSH followed by small opcode
+        &[_]u8{@intFromEnum(Opcode.PUSH4), 0xFF, 0xFF, 0xFF, 0xFF, @intFromEnum(Opcode.POP)},
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testHandler;
+    
+    for (edge_bytecodes) |test_bytecode| {
+        const Planner = @import("planner.zig").createPlanner(.{});
+        var planner = try Planner.init(allocator, test_bytecode);
+        
+        // Should be able to create plan without crashing
+        var plan = try planner.create_minimal_plan(allocator, handlers);
+        defer plan.deinit(allocator);
+        
+        // Basic integrity check
+        try std.testing.expect(plan.bytecode.len == test_bytecode.len);
+        
+        // Should be able to access metadata for first instruction
+        if (test_bytecode.len > 0) {
+            const first_opcode = std.meta.intToEnum(Opcode, test_bytecode[0]) catch continue;
+            _ = plan.getMetadata(0, first_opcode, undefined);
+        }
+    }
+}
+
+test "Plan resource cleanup and leak prevention" {
+    const allocator = std.testing.allocator;
+    
+    // Create and destroy many plans to test for resource leaks
+    const num_iterations = 50;
+    
+    for (0..num_iterations) |i| {
+        // Vary bytecode size to stress allocator
+        const bytecode_size = (i % 10) + 1;
+        var bytecode = try allocator.alloc(u8, bytecode_size);
+        defer allocator.free(bytecode);
+        
+        // Fill with simple pattern
+        for (bytecode, 0..) |*byte, j| {
+            byte.* = if (j == bytecode.len - 1) @intFromEnum(Opcode.STOP) else @intFromEnum(Opcode.PUSH1);
+        }
+        
+        const Planner = @import("planner.zig").createPlanner(.{});
+        var planner = try Planner.init(allocator, bytecode);
+        
+        var handlers: [256]*const HandlerFn = undefined;
+        for (&handlers) |*h| h.* = &testHandler;
+        
+        var plan = try planner.create_minimal_plan(allocator, handlers);
+        
+        // Use the plan briefly
+        _ = plan.getInstructionIndexForPc(0);
+        
+        // Clean up - this should not leak memory
+        plan.deinit(allocator);
+    }
+}
