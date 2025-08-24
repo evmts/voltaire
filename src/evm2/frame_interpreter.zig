@@ -10,23 +10,16 @@ const primitives = @import("primitives");
 // FrameInterpreter combines a Frame with a Plan to execute EVM bytecode
 pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
     config.validate();
-    
-    // Create frame type
     const Frame = frame_mod.createFrame(config);
-    
-    // Create planner and plan types with matching configuration
-    const PlannerConfig = planner_mod.PlannerConfig{
+    const Planner = planner_mod.createPlanner(.{
         .WordType = config.WordType,
         .maxBytecodeSize = config.max_bytecode_size,
         .stack_size = config.stack_size,
-    };
-    const Planner = planner_mod.createPlanner(PlannerConfig);
-    
-    const PlanConfig = plan_mod.PlanConfig{
+    });
+    const Plan = plan_mod.createPlan(.{
         .WordType = config.WordType,
         .maxBytecodeSize = config.max_bytecode_size,
-    };
-    const Plan = plan_mod.createPlan(PlanConfig);
+    });
     
     const FrameInterpreter = struct {
         pub const WordType = config.WordType;
@@ -34,10 +27,8 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         
         const Self = @This();
         
-        // Use the plan's handler function type
         const HandlerFn = plan_mod.HandlerFn;
         
-        // The interpreter owns both the frame and the plan
         frame: Frame,
         plan: Plan,
         instruction_idx: Plan.InstructionIndexType,
@@ -45,19 +36,13 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: Frame.GasType, database: if (config.has_database) ?@import("database_interface.zig").DatabaseInterface else void) Error!Self {
             var frame = try Frame.init(allocator, bytecode, gas_remaining, database);
             errdefer frame.deinit(allocator);
-            
-            // Create the planner and analyze the bytecode
             var planner = Planner.init(bytecode);
-            
-            // Create handler array - all handlers will be updated to match plan's signature
             var handlers: [256]*const HandlerFn = undefined;
             
             // Initialize all handlers to invalid by default
-            for (&handlers) |*h| {
-                h.* = &op_invalid_handler;
-            }
+            for (&handlers) |*h| h.* = &op_invalid_handler;
             
-            // Map opcodes to their handlers
+            // Arithmetic operations (0x01-0x0b)
             handlers[@intFromEnum(Opcode.STOP)] = &op_stop_handler;
             handlers[@intFromEnum(Opcode.ADD)] = &op_add_handler;
             handlers[@intFromEnum(Opcode.MUL)] = &op_mul_handler;
@@ -70,6 +55,13 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.MULMOD)] = &op_mulmod_handler;
             handlers[@intFromEnum(Opcode.EXP)] = &op_exp_handler;
             handlers[@intFromEnum(Opcode.SIGNEXTEND)] = &op_signextend_handler;
+            
+            // Undefined opcodes 0x0c-0x0f
+            inline for (0x0c..0x10) |i| {
+                handlers[i] = &op_invalid_handler;
+            }
+            
+            // Comparison & bitwise logic (0x10-0x1d)
             handlers[@intFromEnum(Opcode.LT)] = &op_lt_handler;
             handlers[@intFromEnum(Opcode.GT)] = &op_gt_handler;
             handlers[@intFromEnum(Opcode.SLT)] = &op_slt_handler;
@@ -84,24 +76,53 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.SHL)] = &op_shl_handler;
             handlers[@intFromEnum(Opcode.SHR)] = &op_shr_handler;
             handlers[@intFromEnum(Opcode.SAR)] = &op_sar_handler;
+            
+            // Undefined opcodes 0x1e-0x1f
+            handlers[0x1e] = &op_invalid_handler;
+            handlers[0x1f] = &op_invalid_handler;
+            
+            // Crypto (0x20)
+            handlers[@intFromEnum(Opcode.KECCAK256)] = &op_invalid_handler; // TODO: implement
+            
+            // Undefined opcodes 0x21-0x2f
+            inline for (0x21..0x30) |i| {
+                handlers[i] = &op_invalid_handler;
+            }
+            
+            // Environmental information (0x30-0x3f) - all unimplemented for now
+            inline for (0x30..0x40) |i| {
+                handlers[i] = &op_invalid_handler; // TODO: implement
+            }
+            
+            // Block information (0x40-0x4a) - all unimplemented for now
+            inline for (0x40..0x4b) |i| {
+                handlers[i] = &op_invalid_handler; // TODO: implement
+            }
+            
+            // Undefined opcodes 0x4b-0x4f
+            inline for (0x4b..0x50) |i| {
+                handlers[i] = &op_invalid_handler;
+            }
+            
+            // Stack, Memory, Storage and Flow Operations (0x50-0x5f)
             handlers[@intFromEnum(Opcode.POP)] = &op_pop_handler;
             handlers[@intFromEnum(Opcode.MLOAD)] = &op_mload_handler;
             handlers[@intFromEnum(Opcode.MSTORE)] = &op_mstore_handler;
             handlers[@intFromEnum(Opcode.MSTORE8)] = &op_mstore8_handler;
-            handlers[@intFromEnum(Opcode.MCOPY)] = &op_mcopy_handler;
             handlers[@intFromEnum(Opcode.SLOAD)] = &op_sload_handler;
             handlers[@intFromEnum(Opcode.SSTORE)] = &op_sstore_handler;
-            handlers[@intFromEnum(Opcode.TLOAD)] = &op_tload_handler;
-            handlers[@intFromEnum(Opcode.TSTORE)] = &op_tstore_handler;
             handlers[@intFromEnum(Opcode.JUMP)] = &op_jump_handler;
             handlers[@intFromEnum(Opcode.JUMPI)] = &op_jumpi_handler;
             handlers[@intFromEnum(Opcode.PC)] = &op_pc_handler;
             handlers[@intFromEnum(Opcode.MSIZE)] = &op_msize_handler;
             handlers[@intFromEnum(Opcode.GAS)] = &op_gas_handler;
             handlers[@intFromEnum(Opcode.JUMPDEST)] = &op_jumpdest_handler;
+            handlers[@intFromEnum(Opcode.TLOAD)] = &op_tload_handler;
+            handlers[@intFromEnum(Opcode.TSTORE)] = &op_tstore_handler;
+            handlers[@intFromEnum(Opcode.MCOPY)] = &op_mcopy_handler;
             handlers[@intFromEnum(Opcode.PUSH0)] = &push0_handler;
             
-            // PUSH1-PUSH32 handlers
+            // PUSH operations (0x60-0x7f)
             handlers[@intFromEnum(Opcode.PUSH1)] = &push1_handler;
             handlers[@intFromEnum(Opcode.PUSH2)] = &push2_handler;
             handlers[@intFromEnum(Opcode.PUSH3)] = &push3_handler;
@@ -135,7 +156,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.PUSH31)] = &push31_handler;
             handlers[@intFromEnum(Opcode.PUSH32)] = &push32_handler;
             
-            // DUP handlers
+            // DUP operations (0x80-0x8f)
             handlers[@intFromEnum(Opcode.DUP1)] = &dup1_handler;
             handlers[@intFromEnum(Opcode.DUP2)] = &dup2_handler;
             handlers[@intFromEnum(Opcode.DUP3)] = &dup3_handler;
@@ -153,7 +174,7 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.DUP15)] = &dup15_handler;
             handlers[@intFromEnum(Opcode.DUP16)] = &dup16_handler;
             
-            // SWAP handlers
+            // SWAP operations (0x90-0x9f)
             handlers[@intFromEnum(Opcode.SWAP1)] = &swap1_handler;
             handlers[@intFromEnum(Opcode.SWAP2)] = &swap2_handler;
             handlers[@intFromEnum(Opcode.SWAP3)] = &swap3_handler;
@@ -171,7 +192,22 @@ pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.SWAP15)] = &swap15_handler;
             handlers[@intFromEnum(Opcode.SWAP16)] = &swap16_handler;
             
-            // Fusion handlers
+            // LOG operations (0xa0-0xa4) - all unimplemented for now
+            inline for (0xa0..0xa5) |i| {
+                handlers[i] = &op_invalid_handler; // TODO: implement
+            }
+            
+            // Undefined opcodes 0xa5-0xef
+            inline for (0xa5..0xf0) |i| {
+                handlers[i] = &op_invalid_handler;
+            }
+            
+            // System operations (0xf0-0xff) - all unimplemented for now
+            inline for (0xf0..0x100) |i| {
+                handlers[i] = &op_invalid_handler; // TODO: implement
+            }
+            
+            // Synthetic opcodes (above 0xff)
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_INLINE)] = &push_add_inline_handler;
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_POINTER)] = &push_add_pointer_handler;
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_INLINE)] = &push_mul_inline_handler;
