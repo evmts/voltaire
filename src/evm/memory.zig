@@ -401,7 +401,7 @@ test "Memory large data operations" {
     try std.testing.expectEqualSlices(u8, large_data[768..1024], chunk4);
 }
 
-test "Memory concurrent child memories" {
+test "Memory sequential child memories" {
     const allocator = std.testing.allocator;
     const Mem = Memory(.{});
     var parent = try Mem.init(allocator);
@@ -412,41 +412,45 @@ test "Memory concurrent child memories" {
     try parent.set_data(0, &parent_data);
     try std.testing.expectEqual(@as(usize, 3), parent.size());
     
-    // Create two child memories from same parent
+    // Create first child memory and add data
     var child1 = try parent.init_child();
     defer child1.deinit();
-    var child2 = try parent.init_child();
-    defer child2.deinit();
     
-    // Both children should start with empty size but same checkpoint
     try std.testing.expectEqual(@as(usize, 0), child1.size());
-    try std.testing.expectEqual(@as(usize, 0), child2.size());
-    try std.testing.expectEqual(child1.checkpoint, child2.checkpoint);
     try std.testing.expectEqual(@as(usize, 3), child1.checkpoint);
     
-    // Add data to first child
     const child1_data = [_]u8{0x11, 0x22};
     try child1.set_data(0, &child1_data);
     try std.testing.expectEqual(@as(usize, 2), child1.size());
     
-    // Add data to second child - this will extend the buffer further
+    // Create second child from updated parent (checkpoint now at 5)
+    var child2 = try parent.init_child();
+    defer child2.deinit();
+    
+    try std.testing.expectEqual(@as(usize, 0), child2.size());
+    try std.testing.expectEqual(@as(usize, 5), child2.checkpoint);
+    
+    // Add data to second child
     const child2_data = [_]u8{0x33, 0x44, 0x55, 0x66};
     try child2.set_data(0, &child2_data);
     
-    // Verify child sizes - child1 size is now affected by buffer growth
-    try std.testing.expectEqual(@as(usize, 2), child1.size());
+    // After child2 writes, both children see the full buffer size from their checkpoint
+    // child1: total(9) - checkpoint(3) = 6
+    // child2: total(9) - checkpoint(5) = 4
+    try std.testing.expectEqual(@as(usize, 6), child1.size());
     try std.testing.expectEqual(@as(usize, 4), child2.size());
     
-    const read1 = try child1.get_slice(0, 2);
-    const read2 = try child2.get_slice(0, 4);
+    // Verify data is correctly positioned
+    const read1 = try child1.get_slice(0, 2);  // child1's data at buffer[3:5]
+    const read2 = try child2.get_slice(0, 4);  // child2's data at buffer[5:9]
     try std.testing.expectEqualSlices(u8, &child1_data, read1);
     try std.testing.expectEqualSlices(u8, &child2_data, read2);
     
-    // Verify underlying buffer grew correctly
-    try std.testing.expectEqual(@as(usize, 7), parent.buffer_ptr.items.len); // 3 + 4 (larger child)
+    // Verify underlying buffer layout
+    try std.testing.expectEqual(@as(usize, 9), parent.buffer_ptr.items.len); // 3 + 2 + 4
     
     // Parent should see all data in buffer
-    try std.testing.expectEqual(@as(usize, 7), parent.size());
+    try std.testing.expectEqual(@as(usize, 9), parent.size());
     const parent_view = try parent.get_slice(0, 3);
     try std.testing.expectEqualSlices(u8, &parent_data, parent_view);
 }

@@ -547,9 +547,115 @@ pub fn Evm(comptime config: EvmConfig) type {
         
         /// CREATE operation
         pub fn create_handler(self: *Self, params: anytype) Error!CallResult {
-            _ = self;
-            _ = params;
-            return error.InvalidJump; // Placeholder
+            // Check depth
+            if (self.depth >= config.max_call_depth) {
+                return CallResult.failure(0);
+            }
+            
+            // Create snapshot for state reversion
+            const snapshot_id = self.journal.create_snapshot();
+            
+            // Get caller account
+            var caller_account = self.database.get_account(params.caller) catch |err| {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return switch (err) {
+                    else => CallResult.failure(0),
+                };
+            } orelse Account{
+                .balance = 0,
+                .nonce = 0,
+                .code_hash = [_]u8{0} ** 32,
+                .storage_root = [_]u8{0} ** 32,
+            };
+            
+            // Check if caller has sufficient balance
+            if (caller_account.balance < params.value) {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return CallResult.failure(0);
+            }
+            
+            // Calculate contract address from sender and nonce
+            const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
+            
+            // Check if address already has code (collision)
+            if (self.database.account_exists(contract_address)) {
+                const existing = self.database.get_account(contract_address) catch null;
+                if (existing != null and !std.mem.eql(u8, &existing.?.code_hash, &[_]u8{0} ** 32)) {
+                    self.journal.revert_to_snapshot(snapshot_id);
+                    return CallResult.failure(0);
+                }
+            }
+            
+            // Increment caller's nonce
+            caller_account.nonce += 1;
+            self.database.set_account(params.caller, caller_account) catch |err| {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return switch (err) {
+                    else => CallResult.failure(0),
+                };
+            };
+            
+            // Track created contract for EIP-6780
+            try self.created_contracts.mark_created(contract_address);
+            
+            // Gas cost for CREATE
+            const GasConstants = primitives.GasConstants;
+            const create_gas = GasConstants.CreateGas; // 32000
+            
+            if (params.gas < create_gas) {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return CallResult.failure(0);
+            }
+            
+            const remaining_gas = params.gas - create_gas;
+            
+            // Execute initialization code
+            const result = self.execute_frame(
+                params.init_code,
+                &.{}, // Empty input for CREATE
+                remaining_gas,
+                contract_address,
+                params.caller,
+                params.value,
+                false, // is_static
+                snapshot_id,
+            ) catch {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return CallResult.failure(0);
+            };
+            
+            if (!result.success) {
+                self.journal.revert_to_snapshot(snapshot_id);
+                return result;
+            }
+            
+            // Store the deployed code
+            if (result.output.len > 0) {
+                var code_hash_bytes: [32]u8 = undefined;
+                const keccak_asm = @import("keccak_asm.zig");
+                try keccak_asm.keccak256(result.output, &code_hash_bytes);
+                
+                const new_account = Account{
+                    .balance = params.value,
+                    .nonce = 1, // Contract accounts start with nonce 1
+                    .code_hash = code_hash_bytes,
+                    .storage_root = [_]u8{0} ** 32,
+                };
+                
+                self.database.set_account(contract_address, new_account) catch |err| {
+                    self.journal.revert_to_snapshot(snapshot_id);
+                    return switch (err) {
+                        else => CallResult.failure(0),
+                    };
+                };
+            }
+            
+            // Return the contract address as output
+            var address_bytes = std.ArrayList(u8).init(self.allocator);
+            defer address_bytes.deinit();
+            try address_bytes.appendSlice(&contract_address);
+            
+            return CallResult.success_with_output(result.gas_left, address_bytes.items);
         }
         
         /// CREATE2 operation
@@ -723,353 +829,6 @@ pub fn Evm(comptime config: EvmConfig) type {
             // Normal completion (STOP)
             const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_manager.remaining, 0)));
             return CallResult.success_with_output(gas_left, interpreter.frame.output_data.items);
-        }
-        
-        // Old implementation for reference - to be removed
-        pub fn call_old(self: *Self, params: CallParams) anyerror!CallResult {
-            self.depth = 0;
-            // Clear any existing logs before starting
-            for (self.logs.items) |log| {
-                self.allocator.free(log.topics);
-                self.allocator.free(log.data);
-            }
-            self.logs.clearRetainingCapacity();
-            
-            var result = try self._call(params, true);
-            // For top-level calls, include logs in the result
-            result.logs = self.takeLogs();
-            return result;
-        }
-
-        pub fn inner_call(self: *Self, params: CallParams) anyerror!CallResult {
-            if (self.depth >= config.max_call_depth) {
-                @branchHint(.cold);
-                return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
-            }
-
-            self.depth += 1;
-            const result = self._call(params, false) catch |err| {
-                self.depth -= 1;
-                return err;
-            };
-
-            self.depth -= 1;
-            return result;
-        }
-
-        /// Internal call implementation with journal support
-        fn _call(self: *Self, params: CallParams, comptime is_top_level_call: bool) anyerror!CallResult {
-            const snapshot_id = if (!is_top_level_call) self.create_snapshot() else @as(JournalType.SnapshotIdType, 0);
-            const prev_snapshot_id: JournalType.SnapshotIdType = self.current_snapshot_id;
-            self.current_snapshot_id = snapshot_id;
-            defer if (!is_top_level_call) {
-                self.current_snapshot_id = prev_snapshot_id;
-            };
-
-            var call_address: Address = undefined;
-            var call_code: []const u8 = undefined;
-            var call_input: []const u8 = undefined;
-            var call_gas: u64 = undefined;
-            var call_is_static: bool = undefined;
-            var call_caller: Address = undefined;
-            var call_value: u256 = undefined;
-
-            switch (params) {
-                .create => |create_params| {
-                    return self.handle_create(create_params, is_top_level_call, snapshot_id);
-                },
-                .create2 => |create2_params| {
-                    return self.handle_create2(create2_params, is_top_level_call, snapshot_id);
-                },
-                .call => |call_data| {
-                    call_address = call_data.to;
-                    call_code = self.database.get_code_by_address(call_data.to) catch &.{};
-                    call_input = call_data.input;
-                    call_gas = call_data.gas;
-                    call_is_static = false;
-                    call_caller = call_data.caller;
-                    call_value = call_data.value;
-                },
-                .callcode => |call_data| {
-                    call_address = call_data.to;
-                    call_code = self.database.get_code_by_address(call_data.to) catch &.{};
-                    call_input = call_data.input;
-                    call_gas = call_data.gas;
-                    call_is_static = false;
-                    call_caller = call_data.caller;
-                    call_value = call_data.value;
-                },
-                .delegatecall => |call_data| {
-                    call_address = call_data.to;
-                    call_code = self.database.get_code_by_address(call_data.to) catch &.{};
-                    call_input = call_data.input;
-                    call_gas = call_data.gas;
-                    call_is_static = false;
-                    call_caller = call_data.caller;
-                    call_value = 0; // DELEGATECALL preserves value from parent context
-                },
-                .staticcall => |call_data| {
-                    call_address = call_data.to;
-                    call_code = self.database.get_code_by_address(call_data.to) catch &.{};
-                    call_input = call_data.input;
-                    call_gas = call_data.gas;
-                    call_is_static = true;
-                    call_caller = call_data.caller;
-                    call_value = 0; // STATICCALL cannot transfer value
-                },
-            }
-
-            if (call_input.len > config.max_input_size) {
-                if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
-                return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
-            }
-
-            if (config.enable_precompiles and precompiles.is_precompile(call_address)) {
-                const precompile_result = self.execute_precompile_call(call_address, call_input, call_gas, call_is_static) catch |err| {
-                    if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
-                    return switch (err) {
-                        else => CallResult{ .success = false, .gas_left = 0, .output = &.{} },
-                    };
-                };
-
-                if (!is_top_level_call and !precompile_result.success) {
-                    self.revert_to_snapshot(snapshot_id);
-                }
-
-                return precompile_result;
-            }
-
-            const execution_result = self.execute_frame(
-                call_code,
-                call_input,
-                call_gas,
-                call_address,
-                call_caller,
-                call_value,
-                call_is_static,
-                snapshot_id,
-            ) catch |err| {
-                if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
-                return switch (err) {
-                    else => CallResult{ .success = false, .gas_left = 0, .output = &.{} },
-                };
-            };
-
-            if (!is_top_level_call and !execution_result.success) {
-                self.revert_to_snapshot(snapshot_id);
-            }
-
-            return execution_result;
-        }
-
-        /// Execute a precompile call using the full legacy precompile system
-        /// This implementation supports all standard Ethereum precompiles (0x01-0x0A)
-        fn execute_precompile_call(self: *Self, address: Address, input: []const u8, gas: u64, is_static: bool) !CallResult {
-            _ = is_static; // Precompiles are inherently stateless, so static flag doesn't matter
-
-            if (!precompiles.is_precompile(address)) {
-                return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
-            }
-
-            const precompile_id = address[19]; // Last byte is the precompile ID
-            if (precompile_id < 1 or precompile_id > 10) {
-                return CallResult{ .success = false, .gas_left = gas, .output = &.{} };
-            }
-
-            const estimated_output_size: usize = switch (precompile_id) {
-                1 => 32, // ECRECOVER - returns 32-byte address (padded)
-                2 => 32, // SHA256 - returns 32-byte hash
-                3 => 32, // RIPEMD160 - returns 32-byte hash (padded)
-                4 => input.len, // IDENTITY - returns input data
-                5 => blk: {
-                    // MODEXP - estimate based on modulus length from input
-                    if (input.len < 96) break :blk 0;
-                    const mod_len_bytes = input[64..96];
-                    var mod_len: usize = 0;
-                    for (mod_len_bytes) |byte| {
-                        mod_len = (mod_len << 8) | byte;
-                    }
-                    break :blk @min(mod_len, 4096); // Cap at 4KB for safety
-                },
-                6 => 64, // ECADD - returns 64 bytes (2 field elements)
-                7 => 64, // ECMUL - returns 64 bytes (2 field elements)
-                8 => 32, // ECPAIRING - returns 32 bytes (boolean result padded)
-                9 => 64, // BLAKE2F - returns 64-byte hash
-                10 => 64, // KZG_POINT_EVALUATION - returns verification result
-                else => 0,
-            };
-
-            const output_buffer = self.allocator.alloc(u8, estimated_output_size) catch |err| {
-                return err;
-            };
-            errdefer self.allocator.free(output_buffer);
-
-            // NOTE: ChainRules integration for precompiles is pending precompile implementation
-            // const chain_rules = ChainRules.for_hardfork(self.hardfork_config);
-
-            // Execute precompile
-            const result = precompiles.execute_precompile(self.allocator, address, input, gas) catch {
-                self.allocator.free(output_buffer);
-                return CallResult{
-                    .success = false,
-                    .gas_left = 0,
-                    .output = &.{},
-                };
-            };
-
-            // Handle precompile result
-            if (result.success) {
-                // Copy output data to our buffer
-                const output_len = @min(result.output.len, output_buffer.len);
-                @memcpy(output_buffer[0..output_len], result.output[0..output_len]);
-                
-                return CallResult{
-                    .success = true,
-                    .gas_left = gas - result.gas_used,
-                    .output = output_buffer[0..output_len],
-                };
-            } else {
-                self.allocator.free(output_buffer);
-                return CallResult{
-                    .success = false,
-                    .gas_left = 0,
-                    .output = &.{},
-                };
-            }
-        }
-
-
-        /// Handle CREATE contract creation
-        fn handle_create(self: *Self, params: anytype, comptime is_top_level_call: bool, snapshot_id: JournalType.SnapshotIdType) !CallResult {
-            var caller_account = (self.database.get_account(params.caller) catch null) orelse @import("database_interface_account.zig").Account{
-                .balance = 0,
-                .nonce = 0,
-                .code_hash = [_]u8{0} ** 32,
-                .storage_root = [_]u8{0} ** 32,
-            };
-
-            const contract_address = primitives.Address.get_contract_address(params.caller, caller_account.nonce);
-
-            // Increment caller's nonce
-            caller_account.nonce += 1;
-            try self.database.set_account(params.caller, caller_account);
-
-            // Delegate to common creation logic
-            return self.create_contract_at(params.caller, params.value, params.init_code, params.gas, contract_address, is_top_level_call, snapshot_id);
-        }
-
-        /// Handle CREATE2 contract creation
-        fn handle_create2(self: *Self, params: anytype, comptime is_top_level_call: bool, snapshot_id: JournalType.SnapshotIdType) !CallResult {
-            const salt_bytes = @as([32]u8, @bitCast(params.salt));
-
-            const keccak_asm = @import("keccak_asm.zig");
-            var init_code_hash_bytes: [32]u8 = undefined;
-            try keccak_asm.keccak256(params.init_code, &init_code_hash_bytes);
-
-            const contract_address = primitives.Address.get_create2_address(params.caller, salt_bytes, init_code_hash_bytes);
-
-            // CREATE2 doesn't increment caller nonce
-            return self.create_contract_at(params.caller, params.value, params.init_code, params.gas, contract_address, is_top_level_call, snapshot_id);
-        }
-
-        /// Create a contract at a specific address
-        fn create_contract_at(
-            self: *Self,
-            caller: Address,
-            value: u256,
-            init_code: []const u8,
-            gas: u64,
-            contract_address: Address,
-            comptime is_top_level_call: bool,
-            snapshot_id: JournalType.SnapshotIdType,
-        ) !CallResult {
-            if (self.database.account_exists(contract_address)) {
-                if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
-                return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
-            }
-
-            const GasConstants = @import("primitives").GasConstants;
-            const create_gas_cost = GasConstants.CreateGas; // 32000 gas
-            if (gas < create_gas_cost) {
-                if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
-                return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
-            }
-            const remaining_gas = gas - create_gas_cost;
-
-            if (value > 0) {
-                var caller_account = (self.database.get_account(caller) catch null) orelse @import("database_interface_account.zig").Account{
-                    .balance = 0,
-                    .nonce = 0,
-                    .code_hash = [_]u8{0} ** 32,
-                    .storage_root = [_]u8{0} ** 32,
-                };
-
-                if (caller_account.balance < value) {
-                    if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
-                    return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
-                }
-
-                caller_account.balance -= value;
-                try self.database.set_account(caller, caller_account);
-            }
-
-            const new_contract_account = @import("database_interface_account.zig").Account{
-                .balance = value,
-                .nonce = 1, // Contract accounts start with nonce 1
-                .code_hash = [_]u8{0} ** 32, // Will be set after init code execution
-                .storage_root = [_]u8{0} ** 32,
-            };
-            try self.database.set_account(contract_address, new_contract_account);
-
-            try self.register_created_contract(contract_address);
-
-            // Execute initialization code to get deployed bytecode
-            const init_result = try self.execute_frame(
-                init_code,
-                &.{}, // Empty input for init code
-                remaining_gas,
-                contract_address,
-                caller,
-                value,
-                false, // Not static
-                snapshot_id,
-            );
-
-            if (!init_result.success) {
-                // Init code failed - revert contract creation
-                if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
-                return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
-            }
-
-            // Store the deployed bytecode
-            if (init_result.output.len > 0) {
-                // Check max code size (24576 bytes per EIP-170)
-                const MAX_CODE_SIZE = 24576;
-                if (init_result.output.len > MAX_CODE_SIZE) {
-                    if (!is_top_level_call) self.revert_to_snapshot(snapshot_id);
-                    return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
-                }
-
-                // Store code and get its hash
-                const code_hash = try self.database.set_code(init_result.output);
-
-                var updated_contract = (try self.database.get_account(contract_address)) orelse {
-                    // This should never happen since we just created the account
-                    return CallResult{ .success = false, .gas_left = 0, .output = &.{} };
-                };
-                updated_contract.code_hash = code_hash;
-                try self.database.set_account(contract_address, updated_contract);
-            }
-
-            // Return contract address as 20-byte output
-            const address_output = try self.allocator.alloc(u8, 20);
-            @memcpy(address_output, &contract_address);
-
-            return CallResult{
-                .success = true,
-                .gas_left = init_result.gas_left,
-                .output = address_output,
-            };
         }
 
         // ===== Host Interface Implementation =====
@@ -2512,7 +2271,7 @@ test "EVM logs - emit_log functionality" {
 
     // Test takeLogs
     const taken_logs = evm.takeLogs();
-    defer CallResult.deinitLogsSlice(taken_logs, evm.allocator);
+    defer DefaultEvm.CallResult.deinitLogsSlice(taken_logs, evm.allocator);
     try testing.expectEqual(@as(usize, 1), taken_logs.len);
     try testing.expectEqual(@as(usize, 0), evm.logs.items.len); // Should be empty after taking
 }

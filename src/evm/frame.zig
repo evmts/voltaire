@@ -944,10 +944,14 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Check if we have enough gas
             if (copy_gas > std.math.maxInt(GasType)) {
+                @branchHint(.unlikely);
                 return Error.OutOfGas;
             }
 
-            if (self.gas_remaining < @as(GasType, @intCast(copy_gas))) return Error.OutOfGas;
+            if (self.gas_remaining < @as(GasType, @intCast(copy_gas))) {
+                @branchHint(.unlikely);
+                return Error.OutOfGas;
+            }
             self.gas_remaining -= @as(GasType, @intCast(copy_gas));
 
             // Get memory buffer slice
@@ -1181,7 +1185,10 @@ pub fn Frame(comptime config: FrameConfig) type {
             if (byte_cost > std.math.maxInt(GasType)) {
                 return Error.OutOfGas;
             }
-            if (self.gas_remaining < @as(GasType, @intCast(byte_cost))) return Error.OutOfGas;
+            if (self.gas_remaining < @as(GasType, @intCast(byte_cost))) {
+                @branchHint(.unlikely);
+                return Error.OutOfGas;
+            }
             self.gas_remaining -= @as(GasType, @intCast(byte_cost));
 
             // Get log data
