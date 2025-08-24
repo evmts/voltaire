@@ -2619,7 +2619,7 @@ test "Debug planner instruction stream creation" {
     };
     const PlannerType = planner_mod.createPlanner(PlannerConfig);
     
-    var planner = try PlannerType.init(allocator, &bytecode);
+    var planner = try PlannerType.init(allocator, 100);
     
     // Create handler array with debug logging
     var handlers: [256]*const plan_mod.HandlerFn = undefined;
