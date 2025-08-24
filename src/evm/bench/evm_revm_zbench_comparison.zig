@@ -5,6 +5,7 @@ const evm = @import("evm");
 const revm = @import("revm");
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
+const TransactionContext = @import("../transaction_context.zig").TransactionContext;
 
 // Test configuration
 const BENCHMARK_GAS_LIMIT: u64 = 1_000_000;

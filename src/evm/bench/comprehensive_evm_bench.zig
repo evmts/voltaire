@@ -6,6 +6,7 @@ const evm_mod = @import("evm");
 const revm_wrapper = @import("revm");
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
+const TransactionContext = @import("../transaction_context.zig").TransactionContext;
 
 // Test data constants
 const ERC20_TRANSFER_SELECTOR: u32 = 0xa9059cbb; // transfer(address,uint256)
@@ -69,7 +70,7 @@ fn benchmark_evm_erc20_transfer(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_mod.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -127,7 +128,7 @@ fn benchmark_evm_snailtracer(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_mod.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -174,7 +175,7 @@ fn benchmark_evm_thousand_hashes(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_mod.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -225,7 +226,7 @@ fn benchmark_legacy_evm_erc20_transfer(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_legacy.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -290,7 +291,7 @@ fn benchmark_legacy_evm_snailtracer(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_legacy.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -355,7 +356,7 @@ fn benchmark_legacy_evm_thousand_hashes(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_legacy.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -513,7 +514,7 @@ fn benchmark_evm_stack_push_pop(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_mod.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -558,7 +559,7 @@ fn benchmark_legacy_evm_stack_push_pop(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_legacy.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -656,7 +657,7 @@ fn benchmark_evm_arithmetic_sequence(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_mod.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -721,7 +722,7 @@ fn benchmark_legacy_evm_arithmetic_sequence(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_legacy.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -821,7 +822,7 @@ fn benchmark_evm_memory_operations(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_mod.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -882,7 +883,7 @@ fn benchmark_legacy_evm_memory_operations(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
 
-    const context = evm_legacy.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,

@@ -16,6 +16,7 @@ const BlockInfo = @import("block_info.zig").BlockInfo;
 const CallParams = @import("call_params.zig").CallParams;
 const Host = @import("host.zig").Host;
 const NoOpTracer = @import("tracer.zig").NoOpTracer;
+const TransactionContext = @import("transaction_context.zig").TransactionContext;
 
 // Test configuration with small limits for predictable testing
 const TestFrameConfig = frame_mod.FrameConfig{
@@ -74,7 +75,7 @@ test "Integration: Frame stack operations with memory expansion" {
     };
     
     const block_info = create_test_block_info();
-    const context = TestEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 100000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,
@@ -122,7 +123,7 @@ test "Integration: Frame with database operations (SLOAD/SSTORE)" {
     const bytecode = [_]u8{0x00}; // Simple STOP
     
     const block_info = create_test_block_info();
-    const context = TestEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 100000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,
@@ -169,7 +170,7 @@ test "Integration: Frame LOG operations with memory data" {
     const bytecode = [_]u8{0x00}; // Simple STOP
     
     const block_info = create_test_block_info();
-    const context = TestEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 100000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,
@@ -221,7 +222,7 @@ test "Integration: EVM to Frame execution - simple arithmetic" {
     const db_interface = memory_db.to_database_interface();
     
     const block_info = create_test_block_info();
-    const context = TestEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 100000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,
@@ -273,7 +274,7 @@ test "Integration: Memory expansion with gas calculation" {
     const bytecode = [_]u8{0x00}; // Simple STOP
     
     const block_info = create_test_block_info();
-    const context = TestEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 100000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,
@@ -322,7 +323,7 @@ test "Integration: Stack and Memory boundary conditions" {
     const bytecode = [_]u8{0x00}; // Simple STOP
     
     const block_info = create_test_block_info();
-    const context = TestEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 100000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,
@@ -434,7 +435,7 @@ test "Integration: Gas consumption across operations" {
     const bytecode = [_]u8{0x00}; // Simple STOP
     
     const block_info = create_test_block_info();
-    const context = TestEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 100000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,
@@ -488,7 +489,7 @@ test "Integration: Error propagation between components" {
     const bytecode = [_]u8{0x00}; // Simple STOP
     
     const block_info = create_test_block_info();
-    const context = TestEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 100000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,
@@ -535,7 +536,7 @@ test "Integration: Transient storage operations (EIP-1153)" {
     const bytecode = [_]u8{0x00}; // Simple STOP
     
     const block_info = create_test_block_info();
-    const context = TestEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 100000,
         .coinbase = [_]u8{0} ** 20,
         .chain_id = 1,

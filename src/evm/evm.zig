@@ -1092,7 +1092,7 @@ test "call method loads contract code from state" {
     defer evm.deinit();
 
     // Set up contract with bytecode [0x00] (STOP)
-    const contract_address = Address.from_hex("0x1234567890123456789012345678901234567890") catch ZERO_ADDRESS;
+    const contract_address: Address = [_]u8{0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90};
     const bytecode = [_]u8{0x00};
     try memory_db.set_code(contract_address, &bytecode);
 
@@ -1771,7 +1771,7 @@ test "Host interface - input size validation" {
     // Create input that exceeds max_input_size (131072 bytes)
     const large_input = try testing.allocator.alloc(u8, 200000);
     defer testing.allocator.free(large_input);
-    std.mem.set(u8, large_input, 0xFF);
+    @memset(large_input, 0xFF);
 
     const call_params = DefaultEvm.CallParams{
         .call = .{

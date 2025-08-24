@@ -79,7 +79,7 @@ export fn zigEvmCreate() ?*anyopaque {
         .prev_randao = [_]u8{0} ** 32,
     };
     
-    const context = DefaultEvm.TransactionContext{
+    const context = evm_mod.TransactionContext{
         .gas_limit = 30_000_000,
         .coinbase = primitives.ZERO_ADDRESS,
         .chain_id = 1,

@@ -6,6 +6,7 @@ const BlockInfo = @import("block_info.zig").BlockInfo;
 const hardfork = @import("evm").hardforks.hardfork;
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
+const TransactionContext = @import("transaction_context.zig").TransactionContext;
 
 // Test constants
 const ZERO_ADDRESS = [_]u8{0} ** 20;
@@ -29,7 +30,7 @@ fn setup_test_evm(allocator: std.mem.Allocator) !struct {
         .prev_randao = [_]u8{0xAB} ** 32,
     };
     
-    const context = evm.DefaultEvm.TransactionContext{
+    const context = TransactionContext{
         .gas_limit = 5000000,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1, // Ethereum mainnet
@@ -419,7 +420,7 @@ test "EVM2 Comprehensive - Hardfork Support" {
             .prev_randao = [_]u8{0} ** 32,
         };
         
-        const context = evm.DefaultEvm.TransactionContext{
+        const context = TransactionContext{
             .gas_limit = 1000000,
             .coinbase = ZERO_ADDRESS,
             .chain_id = 1,

@@ -120,7 +120,7 @@ const std = @import("std");
 
 test "call params gas access" {
     const caller = primitives.ZERO_ADDRESS;
-    const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
     const input = &[_]u8{0x42};
     
     const call_op = CallParams{ .call = .{
@@ -142,8 +142,8 @@ test "call params gas access" {
 }
 
 test "call params caller access" {
-    const caller = Address{ .bytes = [_]u8{0xaa} ++ [_]u8{0} ** 19 };
-    const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+    const caller: Address = [_]u8{0xaa} ++ [_]u8{0} ** 19;
+    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
     
     const call_op = CallParams{ .call = .{
         .caller = caller,
@@ -165,7 +165,7 @@ test "call params caller access" {
 
 test "call params input access" {
     const caller = primitives.ZERO_ADDRESS;
-    const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
     const input_data = &[_]u8{ 0xa9, 0x05, 0x9c, 0xbb }; // transfer(address,uint256) selector
     
     const call_op = CallParams{ .call = .{
@@ -189,7 +189,7 @@ test "call params input access" {
 
 test "call params has value checks" {
     const caller = primitives.ZERO_ADDRESS;
-    const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
     const input = &[_]u8{};
     
     // CALL with value
@@ -242,7 +242,7 @@ test "call params has value checks" {
 
 test "call params read only checks" {
     const caller = primitives.ZERO_ADDRESS;
-    const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
     const input = &[_]u8{};
     
     // Only STATICCALL is read-only
@@ -276,7 +276,7 @@ test "call params read only checks" {
 
 test "call params create checks" {
     const caller = primitives.ZERO_ADDRESS;
-    const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
     const init_code = &[_]u8{0x60, 0x00, 0x60, 0x00, 0xf3};
     
     // CREATE operations
@@ -309,8 +309,8 @@ test "call params create checks" {
 }
 
 test "call params edge cases" {
-    const caller = Address{ .bytes = [_]u8{0xff} ** 20 }; // Maximum address
-    const to = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
+    const caller: Address = [_]u8{0xff} ** 20; // Maximum address
+    const to: Address = [_]u8{1} ++ [_]u8{0} ** 19;
     
     // Maximum gas
     const max_gas_call = CallParams{ .call = .{

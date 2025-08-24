@@ -53,9 +53,9 @@ test "created contracts mark and check" {
     var created = CreatedContracts.init(allocator);
     defer created.deinit();
     
-    const addr1 = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
-    const addr2 = Address{ .bytes = [_]u8{2} ++ [_]u8{0} ** 19 };
-    const addr3 = Address{ .bytes = [_]u8{3} ++ [_]u8{0} ** 19 };
+    const addr1: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const addr2: Address = [_]u8{2} ++ [_]u8{0} ** 19;
+    const addr3: Address = [_]u8{3} ++ [_]u8{0} ** 19;
     
     // Initially no contracts
     try std.testing.expect(!created.was_created_in_tx(addr1));
@@ -81,7 +81,7 @@ test "created contracts duplicate marking" {
     var created = CreatedContracts.init(allocator);
     defer created.deinit();
     
-    const addr = Address{ .bytes = [_]u8{0xaa} ++ [_]u8{0} ** 19 };
+    const addr: Address = [_]u8{0xaa} ++ [_]u8{0} ** 19;
     
     // Mark same contract multiple times
     try created.mark_created(addr);
@@ -97,8 +97,8 @@ test "created contracts removal" {
     var created = CreatedContracts.init(allocator);
     defer created.deinit();
     
-    const addr1 = Address{ .bytes = [_]u8{1} ++ [_]u8{0} ** 19 };
-    const addr2 = Address{ .bytes = [_]u8{2} ++ [_]u8{0} ** 19 };
+    const addr1: Address = [_]u8{1} ++ [_]u8{0} ** 19;
+    const addr2: Address = [_]u8{2} ++ [_]u8{0} ** 19;
     
     // Add contracts
     try created.mark_created(addr1);
@@ -127,7 +127,7 @@ test "created contracts clear" {
     
     // Add multiple contracts
     for (1..11) |i| {
-        const addr = Address{ .bytes = [_]u8{@intCast(i)} ++ [_]u8{0} ** 19 };
+        const addr: Address = [_]u8{@intCast(i)} ++ [_]u8{0} ** 19;
         try created.mark_created(addr);
     }
     try std.testing.expectEqual(@as(u32, 10), created.count());
@@ -138,7 +138,7 @@ test "created contracts clear" {
     
     // Verify all were removed
     for (1..11) |i| {
-        const addr = Address{ .bytes = [_]u8{@intCast(i)} ++ [_]u8{0} ** 19 };
+        const addr: Address = [_]u8{@intCast(i)} ++ [_]u8{0} ** 19;
         try std.testing.expect(!created.was_created_in_tx(addr));
     }
 }
@@ -164,7 +164,7 @@ test "created contracts edge case addresses" {
     defer created.deinit();
     
     // Maximum address (all 0xFF)
-    const max_addr = Address{ .bytes = [_]u8{0xff} ** 20 };
+    const max_addr: Address = [_]u8{0xff} ** 20;
     try created.mark_created(max_addr);
     try std.testing.expect(created.was_created_in_tx(max_addr));
     
@@ -190,7 +190,7 @@ test "created contracts large number of addresses" {
     const count = 1000;
     for (0..count) |i| {
         const addr_bytes = std.mem.toBytes(@as(u160, i));
-        const addr = Address{ .bytes = addr_bytes };
+        const addr: Address = addr_bytes;
         try created.mark_created(addr);
     }
     
@@ -199,7 +199,7 @@ test "created contracts large number of addresses" {
     // Verify all addresses are tracked
     for (0..count) |i| {
         const addr_bytes = std.mem.toBytes(@as(u160, i));
-        const addr = Address{ .bytes = addr_bytes };
+        const addr: Address = addr_bytes;
         try std.testing.expect(created.was_created_in_tx(addr));
     }
     

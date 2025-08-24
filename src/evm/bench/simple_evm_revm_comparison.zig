@@ -7,6 +7,7 @@ const crypto = @import("crypto");
 const HashUtils = crypto.HashUtils;
 const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
+const TransactionContext = @import("../transaction_context.zig").TransactionContext;
 
 // Test configuration
 const BENCHMARK_GAS_LIMIT: u64 = 1_000_000;
@@ -79,7 +80,7 @@ fn benchmark_evm_arithmetic_contract(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
     
-    const context = evm_mod.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -133,7 +134,7 @@ fn benchmark_evm_storage_contract(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
     
-    const context = evm_mod.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
@@ -187,7 +188,7 @@ fn benchmark_evm_stack_contract(allocator: std.mem.Allocator) void {
         .prev_randao = [_]u8{0} ** 32,
     };
     
-    const context = evm_mod.Evm(.{}).TransactionContext{
+    const context = TransactionContext{
         .gas_limit = BENCHMARK_GAS_LIMIT,
         .coinbase = ZERO_ADDRESS,
         .chain_id = 1,
