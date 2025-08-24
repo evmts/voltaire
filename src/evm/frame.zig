@@ -7838,19 +7838,19 @@ test "SSTORE gas costs - Multiple slots and refund scenarios" {
     try std.testing.expectEqual(@as(u64, 22100), gas_used_2); // Cold SSTORE
 
     // Slot 1: Non-zero → Different non-zero (warm access)
-    const initial_gas_3 = frame.gas_manager.gasRemaining();
+    const initial_gas_3 = @max(frame.gas_remaining, 0);
     try frame.stack.push(0x3333); // new value
     try frame.stack.push(0x01); // same key as slot 1
     try frame.sstore();
-    const gas_used_3 = initial_gas_3 - frame.gas_manager.gasRemaining();
+    const gas_used_3 = initial_gas_3 - @max(frame.gas_remaining, 0);
     try std.testing.expectEqual(@as(u64, 5000), gas_used_3); // Warm SSTORE
 
     // Slot 1: Non-zero → Zero (refund scenario)
-    const initial_gas_4 = frame.gas_manager.gasRemaining();
+    const initial_gas_4 = @max(frame.gas_remaining, 0);
     try frame.stack.push(0x0000); // value = 0
     try frame.stack.push(0x01); // same key as slot 1
     try frame.sstore();
-    const gas_used_4 = initial_gas_4 - frame.gas_manager.gasRemaining();
+    const gas_used_4 = initial_gas_4 - @max(frame.gas_remaining, 0);
     try std.testing.expectEqual(@as(u64, 5000), gas_used_4); // Warm SSTORE
 }
 
@@ -7880,7 +7880,7 @@ test "SLOAD warm/cold gas costs - EIP-2929/2930" {
     try frame.stack.push(storage_key); // key
     try frame.sload();
     const value_loaded = try frame.stack.pop();
-    const gas_used_cold = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_used_cold = initial_gas - @max(frame.gas_remaining, 0);
 
     // Verify the correct value was loaded
     try std.testing.expectEqual(@as(u256, 0xDEADBEEF), value_loaded);
@@ -7890,11 +7890,11 @@ test "SLOAD warm/cold gas costs - EIP-2929/2930" {
     try std.testing.expectEqual(expected_cold_sload, gas_used_cold);
 
     // Test 2: Warm SLOAD - subsequent access to same storage slot
-    const gas_before_warm = frame.gas_manager.gasRemaining();
+    const gas_before_warm = @max(frame.gas_remaining, 0);
     try frame.stack.push(storage_key); // same key
     try frame.sload();
     const value_loaded_warm = try frame.stack.pop();
-    const gas_used_warm = gas_before_warm - frame.gas_manager.gasRemaining();
+    const gas_used_warm = gas_before_warm - @max(frame.gas_remaining, 0);
 
     // Verify the correct value was loaded again
     try std.testing.expectEqual(@as(u256, 0xDEADBEEF), value_loaded_warm);
@@ -7905,7 +7905,7 @@ test "SLOAD warm/cold gas costs - EIP-2929/2930" {
 
     // Test 3: Cold access to different storage slot
     const different_key: u256 = 0x9999;
-    const gas_before_different = frame.gas_manager.gasRemaining();
+    const gas_before_different = @max(frame.gas_remaining, 0);
     try frame.stack.push(different_key); // different key
     try frame.sload();
     const value_different = try frame.stack.pop();
@@ -8046,13 +8046,13 @@ test "CALL cold account access penalties - EIP-2929" {
     try frame.stack.push(to_u256(cold_addr)); // cold address
     try frame.stack.push(30000); // gas
     try frame.op_call();
-    const gas_used_cold = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_used_cold = initial_gas - @max(frame.gas_remaining, 0);
 
     // Cold account access: 700 (base) + 2600 (cold) = 3300 gas + forwarded gas
     try std.testing.expect(gas_used_cold >= 3300);
 
     // Test 2: Second CALL to same account (now warm)
-    const gas_before_warm = frame.gas_manager.gasRemaining();
+    const gas_before_warm = @max(frame.gas_remaining, 0);
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -8061,7 +8061,7 @@ test "CALL cold account access penalties - EIP-2929" {
     try frame.stack.push(to_u256(cold_addr)); // same address (now warm)
     try frame.stack.push(30000); // gas
     try frame.op_call();
-    const gas_used_warm = gas_before_warm - frame.gas_manager.gasRemaining();
+    const gas_used_warm = gas_before_warm - @max(frame.gas_remaining, 0);
 
     // Warm account access: 700 (base) + 100 (warm) = 800 gas + forwarded gas
     try std.testing.expect(gas_used_warm >= 800);
