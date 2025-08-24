@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const evm = @import("root.zig");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const DifferentialTestHarness = @import("differential_test_harness.zig").DifferentialTestHarness;
 
 test {

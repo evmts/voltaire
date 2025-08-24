@@ -2,7 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 const evm = @import("root.zig");
 const primitives = @import("primitives");
-const Address = primitives.Address.Address;
+const Address = primitives.Address;
 const revm_wrapper = @import("revm");
 
 test {
@@ -110,8 +110,8 @@ pub const DifferentialTestHarness = struct {
     /// Execute the same transaction on all three EVMs and return comparative results
     pub fn execute(
         self: *DifferentialTestHarness,
-        caller: Address.Address,
-        to: Address.Address,
+        caller: Address,
+        to: Address,
         value: u256,
         input: []const u8,
         gas_limit: u64,
@@ -183,7 +183,7 @@ pub const DifferentialTestHarness = struct {
     }
 
     /// Set bytecode for a contract address on all three EVMs
-    pub fn setCode(self: *DifferentialTestHarness, address: Address.Address, code: []const u8) !void {
+    pub fn setCode(self: *DifferentialTestHarness, address: Address, code: []const u8) !void {
         try self.revm_vm.setCode(address, code);
         try self.simple_vm.state.set_code(address, code);
         try self.advanced_vm.state.set_code(address, code);
@@ -192,10 +192,10 @@ pub const DifferentialTestHarness = struct {
     /// Deploy a contract on all three EVMs and return the address
     pub fn deployContract(
         self: *DifferentialTestHarness,
-        deployer: Address.Address,
+        deployer: Address,
         init_code: []const u8,
         gas_limit: u64,
-    ) !struct { address: Address.Address, results: DifferentialResult } {
+    ) !struct { address: Address, results: DifferentialResult } {
         // Setup: Fund deployer
         try self.revm_vm.setBalance(deployer, 10_000_000);
         try self.simple_vm.state.set_balance(deployer, 10_000_000);
