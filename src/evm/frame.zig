@@ -131,6 +131,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
         }
 
+        /// Clean up all frame resources.
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             self.stack.deinit(allocator);
             self.memory.deinit();
@@ -529,12 +530,15 @@ pub fn Frame(comptime config: FrameConfig) type {
         }
 
         // Arithmetic operations
+        
+        /// ADD opcode (0x01) - Addition with overflow wrapping.
         pub fn add(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top +% top_minus_1);
         }
 
+        /// MUL opcode (0x02) - Multiplication with overflow wrapping.
         pub fn mul(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
@@ -547,6 +551,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             try self.stack.set_top(top -% top_minus_1);
         }
 
+        /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
         pub fn div(self: *Self) Error!void {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
@@ -1738,8 +1743,9 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
             
             // Create log entry
-            const data_copy = self.allocator.dupe(u8, data) catch return Error.AllocationError;
-            const topics_array = self.allocator.alloc(u256, 0) catch return Error.AllocationError;
+            const allocator = self.logs.allocator;
+            const data_copy = allocator.dupe(u8, data) catch return Error.AllocationError;
+            const topics_array = allocator.alloc(u256, 0) catch return Error.AllocationError;
             
             const log_entry = Log{
                 .address = self.contract_address,
@@ -1748,8 +1754,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             
             self.logs.append(log_entry) catch {
-                self.allocator.free(data_copy);
-                self.allocator.free(topics_array);
+                allocator.free(data_copy);
+                allocator.free(topics_array);
                 return Error.AllocationError;
             };
         }
@@ -1781,9 +1787,10 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
             
             // Create log entry
-            const data_copy = self.allocator.dupe(u8, data) catch return Error.AllocationError;
-            const topics_array = self.allocator.alloc(u256, 1) catch {
-                self.allocator.free(data_copy);
+            const allocator = self.logs.allocator;
+            const data_copy = allocator.dupe(u8, data) catch return Error.AllocationError;
+            const topics_array = allocator.alloc(u256, 1) catch {
+                allocator.free(data_copy);
                 return Error.AllocationError;
             };
             topics_array[0] = topic1;
@@ -1795,8 +1802,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             
             self.logs.append(log_entry) catch {
-                self.allocator.free(data_copy);
-                self.allocator.free(topics_array);
+                allocator.free(data_copy);
+                allocator.free(topics_array);
                 return Error.AllocationError;
             };
         }
@@ -1825,9 +1832,10 @@ pub fn Frame(comptime config: FrameConfig) type {
             const offset_usize = @as(usize, @intCast(offset));
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
             
-            const data_copy = self.allocator.dupe(u8, data) catch return Error.AllocationError;
-            const topics_array = self.allocator.alloc(u256, 2) catch {
-                self.allocator.free(data_copy);
+            const allocator = self.logs.allocator;
+            const data_copy = allocator.dupe(u8, data) catch return Error.AllocationError;
+            const topics_array = allocator.alloc(u256, 2) catch {
+                allocator.free(data_copy);
                 return Error.AllocationError;
             };
             topics_array[0] = topic1;
@@ -1840,8 +1848,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             
             self.logs.append(log_entry) catch {
-                self.allocator.free(data_copy);
-                self.allocator.free(topics_array);
+                allocator.free(data_copy);
+                allocator.free(topics_array);
                 return Error.AllocationError;
             };
         }
@@ -1871,9 +1879,10 @@ pub fn Frame(comptime config: FrameConfig) type {
             const offset_usize = @as(usize, @intCast(offset));
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
             
-            const data_copy = self.allocator.dupe(u8, data) catch return Error.AllocationError;
-            const topics_array = self.allocator.alloc(u256, 3) catch {
-                self.allocator.free(data_copy);
+            const allocator = self.logs.allocator;
+            const data_copy = allocator.dupe(u8, data) catch return Error.AllocationError;
+            const topics_array = allocator.alloc(u256, 3) catch {
+                allocator.free(data_copy);
                 return Error.AllocationError;
             };
             topics_array[0] = topic1;
@@ -1887,8 +1896,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             
             self.logs.append(log_entry) catch {
-                self.allocator.free(data_copy);
-                self.allocator.free(topics_array);
+                allocator.free(data_copy);
+                allocator.free(topics_array);
                 return Error.AllocationError;
             };
         }
@@ -1919,9 +1928,10 @@ pub fn Frame(comptime config: FrameConfig) type {
             const offset_usize = @as(usize, @intCast(offset));
             const data = self.memory.get_slice(offset_usize, data_size) catch return Error.OutOfBounds;
             
-            const data_copy = self.allocator.dupe(u8, data) catch return Error.AllocationError;
-            const topics_array = self.allocator.alloc(u256, 4) catch {
-                self.allocator.free(data_copy);
+            const allocator = self.logs.allocator;
+            const data_copy = allocator.dupe(u8, data) catch return Error.AllocationError;
+            const topics_array = allocator.alloc(u256, 4) catch {
+                allocator.free(data_copy);
                 return Error.AllocationError;
             };
             topics_array[0] = topic1;
@@ -1936,8 +1946,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             
             self.logs.append(log_entry) catch {
-                self.allocator.free(data_copy);
-                self.allocator.free(topics_array);
+                allocator.free(data_copy);
+                allocator.free(topics_array);
                 return Error.AllocationError;
             };
         }
@@ -1960,7 +1970,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         fn _calculate_call_gas(self: *Self, target_address: Address, value: u256, is_static: bool) u64 {
             // Check if target account exists using database interface
             const new_account = blk: {
-                if (self.database) |db| {
+                if (config.has_database) {
+                    if (self.database) |db| {
                     // Try to get the account from the database
                     const account_result = db.get_account(target_address) catch {
                         // On database error, assume account doesn't exist (conservative approach)
@@ -1977,8 +1988,12 @@ pub fn Frame(comptime config: FrameConfig) type {
                         // Account not found in database
                         break :blk true;
                     }
+                    } else {
+                        // No database available, assume account doesn't exist
+                        break :blk true;
+                    }
                 } else {
-                    // No database available, assume account doesn't exist
+                    // No database configured, assume account doesn't exist
                     break :blk true;
                 }
             };
