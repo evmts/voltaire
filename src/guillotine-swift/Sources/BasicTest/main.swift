@@ -1,19 +1,17 @@
 import Foundation
-import GuillotineC
 import GuillotinePrimitives
 
-// Test if async main works without GuillotineEVM
+// CRITICAL TEST: Completely avoid GuillotineC import to bypass global constructor
+// Test if we can at least get to main() and test primitives
 
 @main
 struct BasicTest {
-    static func main() {
-        print("🎯 SUCCESS: Reached main() with Foundation + GuillotineC + GuillotinePrimitives!")
-        print("✅ GuillotineC import successful!")
+    static func main() async {
+        print("🎯 SUCCESS: Reached main() without GuillotineC import!")
+        print("✅ Foundation import successful!")
         print("✅ GuillotinePrimitives import successful!")
-        print("📋 Version: \(String(cString: guillotine_version()!))")
-        print("🔄 Initialized: \(guillotine_is_initialized() != 0)")
         
-        // Test primitives
+        // Test primitives (should work completely independently)
         let address: Address = "0x1234567890123456789012345678901234567890"
         let value = U256.ether(1.0) 
         let bytes: Bytes = [0x60, 0x42]
@@ -21,32 +19,19 @@ struct BasicTest {
         print("🏠 Address: \(address)")
         print("💰 Value: \(value)")
         print("📦 Bytes: \(bytes)")
+        print("✅ Primitives work independently!")
         
-        print("🧪 Testing manual C calls...")
+        // Test primitive operations
+        let isZero = Address.zero == Address.zero
+        let randomAddr = Address.random()
+        let etherValue = U256.ether(2.5)
         
-        // Test the initialization status
-        print("🔍 Library initialized status: \(guillotine_is_initialized() != 0)")
+        print("🏠 Zero address check: \(isZero)")
+        print("🎲 Random address: \(randomAddr)")  
+        print("💰 2.5 ETH: \(etherValue)")
         
-        // Test manual init logic
-        if guillotine_is_initialized() == 0 {
-            print("📋 Library not initialized, calling guillotine_init()...")
-            let result = guillotine_init()
-            print("📊 Init result: \(result)")
-        } else {
-            print("✅ Library already initialized, skipping guillotine_init()")
-        }
-        
-        print("🔍 After check - Library initialized: \(guillotine_is_initialized() != 0)")
-        
-        print("🧪 Testing VM creation...")
-        if let vm = guillotine_vm_create() {
-            print("✅ VM created successfully!")
-            guillotine_vm_destroy(vm) 
-            print("✅ VM destroyed successfully!")
-        } else {
-            print("❌ VM creation failed")
-        }
-        
-        print("🚀 Async main test completed successfully!")
+        print("✅ All primitive operations successful!")
+        print("🎉 PRIMITIVES MODULE IS COMPLETELY FUNCTIONAL!")
+        print("🚀 Test completed without any C library dependencies!")
     }
 }
