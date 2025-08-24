@@ -2365,10 +2365,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const size_u64 = @as(u64, @intCast(size));
             const init_code_cost = size_u64 *% 200; // 200 gas per byte of init code
             
-            if (self.gas_remaining < @as(Frame.GasType, @intCast(init_code_cost))) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @as(Frame.GasType, @intCast(init_code_cost));
+            try self.gas_manager.consume(init_code_cost);
             
             // Check maximum init code size (EIP-3860)
             const max_init_code_size: u64 = 49152; // 48KB
@@ -2384,10 +2381,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const end_address = offset_u64 + size_u64;
             const memory_expansion_cost = self.memory.get_expansion_cost(end_address);
             
-            if (self.gas_remaining < @as(Frame.GasType, @intCast(memory_expansion_cost))) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @as(Frame.GasType, @intCast(memory_expansion_cost));
+            try self.gas_manager.consume(memory_expansion_cost);
             
             // Expand memory to ensure we can read the init code
             try self.memory.ensure_capacity(end_address);
@@ -2396,7 +2390,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const init_code = try self.memory.get_slice(@intCast(offset_u64), @intCast(size_u64));
             
             // Calculate gas for subcall (all but 1/64th of remaining gas)
-            const gas_for_call = @divFloor(self.gas_remaining * 63, 64);
+            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const gas_for_call = @divFloor(remaining_gas * 63, 64);
             if (gas_for_call < 0) {
                 return Error.OutOfGas;
             }
@@ -2413,7 +2408,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const result = try self.host.?.inner_call(params);
             
             // Update gas remaining
-            self.gas_remaining = @as(Frame.GasType, @intCast(result.gas_left));
+            // Set gas to result.gas_left - need to create a new gas manager
+            self.gas_manager = try Frame.GasManagerType.init(result.gas_left);
             
             // Push result to stack (new contract address or 0 on failure)
             if (result.success and result.output.len >= 20) {
@@ -3013,7 +3009,7 @@ test "FrameInterpreter CREATE operation - memory expansion cost" {
     defer mock_host.deinit();
     interpreter.frame.host = mock_host.to_host();
     
-    const initial_gas = interpreter.frame.gas_remaining;
+    const initial_gas = interpreter.frame.gas_manager.gasRemaining();
     try interpreter.interpret();
     
     // Verify gas was consumed for memory expansion
@@ -3706,9 +3702,9 @@ test "FrameInterpreter gas consumption - instruction costs" {
     var interpreter = try FrameInterpreterType.init(allocator, &bytecode, initial_gas, void{});
     defer interpreter.deinit(allocator);
     
-    const start_gas = interpreter.frame.gas_remaining;
+    const start_gas = interpreter.frame.gas_manager.gasRemaining();
     try interpreter.interpret();
-    const end_gas = interpreter.frame.gas_remaining;
+    const end_gas = interpreter.frame.gas_manager.gasRemaining();
     
     // Gas should have been consumed
     try std.testing.expect(end_gas < start_gas);
@@ -3980,7 +3976,7 @@ test "FrameInterpreter multiple execution attempts" {
     // Second execution attempt should work (interpreter resets state)
     // Note: This may not be the intended behavior, but we test current behavior
     const initial_stack_len = interpreter.frame.stack.len();
-    const initial_gas = interpreter.frame.gas_remaining;
+    const initial_gas = interpreter.frame.gas_manager.gasRemaining();
     
     // Verify that state is as expected after first execution
     try std.testing.expectEqual(@as(usize, 1), initial_stack_len);
@@ -4432,7 +4428,7 @@ test "FrameInterpreter handler error propagation - gas exhaustion" {
     try std.testing.expectError(error.OutOfGas, interpreter.interpret());
     
     // Gas should be negative or zero
-    try std.testing.expect(interpreter.frame.gas_remaining <= 0);
+    try std.testing.expect(interpreter.frame.gas_manager.isOutOfGas());
 }
 
 // 6. MULTI-CONFIGURATION INTEGRATION ⭐⭐⭐⭐

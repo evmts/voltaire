@@ -1358,20 +1358,20 @@ test "EVM error type definition" {
     
     // Test that error set contains expected errors
     comptime {
-        _ = DefaultEvm.Error.StackUnderflow;
-        _ = DefaultEvm.Error.StackOverflow;
-        _ = DefaultEvm.Error.ContractNotFound;
-        _ = DefaultEvm.Error.PrecompileError;
-        _ = DefaultEvm.Error.MemoryError;
-        _ = DefaultEvm.Error.StorageError;
-        _ = DefaultEvm.Error.CallDepthExceeded;
-        _ = DefaultEvm.Error.InsufficientBalance;
-        _ = DefaultEvm.Error.ContractCollision;
-        _ = DefaultEvm.Error.InvalidBytecode;
-        _ = DefaultEvm.Error.StaticCallViolation;
-        _ = DefaultEvm.Error.InvalidOpcode;
-        _ = DefaultEvm.Error.RevertExecution;
-        _ = DefaultEvm.Error.Stop;
+        @as(void, DefaultEvm.Error.StackUnderflow);
+        @as(void, DefaultEvm.Error.StackOverflow);
+        @as(void, DefaultEvm.Error.ContractNotFound);
+        @as(void, DefaultEvm.Error.PrecompileError);
+        @as(void, DefaultEvm.Error.MemoryError);
+        @as(void, DefaultEvm.Error.StorageError);
+        @as(void, DefaultEvm.Error.CallDepthExceeded);
+        @as(void, DefaultEvm.Error.InsufficientBalance);
+        @as(void, DefaultEvm.Error.ContractCollision);
+        @as(void, DefaultEvm.Error.InvalidBytecode);
+        @as(void, DefaultEvm.Error.StaticCallViolation);
+        @as(void, DefaultEvm.Error.InvalidOpcode);
+        @as(void, DefaultEvm.Error.RevertExecution);
+        @as(void, DefaultEvm.Error.Stop);
     }
 }
 
@@ -1469,7 +1469,7 @@ test "EVM call() method routes to different handlers" {
     };
     _ = evm.call(call_params) catch |err| {
         // Expected to fail for now as implementation doesn't exist
-        _ = err;
+        @as(void, err);
     };
     
     // Test DELEGATECALL routing

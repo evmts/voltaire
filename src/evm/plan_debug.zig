@@ -51,7 +51,7 @@ pub const FrameState = struct {
     memory: []u8,
     memory_size: usize,
     pc: u32,
-    gas_remaining: i64,
+    gas_remaining: u64,
     return_data: []u8,
     allocator: std.mem.Allocator,
     
@@ -267,7 +267,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             const typed_frame = @as(*FrameType, @ptrCast(@alignCast(frame)));
             
             // Validate gas
-            const gas_remaining = @as(u64, @intCast(typed_frame.gas_remaining));
+            const gas_remaining = typed_frame.gas_manager.gasRemaining();
             if (gas_remaining != trace_entry.gas_remaining) {
                 std.debug.panic("DebugPlan: REVM gas mismatch at PC {}: expected {} got {}", .{ pc, trace_entry.gas_remaining, gas_remaining });
             }
@@ -545,7 +545,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             },
             stop: struct {
                 reason: []const u8,
-                gas_remaining: i64,
+                gas_remaining: u64,
             },
             execution_error: anyerror,
         };
@@ -734,7 +734,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             state.stack_height = frame.stack.next_stack_index;
             state.memory_size = frame.memory.getCurrentSize();
             state.pc = frame.pc;
-            state.gas_remaining = frame.gas_remaining;
+            state.gas_remaining = frame.gas_manager.gasRemaining();
             
             return state;
         }

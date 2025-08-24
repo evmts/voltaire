@@ -100,7 +100,7 @@ pub const DebuggingTracer = struct {
     
     pub const StateSnapshot = struct {
         pc: u32,
-        gas_remaining: i32,
+        gas_remaining: u64,
         stack: []u256,           // Owned slice
         memory_size: usize,
         depth: u32,
@@ -207,7 +207,7 @@ pub const DebuggingTracer = struct {
         
         const snapshot = StateSnapshot{
             .pc = pc,
-            .gas_remaining = frame.gas_remaining,
+            .gas_remaining = frame.gas_manager.gasRemaining(),
             .stack = stack_copy,
             .memory_size = if (@hasField(FrameType, "memory")) frame.memory.size() else 0,
             .depth = if (@hasField(FrameType, "depth")) frame.depth else 0,
@@ -279,7 +279,7 @@ pub const DebuggingTracer = struct {
     
     /// Helper function to capture state for step recording
     fn captureStateForStep(self: *Self, pc: u32, opcode: u8, comptime FrameType: type, frame: *const FrameType, is_before: bool) !void {
-        const gas = frame.gas_remaining;
+        const gas = frame.gas_manager.gasRemaining();
         
         // Create stack copy
         const stack_copy = try self.allocator.alloc(u256, frame.next_stack_index);
@@ -441,7 +441,7 @@ pub fn Tracer(comptime Writer: type) type {
             const op_name = getOpcodeName(opcode);
             
             // Gas calculation
-            const gas_now: u64 = if (frame_instance.gas_remaining < 0) 0 else @intCast(frame_instance.gas_remaining);
+            const gas_now: u64 = if (frame_instance.gas_manager.remaining < 0) 0 else @intCast(frame_instance.gas_manager.remaining);
             var gas_cost: u64 = 0;
             if (self.cfg.compute_gas_cost) {
                 if (self.prev_gas) |prev| {
@@ -808,7 +808,7 @@ test "tracer captures basic frame state with writer" {
     try test_frame.stack.push(3);
     try test_frame.stack.push(5);
     // PC is now managed by plan, not frame
-    test_frame.gas_remaining = 950;
+    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 950);
     
     // Create tracer with array list writer
     var output = std.ArrayList(u8).init(allocator);
@@ -838,7 +838,7 @@ test "tracer writes JSON to writer" {
     try test_frame.stack.push(3);
     try test_frame.stack.push(5);
     // PC is now managed by plan, not frame
-    test_frame.gas_remaining = 950;
+    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 950);
     
     // Create tracer with array list writer
     var output = std.ArrayList(u8).init(allocator);
@@ -890,7 +890,7 @@ test "file tracer writes to file" {
     defer test_frame.deinit(allocator);
     
     // PC is now managed by plan, not frame
-    test_frame.gas_remaining = 997;
+    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 997);
     
     // Create file tracer and write
     var tracer = try FileTracer.init(allocator, file_path);
@@ -924,19 +924,19 @@ test "tracer with gas cost computation" {
     );
     
     // First snapshot - no previous gas, so cost should be 0
-    test_frame.gas_remaining = 1000;
+    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 1000);
     const log1 = try tracer.snapshot(0, 0x60, Frame, &test_frame); // PUSH1
     defer allocator.free(log1.stack);
     try std.testing.expectEqual(@as(u64, 0), log1.gasCost);
     
     // Second snapshot - gas decreased by 3
-    test_frame.gas_remaining = 997;
+    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 997);
     const log2 = try tracer.snapshot(1, 0x60, Frame, &test_frame); // PUSH1
     defer allocator.free(log2.stack);
     try std.testing.expectEqual(@as(u64, 3), log2.gasCost);
     
     // Third snapshot - gas decreased by 21
-    test_frame.gas_remaining = 976;
+    try test_frame.gas_manager.consume(test_frame.gas_manager.remaining - 976);
     const log3 = try tracer.snapshot(2, 0x01, Frame, &test_frame); // ADD
     defer allocator.free(log3.stack);
     try std.testing.expectEqual(@as(u64, 21), log3.gasCost);
@@ -1037,7 +1037,7 @@ test "DebuggingTracer memory management" {
     // This test verifies that the tracer properly manages memory
     // when used with a mock frame
     const MockFrame = struct {
-        gas_remaining: i32,
+        gas_remaining: u64,
         bytecode: []const u8,
         next_stack_index: usize,
         stack: [16]u256,

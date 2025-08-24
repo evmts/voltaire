@@ -498,7 +498,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const result = if (byte_index >= 32) 0 else blk: {
                 const index_usize = @as(usize, @intCast(byte_index));
                 const shift_amount = (31 - index_usize) * 8;
-                break :blk (value >> @intCast(shift_amount)) & 0xFF;
+                const ShiftType = std.math.Log2Int(WordType);
+                break :blk (value >> @as(ShiftType, @intCast(shift_amount))) & 0xFF;
             };
             try self.stack.set_top(result);
         }
@@ -506,14 +507,16 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn shl(self: *Self) Error!void {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
-            const result = if (shift >= 256) 0 else value << @intCast(shift);
+            const ShiftType = std.math.Log2Int(WordType);
+            const result = if (shift >= @bitSizeOf(WordType)) 0 else value << @as(ShiftType, @intCast(shift));
             try self.stack.set_top(result);
         }
 
         pub fn shr(self: *Self) Error!void {
             const shift = try self.stack.pop();
             const value = try self.stack.peek();
-            const result = if (shift >= 256) 0 else value >> @intCast(shift);
+            const ShiftType = std.math.Log2Int(WordType);
+            const result = if (shift >= @bitSizeOf(WordType)) 0 else value >> @as(ShiftType, @intCast(shift));
             try self.stack.set_top(result);
         }
 
@@ -525,7 +528,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 const sign_bit = value >> (word_bits - 1);
                 break :blk if (sign_bit == 1) @as(WordType, std.math.maxInt(WordType)) else @as(WordType, 0);
             } else blk: {
-                const shift_amount = @as(u8, @intCast(shift));
+                const ShiftType = std.math.Log2Int(WordType);
+                const shift_amount = @as(ShiftType, @intCast(shift));
                 // https://ziglang.org/documentation/master/std/#std.meta.Int
                 // std.meta.Int creates an integer type with specified signedness and bit width
                 const value_signed = @as(std.meta.Int(.signed, @bitSizeOf(WordType)), @bitCast(value));
@@ -2135,10 +2139,9 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Update gas accounting
             const gas_cost = forwarded_gas - result.gas_left;
-            if (@as(GasType, @intCast(gas_cost)) > self.gas_remaining) {
-                self.gas_remaining = 0;
-            } else {
-                self.gas_remaining -= @as(GasType, @intCast(gas_cost));
+            if (!self.gas_manager.tryConsume(gas_cost)) {
+                // If gas cost exceeds remaining, consume all remaining gas
+                _ = self.gas_manager.tryConsume(self.gas_manager.gasRemaining());
             }
         }
 
@@ -2247,10 +2250,9 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Update gas accounting
             const gas_cost = forwarded_gas - result.gas_left;
-            if (@as(GasType, @intCast(gas_cost)) > self.gas_remaining) {
-                self.gas_remaining = 0;
-            } else {
-                self.gas_remaining -= @as(GasType, @intCast(gas_cost));
+            if (!self.gas_manager.tryConsume(gas_cost)) {
+                // If gas cost exceeds remaining, consume all remaining gas
+                _ = self.gas_manager.tryConsume(self.gas_manager.gasRemaining());
             }
         }
 
@@ -2312,16 +2314,17 @@ pub fn Frame(comptime config: FrameConfig) type {
             const base_call_gas = self._calculate_call_gas(address, 0, true);
             
             // Check if we have enough gas for the base call cost
-            if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
+            if (!self.gas_manager.hasGas(base_call_gas)) {
                 try self.stack.push(0);
                 return;
             }
             
             // Consume base call gas
-            self.gas_remaining -= @as(GasType, @intCast(base_call_gas));
+            self.gas_manager.consumeUnchecked(base_call_gas);
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
-            const max_forward_gas = self.gas_remaining - (self.gas_remaining / 64);
+            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = @min(gas_u64, max_forward_gas);
 
             // Execute the staticcall
@@ -2351,10 +2354,9 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Update gas accounting
             const gas_cost = forwarded_gas - result.gas_left;
-            if (@as(GasType, @intCast(gas_cost)) > self.gas_remaining) {
-                self.gas_remaining = 0;
-            } else {
-                self.gas_remaining -= @as(GasType, @intCast(gas_cost));
+            if (!self.gas_manager.tryConsume(gas_cost)) {
+                // If gas cost exceeds remaining, consume all remaining gas
+                _ = self.gas_manager.tryConsume(self.gas_manager.gasRemaining());
             }
         }
 
@@ -2396,7 +2398,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 self.memory.get_slice(offset_usize, size_usize) catch &[_]u8{};
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
-            const max_forward_gas = self.gas_remaining - (self.gas_remaining / 64);
+            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = max_forward_gas;
 
             // Create snapshot for potential revert
@@ -2431,10 +2434,9 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Update gas accounting
             const gas_cost = forwarded_gas - result.gas_left;
-            if (@as(GasType, @intCast(gas_cost)) > self.gas_remaining) {
-                self.gas_remaining = 0;
-            } else {
-                self.gas_remaining -= @as(GasType, @intCast(gas_cost));
+            if (!self.gas_manager.tryConsume(gas_cost)) {
+                // If gas cost exceeds remaining, consume all remaining gas
+                _ = self.gas_manager.tryConsume(self.gas_manager.gasRemaining());
             }
         }
 
@@ -2477,7 +2479,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 self.memory.get_slice(offset_usize, size_usize) catch &[_]u8{};
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
-            const max_forward_gas = self.gas_remaining - (self.gas_remaining / 64);
+            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = max_forward_gas;
 
             // Create snapshot for potential revert
@@ -2513,10 +2516,9 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Update gas accounting
             const gas_cost = forwarded_gas - result.gas_left;
-            if (@as(GasType, @intCast(gas_cost)) > self.gas_remaining) {
-                self.gas_remaining = 0;
-            } else {
-                self.gas_remaining -= @as(GasType, @intCast(gas_cost));
+            if (!self.gas_manager.tryConsume(gas_cost)) {
+                // If gas cost exceeds remaining, consume all remaining gas
+                _ = self.gas_manager.tryConsume(self.gas_manager.gasRemaining());
             }
         }
 
@@ -4128,19 +4130,19 @@ test "Frame op_gas returns gas remaining" {
     try std.testing.expectEqual(@as(u256, 1000000), result1);
 
     // Test op_gas with modified gas_remaining
-    frame.gas_remaining = 12345;
+    frame.gas_manager = try Frame.GasManagerType.init(12345);
     try frame.gas();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 12345), result2);
 
     // Test op_gas with zero gas
-    frame.gas_remaining = 0;
+    frame.gas_manager = try Frame.GasManagerType.init(0);
     try frame.gas();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
     // Test op_gas with negative gas (should push 0)
-    frame.gas_remaining = -100;
+    frame.gas_manager = try Frame.GasManagerType.init(0); // Can't have negative gas
     try frame.gas();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
@@ -5022,7 +5024,7 @@ test "Frame gas consumption tracking" {
     defer interpreter.deinit(allocator);
 
     // Check initial gas
-    const initial_gas = interpreter.frame.gas_remaining;
+    const initial_gas = interpreter.frame.gas_manager.gasRemaining();
     try std.testing.expectEqual(@as(i32, 1000), initial_gas);
 
     // Run the interpretation which will consume gas
@@ -5371,7 +5373,7 @@ test "Frame LOG gas consumption" {
 
     // Verify gas was consumed for data bytes
     const expected_gas_consumed = @as(i32, @intCast(GasConstants.LogDataGas * test_data.len));
-    try std.testing.expectEqual(initial_gas - expected_gas_consumed, frame.gas_remaining);
+    try std.testing.expectEqual(initial_gas - expected_gas_consumed, frame.gas_manager.gasRemaining());
 }
 
 // ============================================================================
@@ -6585,7 +6587,7 @@ test "Frame system opcodes gas accounting" {
     const host = mock_host.to_host();
     frame.host = host;
 
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
 
     // Setup stack for CALL
     try frame.stack.push(20000); // gas
@@ -6600,7 +6602,7 @@ test "Frame system opcodes gas accounting" {
     try frame.op_call();
 
     // Gas should have been deducted
-    try std.testing.expect(frame.gas_remaining < initial_gas);
+    try std.testing.expect(frame.gas_manager.gasRemaining() < initial_gas);
 
     const result = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 1), result);
@@ -7084,7 +7086,7 @@ test "Ethereum Test: Complex operation sequences maintain consistency" {
     var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
     defer frame.deinit(allocator);
 
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
 
     // Complex sequence: arithmetic + memory + stack operations
     // Push values for calculation
@@ -7112,7 +7114,7 @@ test "Ethereum Test: Complex operation sequences maintain consistency" {
     try std.testing.expectEqual(@as(u256, 0x0F0F), frame.stack.pop_unsafe());
 
     // Verify gas was consumed
-    try std.testing.expect(frame.gas_remaining < initial_gas);
+    try std.testing.expect(frame.gas_manager.gasRemaining() < initial_gas);
 
     // Verify memory state
     try std.testing.expect(frame.memory.size() >= 32);
@@ -7492,14 +7494,14 @@ test "Frame LOG opcodes - gas consumption" {
     try frame.memory.set_data(0, log_data);
     
     // Test LOG0 gas consumption
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(0);
     try frame.stack.push(4);
     try frame.op_log0();
     
     // LOG0 base cost is 375 + 8 * 4 = 407
     const expected_gas = 375 + 8 * 4;
-    try std.testing.expectEqual(initial_gas - expected_gas, frame.gas_remaining);
+    try std.testing.expectEqual(initial_gas - expected_gas, frame.gas_manager.gasRemaining());
 }
 
 test "Frame LOG opcodes - static context check" {
@@ -7528,10 +7530,10 @@ test "Memory expansion gas costs - MLOAD operations" {
     defer frame.deinit(allocator);
 
     // Test 1: MLOAD at offset 0 - first memory expansion to 32 bytes
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(0); // offset
     try frame.mload();
-    const gas_used_first = initial_gas - frame.gas_remaining;
+    const gas_used_first = initial_gas - frame.gas_manager.gasRemaining();
     
     // MLOAD base cost (3 gas) + memory expansion cost for 32 bytes
     // Memory cost = (memory_size_word^2) / 512 + (3 * memory_size_word)
@@ -7540,10 +7542,10 @@ test "Memory expansion gas costs - MLOAD operations" {
     try std.testing.expectEqual(expected_first, gas_used_first);
 
     // Test 2: MLOAD at offset 32 - expand to 64 bytes (2 words)
-    const gas_before_second = frame.gas_remaining;
+    const gas_before_second = frame.gas_manager.gasRemaining();
     try frame.stack.push(32); // offset
     try frame.mload();
-    const gas_used_second = gas_before_second - frame.gas_remaining;
+    const gas_used_second = gas_before_second - frame.gas_manager.gasRemaining();
     
     // Additional memory cost from 1 word to 2 words
     // New cost = 2^2/512 + 3*2 = 4/512 + 6 = 0 + 6 = 6
@@ -7552,10 +7554,10 @@ test "Memory expansion gas costs - MLOAD operations" {
     try std.testing.expectEqual(expected_second, gas_used_second);
 
     // Test 3: MLOAD at offset 1024 - expand to 1056 bytes (33 words)
-    const gas_before_large = frame.gas_remaining;
+    const gas_before_large = frame.gas_manager.gasRemaining();
     try frame.stack.push(1024); // offset
     try frame.mload();
-    const gas_used_large = gas_before_large - frame.gas_remaining;
+    const gas_used_large = gas_before_large - frame.gas_manager.gasRemaining();
     
     // Memory expansion from 2 words to 33 words
     // New cost = 33^2/512 + 3*33 = 1089/512 + 99 = 2.12... + 99 = 101
@@ -7572,22 +7574,22 @@ test "Memory expansion gas costs - MSTORE operations" {
     defer frame.deinit(allocator);
 
     // Test 1: MSTORE at offset 0 - first memory expansion
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(0xDEADBEEF); // value
     try frame.stack.push(0); // offset
     try frame.mstore();
-    const gas_used_first = initial_gas - frame.gas_remaining;
+    const gas_used_first = initial_gas - frame.gas_manager.gasRemaining();
     
     // MSTORE base cost (3 gas) + memory expansion cost
     const expected_first = GasConstants.GasVeryLow + 3; // 3 + 3 = 6 gas
     try std.testing.expectEqual(expected_first, gas_used_first);
 
     // Test 2: MSTORE8 at various offsets to test single-byte expansion
-    const gas_before_byte = frame.gas_remaining;
+    const gas_before_byte = frame.gas_manager.gasRemaining();
     try frame.stack.push(0xFF); // value
     try frame.stack.push(64); // offset - expand to 96 bytes (3 words)
     try frame.mstore8();
-    const gas_used_byte = gas_before_byte - frame.gas_remaining;
+    const gas_used_byte = gas_before_byte - frame.gas_manager.gasRemaining();
     
     // Additional memory cost from 1 word to 3 words
     // New cost = 3^2/512 + 3*3 = 9/512 + 9 = 0 + 9 = 9
@@ -7609,12 +7611,12 @@ test "Memory expansion gas costs - MCOPY operations" {
     try frame.mstore();
     
     // Test MCOPY with memory expansion
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(32); // length
     try frame.stack.push(0);  // source
     try frame.stack.push(64); // destination - expands to 96 bytes
     try frame.mcopy();
-    const gas_used = initial_gas - frame.gas_remaining;
+    const gas_used = initial_gas - frame.gas_manager.gasRemaining();
     
     // MCOPY base cost (3 gas) + dynamic cost (3 per word) + expansion cost
     // Dynamic cost = 3 * ceil(32/32) = 3 * 1 = 3
@@ -7633,12 +7635,12 @@ test "Memory expansion gas costs - CALLDATACOPY operations" {
     defer frame.deinit(allocator);
 
     // Test CALLDATACOPY with memory expansion
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(32); // length
     try frame.stack.push(0);  // calldata offset
     try frame.stack.push(0);  // memory offset - first expansion
     try frame.calldatacopy();
-    const gas_used = initial_gas - frame.gas_remaining;
+    const gas_used = initial_gas - frame.gas_manager.gasRemaining();
     
     // CALLDATACOPY base cost (3 gas) + dynamic cost (3 per word) + expansion
     // Dynamic cost = 3 * ceil(32/32) = 3 * 1 = 3
@@ -7655,12 +7657,12 @@ test "Memory expansion gas costs - CODECOPY operations" {
     defer frame.deinit(allocator);
 
     // Test CODECOPY with memory expansion
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(2);  // length - copy 2 bytes of bytecode
     try frame.stack.push(0);  // code offset
     try frame.stack.push(0);  // memory offset
     try frame.codecopy();
-    const gas_used = initial_gas - frame.gas_remaining;
+    const gas_used = initial_gas - frame.gas_manager.gasRemaining();
     
     // CODECOPY base cost (3 gas) + dynamic cost (3 per word) + expansion
     // Dynamic cost = 3 * ceil(2/32) = 3 * 1 = 3
@@ -7677,10 +7679,10 @@ test "Memory expansion gas costs - Large memory operations" {
     defer frame.deinit(allocator);
 
     // Test very large memory access to verify quadratic gas cost
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(10000); // offset - large memory access
     try frame.mload();
-    const gas_used = initial_gas - frame.gas_remaining;
+    const gas_used = initial_gas - frame.gas_manager.gasRemaining();
     
     // Memory size = 10032 bytes = 314 words (rounded up)
     // Memory cost = 314^2/512 + 3*314 = 98596/512 + 942 = 192.57... + 942 = 1134
@@ -7688,10 +7690,10 @@ test "Memory expansion gas costs - Large memory operations" {
     try std.testing.expect(gas_used >= expected_minimum);
     
     // Verify the cost increases quadratically for even larger access
-    const gas_before_larger = frame.gas_remaining;
+    const gas_before_larger = frame.gas_manager.gasRemaining();
     try frame.stack.push(50000); // Much larger offset
     try frame.mload();
-    const gas_used_larger = gas_before_larger - frame.gas_remaining;
+    const gas_used_larger = gas_before_larger - frame.gas_manager.gasRemaining();
     
     // This should cost significantly more due to quadratic nature
     try std.testing.expect(gas_used_larger > gas_used * 2);
@@ -7717,12 +7719,12 @@ test "SSTORE gas costs and refunds - EIP-2200/3529" {
     
     // Test 1: First write to zero (cold access) - EIP-2200
     // SSTORE to zero slot should cost 22100 gas (20000 + 2100 cold access)
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(0xABCD); // value
     try frame.stack.push(storage_key); // key
     frame.contract.address = test_address;
     try frame.sstore();
-    const gas_used_first = initial_gas - frame.gas_remaining;
+    const gas_used_first = initial_gas - frame.gas_manager.gasRemaining();
     
     // Cold SSTORE (first write): 22100 gas
     const expected_cold_sstore = 22100;
@@ -7730,11 +7732,11 @@ test "SSTORE gas costs and refunds - EIP-2200/3529" {
     
     // Test 2: Update existing non-zero value (warm access)
     // Should cost 5000 gas (warm access)
-    const gas_before_update = frame.gas_remaining;
+    const gas_before_update = frame.gas_manager.gasRemaining();
     try frame.stack.push(0xDEAD); // new value
     try frame.stack.push(storage_key); // same key
     try frame.sstore();
-    const gas_used_update = gas_before_update - frame.gas_remaining;
+    const gas_used_update = gas_before_update - frame.gas_manager.gasRemaining();
     
     // Warm SSTORE (update): 5000 gas
     const expected_warm_sstore = 5000;
@@ -7742,11 +7744,11 @@ test "SSTORE gas costs and refunds - EIP-2200/3529" {
     
     // Test 3: Set to zero (should provide refund) - EIP-3529
     // Setting non-zero to zero provides refund
-    const gas_before_zero = frame.gas_remaining;
+    const gas_before_zero = frame.gas_manager.gasRemaining();
     try frame.stack.push(0); // value = 0
     try frame.stack.push(storage_key); // same key
     try frame.sstore();
-    const gas_used_zero = gas_before_zero - frame.gas_remaining;
+    const gas_used_zero = gas_before_zero - frame.gas_manager.gasRemaining();
     
     // Setting to zero: 5000 gas, but refund should be provided
     // The frame doesn't track refunds directly, but gas cost is still 5000
@@ -7771,35 +7773,35 @@ test "SSTORE gas costs - Multiple slots and refund scenarios" {
     // Test multiple storage slots with different scenarios
     
     // Slot 1: Zero → Non-zero (new slot)
-    const initial_gas_1 = frame.gas_remaining;
+    const initial_gas_1 = frame.gas_manager.gasRemaining();
     try frame.stack.push(0x1111); // value
     try frame.stack.push(0x01); // key
     try frame.sstore();
-    const gas_used_1 = initial_gas_1 - frame.gas_remaining;
+    const gas_used_1 = initial_gas_1 - frame.gas_manager.gasRemaining();
     try std.testing.expectEqual(@as(u64, 22100), gas_used_1); // Cold SSTORE
     
     // Slot 2: Zero → Non-zero (another new slot)
-    const initial_gas_2 = frame.gas_remaining;
+    const initial_gas_2 = frame.gas_manager.gasRemaining();
     try frame.stack.push(0x2222); // value
     try frame.stack.push(0x02); // key
     try frame.sstore();
-    const gas_used_2 = initial_gas_2 - frame.gas_remaining;
+    const gas_used_2 = initial_gas_2 - frame.gas_manager.gasRemaining();
     try std.testing.expectEqual(@as(u64, 22100), gas_used_2); // Cold SSTORE
     
     // Slot 1: Non-zero → Different non-zero (warm access)
-    const initial_gas_3 = frame.gas_remaining;
+    const initial_gas_3 = frame.gas_manager.gasRemaining();
     try frame.stack.push(0x3333); // new value
     try frame.stack.push(0x01); // same key as slot 1
     try frame.sstore();
-    const gas_used_3 = initial_gas_3 - frame.gas_remaining;
+    const gas_used_3 = initial_gas_3 - frame.gas_manager.gasRemaining();
     try std.testing.expectEqual(@as(u64, 5000), gas_used_3); // Warm SSTORE
     
     // Slot 1: Non-zero → Zero (refund scenario)
-    const initial_gas_4 = frame.gas_remaining;
+    const initial_gas_4 = frame.gas_manager.gasRemaining();
     try frame.stack.push(0x0000); // value = 0
     try frame.stack.push(0x01); // same key as slot 1
     try frame.sstore();
-    const gas_used_4 = initial_gas_4 - frame.gas_remaining;
+    const gas_used_4 = initial_gas_4 - frame.gas_manager.gasRemaining();
     try std.testing.expectEqual(@as(u64, 5000), gas_used_4); // Warm SSTORE
 }
 
@@ -7825,11 +7827,11 @@ test "SLOAD warm/cold gas costs - EIP-2929/2930" {
     try frame.sstore();
     
     // Test 1: Cold SLOAD - first access to this storage slot
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(storage_key); // key
     try frame.sload();
     const value_loaded = try frame.stack.pop();
-    const gas_used_cold = initial_gas - frame.gas_remaining;
+    const gas_used_cold = initial_gas - frame.gas_manager.gasRemaining();
     
     // Verify the correct value was loaded
     try std.testing.expectEqual(@as(u256, 0xDEADBEEF), value_loaded);
@@ -7839,11 +7841,11 @@ test "SLOAD warm/cold gas costs - EIP-2929/2930" {
     try std.testing.expectEqual(expected_cold_sload, gas_used_cold);
     
     // Test 2: Warm SLOAD - subsequent access to same storage slot
-    const gas_before_warm = frame.gas_remaining;
+    const gas_before_warm = frame.gas_manager.gasRemaining();
     try frame.stack.push(storage_key); // same key
     try frame.sload();
     const value_loaded_warm = try frame.stack.pop();
-    const gas_used_warm = gas_before_warm - frame.gas_remaining;
+    const gas_used_warm = gas_before_warm - frame.gas_manager.gasRemaining();
     
     // Verify the correct value was loaded again
     try std.testing.expectEqual(@as(u256, 0xDEADBEEF), value_loaded_warm);
@@ -7854,11 +7856,11 @@ test "SLOAD warm/cold gas costs - EIP-2929/2930" {
     
     // Test 3: Cold access to different storage slot
     const different_key: u256 = 0x9999;
-    const gas_before_different = frame.gas_remaining;
+    const gas_before_different = frame.gas_manager.gasRemaining();
     try frame.stack.push(different_key); // different key
     try frame.sload();
     const value_different = try frame.stack.pop();
-    const gas_used_different = gas_before_different - frame.gas_remaining;
+    const gas_used_different = gas_before_different - frame.gas_manager.gasRemaining();
     
     // Should load zero (default value)
     try std.testing.expectEqual(@as(u256, 0), value_different);
@@ -7886,19 +7888,19 @@ test "SLOAD/SSTORE interaction - Access list warming" {
     // Test: SLOAD makes storage slot warm for subsequent SSTORE
     
     // First SLOAD (cold)
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(storage_key);
     try frame.sload();
     _ = try frame.stack.pop(); // consume loaded value
-    const gas_used_sload = initial_gas - frame.gas_remaining;
+    const gas_used_sload = initial_gas - frame.gas_manager.gasRemaining();
     try std.testing.expectEqual(@as(u64, 2100), gas_used_sload); // Cold SLOAD
     
     // SSTORE to same slot (should be warm now)
-    const gas_before_sstore = frame.gas_remaining;
+    const gas_before_sstore = frame.gas_manager.gasRemaining();
     try frame.stack.push(0xBEEF); // value
     try frame.stack.push(storage_key); // same key
     try frame.sstore();
-    const gas_used_sstore = gas_before_sstore - frame.gas_remaining;
+    const gas_used_sstore = gas_before_sstore - frame.gas_manager.gasRemaining();
     
     // Should cost less than cold SSTORE because slot is warm
     // For zero→non-zero but warm access: still high cost due to storage creation
@@ -7930,7 +7932,7 @@ test "CALL value stipend gas costs" {
     
     // Test 1: CALL with value transfer (should add 2300 gas stipend to sub-call)
     // Base CALL cost + cold account access + value transfer cost
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -7939,7 +7941,7 @@ test "CALL value stipend gas costs" {
     try frame.stack.push(@intFromEnum(target_addr)); // address
     try frame.stack.push(50000); // gas
     try frame.call();
-    const gas_used_with_value = initial_gas - frame.gas_remaining;
+    const gas_used_with_value = initial_gas - frame.gas_manager.gasRemaining();
     
     // CALL with value: base cost + cold account access + value transfer
     // Base: 700 gas, Cold account: 2600 gas, Value transfer: 9000 gas
@@ -7947,7 +7949,7 @@ test "CALL value stipend gas costs" {
     try std.testing.expect(gas_used_with_value >= 12300);
     
     // Test 2: CALL without value (no stipend)
-    const gas_before_no_value = frame.gas_remaining;
+    const gas_before_no_value = frame.gas_manager.gasRemaining();
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -7956,7 +7958,7 @@ test "CALL value stipend gas costs" {
     try frame.stack.push(@intFromEnum(target_addr)); // same address (should be warm now)
     try frame.stack.push(50000); // gas
     try frame.call();
-    const gas_used_no_value = gas_before_no_value - frame.gas_remaining;
+    const gas_used_no_value = gas_before_no_value - frame.gas_manager.gasRemaining();
     
     // CALL without value to warm address: base cost + warm account access
     // Base: 700 gas, Warm account: 100 gas
@@ -7986,7 +7988,7 @@ test "CALL cold account access penalties - EIP-2929" {
     frame.contract.address = caller_addr;
     
     // Test 1: First CALL to cold account
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -7995,13 +7997,13 @@ test "CALL cold account access penalties - EIP-2929" {
     try frame.stack.push(@intFromEnum(cold_addr)); // cold address
     try frame.stack.push(30000); // gas
     try frame.call();
-    const gas_used_cold = initial_gas - frame.gas_remaining;
+    const gas_used_cold = initial_gas - frame.gas_manager.gasRemaining();
     
     // Cold account access: 700 (base) + 2600 (cold) = 3300 gas + forwarded gas
     try std.testing.expect(gas_used_cold >= 3300);
     
     // Test 2: Second CALL to same account (now warm)
-    const gas_before_warm = frame.gas_remaining;
+    const gas_before_warm = frame.gas_manager.gasRemaining();
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -8010,14 +8012,14 @@ test "CALL cold account access penalties - EIP-2929" {
     try frame.stack.push(@intFromEnum(cold_addr)); // same address (now warm)
     try frame.stack.push(30000); // gas
     try frame.call();
-    const gas_used_warm = gas_before_warm - frame.gas_remaining;
+    const gas_used_warm = gas_before_warm - frame.gas_manager.gasRemaining();
     
     // Warm account access: 700 (base) + 100 (warm) = 800 gas + forwarded gas
     try std.testing.expect(gas_used_warm >= 800);
     try std.testing.expect(gas_used_warm < gas_used_cold); // Should be less than cold
     
     // Test 3: CALL to different cold account
-    const gas_before_another_cold = frame.gas_remaining;
+    const gas_before_another_cold = frame.gas_manager.gasRemaining();
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -8026,7 +8028,7 @@ test "CALL cold account access penalties - EIP-2929" {
     try frame.stack.push(@intFromEnum(another_cold_addr)); // different cold address
     try frame.stack.push(30000); // gas
     try frame.call();
-    const gas_used_another_cold = gas_before_another_cold - frame.gas_remaining;
+    const gas_used_another_cold = gas_before_another_cold - frame.gas_manager.gasRemaining();
     
     // Should cost the same as first cold access
     try std.testing.expect(gas_used_another_cold >= 3300);
@@ -8054,7 +8056,7 @@ test "DELEGATECALL and STATICCALL gas costs" {
     frame.contract.address = caller_addr;
     
     // Test 1: DELEGATECALL (no value transfer, different gas model)
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -8062,14 +8064,14 @@ test "DELEGATECALL and STATICCALL gas costs" {
     try frame.stack.push(@intFromEnum(target_addr)); // address
     try frame.stack.push(50000); // gas
     try frame.delegatecall();
-    const gas_used_delegatecall = initial_gas - frame.gas_remaining;
+    const gas_used_delegatecall = initial_gas - frame.gas_manager.gasRemaining();
     
     // DELEGATECALL: base cost + cold account access (no value transfer cost)
     // Base: 700 gas, Cold account: 2600 gas = 3300 total
     try std.testing.expect(gas_used_delegatecall >= 3300);
     
     // Test 2: STATICCALL (no value, guaranteed read-only)
-    const gas_before_static = frame.gas_remaining;
+    const gas_before_static = frame.gas_manager.gasRemaining();
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -8077,7 +8079,7 @@ test "DELEGATECALL and STATICCALL gas costs" {
     try frame.stack.push(@intFromEnum(target_addr)); // same address (should be warm now)
     try frame.stack.push(50000); // gas
     try frame.staticcall();
-    const gas_used_staticcall = gas_before_static - frame.gas_remaining;
+    const gas_used_staticcall = gas_before_static - frame.gas_manager.gasRemaining();
     
     // STATICCALL to warm address: base cost + warm account access
     // Base: 700 gas, Warm account: 100 gas = 800 total
@@ -8126,7 +8128,7 @@ test "Access list pre-warming effects on CALL/SLOAD/SSTORE" {
     // Now test that subsequent accesses use warm gas costs
     
     // Test 1: Second CALL to pre-warmed address
-    const gas_before_warm_call = frame.gas_remaining;
+    const gas_before_warm_call = frame.gas_manager.gasRemaining();
     try frame.stack.push(0); // retSize
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
@@ -8135,28 +8137,28 @@ test "Access list pre-warming effects on CALL/SLOAD/SSTORE" {
     try frame.stack.push(@intFromEnum(target_addr)); // pre-warmed address
     try frame.stack.push(30000); // gas
     try frame.call();
-    const gas_used_warm_call = gas_before_warm_call - frame.gas_remaining;
+    const gas_used_warm_call = gas_before_warm_call - frame.gas_manager.gasRemaining();
     
     // Should use warm access cost: 700 + 100 = 800
     try std.testing.expect(gas_used_warm_call >= 800);
     try std.testing.expect(gas_used_warm_call < 3300); // Less than cold access
     
     // Test 2: SLOAD from pre-warmed storage slot
-    const gas_before_warm_sload = frame.gas_remaining;
+    const gas_before_warm_sload = frame.gas_manager.gasRemaining();
     try frame.stack.push(storage_key); // pre-warmed slot
     try frame.sload();
     _ = try frame.stack.pop();
-    const gas_used_warm_sload = gas_before_warm_sload - frame.gas_remaining;
+    const gas_used_warm_sload = gas_before_warm_sload - frame.gas_manager.gasRemaining();
     
     // Should use warm SLOAD cost: 100 gas
     try std.testing.expectEqual(@as(u64, 100), gas_used_warm_sload);
     
     // Test 3: SSTORE to pre-warmed storage slot
-    const gas_before_warm_sstore = frame.gas_remaining;
+    const gas_before_warm_sstore = frame.gas_manager.gasRemaining();
     try frame.stack.push(0xFFFF); // value
     try frame.stack.push(storage_key); // pre-warmed slot
     try frame.sstore();
-    const gas_used_warm_sstore = gas_before_warm_sstore - frame.gas_remaining;
+    const gas_used_warm_sstore = gas_before_warm_sstore - frame.gas_manager.gasRemaining();
     
     // Since slot was accessed (but likely zero), this is zero→non-zero but warm
     // The gas cost depends on the EVM's implementation of warm vs cold for SSTORE
@@ -8248,7 +8250,7 @@ test "CALL gas integration - sufficient gas scenario" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
     
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     
     // Setup CALL stack: [gas, address, value, input_offset, input_size, output_offset, output_size]
     try frame.stack.push(0); // output_size
@@ -8267,7 +8269,7 @@ test "CALL gas integration - sufficient gas scenario" {
     try std.testing.expectEqual(@as(u256, 1), result);
     
     // Verify gas was consumed (base cost should be deducted)
-    const gas_consumed = initial_gas - frame.gas_remaining;
+    const gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
     try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST);
 }
 
@@ -8318,7 +8320,7 @@ test "CALL gas integration - value transfer with stipend" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
     
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     
     // Setup CALL stack with value transfer
     try frame.stack.push(0); // output_size
@@ -8337,7 +8339,7 @@ test "CALL gas integration - value transfer with stipend" {
     try std.testing.expectEqual(@as(u256, 1), result);
     
     // Verify value transfer gas cost was applied
-    const gas_consumed = initial_gas - frame.gas_remaining;
+    const gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
     const expected_base_cost = GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST;
     try std.testing.expect(gas_consumed >= expected_base_cost);
 }
@@ -8361,7 +8363,7 @@ test "DELEGATECALL gas integration - no value transfer cost" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
     
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     
     // Setup DELEGATECALL stack: [gas, address, input_offset, input_size, output_offset, output_size]
     try frame.stack.push(0); // output_size
@@ -8379,7 +8381,7 @@ test "DELEGATECALL gas integration - no value transfer cost" {
     try std.testing.expectEqual(@as(u256, 1), result);
     
     // Verify only base cost was applied (no value transfer cost)
-    const gas_consumed = initial_gas - frame.gas_remaining;
+    const gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
     try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST);
     try std.testing.expect(gas_consumed < GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST);
 }
@@ -8403,7 +8405,7 @@ test "STATICCALL gas integration - static context enforced" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
     
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     
     // Setup STATICCALL stack: [gas, address, input_offset, input_size, output_offset, output_size]
     try frame.stack.push(0); // output_size
@@ -8421,7 +8423,7 @@ test "STATICCALL gas integration - static context enforced" {
     try std.testing.expectEqual(@as(u256, 1), result);
     
     // Verify only base cost was applied (static context prevents value transfer)
-    const gas_consumed = initial_gas - frame.gas_remaining;
+    const gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
     try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST);
     try std.testing.expect(gas_consumed < GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST);
 }
@@ -8542,7 +8544,7 @@ test "EIP-150 compliance - 63/64 rule with base gas deduction" {
     try std.testing.expectEqual(@as(u256, 1), result);
     
     // Verify base gas was consumed first, then EIP-150 rule applied
-    const gas_remaining = frame.gas_remaining;
+    const gas_remaining = frame.gas_manager.gasRemaining();
     const gas_consumed = initial_gas - gas_remaining;
     
     // Should have consumed at least the base cost
@@ -8633,7 +8635,7 @@ test "Gas accounting precision - no gas leaks" {
     try std.testing.expectEqual(@as(u256, 1), result);
     
     // Verify gas accounting is consistent
-    const final_gas = frame.gas_remaining;
+    const final_gas = frame.gas_manager.gasRemaining();
     const total_consumed = initial_gas - final_gas;
     
     // Should have consumed at least the base cost
@@ -8695,7 +8697,7 @@ test "Memory expansion costs with call operations" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
     
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     
     // Setup CALL with large memory access that requires expansion
     try frame.stack.push(64); // output_size (64 bytes)
@@ -8712,7 +8714,7 @@ test "Memory expansion costs with call operations" {
     try std.testing.expectEqual(@as(u256, 1), result);
     
     // Verify gas consumption includes both call cost and memory expansion
-    const gas_consumed = initial_gas - frame.gas_remaining;
+    const gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
     try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST + 100); // +100 for memory expansion
 }
 
@@ -8732,7 +8734,7 @@ test "Nested call gas accounting - deep call stack" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
     
-    const initial_gas = frame.gas_remaining;
+    const initial_gas = frame.gas_manager.gasRemaining();
     
     // Simulate multiple sequential calls (like a contract calling other contracts)
     for (0..3) |i| {
@@ -8751,10 +8753,10 @@ test "Nested call gas accounting - deep call stack" {
     }
     
     // Verify cumulative gas consumption
-    const total_gas_consumed = initial_gas - frame.gas_remaining;
+    const total_gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
     const expected_min_gas = 3 * GasConstants.CALL_BASE_COST;
     try std.testing.expect(total_gas_consumed >= expected_min_gas);
-    try std.testing.expect(frame.gas_remaining > 0); // Should still have gas remaining
+    try std.testing.expect(frame.gas_manager.gasRemaining() > 0); // Should still have gas remaining
 }
 
 test "Static context violation attempts" {
@@ -8958,7 +8960,7 @@ test "Rapid successive calls - gas depletion patterns" {
     
     // Make calls until gas is exhausted
     for (0..50) |i| { // Max 50 attempts
-        if (frame.gas_remaining < GasConstants.CALL_BASE_COST + 1000) break; // Not enough gas for more calls
+        if (frame.gas_manager.gasRemaining() < GasConstants.CALL_BASE_COST + 1000) break; // Not enough gas for more calls
         
         try frame.stack.push(0); // output_size
         try frame.stack.push(0); // output_offset
@@ -8983,7 +8985,7 @@ test "Rapid successive calls - gas depletion patterns" {
     try std.testing.expect(successful_calls < 50); // But not all 50
     
     // Final gas should be very low
-    try std.testing.expect(frame.gas_remaining < initial_gas / 2);
+    try std.testing.expect(frame.gas_manager.gasRemaining() < initial_gas / 2);
 }
 
 // ============================================================================

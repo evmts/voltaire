@@ -526,8 +526,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 @branchHint(.likely);
                 
                 // Prefetch ahead for better cache performance on large bytecode
-                if (i + PREFETCH_DISTANCE < N) {
-                    @prefetch(&self.runtime_code[i + PREFETCH_DISTANCE], .{
+                if (@as(usize, i) + PREFETCH_DISTANCE < N) {
+                    @prefetch(&self.runtime_code[@as(usize, i) + PREFETCH_DISTANCE], .{
                         .rw = .read,
                         .locality = 3, // Low temporal locality
                         .cache = .data,
@@ -832,8 +832,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             var i: PcType = 0;
             while (i < self.runtime_code.len) {
                 // Prefetch ahead for stats collection
-                if (i + PREFETCH_DISTANCE < self.runtime_code.len) {
-                    @prefetch(&self.runtime_code[i + PREFETCH_DISTANCE], .{
+                if (@as(usize, i) + PREFETCH_DISTANCE < self.runtime_code.len) {
+                    @prefetch(&self.runtime_code[@as(usize, i) + PREFETCH_DISTANCE], .{
                         .rw = .read,
                         .locality = 3,
                         .cache = .data,
@@ -906,8 +906,8 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             var i: usize = 0;
             while (i < self.len()) : (i += 1) {
                 // Prefetch for sequential access
-                if (i + PREFETCH_DISTANCE < self.len()) {
-                    @prefetch(&self.runtime_code[i + PREFETCH_DISTANCE], .{
+                if (@as(usize, i) + PREFETCH_DISTANCE < self.len()) {
+                    @prefetch(&self.runtime_code[@as(usize, i) + PREFETCH_DISTANCE], .{
                         .rw = .read,
                         .locality = 3,
                         .cache = .data,
@@ -940,16 +940,16 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             // Process bytecode in L-byte chunks with prefetching
             while (i + L <= code_len) : (i += L) {
                 // Prefetch future data to hide memory latency
-                if (i + L + PREFETCH_DISTANCE < code_len) {
+                if (@as(usize, i + L) + PREFETCH_DISTANCE < code_len) {
                     // Prefetch next bytecode chunk for future iterations
-                    @prefetch(&self.runtime_code[i + L + PREFETCH_DISTANCE], .{
+                    @prefetch(&self.runtime_code[@as(usize, i + L) + PREFETCH_DISTANCE], .{
                         .rw = .read,
                         .locality = 3,
                         .cache = .data,
                     });
                     
                     // Prefetch corresponding push_data bitmap entries
-                    @prefetch(&self.is_push_data[(i + L + PREFETCH_DISTANCE) >> BITMAP_SHIFT], .{
+                    @prefetch(&self.is_push_data[(@as(usize, i + L) + PREFETCH_DISTANCE) >> BITMAP_SHIFT], .{
                         .rw = .read,
                         .locality = 3,
                         .cache = .data,
