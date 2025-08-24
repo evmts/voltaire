@@ -1,3 +1,5 @@
+NOTE: THis is purely just vibes atm and hasn't even been ran yet. We plan on using this later to make the benchmarks reproducable
+
 # Cloud Benchmark Infrastructure
 
 This directory contains the Infrastructure-as-Code (IaC) setup for running Guillotine EVM benchmarks in AWS EC2 instances using Terraform and Packer.

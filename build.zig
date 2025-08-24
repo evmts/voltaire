@@ -579,7 +579,7 @@ pub fn build(b: *std.Build) void {
     // EVM Benchmark Runner executable (ReleaseFast)
     const evm_runner_exe = b.addExecutable(.{
         .name = "evm-runner",
-        .root_source_file = b.path("bench/official/evms/zig/src/main.zig"),
+        .root_source_file = b.path("bench/evms/zig/src/main.zig"),
         .target = target,
         .optimize = .ReleaseFast,
     });
@@ -602,7 +602,7 @@ pub fn build(b: *std.Build) void {
     // EVM Benchmark Runner executable (ReleaseSmall)
     const evm_runner_small_exe = b.addExecutable(.{
         .name = "evm-runner-small",
-        .root_source_file = b.path("bench/official/evms/zig/src/main.zig"),
+        .root_source_file = b.path("bench/evms/zig/src/main.zig"),
         .target = target,
         .optimize = .ReleaseSmall,
     });
@@ -617,7 +617,7 @@ pub fn build(b: *std.Build) void {
     // Debug EVM Runner
     const debug_runner_exe = b.addExecutable(.{
         .name = "debug-runner",
-        .root_source_file = b.path("bench/official/evms/zig/src/debug.zig"),
+        .root_source_file = b.path("bench/evms/zig/src/debug.zig"),
         .target = target,
         .optimize = .Debug,
     });
@@ -637,7 +637,7 @@ pub fn build(b: *std.Build) void {
 
     const orchestrator_exe = b.addExecutable(.{
         .name = "orchestrator",
-        .root_source_file = b.path("bench/official/src/main.zig"),
+        .root_source_file = b.path("bench/src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -695,13 +695,13 @@ pub fn build(b: *std.Build) void {
 
     // Build Go (geth) runner
     const geth_runner_build = b.addSystemCommand(&[_][]const u8{ "go", "build", "-o", "runner", "runner.go" });
-    geth_runner_build.setCwd(b.path("bench/official/evms/geth"));
+    geth_runner_build.setCwd(b.path("bench/evms/geth"));
 
     // Build evmone runner using CMake
-    const evmone_cmake_configure = b.addSystemCommand(&[_][]const u8{ "cmake", "-S", "bench/official/evms/evmone", "-B", "bench/official/evms/evmone/build", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_POLICY_VERSION_MINIMUM=3.5" });
+    const evmone_cmake_configure = b.addSystemCommand(&[_][]const u8{ "cmake", "-S", "bench/evms/evmone", "-B", "bench/evms/evmone/build", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_POLICY_VERSION_MINIMUM=3.5" });
     evmone_cmake_configure.setCwd(b.path(""));
 
-    const evmone_cmake_build = b.addSystemCommand(&[_][]const u8{ "cmake", "--build", "bench/official/evms/evmone/build", "--parallel" });
+    const evmone_cmake_build = b.addSystemCommand(&[_][]const u8{ "cmake", "--build", "bench/evms/evmone/build", "--parallel" });
     evmone_cmake_build.setCwd(b.path(""));
     evmone_cmake_build.step.dependOn(&evmone_cmake_configure.step);
 
@@ -846,6 +846,22 @@ pub fn build(b: *std.Build) void {
     const run_frame_integration_test = b.addRunArtifact(frame_integration_test);
     const frame_integration_test_step = b.step("test-frame-integration", "Run Frame integration tests");
     frame_integration_test_step.dependOn(&run_frame_integration_test.step);
+
+    // Add Frame opcode integration tests
+    const frame_opcode_integration_test = b.addTest(.{
+        .name = "frame-opcode-integration-test",
+        .root_source_file = b.path("src/evm/frame_opcode_integration_test.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    frame_opcode_integration_test.root_module.addImport("evm", evm_mod);
+    frame_opcode_integration_test.root_module.addImport("primitives", primitives_mod);
+    frame_opcode_integration_test.root_module.addImport("crypto", crypto_mod);
+    frame_opcode_integration_test.root_module.addImport("build_options", build_options_mod);
+    frame_opcode_integration_test.addIncludePath(b.path("src/bn254_wrapper"));
+    const run_frame_opcode_integration_test = b.addRunArtifact(frame_opcode_integration_test);
+    const frame_opcode_integration_test_step = b.step("test-frame-opcode-integration", "Run Frame opcode integration tests");
+    frame_opcode_integration_test_step.dependOn(&run_frame_opcode_integration_test.step);
 
     // EVM E2E tests removed - file no longer exists
 
@@ -1743,6 +1759,7 @@ pub fn build(b: *std.Build) void {
     // Stack validation, jump table, config, differential, staticcall, and interpret2 tests removed
     test_step.dependOn(&run_evm_core_test.step);
     test_step.dependOn(&run_frame_integration_test.step);
+    test_step.dependOn(&run_frame_opcode_integration_test.step);
     // benchmark runner test removed - file no longer exists
 
     // Inline ops test removed - file no longer exists
@@ -1832,7 +1849,7 @@ pub fn build(b: *std.Build) void {
     // Add orchestrator tests
     const orchestrator_test = b.addTest(.{
         .name = "orchestrator-test",
-        .root_source_file = b.path("bench/official/src/Orchestrator.zig"),
+        .root_source_file = b.path("bench/src/Orchestrator.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -1843,7 +1860,7 @@ pub fn build(b: *std.Build) void {
     // Add main orchestrator tests
     const orchestrator_main_test = b.addTest(.{
         .name = "orchestrator-main-test",
-        .root_source_file = b.path("bench/official/src/main.zig"),
+        .root_source_file = b.path("bench/src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -1854,7 +1871,7 @@ pub fn build(b: *std.Build) void {
     // Add EVM runner tests
     const evm_runner_test = b.addTest(.{
         .name = "evm-runner-test",
-        .root_source_file = b.path("bench/official/evms/zig/src/main.zig"),
+        .root_source_file = b.path("bench/evms/zig/src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
