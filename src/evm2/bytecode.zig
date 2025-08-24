@@ -8,6 +8,12 @@ const BytecodeConfig = bytecode_config.BytecodeConfig;
 // ==============================================
 // This module implements a two-phase security model for handling untrusted EVM bytecode:
 //
+// NOTE: This implementation does not support EOF (Ethereum Object Format) EIPs including:
+// - EIP-3540: EOF - EVM Object Format v1
+// - EIP-3670: EOF - Code Validation
+// - EIP-4750: EOF - Functions
+// - EIP-5450: EOF - Stack Validation
+//
 // Phase 1 - Validation (in init/buildBitmapsAndValidate):
 // - Treat ALL bytecode as untrusted and potentially malicious
 // - Use safe std library functions (e.g., std.meta.intToEnum) that perform runtime checks
@@ -24,6 +30,18 @@ const BytecodeConfig = bytecode_config.BytecodeConfig;
 // CRITICAL: Never use unsafe builtins during validation phase!
 // CRITICAL: Never trust bytecode indices without checking bitmaps first!
 
+// Constants for magic numbers used throughout the bytecode module
+// These constants replace magic numbers to improve code readability and maintainability
+const BITS_PER_BYTE = 8;
+const BITMAP_SHIFT = 3; // log2(BITS_PER_BYTE) for efficient division by 8
+const BITMAP_MASK = 7; // BITS_PER_BYTE - 1 for modulo 8
+const INITCODE_GAS_PER_WORD = 2; // EIP-3860: 2 gas per 32-byte word
+const BYTES_PER_WORD = 32; // EVM word size in bytes
+const MAX_PUSH_BYTES = 32; // Maximum bytes for PUSH32
+const OPCODE_TABLE_SIZE = 256; // Total possible opcode values (0x00-0xFF)
+const CACHE_LINE_SIZE = 64; // Common cache line size for x86-64 and ARM64
+const PREFETCH_DISTANCE = 256; // How far ahead to prefetch in bytes
+
 /// Factory function to create a Bytecode type with the given configuration
 pub fn createBytecode(comptime cfg: BytecodeConfig) type {
     comptime cfg.validate();
@@ -34,6 +52,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             TruncatedPush,
             InvalidJumpDestination,
             OutOfMemory,
+            InitcodeTooLarge,
         };
 
         pub const Stats = @import("bytecode_stats.zig").BytecodeStats;
@@ -59,6 +78,23 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             // This must run in constructor in order to populate the currently undefined bitmaps and guarantee the bytecode is valid
             try self.buildBitmapsAndValidate();
             return self;
+        }
+        
+        /// Initialize bytecode from initcode (EIP-3860)
+        /// Validates that initcode size doesn't exceed the maximum allowed
+        pub fn initFromInitcode(allocator: std.mem.Allocator, initcode: []const u8) ValidationError!Self {
+            if (initcode.len > cfg.max_initcode_size) {
+                return error.InitcodeTooLarge;
+            }
+            return init(allocator, initcode);
+        }
+        
+        /// Calculate the gas cost for initcode (EIP-3860)
+        /// Returns 2 gas per 32-byte word of initcode
+        pub fn calculateInitcodeGas(initcode_len: usize) u64 {
+            // Gas cost is 2 per 32-byte word, rounding up
+            const words = (initcode_len + BYTES_PER_WORD - 1) / BYTES_PER_WORD;
+            return words * INITCODE_GAS_PER_WORD;
         }
         
         pub fn deinit(self: *Self) void {
@@ -105,7 +141,74 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             if (pc >= self.len()) return false;
             // https://ziglang.org/documentation/master/#as
             // @as performs type coercion, ensuring the value fits the target type
-            return (self.is_jumpdest[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
+            return (self.is_jumpdest[pc >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(pc & BITMAP_MASK))) != 0;
+        }
+        
+        /// Count the number of set bits in a byte range of a bitmap
+        /// Uses hardware popcount instruction when available
+        pub fn countBitsInRange(bitmap: []const u8, start_bit: usize, end_bit: usize) usize {
+            if (start_bit >= end_bit) return 0;
+            
+            const start_byte = start_bit >> BITMAP_SHIFT;
+            const end_byte = (end_bit + BITMAP_MASK) >> BITMAP_SHIFT;
+            
+            var count: usize = 0;
+            
+            // Handle partial first byte
+            if (start_byte < bitmap.len) {
+                const start_offset = start_bit & BITMAP_MASK;
+                var mask: u8 = @as(u8, 0xFF) << @as(u3, @intCast(start_offset));
+                if (start_byte == end_byte - 1) {
+                    const end_offset = end_bit & BITMAP_MASK;
+                    if (end_offset != 0) {
+                        mask &= @as(u8, 0xFF) >> @as(u3, @intCast(BITS_PER_BYTE - end_offset));
+                    }
+                }
+                count += @popCount(bitmap[start_byte] & mask);
+            }
+            
+            // Handle full bytes in the middle
+            var i = start_byte + 1;
+            while (i < end_byte - 1 and i < bitmap.len) : (i += 1) {
+                count += @popCount(bitmap[i]);
+            }
+            
+            // Handle partial last byte
+            if (i < end_byte and i < bitmap.len and i != start_byte) {
+                const end_offset = end_bit & BITMAP_MASK;
+                if (end_offset != 0) {
+                    const mask = @as(u8, 0xFF) >> @as(u3, @intCast(BITS_PER_BYTE - end_offset));
+                    count += @popCount(bitmap[i] & mask);
+                }
+            }
+            
+            return count;
+        }
+        
+        /// Find the next set bit in a bitmap starting from a given position
+        /// Uses hardware ctz (count trailing zeros) when available
+        pub fn findNextSetBit(bitmap: []const u8, start_bit: usize) ?usize {
+            const start_byte = start_bit >> BITMAP_SHIFT;
+            if (start_byte >= bitmap.len) return null;
+            
+            // Check the starting byte (with offset)
+            const start_offset = start_bit & BITMAP_MASK;
+            const first_byte = bitmap[start_byte] & (@as(u8, 0xFF) << @as(u3, @intCast(start_offset)));
+            if (first_byte != 0) {
+                const bit_pos = @ctz(first_byte);
+                return (start_byte << BITMAP_SHIFT) + bit_pos;
+            }
+            
+            // Check subsequent bytes
+            var i = start_byte + 1;
+            while (i < bitmap.len) : (i += 1) {
+                if (bitmap[i] != 0) {
+                    const bit_pos = @ctz(bitmap[i]);
+                    return (i << BITMAP_SHIFT) + bit_pos;
+                }
+            }
+            
+            return null;
         }
         
         /// Analyze bytecode and call callbacks for jump destinations
@@ -117,6 +220,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
         ) void {
             var i: PcType = 0;
             while (i < self.code.len) {
+                @branchHint(.likely);
                 const op = self.code[i];
                 // https://ziglang.org/documentation/master/#intFromEnum
                 // @intFromEnum converts an enum value to its integer representation
@@ -146,30 +250,54 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                 const gt_max: @Vector(L, bool) = v > splat_max;
                 const gt_max_arr: [L]bool = gt_max;
                 inline for (gt_max_arr) |exceeds| {
-                    if (exceeds) return false;
+                    if (exceeds) {
+                        @branchHint(.unlikely);
+                        return false;
+                    }
                 }
             }
             // Check remaining bytes
             while (i < code.len) : (i += 1) {
-                if (code[i] > max_valid_opcode) return false;
+                if (code[i] > max_valid_opcode) {
+                    @branchHint(.unlikely);
+                    return false;
+                }
             }
             return true;
         }
 
         /// Set bits in bitmap using SIMD operations
         fn setBitmapBitsSimd(bitmap: []u8, indices: []const usize, comptime L: comptime_int) void {
-            // Process in chunks where possible
+            // Group indices by their byte positions for better cache efficiency
             var i: usize = 0;
+            
+            // Process L indices at a time
             while (i + L <= indices.len) : (i += L) {
+                // Create vectors for byte indices and bit masks
+                var byte_indices: [L]usize = undefined;
+                var bit_masks: [L]u8 = undefined;
+                
                 inline for (0..L) |j| {
                     const idx = indices[i + j];
-                    bitmap[idx >> 3] |= @as(u8, 1) << @intCast(idx & 7);
+                    byte_indices[j] = idx >> BITMAP_SHIFT;
+                    bit_masks[j] = @as(u8, 1) << @intCast(idx & BITMAP_MASK);
+                }
+                
+                // Apply all masks (still sequential but with better locality)
+                inline for (0..L) |j| {
+                    if (byte_indices[j] < bitmap.len) {
+                        bitmap[byte_indices[j]] |= bit_masks[j];
+                    }
                 }
             }
+            
             // Handle remaining indices
             while (i < indices.len) : (i += 1) {
                 const idx = indices[i];
-                bitmap[idx >> 3] |= @as(u8, 1) << @intCast(idx & 7);
+                const byte_idx = idx >> BITMAP_SHIFT;
+                if (byte_idx < bitmap.len) {
+                    bitmap[byte_idx] |= @as(u8, 1) << @intCast(idx & BITMAP_MASK);
+                }
             }
         }
 
@@ -202,7 +330,8 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             var i: usize = 0;
             while (i < self.code.len) {
                 // Skip if not an operation start
-                if ((self.is_op_start[i >> 3] & (@as(u8, 1) << @intCast(i & 7))) == 0) {
+                if ((self.is_op_start[i >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(i & BITMAP_MASK))) == 0) {
+                    @branchHint(.unlikely);
                     i += 1;
                     continue;
                 }
@@ -285,13 +414,15 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                 return;
             }
             
-            const bitmap_bytes = (N + 7) >> 3;
+            const bitmap_bytes = (N + BITMAP_MASK) >> BITMAP_SHIFT;
+            // Align bitmap allocations to cache line boundaries for better performance
+            const aligned_bitmap_bytes = (bitmap_bytes + CACHE_LINE_SIZE - 1) & ~@as(usize, CACHE_LINE_SIZE - 1);
             
-            self.is_push_data = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
+            self.is_push_data = self.allocator.alignedAlloc(u8, CACHE_LINE_SIZE, aligned_bitmap_bytes) catch return error.OutOfMemory;
             errdefer self.allocator.free(self.is_push_data);
-            self.is_op_start = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
+            self.is_op_start = self.allocator.alignedAlloc(u8, CACHE_LINE_SIZE, aligned_bitmap_bytes) catch return error.OutOfMemory;
             errdefer self.allocator.free(self.is_op_start);
-            self.is_jumpdest = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
+            self.is_jumpdest = self.allocator.alignedAlloc(u8, CACHE_LINE_SIZE, aligned_bitmap_bytes) catch return error.OutOfMemory;
             errdefer self.allocator.free(self.is_jumpdest);
             @memset(self.is_push_data, 0);
             @memset(self.is_op_start, 0);
@@ -306,14 +437,26 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             
             var i: PcType = 0;
             while (i < N) {
-                self.is_op_start[i >> 3] |= @as(u8, 1) << @intCast(i & 7);
+                @branchHint(.likely);
+                
+                // Prefetch ahead for better cache performance on large bytecode
+                if (i + PREFETCH_DISTANCE < N) {
+                    @prefetch(&self.code[i + PREFETCH_DISTANCE], .{
+                        .rw = .read,
+                        .locality = 3, // Low temporal locality
+                        .cache = .data,
+                    });
+                }
+                
+                self.is_op_start[i >> BITMAP_SHIFT] |= @as(u8, 1) << @intCast(i & BITMAP_MASK);
                 const op = self.code[i];
                 
                 // SECURITY: Validate opcode using safe enum conversion
                 // We need to ensure this is a valid opcode before using it
                 // Note: If SIMD validation passed, this should never fail, but we still check for defense in depth
                 const opcode_enum = std.meta.intToEnum(Opcode, op) catch {
-                    // Invalid opcode found
+                    // Invalid opcode found (unlikely after SIMD validation)
+                    @branchHint(.unlikely);
                     return error.InvalidOpcode;
                 };
                 
@@ -325,7 +468,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                     var j: PcType = 0;
                     while (j < n) : (j += 1) {
                         const idx = i + 1 + j;
-                        self.is_push_data[idx >> 3] |= @as(u8, 1) << @intCast(idx & 7);
+                        self.is_push_data[idx >> BITMAP_SHIFT] |= @as(u8, 1) << @intCast(idx & BITMAP_MASK);
                     }
                     i += n + 1;
                 } else {
@@ -341,7 +484,9 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             
             i = 0;
             while (i < N) {
-                if ((self.is_op_start[i >> 3] & (@as(u8, 1) << @intCast(i & 7))) == 0) {
+                @branchHint(.likely);
+                if ((self.is_op_start[i >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(i & BITMAP_MASK))) == 0) {
+                    @branchHint(.unlikely);
                     i += 1;
                     continue;
                 }
@@ -350,7 +495,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                     var push_start: ?PcType = null;
                     var j: PcType = 0;
                     while (j < i) {
-                        if ((self.is_op_start[j >> 3] & (@as(u8, 1) << @intCast(j & 7))) != 0) {
+                        if ((self.is_op_start[j >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(j & BITMAP_MASK))) != 0) {
                             const prev_op = self.code[j];
                             if (prev_op >= @intFromEnum(Opcode.PUSH1) and prev_op <= @intFromEnum(Opcode.PUSH32)) {
                                 const size = self.getInstructionSize(j);
@@ -370,7 +515,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                             return error.InvalidJumpDestination;
                         }
                         const target_pc = @as(PcType, @intCast(target));
-                        if ((self.is_jumpdest[target_pc >> 3] & (@as(u8, 1) << @intCast(target_pc & 7))) == 0) {
+                        if ((self.is_jumpdest[target_pc >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(target_pc & BITMAP_MASK))) == 0) {
                             return error.InvalidJumpDestination;
                         }
                     }
@@ -390,17 +535,17 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             if (start + n > self.code.len) return null; // Not enough bytes
             // https://ziglang.org/documentation/master/std/#std.meta.Int
             // Creates an unsigned integer type with n*8 bits (e.g., n=1 -> u8, n=2 -> u16)
-            const T = std.meta.Int(.unsigned, n * 8);
+            const T = std.meta.Int(.unsigned, n * BITS_PER_BYTE);
             var value: T = 0;
             var i: u8 = 0;
             // https://ziglang.org/documentation/master/std/#std.math.shl
-            while (i < n) : (i += 1) value = std.math.shl(T, value, 8) | @as(T, self.code[start + i]);
+            while (i < n) : (i += 1) value = std.math.shl(T, value, BITS_PER_BYTE) | @as(T, self.code[start + i]);
             return value;
         }
         
         /// Read a variable-sized PUSH value (returns u256)
         pub fn readPushValueN(self: Self, pc: PcType, n: u8) ?u256 {
-            if (pc >= self.code.len or n == 0 or n > 32) return null;
+            if (pc >= self.code.len or n == 0 or n > MAX_PUSH_BYTES) return null;
             const op = self.code[pc];
             if (op < @intFromEnum(Opcode.PUSH1) or op > @intFromEnum(Opcode.PUSH32)) return null;
             const expected_n = op - (@intFromEnum(Opcode.PUSH1) - 1);
@@ -408,7 +553,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             const start = pc + 1;
             const available = @min(n, self.code.len -| start);
             var value: u256 = 0;
-            for (0..n) |i| value = if (i < available) (value << 8) | self.code[start + i] else value << 8; 
+            for (0..n) |i| value = if (i < available) (value << BITS_PER_BYTE) | self.code[start + i] else value << BITS_PER_BYTE; 
             return value;
         }
         
@@ -432,7 +577,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
         /// Get statistics about the bytecode
         pub fn getStats(self: Self) !Stats {
             var stats = Stats{
-                .opcode_counts = [_]u32{0} ** 256,
+                .opcode_counts = [_]u32{0} ** OPCODE_TABLE_SIZE,
                 .push_values = &.{},
                 .potential_fusions = &.{},
                 .jumpdests = &.{},
@@ -461,7 +606,16 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             defer jumps.deinit();
             var i: PcType = 0;
             while (i < self.code.len) {
-                if ((self.is_op_start[i >> 3] & (@as(u8, 1) << @intCast(i & 7))) == 0) {
+                // Prefetch ahead for stats collection
+                if (i + PREFETCH_DISTANCE < self.code.len) {
+                    @prefetch(&self.code[i + PREFETCH_DISTANCE], .{
+                        .rw = .read,
+                        .locality = 3,
+                        .cache = .data,
+                    });
+                }
+                
+                if ((self.is_op_start[i >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(i & BITMAP_MASK))) == 0) {
                     i += 1;
                     continue;
                 }
@@ -526,36 +680,75 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
         fn markJumpdestScalar(self: Self) void {
             var i: usize = 0;
             while (i < self.len()) : (i += 1) {
-                const test_push = (self.is_push_data[i >> 3] & (@as(u8, 1) << @intCast(i & 7))) != 0;
-                if (self.code[i] == @intFromEnum(Opcode.JUMPDEST) and !test_push) self.is_jumpdest[i >> 3] |= @as(u8, 1) << @intCast(i & 7);
+                // Prefetch for sequential access
+                if (i + PREFETCH_DISTANCE < self.len()) {
+                    @prefetch(&self.code[i + PREFETCH_DISTANCE], .{
+                        .rw = .read,
+                        .locality = 3,
+                        .cache = .data,
+                    });
+                }
+                
+                const test_push = (self.is_push_data[i >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(i & BITMAP_MASK))) != 0;
+                if (self.code[i] == @intFromEnum(Opcode.JUMPDEST) and !test_push) {
+                    self.is_jumpdest[i >> BITMAP_SHIFT] |= @as(u8, 1) << @intCast(i & BITMAP_MASK);
+                }
             }
         }
 
         /// Vector scan: compare @Vector(L,u8) chunks to 0x5b, mask out push-data lanes, set jumpdest bits
-        /// Copied from planner.zig
+        /// Optimized with prefetching and better SIMD utilization
         fn markJumpdestSimd(self: Self, comptime L: comptime_int) void {
             var i: usize = 0;
             const code_len = self.code.len;
             const splat_5b: @Vector(L, u8) = @splat(@as(u8, @intFromEnum(Opcode.JUMPDEST)));
+            
             while (i + L <= code_len) : (i += L) {
+                // Prefetch next iteration's data
+                if (i + L + PREFETCH_DISTANCE < code_len) {
+                    @prefetch(&self.code[i + L + PREFETCH_DISTANCE], .{
+                        .rw = .read,
+                        .locality = 3,
+                        .cache = .data,
+                    });
+                    @prefetch(&self.is_push_data[(i + L + PREFETCH_DISTANCE) >> BITMAP_SHIFT], .{
+                        .rw = .read,
+                        .locality = 3,
+                        .cache = .data,
+                    });
+                }
+                
+                // Load and compare bytecode chunk
                 var arr: [L]u8 = undefined;
                 inline for (0..L) |k| arr[k] = self.code[i + k];
                 const v: @Vector(L, u8) = arr;
                 const eq: @Vector(L, bool) = v == splat_5b;
                 const eq_arr: [L]bool = eq;
+                
+                // Process matches in batches for better cache efficiency
                 inline for (0..L) |j| {
                     const idx = i + j;
-                    const test_push = (self.is_push_data[idx >> 3] & (@as(u8, 1) << @intCast(idx & 7))) != 0;
-                    if (eq_arr[j] and !test_push) {
-                        self.is_jumpdest[idx >> 3] |= @as(u8, 1) << @intCast(idx & 7);
+                    const byte_idx = idx >> BITMAP_SHIFT;
+                    const bit_mask = @as(u8, 1) << @intCast(idx & BITMAP_MASK);
+                    
+                    // Check if it's a JUMPDEST and not push data
+                    if (eq_arr[j]) {
+                        const test_push = (self.is_push_data[byte_idx] & bit_mask) != 0;
+                        if (!test_push) {
+                            self.is_jumpdest[byte_idx] |= bit_mask;
+                        }
                     }
                 }
             }
+            
+            // Handle remaining bytes
             var t: usize = i;
             while (t < code_len) : (t += 1) {
-                const test_push = (self.is_push_data[t >> 3] & (@as(u8, 1) << @intCast(t & 7))) != 0;
+                const byte_idx = t >> BITMAP_SHIFT;
+                const bit_mask = @as(u8, 1) << @intCast(t & BITMAP_MASK);
+                const test_push = (self.is_push_data[byte_idx] & bit_mask) != 0;
                 if (self.code[t] == @intFromEnum(Opcode.JUMPDEST) and !test_push) {
-                    self.is_jumpdest[t >> 3] |= @as(u8, 1) << @intCast(t & 7);
+                    self.is_jumpdest[byte_idx] |= bit_mask;
                 }
             }
         }
@@ -564,6 +757,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
     return BytecodeType;
 }
 
+// Default configuration with EIP-3860 initcode limit of 49,152 bytes (2 * max contract size)
 const default_config = BytecodeConfig{};
 pub const Bytecode = createBytecode(default_config);
 pub const BytecodeValidationError = Bytecode.ValidationError;
@@ -953,6 +1147,61 @@ test "Bytecode SIMD opcode validation" {
     try std.testing.expectEqual(@as(usize, 6), bytecode.len());
 }
 
+test "Bytecode initcode validation - EIP-3860" {
+    const allocator = std.testing.allocator;
+    
+    // Test with valid initcode size (under limit)
+    const valid_initcode = try allocator.alloc(u8, 1000);
+    defer allocator.free(valid_initcode);
+    @memset(valid_initcode, 0x00); // Fill with STOP opcodes
+    
+    var bytecode = try Bytecode.initFromInitcode(allocator, valid_initcode);
+    defer bytecode.deinit();
+    try std.testing.expectEqual(@as(usize, 1000), bytecode.len());
+    
+    // Test with initcode at exactly the limit
+    const max_initcode = try allocator.alloc(u8, default_config.max_initcode_size);
+    defer allocator.free(max_initcode);
+    @memset(max_initcode, 0x00);
+    
+    var bytecode2 = try Bytecode.initFromInitcode(allocator, max_initcode);
+    defer bytecode2.deinit();
+    try std.testing.expectEqual(@as(usize, default_config.max_initcode_size), bytecode2.len());
+    
+    // Test with initcode exceeding the limit
+    const oversized_initcode = try allocator.alloc(u8, default_config.max_initcode_size + 1);
+    defer allocator.free(oversized_initcode);
+    @memset(oversized_initcode, 0x00);
+    
+    const result = Bytecode.initFromInitcode(allocator, oversized_initcode);
+    try std.testing.expectError(error.InitcodeTooLarge, result);
+}
+
+test "Bytecode calculateInitcodeGas - EIP-3860" {
+    // Test gas calculation for various initcode sizes
+    
+    // Empty initcode = 0 words = 0 gas
+    try std.testing.expectEqual(@as(u64, 0), Bytecode.calculateInitcodeGas(0));
+    
+    // 1 byte = 1 word = 2 gas
+    try std.testing.expectEqual(@as(u64, 2), Bytecode.calculateInitcodeGas(1));
+    
+    // 32 bytes = 1 word = 2 gas
+    try std.testing.expectEqual(@as(u64, 2), Bytecode.calculateInitcodeGas(32));
+    
+    // 33 bytes = 2 words = 4 gas
+    try std.testing.expectEqual(@as(u64, 4), Bytecode.calculateInitcodeGas(33));
+    
+    // 64 bytes = 2 words = 4 gas
+    try std.testing.expectEqual(@as(u64, 4), Bytecode.calculateInitcodeGas(64));
+    
+    // 1000 bytes = 32 words (31.25 rounded up) = 64 gas
+    try std.testing.expectEqual(@as(u64, 64), Bytecode.calculateInitcodeGas(1000));
+    
+    // Maximum initcode size: 49,152 bytes = 1536 words = 3072 gas
+    try std.testing.expectEqual(@as(u64, 3072), Bytecode.calculateInitcodeGas(default_config.max_initcode_size));
+}
+
 test "Bytecode SIMD fusion pattern detection" {
     const allocator = std.testing.allocator;
     
@@ -1031,4 +1280,85 @@ test "Bytecode.getStats - all opcode types counted" {
     try std.testing.expectEqual(@as(u32, 1), stats.opcode_counts[@intFromEnum(Opcode.MSTORE)]);
     try std.testing.expectEqual(@as(u32, 1), stats.opcode_counts[@intFromEnum(Opcode.MLOAD)]);
     try std.testing.expectEqual(@as(u32, 1), stats.opcode_counts[@intFromEnum(Opcode.STOP)]);
+}
+
+test "Bytecode.countBitsInRange - basic functionality" {
+    const allocator = std.testing.allocator;
+    // Create a simple bitmap for testing
+    var bitmap = try allocator.alloc(u8, 4);
+    defer allocator.free(bitmap);
+    @memset(bitmap, 0);
+    
+    // Set some bits: bit 0, 2, 8, 15, 17, 23
+    bitmap[0] = 0b00000101; // bits 0 and 2
+    bitmap[1] = 0b10000001; // bits 8 and 15
+    bitmap[2] = 0b00000010; // bit 17
+    bitmap[3] = 0b10000000; // bit 23
+    
+    // Test full range
+    try std.testing.expectEqual(@as(usize, 6), Bytecode.countBitsInRange(bitmap, 0, 32));
+    
+    // Test partial ranges
+    try std.testing.expectEqual(@as(usize, 2), Bytecode.countBitsInRange(bitmap, 0, 8));
+    try std.testing.expectEqual(@as(usize, 2), Bytecode.countBitsInRange(bitmap, 8, 16));
+    try std.testing.expectEqual(@as(usize, 1), Bytecode.countBitsInRange(bitmap, 16, 20));
+    
+    // Test single bit ranges
+    try std.testing.expectEqual(@as(usize, 1), Bytecode.countBitsInRange(bitmap, 0, 1));
+    try std.testing.expectEqual(@as(usize, 0), Bytecode.countBitsInRange(bitmap, 1, 2));
+    
+    // Test empty range
+    try std.testing.expectEqual(@as(usize, 0), Bytecode.countBitsInRange(bitmap, 10, 10));
+}
+
+test "Bytecode.findNextSetBit - basic functionality" {
+    const allocator = std.testing.allocator;
+    // Create a simple bitmap for testing
+    var bitmap = try allocator.alloc(u8, 4);
+    defer allocator.free(bitmap);
+    @memset(bitmap, 0);
+    
+    // Set some bits: bit 0, 2, 8, 15, 17, 23
+    bitmap[0] = 0b00000101; // bits 0 and 2
+    bitmap[1] = 0b10000001; // bits 8 and 15
+    bitmap[2] = 0b00000010; // bit 17
+    bitmap[3] = 0b10000000; // bit 23
+    
+    // Find from start
+    try std.testing.expectEqual(@as(?usize, 0), Bytecode.findNextSetBit(bitmap, 0));
+    
+    // Find from after first bit
+    try std.testing.expectEqual(@as(?usize, 2), Bytecode.findNextSetBit(bitmap, 1));
+    
+    // Find from after second bit
+    try std.testing.expectEqual(@as(?usize, 8), Bytecode.findNextSetBit(bitmap, 3));
+    
+    // Find from middle of byte
+    try std.testing.expectEqual(@as(?usize, 15), Bytecode.findNextSetBit(bitmap, 9));
+    
+    // Find last bit
+    try std.testing.expectEqual(@as(?usize, 23), Bytecode.findNextSetBit(bitmap, 18));
+    
+    // No more bits after last
+    try std.testing.expectEqual(@as(?usize, null), Bytecode.findNextSetBit(bitmap, 24));
+    
+    // Start beyond bitmap
+    try std.testing.expectEqual(@as(?usize, null), Bytecode.findNextSetBit(bitmap, 100));
+}
+
+test "Bytecode cache-aligned allocations" {
+    const allocator = std.testing.allocator;
+    // Test that bitmaps are allocated with cache line alignment
+    const code = [_]u8{ 0x60, 0x01, 0x60, 0x02, 0x01, 0x00 }; // PUSH1 1 PUSH1 2 ADD STOP
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    // Check that bitmaps are aligned to cache line boundaries
+    const push_data_addr = @intFromPtr(bytecode.is_push_data.ptr);
+    const op_start_addr = @intFromPtr(bytecode.is_op_start.ptr);
+    const jumpdest_addr = @intFromPtr(bytecode.is_jumpdest.ptr);
+    
+    try std.testing.expect(push_data_addr % CACHE_LINE_SIZE == 0);
+    try std.testing.expect(op_start_addr % CACHE_LINE_SIZE == 0);
+    try std.testing.expect(jumpdest_addr % CACHE_LINE_SIZE == 0);
 }
