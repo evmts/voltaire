@@ -277,8 +277,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             },
             .call => |call_data| {
                 call_address = call_data.to;
-                // TODO: Load contract code from database
-                call_code = &.{}; // Placeholder for now
+                // Load contract code from database
+                call_code = self.database.get_code_by_address(call_data.to) catch &.{};
                 call_input = call_data.input;
                 call_gas = call_data.gas;
                 call_is_static = false;
@@ -287,8 +287,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             },
             .callcode => |call_data| {
                 call_address = call_data.to;
-                // TODO: Load contract code from database  
-                call_code = &.{};
+                // Load contract code from database  
+                call_code = self.database.get_code_by_address(call_data.to) catch &.{};
                 call_input = call_data.input;
                 call_gas = call_data.gas;
                 call_is_static = false;
@@ -297,8 +297,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             },
             .delegatecall => |call_data| {
                 call_address = call_data.to;
-                // TODO: Load contract code from database
-                call_code = &.{};
+                // Load contract code from database
+                call_code = self.database.get_code_by_address(call_data.to) catch &.{};
                 call_input = call_data.input;
                 call_gas = call_data.gas;
                 call_is_static = false;
@@ -307,8 +307,8 @@ pub fn Evm(comptime config: EvmConfig) type {
             },
             .staticcall => |call_data| {
                 call_address = call_data.to;
-                // TODO: Load contract code from database
-                call_code = &.{};
+                // Load contract code from database
+                call_code = self.database.get_code_by_address(call_data.to) catch &.{};
                 call_input = call_data.input;
                 call_gas = call_data.gas;
                 call_is_static = true;

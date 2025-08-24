@@ -4826,3 +4826,859 @@ test "Frame error recovery - partial operations and state consistency" {
     try std.testing.expectEqual(@as(u256, 999), frame.stack.peek_unsafe());
 }
 
+// ========== COMPREHENSIVE BOUNDARY CONDITION TESTS ==========
+
+test "Frame arithmetic edge cases - overflow and underflow boundaries" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // ADD overflow at exact boundary
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(1);
+    try frame.add();
+    const add_overflow = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), add_overflow);
+
+    // SUB underflow at exact boundary
+    try frame.stack.push(0);
+    try frame.stack.push(1);
+    try frame.sub();
+    const sub_underflow = try frame.stack.pop();
+    try std.testing.expectEqual(std.math.maxInt(u256), sub_underflow);
+
+    // MUL overflow with large values
+    const sqrt_max = @as(u256, 1) << 128; // 2^128
+    try frame.stack.push(sqrt_max);
+    try frame.stack.push(sqrt_max);
+    try frame.mul();
+    const mul_overflow = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), mul_overflow); // 2^256 wraps to 0
+
+    // MUL with max value and 2
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(2);
+    try frame.mul();
+    const mul_max_2 = try frame.stack.pop();
+    try std.testing.expectEqual(std.math.maxInt(u256) - 1, mul_max_2);
+
+    // ADD with two max values
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.add();
+    const add_max_max = try frame.stack.pop();
+    try std.testing.expectEqual(std.math.maxInt(u256) - 1, add_max_max);
+}
+
+test "Frame division edge cases - division by zero and signed boundaries" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // DIV by zero with max numerator
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(0);
+    try frame.div();
+    const div_zero_max = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), div_zero_max);
+
+    // DIV max by 1
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(1);
+    try frame.div();
+    const div_max_1 = try frame.stack.pop();
+    try std.testing.expectEqual(std.math.maxInt(u256), div_max_1);
+
+    // SDIV overflow case: MIN_I256 / -1 should return MIN_I256
+    const min_i256 = @as(u256, 1) << 255;
+    const neg_1 = @as(u256, @bitCast(@as(i256, -1)));
+    try frame.stack.push(min_i256);
+    try frame.stack.push(neg_1);
+    try frame.sdiv();
+    const sdiv_overflow = try frame.stack.pop();
+    try std.testing.expectEqual(min_i256, sdiv_overflow);
+
+    // SDIV by zero with negative numerator
+    try frame.stack.push(neg_1);
+    try frame.stack.push(0);
+    try frame.sdiv();
+    const sdiv_neg_zero = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), sdiv_neg_zero);
+
+    // SDIV edge case: -1 / 1 = -1
+    try frame.stack.push(neg_1);
+    try frame.stack.push(1);
+    try frame.sdiv();
+    const sdiv_neg1_1 = try frame.stack.pop();
+    try std.testing.expectEqual(neg_1, sdiv_neg1_1);
+}
+
+test "Frame modulo edge cases - zero modulus and signed boundaries" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // MOD by zero with max value
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(0);
+    try frame.mod();
+    const mod_max_zero = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), mod_max_zero);
+
+    // MOD max by max should be 0
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.mod();
+    const mod_max_max = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), mod_max_max);
+
+    // SMOD with negative numbers and zero
+    const neg_17 = @as(u256, @bitCast(@as(i256, -17)));
+    try frame.stack.push(neg_17);
+    try frame.stack.push(0);
+    try frame.smod();
+    const smod_neg_zero = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), smod_neg_zero);
+
+    // SMOD with MIN_I256
+    const min_i256 = @as(u256, 1) << 255;
+    const pos_2 = @as(u256, 2);
+    try frame.stack.push(min_i256);
+    try frame.stack.push(pos_2);
+    try frame.smod();
+    const smod_min_2 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), smod_min_2); // MIN is even
+}
+
+test "Frame addmod and mulmod edge cases - zero modulus" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // ADDMOD with zero modulus
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(0); // modulus = 0
+    try frame.addmod();
+    const addmod_zero = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), addmod_zero);
+
+    // MULMOD with zero modulus
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(0); // modulus = 0
+    try frame.mulmod();
+    const mulmod_zero = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), mulmod_zero);
+
+    // ADDMOD with modulus = 1 (everything mod 1 is 0)
+    try frame.stack.push(999999);
+    try frame.stack.push(888888);
+    try frame.stack.push(1);
+    try frame.addmod();
+    const addmod_one = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), addmod_one);
+
+    // MULMOD with modulus = 1
+    try frame.stack.push(123456);
+    try frame.stack.push(789012);
+    try frame.stack.push(1);
+    try frame.mulmod();
+    const mulmod_one = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), mulmod_one);
+}
+
+test "Frame exponentiation edge cases - zero base and exponent" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // 0^0 = 1 (EVM convention)
+    try frame.stack.push(0);
+    try frame.stack.push(0);
+    try frame.exp();
+    const zero_pow_zero = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), zero_pow_zero);
+
+    // 0^1 = 0
+    try frame.stack.push(0);
+    try frame.stack.push(1);
+    try frame.exp();
+    const zero_pow_one = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), zero_pow_one);
+
+    // 1^(max) = 1
+    try frame.stack.push(1);
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.exp();
+    const one_pow_max = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), one_pow_max);
+
+    // 2^8 = 256
+    try frame.stack.push(2);
+    try frame.stack.push(8);
+    try frame.exp();
+    const two_pow_eight = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 256), two_pow_eight);
+
+    // Large base with exponent 1
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(1);
+    try frame.exp();
+    const max_pow_one = try frame.stack.pop();
+    try std.testing.expectEqual(std.math.maxInt(u256), max_pow_one);
+}
+
+test "Frame shift operations edge cases - large shift amounts" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // SHL with shift >= 256 returns 0
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(256);
+    try frame.shl();
+    const shl_256 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), shl_256);
+
+    // SHL with shift = 255 (boundary)
+    try frame.stack.push(1);
+    try frame.stack.push(255);
+    try frame.shl();
+    const shl_255 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1) << 255, shl_255);
+
+    // SHR with shift >= 256 returns 0
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(256);
+    try frame.shr();
+    const shr_256 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), shr_256);
+
+    // SAR with positive number and large shift
+    try frame.stack.push(0x7FFFFFFF);
+    try frame.stack.push(300); // > 256
+    try frame.sar();
+    const sar_pos_large = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), sar_pos_large);
+
+    // SAR with negative number and large shift
+    try frame.stack.push(@as(u256, 1) << 255); // Negative (sign bit set)
+    try frame.stack.push(300); // > 256
+    try frame.sar();
+    const sar_neg_large = try frame.stack.pop();
+    try std.testing.expectEqual(std.math.maxInt(u256), sar_neg_large);
+}
+
+test "Frame sign extension edge cases - boundary byte indices" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // SIGNEXTEND with byte_index >= 31 returns value unchanged
+    try frame.stack.push(0x8765432187654321);
+    try frame.stack.push(31);
+    try frame.signextend();
+    const signext_31 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0x8765432187654321), signext_31);
+
+    // SIGNEXTEND with byte_index = 32 (above boundary)
+    try frame.stack.push(0x8765432187654321);
+    try frame.stack.push(32);
+    try frame.signextend();
+    const signext_32 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0x8765432187654321), signext_32);
+
+    // SIGNEXTEND with byte_index = max value
+    try frame.stack.push(0xFF);
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.signextend();
+    const signext_max = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0xFF), signext_max);
+
+    // SIGNEXTEND at exact boundary between sign extension and no change
+    try frame.stack.push(0x80); // Negative in 8-bit
+    try frame.stack.push(0); // Extend from byte 0 (8-bit)
+    try frame.signextend();
+    const signext_boundary = try frame.stack.pop();
+    const expected_boundary = std.math.maxInt(u256) & ~@as(u256, 0x7F); // Fill with 1s, keep low 7 bits 0
+    try std.testing.expectEqual(expected_boundary, signext_boundary);
+}
+
+test "Frame memory operations edge cases - extreme offsets and sizes" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000000, void{}, null); // High gas for memory expansion
+    defer frame.deinit(allocator);
+
+    // MLOAD with offset > max usize should fail
+    const too_large_offset = @as(u256, std.math.maxInt(usize)) + 1;
+    try frame.stack.push(too_large_offset);
+    try std.testing.expectError(error.OutOfBounds, frame.mload());
+    
+    // Clear stack
+    _ = try frame.stack.pop();
+
+    // MSTORE with offset > max usize should fail
+    try frame.stack.push(0x1234);
+    try frame.stack.push(too_large_offset);
+    try std.testing.expectError(error.OutOfBounds, frame.mstore());
+    
+    // Clear stack
+    _ = try frame.stack.pop();
+    _ = try frame.stack.pop();
+
+    // MSTORE8 with offset > max usize should fail
+    try frame.stack.push(0xAB);
+    try frame.stack.push(too_large_offset);
+    try std.testing.expectError(error.OutOfBounds, frame.mstore8());
+    
+    // Clear stack
+    _ = try frame.stack.pop();
+    _ = try frame.stack.pop();
+
+    // Test MLOAD at maximum valid usize offset (if memory allows)
+    const max_usize_offset = std.math.maxInt(usize) - 31; // Ensure 32-byte read fits
+    if (max_usize_offset < 1000000) { // Only test if reasonable size
+        try frame.stack.push(@as(u256, max_usize_offset));
+        // This might succeed or fail depending on memory limits
+        _ = frame.mload() catch |err| switch (err) {
+            error.OutOfBounds, error.AllocationError => {}, // Expected for large offsets
+            else => return err,
+        };
+        
+        // Clear stack if operation succeeded
+        if (frame.stack.len() > 0) {
+            _ = try frame.stack.pop();
+        }
+    }
+}
+
+test "Frame stack capacity edge cases - exactly at limits" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // Fill stack to exactly 1024 items (max capacity)
+    for (0..1024) |i| {
+        try frame.stack.push(@as(u256, i));
+    }
+    
+    // Verify stack is at capacity
+    try std.testing.expectEqual(@as(usize, 1024), frame.stack.len());
+    try std.testing.expectEqual(@as(u256, 1023), try frame.stack.peek());
+
+    // Attempt to push one more - should fail with StackOverflow
+    try std.testing.expectError(error.StackOverflow, frame.stack.push(9999));
+    
+    // Stack should still be at capacity and unchanged
+    try std.testing.expectEqual(@as(usize, 1024), frame.stack.len());
+    try std.testing.expectEqual(@as(u256, 1023), try frame.stack.peek());
+
+    // Pop one item to make room
+    const popped = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1023), popped);
+    try std.testing.expectEqual(@as(usize, 1023), frame.stack.len());
+
+    // Now we should be able to push again
+    try frame.stack.push(5555);
+    try std.testing.expectEqual(@as(usize, 1024), frame.stack.len());
+    try std.testing.expectEqual(@as(u256, 5555), try frame.stack.peek());
+
+    // Pop all items to test empty stack boundary
+    for (0..1024) |_| {
+        _ = try frame.stack.pop();
+    }
+    
+    // Stack should now be empty
+    try std.testing.expectEqual(@as(usize, 0), frame.stack.len());
+    
+    // Attempt operations on empty stack
+    try std.testing.expectError(error.StackUnderflow, frame.stack.pop());
+    try std.testing.expectError(error.StackUnderflow, frame.stack.peek());
+    try std.testing.expectError(error.StackUnderflow, frame.stack.set_top(123));
+}
+
+test "Frame DUP operations edge cases - maximum depth" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // Test DUP16 at exact boundary - need exactly 16 items
+    for (0..16) |i| {
+        try frame.stack.push(@as(u256, i + 100));
+    }
+    
+    // DUP16 should duplicate the 16th item from top (value 100)
+    try frame.stack.dup16();
+    try std.testing.expectEqual(@as(usize, 17), frame.stack.len());
+    try std.testing.expectEqual(@as(u256, 100), try frame.stack.peek());
+    
+    // Clear and test insufficient stack for DUP16
+    for (0..17) |_| {
+        _ = try frame.stack.pop();
+    }
+    
+    // Push only 15 items
+    for (0..15) |i| {
+        try frame.stack.push(@as(u256, i + 200));
+    }
+    
+    // DUP16 should fail
+    try std.testing.expectError(error.StackUnderflow, frame.stack.dup16());
+    
+    // Stack should be unchanged
+    try std.testing.expectEqual(@as(usize, 15), frame.stack.len());
+    try std.testing.expectEqual(@as(u256, 214), try frame.stack.peek());
+
+    // Test DUP1 with exactly 1 item
+    for (0..15) |_| {
+        _ = try frame.stack.pop();
+    }
+    try frame.stack.push(777);
+    
+    try frame.stack.dup1();
+    try std.testing.expectEqual(@as(usize, 2), frame.stack.len());
+    try std.testing.expectEqual(@as(u256, 777), try frame.stack.peek());
+    _ = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 777), try frame.stack.peek());
+}
+
+test "Frame SWAP operations edge cases - maximum depth" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // Test SWAP16 at exact boundary - need exactly 17 items
+    for (0..17) |i| {
+        try frame.stack.push(@as(u256, i + 300));
+    }
+    
+    // SWAP16 should swap top (316) with 17th from top (300)
+    try frame.stack.swap16();
+    try std.testing.expectEqual(@as(usize, 17), frame.stack.len());
+    try std.testing.expectEqual(@as(u256, 300), try frame.stack.peek()); // Was 17th, now top
+    
+    // Verify the 17th position now has 316
+    const stack_slice = frame.stack.get_slice();
+    try std.testing.expectEqual(@as(u256, 316), stack_slice[16]); // 17th from top (0-indexed)
+    
+    // Clear and test insufficient stack for SWAP16
+    for (0..17) |_| {
+        _ = try frame.stack.pop();
+    }
+    
+    // Push only 16 items (need 17 for SWAP16)
+    for (0..16) |i| {
+        try frame.stack.push(@as(u256, i + 400));
+    }
+    
+    // SWAP16 should fail
+    try std.testing.expectError(error.StackUnderflow, frame.stack.swap16());
+    
+    // Stack should be unchanged
+    try std.testing.expectEqual(@as(usize, 16), frame.stack.len());
+    try std.testing.expectEqual(@as(u256, 415), try frame.stack.peek());
+
+    // Test SWAP1 with exactly 2 items
+    for (0..16) |_| {
+        _ = try frame.stack.pop();
+    }
+    try frame.stack.push(888);
+    try frame.stack.push(999);
+    
+    try frame.stack.swap1();
+    try std.testing.expectEqual(@as(usize, 2), frame.stack.len());
+    try std.testing.expectEqual(@as(u256, 888), try frame.stack.peek()); // Was 2nd, now top
+    _ = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 999), try frame.stack.peek()); // Was top, now 2nd
+}
+
+test "Frame gas edge cases - out of gas conditions" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 100, void{}, null); // Start with low gas
+    defer frame.deinit(allocator);
+
+    // Test GAS opcode with positive gas
+    try frame.gas();
+    const gas_result1 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 100), gas_result1);
+
+    // Set gas to exactly 0
+    frame.gas_remaining = 0;
+    try frame.gas();
+    const gas_result2 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), gas_result2);
+
+    // Set gas to negative (out of gas)
+    frame.gas_remaining = -50;
+    try frame.gas();
+    const gas_result3 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), gas_result3); // Negative gas returns 0
+
+    // Test checkGas with negative gas
+    frame.gas_remaining = -1;
+    try std.testing.expectError(error.OutOfGas, frame.checkGas());
+
+    // Test checkGas with zero gas (should pass)
+    frame.gas_remaining = 0;
+    try frame.checkGas(); // Should not error
+
+    // Test checkGas with positive gas
+    frame.gas_remaining = 1;
+    try frame.checkGas(); // Should not error
+
+    // Test consumeGasUnchecked at boundaries
+    frame.gas_remaining = 1000;
+    frame.consumeGasUnchecked(1000); // Consume exactly all gas
+    try std.testing.expectEqual(@as(i32, 0), frame.gas_remaining);
+
+    frame.consumeGasUnchecked(1); // Consume more than available
+    try std.testing.expectEqual(@as(i32, -1), frame.gas_remaining);
+}
+
+test "Frame comparison operations edge cases - signed number boundaries" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // SLT with MIN_I256 and -1
+    const min_i256 = @as(u256, 1) << 255; // Most negative i256
+    const neg_1 = @as(u256, @bitCast(@as(i256, -1)));
+    try frame.stack.push(min_i256);
+    try frame.stack.push(neg_1);
+    try frame.slt();
+    const slt_min_neg1 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), slt_min_neg1); // MIN < -1
+
+    // SGT with MAX_I256 and 0
+    const max_i256 = (@as(u256, 1) << 255) - 1; // Most positive i256
+    try frame.stack.push(max_i256);
+    try frame.stack.push(0);
+    try frame.sgt();
+    const sgt_max_zero = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), sgt_max_zero); // MAX > 0
+
+    // SLT/SGT with same values
+    try frame.stack.push(min_i256);
+    try frame.stack.push(min_i256);
+    try frame.slt();
+    const slt_same = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), slt_same); // Same values not less than
+
+    try frame.stack.push(max_i256);
+    try frame.stack.push(max_i256);
+    try frame.sgt();
+    const sgt_same = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), sgt_same); // Same values not greater than
+
+    // LT/GT with max unsigned values
+    try frame.stack.push(std.math.maxInt(u256) - 1);
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.lt();
+    const lt_max = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), lt_max); // MAX-1 < MAX
+
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(std.math.maxInt(u256) - 1);
+    try frame.gt();
+    const gt_max = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 1), gt_max); // MAX > MAX-1
+}
+
+test "Frame byte extraction edge cases - out of bounds indices" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // BYTE with index = 32 (first invalid index)
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(32);
+    try frame.byte();
+    const byte_32 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), byte_32);
+
+    // BYTE with index = 33
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(33);
+    try frame.byte();
+    const byte_33 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), byte_33);
+
+    // BYTE with maximum index
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.stack.push(std.math.maxInt(u256));
+    try frame.byte();
+    const byte_max = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0), byte_max);
+
+    // BYTE with index = 31 (last valid index)
+    const test_value = @as(u256, 0xAB);
+    try frame.stack.push(test_value);
+    try frame.stack.push(31);
+    try frame.byte();
+    const byte_31 = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0xAB), byte_31);
+
+    // BYTE with index = 0 (first byte) on value with high bit set
+    const high_bit_value = @as(u256, 0xCD) << 248; // Put 0xCD in leftmost byte
+    try frame.stack.push(high_bit_value);
+    try frame.stack.push(0);
+    try frame.byte();
+    const byte_0_high = try frame.stack.pop();
+    try std.testing.expectEqual(@as(u256, 0xCD), byte_0_high);
+}
+
+test "Frame keccak256 edge cases - empty input and large input" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000000, void{}, null); // High gas for large operations
+    defer frame.deinit(allocator);
+
+    // KECCAK256 with size = 0 (empty input)
+    try frame.stack.push(0); // offset
+    try frame.stack.push(0); // size
+    try frame.op_keccak256();
+    const empty_hash = try frame.stack.pop();
+    // keccak256("") = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
+    const expected_empty: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
+    try std.testing.expectEqual(expected_empty, empty_hash);
+
+    // KECCAK256 with offset > max usize
+    const too_large_offset = @as(u256, std.math.maxInt(usize)) + 1;
+    try frame.stack.push(too_large_offset);
+    try frame.stack.push(32); // size
+    try std.testing.expectError(error.OutOfBounds, frame.op_keccak256());
+    
+    // Clear stack
+    _ = try frame.stack.pop();
+    _ = try frame.stack.pop();
+
+    // KECCAK256 with size > max usize
+    const too_large_size = @as(u256, std.math.maxInt(usize)) + 1;
+    try frame.stack.push(0); // offset
+    try frame.stack.push(too_large_size);
+    try std.testing.expectError(error.OutOfBounds, frame.op_keccak256());
+    
+    // Clear stack
+    _ = try frame.stack.pop();
+    _ = try frame.stack.pop();
+
+    // KECCAK256 with offset + size overflow
+    const large_offset = std.math.maxInt(usize) - 10;
+    try frame.stack.push(@as(u256, large_offset));
+    try frame.stack.push(20); // size, will cause offset + size to overflow
+    try std.testing.expectError(error.OutOfBounds, frame.op_keccak256());
+    
+    // Clear stack
+    _ = try frame.stack.pop();
+    _ = try frame.stack.pop();
+
+    // KECCAK256 with single byte
+    try frame.stack.push(0xAB); // value
+    try frame.stack.push(0); // offset
+    try frame.mstore8();
+    
+    try frame.stack.push(0); // offset
+    try frame.stack.push(1); // size
+    try frame.op_keccak256();
+    const single_byte_hash = try frame.stack.pop();
+    // Should be a specific hash value for the byte 0xAB
+    try std.testing.expect(single_byte_hash != 0); // Should be some non-zero hash
+}
+
+test "Frame log operations edge cases - maximum topics and static context" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00}; // STOP
+    var frame = try F.init(allocator, &bytecode, 1000000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // Test LOG0 with zero-length data
+    try frame.stack.push(0); // offset
+    try frame.stack.push(0); // size
+    try frame.log0(allocator);
+    try std.testing.expectEqual(@as(usize, 1), frame.logs.items.len);
+    try std.testing.expectEqual(@as(usize, 0), frame.logs.items[0].topics.len);
+    try std.testing.expectEqual(@as(usize, 0), frame.logs.items[0].data.len);
+
+    // Test LOG4 with maximum topics and data
+    const test_data: u256 = 0xDEADBEEFCAFEBABE12345678ABCDEFFF;
+    try frame.stack.push(test_data);
+    try frame.stack.push(0); // offset
+    try frame.mstore();
+    
+    try frame.stack.push(0); // offset
+    try frame.stack.push(32); // size
+    try frame.stack.push(0x1111111111111111); // topic 0
+    try frame.stack.push(0x2222222222222222); // topic 1
+    try frame.stack.push(0x3333333333333333); // topic 2
+    try frame.stack.push(0x4444444444444444); // topic 3
+    try frame.log4(allocator);
+    
+    try std.testing.expectEqual(@as(usize, 2), frame.logs.items.len); // LOG0 + LOG4
+    const log4_entry = frame.logs.items[1];
+    try std.testing.expectEqual(@as(usize, 4), log4_entry.topics.len);
+    try std.testing.expectEqual(@as(u256, 0x1111111111111111), log4_entry.topics[0]);
+    try std.testing.expectEqual(@as(u256, 0x4444444444444444), log4_entry.topics[3]);
+    try std.testing.expectEqual(@as(usize, 32), log4_entry.data.len);
+
+    // Test LOG operations in static context (should fail)
+    frame.is_static = true;
+    try frame.stack.push(0); // offset
+    try frame.stack.push(0); // size
+    try std.testing.expectError(error.WriteProtection, frame.log0(allocator));
+    
+    // Clear stack and reset static flag
+    _ = try frame.stack.pop();
+    _ = try frame.stack.pop();
+    frame.is_static = false;
+
+    // Test LOG with data size causing potential overflow
+    const large_size = if (std.math.maxInt(usize) > 1000000) 1000000 else 1000; // Reasonable large size
+    try frame.stack.push(0); // offset
+    try frame.stack.push(@as(u256, large_size)); // size
+    // This might succeed or fail based on memory limits and gas
+    _ = frame.log0(allocator) catch |err| switch (err) {
+        error.OutOfBounds, error.AllocationError, error.OutOfGas => {}, // Expected
+        else => return err,
+    };
+    
+    // Clear stack if needed
+    while (frame.stack.len() > 0) {
+        _ = try frame.stack.pop();
+    }
+}
+
+test "Frame initialization edge cases - various configurations" {
+    const allocator = std.testing.allocator;
+
+    // Test Frame with minimum configuration
+    const MinFrame = Frame(.{ 
+        .stack_size = 1,
+        .WordType = u8, 
+        .max_bytecode_size = 1,
+        .block_gas_limit = 1000
+    });
+    const min_bytecode = [_]u8{0x00};
+    var min_frame = try MinFrame.init(allocator, &min_bytecode, 100, void{}, null);
+    defer min_frame.deinit(allocator);
+    
+    // Test single stack operation
+    try min_frame.stack.push(42);
+    try std.testing.expectEqual(@as(u8, 42), try min_frame.stack.peek());
+    
+    // Second push should fail (stack size = 1)
+    try std.testing.expectError(error.StackOverflow, min_frame.stack.push(43));
+
+    // Test Frame with maximum allowed bytecode
+    const MaxBytecodeFrame = Frame(.{ .max_bytecode_size = 65535 }); // u16 max
+    const large_bytecode = try allocator.alloc(u8, 65535);
+    defer allocator.free(large_bytecode);
+    @memset(large_bytecode, 0x00); // Fill with STOP opcodes
+    
+    var max_frame = try MaxBytecodeFrame.init(allocator, large_bytecode, 1000000, void{}, null);
+    defer max_frame.deinit(allocator);
+    try std.testing.expectEqual(@as(usize, 65535), max_frame.bytecode.len);
+
+    // Test Frame with zero gas
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00};
+    var zero_gas_frame = try F.init(allocator, &bytecode, 0, void{}, null);
+    defer zero_gas_frame.deinit(allocator);
+    try std.testing.expectEqual(@as(i32, 0), zero_gas_frame.gas_remaining);
+
+    // Test Frame with negative initial gas (edge case)
+    var neg_gas_frame = try F.init(allocator, &bytecode, -100, void{}, null);
+    defer neg_gas_frame.deinit(allocator);
+    try std.testing.expectEqual(@as(i32, -100), neg_gas_frame.gas_remaining);
+}
+
+test "Frame error recovery - partial operations and state consistency" {
+    const allocator = std.testing.allocator;
+    const F = Frame(.{});
+    const bytecode = [_]u8{0x00};
+    var frame = try F.init(allocator, &bytecode, 1000000, void{}, null);
+    defer frame.deinit(allocator);
+
+    // Test that failed operations don't corrupt frame state
+    const initial_gas = frame.gas_remaining;
+    
+    // Fill stack almost to capacity
+    for (0..1023) |i| {
+        try frame.stack.push(@as(u256, i));
+    }
+    
+    // Attempt operation that requires stack space but stack is almost full
+    try frame.stack.push(999); // Now at capacity
+    
+    // Try DUP1 which would require adding to full stack - should fail
+    try std.testing.expectError(error.StackOverflow, frame.stack.dup1());
+    
+    // Verify stack state is consistent (still at capacity with expected top)
+    try std.testing.expectEqual(@as(usize, 1024), frame.stack.len());
+    try std.testing.expectEqual(@as(u256, 999), try frame.stack.peek());
+    
+    // Verify gas wasn't consumed by failed operation
+    try std.testing.expectEqual(initial_gas, frame.gas_remaining);
+
+    // Test arithmetic operations with underflow stack don't corrupt state
+    // Clear stack first
+    for (0..1024) |_| {
+        _ = try frame.stack.pop();
+    }
+    
+    // Try ADD with empty stack - should fail cleanly
+    try std.testing.expectError(error.StackUnderflow, frame.add());
+    try std.testing.expectEqual(@as(usize, 0), frame.stack.len());
+    
+    // Try ADD with only one item - should also fail cleanly
+    try frame.stack.push(42);
+    try std.testing.expectError(error.StackUnderflow, frame.add());
+    try std.testing.expectEqual(@as(usize, 1), frame.stack.len());
+    try std.testing.expectEqual(@as(u256, 42), try frame.stack.peek());
+
+    // Test memory operations don't corrupt state on failure
+    const current_memory_size = frame.memory.size();
+    
+    // Attempt MLOAD with extremely large offset - should fail cleanly
+    try frame.stack.push(@as(u256, std.math.maxInt(usize)) + 1);
+    try std.testing.expectError(error.OutOfBounds, frame.mload());
+    
+    // Verify memory state unchanged
+    try std.testing.expectEqual(current_memory_size, frame.memory.size());
+    
+    // Verify stack has the failed offset still there (operation didn't consume)
+    try std.testing.expectEqual(@as(usize, 2), frame.stack.len()); // 42 + large_offset
+    _ = try frame.stack.pop(); // Remove the large offset
+    try std.testing.expectEqual(@as(u256, 42), try frame.stack.peek());
+}
+

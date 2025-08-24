@@ -60,9 +60,9 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
         bytecode: BytecodeType,
         
         // Cache fields
-        allocator: ?std.mem.Allocator,
+        allocator: std.mem.Allocator,
         cache_capacity: usize,
-        cache_map: ?std.AutoHashMap(u64, *CacheNode),
+        cache_map: std.AutoHashMap(u64, *CacheNode),
         cache_head: ?*CacheNode,
         cache_tail: ?*CacheNode,
         cache_count: usize,
@@ -91,17 +91,15 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             // Deinit bytecode
             self.bytecode.deinit();
             
-            // Deinit cache if present
-            if (self.cache_map) |*map| {
-                var node = self.cache_head;
-                while (node) |n| {
-                    const next = n.next;
-                    n.plan.deinit(self.allocator.?);
-                    self.allocator.?.destroy(n);
-                    node = next;
-                }
-                map.deinit();
+            // Deinit cache
+            var node = self.cache_head;
+            while (node) |n| {
+                const next = n.next;
+                n.plan.deinit(self.allocator);
+                self.allocator.destroy(n);
+                node = next;
             }
+            self.cache_map.deinit();
         }
         
         /// Get plan from cache or analyze.
@@ -179,18 +177,18 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             // Evict if necessary
             if (self.cache_count >= self.cache_capacity) {
                 if (self.cache_tail) |tail| {
-                    _ = self.cache_map.?.remove(tail.key_hash);
+                    _ = self.cache_map.remove(tail.key_hash);
                     if (tail.prev) |p| p.next = null;
                     self.cache_tail = tail.prev;
                     if (self.cache_head == tail) self.cache_head = null;
-                    tail.plan.deinit(self.allocator.?);
-                    self.allocator.?.destroy(tail);
+                    tail.plan.deinit(self.allocator);
+                    self.allocator.destroy(tail);
                     self.cache_count -= 1;
                 }
             }
             
             // Create new node
-            const node = try self.allocator.?.create(CacheNode);
+            const node = try self.allocator.create(CacheNode);
             node.* = .{
                 .key_hash = key,
                 .plan = plan,
@@ -202,7 +200,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             self.cache_head = node;
             if (self.cache_tail == null) self.cache_tail = node;
             
-            try self.cache_map.?.put(key, node);
+            try self.cache_map.put(key, node);
             self.cache_count += 1;
         }
 
