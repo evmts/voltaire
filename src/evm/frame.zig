@@ -17,13 +17,8 @@ const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
 const Host = @import("host.zig").Host;
 const CallParams = @import("call_params.zig").CallParams;
 const CallResult = @import("call_result.zig").CallResult;
-
-/// Simple log structure for Frame
-pub const Log = struct {
-    address: Address,
-    topics: []const u256,
-    data: []const u8,
-};
+const logs = @import("logs.zig");
+const Log = logs.Log;
 
 /// Frame is a lightweight execution context for EVM operations.
 ///
@@ -119,8 +114,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             };
             errdefer memory.deinit();
 
-            var logs = std.ArrayList(Log).init(allocator);
-            errdefer logs.deinit();
+            var frame_logs = std.ArrayList(Log).init(allocator);
+            errdefer frame_logs.deinit();
 
             var output_data = std.ArrayList(u8).init(allocator);
             errdefer output_data.deinit();
@@ -132,7 +127,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .tracer = if (config.TracerType) |T| T.init() else {},
                 .memory = memory,
                 .database = database,
-                .logs = logs,
+                .logs = frame_logs,
                 .output_data = output_data,
                 .host = host,
             };
