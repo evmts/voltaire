@@ -64,6 +64,80 @@ pub fn GasManager(comptime config: GasManagerConfig) type {
         pub fn rawRemaining(self: *const Self) GasType {
             return self.remaining;
         }
+        
+        /// Consume gas with safety checks - preferred method for gas consumption
+        pub fn consume(self: *Self, amount: u64) GasError!void {
+            // Validate input amount can fit in our gas type
+            if (amount > std.math.maxInt(GasType)) {
+                if (comptime config.enable_branch_hints) @branchHint(.cold);
+                return GasError.InvalidAmount;
+            }
+            
+            const amount_typed = @as(GasType, @intCast(amount));
+            
+            // Check if we have sufficient gas
+            if (self.remaining < amount_typed) {
+                if (comptime config.enable_branch_hints) @branchHint(.cold);
+                return GasError.OutOfGas;
+            }
+            
+            // Consume the gas
+            self.remaining -= amount_typed;
+            
+            // Optional debug logging
+            if (comptime config.enable_gas_logging and builtin.mode == .Debug) {
+                std.log.debug("Gas consumed: {}, remaining: {}", .{ amount, self.remaining });
+            }
+        }
+        
+        /// Unsafe gas consumption without checks - for performance-critical paths
+        /// Only use when gas availability has been pre-verified
+        pub fn consumeUnchecked(self: *Self, amount: u64) void {
+            if (comptime config.enable_branch_hints) @branchHint(.likely);
+            
+            if (comptime builtin.mode == .Debug and config.enable_overflow_checks) {
+                // In debug mode, still do basic validation
+                std.debug.assert(amount <= std.math.maxInt(GasType));
+                std.debug.assert(self.remaining >= @as(GasType, @intCast(amount)));
+            }
+            
+            self.remaining -= @as(GasType, @intCast(amount));
+            
+            if (comptime config.enable_gas_logging and builtin.mode == .Debug) {
+                std.log.debug("Gas consumed (unchecked): {}, remaining: {}", .{ amount, self.remaining });
+            }
+        }
+        
+        /// Try to consume gas, returns true if successful, false if insufficient
+        pub fn tryConsume(self: *Self, amount: u64) bool {
+            if (self.hasGas(amount)) {
+                self.consumeUnchecked(amount);
+                return true;
+            }
+            return false;
+        }
+        
+        /// Add gas back (for gas refunds)
+        pub fn refund(self: *Self, amount: u64) GasError!void {
+            if (amount > std.math.maxInt(GasType)) {
+                if (comptime config.enable_branch_hints) @branchHint(.cold);
+                return GasError.InvalidAmount;
+            }
+            
+            const amount_typed = @as(GasType, @intCast(amount));
+            
+            // Check for overflow
+            if (self.remaining > config.maxGas() - amount_typed) {
+                if (comptime config.enable_branch_hints) @branchHint(.cold);
+                return GasError.GasOverflow;
+            }
+            
+            self.remaining += amount_typed;
+            
+            if (comptime config.enable_gas_logging and builtin.mode == .Debug) {
+                std.log.debug("Gas refunded: {}, remaining: {}", .{ amount, self.remaining });
+            }
+        }
     };
 }
 
