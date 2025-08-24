@@ -1227,7 +1227,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const address_u256 = try self.stack.pop();
             const address = from_u256(address_u256);
             const balance = host.get_balance(address);
-            try self.stack.push(balance);
+            const balance_word = @as(WordType, @truncate(balance));
+            try self.stack.push(balance_word);
         }
 
         /// ORIGIN opcode (0x32) - Get execution origination address
@@ -1462,7 +1463,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_returndatasize(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const return_data = host.get_return_data();
-            try self.stack.push(@as(u256, @intCast(return_data.len)));
+            const return_data_len = @as(WordType, @truncate(@as(u256, @intCast(return_data.len))));
+            try self.stack.push(return_data_len);
         }
 
         /// RETURNDATACOPY opcode (0x3E) - Copy output data from previous call to memory
@@ -1532,7 +1534,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             if (code.len == 0) {
                 // Existing account with empty code returns keccak256("") constant
                 const empty_hash_u256: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
-                try self.stack.push(empty_hash_u256);
+                const empty_hash_word = @as(WordType, @truncate(empty_hash_u256));
+                try self.stack.push(empty_hash_word);
                 return;
             }
 
@@ -1546,7 +1549,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 hash_u256 = (hash_u256 << 8) | @as(u256, b);
             }
 
-            try self.stack.push(hash_u256);
+            const hash_word = @as(WordType, @truncate(hash_u256));
+            try self.stack.push(hash_word);
         }
 
         /// CHAINID opcode (0x46) - Get chain ID
@@ -1555,7 +1559,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_chainid(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const chain_id = host.get_chain_id();
-            try self.stack.push(@as(u256, chain_id));
+            const chain_id_word = @as(WordType, @truncate(@as(u256, chain_id)));
+            try self.stack.push(chain_id_word);
         }
 
         /// SELFBALANCE opcode (0x47) - Get balance of currently executing account
@@ -1564,7 +1569,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_selfbalance(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const balance = host.get_balance(self.contract_address);
-            try self.stack.push(balance);
+            const balance_word = @as(WordType, @truncate(balance));
+            try self.stack.push(balance_word);
         }
 
         // Block information opcodes
@@ -1600,7 +1606,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 for (hash) |b| {
                     hash_u256 = (hash_u256 << 8) | @as(u256, b);
                 }
-                try self.stack.push(hash_u256);
+                const hash_word = @as(WordType, @truncate(hash_u256));
+            try self.stack.push(hash_word);
             } else {
                 try self.stack.push(0);
             }
@@ -1613,7 +1620,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const host = self.host orelse return Error.InvalidOpcode;
             const block_info = host.get_block_info();
             const coinbase_u256 = to_u256(block_info.coinbase);
-            try self.stack.push(coinbase_u256);
+            const coinbase_word = @as(WordType, @truncate(coinbase_u256));
+            try self.stack.push(coinbase_word);
         }
 
         /// TIMESTAMP opcode (0x42) - Get current block timestamp
@@ -1622,7 +1630,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_timestamp(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const block_info = host.get_block_info();
-            try self.stack.push(@as(u256, @intCast(block_info.timestamp)));
+            const timestamp_word = @as(WordType, @truncate(@as(u256, @intCast(block_info.timestamp))));
+            try self.stack.push(timestamp_word);
         }
 
         /// NUMBER opcode (0x43) - Get current block number
@@ -1690,7 +1699,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 for (hash) |b| {
                     hash_u256 = (hash_u256 << 8) | @as(u256, b);
                 }
-                try self.stack.push(hash_u256);
+                const hash_word = @as(WordType, @truncate(hash_u256));
+            try self.stack.push(hash_word);
             } else {
                 try self.stack.push(0);
             }
