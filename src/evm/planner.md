@@ -1,8 +1,18 @@
-# Planner Documentation
+# Planner
 
-## Overview
+Bytecode analysis and optimization system for EVM execution plans.
 
-The EVM Planner is a sophisticated bytecode analysis and optimization system that transforms raw EVM bytecode into optimized execution plans. It performs jump destination analysis, opcode fusion, constant inlining, and gas pre-calculation to enable high-performance EVM execution through tail-call interpreter optimization.
+## Synopsis
+
+```zig
+const PlannerType = Planner(config);
+var planner = try PlannerType.init(allocator, cache_capacity);
+const plan = try planner.getOrAnalyze(bytecode, handlers);
+```
+
+## Description
+
+Transforms raw EVM bytecode into optimized execution plans. Performs jump destination analysis, opcode fusion, constant inlining, and gas pre-calculation for high-performance tail-call interpreter execution.
 
 ## Architecture & Design
 

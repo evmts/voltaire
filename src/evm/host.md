@@ -1,8 +1,18 @@
-# Host Documentation
+# Host
 
-## Overview
+Interface for EVM blockchain state and external service access.
 
-The Host interface provides the EVM with access to blockchain state and external services through a clean, vtable-based abstraction. It handles all operations that require interaction beyond the current execution context, including account queries, storage operations, nested calls, event logging, and blockchain environment access.
+## Synopsis
+
+```zig
+const host = Host.init(&host_impl);
+const balance = host.get_balance(address);
+const result = try host.inner_call(call_params);
+```
+
+## Description
+
+Provides vtable-based abstraction for blockchain state access. Handles account queries, storage operations, nested calls, event logging, and blockchain environment operations beyond execution context.
 
 ## Architecture & Design
 

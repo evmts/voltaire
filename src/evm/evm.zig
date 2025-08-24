@@ -4149,3 +4149,70 @@ test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
         try testing.expectEqual(@as(u8, 0), byte);
     }
 }
+
+test "EVM benchmark scenario - reproduces segfault" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+    
+    // Create test database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    // Deploy contract first (ERC20 approval bytecode snippet)
+    const stop_bytecode = [_]u8{0x00}; // Simple STOP for now
+    const deploy_address: Address = [_]u8{0} ** 19 ++ [_]u8{1};
+    const code_hash = try memory_db.set_code(&stop_bytecode);
+    try memory_db.set_account(deploy_address, Account{
+        .nonce = 0,
+        .balance = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Create EVM instance
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 21000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm_instance = try DefaultEvm.init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm_instance.deinit();
+    
+    // Simple calldata
+    const calldata = [_]u8{0x00};
+    
+    // Execute call (simulating benchmark)
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = ZERO_ADDRESS,
+            .to = deploy_address,
+            .value = 0,
+            .input = &calldata,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm_instance.call(call_params);
+    try testing.expect(result.success);
+    
+    // The segfault happens in deinit, so let's explicitly test that
+    // by creating and destroying multiple times
+    for (0..3) |_| {
+        var temp_evm = try DefaultEvm.init(allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+        const temp_result = try temp_evm.call(call_params);
+        try testing.expect(temp_result.success);
+        temp_evm.deinit(); // This is where the segfault happens
+    }
+}

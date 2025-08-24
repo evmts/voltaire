@@ -18,8 +18,8 @@ const primitives = @import("primitives");
 pub const RevmTraceData = struct {
     pc: u64,
     opcode: u8,
-    stack_before: []const primitives.u256,
-    stack_after: []const primitives.u256,
+    stack_before: []const u256,
+    stack_after: []const u256,
     memory_before: []const u8,
     memory_after: []const u8,
     gas_remaining: u64,

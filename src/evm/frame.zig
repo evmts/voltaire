@@ -1954,12 +1954,30 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// ## Returns
         /// - Gas cost for the call operation before gas forwarding
         fn _calculate_call_gas(self: *Self, target_address: Address, value: u256, is_static: bool) u64 {
-            _ = self; // Currently unused but will be needed for database/access list checks
-            _ = target_address; // Currently unused but will be needed for account existence checks
-            
-            // Check if target account exists (simplified - in reality this would check database)
-            // For now, assume account exists (new_account = false)
-            const new_account = false;
+            // Check if target account exists using database interface
+            const new_account = blk: {
+                if (self.database) |db| {
+                    // Try to get the account from the database
+                    const account_result = db.get_account(target_address) catch {
+                        // On database error, assume account doesn't exist (conservative approach)
+                        break :blk true;
+                    };
+                    
+                    if (account_result) |account| {
+                        // Account exists if it has any of: non-zero nonce, non-zero balance, or non-empty code
+                        const exists = account.nonce > 0 or 
+                                     account.balance > 0 or 
+                                     !std.mem.eql(u8, &account.code_hash, &primitives.EMPTY_CODE_HASH);
+                        break :blk !exists;
+                    } else {
+                        // Account not found in database
+                        break :blk true;
+                    }
+                } else {
+                    // No database available, assume account doesn't exist
+                    break :blk true;
+                }
+            };
             
             // Check if this is a cold access (simplified - in reality this would check access list)
             // For now, assume warm access (cold_access = false)
