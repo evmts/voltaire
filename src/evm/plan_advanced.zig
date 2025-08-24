@@ -3089,7 +3089,7 @@ test "Plan configuration boundary and mutation stress testing" {
             
             var planner = try Planner.init(allocator, 100);
             
-            const plan = try planner.getOrAnalyze(limited_bytecode, handlers);
+            const plan = try planner.getOrAnalyze(limited_bytecode, handlers, Hardfork.DEFAULT);
             
             // Verify plan works with this configuration
             
@@ -3118,7 +3118,7 @@ test "Plan configuration boundary and mutation stress testing" {
         const Planner = @import("planner.zig").createPlanner(config);
         var planner = try Planner.init(allocator, 100);
         
-        const plan = try planner.getOrAnalyze(&test_bytecode, handlers);
+        const plan = try planner.getOrAnalyze(&test_bytecode, handlers, Hardfork.DEFAULT);
         
         _ = plan;
     }
@@ -3306,7 +3306,7 @@ test "Plan caching and lifecycle management validation" {
     for (0..num_concurrent_plans) |i| {
         const PlannerType2 = @import("planner.zig").createPlanner(.{});
         planners[i] = try PlannerType2.init(allocator, &reusable_bytecode);
-        plans[i] = try planners[i].getOrAnalyze(&reusable_bytecode, handlers);
+        plans[i] = try planners[i].getOrAnalyze(&reusable_bytecode, handlers, Hardfork.DEFAULT);
     }
     
     // Verify all plans work independently
@@ -3341,7 +3341,7 @@ test "Plan caching and lifecycle management validation" {
         var config_planner = try ConfigPlanner.init(allocator, 100);
         
         // Create plan (getOrAnalyze creates both minimal and advanced plans internally)
-        const plan = try config_planner.getOrAnalyze(&reusable_bytecode, handlers);
+        const plan = try config_planner.getOrAnalyze(&reusable_bytecode, handlers, Hardfork.DEFAULT);
         
         // Test that plan works with this configuration
         
@@ -3364,7 +3364,7 @@ test "Plan caching and lifecycle management validation" {
         fn create(alloc: std.mem.Allocator, _: []const u8, plan_handlers: [256]*const HandlerFn) !Plan {
             const TransferPlanner = @import("planner.zig").createPlanner(.{});
             var transfer_planner = try TransferPlanner.init(alloc, 100);
-            _ = try transfer_planner.getOrAnalyze(&[_]u8{0x60, 0x01, 0x00}, plan_handlers);
+            _ = try transfer_planner.getOrAnalyze(&[_]u8{0x60, 0x01, 0x00}, plan_handlers, Hardfork.DEFAULT);
             // Since getOrAnalyze returns a const pointer, we need to create a copy for ownership transfer
             // This is a limitation of the new API - plans are cached and const
             return error.NotImplemented;
@@ -3402,7 +3402,7 @@ test "Plan caching and lifecycle management validation" {
         const StressPlanner = @import("planner.zig").createPlanner(.{});
         var stress_planner = try StressPlanner.init(allocator, 100);
         
-        const stress_plan = try stress_planner.getOrAnalyze(&stress_bytecode, handlers);
+        const stress_plan = try stress_planner.getOrAnalyze(&stress_bytecode, handlers, Hardfork.DEFAULT);
         
         // Quick validation
         

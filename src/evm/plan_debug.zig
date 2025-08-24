@@ -9,6 +9,7 @@ const plan_mod = @import("plan.zig");
 const plan_minimal_mod = @import("plan_minimal.zig");
 const Planner = @import("planner.zig").Planner;
 const Frame = @import("frame.zig").Frame;
+const Hardfork = @import("hardfork.zig").Hardfork;
 // REVM integration disabled - module not available
 
 // Import primitives
@@ -162,7 +163,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             defer planner.deinit();
             
             // Create advanced plan
-            const advanced_plan_ptr = try planner.getOrAnalyze(bytecode, handlers);
+            const advanced_plan_ptr = try planner.getOrAnalyze(bytecode, handlers, Hardfork.DEFAULT);
             const advanced_plan = advanced_plan_ptr.*;
             
             // Create minimal plan

@@ -827,8 +827,21 @@ pub fn Evm(comptime config: EvmConfig) type {
             };
             
             // Normal completion (STOP)
-            const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_manager.remaining, 0)));
+            const gas_left = @as(u64, @intCast(@max(interpreter.frame.gas_remaining, 0)));
             return CallResult.success_with_output(gas_left, interpreter.frame.output_data.items);
+        }
+        
+        /// Execute nested EVM call - used for calls from within the EVM
+        pub fn inner_call(self: *Self, params: CallParams) !CallResult {
+            // Don't reset depth to 0 for inner calls - just use call handlers
+            switch (params) {
+                .call => |p| return try self.call_regular(p),
+                .callcode => |p| return try self.callcode_handler(p),
+                .delegatecall => |p| return try self.delegatecall_handler(p),
+                .staticcall => |p| return try self.staticcall_handler(p),
+                .create => |p| return try self.create_handler(p),
+                .create2 => |p| return try self.create2_handler(p),
+            }
         }
 
         // ===== Host Interface Implementation =====

@@ -1183,6 +1183,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             // 2. Dynamic gas for data
             const byte_cost = GasConstants.LogDataGas * size_usize;
             if (byte_cost > std.math.maxInt(GasType)) {
+                @branchHint(.unlikely);
                 return Error.OutOfGas;
             }
             if (self.gas_remaining < @as(GasType, @intCast(byte_cost))) {
@@ -2643,7 +2644,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// REVERT opcode (0xFD) - Halt execution reverting state changes
         /// Halts execution, reverts state changes, and returns data from memory.
         /// Stack: [offset, size] → []
-        pub fn op_revert(self: *Self) Error!void {
+        pub fn revert(self: *Self) Error!void {
             const size = try self.stack.pop();
             const offset = try self.stack.pop();
 
@@ -2683,7 +2684,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// SELFDESTRUCT opcode (0xFF) - Mark contract for destruction
         /// Marks the current contract for destruction and transfers its balance to the recipient.
         /// Stack: [recipient] → []
-        pub fn op_selfdestruct(self: *Self) Error!void {
+        pub fn selfdestruct(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
 
             // Check static context - SELFDESTRUCT is not allowed in static context
@@ -6431,7 +6432,7 @@ test "Frame op_revert basic functionality" {
     try frame.stack.push(0); // size
 
     // Execute REVERT - should terminate with STOP (would be REVERT error in practice)
-    const result = frame.op_revert();
+    const result = frame.revert();
     try std.testing.expectError(error.STOP, result);
 }
 
@@ -6456,7 +6457,7 @@ test "Frame op_selfdestruct basic functionality" {
     try frame.stack.push(to_u256(recipient_addr));
 
     // Execute SELFDESTRUCT - should terminate with STOP
-    const result = frame.op_selfdestruct();
+    const result = frame.selfdestruct();
     try std.testing.expectError(error.STOP, result);
 
     // Verify destruction was recorded
@@ -6484,7 +6485,7 @@ test "Frame op_selfdestruct static context fails" {
     try frame.stack.push(0x22); // recipient
 
     // Should fail with WriteProtection
-    try std.testing.expectError(error.WriteProtection, frame.op_selfdestruct());
+    try std.testing.expectError(error.WriteProtection, frame.selfdestruct());
 }
 
 test "Frame op_selfdestruct stack underflow" {
@@ -6501,7 +6502,7 @@ test "Frame op_selfdestruct stack underflow" {
     frame.host = host;
 
     // Empty stack - should fail
-    try std.testing.expectError(error.StackUnderflow, frame.op_selfdestruct());
+    try std.testing.expectError(error.StackUnderflow, frame.selfdestruct());
 }
 
 test "Frame system opcodes with failing host calls" {
@@ -6647,7 +6648,7 @@ test "Frame op_return and op_revert memory bounds handling" {
     try frame2.stack.push(0); // offset
     try frame2.stack.push(return_data.len); // size
 
-    const result2 = frame2.op_revert();
+    const result2 = frame2.revert();
     try std.testing.expectError(error.REVERT, result2);
 }
 

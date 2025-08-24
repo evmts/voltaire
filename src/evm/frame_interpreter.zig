@@ -8,6 +8,7 @@ const Opcode = opcode_data.Opcode;
 const primitives = @import("primitives");
 const CallParams = @import("call_params.zig").CallParams;
 const host_mod = @import("host.zig");
+const Hardfork = @import("hardfork.zig").Hardfork;
 
 /// Create a FrameInterpreter with the given configuration
 pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
@@ -130,39 +131,22 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.TLOAD)] = &op_tload_handler;
             handlers[@intFromEnum(Opcode.TSTORE)] = &op_tstore_handler;
             handlers[@intFromEnum(Opcode.MCOPY)] = &op_mcopy_handler;
-            handlers[@intFromEnum(Opcode.PUSH0)] = &push0_handler;
-            handlers[@intFromEnum(Opcode.PUSH1)] = &push1_handler;
-            handlers[@intFromEnum(Opcode.PUSH2)] = &push2_handler;
-            handlers[@intFromEnum(Opcode.PUSH3)] = &push3_handler;
-            handlers[@intFromEnum(Opcode.PUSH4)] = &push4_handler;
-            handlers[@intFromEnum(Opcode.PUSH5)] = &push5_handler;
-            handlers[@intFromEnum(Opcode.PUSH6)] = &push6_handler;
-            handlers[@intFromEnum(Opcode.PUSH7)] = &push7_handler;
-            handlers[@intFromEnum(Opcode.PUSH8)] = &push8_handler;
-            handlers[@intFromEnum(Opcode.PUSH9)] = &push9_handler;
-            handlers[@intFromEnum(Opcode.PUSH10)] = &push10_handler;
-            handlers[@intFromEnum(Opcode.PUSH11)] = &push11_handler;
-            handlers[@intFromEnum(Opcode.PUSH12)] = &push12_handler;
-            handlers[@intFromEnum(Opcode.PUSH13)] = &push13_handler;
-            handlers[@intFromEnum(Opcode.PUSH14)] = &push14_handler;
-            handlers[@intFromEnum(Opcode.PUSH15)] = &push15_handler;
-            handlers[@intFromEnum(Opcode.PUSH16)] = &push16_handler;
-            handlers[@intFromEnum(Opcode.PUSH17)] = &push17_handler;
-            handlers[@intFromEnum(Opcode.PUSH18)] = &push18_handler;
-            handlers[@intFromEnum(Opcode.PUSH19)] = &push19_handler;
-            handlers[@intFromEnum(Opcode.PUSH20)] = &push20_handler;
-            handlers[@intFromEnum(Opcode.PUSH21)] = &push21_handler;
-            handlers[@intFromEnum(Opcode.PUSH22)] = &push22_handler;
-            handlers[@intFromEnum(Opcode.PUSH23)] = &push23_handler;
-            handlers[@intFromEnum(Opcode.PUSH24)] = &push24_handler;
-            handlers[@intFromEnum(Opcode.PUSH25)] = &push25_handler;
-            handlers[@intFromEnum(Opcode.PUSH26)] = &push26_handler;
-            handlers[@intFromEnum(Opcode.PUSH27)] = &push27_handler;
-            handlers[@intFromEnum(Opcode.PUSH28)] = &push28_handler;
-            handlers[@intFromEnum(Opcode.PUSH29)] = &push29_handler;
-            handlers[@intFromEnum(Opcode.PUSH30)] = &push30_handler;
-            handlers[@intFromEnum(Opcode.PUSH31)] = &push31_handler;
-            handlers[@intFromEnum(Opcode.PUSH32)] = &push32_handler;
+            // Generate PUSH handlers using comptime
+            const push_handlers = comptime blk: {
+                var result: [33]HandlerFnType = undefined;
+                var i: u8 = 0;
+                while (i <= 32) : (i += 1) {
+                    result[i] = generatePushHandler(i);
+                }
+                break :blk result;
+            };
+            
+            // Assign PUSH handlers
+            comptime var push_i: u8 = 0;
+            inline while (push_i <= 32) : (push_i += 1) {
+                const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.PUSH0) + push_i));
+                handlers[@intFromEnum(opcode)] = &push_handlers[push_i];
+            }
             handlers[@intFromEnum(Opcode.DUP1)] = &dup1_handler;
             handlers[@intFromEnum(Opcode.DUP2)] = &dup2_handler;
             handlers[@intFromEnum(Opcode.DUP3)] = &dup3_handler;
@@ -229,7 +213,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_POINTER)] = &push_jumpi_pointer_handler;
 
             // Use getOrAnalyze which properly sets the bytecode before analyzing
-            const plan_ptr = try planner.getOrAnalyze(bytecode, handlers);
+            const plan_ptr = try planner.getOrAnalyze(bytecode, handlers, Hardfork.DEFAULT);
             const plan = plan_ptr.*;
             
             return Self{
@@ -344,7 +328,33 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
         }
         
-        // Individual PUSH handlers
+        // Comptime PUSH handler generation
+        fn generatePushHandler(comptime n: u8) HandlerFnType {
+            const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.PUSH0) + n));
+            return struct {
+                fn handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+                    const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+                    const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+                    const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+                    
+                    if (n == 0) {
+                        // PUSH0 pushes zero without metadata
+                        try self.stack.push(0);
+                    } else {
+                        // PUSH1-32 get value from metadata
+                        const value = @as(WordType, plan_ptr.getMetadata(&interpreter.instruction_idx, opcode));
+                        try self.stack.push(value);
+                    }
+                    
+                    const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, opcode);
+                    return dispatchNext(next_handler, self, plan_ptr);
+                }
+            }.handler;
+        }
+        
+        // PUSH handlers are now generated at comptime in the init function
+        
+        // Individual PUSH handlers (old implementations for reference)
         fn push0_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
@@ -3025,12 +3035,12 @@ test "FrameInterpreter CREATE operation - memory expansion cost" {
     defer mock_host.deinit();
     interpreter.frame.host = mock_host.to_host();
     
-    const initial_gas = interpreter.frame.gas_manager.gasRemaining();
+    const initial_gas = @max(interpreter.frame.gas_remaining, 0);
     try interpreter.interpret();
     
     // Verify gas was consumed for memory expansion
     // CREATE base cost (32000) + init code cost (32 * 200) + memory expansion
-    const gas_remaining = interpreter.frame.gas_manager.gasRemaining();
+    const gas_remaining = @max(interpreter.frame.gas_remaining, 0);
     const gas_used = initial_gas - gas_remaining;
     try std.testing.expect(gas_used > 32000 + 6400); // More than base + init code cost
 }
@@ -3719,9 +3729,9 @@ test "FrameInterpreter gas consumption - instruction costs" {
     var interpreter = try FrameInterpreterType.init(allocator, &bytecode, initial_gas, void{});
     defer interpreter.deinit(allocator);
     
-    const start_gas = interpreter.frame.gas_manager.gasRemaining();
+    const start_gas = @max(interpreter.frame.gas_remaining, 0);
     try interpreter.interpret();
-    const end_gas = interpreter.frame.gas_manager.gasRemaining();
+    const end_gas = @max(interpreter.frame.gas_remaining, 0);
     
     // Gas should have been consumed
     try std.testing.expect(end_gas < start_gas);
@@ -3993,7 +4003,7 @@ test "FrameInterpreter multiple execution attempts" {
     // Second execution attempt should work (interpreter resets state)
     // Note: This may not be the intended behavior, but we test current behavior
     const initial_stack_len = interpreter.frame.stack.size();
-    const initial_gas = interpreter.frame.gas_manager.gasRemaining();
+    const initial_gas = @max(interpreter.frame.gas_remaining, 0);
     
     // Verify that state is as expected after first execution
     try std.testing.expectEqual(@as(usize, 1), initial_stack_len);
@@ -4445,7 +4455,7 @@ test "FrameInterpreter handler error propagation - gas exhaustion" {
     try std.testing.expectError(error.OutOfGas, interpreter.interpret());
     
     // Gas should be negative or zero
-    try std.testing.expect(interpreter.frame.gas_manager.isOutOfGas());
+    try std.testing.expect(interpreter.frame.gas_remaining <= 0);
 }
 
 // 6. MULTI-CONFIGURATION INTEGRATION ⭐⭐⭐⭐
