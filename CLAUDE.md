@@ -553,7 +553,7 @@ zig test src/file.zig                       # Wrong - will fail with import erro
 
 ### Running Official EVM Benchmarks
 
-The project includes official EVM benchmarks in `bench/official/` for performance testing:
+The project includes official EVM benchmarks in `bench/` for performance testing:
 
 1. **Install hyperfine** (required):
    ```bash
@@ -568,14 +568,14 @@ The project includes official EVM benchmarks in `bench/official/` for performanc
    zig build build-orchestrator
    
    # EthereumJS dependencies (required for comparison benchmarks)
-   cd bench/official/evms/ethereumjs && bun install && cd ../../../..
+   cd bench/evms/ethereumjs && bun install && cd ../../../..
    ```
 
 3. **Run benchmarks**:
    ```bash
    # Single benchmark example
    hyperfine --runs 10 --warmup 3 \
-     "zig-out/bin/evm-runner --contract-code-path bench/official/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
+     "zig-out/bin/evm-runner --contract-code-path bench/cases/ten-thousand-hashes/bytecode.txt --calldata 0x30627b7c"
    
    # Cross-EVM comparison benchmarks
    ./zig-out/bin/orchestrator --compare --export markdown
