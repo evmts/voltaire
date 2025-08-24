@@ -2099,14 +2099,13 @@ test "Plan fuzzing with random bytecode generation" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        var plan = planner.create_minimal_plan(allocator, handlers) catch |err| {
+        const plan = planner.getOrAnalyze(bytecode, handlers) catch |err| {
             // Some random bytecode may be invalid, that's ok
             switch (err) {
                 error.OutOfMemory, error.InvalidBytecode, error.BytecodeTooLarge => continue,
                 else => return err,
             }
         };
-        defer plan.deinit(allocator);
         
         // Basic sanity checks
         try std.testing.expect(plan.bytecode.len > 0);
@@ -2218,7 +2217,7 @@ test "Plan memory fragmentation resistance" {
     
     // Create many small plans to test memory fragmentation
     const num_plans = 100;
-    var plans: [num_plans]Plan = undefined;
+    var plans: [num_plans]*const Planner.Plan = undefined;
     const Planner = @import("planner.zig").createPlanner(.{});
     var planners: [num_plans]Planner = undefined;
     
@@ -2237,7 +2236,7 @@ test "Plan memory fragmentation resistance" {
     for (0..num_plans) |i| {
         const PlannerType = @import("planner.zig").createPlanner(.{});
         planners[i] = try PlannerType.init(allocator, 100);
-        plans[i] = try planners[i].create_plan(allocator, handlers);
+        plans[i] = try planners[i].getOrAnalyze(&bytecode, handlers);
     }
     
     // Cleanup in reverse order to test fragmentation handling
@@ -3340,7 +3339,7 @@ test "Plan caching and lifecycle management validation" {
     for (0..num_concurrent_plans) |i| {
         const PlannerType2 = @import("planner.zig").createPlanner(.{});
         planners[i] = try PlannerType2.init(allocator, &reusable_bytecode);
-        plans[i] = try planners[i].create_plan(allocator, handlers);
+        plans[i] = try planners[i].getOrAnalyze(&bytecode, handlers);
     }
     
     // Verify all plans work independently
