@@ -1,5 +1,3 @@
-/// Comprehensive snapshot management tests for EVM journal system
-/// These tests validate the critical state reversion functionality used throughout EVM execution
 const std = @import("std");
 const testing = std.testing;
 const primitives = @import("primitives");
