@@ -77,12 +77,18 @@ test "CREATE operation deploys simple contract" {
     const contract_address = result.output[0..20].*;
     
     // Verify the contract was actually deployed
-    const deployed_account = try memory_db.get_account(contract_address);
+    const deployed_account = (try memory_db.get_account(contract_address)) orelse {
+        try testing.expect(false); // Account should exist
+        return;
+    };
     try testing.expect(deployed_account.nonce == 1); // Contract accounts start with nonce 1
     try testing.expect(!std.mem.eql(u8, &deployed_account.code_hash, &[_]u8{0} ** 32)); // Should have code hash
     
     // Verify the caller's nonce was incremented
-    const updated_caller = try memory_db.get_account(caller_address);
+    const updated_caller = (try memory_db.get_account(caller_address)) orelse {
+        try testing.expect(false); // Account should exist
+        return;
+    };
     try testing.expect(updated_caller.nonce == 1);
 }
 
@@ -140,7 +146,7 @@ test "CREATE2 operation deploys contract at deterministic address" {
     try testing.expect(result.gas_left > 0);
     try testing.expect(result.output.len == 20);
     
-    const contract_address = result.output[0..20].*;
+    _ = result.output[0..20].*;
     
     // CREATE2 with same parameters should produce same address
     var evm2_instance = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
@@ -301,8 +307,14 @@ test "CREATE operation with value transfer" {
     const contract_address = result.output[0..20].*;
     
     // Verify balance transfer
-    const updated_caller = try memory_db.get_account(caller_address);
-    const contract_account = try memory_db.get_account(contract_address);
+    const updated_caller = (try memory_db.get_account(caller_address)) orelse {
+        try testing.expect(false); // Account should exist
+        return;
+    };
+    const contract_account = (try memory_db.get_account(contract_address)) orelse {
+        try testing.expect(false); // Account should exist
+        return;
+    };
     
     try testing.expect(updated_caller.balance == initial_balance - transfer_value);
     try testing.expect(contract_account.balance == transfer_value);
