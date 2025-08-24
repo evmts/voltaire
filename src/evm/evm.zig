@@ -323,7 +323,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 params.value,
                 false, // is_static
                 snapshot_id,
-            ) catch |err| {
+            ) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
@@ -384,7 +384,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 params.value,
                 false, // is_static
                 snapshot_id,
-            ) catch |err| {
+            ) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
@@ -447,7 +447,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 0, // Value is preserved from parent context, not passed
                 false, // is_static
                 snapshot_id,
-            ) catch |err| {
+            ) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
@@ -508,7 +508,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 0, // No value in static call
                 true, // is_static = true
                 snapshot_id,
-            ) catch |err| {
+            ) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
                 // In static context, any error is a failure
                 return CallResult.failure(0);
@@ -598,7 +598,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 params.value,
                 false, // is_static
                 snapshot_id,
-            ) catch |err| {
+            ) catch {
                 self.journal.revert_to_snapshot(snapshot_id);
                 return CallResult.failure(0);
             };
