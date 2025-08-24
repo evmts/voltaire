@@ -122,6 +122,11 @@ pub fn main() !void {
     // Deploy contract first
     const deploy_address: Address = [_]u8{0} ** 19 ++ [_]u8{1};
     const code_hash = try memory_db.set_code(init_code);
+    
+    // Debug: Print deployment info
+    std.debug.print("Debug: Deploying contract at address: {x}, code_len={}, code_hash={x}\n", 
+        .{std.fmt.fmtSliceHexLower(&deploy_address), init_code.len, std.fmt.fmtSliceHexLower(&code_hash)});
+    
     try memory_db.set_account(deploy_address, evm.Account{
         .nonce = 0,
         .balance = 0,
@@ -153,6 +158,10 @@ pub fn main() !void {
         if (run_idx == 0) { // Only print for first run
             std.debug.print("Debug: success={}, gas_provided={}, gas_left={}, gas_used={}, output_len={}\n", 
                 .{result.success, 100000, result.gas_left, gas_used, result.output.len});
+            if (result.output.len > 0 and result.output.len <= 64) {
+                std.debug.print("Debug: output={x}\n", .{std.fmt.fmtSliceHexLower(result.output)});
+            }
+            std.debug.print("Debug: calldata={x}\n", .{std.fmt.fmtSliceHexLower(calldata)});
         }
         
         // Free the result output to prevent memory leak and use-after-free
