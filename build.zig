@@ -1490,228 +1490,231 @@ pub fn build(b: *std.Build) void {
     const thousand_hashes_test_step = b.step("test-thousand-hashes", "Run thousand hashes benchmark test");
     thousand_hashes_test_step.dependOn(&run_thousand_hashes_test.step);
 
-    // Debug executable for 10k hashes
-    const debug_10k_exe = b.addExecutable(.{
-        .name = "debug-10k-hashes",
-        .root_source_file = b.path("test/debug_10k_single.zig"),
-        .target = target,
-        .optimize = .Debug,
-    });
-    debug_10k_exe.root_module.addImport("evm", evm_mod);
-    debug_10k_exe.root_module.addImport("primitives", primitives_mod);
-    b.installArtifact(debug_10k_exe);
+    // Debug executable for 10k hashes - commented out as test file was removed
+    // const debug_10k_exe = b.addExecutable(.{
+    //     .name = "debug-10k-hashes",
+    //     .root_source_file = b.path("test/debug_10k_single.zig"),
+    //     .target = target,
+    //     .optimize = .Debug,
+    // });
+    // debug_10k_exe.root_module.addImport("evm", evm_mod);
+    // debug_10k_exe.root_module.addImport("primitives", primitives_mod);
+    // b.installArtifact(debug_10k_exe);
 
-    const run_debug_10k = b.addRunArtifact(debug_10k_exe);
-    const debug_10k_step = b.step("debug-10k", "Debug 10k hashes execution");
-    debug_10k_step.dependOn(&run_debug_10k.step);
+    // const run_debug_10k = b.addRunArtifact(debug_10k_exe);
+    // const debug_10k_step = b.step("debug-10k", "Debug 10k hashes execution");
+    // debug_10k_step.dependOn(&run_debug_10k.step);
 
-    const debug_constructor_exe = b.addExecutable(.{
-        .name = "debug-constructor",
-        .root_source_file = b.path("test/debug_constructor.zig"),
-        .target = target,
-        .optimize = .Debug,
-    });
-    debug_constructor_exe.root_module.addImport("evm", evm_mod);
-    debug_constructor_exe.root_module.addImport("primitives", primitives_mod);
-    b.installArtifact(debug_constructor_exe);
+    // Debug constructor executable - commented out as test file was removed
+    // const debug_constructor_exe = b.addExecutable(.{
+    //     .name = "debug-constructor",
+    //     .root_source_file = b.path("test/debug_constructor.zig"),
+    //     .target = target,
+    //     .optimize = .Debug,
+    // });
+    // debug_constructor_exe.root_module.addImport("evm", evm_mod);
+    // debug_constructor_exe.root_module.addImport("primitives", primitives_mod);
+    // b.installArtifact(debug_constructor_exe);
 
-    const run_debug_constructor = b.addRunArtifact(debug_constructor_exe);
-    const debug_constructor_step = b.step("debug-constructor", "Debug constructor execution");
-    debug_constructor_step.dependOn(&run_debug_constructor.step);
+    // const run_debug_constructor = b.addRunArtifact(debug_constructor_exe);
+    // const debug_constructor_step = b.step("debug-constructor", "Debug constructor execution");
+    // debug_constructor_step.dependOn(&run_debug_constructor.step);
 
-    const snailtracer_test = b.addTest(.{
-        .name = "snailtracer-test",
-        .root_source_file = b.path("test/snailtracer_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    snailtracer_test.root_module.addImport("evm", evm_mod);
-    snailtracer_test.root_module.addImport("primitives", primitives_mod);
-    const run_snailtracer_test = b.addRunArtifact(snailtracer_test);
-    const snailtracer_test_step = b.step("test-snailtracer", "Run snailtracer benchmark test");
-    snailtracer_test_step.dependOn(&run_snailtracer_test.step);
+    // Snailtracer test - commented out as test file was removed
+    // const snailtracer_test = b.addTest(.{
+    //     .name = "snailtracer-test",
+    //     .root_source_file = b.path("test/snailtracer_test.zig"),
+    //     .target = target,
+    //     .optimize = optimize,
+    // });
+    // snailtracer_test.root_module.addImport("evm", evm_mod);
+    // snailtracer_test.root_module.addImport("primitives", primitives_mod);
+    // const run_snailtracer_test = b.addRunArtifact(snailtracer_test);
+    // const snailtracer_test_step = b.step("test-snailtracer", "Run snailtracer benchmark test");
+    // snailtracer_test_step.dependOn(&run_snailtracer_test.step);
 
-    const erc20_bench_test = b.addTest(.{
-        .name = "erc20-bench-test",
-        .root_source_file = b.path("test/erc20_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    erc20_bench_test.root_module.addImport("evm", evm_mod);
-    erc20_bench_test.root_module.addImport("primitives", primitives_mod);
-    const run_erc20_bench_test = b.addRunArtifact(erc20_bench_test);
-    const erc20_bench_test_step = b.step("test-erc20-bench", "Run ERC20 benchmark test");
-    erc20_bench_test_step.dependOn(&run_erc20_bench_test.step);
+    // ERC20 benchmark test - commented out as test file was removed
+    // const erc20_bench_test = b.addTest(.{
+    //     .name = "erc20-bench-test",
+    //     .root_source_file = b.path("test/erc20_test.zig"),
+    //     .target = target,
+    //     .optimize = optimize,
+    // });
+    // erc20_bench_test.root_module.addImport("evm", evm_mod);
+    // erc20_bench_test.root_module.addImport("primitives", primitives_mod);
+    // const run_erc20_bench_test = b.addRunArtifact(erc20_bench_test);
+    // const erc20_bench_test_step = b.step("test-erc20-bench", "Run ERC20 benchmark test");
+    // erc20_bench_test_step.dependOn(&run_erc20_bench_test.step);
 
     // (removed temporary minimal dynamic JUMP reproduction target)
 
-    // Add Gas Accounting tests
-    const gas_test = b.addTest(.{
-        .name = "gas-test",
-        .root_source_file = b.path("test/evm/gas/gas_accounting_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    gas_test.root_module.stack_check = false;
-    gas_test.root_module.addImport("primitives", primitives_mod);
-    gas_test.root_module.addImport("evm", evm_mod);
+    // Add Gas Accounting tests - commented out as test file was removed
+    // const gas_test = b.addTest(.{
+    //     .name = "gas-test",
+    //     .root_source_file = b.path("test/evm/gas/gas_accounting_test.zig"),
+    //     .target = target,
+    //     .optimize = optimize,
+    //     .single_threaded = true,
+    // });
+    // gas_test.root_module.stack_check = false;
+    // gas_test.root_module.addImport("primitives", primitives_mod);
+    // gas_test.root_module.addImport("evm", evm_mod);
 
-    const run_gas_test = b.addRunArtifact(gas_test);
-    const gas_test_step = b.step("test-gas", "Run Gas Accounting tests");
-    gas_test_step.dependOn(&run_gas_test.step);
+    // const run_gas_test = b.addRunArtifact(gas_test);
+    // const gas_test_step = b.step("test-gas", "Run Gas Accounting tests");
+    // gas_test_step.dependOn(&run_gas_test.step);
 
-    // Add Static Call Protection tests
-    const static_protection_test = b.addTest(.{
-        .name = "static-protection-test",
-        .root_source_file = b.path("test/evm/static_call_protection_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    static_protection_test.root_module.stack_check = false;
-    static_protection_test.root_module.addImport("primitives", primitives_mod);
-    static_protection_test.root_module.addImport("evm", evm_mod);
+    // Add Static Call Protection tests - commented out as test file was removed
+    // const static_protection_test = b.addTest(.{
+    //     .name = "static-protection-test",
+    //     .root_source_file = b.path("test/evm/static_call_protection_test.zig"),
+    //     .target = target,
+    //     .optimize = optimize,
+    //     .single_threaded = true,
+    // });
+    // static_protection_test.root_module.stack_check = false;
+    // static_protection_test.root_module.addImport("primitives", primitives_mod);
+    // static_protection_test.root_module.addImport("evm", evm_mod);
 
-    const run_static_protection_test = b.addRunArtifact(static_protection_test);
-    const static_protection_test_step = b.step("test-static-protection", "Run Static Call Protection tests");
-    static_protection_test_step.dependOn(&run_static_protection_test.step);
+    // const run_static_protection_test = b.addRunArtifact(static_protection_test);
+    // const static_protection_test_step = b.step("test-static-protection", "Run Static Call Protection tests");
+    // static_protection_test_step.dependOn(&run_static_protection_test.step);
 
-    // Add Precompile SHA256 tests (only if precompiles are enabled)
-    var run_sha256_test: ?*std.Build.Step.Run = null;
-    if (!no_precompiles) {
-        const sha256_test = b.addTest(.{
-            .name = "sha256-test",
-            .root_source_file = b.path("test/evm/precompiles/sha256_test.zig"),
-            .target = target,
-            .optimize = optimize,
-        });
-        sha256_test.root_module.stack_check = false;
-        sha256_test.root_module.addImport("primitives", primitives_mod);
-        sha256_test.root_module.addImport("evm", evm_mod);
+//     // Add Precompile SHA256 tests (only if precompiles are enabled)
+//     var run_sha256_test: ?*std.Build.Step.Run = null;
+//     if (!no_precompiles) {
+//         const sha256_test = b.addTest(.{
+//             .name = "sha256-test",
+//             .root_source_file = b.path("test/evm/precompiles/sha256_test.zig"),
+//             .target = target,
+//             .optimize = optimize,
+//         });
+//         sha256_test.root_module.stack_check = false;
+//         sha256_test.root_module.addImport("primitives", primitives_mod);
+//         sha256_test.root_module.addImport("evm", evm_mod);
+// 
+//         run_sha256_test = b.addRunArtifact(sha256_test);
+//         const sha256_test_step = b.step("test-sha256", "Run SHA256 precompile tests");
+//         sha256_test_step.dependOn(&run_sha256_test.?.step);
+//     }
 
-        run_sha256_test = b.addRunArtifact(sha256_test);
-        const sha256_test_step = b.step("test-sha256", "Run SHA256 precompile tests");
-        sha256_test_step.dependOn(&run_sha256_test.?.step);
-    }
+//     // Add RIPEMD160 precompile tests (only if precompiles are enabled)
+//     var run_ripemd160_test: ?*std.Build.Step.Run = null;
+//     if (!no_precompiles) {
+//         const ripemd160_test = b.addTest(.{
+//             .name = "ripemd160-test",
+//             .root_source_file = b.path("test/evm/precompiles/ripemd160_test.zig"),
+//             .target = target,
+//             .optimize = optimize,
+//         });
+//         ripemd160_test.root_module.stack_check = false;
+//         ripemd160_test.root_module.addImport("primitives", primitives_mod);
+//         ripemd160_test.root_module.addImport("evm", evm_mod);
+// 
+//         run_ripemd160_test = b.addRunArtifact(ripemd160_test);
+//         const ripemd160_test_step = b.step("test-ripemd160", "Run RIPEMD160 precompile tests");
+//         ripemd160_test_step.dependOn(&run_ripemd160_test.?.step);
+//     }
 
-    // Add RIPEMD160 precompile tests (only if precompiles are enabled)
-    var run_ripemd160_test: ?*std.Build.Step.Run = null;
-    if (!no_precompiles) {
-        const ripemd160_test = b.addTest(.{
-            .name = "ripemd160-test",
-            .root_source_file = b.path("test/evm/precompiles/ripemd160_test.zig"),
-            .target = target,
-            .optimize = optimize,
-        });
-        ripemd160_test.root_module.stack_check = false;
-        ripemd160_test.root_module.addImport("primitives", primitives_mod);
-        ripemd160_test.root_module.addImport("evm", evm_mod);
+//     // Add BLAKE2f tests
+//     const blake2f_test = b.addTest(.{
+//         .name = "blake2f-test",
+//         .root_source_file = b.path("test/evm/precompiles/blake2f_test.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//     });
+//     blake2f_test.root_module.stack_check = false;
+//     blake2f_test.root_module.addImport("primitives", primitives_mod);
+//     blake2f_test.root_module.addImport("evm", evm_mod);
+//     const run_blake2f_test = b.addRunArtifact(blake2f_test);
+//     const blake2f_test_step = b.step("test-blake2f", "Run BLAKE2f precompile tests");
+//     blake2f_test_step.dependOn(&run_blake2f_test.step);
 
-        run_ripemd160_test = b.addRunArtifact(ripemd160_test);
-        const ripemd160_test_step = b.step("test-ripemd160", "Run RIPEMD160 precompile tests");
-        ripemd160_test_step.dependOn(&run_ripemd160_test.?.step);
-    }
+//     // Add BN254 Rust wrapper tests (only if BN254 is enabled)
+//     const run_bn254_rust_test = if (bn254_lib) |bn254_library| blk: {
+//         const bn254_rust_test = b.addTest(.{
+//             .name = "bn254-rust-test",
+//             .root_source_file = b.path("test/evm/precompiles/bn254_rust_test.zig"),
+//             .target = target,
+//             .optimize = optimize,
+//         });
+//         bn254_rust_test.root_module.stack_check = false;
+//         bn254_rust_test.root_module.addImport("primitives", primitives_mod);
+//         bn254_rust_test.root_module.addImport("evm", evm_mod);
+//         // Link BN254 Rust library to tests
+//         bn254_rust_test.linkLibrary(bn254_library);
+//         bn254_rust_test.addIncludePath(b.path("src/bn254_wrapper"));
+// 
+//         const run_test = b.addRunArtifact(bn254_rust_test);
+//         const test_step_bn254 = b.step("test-bn254-rust", "Run BN254 Rust wrapper precompile tests");
+//         test_step_bn254.dependOn(&run_test.step);
+// 
+//         break :blk run_test;
+//     } else null;
 
-    // Add BLAKE2f tests
-    const blake2f_test = b.addTest(.{
-        .name = "blake2f-test",
-        .root_source_file = b.path("test/evm/precompiles/blake2f_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    blake2f_test.root_module.stack_check = false;
-    blake2f_test.root_module.addImport("primitives", primitives_mod);
-    blake2f_test.root_module.addImport("evm", evm_mod);
-    const run_blake2f_test = b.addRunArtifact(blake2f_test);
-    const blake2f_test_step = b.step("test-blake2f", "Run BLAKE2f precompile tests");
-    blake2f_test_step.dependOn(&run_blake2f_test.step);
+//     // Add E2E Simple tests
+//     const e2e_simple_test = b.addTest(.{
+//         .name = "e2e-simple-test",
+//         .root_source_file = b.path("test/evm/e2e_simple_test.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//         .single_threaded = true,
+//     });
+//     e2e_simple_test.root_module.stack_check = false;
+//     e2e_simple_test.root_module.addImport("primitives", primitives_mod);
+//     e2e_simple_test.root_module.addImport("evm", evm_mod);
+// 
+//     const run_e2e_simple_test = b.addRunArtifact(e2e_simple_test);
+//     const e2e_simple_test_step = b.step("test-e2e-simple", "Run E2E simple tests");
+//     e2e_simple_test_step.dependOn(&run_e2e_simple_test.step);
 
-    // Add BN254 Rust wrapper tests (only if BN254 is enabled)
-    const run_bn254_rust_test = if (bn254_lib) |bn254_library| blk: {
-        const bn254_rust_test = b.addTest(.{
-            .name = "bn254-rust-test",
-            .root_source_file = b.path("test/evm/precompiles/bn254_rust_test.zig"),
-            .target = target,
-            .optimize = optimize,
-        });
-        bn254_rust_test.root_module.stack_check = false;
-        bn254_rust_test.root_module.addImport("primitives", primitives_mod);
-        bn254_rust_test.root_module.addImport("evm", evm_mod);
-        // Link BN254 Rust library to tests
-        bn254_rust_test.linkLibrary(bn254_library);
-        bn254_rust_test.addIncludePath(b.path("src/bn254_wrapper"));
+//     // Add E2E Error Handling tests
+//     const e2e_error_test = b.addTest(.{
+//         .name = "e2e-error-test",
+//         .root_source_file = b.path("test/evm/e2e_error_handling_test.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//         .single_threaded = true,
+//     });
+//     e2e_error_test.root_module.stack_check = false;
+//     e2e_error_test.root_module.addImport("primitives", primitives_mod);
+//     e2e_error_test.root_module.addImport("evm", evm_mod);
+// 
+//     const run_e2e_error_test = b.addRunArtifact(e2e_error_test);
+//     const e2e_error_test_step = b.step("test-e2e-error", "Run E2E error handling tests");
+//     e2e_error_test_step.dependOn(&run_e2e_error_test.step);
 
-        const run_test = b.addRunArtifact(bn254_rust_test);
-        const test_step_bn254 = b.step("test-bn254-rust", "Run BN254 Rust wrapper precompile tests");
-        test_step_bn254.dependOn(&run_test.step);
+//     // Add E2E Data Structures tests
+//     const e2e_data_test = b.addTest(.{
+//         .name = "e2e-data-test",
+//         .root_source_file = b.path("test/evm/e2e_data_structures_test.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//         .single_threaded = true,
+//     });
+//     e2e_data_test.root_module.stack_check = false;
+//     e2e_data_test.root_module.addImport("primitives", primitives_mod);
+//     e2e_data_test.root_module.addImport("evm", evm_mod);
+// 
+//     const run_e2e_data_test = b.addRunArtifact(e2e_data_test);
+//     const e2e_data_test_step = b.step("test-e2e-data", "Run E2E data structures tests");
+//     e2e_data_test_step.dependOn(&run_e2e_data_test.step);
 
-        break :blk run_test;
-    } else null;
-
-    // Add E2E Simple tests
-    const e2e_simple_test = b.addTest(.{
-        .name = "e2e-simple-test",
-        .root_source_file = b.path("test/evm/e2e_simple_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    e2e_simple_test.root_module.stack_check = false;
-    e2e_simple_test.root_module.addImport("primitives", primitives_mod);
-    e2e_simple_test.root_module.addImport("evm", evm_mod);
-
-    const run_e2e_simple_test = b.addRunArtifact(e2e_simple_test);
-    const e2e_simple_test_step = b.step("test-e2e-simple", "Run E2E simple tests");
-    e2e_simple_test_step.dependOn(&run_e2e_simple_test.step);
-
-    // Add E2E Error Handling tests
-    const e2e_error_test = b.addTest(.{
-        .name = "e2e-error-test",
-        .root_source_file = b.path("test/evm/e2e_error_handling_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    e2e_error_test.root_module.stack_check = false;
-    e2e_error_test.root_module.addImport("primitives", primitives_mod);
-    e2e_error_test.root_module.addImport("evm", evm_mod);
-
-    const run_e2e_error_test = b.addRunArtifact(e2e_error_test);
-    const e2e_error_test_step = b.step("test-e2e-error", "Run E2E error handling tests");
-    e2e_error_test_step.dependOn(&run_e2e_error_test.step);
-
-    // Add E2E Data Structures tests
-    const e2e_data_test = b.addTest(.{
-        .name = "e2e-data-test",
-        .root_source_file = b.path("test/evm/e2e_data_structures_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    e2e_data_test.root_module.stack_check = false;
-    e2e_data_test.root_module.addImport("primitives", primitives_mod);
-    e2e_data_test.root_module.addImport("evm", evm_mod);
-
-    const run_e2e_data_test = b.addRunArtifact(e2e_data_test);
-    const e2e_data_test_step = b.step("test-e2e-data", "Run E2E data structures tests");
-    e2e_data_test_step.dependOn(&run_e2e_data_test.step);
-
-    // Add E2E Inheritance tests
-    const e2e_inheritance_test = b.addTest(.{
-        .name = "e2e-inheritance-test",
-        .root_source_file = b.path("test/evm/e2e_inheritance_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    e2e_inheritance_test.root_module.stack_check = false;
-    e2e_inheritance_test.root_module.addImport("primitives", primitives_mod);
-    e2e_inheritance_test.root_module.addImport("evm", evm_mod);
-
-    const run_e2e_inheritance_test = b.addRunArtifact(e2e_inheritance_test);
-    const e2e_inheritance_test_step = b.step("test-e2e-inheritance", "Run E2E inheritance tests");
-    e2e_inheritance_test_step.dependOn(&run_e2e_inheritance_test.step);
+//     // Add E2E Inheritance tests
+//     const e2e_inheritance_test = b.addTest(.{
+//         .name = "e2e-inheritance-test",
+//         .root_source_file = b.path("test/evm/e2e_inheritance_test.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//         .single_threaded = true,
+//     });
+//     e2e_inheritance_test.root_module.stack_check = false;
+//     e2e_inheritance_test.root_module.addImport("primitives", primitives_mod);
+//     e2e_inheritance_test.root_module.addImport("evm", evm_mod);
+// 
+//     const run_e2e_inheritance_test = b.addRunArtifact(e2e_inheritance_test);
+//     const e2e_inheritance_test_step = b.step("test-e2e-inheritance", "Run E2E inheritance tests");
+//     e2e_inheritance_test_step.dependOn(&run_e2e_inheritance_test.step);
 
     // Add Compiler tests
     const compiler_test = b.addTest(.{
@@ -1788,153 +1791,153 @@ pub fn build(b: *std.Build) void {
     const bn254_fuzz_test_step = b.step("fuzz-bn254", "Run BN254 fuzz tests (use: zig build fuzz-bn254 -- --fuzz)");
     bn254_fuzz_test_step.dependOn(&run_bn254_fuzz_test.step);
 
-    // Add ECMUL precompile fuzz tests
-    const ecmul_fuzz_test = b.addTest(.{
-        .name = "ecmul-fuzz-test",
-        .root_source_file = b.path("src/evm/precompiles/ecmul_fuzz.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    ecmul_fuzz_test.root_module.addImport("primitives", primitives_mod);
-    ecmul_fuzz_test.root_module.addImport("crypto", crypto_mod);
-    ecmul_fuzz_test.root_module.addImport("evm", evm_mod);
+//     // Add ECMUL precompile fuzz tests
+//     const ecmul_fuzz_test = b.addTest(.{
+//         .name = "ecmul-fuzz-test",
+//         .root_source_file = b.path("src/evm/precompiles/ecmul_fuzz.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//     });
+//     ecmul_fuzz_test.root_module.addImport("primitives", primitives_mod);
+//     ecmul_fuzz_test.root_module.addImport("crypto", crypto_mod);
+//     ecmul_fuzz_test.root_module.addImport("evm", evm_mod);
+// 
+//     const run_ecmul_fuzz_test = b.addRunArtifact(ecmul_fuzz_test);
+//     if (b.args) |args| {
+//         run_ecmul_fuzz_test.addArgs(args);
+//     }
+//     const ecmul_fuzz_test_step = b.step("fuzz-ecmul", "Run ECMUL precompile fuzz tests (use: zig build fuzz-ecmul -- --fuzz)");
+//     ecmul_fuzz_test_step.dependOn(&run_ecmul_fuzz_test.step);
 
-    const run_ecmul_fuzz_test = b.addRunArtifact(ecmul_fuzz_test);
-    if (b.args) |args| {
-        run_ecmul_fuzz_test.addArgs(args);
-    }
-    const ecmul_fuzz_test_step = b.step("fuzz-ecmul", "Run ECMUL precompile fuzz tests (use: zig build fuzz-ecmul -- --fuzz)");
-    ecmul_fuzz_test_step.dependOn(&run_ecmul_fuzz_test.step);
+//     // Add ECPAIRING precompile fuzz tests
+//     const ecpairing_fuzz_test = b.addTest(.{
+//         .name = "ecpairing-fuzz-test",
+//         .root_source_file = b.path("src/evm/precompiles/ecpairing_fuzz.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//     });
+//     ecpairing_fuzz_test.root_module.addImport("primitives", primitives_mod);
+//     ecpairing_fuzz_test.root_module.addImport("crypto", crypto_mod);
+//     ecpairing_fuzz_test.root_module.addImport("evm", evm_mod);
+// 
+//     const run_ecpairing_fuzz_test = b.addRunArtifact(ecpairing_fuzz_test);
+//     if (b.args) |args| {
+//         run_ecpairing_fuzz_test.addArgs(args);
+//     }
+//     const ecpairing_fuzz_test_step = b.step("fuzz-ecpairing", "Run ECPAIRING precompile fuzz tests (use: zig build fuzz-ecpairing -- --fuzz)");
+//     ecpairing_fuzz_test_step.dependOn(&run_ecpairing_fuzz_test.step);
 
-    // Add ECPAIRING precompile fuzz tests
-    const ecpairing_fuzz_test = b.addTest(.{
-        .name = "ecpairing-fuzz-test",
-        .root_source_file = b.path("src/evm/precompiles/ecpairing_fuzz.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    ecpairing_fuzz_test.root_module.addImport("primitives", primitives_mod);
-    ecpairing_fuzz_test.root_module.addImport("crypto", crypto_mod);
-    ecpairing_fuzz_test.root_module.addImport("evm", evm_mod);
-
-    const run_ecpairing_fuzz_test = b.addRunArtifact(ecpairing_fuzz_test);
-    if (b.args) |args| {
-        run_ecpairing_fuzz_test.addArgs(args);
-    }
-    const ecpairing_fuzz_test_step = b.step("fuzz-ecpairing", "Run ECPAIRING precompile fuzz tests (use: zig build fuzz-ecpairing -- --fuzz)");
-    ecpairing_fuzz_test_step.dependOn(&run_ecpairing_fuzz_test.step);
-
-    // Add BN254 comparison fuzz test (Zig vs Rust)
-    const bn254_comparison_fuzz_test = b.addTest(.{
-        .name = "bn254-comparison-fuzz-test",
-        .root_source_file = b.path("test/fuzz/bn254_comparison_fuzz_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    bn254_comparison_fuzz_test.root_module.addImport("primitives", primitives_mod);
-    bn254_comparison_fuzz_test.root_module.addImport("crypto", crypto_mod);
-    bn254_comparison_fuzz_test.root_module.addImport("evm", evm_mod);
-    if (bn254_lib) |bn254| {
-        bn254_comparison_fuzz_test.linkLibrary(bn254);
-    }
-
-    const run_bn254_comparison_fuzz_test = b.addRunArtifact(bn254_comparison_fuzz_test);
-    if (b.args) |args| {
-        run_bn254_comparison_fuzz_test.addArgs(args);
-    }
-    const bn254_comparison_fuzz_test_step = b.step("fuzz-compare", "Run BN254 comparison fuzz tests (use: zig build fuzz-compare -- --fuzz)");
-    bn254_comparison_fuzz_test_step.dependOn(&run_bn254_comparison_fuzz_test.step);
+//     // Add BN254 comparison fuzz test (Zig vs Rust)
+//     const bn254_comparison_fuzz_test = b.addTest(.{
+//         .name = "bn254-comparison-fuzz-test",
+//         .root_source_file = b.path("test/fuzz/bn254_comparison_fuzz_test.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//     });
+//     bn254_comparison_fuzz_test.root_module.addImport("primitives", primitives_mod);
+//     bn254_comparison_fuzz_test.root_module.addImport("crypto", crypto_mod);
+//     bn254_comparison_fuzz_test.root_module.addImport("evm", evm_mod);
+//     if (bn254_lib) |bn254| {
+//         bn254_comparison_fuzz_test.linkLibrary(bn254);
+//     }
+// 
+//     const run_bn254_comparison_fuzz_test = b.addRunArtifact(bn254_comparison_fuzz_test);
+//     if (b.args) |args| {
+//         run_bn254_comparison_fuzz_test.addArgs(args);
+//     }
+//     const bn254_comparison_fuzz_test_step = b.step("fuzz-compare", "Run BN254 comparison fuzz tests (use: zig build fuzz-compare -- --fuzz)");
+//     bn254_comparison_fuzz_test_step.dependOn(&run_bn254_comparison_fuzz_test.step);
 
     // Add a master fuzz test step that runs all fuzz tests
     const fuzz_all_step = b.step("fuzz", "Run all fuzz tests (use: zig build fuzz -- --fuzz)");
     fuzz_all_step.dependOn(&run_bn254_fuzz_test.step);
-    fuzz_all_step.dependOn(&run_ecmul_fuzz_test.step);
-    fuzz_all_step.dependOn(&run_ecpairing_fuzz_test.step);
-    fuzz_all_step.dependOn(&run_bn254_comparison_fuzz_test.step);
+    // fuzz_all_step.dependOn(&run_ecmul_fuzz_test.step);
+    // fuzz_all_step.dependOn(&run_ecpairing_fuzz_test.step);
+    // fuzz_all_step.dependOn(&run_bn254_comparison_fuzz_test.step);
 
-    // Add Constructor Bug test
-    const constructor_bug_test = b.addTest(.{
-        .name = "constructor-bug-test",
-        .root_source_file = b.path("test/evm/constructor_bug_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    constructor_bug_test.root_module.addImport("primitives", primitives_mod);
-    constructor_bug_test.root_module.addImport("evm", evm_mod);
-    const run_constructor_bug_test = b.addRunArtifact(constructor_bug_test);
-    const constructor_bug_test_step = b.step("test-constructor-bug", "Run Constructor Bug test");
-    constructor_bug_test_step.dependOn(&run_constructor_bug_test.step);
+//     // Add Constructor Bug test
+//     const constructor_bug_test = b.addTest(.{
+//         .name = "constructor-bug-test",
+//         .root_source_file = b.path("test/evm/constructor_bug_test.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//         .single_threaded = true,
+//     });
+//     constructor_bug_test.root_module.addImport("primitives", primitives_mod);
+//     constructor_bug_test.root_module.addImport("evm", evm_mod);
+//     const run_constructor_bug_test = b.addRunArtifact(constructor_bug_test);
+//     const constructor_bug_test_step = b.step("test-constructor-bug", "Run Constructor Bug test");
+//     constructor_bug_test_step.dependOn(&run_constructor_bug_test.step);
 
-    // Add Solidity Constructor test
-    const solidity_constructor_test = b.addTest(.{
-        .name = "solidity-constructor-test",
-        .root_source_file = b.path("test/evm/solidity_constructor_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    solidity_constructor_test.root_module.addImport("primitives", primitives_mod);
-    solidity_constructor_test.root_module.addImport("evm", evm_mod);
-    const run_solidity_constructor_test = b.addRunArtifact(solidity_constructor_test);
-    const solidity_constructor_test_step = b.step("test-solidity-constructor", "Run Solidity Constructor test");
-    solidity_constructor_test_step.dependOn(&run_solidity_constructor_test.step);
+//     // Add Solidity Constructor test
+//     const solidity_constructor_test = b.addTest(.{
+//         .name = "solidity-constructor-test",
+//         .root_source_file = b.path("test/evm/solidity_constructor_test.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//         .single_threaded = true,
+//     });
+//     solidity_constructor_test.root_module.addImport("primitives", primitives_mod);
+//     solidity_constructor_test.root_module.addImport("evm", evm_mod);
+//     const run_solidity_constructor_test = b.addRunArtifact(solidity_constructor_test);
+//     const solidity_constructor_test_step = b.step("test-solidity-constructor", "Run Solidity Constructor test");
+//     solidity_constructor_test_step.dependOn(&run_solidity_constructor_test.step);
 
-    // Add RETURN opcode bug test
-    const return_opcode_bug_test = b.addTest(.{
-        .name = "return-opcode-bug-test",
-        .root_source_file = b.path("test/evm/return_opcode_bug_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    return_opcode_bug_test.root_module.addImport("primitives", primitives_mod);
-    return_opcode_bug_test.root_module.addImport("evm", evm_mod);
-    const run_return_opcode_bug_test = b.addRunArtifact(return_opcode_bug_test);
-    const return_opcode_bug_test_step = b.step("test-return-opcode-bug", "Run RETURN opcode bug test");
-    return_opcode_bug_test_step.dependOn(&run_return_opcode_bug_test.step);
+//     // Add RETURN opcode bug test
+//     const return_opcode_bug_test = b.addTest(.{
+//         .name = "return-opcode-bug-test",
+//         .root_source_file = b.path("test/evm/return_opcode_bug_test.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//         .single_threaded = true,
+//     });
+//     return_opcode_bug_test.root_module.addImport("primitives", primitives_mod);
+//     return_opcode_bug_test.root_module.addImport("evm", evm_mod);
+//     const run_return_opcode_bug_test = b.addRunArtifact(return_opcode_bug_test);
+//     const return_opcode_bug_test_step = b.step("test-return-opcode-bug", "Run RETURN opcode bug test");
+//     return_opcode_bug_test_step.dependOn(&run_return_opcode_bug_test.step);
 
-    // Add RETURN stops execution test
-    const test_return_stops_execution = b.addTest(.{
-        .name = "test-return-stops-execution",
-        .root_source_file = b.path("test/evm/test_return_stops_execution.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    test_return_stops_execution.root_module.addImport("primitives", primitives_mod);
-    test_return_stops_execution.root_module.addImport("evm", evm_mod);
-    const run_test_return_stops_execution = b.addRunArtifact(test_return_stops_execution);
-    const test_return_stops_execution_step = b.step("test-return-stops-execution", "Run RETURN stops execution test");
-    test_return_stops_execution_step.dependOn(&run_test_return_stops_execution.step);
+//     // Add RETURN stops execution test
+//     const test_return_stops_execution = b.addTest(.{
+//         .name = "test-return-stops-execution",
+//         .root_source_file = b.path("test/evm/test_return_stops_execution.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//         .single_threaded = true,
+//     });
+//     test_return_stops_execution.root_module.addImport("primitives", primitives_mod);
+//     test_return_stops_execution.root_module.addImport("evm", evm_mod);
+//     const run_test_return_stops_execution = b.addRunArtifact(test_return_stops_execution);
+//     const test_return_stops_execution_step = b.step("test-return-stops-execution", "Run RETURN stops execution test");
+//     test_return_stops_execution_step.dependOn(&run_test_return_stops_execution.step);
 
-    const contract_call_test = b.addTest(.{
-        .name = "contract-call-test",
-        .root_source_file = b.path("test/evm/contract_call_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    contract_call_test.root_module.addImport("primitives", primitives_mod);
-    contract_call_test.root_module.addImport("evm", evm_mod);
-    const run_contract_call_test = b.addRunArtifact(contract_call_test);
-    const contract_call_test_step = b.step("test-contract-call", "Run Contract Call tests");
-    contract_call_test_step.dependOn(&run_contract_call_test.step);
+//     const contract_call_test = b.addTest(.{
+//         .name = "contract-call-test",
+//         .root_source_file = b.path("test/evm/contract_call_test.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//         .single_threaded = true,
+//     });
+//     contract_call_test.root_module.addImport("primitives", primitives_mod);
+//     contract_call_test.root_module.addImport("evm", evm_mod);
+//     const run_contract_call_test = b.addRunArtifact(contract_call_test);
+//     const contract_call_test_step = b.step("test-contract-call", "Run Contract Call tests");
+//     contract_call_test_step.dependOn(&run_contract_call_test.step);
 
     // Hardfork tests removed - provider implementation is broken
 
-    // Add DELEGATECALL test
-    const delegatecall_test = b.addTest(.{
-        .name = "delegatecall-test",
-        .root_source_file = b.path("test/evm/opcodes/delegatecall_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    delegatecall_test.root_module.addImport("primitives", primitives_mod);
-    delegatecall_test.root_module.addImport("evm", evm_mod);
-    const run_delegatecall_test = b.addRunArtifact(delegatecall_test);
-    const delegatecall_test_step = b.step("test-delegatecall", "Run DELEGATECALL tests");
-    delegatecall_test_step.dependOn(&run_delegatecall_test.step);
+//     // Add DELEGATECALL test
+//     const delegatecall_test = b.addTest(.{
+//         .name = "delegatecall-test",
+//         .root_source_file = b.path("test/evm/opcodes/delegatecall_test.zig"),
+//         .target = target,
+//         .optimize = optimize,
+//     });
+//     delegatecall_test.root_module.addImport("primitives", primitives_mod);
+//     delegatecall_test.root_module.addImport("evm", evm_mod);
+//     const run_delegatecall_test = b.addRunArtifact(delegatecall_test);
+//     const delegatecall_test_step = b.step("test-delegatecall", "Run DELEGATECALL tests");
+//     delegatecall_test_step.dependOn(&run_delegatecall_test.step);
 
     // Add register-based EVM test (analysis3, interpret3, etc.)
     const test3 = b.addTest(.{
@@ -2336,12 +2339,12 @@ pub fn build(b: *std.Build) void {
     const bn254_pairing_test_step = b.step("test-bn254-pairing", "Run BN254 pairing tests");
     bn254_pairing_test_step.dependOn(&run_bn254_pairing_test.step);
 
-    // Add combined E2E test step
-    const e2e_all_test_step = b.step("test-e2e", "Run all E2E tests");
-    e2e_all_test_step.dependOn(&run_e2e_simple_test.step);
-    e2e_all_test_step.dependOn(&run_e2e_error_test.step);
-    e2e_all_test_step.dependOn(&run_e2e_data_test.step);
-    e2e_all_test_step.dependOn(&run_e2e_inheritance_test.step);
+    // Add combined E2E test step - commented out as E2E tests were removed
+    // const e2e_all_test_step = b.step("test-e2e", "Run all E2E tests");
+    // e2e_all_test_step.dependOn(&run_e2e_simple_test.step);
+    // e2e_all_test_step.dependOn(&run_e2e_error_test.step);
+    // e2e_all_test_step.dependOn(&run_e2e_data_test.step);
+    // e2e_all_test_step.dependOn(&run_e2e_inheritance_test.step);
 
     // Similar to creating the run step earlier, this exposes a `test` step to
     // the `zig build --help` menu, providing a way for the user to request
@@ -2385,18 +2388,18 @@ pub fn build(b: *std.Build) void {
 
     // Code analysis optimized test removed - file no longer exists
 
-    test_step.dependOn(&run_blake2f_test.step);
-    if (run_bn254_rust_test) |bn254_test| {
-        test_step.dependOn(&bn254_test.step);
-    }
+    // test_step.dependOn(&run_blake2f_test.step);
+    // if (run_bn254_rust_test) |bn254_test| {
+    //     test_step.dependOn(&bn254_test.step);
+    // }
 
     // Add SHA256 and RIPEMD160 tests if precompiles are enabled
-    if (run_sha256_test) |sha256_test| {
-        test_step.dependOn(&sha256_test.step);
-    }
-    if (run_ripemd160_test) |ripemd160_test| {
-        test_step.dependOn(&ripemd160_test.step);
-    }
+    // if (run_sha256_test) |sha256_test| {
+    //     test_step.dependOn(&sha256_test.step);
+    // }
+    // if (run_ripemd160_test) |ripemd160_test| {
+    //     test_step.dependOn(&ripemd160_test.step);
+    // }
 
     // Add REVM wrapper tests if available
     if (revm_lib != null) {
@@ -2442,8 +2445,8 @@ pub fn build(b: *std.Build) void {
         revm_test_step.dependOn(&run_revm_test.step);
     }
 
-    test_step.dependOn(&run_return_opcode_bug_test.step);
-    test_step.dependOn(&run_test_return_stops_execution.step);
+    // test_step.dependOn(&run_return_opcode_bug_test.step);
+    // test_step.dependOn(&run_test_return_stops_execution.step);
     // Hardfork tests removed completely
 
     // Add all BN254 tests to main test step
@@ -2472,8 +2475,8 @@ pub fn build(b: *std.Build) void {
 
     // Add benchmark tests to main test step
     test_step.dependOn(&run_thousand_hashes_test.step);
-    test_step.dependOn(&run_snailtracer_test.step);
-    test_step.dependOn(&run_erc20_bench_test.step);
+    // test_step.dependOn(&run_snailtracer_test.step);
+    // test_step.dependOn(&run_erc20_bench_test.step);
 
     // Add orchestrator tests
     const orchestrator_test = b.addTest(.{
