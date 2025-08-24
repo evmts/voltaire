@@ -230,6 +230,11 @@ export class WasmMemory {
 export class WasmLoader {
   private wasmModule: GuillotineWasm | null = null;
   private memory: WasmMemory | null = null;
+  public exports: GuillotineWasm | null = null;
+  public memoryViews = {
+    getUint8: () => new Uint8Array(0),
+    getUint32: () => new Uint32Array(0),
+  };
 
   /**
    * Load the WASM module
@@ -262,7 +267,14 @@ export class WasmLoader {
     });
 
     this.wasmModule = wasmModule.instance.exports as GuillotineWasm;
+    this.exports = this.wasmModule;
     this.memory = new WasmMemory(this.wasmModule.memory, this.wasmModule);
+    
+    // Update memory views
+    this.memoryViews = {
+      getUint8: () => new Uint8Array(this.wasmModule!.memory.buffer),
+      getUint32: () => new Uint32Array(this.wasmModule!.memory.buffer),
+    };
 
     // Initialize the EVM
     const result = this.wasmModule.guillotine_init();
@@ -274,11 +286,11 @@ export class WasmLoader {
   /**
    * Get the WASM module
    */
-  getWasm(): GuillotineWasm {
+  getWasm(): any {
     if (!this.wasmModule) {
       throw new Error('WASM module not loaded. Call load() first.');
     }
-    return this.wasmModule;
+    return this;
   }
 
   /**
@@ -299,6 +311,58 @@ export class WasmLoader {
   }
 
   /**
+   * Allocate bytes in WASM memory
+   */
+  allocateBytes(bytes: Uint8Array): number {
+    if (!this.memory) {
+      throw new Error('WASM module not loaded');
+    }
+    return this.memory.writeBytes(bytes);
+  }
+
+  /**
+   * Free bytes in WASM memory
+   */
+  freeBytes(ptr: number): void {
+    if (!this.memory) {
+      throw new Error('WASM module not loaded');
+    }
+    // In our case, we don't track size, so we'll just no-op for now
+    // Real implementation would track allocations
+  }
+
+  /**
+   * Read bytes from WASM memory
+   */
+  readBytes(ptr: number, length: number): Uint8Array {
+    if (!this.memory) {
+      throw new Error('WASM module not loaded');
+    }
+    return this.memory.readBytes(ptr, length);
+  }
+
+  /**
+   * Write bytes to WASM memory
+   */
+  writeBytes(ptr: number, bytes: Uint8Array): void {
+    if (!this.memory) {
+      throw new Error('WASM module not loaded');
+    }
+    const buffer = this.memory.getBuffer();
+    buffer.set(bytes, ptr);
+  }
+
+  /**
+   * Read string from WASM memory
+   */
+  readString(ptr: number): string {
+    if (!this.memory) {
+      throw new Error('WASM module not loaded');
+    }
+    return this.memory.readString(ptr);
+  }
+
+  /**
    * Cleanup the WASM module
    */
   cleanup(): void {
@@ -306,6 +370,7 @@ export class WasmLoader {
       this.wasmModule.guillotine_deinit();
       this.wasmModule = null;
       this.memory = null;
+      this.exports = null;
     }
   }
 
@@ -343,6 +408,13 @@ export function getWasmLoader(): WasmLoader {
     globalLoader = new WasmLoader();
   }
   return globalLoader;
+}
+
+/**
+ * Set the global WASM loader instance (for testing)
+ */
+export function setWasmLoader(loader: WasmLoader | any): void {
+  globalLoader = loader;
 }
 
 /**
