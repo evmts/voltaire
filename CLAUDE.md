@@ -640,6 +640,186 @@ This will enable all debug logging statements in the code being tested, which is
 
 Creating .bak files or commenting out code/tests demonstrates unprofessional development practices and violates our source control principles.
 
+## EVM Architecture and Development Guidelines
+
+### EVM Module Structure
+
+The EVM implementation follows a modular architecture with clear separation of concerns:
+
+#### Core Components
+- **Evm (evm.zig)**: Main virtual machine orchestrating execution
+- **Frame/StackFrame**: Execution contexts for calls and creates
+- **Stack**: 256-bit word stack (max 1024 elements)
+- **Memory**: Byte-addressable memory with hierarchical isolation
+- **State**: Account and storage management with journaling
+
+#### Key Design Patterns
+
+1. **Strong Error Types**: Every component has specific error types
+   ```zig
+   pub const MemoryError = error{
+       OutOfMemory,
+       InvalidOffset,
+       MemoryLimitExceeded,
+       // ... specific errors
+   };
+   ```
+
+2. **Unsafe Operations for Performance**: 
+   - Jump table validates stack requirements
+   - Opcodes use `_unsafe` variants for speed
+   ```zig
+   const top = frame.stack.pop_unsafe(); // Bounds already checked
+   ```
+
+3. **Comprehensive Documentation**: Every opcode includes:
+   - Stack input/output specification
+   - Gas costs
+   - Execution steps
+   - Examples
+
+4. **Cache-Conscious Field Layout**: Structs organized by access patterns
+   ```zig
+   // Hot fields together (cache line 1)
+   stack: Stack,
+   pc: u32,
+   gas_remaining: i64,
+   
+   // Cold fields together (later cache lines)
+   tracer: ?std.io.AnyWriter,
+   ```
+
+### EVM-Specific Coding Standards
+
+1. **Opcode Implementation Pattern**:
+   ```zig
+   pub fn op_example(frame: *Frame) ExecutionError.Error!void {
+       // Pop operands (validated by jump table)
+       const b = frame.stack.pop_unsafe();
+       const a = frame.stack.peek_unsafe();
+       
+       // Perform operation
+       const result = /* operation logic */;
+       
+       // Update stack
+       frame.stack.set_top_unsafe(result);
+   }
+   ```
+
+2. **Memory Management in EVM**:
+   - Use checkpoint system for nested calls
+   - Shared buffer with lazy expansion
+   - Always calculate gas before expansion
+   ```zig
+   const checkpoint = memory.get_checkpoint();
+   const child_memory = try memory.init_child_memory(checkpoint);
+   defer child_memory.deinit();
+   ```
+
+3. **Error Handling Philosophy**:
+   - Normal termination (STOP, RETURN) are errors for control flow
+   - Real errors indicate failure conditions
+   - Database errors are propagated from state interface
+   ```zig
+   return switch (err) {
+       Error.STOP => RunResult{ .success = output },
+       Error.REVERT => RunResult{ .revert = output },
+       else => RunResult{ .failure = err },
+   };
+   ```
+
+4. **Gas Calculation Rules**:
+   - Check gas before operations
+   - Use wrapping arithmetic for gas costs
+   - Track gas as i64 (negative = out of gas)
+   ```zig
+   frame.gas_remaining -= cost;
+   if (frame.gas_remaining < 0) return error.OutOfGas;
+   ```
+
+### EVM Testing Patterns
+
+1. **In-File Tests**: All unit tests colocated with implementation
+2. **Fuzz Testing**: Use for boundary conditions and edge cases
+3. **No Test Abstractions**: Each test is self-contained
+4. **Test Categories**:
+   - Basic operations
+   - Edge cases (overflow, underflow)
+   - Gas consumption
+   - Error conditions
+
+### Performance Considerations
+
+1. **Jump Table Dispatch**: Opcodes dispatched via function pointers
+2. **Analysis Caching**: Code analysis cached for nested calls
+3. **Memory Pooling**: Frame pool for temporary allocations
+4. **Inline Hot Paths**: Critical opcodes can be inlined
+
+### Module Dependencies
+
+When working with EVM modules:
+- Import from module system, not relative paths
+- Use full type paths for clarity
+```zig
+const Address = @import("primitives").Address.Address;
+const ExecutionError = @import("execution/execution_error.zig");
+```
+
+### EVM Module Organization
+
+The EVM is organized into functional modules:
+
+1. **Core Execution** (`src/evm/`):
+   - `evm.zig` - Main VM with Host interface
+   - `stack_frame.zig` - Execution contexts
+   - `interpret2.zig` - Tailcall interpreter
+
+2. **Opcodes** (`src/evm/execution/`):
+   - `arithmetic.zig` - ADD, MUL, DIV, MOD
+   - `stack.zig` - PUSH, POP, DUP, SWAP
+   - `memory.zig` - MLOAD, MSTORE, MSIZE
+   - `storage.zig` - SLOAD, SSTORE
+   - `control.zig` - JUMP, JUMPI, PC, STOP
+   - `system.zig` - CALL, CREATE, RETURN
+   - `crypto.zig` - KECCAK256
+   - `log.zig` - LOG0-LOG4
+
+3. **State Management** (`src/evm/state/`):
+   - `state.zig` - Account and storage state
+   - `database_interface.zig` - Pluggable storage
+   - `journal.zig` - Revertible state changes
+   - `memory_database.zig` - In-memory implementation
+
+4. **Analysis** (`src/evm/`):
+   - `analysis2.zig` - Jump destination validation
+   - `jumpdest_validation.zig` - JUMPDEST analysis
+   - `bitvec.zig` - Efficient jump tracking
+
+5. **Precompiles** (`src/evm/precompiles/`):
+   - Standard Ethereum precompiled contracts
+   - Each with gas calculation and implementation
+
+### Working with EVM State
+
+1. **Database Interface Pattern**:
+   ```zig
+   pub const DatabaseInterface = struct {
+       get_account: *const fn(self: *anyopaque, address: Address) DatabaseError!Account,
+       set_account: *const fn(self: *anyopaque, address: Address, account: Account) DatabaseError!void,
+       // ... other methods
+   };
+   ```
+
+2. **Journaling for Reverts**:
+   - All state changes are journaled
+   - Snapshots enable nested transaction rollback
+   - Self-destruct and created contracts tracked separately
+
+3. **Access List (EIP-2929/2930)**:
+   - Tracks warm/cold storage access
+   - Reduces gas costs for repeated access
+   - Pre-warming for transaction access lists
+
 ## EVM2 Frame.zig Navigation Guide
 
 ### File Structure Overview for `src/evm2/frame.zig` (~2000+ lines)
