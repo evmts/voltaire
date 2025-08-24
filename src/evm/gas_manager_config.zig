@@ -36,8 +36,9 @@ pub const GasManagerConfig = struct {
     }
 
     /// Get the maximum safe gas value that can be represented
+    /// This should be the block gas limit, not the integer type limit
     pub fn maxGas(comptime self: Self) comptime_int {
-        return std.math.maxInt(self.GasType());
+        return self.block_gas_limit;
     }
 
     /// Validate configuration at compile time
@@ -59,13 +60,13 @@ test "GasManagerConfig type selection" {
     const config_i32 = GasManagerConfig{ .block_gas_limit = 30_000_000 };
     comptime config_i32.validate();
     try std.testing.expectEqual(i32, config_i32.GasType());
-    try std.testing.expectEqual(@as(comptime_int, std.math.maxInt(i32)), config_i32.maxGas());
+    try std.testing.expectEqual(@as(comptime_int, 30_000_000), config_i32.maxGas());
 
     // Test i64 selection for large gas limits
     const config_i64 = GasManagerConfig{ .block_gas_limit = 5_000_000_000 };
     comptime config_i64.validate();
     try std.testing.expectEqual(i64, config_i64.GasType());
-    try std.testing.expectEqual(@as(comptime_int, std.math.maxInt(i64)), config_i64.maxGas());
+    try std.testing.expectEqual(@as(comptime_int, 5_000_000_000), config_i64.maxGas());
 
     // Test edge case at i32 boundary
     const config_edge = GasManagerConfig{ .block_gas_limit = std.math.maxInt(i32) };
