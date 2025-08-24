@@ -2380,7 +2380,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const size_u64 = @as(u64, @intCast(size));
             const init_code_cost = size_u64 *% 200; // 200 gas per byte of init code
             
-            try self.gas_manager.consume(init_code_cost);
+            if (self.gas_remaining < @as(@TypeOf(self.gas_remaining), @intCast(init_code_cost))) return error.OutOfGas;
+            self.gas_remaining -= @as(@TypeOf(self.gas_remaining), @intCast(init_code_cost));
             
             // Check maximum init code size (EIP-3860)
             const max_init_code_size: u64 = 49152; // 48KB
@@ -2396,7 +2397,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const end_address = offset_u64 + size_u64;
             const memory_expansion_cost = self.memory.get_expansion_cost(end_address);
             
-            try self.gas_manager.consume(memory_expansion_cost);
+            if (self.gas_remaining < @as(@TypeOf(self.gas_remaining), @intCast(memory_expansion_cost))) return error.OutOfGas;
+            self.gas_remaining -= @as(@TypeOf(self.gas_remaining), @intCast(memory_expansion_cost));
             
             // Expand memory to ensure we can read the init code
             try self.memory.ensure_capacity(@intCast(end_address));
