@@ -1,71 +1,44 @@
 # EVM Module
 
-A high-performance Ethereum Virtual Machine implementation in Zig with configurable components and advanced optimization capabilities.
+High-performance Ethereum Virtual Machine implementation in Zig.
 
-## Overview
+## Synopsis
 
-This EVM implementation is designed from the ground up with a focus on:
-- **Performance**: Cache-conscious data structures, pointer-based stack, and optimized bytecode execution
-- **Modularity**: Pluggable components allow customization for different use cases
-- **Type Safety**: Compile-time configuration and platform-specific optimizations
-- **Research-Friendly**: Easy to extend with new optimizations and execution strategies
+```zig
+const evm_config = EvmConfig{
+    .max_call_depth = 1024,
+    .frame_config = .{ .stack_size = 1024, .has_database = true },
+    .planner_strategy = .minimal,
+};
+const EvmType = Evm(evm_config);
+```
 
-## Architecture
+## Description
 
-### Core Components
+Implements EVM bytecode execution with configurable components and optimization strategies. Features cache-conscious data structures, pointer-based stack operations, and platform-specific optimizations.
 
-#### 1. **EVM** (`evm.zig`)
-The main orchestrator that manages transaction-level execution, including:
-- Call stack management
-- State journaling for reverts
-- Integration with Host for external operations
-- Access list tracking (EIP-2929)
-- Contract creation and self-destruct tracking
+## Components
 
-#### 2. **Frame** (`frame.zig`)
-Lightweight execution context for individual opcodes:
-- Stack operations (PUSH, POP, DUP, SWAP)
-- Arithmetic and bitwise operations
-- Memory operations (MLOAD, MSTORE, MCOPY)
-- Storage operations via database interface
-- Hashing and logging
+### EVM (`evm.zig`)
+Transaction-level execution orchestrator. Manages call stack, state journaling, Host integration, access list tracking (EIP-2929), and contract lifecycle.
 
-**Note**: Frame does NOT handle PC tracking, jumps, or calls - these are managed by the Plan and Host respectively.
+### Frame (`frame.zig`)
+Opcode execution context. Handles stack operations, arithmetic, memory operations, storage access via database interface, hashing, and logging. Does not manage PC tracking, jumps, or calls.
 
-#### 3. **Stack** (`stack.zig`)
-High-performance 256-bit word stack:
-- Pointer-based implementation with downward growth
-- Cache-aligned for optimal CPU performance
-- Configurable size (default 1024 elements)
-- Safe and unsafe variants for different use cases
+### Stack (`stack.zig`)
+Pointer-based 256-bit word stack. Features downward growth, cache alignment, configurable size (default 1024), safe and unsafe operation variants.
 
-#### 4. **Memory** (`memory.zig`)
-EVM-compliant byte-addressable memory:
-- Lazy expansion with word-boundary alignment
-- Hierarchical checkpoints for nested calls
-- Configurable initial capacity and limits
-- Integrated gas calculation for expansion
+### Memory (`memory.zig`)
+EVM-compliant byte-addressable memory. Supports lazy expansion with word-boundary alignment, hierarchical checkpoints for nested calls, integrated gas calculation.
 
-#### 5. **Planner** (`planner.zig`)
-Bytecode analysis and optimization engine:
-- Jump destination validation
-- Opcode fusion for common patterns
-- Constant inlining
-- Platform-specific optimizations
-- Multiple strategies: minimal, advanced, debug
+### Planner (`planner.zig`)
+Bytecode analysis and optimization. Validates jump destinations, performs opcode fusion, constant inlining, platform-specific optimizations. Supports minimal, advanced, and debug strategies.
 
-#### 6. **Frame Interpreter** (`frame_interpreter.zig`)
-Unified execution engine that works with different plan strategies:
-- Single interpreter codebase for all plan types
-- Tail-call based execution model
-- Zero-cost abstraction through unified plan interface
+### Frame Interpreter (`frame_interpreter.zig`)
+Unified execution engine. Works with different plan strategies through single codebase. Uses tail-call execution model with zero-cost abstraction.
 
-#### 7. **Database Interface** (`database_interface.zig`)
-Type-safe storage abstraction:
-- VTable-based polymorphism for zero overhead
-- Support for accounts, storage, transient storage
-- Pluggable backends (memory, file, network)
-- Rich error handling
+### Database Interface (`database_interface.zig`)
+Type-safe storage abstraction. VTable-based polymorphism with zero overhead. Supports accounts, storage, transient storage. Pluggable backends.
 
 ## Configuration
 
