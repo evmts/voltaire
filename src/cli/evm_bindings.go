@@ -4,21 +4,21 @@
 package main
 
 /*
-#cgo CFLAGS: -I../evm2
-#cgo LDFLAGS: -L../../zig-out/lib -levm2_c
+#cgo CFLAGS: -I../evm
+#cgo LDFLAGS: -L../../zig-out/lib -levm_c
 
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-// Forward declarations for the EVM2 C API
+// Forward declarations for the EVM C API
 typedef void* evm_frame_t;
 
 // Library management
-const char* evm2_version(void);
-const char* evm2_build_info(void);
-int evm2_init(void);
-void evm2_cleanup(void);
+const char* evm_version(void);
+const char* evm_build_info(void);
+int evm_init(void);
+void evm_cleanup(void);
 
 // Frame lifecycle  
 evm_frame_t evm_frame_create(const uint8_t* bytecode, size_t bytecode_len, uint64_t initial_gas);
@@ -72,8 +72,8 @@ import (
 	"unsafe"
 )
 
-// EVM2Frame wraps the C API frame for Go usage
-type EVM2Frame struct {
+// EVMFrame wraps the C API frame for Go usage
+type EVMFrame struct {
 	handle     C.evm_frame_t
 	bytecode   []byte
 	maxGas     uint64
@@ -82,11 +82,11 @@ type EVM2Frame struct {
 	breakpoints map[uint64]bool
 }
 
-// NewEVM2Frame creates a new EVM2 frame with the given bytecode and gas
-func NewEVM2Frame(bytecode []byte, initialGas uint64) (*EVM2Frame, error) {
+// NewEVMFrame creates a new EVM frame with the given bytecode and gas
+func NewEVMFrame(bytecode []byte, initialGas uint64) (*EVMFrame, error) {
 	// Initialize the library
-	if C.evm2_init() != 0 {
-		return nil, fmt.Errorf("failed to initialize EVM2 library")
+	if C.evm_init() != 0 {
+		return nil, fmt.Errorf("failed to initialize EVM library")
 	}
 
 	// Create the frame
@@ -100,7 +100,7 @@ func NewEVM2Frame(bytecode []byte, initialGas uint64) (*EVM2Frame, error) {
 		return nil, fmt.Errorf("failed to create EVM frame")
 	}
 
-	return &EVM2Frame{
+	return &EVMFrame{
 		handle:      handle,
 		bytecode:    append([]byte(nil), bytecode...), // Copy bytecode
 		maxGas:      initialGas,
@@ -111,7 +111,7 @@ func NewEVM2Frame(bytecode []byte, initialGas uint64) (*EVM2Frame, error) {
 }
 
 // Destroy cleans up the frame resources
-func (f *EVM2Frame) Destroy() {
+func (f *EVMFrame) Destroy() {
 	if f.handle != nil {
 		C.evm_frame_destroy(f.handle)
 		f.handle = nil
@@ -119,7 +119,7 @@ func (f *EVM2Frame) Destroy() {
 }
 
 // GetState returns the current EVM state compatible with the existing UI
-func (f *EVM2Frame) GetState() *EVMState {
+func (f *EVMFrame) GetState() *EVMState {
 	if f.handle == nil {
 		return &EVMState{Status: StatusError, Error: "Frame destroyed"}
 	}
@@ -177,7 +177,7 @@ func (f *EVM2Frame) GetState() *EVMState {
 }
 
 // Step executes one instruction
-func (f *EVM2Frame) Step() error {
+func (f *EVMFrame) Step() error {
 	if f.handle == nil {
 		return fmt.Errorf("frame destroyed")
 	}
@@ -267,7 +267,7 @@ func (f *EVM2Frame) Step() error {
 }
 
 // Run executes until completion or breakpoint
-func (f *EVM2Frame) Run() error {
+func (f *EVMFrame) Run() error {
 	if f.handle == nil {
 		return fmt.Errorf("frame destroyed")
 	}
@@ -283,7 +283,7 @@ func (f *EVM2Frame) Run() error {
 }
 
 // Reset resets the frame to initial state
-func (f *EVM2Frame) Reset() error {
+func (f *EVMFrame) Reset() error {
 	if f.handle == nil {
 		return fmt.Errorf("frame destroyed")
 	}
@@ -300,27 +300,27 @@ func (f *EVM2Frame) Reset() error {
 }
 
 // Pause is a no-op since we control execution externally
-func (f *EVM2Frame) Pause() {
+func (f *EVMFrame) Pause() {
 	// No-op - execution is controlled by Step() and Run() calls
 }
 
 // SetBreakpoint sets a breakpoint at the given PC
-func (f *EVM2Frame) SetBreakpoint(pc uint64) {
+func (f *EVMFrame) SetBreakpoint(pc uint64) {
 	f.breakpoints[pc] = true
 }
 
 // ClearBreakpoint clears a breakpoint at the given PC
-func (f *EVM2Frame) ClearBreakpoint(pc uint64) {
+func (f *EVMFrame) ClearBreakpoint(pc uint64) {
 	delete(f.breakpoints, pc)
 }
 
 // IsBreakpoint checks if there's a breakpoint at the given PC
-func (f *EVM2Frame) IsBreakpoint(pc uint64) bool {
+func (f *EVMFrame) IsBreakpoint(pc uint64) bool {
 	return f.breakpoints[pc]
 }
 
 // GetNextOperation returns preview of what the next step will do
-func (f *EVM2Frame) GetNextOperation() *OperationPreview {
+func (f *EVMFrame) GetNextOperation() *OperationPreview {
 	if f.handle == nil {
 		return nil
 	}
@@ -370,7 +370,7 @@ func (f *EVM2Frame) GetNextOperation() *OperationPreview {
 
 // Helper methods
 
-func (f *EVM2Frame) getOpcodeName(opcode uint8) string {
+func (f *EVMFrame) getOpcodeName(opcode uint8) string {
 	switch opcode {
 	case 0x00:
 		return "STOP"
@@ -390,7 +390,7 @@ func (f *EVM2Frame) getOpcodeName(opcode uint8) string {
 	}
 }
 
-func (f *EVM2Frame) getOpcodeDescription(opcode uint8, inst *Instruction) string {
+func (f *EVMFrame) getOpcodeDescription(opcode uint8, inst *Instruction) string {
 	switch opcode {
 	case 0x00:
 		return "Halts execution successfully"
@@ -410,7 +410,7 @@ func (f *EVM2Frame) getOpcodeDescription(opcode uint8, inst *Instruction) string
 	}
 }
 
-func (f *EVM2Frame) disassembleBytecode() []Instruction {
+func (f *EVMFrame) disassembleBytecode() []Instruction {
 	instructions := []Instruction{}
 	pc := uint64(0)
 	
@@ -460,30 +460,30 @@ func (f *EVM2Frame) disassembleBytecode() []Instruction {
 
 // Additional methods for compatibility with the existing interface
 
-func (f *EVM2Frame) AddWatchedAddress(addr uint64, label string) {
+func (f *EVMFrame) AddWatchedAddress(addr uint64, label string) {
 	// Not implemented yet - would need memory inspection in C API
 }
 
-func (f *EVM2Frame) RemoveWatchedAddress(addr uint64) {
+func (f *EVMFrame) RemoveWatchedAddress(addr uint64) {
 	// Not implemented yet
 }
 
-func (f *EVM2Frame) GetRecentMemoryChanges(count int) []MemoryChange {
+func (f *EVMFrame) GetRecentMemoryChanges(count int) []MemoryChange {
 	// Not implemented yet - would need memory tracking in C API
 	return []MemoryChange{}
 }
 
-// GetVersion returns the EVM2 library version
-func GetEVM2Version() string {
-	return C.GoString(C.evm2_version())
+// GetVersion returns the EVM library version
+func GetEVMVersion() string {
+	return C.GoString(C.evm_version())
 }
 
-// GetBuildInfo returns the EVM2 build information
-func GetEVM2BuildInfo() string {
-	return C.GoString(C.evm2_build_info())
+// GetBuildInfo returns the EVM build information
+func GetEVMBuildInfo() string {
+	return C.GoString(C.evm_build_info())
 }
 
-// Cleanup cleans up the EVM2 library
-func CleanupEVM2() {
-	C.evm2_cleanup()
+// Cleanup cleans up the EVM library
+func CleanupEVM() {
+	C.evm_cleanup()
 }

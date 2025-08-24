@@ -3,17 +3,17 @@
 
 package main
 
-// Mock versions of the EVM2 functions when building with --mock tag
+// Mock versions of the EVM functions when building with --mock tag
 
-func GetEVM2Version() string {
+func GetEVMVersion() string {
 	return "mock-version"
 }
 
-func GetEVM2BuildInfo() string {
+func GetEVMBuildInfo() string {
 	return "mock-build"
 }
 
-func CleanupEVM2() {
+func CleanupEVM() {
 	// No-op
 }
 

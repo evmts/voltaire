@@ -1,6 +1,6 @@
 # EVM Debugger CLI
 
-A sophisticated terminal-based EVM debugger built with Go and Bubble Tea, designed to work with the Guillotine EVM2 interpreter. Features a professional multi-panel interface for real-time EVM execution analysis.
+A sophisticated terminal-based EVM debugger built with Go and Bubble Tea, designed to work with the Guillotine EVM interpreter. Features a professional multi-panel interface for real-time EVM execution analysis.
 
 ## 🎯 Features
 
@@ -173,7 +173,7 @@ type DataProvider interface {
 
 To integrate with the real C API, simply replace `MockDataProvider` with a wrapper around the C interface.
 
-### EVM2 Integration
+### EVM Integration
 Ready for integration with:
 - Frame.zig execution state
 - Tracer.zig hooks and snapshots

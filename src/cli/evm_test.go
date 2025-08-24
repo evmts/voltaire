@@ -4,14 +4,14 @@ import (
 	"testing"
 )
 
-func TestEVM2FrameCreation(t *testing.T) {
+func TestEVMFrameCreation(t *testing.T) {
 	// Test frame creation with simple bytecode
 	bytecode := []byte{0x60, 0x05, 0x60, 0x0A, 0x01, 0x00} // PUSH1 5, PUSH1 10, ADD, STOP
 	initialGas := uint64(1000000)
 
-	frame, err := NewEVM2Frame(bytecode, initialGas)
+	frame, err := NewEVMFrame(bytecode, initialGas)
 	if err != nil {
-		t.Fatalf("Failed to create EVM2 frame: %v", err)
+		t.Fatalf("Failed to create EVM frame: %v", err)
 	}
 	defer frame.Destroy()
 
@@ -44,14 +44,14 @@ func TestEVM2FrameCreation(t *testing.T) {
 	}
 }
 
-func TestEVM2FrameExecutionSimple(t *testing.T) {
+func TestEVMFrameExecutionSimple(t *testing.T) {
 	// Test execution of simple arithmetic: PUSH1 5, PUSH1 10, ADD, STOP
 	bytecode := []byte{0x60, 0x05, 0x60, 0x0A, 0x01, 0x00}
 	initialGas := uint64(1000000)
 
-	frame, err := NewEVM2Frame(bytecode, initialGas)
+	frame, err := NewEVMFrame(bytecode, initialGas)
 	if err != nil {
-		t.Fatalf("Failed to create EVM2 frame: %v", err)
+		t.Fatalf("Failed to create EVM frame: %v", err)
 	}
 	defer frame.Destroy()
 
@@ -83,14 +83,14 @@ func TestEVM2FrameExecutionSimple(t *testing.T) {
 	}
 }
 
-func TestEVM2FrameStepExecution(t *testing.T) {
+func TestEVMFrameStepExecution(t *testing.T) {
 	// Test step-by-step execution
 	bytecode := []byte{0x60, 0x05, 0x00} // PUSH1 5, STOP
 	initialGas := uint64(1000000)
 
-	frame, err := NewEVM2Frame(bytecode, initialGas)
+	frame, err := NewEVMFrame(bytecode, initialGas)
 	if err != nil {
-		t.Fatalf("Failed to create EVM2 frame: %v", err)
+		t.Fatalf("Failed to create EVM frame: %v", err)
 	}
 	defer frame.Destroy()
 
@@ -127,14 +127,14 @@ func TestEVM2FrameStepExecution(t *testing.T) {
 	t.Logf("Gas after step: %d (started at %d)", state.Gas, initialState.Gas)
 }
 
-func TestEVM2FrameReset(t *testing.T) {
+func TestEVMFrameReset(t *testing.T) {
 	// Test frame reset functionality
 	bytecode := []byte{0x60, 0x05, 0x60, 0x0A, 0x01, 0x00} // PUSH1 5, PUSH1 10, ADD, STOP
 	initialGas := uint64(1000000)
 
-	frame, err := NewEVM2Frame(bytecode, initialGas)
+	frame, err := NewEVMFrame(bytecode, initialGas)
 	if err != nil {
-		t.Fatalf("Failed to create EVM2 frame: %v", err)
+		t.Fatalf("Failed to create EVM frame: %v", err)
 	}
 	defer frame.Destroy()
 
@@ -172,14 +172,14 @@ func TestEVM2FrameReset(t *testing.T) {
 	}
 }
 
-func TestEVM2FrameBreakpoints(t *testing.T) {
+func TestEVMFrameBreakpoints(t *testing.T) {
 	// Test breakpoint functionality
 	bytecode := []byte{0x60, 0x05, 0x60, 0x0A, 0x01, 0x00} // PUSH1 5, PUSH1 10, ADD, STOP
 	initialGas := uint64(1000000)
 
-	frame, err := NewEVM2Frame(bytecode, initialGas)
+	frame, err := NewEVMFrame(bytecode, initialGas)
 	if err != nil {
-		t.Fatalf("Failed to create EVM2 frame: %v", err)
+		t.Fatalf("Failed to create EVM frame: %v", err)
 	}
 	defer frame.Destroy()
 
@@ -204,7 +204,7 @@ func TestEVM2FrameBreakpoints(t *testing.T) {
 	}
 }
 
-func TestEVM2FrameWithCustomBytecode(t *testing.T) {
+func TestEVMFrameWithCustomBytecode(t *testing.T) {
 	// Test with different bytecode patterns
 	testCases := []struct {
 		name     string
@@ -214,7 +214,7 @@ func TestEVM2FrameWithCustomBytecode(t *testing.T) {
 		{
 			name:     "Empty bytecode",
 			bytecode: []byte{},
-			expectError: true, // EVM2 might not allow empty bytecode
+			expectError: true, // EVM might not allow empty bytecode
 		},
 		{
 			name:     "Single STOP",
@@ -230,7 +230,7 @@ func TestEVM2FrameWithCustomBytecode(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			frame, err := NewEVM2Frame(tc.bytecode, 1000000)
+			frame, err := NewEVMFrame(tc.bytecode, 1000000)
 			
 			if tc.expectError {
 				if err == nil {
@@ -259,11 +259,11 @@ func TestEVM2FrameWithCustomBytecode(t *testing.T) {
 	}
 }
 
-func TestEVM2DataProvider(t *testing.T) {
+func TestEVMDataProvider(t *testing.T) {
 	// Test the data provider wrapper
-	provider, err := NewEVM2DataProviderWithSample()
+	provider, err := NewEVMDataProviderWithSample()
 	if err != nil {
-		t.Fatalf("Failed to create EVM2 data provider: %v", err)
+		t.Fatalf("Failed to create EVM data provider: %v", err)
 	}
 	defer provider.Cleanup()
 
@@ -297,29 +297,29 @@ func TestEVM2DataProvider(t *testing.T) {
 	}
 }
 
-func TestEVM2LibraryInfo(t *testing.T) {
+func TestEVMLibraryInfo(t *testing.T) {
 	// Test library information functions
-	version := GetEVM2Version()
+	version := GetEVMVersion()
 	if version == "" {
 		t.Error("Expected non-empty version string")
 	}
 
-	buildInfo := GetEVM2BuildInfo()
+	buildInfo := GetEVMBuildInfo()
 	if buildInfo == "" {
 		t.Error("Expected non-empty build info string")
 	}
 
-	t.Logf("EVM2 Version: %s", version)
-	t.Logf("EVM2 Build Info: %s", buildInfo)
+	t.Logf("EVM Version: %s", version)
+	t.Logf("EVM Build Info: %s", buildInfo)
 }
 
 // Benchmark tests for performance verification
-func BenchmarkEVM2FrameCreation(b *testing.B) {
+func BenchmarkEVMFrameCreation(b *testing.B) {
 	bytecode := []byte{0x60, 0x05, 0x60, 0x0A, 0x01, 0x00}
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		frame, err := NewEVM2Frame(bytecode, 1000000)
+		frame, err := NewEVMFrame(bytecode, 1000000)
 		if err != nil {
 			b.Fatalf("Frame creation failed: %v", err)
 		}
@@ -327,12 +327,12 @@ func BenchmarkEVM2FrameCreation(b *testing.B) {
 	}
 }
 
-func BenchmarkEVM2FrameExecution(b *testing.B) {
+func BenchmarkEVMFrameExecution(b *testing.B) {
 	bytecode := []byte{0x60, 0x05, 0x60, 0x0A, 0x01, 0x00}
 	
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		frame, err := NewEVM2Frame(bytecode, 1000000)
+		frame, err := NewEVMFrame(bytecode, 1000000)
 		if err != nil {
 			b.Fatalf("Frame creation failed: %v", err)
 		}

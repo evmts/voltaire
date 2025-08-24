@@ -1,6 +1,6 @@
 package main
 
-// DataProvider interface defines the common interface for both Mock and EVM2 providers
+// DataProvider interface defines the common interface for both Mock and EVM providers
 type DataProvider interface {
 	// State management
 	GetState() *EVMState

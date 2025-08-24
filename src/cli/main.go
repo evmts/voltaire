@@ -11,8 +11,8 @@ import (
 func main() {
 	// Parse command line arguments
 	var (
-		useMock      = flag.Bool("mock", false, "Use mock data instead of real EVM2 implementation")
-		useGuillotine = flag.Bool("guillotine", false, "Use guillotine-go backend instead of EVM2")
+		useMock      = flag.Bool("mock", false, "Use mock data instead of real EVM implementation")
+		useGuillotine = flag.Bool("guillotine", false, "Use guillotine-go backend instead of EVM")
 		bytecodeHex  = flag.String("bytecode", "", "Hex bytecode to execute (overrides default sample)")
 		initialGas   = flag.Uint64("gas", 1000000, "Initial gas amount")
 		showInfo     = flag.Bool("info", false, "Show build information and exit")
@@ -26,8 +26,8 @@ func main() {
 		fmt.Println("\nEVM Debugger V2 - Professional EVM execution visualizer")
 		fmt.Println("Features: Multi-panel TUI, execution profiling, command interface, context help")
 		fmt.Println("\nExamples:")
-		fmt.Println("  evm-debugger                                    # Real EVM2 with sample bytecode")
-		fmt.Println("  evm-debugger --bytecode 6001600101              # Real EVM2 with custom bytecode")
+		fmt.Println("  evm-debugger                                    # Real EVM with sample bytecode")
+		fmt.Println("  evm-debugger --bytecode 6001600101              # Real EVM with custom bytecode")
 		fmt.Println("  evm-debugger --mock                             # Mock data for testing")
 		fmt.Println("  evm-debugger --guillotine                       # Use guillotine-go backend")
 		fmt.Println("  evm-debugger --info                             # Show build information")
@@ -52,7 +52,7 @@ func main() {
 		} else {
 			fmt.Println("EVM Debugger V2 - Mock Mode")
 			fmt.Println("Enhanced features: Command interface, profiling, help system")
-			fmt.Println("Use without --mock flag to see EVM2 build information")
+			fmt.Println("Use without --mock flag to see EVM build information")
 		}
 		return
 	}
@@ -91,31 +91,31 @@ func main() {
 			}
 		}()
 	} else {
-		// Use real EVM2 implementation (default)
+		// Use real EVM implementation (default)
 		if *bytecodeHex != "" {
-			provider, err = NewEVM2DataProvider(*bytecodeHex, *initialGas)
+			provider, err = NewEVMDataProvider(*bytecodeHex, *initialGas)
 		} else {
-			provider, err = NewEVM2DataProviderWithSample()
+			provider, err = NewEVMDataProviderWithSample()
 		}
 		
 		if err != nil {
-			fmt.Printf("Error creating EVM2 provider: %v\n", err)
-			fmt.Println("\nTry building the EVM2 C libraries first:")
-			fmt.Println("  cd ../../ && zig build evm2-c")
+			fmt.Printf("Error creating EVM provider: %v\n", err)
+			fmt.Println("\nTry building the EVM C libraries first:")
+			fmt.Println("  cd ../../ && zig build evm-c")
 			fmt.Println("\nOr use --mock flag to run with test data")
 			os.Exit(1)
 		}
 
-		// Print EVM2 info
-		version, buildInfo := GetEVM2Version(), GetEVM2BuildInfo()
-		fmt.Printf("Using EVM2: %s (%s)\n", version, buildInfo)
+		// Print EVM info
+		version, buildInfo := GetEVMVersion(), GetEVMBuildInfo()
+		fmt.Printf("Using EVM: %s (%s)\n", version, buildInfo)
 		
 		// Setup cleanup
 		defer func() {
-			if evm2Provider, ok := provider.(*EVM2DataProvider); ok {
-				evm2Provider.Cleanup()
+			if evmProvider, ok := provider.(*EVMDataProvider); ok {
+				evmProvider.Cleanup()
 			}
-			CleanupEVM2()
+			CleanupEVM()
 		}()
 	}
 
