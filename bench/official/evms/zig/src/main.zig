@@ -148,6 +148,13 @@ pub fn main() !void {
         };
         const end_time = std.time.nanoTimestamp();
         
+        // Debug: Print gas usage info
+        const gas_used = 100000 - result.gas_left;
+        if (i == 0) { // Only print for first run
+            std.log.warn("Debug: success={}, gas_provided={}, gas_left={}, gas_used={}, output_len={}", 
+                .{result.success, 100000, result.gas_left, gas_used, result.output.len});
+        }
+        
         // Free the result output to prevent memory leak and use-after-free
         defer if (result.output.len > 0) allocator.free(result.output);
         
