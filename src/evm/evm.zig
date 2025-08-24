@@ -3051,6 +3051,299 @@ test "Precompiles - invalid precompile addresses" {
     try testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed by precompile
 }
 
+// ============================================================================
+// Minimal Debug Tests for Benchmark Investigation
+// ============================================================================
+
+test "Debug - Gas limit affects execution" {
+    const testing = std.testing;
+    std.testing.log_level = .warn;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 21000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Deploy a simple infinite loop contract
+    // JUMPDEST (0x5b) PUSH1 0x00 (0x6000) JUMP (0x56)
+    const loop_bytecode = [_]u8{0x5b, 0x60, 0x00, 0x56};
+    const deploy_address: Address = [_]u8{0} ** 19 ++ [_]u8{1};
+    const code_hash = try memory_db.set_code(&loop_bytecode);
+    try memory_db.set_account(deploy_address, Account{
+        .nonce = 0,
+        .balance = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Test 1: Very low gas limit - should fail quickly
+    {
+        const start_time = std.time.nanoTimestamp();
+        const result = try evm.call(.{
+            .call = .{
+                .caller = ZERO_ADDRESS,
+                .to = deploy_address,
+                .value = 0,
+                .input = &.{},
+                .gas = 100, // Very low gas
+            },
+        });
+        const elapsed = std.time.nanoTimestamp() - start_time;
+        
+        try testing.expect(!result.success); // Should fail
+        try testing.expectEqual(@as(u64, 0), result.gas_left); // All gas consumed
+        std.log.warn("Low gas (100): elapsed = {} ns, success = {}", .{elapsed, result.success});
+    }
+    
+    // Test 2: Medium gas limit
+    {
+        const start_time = std.time.nanoTimestamp();
+        const result = try evm.call(.{
+            .call = .{
+                .caller = ZERO_ADDRESS,
+                .to = deploy_address,
+                .value = 0,
+                .input = &.{},
+                .gas = 10000,
+            },
+        });
+        const elapsed = std.time.nanoTimestamp() - start_time;
+        
+        try testing.expect(!result.success); // Should still fail (infinite loop)
+        try testing.expectEqual(@as(u64, 0), result.gas_left);
+        std.log.warn("Medium gas (10k): elapsed = {} ns, success = {}", .{elapsed, result.success});
+    }
+    
+    // Test 3: High gas limit
+    {
+        const start_time = std.time.nanoTimestamp();
+        const result = try evm.call(.{
+            .call = .{
+                .caller = ZERO_ADDRESS,
+                .to = deploy_address,
+                .value = 0,
+                .input = &.{},
+                .gas = 1000000,
+            },
+        });
+        const elapsed = std.time.nanoTimestamp() - start_time;
+        
+        try testing.expect(!result.success); // Should fail after consuming all gas
+        try testing.expectEqual(@as(u64, 0), result.gas_left);
+        std.log.warn("High gas (1M): elapsed = {} ns, success = {}", .{elapsed, result.success});
+    }
+}
+
+test "Debug - Contract deployment and execution" {
+    const testing = std.testing;
+    std.testing.log_level = .warn;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 21000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Test 1: Call to non-existent contract
+    {
+        const empty_address: Address = [_]u8{0} ** 19 ++ [_]u8{99};
+        const start_time = std.time.nanoTimestamp();
+        const result = try evm.call(.{
+            .call = .{
+                .caller = ZERO_ADDRESS,
+                .to = empty_address,
+                .value = 0,
+                .input = &.{},
+                .gas = 100000,
+            },
+        });
+        const elapsed = std.time.nanoTimestamp() - start_time;
+        
+        try testing.expect(result.success); // Empty contract succeeds immediately
+        try testing.expectEqual(@as(u64, 100000), result.gas_left); // No gas consumed
+        std.log.warn("Empty contract: elapsed = {} ns, gas_left = {}", .{elapsed, result.gas_left});
+    }
+    
+    // Test 2: Simple contract that returns immediately (STOP opcode)
+    {
+        const stop_bytecode = [_]u8{0x00}; // STOP
+        const stop_address: Address = [_]u8{0} ** 19 ++ [_]u8{2};
+        const code_hash = try memory_db.set_code(&stop_bytecode);
+        try memory_db.set_account(stop_address, Account{
+            .nonce = 0,
+            .balance = 0,
+            .code_hash = code_hash,
+            .storage_root = [_]u8{0} ** 32,
+        });
+        
+        const start_time = std.time.nanoTimestamp();
+        const result = try evm.call(.{
+            .call = .{
+                .caller = ZERO_ADDRESS,
+                .to = stop_address,
+                .value = 0,
+                .input = &.{},
+                .gas = 100000,
+            },
+        });
+        const elapsed = std.time.nanoTimestamp() - start_time;
+        
+        try testing.expect(result.success);
+        // STOP should consume minimal gas
+        const gas_used = 100000 - result.gas_left;
+        try testing.expect(gas_used < 100); // Should use very little gas
+        std.log.warn("STOP contract: elapsed = {} ns, gas_used = {}", .{elapsed, gas_used});
+    }
+    
+    // Test 3: Contract with some computation
+    {
+        // PUSH1 0x05, PUSH1 0x03, ADD, PUSH1 0x00, MSTORE, STOP
+        // Adds 3 + 5 and stores in memory
+        const add_bytecode = [_]u8{0x60, 0x05, 0x60, 0x03, 0x01, 0x60, 0x00, 0x52, 0x00};
+        const add_address: Address = [_]u8{0} ** 19 ++ [_]u8{3};
+        const code_hash = try memory_db.set_code(&add_bytecode);
+        try memory_db.set_account(add_address, Account{
+            .nonce = 0,
+            .balance = 0,
+            .code_hash = code_hash,
+            .storage_root = [_]u8{0} ** 32,
+        });
+        
+        const start_time = std.time.nanoTimestamp();
+        const result = try evm.call(.{
+            .call = .{
+                .caller = ZERO_ADDRESS,
+                .to = add_address,
+                .value = 0,
+                .input = &.{},
+                .gas = 100000,
+            },
+        });
+        const elapsed = std.time.nanoTimestamp() - start_time;
+        
+        try testing.expect(result.success);
+        const gas_used = 100000 - result.gas_left;
+        try testing.expect(gas_used > 0); // Should use some gas
+        try testing.expect(gas_used < 1000); // But not too much
+        std.log.warn("ADD contract: elapsed = {} ns, gas_used = {}", .{elapsed, gas_used});
+    }
+}
+
+test "Debug - Bytecode size affects execution time" {
+    const testing = std.testing;
+    std.testing.log_level = .warn;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 21000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Create a large contract that does simple operations
+    var large_bytecode = std.ArrayList(u8).init(testing.allocator);
+    defer large_bytecode.deinit();
+    
+    // Add many PUSH1/POP pairs (each costs gas but doesn't loop)
+    for (0..1000) |_| {
+        try large_bytecode.append(0x60); // PUSH1
+        try large_bytecode.append(0x42); // value
+        try large_bytecode.append(0x50); // POP
+    }
+    try large_bytecode.append(0x00); // STOP
+    
+    const large_address: Address = [_]u8{0} ** 19 ++ [_]u8{4};
+    const code_hash = try memory_db.set_code(large_bytecode.items);
+    try memory_db.set_account(large_address, Account{
+        .nonce = 0,
+        .balance = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+    
+    // Test with different gas limits
+    const gas_limits = [_]u64{10000, 50000, 100000, 500000};
+    
+    for (gas_limits) |gas_limit| {
+        const start_time = std.time.nanoTimestamp();
+        const result = try evm.call(.{
+            .call = .{
+                .caller = ZERO_ADDRESS,
+                .to = large_address,
+                .value = 0,
+                .input = &.{},
+                .gas = gas_limit,
+            },
+        });
+        const elapsed = std.time.nanoTimestamp() - start_time;
+        
+        const gas_used = gas_limit - result.gas_left;
+        std.log.warn("Large contract (gas_limit={}): elapsed = {} ns, gas_used = {}, success = {}", 
+            .{gas_limit, elapsed, gas_used, result.success});
+        
+        // With low gas, should fail before completing
+        if (gas_limit < 50000) {
+            try testing.expect(!result.success);
+            try testing.expectEqual(@as(u64, 0), result.gas_left);
+        } else {
+            // With enough gas, should complete
+            try testing.expect(result.success);
+            try testing.expect(result.gas_left > 0);
+        }
+    }
+}
+
 test "Security - bounds checking and edge cases" {
     const testing = std.testing;
 

@@ -18,6 +18,7 @@ const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 pub const FrameConfig = @import("frame_config.zig").FrameConfig;
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
+const Account = @import("database_interface.zig").Account;
 const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 const primitives = @import("primitives");
 const GasConstants = primitives.GasConstants;
@@ -7971,9 +7972,9 @@ test "CALL value stipend gas costs" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
     
-    const caller_addr = Address.fromInt(0x1000);
-    const target_addr = Address.fromInt(0x2000);
-    frame.contract.address = caller_addr;
+    const caller_addr = from_u256(0x1000);
+    const target_addr = from_u256(0x2000);
+    frame.contract_address = caller_addr;
     
     // Test 1: CALL with value transfer (should add 2300 gas stipend to sub-call)
     // Base CALL cost + cold account access + value transfer cost
@@ -7983,7 +7984,7 @@ test "CALL value stipend gas costs" {
     try frame.stack.push(0); // argsSize
     try frame.stack.push(0); // argsOffset
     try frame.stack.push(1000); // value (non-zero)
-    try frame.stack.push(@intFromEnum(target_addr)); // address
+    try frame.stack.push(to_u256(target_addr)); // address
     try frame.stack.push(50000); // gas
     try frame.call();
     const gas_used_with_value = initial_gas - frame.gas_manager.gasRemaining();
@@ -8027,10 +8028,10 @@ test "CALL cold account access penalties - EIP-2929" {
     var frame = try F.init(allocator, &bytecode, 200000, db_interface, host);
     defer frame.deinit(allocator);
     
-    const caller_addr = Address.fromInt(0x5000);
-    const cold_addr = Address.fromInt(0x6000);
-    const another_cold_addr = Address.fromInt(0x7000);
-    frame.contract.address = caller_addr;
+    const caller_addr = from_u256(0x5000);
+    const cold_addr = from_u256(0x6000);
+    const another_cold_addr = from_u256(0x7000);
+    frame.contract_address = caller_addr;
     
     // Test 1: First CALL to cold account
     const initial_gas = frame.gas_manager.gasRemaining();
@@ -8039,7 +8040,7 @@ test "CALL cold account access penalties - EIP-2929" {
     try frame.stack.push(0); // argsSize
     try frame.stack.push(0); // argsOffset
     try frame.stack.push(0); // value
-    try frame.stack.push(@intFromEnum(cold_addr)); // cold address
+    try frame.stack.push(to_u256(cold_addr)); // cold address
     try frame.stack.push(30000); // gas
     try frame.call();
     const gas_used_cold = initial_gas - frame.gas_manager.gasRemaining();
@@ -8096,9 +8097,9 @@ test "DELEGATECALL and STATICCALL gas costs" {
     var frame = try F.init(allocator, &bytecode, 200000, db_interface, host);
     defer frame.deinit(allocator);
     
-    const caller_addr = Address.fromInt(0x8000);
-    const target_addr = Address.fromInt(0x9000);
-    frame.contract.address = caller_addr;
+    const caller_addr = from_u256(0x8000);
+    const target_addr = from_u256(0x9000);
+    frame.contract_address = caller_addr;
     
     // Test 1: DELEGATECALL (no value transfer, different gas model)
     const initial_gas = frame.gas_manager.gasRemaining();
@@ -8106,7 +8107,7 @@ test "DELEGATECALL and STATICCALL gas costs" {
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
     try frame.stack.push(0); // argsOffset
-    try frame.stack.push(@intFromEnum(target_addr)); // address
+    try frame.stack.push(to_u256(target_addr)); // address
     try frame.stack.push(50000); // gas
     try frame.delegatecall();
     const gas_used_delegatecall = initial_gas - frame.gas_manager.gasRemaining();
@@ -8147,10 +8148,10 @@ test "Access list pre-warming effects on CALL/SLOAD/SSTORE" {
     var frame = try F.init(allocator, &bytecode, 300000, db_interface, host);
     defer frame.deinit(allocator);
     
-    const caller_addr = Address.fromInt(0xA000);
-    const target_addr = Address.fromInt(0xB000);
+    const caller_addr = from_u256(0xA000);
+    const target_addr = from_u256(0xB000);
     const storage_key: u256 = 0xCCCC;
-    frame.contract.address = caller_addr;
+    frame.contract_address = caller_addr;
     
     // Simulate access list pre-warming by making initial accesses
     // In a real EVM, the access list would be pre-populated in the transaction
@@ -8161,7 +8162,7 @@ test "Access list pre-warming effects on CALL/SLOAD/SSTORE" {
     try frame.stack.push(0); // argsSize
     try frame.stack.push(0); // argsOffset
     try frame.stack.push(0); // value
-    try frame.stack.push(@intFromEnum(target_addr)); // address
+    try frame.stack.push(to_u256(target_addr)); // address
     try frame.stack.push(30000); // gas
     try frame.call();
     
@@ -8287,7 +8288,8 @@ test "CALL gas integration - sufficient gas scenario" {
     const db_interface = memory_db.to_database_interface();
     
     var mock_host = MockHost.init(allocator);
-    mock_host.call_result = CallResult.success_empty(50000);
+    mock_host.should_call_succeed = true;
+    mock_host.call_return_data = &.{};
     const host = mock_host.to_host();
     
     const F = Frame(.{ .has_database = true });
@@ -8357,7 +8359,8 @@ test "CALL gas integration - value transfer with stipend" {
     const db_interface = memory_db.to_database_interface();
     
     var mock_host = MockHost.init(allocator);
-    mock_host.call_result = CallResult.success_empty(50000);
+    mock_host.should_call_succeed = true;
+    mock_host.call_return_data = &.{};
     const host = mock_host.to_host();
     
     const F = Frame(.{ .has_database = true });
@@ -8400,7 +8403,8 @@ test "DELEGATECALL gas integration - no value transfer cost" {
     const db_interface = memory_db.to_database_interface();
     
     var mock_host = MockHost.init(allocator);
-    mock_host.call_result = CallResult.success_empty(40000);
+    mock_host.should_call_succeed = true;
+    mock_host.call_return_data = &.{};
     const host = mock_host.to_host();
     
     const F = Frame(.{ .has_database = true });
@@ -8442,7 +8446,8 @@ test "STATICCALL gas integration - static context enforced" {
     const db_interface = memory_db.to_database_interface();
     
     var mock_host = MockHost.init(allocator);
-    mock_host.call_result = CallResult.success_empty(30000);
+    mock_host.should_call_succeed = true;
+    mock_host.call_return_data = &.{};
     const host = mock_host.to_host();
     
     const F = Frame(.{ .has_database = true });
@@ -8566,7 +8571,8 @@ test "EIP-150 compliance - 63/64 rule with base gas deduction" {
     const db_interface = memory_db.to_database_interface();
     
     var mock_host = MockHost.init(allocator);
-    mock_host.call_result = CallResult.success_empty(10000);
+    mock_host.should_call_succeed = true;
+    mock_host.call_return_data = &.{};
     const host = mock_host.to_host();
     
     const F = Frame(.{ .has_database = true });
@@ -8657,7 +8663,8 @@ test "Gas accounting precision - no gas leaks" {
     const db_interface = memory_db.to_database_interface();
     
     var mock_host = MockHost.init(allocator);
-    mock_host.call_result = CallResult.success_empty(20000); // Return some gas
+    mock_host.should_call_succeed = true;
+    mock_host.call_return_data = &.{}; // Return some gas
     const host = mock_host.to_host();
     
     const F = Frame(.{ .has_database = true });
@@ -8734,7 +8741,8 @@ test "Memory expansion costs with call operations" {
     const db_interface = memory_db.to_database_interface();
     
     var mock_host = MockHost.init(allocator);
-    mock_host.call_result = CallResult.success_with_output(25000, &[_]u8{0xFF} ** 64);
+    mock_host.should_call_succeed = true;
+    mock_host.call_return_data = &([_]u8{0xFF} ** 64);
     const host = mock_host.to_host();
     
     const F = Frame(.{ .has_database = true });
@@ -8771,7 +8779,8 @@ test "Nested call gas accounting - deep call stack" {
     
     // Mock host that simulates nested calls by returning different gas amounts
     var mock_host = MockHost.init(allocator);
-    mock_host.call_result = CallResult.success_empty(15000);
+    mock_host.should_call_succeed = true;
+    mock_host.call_return_data = &.{};
     const host = mock_host.to_host();
     
     const F = Frame(.{ .has_database = true });
@@ -8841,7 +8850,8 @@ test "Gas stipend edge cases - exact calculations" {
     const db_interface = memory_db.to_database_interface();
     
     var mock_host = MockHost.init(allocator);
-    mock_host.call_result = CallResult.success_empty(2300); // Exactly the stipend amount returned
+    mock_host.should_call_succeed = true;
+    mock_host.call_return_data = &.{}; // Exactly the stipend amount returned
     const host = mock_host.to_host();
     
     const F = Frame(.{ .has_database = true });
@@ -8874,7 +8884,8 @@ test "Zero address calls - special case handling" {
     const db_interface = memory_db.to_database_interface();
     
     var mock_host = MockHost.init(allocator);
-    mock_host.call_result = CallResult.success_empty(25000);
+    mock_host.should_call_succeed = true;
+    mock_host.call_return_data = &.{};
     const host = mock_host.to_host();
     
     const F = Frame(.{ .has_database = true });
@@ -8882,7 +8893,7 @@ test "Zero address calls - special case handling" {
     var frame = try F.init(allocator, &bytecode, 100000, db_interface, host);
     defer frame.deinit(allocator);
     
-    const zero_address = Address.fromInt(0);
+    const zero_address = from_u256(0);
     
     // Test call to zero address
     const gas_cost = frame._calculate_call_gas(zero_address, 0, false);
@@ -8992,7 +9003,8 @@ test "Rapid successive calls - gas depletion patterns" {
     const db_interface = memory_db.to_database_interface();
     
     var mock_host = MockHost.init(allocator);
-    mock_host.call_result = CallResult.success_empty(1000);
+    mock_host.should_call_succeed = true;
+    mock_host.call_return_data = &.{};
     const host = mock_host.to_host();
     
     const F = Frame(.{ .has_database = true });
@@ -9069,7 +9081,7 @@ test "_calculate_call_gas existing account costs - account with balance" {
 
     // Pre-create an account with non-zero balance
     const existing_address = from_u256(0x54321);
-    const account = DatabaseInterface.Account{
+    const account = Account{
         .nonce = 1,
         .balance = 1000,
         .code_hash = EMPTY_CODE_HASH,
@@ -9102,8 +9114,8 @@ test "_calculate_call_gas existing account costs - account with code" {
 
     // Pre-create an account with code (non-empty code hash)
     const existing_address = from_u256(0x98765);
-    const code_hash = primitives.keccak256(&[_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }); // Simple contract code
-    const account = DatabaseInterface.Account{
+    const code_hash = keccak_asm.keccak256(&[_]u8{ 0x60, 0x00, 0x60, 0x00, 0xF3 }); // Simple contract code
+    const account = Account{
         .nonce = 0,
         .balance = 0,
         .code_hash = code_hash,
@@ -9136,7 +9148,7 @@ test "_calculate_call_gas existing account costs - account with nonce" {
 
     // Pre-create an account with non-zero nonce (but zero balance and empty code)
     const existing_address = from_u256(0x11111);
-    const account = DatabaseInterface.Account{
+    const account = Account{
         .nonce = 5,
         .balance = 0,
         .code_hash = EMPTY_CODE_HASH,
@@ -9198,7 +9210,7 @@ test "_calculate_call_gas account states - empty account (all zeros)" {
 
     // Create a completely empty account (nonce=0, balance=0, empty code)
     const empty_address = from_u256(0x111111);
-    const empty_account = DatabaseInterface.Account{
+    const empty_account = Account{
         .nonce = 0,
         .balance = 0,
         .code_hash = EMPTY_CODE_HASH,
@@ -9231,7 +9243,7 @@ test "_calculate_call_gas account states - minimal balance account" {
 
     // Account with minimal balance (1 wei)
     const balance_address = from_u256(0x222222);
-    const balance_account = DatabaseInterface.Account{
+    const balance_account = Account{
         .nonce = 0,
         .balance = 1,
         .code_hash = EMPTY_CODE_HASH,
@@ -9264,7 +9276,7 @@ test "_calculate_call_gas account states - high nonce account" {
 
     // Account with high nonce but no balance
     const nonce_address = from_u256(0x333333);
-    const nonce_account = DatabaseInterface.Account{
+    const nonce_account = Account{
         .nonce = 1000,
         .balance = 0,
         .code_hash = EMPTY_CODE_HASH,
@@ -9298,8 +9310,8 @@ test "_calculate_call_gas account states - complex contract account" {
     // Complex contract with code, balance, and nonce
     const contract_address = from_u256(0x444444);
     const contract_code = [_]u8{ 0x60, 0x42, 0x60, 0x00, 0x52, 0x60, 0x20, 0x60, 0x00, 0xF3 }; // Returns 0x42
-    const code_hash = primitives.keccak256(&contract_code);
-    const contract_account = DatabaseInterface.Account{
+    const code_hash = keccak_asm.keccak256(&contract_code);
+    const contract_account = Account{
         .nonce = 1,
         .balance = 1000000,
         .code_hash = code_hash,
@@ -9356,7 +9368,7 @@ test "_calculate_call_gas account states - boundary values" {
 
     for (test_cases, 0..) |case, i| {
         const test_address = from_u256(0x500000 + i);
-        const test_account = DatabaseInterface.Account{
+        const test_account = Account{
             .nonce = case.nonce,
             .balance = case.balance,
             .code_hash = EMPTY_CODE_HASH,
