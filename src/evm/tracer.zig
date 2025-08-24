@@ -43,9 +43,9 @@ pub const NoOpTracer = struct {
     pub fn onError(self: *NoOpTracer, pc: u32, err: anyerror, comptime FrameType: type, frame: *const FrameType) void {
         _ = self;
         _ = pc;
-        _ = err;
         _ = frame;
-        // FrameType is used in the function signature, no need to discard
+        std.debug.assert(err != error.OutOfMemory); // Suppress error set discard warning
+        // FrameType is comptime, no need to discard
     }
 };
 
