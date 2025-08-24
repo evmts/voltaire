@@ -10079,14 +10079,15 @@ test "_calculate_call_gas E2E: Complete call flow validation" {
     try std.testing.expectEqual(@as(u64, 9800), expected_gas);
 
     // Verify we have sufficient gas
-    const initial_gas = frame.gas_manager.remaining;
-    try std.testing.expect(frame.gas_manager.hasGas(expected_gas));
+    const initial_gas = frame.gas_remaining;
+    try std.testing.expect(frame.gas_remaining >= @as(@TypeOf(frame.gas_remaining), @intCast(expected_gas)));
 
     // Simulate gas consumption (what CALL opcode would do)
-    try frame.gas_manager.consume(expected_gas);
+    if (frame.gas_remaining < @as(@TypeOf(frame.gas_remaining), @intCast(expected_gas))) return error.OutOfGas;
+    frame.gas_remaining -= @as(@TypeOf(frame.gas_remaining), @intCast(expected_gas));
 
     // Verify gas was consumed correctly
-    try std.testing.expectEqual(initial_gas - @as(i64, @intCast(expected_gas)), frame.gas_manager.remaining);
+    try std.testing.expectEqual(initial_gas - @as(@TypeOf(frame.gas_remaining), @intCast(expected_gas)), frame.gas_remaining);
 }
 
 test "_calculate_call_gas E2E: Real world scenario - contract calling contract" {
@@ -10152,17 +10153,20 @@ test "_calculate_call_gas E2E: Real world scenario - contract calling contract" 
     try std.testing.expectEqual(@as(u64, 3300), static_token_gas);
 
     // Verify we can handle all three scenarios in sequence
-    try std.testing.expect(frame.gas_manager.hasGas(token_call_gas));
-    try frame.gas_manager.consume(token_call_gas);
+    try std.testing.expect(frame.gas_remaining >= @as(@TypeOf(frame.gas_remaining), @intCast(token_call_gas)));
+    if (frame.gas_remaining < @as(@TypeOf(frame.gas_remaining), @intCast(token_call_gas))) return error.OutOfGas;
+    frame.gas_remaining -= @as(@TypeOf(frame.gas_remaining), @intCast(token_call_gas));
 
-    try std.testing.expect(frame.gas_manager.hasGas(precompile_gas));
-    try frame.gas_manager.consume(precompile_gas);
+    try std.testing.expect(frame.gas_remaining >= @as(@TypeOf(frame.gas_remaining), @intCast(precompile_gas)));
+    if (frame.gas_remaining < @as(@TypeOf(frame.gas_remaining), @intCast(precompile_gas))) return error.OutOfGas;
+    frame.gas_remaining -= @as(@TypeOf(frame.gas_remaining), @intCast(precompile_gas));
 
-    try std.testing.expect(frame.gas_manager.hasGas(static_token_gas));
-    try frame.gas_manager.consume(static_token_gas);
+    try std.testing.expect(frame.gas_remaining >= @as(@TypeOf(frame.gas_remaining), @intCast(static_token_gas)));
+    if (frame.gas_remaining < @as(@TypeOf(frame.gas_remaining), @intCast(static_token_gas))) return error.OutOfGas;
+    frame.gas_remaining -= @as(@TypeOf(frame.gas_remaining), @intCast(static_token_gas));
 
     // Total consumed should be 3300 + 9800 + 3300 = 16400
     const total_consumed = token_call_gas + precompile_gas + static_token_gas;
     try std.testing.expectEqual(@as(u64, 16400), total_consumed);
-    try std.testing.expectEqual(@as(u64, 100000 - 16400), frame.gas_manager.remaining);
+    try std.testing.expectEqual(@as(u64, 100000 - 16400), frame.gas_remaining);
 }
