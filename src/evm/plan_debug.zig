@@ -271,7 +271,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             const typed_frame = @as(*FrameType, @ptrCast(@alignCast(frame)));
             
             // Validate gas
-            const gas_remaining = typed_frame.gas_manager.gasRemaining();
+            const gas_remaining = @max(typed_frame.gas_remaining, 0);
             if (gas_remaining != trace_entry.gas_remaining) {
                 std.debug.panic("DebugPlan: REVM gas mismatch at PC {}: expected {} got {}", .{ pc, trace_entry.gas_remaining, gas_remaining });
             }
@@ -738,7 +738,7 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             state.stack_height = frame.stack.next_stack_index;
             state.memory_size = frame.memory.getCurrentSize();
             state.pc = frame.pc;
-            state.gas_remaining = frame.gas_manager.gasRemaining();
+            state.gas_remaining = @max(frame.gas_remaining, 0);
             
             return state;
         }

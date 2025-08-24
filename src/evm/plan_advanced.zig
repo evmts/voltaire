@@ -7,6 +7,7 @@ pub const PlanConfig = @import("plan_config.zig").PlanConfig;
 const OpcodeSynthetic = @import("opcode_synthetic.zig").OpcodeSynthetic;
 const createBytecode = @import("bytecode.zig").createBytecode;
 const BytecodeConfig = @import("bytecode_config.zig").BytecodeConfig;
+const Hardfork = @import("hardfork.zig").Hardfork;
 
 /// Metadata for JUMPDEST instructions.
 /// On 64-bit systems this fits in usize, on 32-bit it requires pointer.
@@ -974,7 +975,7 @@ test "PlanMinimal getMetadata for all PUSH opcodes" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
         
         // Test PUSH1
         var idx: PlanMinimal.InstructionIndexType = 0;
@@ -1029,7 +1030,7 @@ test "PlanMinimal getNextInstruction advances correctly" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     var idx: PlanMinimal.InstructionIndexType = 0;
     
@@ -1080,7 +1081,7 @@ test "PlanMinimal JUMPDEST detection with PUSH data" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Check JUMPDEST detection
     try std.testing.expect(!plan.isValidJumpDest(0)); // PUSH2
@@ -1106,7 +1107,7 @@ test "PlanMinimal edge cases" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
         _ = plan;
         
     }
@@ -1121,7 +1122,7 @@ test "PlanMinimal edge cases" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
         
         try std.testing.expect(plan.isOpcodeStart(0));
         try std.testing.expect(!plan.isValidJumpDest(0));
@@ -1144,7 +1145,7 @@ test "PlanMinimal edge cases" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
         
         // Should mark available bytes as push data
         try std.testing.expect(plan.isOpcodeStart(0));  // PUSH3
@@ -1194,7 +1195,7 @@ test "PlanMinimal getNextInstruction returns correct handlers" {
     handlers[@intFromEnum(Opcode.MUL)] = &mulHandler;
     handlers[@intFromEnum(Opcode.STOP)] = &stopHandler;
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     var idx: PlanMinimal.InstructionIndexType = 0;
     
@@ -1236,7 +1237,7 @@ test "PlanMinimal PC opcode returns correct value" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Test PC at position 2
     var idx: PlanMinimal.InstructionIndexType = 2;
@@ -1794,7 +1795,7 @@ test "Plan and PlanMinimal interoperability" {
     var planner = try Planner.init(allocator, 100);
     defer planner.deinit();
     
-    const minimal_plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const minimal_plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Test that both plans identify the same opcode starts
     const expected_opcode_positions = [_]usize{ 0, 2, 5, 6, 7 };
@@ -1938,7 +1939,7 @@ test "PlanMinimal JUMPDEST metadata" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Test JUMPDEST metadata (should be dummy values)
     var idx: PlanMinimal.InstructionIndexType = 0;
@@ -2000,7 +2001,7 @@ test "PlanMinimal simulated execution flow" {
     handlers[@intFromEnum(Opcode.ADD)] = &addHandler;
     handlers[@intFromEnum(Opcode.STOP)] = &stopHandler;
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Simulate execution flow
     var idx: PlanMinimal.InstructionIndexType = 0;
@@ -2074,7 +2075,7 @@ test "Plan fuzzing with random bytecode generation" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        const plan = planner.getOrAnalyze(bytecode, handlers) catch |err| {
+        const plan = planner.getOrAnalyze(bytecode, handlers, Hardfork.DEFAULT) catch |err| {
             // Some random bytecode may be invalid, that's ok
             switch (err) {
                 error.OutOfMemory, error.InvalidBytecode, error.BytecodeTooLarge => continue,
@@ -2117,7 +2118,7 @@ test "Plan performance and memory efficiency benchmarking" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     _ = plan;
     
     const end_time = std.time.nanoTimestamp();
@@ -2174,7 +2175,7 @@ test "Plan synthetic opcode edge cases and error handling" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
         
         // Verify the synthetic opcode is detected and metadata is available
         var idx: Plan(.{}).InstructionIndexType = 0;
@@ -2212,7 +2213,7 @@ test "Plan memory fragmentation resistance" {
     for (0..num_plans) |i| {
         const PlannerType = @import("planner.zig").createPlanner(.{});
         planners[i] = try PlannerType.init(allocator, 100);
-        plans[i] = try planners[i].getOrAnalyze(&bytecode, handlers);
+        plans[i] = try planners[i].getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     }
     
     // Plans are cached, don't deinit them
@@ -2220,7 +2221,7 @@ test "Plan memory fragmentation resistance" {
     // Create one more plan to ensure allocator still works
     const FinalPlanner = @import("planner.zig").createPlanner(.{});
     var final_planner = try FinalPlanner.init(allocator, 100);
-    const final_plan = try final_planner.getOrAnalyze(&bytecode, handlers);
+    const final_plan = try final_planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     _ = final_plan;    
 }
 
@@ -2250,7 +2251,7 @@ test "Plan bytecode validation and malformed input handling" {
         var planner = try Planner.init(allocator, 100);
         
         // Should be able to create plan even with malformed bytecode
-        const plan = try planner.getOrAnalyze(test_case.bytecode, handlers);
+        const plan = try planner.getOrAnalyze(test_case.bytecode, handlers, Hardfork.DEFAULT);
         _ = plan;        // Basic validation that plan was created
     }
 }
@@ -2317,7 +2318,7 @@ test "Plan complete opcode coverage validation" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     _ = plan;    // Verify plan was created successfully with all opcodes
 }
 
@@ -2343,7 +2344,7 @@ test "Plan concurrent access simulation" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Simulate multiple "threads" accessing the same plan
     const num_simulated_threads = 10;
@@ -2400,7 +2401,7 @@ test "Plan instruction stream integrity validation" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     
     // Validate instruction stream integrity
     var expected_pc: usize = 0;
@@ -2453,7 +2454,7 @@ test "Plan extreme configuration edge cases" {
     var handlers: [256]*const HandlerFn = undefined;
     for (&handlers) |*h| h.* = &testHandler;
     
-    const plan = try planner.getOrAnalyze(&bytecode, handlers);
+    const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
     _ = plan;
 }
 test "Plan error recovery and resilience testing" {
@@ -2479,7 +2480,7 @@ test "Plan error recovery and resilience testing" {
         var planner = try Planner.init(allocator, 100);
         
         // Should be able to create plan without crashing
-        const plan = try planner.getOrAnalyze(test_bytecode, handlers);
+        const plan = try planner.getOrAnalyze(test_bytecode, handlers, Hardfork.DEFAULT);
         
         // Basic integrity check
         
@@ -2515,7 +2516,7 @@ test "Plan resource cleanup and leak prevention" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        const plan = try planner.getOrAnalyze(bytecode, handlers);
+        const plan = try planner.getOrAnalyze(bytecode, handlers, Hardfork.DEFAULT);
         
         // Use the plan briefly
         _ = plan.getInstructionIndexForPc(0);
@@ -2604,7 +2605,7 @@ test "Plan real-world contract patterns - ERC20 and DeFi bytecode" {
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         
-        const plan = try planner.getOrAnalyze(pattern.bytecode, handlers);
+        const plan = try planner.getOrAnalyze(pattern.bytecode, handlers, Hardfork.DEFAULT);
         
         // Validate plan was created successfully
         
@@ -2675,7 +2676,7 @@ test "Plan cross-platform compatibility - InstructionElement size behavior" {
         const Planner = @import("planner.zig").createPlanner(test_config.config);
         var planner = try Planner.init(allocator, 100);
         
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
         
         // Verify plan creation succeeds
         
@@ -2758,7 +2759,7 @@ test "Plan comprehensive JUMPDEST analysis with pathological patterns" {
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         
-        const plan = try planner.getOrAnalyze(pattern.bytecode, handlers);
+        const plan = try planner.getOrAnalyze(pattern.bytecode, handlers, Hardfork.DEFAULT);
         
         // Verify valid JUMPDEST detection
         for (pattern.valid_jumpdests) |valid_pc| {
@@ -2902,7 +2903,7 @@ test "Plan gas cost estimation accuracy validation" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        const plan = try planner.getOrAnalyze(&bytecode, handlers);
+        const plan = try planner.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
         
         // Find the test opcode in bytecode and get its metadata
         for (bytecode[0..bytecode_len], 0..) |byte, pc| {
@@ -2960,7 +2961,7 @@ test "Plan equivalence between minimal and advanced plans" {
         // Create advanced plan
         const AdvancedPlanner = @import("planner.zig").createPlanner(.{});
         var advanced_planner = try AdvancedPlanner.init(allocator, 100);
-        const advanced_plan = try advanced_planner.getOrAnalyze(bytecode, handlers);
+        const advanced_plan = try advanced_planner.getOrAnalyze(bytecode, handlers, Hardfork.DEFAULT);
         
         // For minimal plan, we need to set bytecode first
         advanced_planner.bytecode = try AdvancedPlanner.Bytecode.init(allocator, bytecode);
@@ -3194,7 +3195,7 @@ test "Plan bytecode analysis completeness validation" {
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         
-        const plan = try planner.getOrAnalyze(pattern.bytecode, handlers);
+        const plan = try planner.getOrAnalyze(pattern.bytecode, handlers, Hardfork.DEFAULT);
         
         // Test comprehensive analysis capabilities
         
