@@ -22,6 +22,17 @@ const MemoryDatabase = evm_root.MemoryDatabase;
 const CallParams = evm_root.CallParams;
 const CallResult = evm_root.CallResult;
 const Address = primitives.Address.Address;
+const Frame = evm_root.Frame;
+const FrameConfig = evm_root.FrameConfig;
+const NoOpTracer = evm_root.NoOpTracer;
+
+// Define a specific Frame type for C API use
+const DefaultFrameConfig = FrameConfig{
+    .stack_size = 1024,
+    .has_database = false,
+    .TracerType = NoOpTracer,
+};
+const DefaultFrame = Frame(DefaultFrameConfig);
 
 // Use page allocator for WASM (no libc dependency)
 const allocator = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding)
@@ -401,6 +412,276 @@ export fn guillotine_u256_from_u64(value: u64, out_u256: ?*GuillotineU256) void 
     // Set the lower 8 bytes (little-endian)
     const value_bytes = std.mem.asBytes(&value);
     @memcpy(out_u256.?.bytes[0..8], value_bytes);
+}
+
+// Frame API exports for direct frame manipulation
+// These are separate from the main EVM API and allow low-level frame control
+
+// Frame handle type
+const FrameHandle = struct {
+    frame: *DefaultFrame,
+    allocator: std.mem.Allocator,
+    bytecode: []const u8,
+    initial_gas: u64,
+};
+
+// Error codes for frame operations
+const FrameError = enum(c_int) {
+    FRAME_OK = 0,
+    FRAME_ERROR_MEMORY = 1,
+    FRAME_ERROR_INVALID_PARAM = 2,
+    FRAME_ERROR_EXECUTION_FAILED = 3,
+    FRAME_ERROR_STACK_OVERFLOW = 4,
+    FRAME_ERROR_STACK_UNDERFLOW = 5,
+    FRAME_ERROR_OUT_OF_GAS = 6,
+};
+
+/// Create a new frame for execution
+/// @param bytecode_ptr Pointer to bytecode
+/// @param bytecode_len Length of bytecode
+/// @param initial_gas Initial gas amount
+/// @return Pointer to frame handle or null on error
+export fn evm_frame_create(bytecode_ptr: [*]const u8, bytecode_len: usize, initial_gas: u64) ?*anyopaque {
+    const bytecode = bytecode_ptr[0..bytecode_len];
+    
+    const handle = allocator.create(FrameHandle) catch return null;
+    
+    // Allocate and copy bytecode
+    handle.bytecode = allocator.alloc(u8, bytecode_len) catch {
+        allocator.destroy(handle);
+        return null;
+    };
+    @memcpy(@constCast(handle.bytecode), bytecode);
+    
+    handle.initial_gas = initial_gas;
+    
+    // Create frame
+    handle.frame = allocator.create(DefaultFrame) catch {
+        allocator.free(handle.bytecode);
+        allocator.destroy(handle);
+        return null;
+    };
+    
+    // Initialize frame
+    handle.frame.* = DefaultFrame.init(
+        allocator,
+        handle.bytecode,
+        @intCast(initial_gas),
+        {}, // No database
+        null // No host  
+    ) catch {
+        allocator.destroy(handle.frame);
+        allocator.free(handle.bytecode);
+        allocator.destroy(handle);
+        return null;
+    };
+    
+    handle.allocator = allocator;
+    return @ptrCast(handle);
+}
+
+/// Destroy a frame
+/// @param frame_ptr Pointer to frame handle
+export fn evm_frame_destroy(frame_ptr: ?*anyopaque) void {
+    if (frame_ptr) |ptr| {
+        const handle: *FrameHandle = @ptrCast(@alignCast(ptr));
+        
+        // Deinit and destroy frame
+        handle.frame.deinit(handle.allocator);
+        handle.allocator.destroy(handle.frame);
+        handle.allocator.free(handle.bytecode);
+        handle.allocator.destroy(handle);
+    }
+}
+
+/// Execute the frame until completion or error
+/// @param frame_ptr Pointer to frame handle
+/// @return Error code (0 = success)
+export fn evm_frame_execute(frame_ptr: ?*anyopaque) c_int {
+    if (frame_ptr == null) return @intFromEnum(FrameError.FRAME_ERROR_INVALID_PARAM);
+    
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    const frame = handle.frame;
+    
+    // The Frame doesn't have a direct execute method in the new architecture
+    // We would need to use a Planner and Plan to execute
+    // For now, return error indicating execution is not implemented
+    _ = frame;
+    return @intFromEnum(FrameError.FRAME_ERROR_EXECUTION_FAILED);
+}
+
+/// Get remaining gas in the frame
+/// @param frame_ptr Pointer to frame handle
+/// @return Remaining gas amount
+export fn evm_frame_get_gas_remaining(frame_ptr: ?*anyopaque) u64 {
+    if (frame_ptr == null) return 0;
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    const frame = handle.frame;
+    return @intCast(@max(0, frame.gas_manager.rawRemaining()));
+}
+
+/// Get used gas in the frame
+/// @param frame_ptr Pointer to frame handle
+/// @return Used gas amount
+export fn evm_frame_get_gas_used(frame_ptr: ?*anyopaque) u64 {
+    if (frame_ptr == null) return 0;
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    const frame = handle.frame;
+    // Calculate used gas from initial gas and remaining gas
+    const remaining = @max(0, frame.gas_manager.rawRemaining());
+    return handle.initial_gas - @as(u64, @intCast(remaining));
+}
+
+/// Get current program counter
+/// @param frame_ptr Pointer to frame handle
+/// @return Current PC value
+export fn evm_frame_get_pc(frame_ptr: ?*anyopaque) u32 {
+    if (frame_ptr == null) return 0;
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    // Frame doesn't store PC in the new architecture
+    // PC is managed by the Plan/Planner
+    _ = handle;
+    return 0; // TODO: Need to integrate with Plan for PC tracking
+}
+
+/// Get stack size
+/// @param frame_ptr Pointer to frame handle
+/// @return Number of items on the stack
+export fn evm_frame_stack_size(frame_ptr: ?*anyopaque) u32 {
+    if (frame_ptr == null) return 0;
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    const frame = handle.frame;
+    return @intCast(frame.stack.size());
+}
+
+/// Check if frame execution has stopped
+/// @param frame_ptr Pointer to frame handle
+/// @return 1 if stopped, 0 if running
+export fn evm_frame_is_stopped(frame_ptr: ?*anyopaque) c_int {
+    if (frame_ptr == null) return 1;
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    // Frame doesn't have is_stopped field
+    // Would need to track execution state separately
+    _ = handle;
+    return 0; // TODO: Track execution state
+}
+
+/// Get memory size
+/// @param frame_ptr Pointer to frame handle
+/// @return Current memory size in bytes
+export fn evm_frame_get_memory_size(frame_ptr: ?*anyopaque) usize {
+    if (frame_ptr == null) return 0;
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    const frame = handle.frame;
+    return frame.memory.size();
+}
+
+/// Get bytecode length
+/// @param frame_ptr Pointer to frame handle
+/// @return Bytecode length
+export fn evm_frame_get_bytecode_len(frame_ptr: ?*anyopaque) u32 {
+    if (frame_ptr == null) return 0;
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    return @intCast(handle.bytecode.len);
+}
+
+/// Get current opcode at PC
+/// @param frame_ptr Pointer to frame handle  
+/// @return Current opcode or 0 if invalid
+export fn evm_frame_get_current_opcode(frame_ptr: ?*anyopaque) u8 {
+    if (frame_ptr == null) return 0;
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    const frame = handle.frame;
+    
+    // Frame doesn't track PC, would need Plan integration
+    _ = frame;
+    return 0; // TODO: Integrate with Plan for opcode access
+}
+
+/// Reset frame with new gas
+/// @param frame_ptr Pointer to frame handle
+/// @param new_gas New gas amount
+/// @return Error code (0 = success)
+export fn evm_frame_reset(frame_ptr: ?*anyopaque, new_gas: u64) c_int {
+    if (frame_ptr == null) return @intFromEnum(FrameError.FRAME_ERROR_INVALID_PARAM);
+    
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    const frame = handle.frame;
+    
+    // Reset frame state
+    // Stack needs to be properly initialized
+    frame.stack = DefaultFrame.Stack.init();
+    frame.memory.reset();
+    frame.gas_manager = DefaultFrame.GasManagerType.init(@intCast(new_gas));
+    
+    return @intFromEnum(FrameError.FRAME_OK);
+}
+
+/// Push a u64 value onto the stack
+/// @param frame_ptr Pointer to frame handle
+/// @param value Value to push
+/// @return Error code (0 = success)
+export fn evm_frame_push_u64(frame_ptr: ?*anyopaque, value: u64) c_int {
+    if (frame_ptr == null) return @intFromEnum(FrameError.FRAME_ERROR_INVALID_PARAM);
+    
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    const frame = handle.frame;
+    
+    frame.stack.push(@intCast(value)) catch {
+        return @intFromEnum(FrameError.FRAME_ERROR_STACK_OVERFLOW);
+    };
+    
+    return @intFromEnum(FrameError.FRAME_OK);
+}
+
+/// Pop a u64 value from the stack
+/// @param frame_ptr Pointer to frame handle
+/// @param value_out Pointer to store the popped value
+/// @return Error code (0 = success)
+export fn evm_frame_pop_u64(frame_ptr: ?*anyopaque, value_out: ?*u64) c_int {
+    if (frame_ptr == null or value_out == null) return @intFromEnum(FrameError.FRAME_ERROR_INVALID_PARAM);
+    
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    const frame = handle.frame;
+    
+    const value = frame.stack.pop() catch {
+        return @intFromEnum(FrameError.FRAME_ERROR_STACK_UNDERFLOW);
+    };
+    
+    value_out.?.* = @intCast(value);
+    return @intFromEnum(FrameError.FRAME_OK);
+}
+
+/// Get memory data
+/// @param frame_ptr Pointer to frame handle
+/// @param offset Offset in memory
+/// @param length Number of bytes to read
+/// @param data_out Buffer to write data to
+/// @return Error code (0 = success)
+export fn evm_frame_get_memory(frame_ptr: ?*anyopaque, offset: u32, length: u32, data_out: ?[*]u8) c_int {
+    if (frame_ptr == null or data_out == null) return @intFromEnum(FrameError.FRAME_ERROR_INVALID_PARAM);
+    
+    const handle: *FrameHandle = @ptrCast(@alignCast(frame_ptr.?));
+    const frame = handle.frame;
+    
+    const slice = frame.memory.get_slice(@intCast(offset), @intCast(length)) catch {
+        return @intFromEnum(FrameError.FRAME_ERROR_EXECUTION_FAILED);
+    };
+    
+    const data_out_slice = data_out.?[0..length];
+    @memcpy(data_out_slice, slice);
+    return @intFromEnum(FrameError.FRAME_OK);
+}
+
+/// Create a debug frame with tracing enabled
+/// @param bytecode_ptr Pointer to bytecode
+/// @param bytecode_len Length of bytecode  
+/// @param initial_gas Initial gas amount
+/// @return Pointer to frame handle or null on error
+export fn evm_debug_frame_create(bytecode_ptr: [*]const u8, bytecode_len: usize, initial_gas: u64) ?*anyopaque {
+    // For now, just create a regular frame
+    // TODO: Add debug/tracing support
+    return evm_frame_create(bytecode_ptr, bytecode_len, initial_gas);
 }
 
 // Helper functions
