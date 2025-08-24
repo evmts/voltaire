@@ -147,22 +147,22 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.PUSH0) + push_i));
                 handlers[@intFromEnum(opcode)] = &push_handlers[push_i];
             }
-            handlers[@intFromEnum(Opcode.DUP1)] = &dup1_handler;
-            handlers[@intFromEnum(Opcode.DUP2)] = &dup2_handler;
-            handlers[@intFromEnum(Opcode.DUP3)] = &dup3_handler;
-            handlers[@intFromEnum(Opcode.DUP4)] = &dup4_handler;
-            handlers[@intFromEnum(Opcode.DUP5)] = &dup5_handler;
-            handlers[@intFromEnum(Opcode.DUP6)] = &dup6_handler;
-            handlers[@intFromEnum(Opcode.DUP7)] = &dup7_handler;
-            handlers[@intFromEnum(Opcode.DUP8)] = &dup8_handler;
-            handlers[@intFromEnum(Opcode.DUP9)] = &dup9_handler;
-            handlers[@intFromEnum(Opcode.DUP10)] = &dup10_handler;
-            handlers[@intFromEnum(Opcode.DUP11)] = &dup11_handler;
-            handlers[@intFromEnum(Opcode.DUP12)] = &dup12_handler;
-            handlers[@intFromEnum(Opcode.DUP13)] = &dup13_handler;
-            handlers[@intFromEnum(Opcode.DUP14)] = &dup14_handler;
-            handlers[@intFromEnum(Opcode.DUP15)] = &dup15_handler;
-            handlers[@intFromEnum(Opcode.DUP16)] = &dup16_handler;
+            // Generate DUP handlers using comptime
+            const dup_handlers = comptime blk: {
+                var result: [16]HandlerFnType = undefined;
+                var i: u8 = 1;
+                while (i <= 16) : (i += 1) {
+                    result[i - 1] = generateDupHandler(i);
+                }
+                break :blk result;
+            };
+            
+            // Assign DUP handlers
+            comptime var dup_i: u8 = 1;
+            inline while (dup_i <= 16) : (dup_i += 1) {
+                const opcode = @as(Opcode, @enumFromInt(@intFromEnum(Opcode.DUP1) + dup_i - 1));
+                handlers[@intFromEnum(opcode)] = &dup_handlers[dup_i - 1];
+            }
             handlers[@intFromEnum(Opcode.SWAP1)] = &swap1_handler;
             handlers[@intFromEnum(Opcode.SWAP2)] = &swap2_handler;
             handlers[@intFromEnum(Opcode.SWAP3)] = &swap3_handler;
