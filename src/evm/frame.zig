@@ -32,9 +32,6 @@ const CallParams = @import("call_params.zig").CallParams;
 const CallResult = @import("call_result.zig").CallResult;
 const logs = @import("logs.zig");
 const Log = logs.Log;
-const gas_manager_mod = @import("gas_manager.zig");
-const GasManager = gas_manager_mod.GasManager;
-const GasError = gas_manager_mod.GasError;
 
 // Temporary constants until they're added to primitives
 const EMPTY_CODE_HASH = [32]u8{
@@ -69,7 +66,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             .stack_size = config.stack_size,
             .WordType = config.WordType,
         });
-        pub const GasManagerType = GasManager(config.gasManagerConfig());
+        pub const GasType = config.GasType();
         pub const Error = error{
             StackOverflow,
             StackUnderflow,
@@ -92,7 +89,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         // Cacheline 1
         stack: Stack,
         bytecode: []const u8, // 16 bytes (slice)
-        gas_manager: GasManagerType, // Centralized gas tracking
+        gas_remaining: GasType, // Direct gas tracking
         tracer: if (config.TracerType) |T| T else void,
         memory: Memory,
         database: if (config.has_database) ?DatabaseInterface else void,
@@ -131,12 +128,11 @@ pub fn Frame(comptime config: FrameConfig) type {
             var output_data = std.ArrayList(u8).init(allocator);
             errdefer output_data.deinit();
 
-            const gas_mgr = try GasManagerType.init(@as(u64, @intCast(@max(gas_remaining, 0))));
             
             return Self{
                 .stack = stack,
                 .bytecode = bytecode,
-                .gas_manager = gas_mgr,
+                .gas_remaining = @as(GasType, @intCast(@max(gas_remaining, 0))),
                 .tracer = if (config.TracerType) |T| T.init() else {},
                 .memory = memory,
                 .database = database,
@@ -264,9 +260,9 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Used by DebugPlan to validate execution.
         pub fn assertEqual(self: *const Self, other: *const Self) void {
             // Compare gas
-            if (self.gas_manager.rawRemaining() != other.gas_manager.rawRemaining()) {
+            if (self.gas_remaining != other.gas_remaining) {
                 if (comptime (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding)) {
-                    std.debug.panic("Frame.assertEqual: gas mismatch: {} vs {}", .{ self.gas_manager.rawRemaining(), other.gas_manager.rawRemaining() });
+                    std.debug.panic("Frame.assertEqual: gas mismatch: {} vs {}", .{ self.gas_remaining, other.gas_remaining });
                 }
             }
 
@@ -351,7 +347,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pretty print the frame state for debugging.
         pub fn pretty_print(self: *const Self) void {
             log.warn("\n=== Frame State ===\n", .{});
-            log.warn("Gas Remaining: {}\n", .{self.gas_manager.gasRemaining()});
+            log.warn("Gas Remaining: {}\n", .{@max(self.gas_remaining, 0)});
             log.warn("Bytecode Length: {}\n", .{self.bytecode.len});
 
             // Show bytecode (first 50 bytes or less)
@@ -688,16 +684,16 @@ pub fn Frame(comptime config: FrameConfig) type {
 
         /// Consume gas without checking (for use after static analysis)
         pub fn consumeGasUnchecked(self: *Self, amount: u64) void {
-            self.gas_manager.consumeUnchecked(amount);
+            self.gas_remaining -= @as(GasType, @intCast(amount));
         }
 
         /// Check if we're out of gas at end of execution
         pub fn checkGas(self: *Self) Error!void {
-            if (@as(std.builtin.BranchHint, .cold) == .cold and self.gas_manager.isOutOfGas()) return Error.OutOfGas;
+            if (@as(std.builtin.BranchHint, .cold) == .cold and self.gas_remaining <= 0) return Error.OutOfGas;
         }
 
         pub fn gas(self: *Self) Error!void {
-            const gas_value = @as(WordType, self.gas_manager.gasRemaining());
+            const gas_value = @as(WordType, @max(self.gas_remaining, 0));
             return self.stack.push(gas_value);
         }
 
@@ -948,7 +944,8 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return Error.OutOfGas;
             }
 
-            try self.gas_manager.consume(copy_gas);
+            if (self.gas_remaining < @as(GasType, @intCast(copy_gas))) return Error.OutOfGas;
+            self.gas_remaining -= @as(GasType, @intCast(copy_gas));
 
             // Get memory buffer slice
             const mem_buffer = self.memory.get_buffer_ref();
@@ -1170,7 +1167,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             if (byte_cost > std.math.maxInt(GasType)) {
                 return Error.OutOfGas;
             }
-            try self.gas_manager.consume(byte_cost);
+            if (self.gas_remaining < @as(GasType, @intCast(byte_cost))) return Error.OutOfGas;
+            self.gas_remaining -= @as(GasType, @intCast(byte_cost));
 
             // Get log data
             const data = self.memory.get_slice(offset_usize, size_usize) catch return Error.OutOfBounds;
@@ -1747,7 +1745,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data_size = @as(usize, @intCast(length));
             const gas_cost = 375 + 8 * data_size;
             
-            try self.gas_manager.consume(gas_cost);
+            if (self.gas_remaining < @as(GasType, @intCast(gas_cost))) return Error.OutOfGas;
+            self.gas_remaining -= @as(GasType, @intCast(gas_cost));
 
             // Get data from memory
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
@@ -1791,7 +1790,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data_size = @as(usize, @intCast(length));
             const gas_cost = 375 + 375 + 8 * data_size;
             
-            try self.gas_manager.consume(gas_cost);
+            if (self.gas_remaining < @as(GasType, @intCast(gas_cost))) return Error.OutOfGas;
+            self.gas_remaining -= @as(GasType, @intCast(gas_cost));
 
             // Get data from memory
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
@@ -1838,7 +1838,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data_size = @as(usize, @intCast(length));
             const gas_cost = 375 + 375 * 2 + 8 * data_size;
             
-            try self.gas_manager.consume(gas_cost);
+            if (self.gas_remaining < @as(GasType, @intCast(gas_cost))) return Error.OutOfGas;
+            self.gas_remaining -= @as(GasType, @intCast(gas_cost));
 
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
                 return Error.OutOfBounds;
@@ -1885,7 +1886,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data_size = @as(usize, @intCast(length));
             const gas_cost = 375 + 375 * 3 + 8 * data_size;
             
-            try self.gas_manager.consume(gas_cost);
+            if (self.gas_remaining < @as(GasType, @intCast(gas_cost))) return Error.OutOfGas;
+            self.gas_remaining -= @as(GasType, @intCast(gas_cost));
 
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
                 return Error.OutOfBounds;
@@ -1934,7 +1936,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data_size = @as(usize, @intCast(length));
             const gas_cost = 375 + 375 * 4 + 8 * data_size;
             
-            try self.gas_manager.consume(gas_cost);
+            if (self.gas_remaining < @as(GasType, @intCast(gas_cost))) return Error.OutOfGas;
+            self.gas_remaining -= @as(GasType, @intCast(gas_cost));
 
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
                 return Error.OutOfBounds;
