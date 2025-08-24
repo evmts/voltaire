@@ -457,6 +457,8 @@ const FrameError = enum(c_int) {
 /// @param initial_gas Initial gas amount
 /// @return Pointer to frame handle or null on error
 export fn evm_frame_create(bytecode_ptr: [*]const u8, bytecode_len: usize, initial_gas: u64) ?*anyopaque {
+    if (bytecode_len == 0) return null;
+    
     const bytecode = bytecode_ptr[0..bytecode_len];
     
     const handle = allocator.create(FrameHandle) catch return null;
