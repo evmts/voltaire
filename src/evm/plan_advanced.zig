@@ -2613,7 +2613,7 @@ test "Plan real-world contract patterns - ERC20 and DeFi bytecode" {
         const Planner = @import("planner.zig").createPlanner(.{});
         var planner = try Planner.init(allocator, 100);
         
-        const plan = try planner.getOrAnalyze(&pattern.bytecode, handlers);
+        const plan = try planner.getOrAnalyze(pattern.bytecode, handlers);
         
         // Validate plan was created successfully
         try std.testing.expect(plan.bytecode.len == pattern.bytecode.len);
