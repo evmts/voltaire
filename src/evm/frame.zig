@@ -7,6 +7,7 @@ const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 pub const FrameConfig = @import("frame_config.zig").FrameConfig;
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
+const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
 const primitives = @import("primitives");
 const GasConstants = primitives.GasConstants;
 const Address = primitives.Address.Address;
