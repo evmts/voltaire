@@ -1,45 +1,39 @@
 import Foundation
 import GuillotineC
+import GuillotineEVM
 
 @main
 struct BasicTest {
     static func main() {
-        print("🔬 Minimal C function test...")
+        print("🔬 Step-by-step debugging...")
         
-        print("Step 1: About to call guillotine_version()")
-        let versionPtr = guillotine_version()
-        print("Step 2: Got version pointer: \(String(describing: versionPtr))")
+        // Step 1: Test basic C functions
+        print("Step 1: Testing guillotine_version()...")
+        let version = String(cString: guillotine_version()!)
+        print("✅ Version: \(version)")
         
-        if let versionPtr = versionPtr {
-            let version = String(cString: versionPtr)
-            print("Step 3: Converted to string: \(version)")
-            print("✅ guillotine_version() works!")
-        } else {
-            print("❌ guillotine_version() returned nil!")
+        print("Step 2: Testing guillotine_is_initialized()...")
+        let isInit = guillotine_is_initialized()
+        print("✅ Is initialized: \(isInit)")
+        
+        // Step 3: Test thread-safe creation (this might hang)
+        print("Step 3: Creating GuillotineEVMThreadSafe...")
+        do {
+            let evm = try GuillotineEVMThreadSafe()
+            print("✅ Thread-safe EVM created successfully!")
             
-            // Let's try the init/is_initialized pattern
-            print("Step 4: Trying guillotine_init()")
-            let initResult = guillotine_init()
-            print("Step 5: Init result: \(initResult)")
+            // Step 4: Test static methods
+            print("Step 4: Testing static methods...")
+            print("  Version: \(GuillotineEVMThreadSafe.version)")
+            print("  Initialized: \(GuillotineEVMThreadSafe.isInitialized)")
+            print("✅ Static methods work!")
             
-            print("Step 6: Trying guillotine_is_initialized()")
-            let isInit = guillotine_is_initialized()
-            print("Step 7: Is initialized: \(isInit)")
+            print("\n🎉 SUCCESS: Thread-safe implementation works!")
             
-            // Try version again
-            print("Step 8: Trying guillotine_version() again")
-            let versionPtr2 = guillotine_version()
-            print("Step 9: Got version pointer 2: \(String(describing: versionPtr2))")
-            
-            if let versionPtr2 = versionPtr2 {
-                let version = String(cString: versionPtr2)
-                print("Step 10: Version after init: \(version)")
-                print("✅ guillotine_version() works after init!")
-            } else {
-                print("❌ guillotine_version() still returns nil after init!")
-            }
+        } catch {
+            print("❌ Failed at GuillotineEVMThreadSafe creation: \(error)")
         }
         
-        print("🏁 Test completed")
+        print("🏁 Test completed without hanging!")
     }
 }
