@@ -2118,7 +2118,7 @@ test "Plan performance and memory efficiency benchmarking" {
     for (&handlers) |*h| h.* = &testHandler;
     
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
-    _ = plan;    _ = plan;
+    _ = plan;
     
     const end_time = std.time.nanoTimestamp();
     const duration_ns = end_time - start_time;
@@ -2251,7 +2251,6 @@ test "Plan bytecode validation and malformed input handling" {
         
         // Should be able to create plan even with malformed bytecode
         const plan = try planner.getOrAnalyze(test_case.bytecode, handlers);
-        
         _ = plan;        // Basic validation that plan was created
     }
 }
@@ -2319,7 +2318,6 @@ test "Plan complete opcode coverage validation" {
     for (&handlers) |*h| h.* = &testHandler;
     
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
-    
     _ = plan;    // Verify plan was created successfully with all opcodes
 }
 
@@ -2456,9 +2454,8 @@ test "Plan extreme configuration edge cases" {
     for (&handlers) |*h| h.* = &testHandler;
     
     const plan = try planner.getOrAnalyze(&bytecode, handlers);
-    
-}
     _ = plan;
+}
 test "Plan error recovery and resilience testing" {
     const allocator = std.testing.allocator;
     
@@ -3122,9 +3119,10 @@ test "Plan configuration boundary and mutation stress testing" {
         
         const plan = try planner.getOrAnalyze(&test_bytecode, handlers);
         
+        _ = plan;
     }
 }
-        _ = plan;
+
 test "Plan bytecode analysis completeness validation" {
     const allocator = std.testing.allocator;
     
