@@ -16,12 +16,20 @@ const frame_c = @import("frame_c.zig");
 const bytecode_c = @import("bytecode_c.zig");
 const memory_c = @import("memory_c.zig");
 const stack_c = @import("stack_c.zig");
+const plan_c = @import("plan_c.zig");
+const planner_c = @import("planner_c.zig");
+const precompiles_c = @import("precompiles_c.zig");
+const hardfork_c = @import("hardfork_c.zig");
 
 // Export all C API modules
 pub usingnamespace frame_c;
 pub usingnamespace bytecode_c;
 pub usingnamespace memory_c;
 pub usingnamespace stack_c;
+pub usingnamespace plan_c;
+pub usingnamespace planner_c;
+pub usingnamespace precompiles_c;
+pub usingnamespace hardfork_c;
 
 const allocator = std.heap.c_allocator;
 
@@ -171,8 +179,9 @@ pub export fn evm_test_integration() c_int {
     const bytecode = bytecode_c.evm_bytecode_create(&bytecode_data, bytecode_data.len) orelse return -3;
     defer bytecode_c.evm_bytecode_destroy(bytecode);
     
-    // Analyze bytecode
-    if (bytecode_c.evm_bytecode_analyze(bytecode) != 0) return -4;
+    // Get bytecode stats instead of analyze
+    var stats: bytecode_c.CBytecodeStats = undefined;
+    if (bytecode_c.evm_bytecode_get_stats(bytecode, &stats) != 0) return -4;
     
     // Execute bytecode operations manually
     // PUSH1 0x42
