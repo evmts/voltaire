@@ -954,3 +954,221 @@ test "gas constants match Ethereum specifications" {
     try testing.expectEqual(@as(u64, 30), Keccak256Gas);
     try testing.expectEqual(@as(u64, 6), Keccak256WordGas);
 }
+
+// ============================================================================
+// Edge Cases and Boundary Tests
+// ============================================================================
+
+test "memory_gas_cost - maximum memory size" {
+    // Test near maximum memory sizes
+    const max_memory = 0x1FFFFFFFE0; // Maximum EVM memory size
+    const near_max = max_memory - 32;
+    
+    // Expanding to maximum should work
+    const expand_to_max = memory_gas_cost(0, max_memory);
+    try testing.expect(expand_to_max > 0);
+    
+    // Expanding from near-max to max
+    const expand_near_to_max = memory_gas_cost(near_max, max_memory);
+    try testing.expect(expand_near_to_max > 0);
+}
+
+test "wordCount - special boundary cases" {
+    // Test powers of 2 boundaries
+    try testing.expectEqual(@as(usize, 16), wordCount(512)); // 2^9
+    try testing.expectEqual(@as(usize, 32), wordCount(1024)); // 2^10
+    try testing.expectEqual(@as(usize, 256), wordCount(8192)); // 2^13
+    
+    // Test maximum contract size
+    const max_contract_size = 24576; // 24KB max contract size
+    try testing.expectEqual(@as(usize, 768), wordCount(max_contract_size));
+}
+
+test "sstore_gas_cost - complex state transitions" {
+    // Test transition from non-zero to different non-zero back to original
+    // This tests the "dirty" state tracking
+    
+    // Original = 10, Current = 20, New = 10 (reverting to original)
+    try testing.expectEqual(@as(u64, 100), sstore_gas_cost(20, 10, 10, false));
+    
+    // Original = 0, Current = 10, New = 0 (reverting to original zero)
+    try testing.expectEqual(@as(u64, 100), sstore_gas_cost(10, 0, 0, false));
+    
+    // Original = 10, Current = 0, New = 20 (was cleared, now setting different)
+    try testing.expectEqual(@as(u64, 100), sstore_gas_cost(0, 10, 20, false));
+}
+
+test "create_gas_cost - exact word boundaries" {
+    // Test exact multiples of 32 bytes
+    const word_sizes = [_]usize{ 32, 64, 128, 256, 512, 1024, 2048, 4096 };
+    
+    for (word_sizes) |size| {
+        const cost = create_gas_cost(size, InitcodeWordGas);
+        const expected = CreateGas + (size / 32) * InitcodeWordGas;
+        try testing.expectEqual(expected, cost);
+    }
+}
+
+test "log_gas_cost - maximum data sizes" {
+    // Test with large data sizes that might be used in practice
+    const large_sizes = [_]usize{ 1024, 2048, 4096, 8192, 16384 };
+    
+    for (large_sizes) |size| {
+        for (0..5) |topic_count| {
+            const cost = log_gas_cost(@intCast(topic_count), size);
+            const expected = LogGas + topic_count * LogTopicGas + size * LogDataGas;
+            try testing.expectEqual(expected, cost);
+        }
+    }
+}
+
+// ============================================================================
+// Cross-Function Integration Tests
+// ============================================================================
+
+test "integration - CREATE2 full gas calculation" {
+    // CREATE2 requires: base create cost + init code cost + hash cost
+    const init_code_size = 1000;
+    const salt_size = 32;
+    const address_size = 20;
+    const prefix_size = 1; // 0xff prefix
+    
+    // Calculate individual components
+    const create_cost = create_gas_cost(init_code_size, InitcodeWordGas);
+    const hash_input_size = prefix_size + address_size + salt_size + init_code_size;
+    const hash_cost = keccak256_gas_cost(hash_input_size);
+    
+    // Total cost should be sum of components
+    const total_cost = create_cost + hash_cost;
+    try testing.expect(total_cost > CreateGas);
+    try testing.expect(total_cost == 32000 + wordCount(init_code_size) * 2 + 30 + wordCount(hash_input_size) * 6);
+}
+
+test "integration - memory expansion with copy" {
+    // Common pattern: expand memory then copy data
+    const current_mem = 1000;
+    const copy_offset = 2000;
+    const copy_size = 500;
+    const final_mem = copy_offset + copy_size; // 2500
+    
+    // Calculate costs
+    const expansion_cost = memory_gas_cost(current_mem, final_mem);
+    const copy_cost = copy_gas_cost(copy_size);
+    
+    // Verify costs are reasonable
+    try testing.expect(expansion_cost > 0);
+    try testing.expect(copy_cost == wordCount(copy_size) * CopyGas);
+}
+
+test "integration - storage operation sequence" {
+    // Simulate a sequence of storage operations in a transaction
+    
+    // First access (cold)
+    const first_read = ColdSloadCost; // 2100
+    
+    // First write (cold, zero to non-zero)
+    const first_write = sstore_gas_cost(0, 0, 42, true); // 22100
+    
+    // Second read (warm)
+    const second_read = SloadGas; // 100
+    
+    // Second write (warm, modify)
+    const second_write = sstore_gas_cost(42, 42, 100, false); // 5000
+    
+    // Third write (warm, already modified)
+    const third_write = sstore_gas_cost(100, 42, 200, false); // 100
+    
+    // Total sequence cost
+    const total = first_read + first_write + second_read + second_write + third_write;
+    try testing.expectEqual(@as(u64, 29400), total);
+}
+
+// ============================================================================
+// Gas Refund Calculation Tests
+// ============================================================================
+
+test "storage refunds - clearing storage" {
+    // Test gas refund calculations for storage clearing
+    
+    // Clear storage (non-zero to zero)
+    const clear_cost = sstore_gas_cost(42, 42, 0, false);
+    try testing.expectEqual(SstoreResetGas, clear_cost);
+    
+    // Refund should be SstoreRefundGas
+    try testing.expectEqual(@as(u64, 4800), SstoreRefundGas);
+    
+    // Maximum refund is gas_used / MaxRefundQuotient
+    const gas_used = 100000;
+    const max_refund = gas_used / MaxRefundQuotient;
+    try testing.expectEqual(@as(u64, 20000), max_refund);
+}
+
+// ============================================================================
+// Precompile Gas Cost Tests
+// ============================================================================
+
+test "precompile gas costs - identity" {
+    // Identity precompile (0x04)
+    const sizes = [_]usize{ 0, 32, 64, 128, 256 };
+    
+    for (sizes) |size| {
+        const cost = IDENTITY_BASE_COST + wordCount(size) * IDENTITY_WORD_COST;
+        try testing.expectEqual(15 + wordCount(size) * 3, cost);
+    }
+}
+
+test "precompile gas costs - sha256" {
+    // SHA256 precompile (0x02)
+    const sizes = [_]usize{ 0, 32, 64, 128, 256 };
+    
+    for (sizes) |size| {
+        const cost = SHA256_BASE_COST + wordCount(size) * SHA256_WORD_COST;
+        try testing.expectEqual(60 + wordCount(size) * 12, cost);
+    }
+}
+
+test "precompile gas costs - ecrecover" {
+    // ECRECOVER has fixed cost regardless of input
+    try testing.expectEqual(@as(u64, 3000), ECRECOVER_COST);
+}
+
+// ============================================================================
+// Transaction Gas Cost Tests
+// ============================================================================
+
+test "transaction gas costs - data costs" {
+    // Test transaction data gas costs
+    const zero_bytes = 100;
+    const non_zero_bytes = 50;
+    
+    const data_cost = zero_bytes * TxDataZeroGas + non_zero_bytes * TxDataNonZeroGas;
+    try testing.expectEqual(@as(u64, 100 * 4 + 50 * 16), data_cost);
+    
+    // Total transaction cost
+    const total_tx_cost = TxGas + data_cost;
+    try testing.expectEqual(@as(u64, 21000 + 400 + 800), total_tx_cost);
+}
+
+// ============================================================================
+// EIP-4844 Blob Transaction Tests
+// ============================================================================
+
+test "blob transaction gas costs" {
+    // Test blob-related opcodes
+    try testing.expectEqual(@as(u64, 3), BlobHashGas);
+    try testing.expectEqual(@as(u64, 2), BlobBaseFeeGas);
+}
+
+// ============================================================================
+// EIP-1153 Transient Storage Tests
+// ============================================================================
+
+test "transient storage gas costs" {
+    // TLOAD and TSTORE have same cost
+    try testing.expectEqual(@as(u64, 100), TLoadGas);
+    try testing.expectEqual(@as(u64, 100), TStoreGas);
+    
+    // Much cheaper than persistent storage
+    try testing.expect(TStoreGas < SstoreResetGas);
+    try testing.expect(TLoadGas == SloadGas); // Same as warm SLOAD
+}
