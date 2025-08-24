@@ -4574,11 +4574,7 @@ test "FrameInterpreter database integration - storage boundary conditions" {
     var frame_interpreter2 = try FrameInterpreter(.{ .has_database = true }).init(allocator, &bytecode_load, 100000, db_interface);
     defer frame_interpreter2.deinit(allocator);
     
-    const result2 = frame_interpreter2.interpret();
-    switch (result2) {
-        .success => {},
-        else => try std.testing.expect(false),
-    }
+    try frame_interpreter2.interpret();
 }
 
 // 8. STRESS & PERFORMANCE EDGE CASES ⭐⭐⭐
