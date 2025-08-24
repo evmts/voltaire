@@ -121,6 +121,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             errdefer stack.deinit(allocator);
 
             var memory = Memory.init(allocator) catch {
+                @branchHint(.cold);
                 return Error.AllocationError;
             };
             errdefer memory.deinit();
@@ -691,7 +692,10 @@ pub fn Frame(comptime config: FrameConfig) type {
 
         /// Check if we're out of gas at end of execution
         pub fn checkGas(self: *Self) Error!void {
-            if (@as(std.builtin.BranchHint, .cold) == .cold and self.gas_remaining <= 0) return Error.OutOfGas;
+            if (self.gas_remaining <= 0) {
+                @branchHint(.cold);
+                return Error.OutOfGas;
+            }
         }
 
         pub fn gas(self: *Self) Error!void {
@@ -785,11 +789,13 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Check bounds
             if (offset > std.math.maxInt(usize) or size > std.math.maxInt(usize)) {
+                @branchHint(.unlikely);
                 return Error.OutOfBounds;
             }
 
             // Handle empty data case
             if (size == 0) {
+                @branchHint(.unlikely);
                 // Hash of empty data = keccak256("")
                 if (WordType == u256) {
                     const empty_hash: u256 = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
@@ -807,6 +813,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Check for overflow
             const end = std.math.add(usize, offset_usize, size_usize) catch {
+                @branchHint(.unlikely);
                 return Error.OutOfBounds;
             };
 
