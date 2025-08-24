@@ -3312,97 +3312,12 @@ test "Frame SWAP2-SWAP15 operations" {
     try std.testing.expectError(error.StackUnderflow, frame.stack.swap10());
 }
 
-test "Frame op_selfdestruct basic" {
-    // TODO: Update these tests for the new frame structure
-    return error.SkipZigTest;
-    // const allocator = std.testing.allocator;
-    // const Frame = createFrame(.{ .has_database = true });
-    //
-    // const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
-    //
-    // // Create database
-    // const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-    // var memory_db = MemoryDatabase.init(allocator);
-    // defer memory_db.deinit();
-    // const db_interface = memory_db.to_database_interface();
-    //
-    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface, null);
-    // defer frame.deinit(allocator);
-    //
-    // // Set contract address and balance
-    // frame.contract_address = [_]u8{0x11} ++ [_]u8{0} ** 19;
-    // const account = @import("database_interface.zig").Account{
-    //     .balance = 1000,
-    //     .nonce = 1,
-    //     .code_hash = [_]u8{0} ** 32,
-    //     .storage_root = [_]u8{0} ** 32,
-    // };
-    // try db_interface.set_account(frame.contract_address, account);
-    //
-    // // Push recipient address to stack
-    // const recipient = [_]u8{0x22} ++ [_]u8{0} ** 19;
-    // const recipient_u256 = @as(u256, @bitCast(recipient ++ [_]u8{0} ** 12));
-    // frame.stack.push_unsafe(recipient_u256);
-    //
-    // // Execute SELFDESTRUCT
-    // try frame.selfdestruct();
-    //
-    // // Verify contract is marked for destruction
-    // try std.testing.expect(frame.self_destruct != null);
-    // try std.testing.expect(frame.self_destruct.?.is_marked_for_destruction(frame.contract_address));
-    //
-    // // Verify recipient is correct
-    // const stored_recipient = frame.self_destruct.?.get_recipient(frame.contract_address);
-    // try std.testing.expect(stored_recipient != null);
-    // try std.testing.expectEqualSlices(u8, &recipient, &stored_recipient.?);
-}
+// NOTE: SELFDESTRUCT test removed - needs update for current frame structure
+// Consider implementing when frame.selfdestruct interface is stable
 
-test "Frame op_selfdestruct with insufficient stack" {
-    return error.SkipZigTest; // TODO: Update this test for the new frame structure
-    // const allocator = std.testing.allocator;
-    // const Frame = createFrame(.{ .has_database = true });
-    //
-    // const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
-    //
-    // // Create database
-    // const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-    // var memory_db = MemoryDatabase.init(allocator);
-    // defer memory_db.deinit();
-    // const db_interface = memory_db.to_database_interface();
-    //
-    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface, null);
-    // defer frame.deinit(allocator);
-    //
-    // // Don't push anything to stack
-    // try std.testing.expectError(error.StackUnderflow, frame.selfdestruct());
-}
+// NOTE: SELFDESTRUCT insufficient stack test removed - needs update for current frame structure
 
-test "Frame op_selfdestruct in static context" {
-    return error.SkipZigTest; // TODO: Update this test for the new frame structure
-    // const allocator = std.testing.allocator;
-    // const Frame = createFrame(.{ .has_database = true });
-    //
-    // const bytecode = [_]u8{ 0xff, 0x00 }; // SELFDESTRUCT STOP
-    //
-    // // Create database
-    // const MemoryDatabase = @import("memory_database.zig").MemoryDatabase;
-    // var memory_db = MemoryDatabase.init(allocator);
-    // defer memory_db.deinit();
-    // const db_interface = memory_db.to_database_interface();
-    //
-    // var frame = try Frame.init(allocator, &bytecode, 1000000, db_interface, null);
-    // defer frame.deinit(allocator);
-    //
-    // // Set static context
-    //
-    // // Push recipient address to stack
-    // const recipient = [_]u8{0x22} ++ [_]u8{0} ** 19;
-    // const recipient_u256 = @as(u256, @bitCast(recipient ++ [_]u8{0} ** 12));
-    // frame.stack.push_unsafe(recipient_u256);
-    //
-    // // Should fail with WriteProtection error
-    // try std.testing.expectError(error.WriteProtection, frame.selfdestruct());
-}
+// NOTE: SELFDESTRUCT static context test removed - needs update for current frame structure
 
 test "Frame init validates bytecode size" {
     const allocator = std.testing.allocator;
