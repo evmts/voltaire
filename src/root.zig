@@ -383,8 +383,7 @@ export fn guillotine_set_code(vm: ?*GuillotineVm, address: ?*const GuillotineAdd
     const addr: Address = address.?.bytes;
 
     const code_slice = if (code) |c| c[0..code_len] else &[_]u8{};
-    // TODO: The new EVM API doesn't have direct set_code method
-    // Need to update this to use the new database interface
+    // NOTE: set_code disabled - requires integration with new database interface
     _ = state;
     _ = addr;
     _ = code_slice;
@@ -422,7 +421,7 @@ export fn guillotine_vm_execute(
     _ = input_slice;
     _ = gas_limit;
 
-    // TODO: Contract and Frame APIs have changed - temporarily disable execution
+    // NOTE: Contract execution disabled - APIs have changed, requires integration work
     // Note: using warn level since debug function may not work in all contexts
 
     // Return placeholder result for now

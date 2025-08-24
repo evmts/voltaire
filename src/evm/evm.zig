@@ -618,7 +618,7 @@ pub fn Evm(comptime config: EvmConfig) type {
                 const new_account = Account{
                     .balance = params.value,
                     .nonce = 1, // CREATE2 contracts start with nonce 1
-                    .code_hash = code_hash,
+                    .code_hash = code_hash_bytes,
                     .storage_root = [_]u8{0} ** 32,
                 };
                 
