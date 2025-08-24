@@ -257,19 +257,30 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             }
         }
         
-        /// Validate opcode range using SIMD
+        /// SIMD-accelerated opcode validation
+        /// 
+        /// Validates all bytecode represents valid EVM opcodes using vector operations.
+        /// Processes L bytes simultaneously instead of individual scalar comparisons.
         fn validateOpcodeSimd(code: []const u8, comptime L: comptime_int) bool {
             const max_valid_opcode = @intFromEnum(Opcode.SELFDESTRUCT);
+            
+            // Vector containing L copies of maximum valid opcode for parallel comparison
             const splat_max: @Vector(L, u8) = @splat(max_valid_opcode);
             
             var i: usize = 0;
+            // Process bytecode in L-byte chunks using vector operations
             while (i + L <= code.len) : (i += L) {
+                // Load consecutive bytes into vector for parallel processing
                 var arr: [L]u8 = undefined;
                 inline for (0..L) |k| arr[k] = code[i + k];
                 const v: @Vector(L, u8) = arr;
-                // Check if any byte exceeds max valid opcode
+                
+                // Compare all L bytes against maximum valid opcode simultaneously
+                // Single vector operation replaces L scalar comparisons
                 const gt_max: @Vector(L, bool) = v > splat_max;
                 const gt_max_arr: [L]bool = gt_max;
+                
+                // Early termination if any byte exceeds valid opcode range
                 inline for (gt_max_arr) |exceeds| {
                     if (exceeds) {
                         @branchHint(.unlikely);
@@ -340,7 +351,12 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 @intFromEnum(Opcode.JUMPI),
             };
             
-            // Create vectors for each fusion target
+            // SIMD-accelerated opcode fusion detection
+            // 
+            // Identifies PUSH+operation patterns (e.g., PUSH1 0x01 ADD) for optimization.
+            // Uses vector operations to check multiple fusion targets simultaneously.
+            
+            // Vectors containing L copies of each fusion target opcode
             const splat_add: @Vector(L, u8) = @splat(@intFromEnum(Opcode.ADD));
             const splat_sub: @Vector(L, u8) = @splat(@intFromEnum(Opcode.SUB));
             const splat_mul: @Vector(L, u8) = @splat(@intFromEnum(Opcode.MUL));
@@ -350,7 +366,7 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             
             var i: usize = 0;
             while (i < self.runtime_code.len) {
-                // Skip if not an operation start
+                // Skip positions that aren't instruction starts using bitmap lookup
                 if ((self.is_op_start[i >> BITMAP_SHIFT] & (@as(u8, 1) << @intCast(i & BITMAP_MASK))) == 0) {
                     @branchHint(.unlikely);
                     i += 1;
@@ -359,17 +375,19 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 
                 const op = self.runtime_code[i];
                 if (op >= push1 and op <= push32) {
+                    // Calculate PUSH instruction size and next opcode position
                     const push_size = 1 + (op - (push1 - 1));
                     const next_op_pos = i + push_size;
                     
-                    // Use SIMD to check multiple fusion opportunities at once if we have enough bytes
+                    // Use SIMD for fusion pattern detection when sufficient bytes available
                     if (next_op_pos < self.runtime_code.len and next_op_pos + L <= self.runtime_code.len) {
-                        // Load next L bytes starting from next_op_pos
+                        // Load L bytes starting after PUSH data for parallel pattern matching
                         var arr: [L]u8 = undefined;
                         inline for (0..L) |k| arr[k] = if (next_op_pos + k < self.runtime_code.len) self.runtime_code[next_op_pos + k] else 0;
                         const v: @Vector(L, u8) = arr;
                         
-                        // Check all fusion patterns
+                        // Compare vector against all fusion patterns simultaneously
+                        // Single pass replaces multiple sequential pattern checks
                         const eq_add: @Vector(L, bool) = v == splat_add;
                         const eq_sub: @Vector(L, bool) = v == splat_sub;
                         const eq_mul: @Vector(L, bool) = v == splat_mul;
@@ -869,21 +887,29 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
             }
         }
 
-        /// Vector scan: compare @Vector(L,u8) chunks to 0x5b, mask out push-data lanes, set jumpdest bits
-        /// Optimized with prefetching and better SIMD utilization
+        /// SIMD-accelerated jump destination marking with prefetching optimization
+        /// 
+        /// Combines vector processing with cache prefetching for optimal performance on large bytecode.
+        /// Prefetching hides memory latency by loading future data while processing current chunks.
         fn markJumpdestSimd(self: Self, comptime L: comptime_int) void {
             var i: usize = 0;
             const code_len = self.runtime_code.len;
+            
+            // Vector containing L copies of JUMPDEST opcode for parallel comparison
             const splat_5b: @Vector(L, u8) = @splat(@as(u8, @intFromEnum(Opcode.JUMPDEST)));
             
+            // Process bytecode in L-byte chunks with prefetching
             while (i + L <= code_len) : (i += L) {
-                // Prefetch next iteration's data
+                // Prefetch future data to hide memory latency
                 if (i + L + PREFETCH_DISTANCE < code_len) {
+                    // Prefetch next bytecode chunk for future iterations
                     @prefetch(&self.runtime_code[i + L + PREFETCH_DISTANCE], .{
                         .rw = .read,
                         .locality = 3,
                         .cache = .data,
                     });
+                    
+                    // Prefetch corresponding push_data bitmap entries
                     @prefetch(&self.is_push_data[(i + L + PREFETCH_DISTANCE) >> BITMAP_SHIFT], .{
                         .rw = .read,
                         .locality = 3,
@@ -891,14 +917,16 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                     });
                 }
                 
-                // Load and compare bytecode chunk
+                // Load L consecutive bytes into vector for parallel processing
                 var arr: [L]u8 = undefined;
                 inline for (0..L) |k| arr[k] = self.runtime_code[i + k];
                 const v: @Vector(L, u8) = arr;
+                
+                // Compare all L bytes against JUMPDEST simultaneously
                 const eq: @Vector(L, bool) = v == splat_5b;
                 const eq_arr: [L]bool = eq;
                 
-                // Process matches in batches for better cache efficiency
+                // Process comparison results and update jump destination bitmap
                 inline for (0..L) |j| {
                     const idx = i + j;
                     const byte_idx = idx >> BITMAP_SHIFT;
