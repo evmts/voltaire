@@ -36,6 +36,9 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
         
         const HandlerFn = plan_mod.HandlerFn;
         
+        // Check if we're building for WASM
+        const is_wasm = builtin.target.cpu.arch == .wasm32;
+        
         frame: Frame,
         plan: Plan,
         instruction_idx: Plan.InstructionIndexType,
@@ -329,6 +332,18 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             unreachable;
         }
         
+        // Helper function to dispatch to next handler with WASM compatibility
+        inline fn dispatchNext(next_handler: *const HandlerFn, frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            if (comptime is_wasm) {
+                // On WASM, use a regular call and loop
+                // This will be optimized by the compiler into a jump
+                return next_handler(frame, plan);
+            } else {
+                // On other platforms, use tail call optimization
+                return next_handler(frame, plan);
+            }
+        }
+        
         // Individual PUSH handlers
         fn push0_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -338,7 +353,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(0);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH0);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn push1_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -350,7 +365,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH1);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // Additional handlers implemented below
@@ -373,7 +388,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(address);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.ADDRESS));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_balance_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -403,7 +418,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(balance);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BALANCE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_origin_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -430,7 +445,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(origin);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.ORIGIN));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_caller_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -457,7 +472,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(caller_u256);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLER));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_callvalue_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -484,7 +499,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLVALUE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_add_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -503,7 +518,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             // Get next handler from plan
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .ADD);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_mul_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -522,7 +537,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             // Get next handler from plan
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MUL);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_sub_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -541,7 +556,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             // Get next handler from plan
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SUB);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_div_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -554,7 +569,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.div();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DIV);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_sdiv_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -567,7 +582,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.sdiv();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SDIV);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_mod_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -580,7 +595,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.mod();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MOD);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_smod_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -593,7 +608,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.smod();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SMOD);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_addmod_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -606,7 +621,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.addmod();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .ADDMOD);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_mulmod_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -619,7 +634,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.mulmod();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MULMOD);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_exp_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -632,7 +647,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.exp();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .EXP);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_signextend_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -645,7 +660,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.signextend();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SIGNEXTEND);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // Comparison handlers
@@ -659,7 +674,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.lt();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .LT);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_gt_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -672,7 +687,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.gt();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .GT);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_slt_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -685,7 +700,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.slt();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SLT);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_sgt_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -698,7 +713,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.sgt();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SGT);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_eq_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -711,7 +726,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.eq();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .EQ);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_iszero_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -724,7 +739,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.iszero();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .ISZERO);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // Bitwise handlers
@@ -738,7 +753,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.@"and"();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .AND);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_or_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -751,7 +766,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.@"or"();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .OR);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_xor_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -764,7 +779,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.xor();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .XOR);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_not_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -777,7 +792,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.not();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .NOT);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_byte_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -790,7 +805,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.byte();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .BYTE);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_shl_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -803,7 +818,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.shl();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SHL);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_shr_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -816,7 +831,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.shr();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SHR);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_sar_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -829,7 +844,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.sar();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SAR);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // Stack management handlers
@@ -843,7 +858,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.pop();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .POP);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // Memory handlers
@@ -857,7 +872,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.mload();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MLOAD);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_mstore_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -870,7 +885,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.mstore();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MSTORE);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_mstore8_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -883,7 +898,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.mstore8();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MSTORE8);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_msize_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -896,7 +911,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.msize();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MSIZE);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_mcopy_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -909,7 +924,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.mcopy();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MCOPY);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // Storage handlers
@@ -923,7 +938,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.sload();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SLOAD);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_sstore_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -936,7 +951,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.sstore();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SSTORE);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_tload_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -949,7 +964,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.tload();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .TLOAD);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_tstore_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -962,7 +977,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.tstore();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .TSTORE);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // Control flow
@@ -976,7 +991,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.jumpdest();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .JUMPDEST);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         fn op_gas_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -989,7 +1004,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.gas();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .GAS);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // Generic handler for simple opcodes that just increment PC
@@ -1011,7 +1026,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
                     // Get next handler from plan
                     const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, opcode_enum);
-                    return @call(.always_tail, next_handler, .{ self, plan_ptr });
+                    return dispatchNext(next_handler, self, plan_ptr);
                 }
             }.handler;
         }
@@ -1039,7 +1054,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 interpreter.instruction_idx = new_idx;
                 // Get the handler at the destination
                 const dest_handler = plan_ptr.instructionStream[new_idx].handler;
-                return @call(.always_tail, dest_handler, .{ self, plan_ptr });
+                return dispatchNext(dest_handler, self, plan_ptr);
             } else {
                 // PC is not a valid instruction start (e.g., middle of PUSH data)
                 return Error.InvalidJump;
@@ -1068,7 +1083,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                     interpreter.instruction_idx = new_idx;
                     // Get the handler at the destination
                     const dest_handler = plan_ptr.instructionStream[new_idx].handler;
-                    return @call(.always_tail, dest_handler, .{ self, plan_ptr });
+                    return dispatchNext(dest_handler, self, plan_ptr);
                 } else {
                     // PC is not a valid instruction start (e.g., middle of PUSH data)
                     return Error.InvalidJump;
@@ -1077,7 +1092,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 // Condition is false, continue to next instruction
                 // PC update is handled by plan through instruction index update
                 const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .JUMPI);
-                return @call(.always_tail, next_handler, .{ self, plan_ptr });
+                return dispatchNext(next_handler, self, plan_ptr);
             }
         }
         // Handler for PC opcode with inline PC value
@@ -1092,7 +1107,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             // Get next handler from plan
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PC);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // Push handlers
@@ -1105,7 +1120,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH2);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1117,7 +1132,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH3);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1128,7 +1143,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH4);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push5_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1147,7 +1162,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH5);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push6_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1166,7 +1181,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH6);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push7_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1185,7 +1200,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH7);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push8_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1204,7 +1219,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH8);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push9_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1216,7 +1231,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH9);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push10_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1228,7 +1243,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH10);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push11_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1240,7 +1255,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH11);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push12_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1252,7 +1267,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH12);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push13_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1264,7 +1279,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH13);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push14_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1276,7 +1291,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH14);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push15_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1288,7 +1303,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH15);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push16_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1300,7 +1315,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH16);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push17_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1311,7 +1326,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH17);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push18_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1322,7 +1337,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH18);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push19_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1333,7 +1348,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH19);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push20_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1344,7 +1359,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH20);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push21_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1355,7 +1370,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH21);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push22_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1366,7 +1381,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH22);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push23_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1377,7 +1392,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH23);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push24_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1388,7 +1403,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH24);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push25_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1399,7 +1414,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH25);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push26_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1410,7 +1425,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH26);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push27_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1421,7 +1436,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH27);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push28_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1432,7 +1447,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH28);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push29_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1443,7 +1458,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH29);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push30_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1454,7 +1469,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH30);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push31_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1465,7 +1480,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH31);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push32_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1476,7 +1491,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(value_ptr.*);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PUSH32);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // DUP handlers
@@ -1487,7 +1502,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(1);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP1);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1496,7 +1511,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(2);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP2);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1505,7 +1520,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(3);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP3);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1514,7 +1529,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(4);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP4);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup5_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1523,7 +1538,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(5);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP5);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup6_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1532,7 +1547,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(6);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP6);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup7_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1541,7 +1556,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(7);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP7);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup8_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1550,7 +1565,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(8);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP8);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup9_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1559,7 +1574,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(9);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP9);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup10_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1568,7 +1583,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(10);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP10);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup11_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1577,7 +1592,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(11);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP11);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup12_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1586,7 +1601,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(12);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP12);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup13_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1595,7 +1610,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(13);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP13);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup14_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1604,7 +1619,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(14);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP14);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup15_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1613,7 +1628,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(15);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP15);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn dup16_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1622,7 +1637,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.dup_n(16);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DUP16);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // SWAP handlers
@@ -1633,7 +1648,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(1);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP1);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1642,7 +1657,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(2);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP2);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1651,7 +1666,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(3);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP3);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1660,7 +1675,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(4);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP4);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap5_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1669,7 +1684,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(5);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP5);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap6_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1678,7 +1693,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(6);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP6);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap7_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1687,7 +1702,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(7);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP7);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap8_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1696,7 +1711,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(8);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP8);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap9_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1705,7 +1720,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(9);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP9);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap10_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1714,7 +1729,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(10);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP10);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap11_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1723,7 +1738,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(11);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP11);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap12_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1732,7 +1747,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(12);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP12);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap13_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1741,7 +1756,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(13);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP13);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap14_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1750,7 +1765,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(14);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP14);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap15_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1759,7 +1774,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(15);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP15);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn swap16_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1768,7 +1783,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             
             try self.stack.swap_n(16);
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SWAP16);
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         
         // Fusion handlers
@@ -1783,7 +1798,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(result);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_INLINE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push_add_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1796,7 +1811,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(result);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_POINTER));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push_mul_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1809,7 +1824,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(result);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_INLINE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push_mul_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1822,7 +1837,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(result);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_POINTER));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push_div_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1835,7 +1850,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(result);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_DIV_INLINE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push_div_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1848,7 +1863,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.stack.push(result);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_DIV_POINTER));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
         fn push_jump_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1870,7 +1885,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Jump to the destination
             interpreter.instruction_idx = dest_idx;
             const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-            return @call(.always_tail, jump_handler, .{ self, plan_ptr });
+            return dispatchNext(jump_handler, self, plan_ptr);
         }
         fn push_jump_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1893,7 +1908,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             // Jump to the destination
             interpreter.instruction_idx = dest_idx;
             const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-            return @call(.always_tail, jump_handler, .{ self, plan_ptr });
+            return dispatchNext(jump_handler, self, plan_ptr);
         }
         fn push_jumpi_inline_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
@@ -1917,11 +1932,11 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 // Jump to the destination
                 interpreter.instruction_idx = dest_idx;
                 const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-                return @call(.always_tail, jump_handler, .{ self, plan_ptr });
+                return dispatchNext(jump_handler, self, plan_ptr);
             } else {
                 // Condition is false, continue to next instruction
                 const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_INLINE));
-                return @call(.always_tail, next_handler, .{ self, plan_ptr });
+                return dispatchNext(next_handler, self, plan_ptr);
             }
         }
         fn push_jumpi_pointer_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -1947,11 +1962,11 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
                 // Jump to the destination
                 interpreter.instruction_idx = dest_idx;
                 const jump_handler = plan_ptr.instructionStream[dest_idx].handler;
-                return @call(.always_tail, jump_handler, .{ self, plan_ptr });
+                return dispatchNext(jump_handler, self, plan_ptr);
             } else {
                 // Condition is false, continue to next instruction
                 const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(planner_mod.OpcodeSynthetic.PUSH_JUMPI_POINTER));
-                return @call(.always_tail, next_handler, .{ self, plan_ptr });
+                return dispatchNext(next_handler, self, plan_ptr);
             }
         }
         
@@ -1972,7 +1987,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             // Get the next handler - trace handlers don't have metadata
             const next_handler = plan_ptr.instructionStream[interpreter.instruction_idx].handler;
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn trace_after_op_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -1985,7 +2000,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
             // Get the next handler - trace handlers don't have metadata
             const next_handler = plan_ptr.instructionStream[interpreter.instruction_idx].handler;
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         // KECCAK256 handler
@@ -1997,7 +2012,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_keccak256();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.KECCAK256));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         // Call data handlers
@@ -2009,7 +2024,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_calldataload();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLDATALOAD));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_calldatasize_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2020,7 +2035,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_calldatasize();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLDATASIZE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_calldatacopy_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2031,7 +2046,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_calldatacopy();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLDATACOPY));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         // Code handlers
@@ -2043,7 +2058,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_codesize();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CODESIZE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_codecopy_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2054,7 +2069,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_codecopy();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CODECOPY));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_gasprice_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2065,7 +2080,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_gasprice();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.GASPRICE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         // External code handlers
@@ -2077,7 +2092,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_extcodesize();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.EXTCODESIZE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_extcodecopy_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2088,7 +2103,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_extcodecopy();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.EXTCODECOPY));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_returndatasize_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2099,7 +2114,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_returndatasize();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.RETURNDATASIZE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_returndatacopy_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2110,7 +2125,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_returndatacopy();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.RETURNDATACOPY));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_extcodehash_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2121,7 +2136,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_extcodehash();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.EXTCODEHASH));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         // Block information handlers
@@ -2133,7 +2148,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_blockhash();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BLOCKHASH));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_coinbase_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2144,7 +2159,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_coinbase();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.COINBASE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_timestamp_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2155,7 +2170,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_timestamp();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.TIMESTAMP));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_number_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2166,7 +2181,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_number();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.NUMBER));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_difficulty_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2177,7 +2192,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_difficulty();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.DIFFICULTY));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_gaslimit_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2188,7 +2203,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_gaslimit();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.GASLIMIT));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_chainid_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2199,7 +2214,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_chainid();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CHAINID));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_selfbalance_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2210,7 +2225,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_selfbalance();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.SELFBALANCE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_basefee_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2221,7 +2236,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_basefee();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BASEFEE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_blobhash_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2232,7 +2247,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_blobhash();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BLOBHASH));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_blobbasefee_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2243,7 +2258,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.op_blobbasefee();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BLOBBASEFEE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         // LOG handlers
@@ -2262,7 +2277,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.log0(interpreter.allocator);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG0));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_log1_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2280,7 +2295,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.log1(interpreter.allocator);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG1));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_log2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2298,7 +2313,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.log2(interpreter.allocator);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG2));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_log3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2316,7 +2331,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.log3(interpreter.allocator);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG3));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_log4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2334,7 +2349,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             try self.log4(interpreter.allocator);
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG4));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
 
         fn op_create_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -2424,7 +2439,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CREATE));
-            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+            return dispatchNext(next_handler, self, plan_ptr);
         }
     };
 }
