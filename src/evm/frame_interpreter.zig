@@ -2117,7 +2117,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
             const interpreter = @as(*Self, @fieldParentPtr("frame", self));
             
-            try self.op_keccak256();
+            try self.keccak256();
             
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.KECCAK256));
             return dispatchNext(next_handler, self, plan_ptr);
