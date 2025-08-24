@@ -10,6 +10,7 @@
 /// transaction hashes, and smart contract operations.
 const std = @import("std");
 const builtin = @import("builtin");
+// TODO it should be it's own rust package
 const c = if (builtin.target.cpu.arch != .wasm32) @cImport({
     @cInclude("../revm_wrapper/revm_wrapper.h");
 }) else struct {

@@ -1256,7 +1256,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             const offset_usize = @as(usize, @intCast(offset));
-            const calldata = host.get_calldata();
+            const calldata = host.get_input();
 
             // Load 32 bytes from calldata, zero-padding if needed
             var word: u256 = 0;
@@ -1278,7 +1278,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Stack: [] → [size]
         pub fn op_calldatasize(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
-            const calldata = host.get_calldata();
+            const calldata = host.get_input();
             try self.stack.push(@as(u256, @intCast(calldata.len)));
         }
 
@@ -1313,7 +1313,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 else => return Error.AllocationError,
             };
 
-            const calldata = host.get_calldata();
+            const calldata = host.get_input();
 
             // Copy calldata to memory with bounds checking
             for (0..length_usize) |i| {
@@ -1515,8 +1515,7 @@ pub fn Frame(comptime config: FrameConfig) type {
 
             // Compute keccak256 hash of the code
             var hash: [32]u8 = undefined;
-            const crypto = @import("crypto");
-            crypto.Keccak256.hash(code, &hash, .{});
+            keccak_asm.keccak256(code, &hash) catch return Error.OutOfBounds;
 
             // Convert hash to u256 (big-endian)
             var hash_u256: u256 = 0;
@@ -1567,8 +1566,21 @@ pub fn Frame(comptime config: FrameConfig) type {
             }
 
             // Get block hash from host
-            const hash = host.get_block_hash(block_number);
-            try self.stack.push(hash);
+            // Note: block_number is u256 but get_block_hash expects u64
+            const block_number_u64 = @as(u64, @intCast(block_number));
+            const hash_opt = host.get_block_hash(block_number_u64);
+            
+            // Push hash or zero if not available
+            if (hash_opt) |hash| {
+                // Convert [32]u8 to u256
+                var hash_u256: u256 = 0;
+                for (hash) |b| {
+                    hash_u256 = (hash_u256 << 8) | @as(u256, b);
+                }
+                try self.stack.push(hash_u256);
+            } else {
+                try self.stack.push(0);
+            }
         }
 
         /// COINBASE opcode (0x41) - Get current block miner's address
@@ -1646,9 +1658,19 @@ pub fn Frame(comptime config: FrameConfig) type {
                 return;
             }
 
-            const index_usize = @as(usize, @intCast(index));
-            const blob_hash = host.get_blob_hash(index_usize);
-            try self.stack.push(blob_hash);
+            const blob_hash_opt = host.get_blob_hash(index);
+            
+            // Push hash or zero if not available
+            if (blob_hash_opt) |hash| {
+                // Convert [32]u8 to u256
+                var hash_u256: u256 = 0;
+                for (hash) |b| {
+                    hash_u256 = (hash_u256 << 8) | @as(u256, b);
+                }
+                try self.stack.push(hash_u256);
+            } else {
+                try self.stack.push(0);
+            }
         }
 
         /// BLOBBASEFEE opcode (0x4A) - Get current blob base fee
