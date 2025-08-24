@@ -1803,5 +1803,49 @@ test "cache eviction behavior" {
     try std.testing.expectEqual(@as(usize, 4), stats.misses); // Miss because bytecode2 was evicted
 }
 
+test "planner plan type compatibility across configurations" {
+    const allocator = std.testing.allocator;
+    
+    // Test different plan configurations produce valid results
+    const PlannerSmall = Planner(.{ .maxBytecodeSize = 1024 });
+    const PlannerLarge = Planner(.{ .maxBytecodeSize = 65536 });
+    
+    var planner_small = try PlannerSmall.init(allocator, 4);
+    defer planner_small.deinit();
+    
+    var planner_large = try PlannerLarge.init(allocator, 4);
+    defer planner_large.deinit();
+    
+    const bytecode = [_]u8{
+        @intFromEnum(Opcode.PUSH1), 0x01,  // PUSH1 1
+        @intFromEnum(Opcode.PUSH1), 0x02,  // PUSH1 2  
+        @intFromEnum(Opcode.ADD),          // ADD
+        @intFromEnum(Opcode.STOP),         // STOP
+    };
+    
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| h.* = &testMockHandler;
+    
+    // Both planners should handle same bytecode
+    const plan_small = try planner_small.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
+    const plan_large = try planner_large.getOrAnalyze(&bytecode, handlers, Hardfork.DEFAULT);
+    
+    // Basic structure validation
+    try std.testing.expect(plan_small.instructionStream.len > 0);
+    try std.testing.expect(plan_large.instructionStream.len > 0);
+    
+    // Both should handle the same opcodes correctly
+    try std.testing.expect(plan_small.instructionStream.len == plan_large.instructionStream.len);
+    
+    // Cache statistics should work for both
+    const stats_small = planner_small.getCacheStats();
+    const stats_large = planner_large.getCacheStats();
+    
+    try std.testing.expectEqual(@as(usize, 1), stats_small.misses);
+    try std.testing.expectEqual(@as(usize, 1), stats_large.misses);
+    try std.testing.expectEqual(@as(usize, 0), stats_small.hits);
+    try std.testing.expectEqual(@as(usize, 0), stats_large.hits);
+}
+
 // Export the factory function for creating Planner types
 pub const createPlanner = Planner;
