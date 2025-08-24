@@ -96,13 +96,13 @@ pub fn Frame(comptime config: FrameConfig) type {
         // Contract execution context
         contract_address: Address = [_]u8{0} ** 20,
         self_destruct: ?*SelfDestruct = null,
-        logs: std.ArrayList(Log),
         is_static: bool = false,
 
-        // Output data storage for RETURN/REVERT operations
-        output_data: std.ArrayList(u8),
-
         host: ?Host = null,
+
+        // Cold data - less frequently accessed during execution
+        logs: std.ArrayList(Log),
+        output_data: std.ArrayList(u8),
 
         /// Initialize a new execution frame.
         ///
@@ -481,7 +481,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             try self.stack.set_top(top | top_minus_1);
         }
 
-        pub fn xor(self: *Self) Error!void {
+        pub fn op_xor(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top ^ top_minus_1);
@@ -542,27 +542,27 @@ pub fn Frame(comptime config: FrameConfig) type {
         // Arithmetic operations
         
         /// ADD opcode (0x01) - Addition with overflow wrapping.
-        pub fn op_add(self: *Self) Error!void {
+        pub fn add(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top +% top_minus_1);
         }
 
         /// MUL opcode (0x02) - Multiplication with overflow wrapping.
-        pub fn op_mul(self: *Self) Error!void {
+        pub fn mul(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top *% top_minus_1);
         }
 
-        pub fn op_sub(self: *Self) Error!void {
+        pub fn sub(self: *Self) Error!void {
             const top_minus_1 = try self.stack.pop();
             const top = try self.stack.peek();
             try self.stack.set_top(top -% top_minus_1);
         }
 
         /// DIV opcode (0x04) - Integer division. Division by zero returns 0.
-        pub fn op_div(self: *Self) Error!void {
+        pub fn div(self: *Self) Error!void {
             const denominator = try self.stack.pop();
             const numerator = try self.stack.peek();
             const result = if (denominator == 0) 0 else numerator / denominator;
@@ -2132,7 +2132,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const base_call_gas = self._calculate_call_gas(address, value, self.is_static);
             
             // Check if we have enough gas for the base call cost
-            if (!self.gas_manager.hasGas(base_call_gas)) {
+            if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
                 try self.stack.push(0);
                 return;
             }
@@ -2243,7 +2243,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const base_call_gas = self._calculate_call_gas(address, 0, false);
             
             // Check if we have enough gas for the base call cost
-            if (!self.gas_manager.hasGas(base_call_gas)) {
+            if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
                 try self.stack.push(0);
                 return;
             }
@@ -2354,7 +2354,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const base_call_gas = self._calculate_call_gas(address, 0, true);
             
             // Check if we have enough gas for the base call cost
-            if (!self.gas_manager.hasGas(base_call_gas)) {
+            if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
                 try self.stack.push(0);
                 return;
             }
