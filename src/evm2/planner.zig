@@ -70,23 +70,9 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
         // Special metadata for entry block
         start: JumpDestMetadata,
 
-        /// Create a planner instance over immutable bytecode (no cache).
-        pub fn init(allocator: std.mem.Allocator, bytecode: []const u8) !Self {
-            const bytecodeObj = try BytecodeType.init(allocator, bytecode);
-            return .{ 
-                .bytecode = bytecodeObj,
-                .allocator = null,
-                .cache_capacity = 0,
-                .cache_map = null,
-                .cache_head = null,
-                .cache_tail = null,
-                .cache_count = 0,
-                .start = .{ .gas = 0, .min_stack = 0, .max_stack = 0 },
-            };
-        }
-        
-        /// Create a planner with LRU cache.
-        pub fn initWithCache(allocator: std.mem.Allocator, cache_capacity: usize) !Self {
+        /// Create a planner with LRU cache for repeated bytecode analysis.
+        /// This is the standard initialization method for production use.
+        pub fn init(allocator: std.mem.Allocator, cache_capacity: usize) !Self {
             return .{
                 .bytecode = undefined, // Will be set per request
                 .allocator = allocator,
@@ -98,6 +84,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                 .start = .{ .gas = 0, .min_stack = 0, .max_stack = 0 },
             };
         }
+        
         
         /// Deinitialize the planner and free cache.
         pub fn deinit(self: *Self) void {
@@ -118,32 +105,58 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
         }
         
         /// Get plan from cache or analyze.
+        /// Returns a reference to the cached plan. Caller should NOT call deinit() on the returned plan.
         pub fn getOrAnalyze(self: *Self, bytecode: []const u8, handlers: [256]*const HandlerFn) !*const PlanType {
-            if (self.cache_map == null) {
-                // No cache - analyze directly
-                self.bytecode = try BytecodeType.init(self.allocator orelse return error.NoAllocator, bytecode);
-                _ = try self.create_instruction_stream(self.allocator orelse return error.NoAllocator, handlers);
-                return error.NotImplemented; // Need to store plan somewhere
-            }
-            
             const key = std.hash.Wyhash.hash(0, bytecode);
             
             // Check cache
-            if (self.cache_map.?.get(key)) |node| {
+            if (self.cache_map.get(key)) |node| {
                 // Move to front
                 self.moveToFront(node);
                 return &node.plan;
             }
             
-            // Miss - analyze
-            self.bytecode = try BytecodeType.init(self.allocator.?, bytecode);
-            const plan = try self.create_instruction_stream(self.allocator.?, handlers);
+            // Miss - analyze and cache
+            self.bytecode = try BytecodeType.init(self.allocator, bytecode);
+            const plan = try self.create_instruction_stream(self.allocator, handlers);
             
             // Add to cache
             try self.addToCache(key, plan);
             
-            // Return from cache
-            return &self.cache_map.?.get(key).?.plan;
+            // Return reference to cached plan
+            return &self.cache_map.get(key).?.plan;
+        }
+        
+        
+        /// Get cache statistics.
+        pub fn getCacheStats(self: *const Self) struct { 
+            capacity: usize, 
+            count: usize,
+            hit_ratio: f64, // TODO: implement hit/miss tracking
+        } {
+            return .{
+                .capacity = self.cache_capacity,
+                .count = self.cache_count,
+                .hit_ratio = 0.0, // TODO: implement hit/miss tracking
+            };
+        }
+        
+        /// Clear all cached plans.
+        pub fn clearCache(self: *Self) void {
+            // Free all cached plans
+            var node = self.cache_head;
+            while (node) |n| {
+                const next = n.next;
+                n.plan.deinit(self.allocator);
+                self.allocator.destroy(n);
+                node = next;
+            }
+            
+            // Reset cache state
+            self.cache_map.clearAndFree();
+            self.cache_head = null;
+            self.cache_tail = null;
+            self.cache_count = 0;
         }
         
         fn moveToFront(self: *Self, node: *CacheNode) void {
@@ -1361,6 +1374,47 @@ test "fusion detection: PUSH+JUMPI fusion" {
     try std.testing.expect(found_fusion);
 }
 
+test "analysis cache: LRU eviction works correctly" {
+    const allocator = std.testing.allocator;
+    _ = Planner(.{});
+    
+    // Create planner with small cache capacity
+    var planner = try Planner(.{}).initWithCache(allocator, 2);
+    defer planner.deinit();
+    
+    // Create handler array
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    
+    // Three different bytecodes
+    const bytecode1 = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.STOP) };
+    const bytecode2 = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x02, @intFromEnum(Opcode.STOP) };
+    const bytecode3 = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x03, @intFromEnum(Opcode.STOP) };
+    
+    // Add first two plans (fills cache to capacity)
+    const plan1 = try planner.getOrAnalyze(&bytecode1, handlers);
+    const plan2 = try planner.getOrAnalyze(&bytecode2, handlers);
+    try std.testing.expectEqual(@as(usize, 2), planner.cache_count);
+    
+    // Access plan1 to make it most recent
+    const plan1_again = try planner.getOrAnalyze(&bytecode1, handlers);
+    try std.testing.expectEqual(@intFromPtr(plan1), @intFromPtr(plan1_again));
+    
+    // Add third plan - should evict plan2 (least recently used)
+    _ = try planner.getOrAnalyze(&bytecode3, handlers);
+    try std.testing.expectEqual(@as(usize, 2), planner.cache_count);
+    
+    // plan1 should still be in cache
+    const plan1_final = try planner.getOrAnalyze(&bytecode1, handlers);
+    try std.testing.expectEqual(@intFromPtr(plan1), @intFromPtr(plan1_final));
+    
+    // plan2 should be evicted, so we should get a new instance
+    const plan2_new = try planner.getOrAnalyze(&bytecode2, handlers);
+    try std.testing.expect(@intFromPtr(plan2) != @intFromPtr(plan2_new));
+}
+
 test "analysis cache: stores and reuses plans" {
     const allocator = std.testing.allocator;
     _ = Planner(.{});
@@ -1384,11 +1438,53 @@ test "analysis cache: stores and reuses plans" {
     // First call should analyze and cache
     const plan1 = try planner.getOrAnalyze(&bytecode, handlers);
     
-    // Second call should return cached plan
+    // Second call should return cached plan (same reference)
     const plan2 = try planner.getOrAnalyze(&bytecode, handlers);
     
-    // Should be the same plan
+    // Should be the same plan reference
     try std.testing.expectEqual(@intFromPtr(plan1), @intFromPtr(plan2));
+    
+    // Verify cache contains the entry
+    try std.testing.expectEqual(@as(usize, 1), planner.cache_count);
+    
+    // Test cache stats
+    const stats = planner.getCacheStats();
+    try std.testing.expect(stats != null);
+    try std.testing.expectEqual(@as(usize, 2), stats.?.capacity);
+    try std.testing.expectEqual(@as(usize, 1), stats.?.count);
+}
+
+test "analysis cache: clear cache functionality" {
+    const allocator = std.testing.allocator;
+    _ = Planner(.{});
+    
+    // Create planner with cache
+    var planner = try Planner(.{}).initWithCache(allocator, 4);
+    defer planner.deinit();
+    
+    // Create handler array
+    var handlers: [256]*const HandlerFn = undefined;
+    for (&handlers) |*h| {
+        h.* = &testMockHandler;
+    }
+    
+    // Add some plans to cache
+    const bytecode1 = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x01, @intFromEnum(Opcode.STOP) };
+    const bytecode2 = [_]u8{ @intFromEnum(Opcode.PUSH1), 0x02, @intFromEnum(Opcode.STOP) };
+    
+    _ = try planner.getOrAnalyze(&bytecode1, handlers);
+    _ = try planner.getOrAnalyze(&bytecode2, handlers);
+    try std.testing.expectEqual(@as(usize, 2), planner.cache_count);
+    
+    // Clear cache
+    planner.clearCache();
+    try std.testing.expectEqual(@as(usize, 0), planner.cache_count);
+    
+    // Verify cache stats reflect cleared state
+    const stats = planner.getCacheStats();
+    try std.testing.expect(stats != null);
+    try std.testing.expectEqual(@as(usize, 4), stats.?.capacity);
+    try std.testing.expectEqual(@as(usize, 0), stats.?.count);
 }
 
 test "integration: complex bytecode with all features" {
