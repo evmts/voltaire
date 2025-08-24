@@ -10,6 +10,7 @@ const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 const GasConstants = @import("primitives").GasConstants;
 const Address = @import("primitives").Address.Address;
 const SelfDestruct = @import("self_destruct.zig").SelfDestruct;
+const Host = @import("host.zig").Host;
 
 /// Simple log structure for Frame
 pub const Log = struct {
@@ -93,8 +94,11 @@ pub fn Frame(comptime config: FrameConfig) type {
         self_destruct: ?*SelfDestruct = null, // Tracks contracts marked for destruction
         logs: std.ArrayList(Log), // Event logs emitted during execution
         is_static: bool = false, // Whether frame is in static context (no state modifications)
+        
+        // Host interface for external operations (optional)
+        host: ?Host = null,
 
-        pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: GasType, database: if (config.has_database) ?DatabaseInterface else void) Error!Self {
+        pub fn init(allocator: std.mem.Allocator, bytecode: []const u8, gas_remaining: GasType, database: if (config.has_database) ?DatabaseInterface else void, host: ?Host) Error!Self {
             if (bytecode.len > max_bytecode_size) return Error.BytecodeTooLarge;
             
             var stack = Stack.init(allocator) catch {
@@ -118,6 +122,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .memory = memory,
                 .database = database,
                 .logs = logs,
+                .host = host,
             };
         }
 
@@ -198,6 +203,7 @@ pub fn Frame(comptime config: FrameConfig) type {
                 .contract_address = self.contract_address,
                 .self_destruct = self.self_destruct,
                 .logs = new_logs,
+                .host = self.host,
                 .is_static = self.is_static,
             };
         }
