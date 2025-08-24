@@ -1939,6 +1939,30 @@ pub fn build(b: *std.Build) void {
     const test_evm2_step = b.step("test-evm2", "Run EVM2 tests");
     test_evm2_step.dependOn(&run_test_evm2.step);
 
+    // EVM2 Benchmark Runner executable (ReleaseFast)
+    const evm2_runner_exe = b.addExecutable(.{
+        .name = "evm2-runner",
+        .root_source_file = b.path("bench/official/evms/zig2/src/main.zig"),
+        .target = target,
+        .optimize = .ReleaseFast,
+    });
+    evm2_runner_exe.root_module.addImport("evm2", evm2_mod);
+    evm2_runner_exe.root_module.addImport("primitives", primitives_mod);
+    evm2_runner_exe.root_module.addImport("crypto", crypto_mod);
+
+    b.installArtifact(evm2_runner_exe);
+
+    const run_evm2_runner_cmd = b.addRunArtifact(evm2_runner_exe);
+    if (b.args) |args| {
+        run_evm2_runner_cmd.addArgs(args);
+    }
+
+    const evm2_runner_step = b.step("evm2-runner", "Run the EVM2 benchmark runner");
+    evm2_runner_step.dependOn(&run_evm2_runner_cmd.step);
+
+    const build_evm2_runner_step = b.step("build-evm2-runner", "Build the EVM2 benchmark runner (ReleaseFast)");
+    build_evm2_runner_step.dependOn(&b.addInstallArtifact(evm2_runner_exe, .{}).step);
+
     // ========================================================================
     // EVM2 C API Library
     // ========================================================================
