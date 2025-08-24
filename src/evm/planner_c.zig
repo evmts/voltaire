@@ -16,10 +16,9 @@ const allocator = std.heap.c_allocator;
 const DefaultPlannerConfig = PlannerConfig{
     .WordType = u256,
     .maxBytecodeSize = 24576,
-    .strategy = .minimal,
-    .enable_cache = true,
-    .cache_size = 256,
+    .enableLruCache = true,
     .vector_length = 4,
+    .stack_size = 1024,
 };
 
 // ============================================================================
