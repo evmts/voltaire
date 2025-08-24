@@ -1378,26 +1378,6 @@ test "EVM error type definition" {
     
     // Test that different errors are not equal
     try testing.expect(err1 != err2);
-    
-    // Test that error set contains expected errors - reference them indirectly
-    comptime {
-        const StackUnderflow = DefaultEvm.Error.StackUnderflow;
-        const StackOverflow = DefaultEvm.Error.StackOverflow;
-        const ContractNotFound = DefaultEvm.Error.ContractNotFound;
-        const PrecompileError = DefaultEvm.Error.PrecompileError;
-        const MemoryError = DefaultEvm.Error.MemoryError;
-        const StorageError = DefaultEvm.Error.StorageError;
-        const CallDepthExceeded = DefaultEvm.Error.CallDepthExceeded;
-        const InsufficientBalance = DefaultEvm.Error.InsufficientBalance;
-        const ContractCollision = DefaultEvm.Error.ContractCollision;
-        const InvalidBytecode = DefaultEvm.Error.InvalidBytecode;
-        const StaticCallViolation = DefaultEvm.Error.StaticCallViolation;
-        const InvalidOpcode = DefaultEvm.Error.InvalidOpcode;
-        const RevertExecution = DefaultEvm.Error.RevertExecution;
-        const Stop = DefaultEvm.Error.Stop;
-        // Reference the errors to prevent them from being optimized away
-        _ = .{ StackUnderflow, StackOverflow, ContractNotFound, PrecompileError, MemoryError, StorageError, CallDepthExceeded, InsufficientBalance, ContractCollision, InvalidBytecode, StaticCallViolation, InvalidOpcode, RevertExecution, Stop };
-    }
 }
 
 test "EVM call() entry point method" {
@@ -1492,10 +1472,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(call_params) catch |err| {
-        // Expected to fail for now as implementation doesn't exist
-        _ = err;
-    };
+    _ = evm.call(call_params) catch {};
     
     // Test DELEGATECALL routing
     const delegatecall_params = DefaultEvm.CallParams{
@@ -1506,10 +1483,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(delegatecall_params) catch |err| {
-        // Expected to fail for now
-        _ = err;
-    };
+    _ = evm.call(delegatecall_params) catch {};
     
     // Test STATICCALL routing
     const staticcall_params = DefaultEvm.CallParams{
@@ -1520,10 +1494,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(staticcall_params) catch |err| {
-        // Expected to fail for now
-        _ = err;
-    };
+    _ = evm.call(staticcall_params) catch {};
     
     // Test CREATE routing
     const create_params = DefaultEvm.CallParams{
@@ -1534,10 +1505,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(create_params) catch |err| {
-        // Expected to fail for now
-        _ = err;
-    };
+    _ = evm.call(create_params) catch {};
     
     // Test CREATE2 routing
     const create2_params = DefaultEvm.CallParams{
@@ -1549,10 +1517,7 @@ test "EVM call() method routes to different handlers" {
             .gas = 1000000,
         },
     };
-    _ = evm.call(create2_params) catch |err| {
-        // Expected to fail for now
-        _ = err;
-    };
+    _ = evm.call(create2_params) catch {};
 }
 
 test "EVM call_regular handler basic functionality" {

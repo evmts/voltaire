@@ -153,7 +153,11 @@ pub fn DebugPlan(comptime cfg: PlanConfig) type {
             handlers: [256]*const HandlerFn,
         ) !Self {
             // Create planner for analysis
-            const PlannerType = Planner(cfg);
+            const planner_cfg = @import("planner_config.zig").PlannerConfig{
+                .WordType = cfg.WordType,
+                .maxBytecodeSize = cfg.maxBytecodeSize,
+            };
+            const PlannerType = Planner(planner_cfg);
             var planner = try PlannerType.init(allocator, bytecode);
             defer planner.deinit();
             
