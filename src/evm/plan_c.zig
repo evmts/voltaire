@@ -36,9 +36,9 @@ pub const EVM_PLAN_ERROR_INVALID_JUMP: c_int = -5;
 // ============================================================================
 
 const PlanHandle = struct {
-    plan: Plan(DefaultPlanConfig),
     allocator: std.mem.Allocator,
     bytecode: []const u8,
+    // For now, just store bytecode - real plans come from planner
 };
 
 // ============================================================================
@@ -65,13 +65,10 @@ pub export fn evm_plan_create(bytecode: [*]const u8, bytecode_len: usize) ?*Plan
     };
     errdefer allocator.free(owned_bytecode);
 
-    // Create plan
-    const PlanType = Plan(DefaultPlanConfig);
-    const plan = PlanType.init(allocator, owned_bytecode) catch {
-        allocator.free(owned_bytecode);
-        allocator.destroy(handle);
-        return null;
-    };
+    // Plans are created by planners, not directly
+    // For simplicity in the C API, we'll return a simple handle
+    // that just holds the bytecode for now
+    // In practice, you'd use the planner_c.zig to create actual plans
 
     handle.* = PlanHandle{
         .plan = plan,
