@@ -852,7 +852,7 @@ test "logging tracer writes to stdout" {
     defer test_frame.deinit(allocator);
     
     var tracer = LoggingTracer.init(allocator);
-    const log = try tracer.snapshot(Frame, &test_frame);
+    const log = try tracer.snapshot(0, 0x00, Frame, &test_frame); // PC=0, opcode=STOP
     defer allocator.free(log.stack);
     
     try std.testing.expectEqual(@as(u64, 0), log.pc);
@@ -886,7 +886,7 @@ test "file tracer writes to file" {
     var tracer = try FileTracer.init(allocator, file_path);
     defer tracer.deinit();
     
-    try tracer.writeSnapshot(Frame, &test_frame);
+    try tracer.writeSnapshot(0, 0x60, Frame, &test_frame); // PC=0, opcode=PUSH1
     
     // Read file and verify
     const contents = try tmp_dir.dir.readFileAlloc(allocator, "trace.json", 1024);
