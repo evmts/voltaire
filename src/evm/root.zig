@@ -113,8 +113,8 @@ test {
     _ = createPlan;
     _ = PlanConfig;
     _ = PlanMinimal;
-    // _ = PlanAdvanced; // NOTE: Module has compilation errors that need to be fixed
-    // _ = PlanDebug; // NOTE: Module has compilation errors that need to be fixed
+    _ = PlanAdvanced; // Testing compilation
+    _ = PlanDebug; // Testing compilation
     
     // Test EVM
     _ = Evm;
