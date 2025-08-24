@@ -8001,7 +8001,7 @@ test "CALL value stipend gas costs" {
     try frame.stack.push(0); // argsSize
     try frame.stack.push(0); // argsOffset
     try frame.stack.push(0); // value (zero)
-    try frame.stack.push(@intFromEnum(target_addr)); // same address (should be warm now)
+    try frame.stack.push(to_u256(target_addr)); // same address (should be warm now)
     try frame.stack.push(50000); // gas
     try frame.op_call();
     const gas_used_no_value = gas_before_no_value - frame.gas_manager.gasRemaining();
@@ -8055,7 +8055,7 @@ test "CALL cold account access penalties - EIP-2929" {
     try frame.stack.push(0); // argsSize
     try frame.stack.push(0); // argsOffset
     try frame.stack.push(0); // value
-    try frame.stack.push(@intFromEnum(cold_addr)); // same address (now warm)
+    try frame.stack.push(to_u256(cold_addr)); // same address (now warm)
     try frame.stack.push(30000); // gas
     try frame.op_call();
     const gas_used_warm = gas_before_warm - frame.gas_manager.gasRemaining();
@@ -8122,7 +8122,7 @@ test "DELEGATECALL and STATICCALL gas costs" {
     try frame.stack.push(0); // retOffset
     try frame.stack.push(0); // argsSize
     try frame.stack.push(0); // argsOffset
-    try frame.stack.push(@intFromEnum(target_addr)); // same address (should be warm now)
+    try frame.stack.push(to_u256(target_addr)); // same address (should be warm now)
     try frame.stack.push(50000); // gas
     try frame.staticcall();
     const gas_used_staticcall = gas_before_static - frame.gas_manager.gasRemaining();
@@ -8180,7 +8180,7 @@ test "Access list pre-warming effects on CALL/SLOAD/SSTORE" {
     try frame.stack.push(0); // argsSize
     try frame.stack.push(0); // argsOffset
     try frame.stack.push(0); // value
-    try frame.stack.push(@intFromEnum(target_addr)); // pre-warmed address
+    try frame.stack.push(to_u256(target_addr)); // pre-warmed address
     try frame.stack.push(30000); // gas
     try frame.op_call();
     const gas_used_warm_call = gas_before_warm_call - frame.gas_manager.gasRemaining();
@@ -9776,7 +9776,7 @@ test "_calculate_call_gas comprehensive edge cases and integration scenarios" {
             .nonce = 0,
             .balance = 1, // Non-zero balance = exists
             .code_hash = EMPTY_CODE_HASH,
-            .code = &.{},
+            .storage_root = EMPTY_TRIE_ROOT,
         });
         
         var mock_host = MockHostWithAccessList.init(allocator);
@@ -9855,7 +9855,7 @@ test "_calculate_call_gas E2E: Integration with CALL opcode execution" {
         .nonce = 1,
         .balance = 1000,
         .code_hash = EMPTY_CODE_HASH,
-        .code = &.{},
+        .storage_root = EMPTY_TRIE_ROOT,
     });
     
     var mock_host = MockHostWithAccessList.init(allocator);
@@ -9956,7 +9956,6 @@ test "_calculate_call_gas E2E: Complete call flow validation" {
         .nonce = 5,
         .balance = 2000,
         .code_hash = EMPTY_CODE_HASH,
-        .code = &.{},
     });
     
     var mock_host = MockHostWithAccessList.init(allocator);
@@ -10010,8 +10009,11 @@ test "_calculate_call_gas E2E: Real world scenario - contract calling contract" 
     try memory_db.set_account(token_addr, .{
         .nonce = 1,
         .balance = 0,
-        .code_hash = std.crypto.hash.sha3.Keccak256.hash(&token_code, .{}),
-        .code = &token_code,
+        .code_hash = blk: {
+            var hash: [32]u8 = undefined;
+            std.crypto.hash.sha3.Keccak256.hash(&token_code, &hash, .{});
+            break :blk hash;
+        },
     });
     
     // Create a precompile call to ECRECOVER
