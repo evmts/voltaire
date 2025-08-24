@@ -13,9 +13,20 @@ const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
 const TransactionContext = @import("transaction_context.zig").TransactionContext;
 const Hardfork = @import("hardfork.zig").Hardfork;
 
+// Helper to convert number to Address
+fn to_address(value: u256) Address {
+    var addr: Address = [_]u8{0} ** 20;
+    var i: usize = 0;
+    while (i < 20) : (i += 1) {
+        addr[19 - i] = @truncate(value >> @intCast(i * 8));
+    }
+    return addr;
+}
+
 /// Helper to create a configured EVM instance for testing
-fn createTestEvm(allocator: std.mem.Allocator) !*Evm {
-    var memory_db = MemoryDatabase.init(allocator);
+fn createTestEvm(allocator: std.mem.Allocator) !struct { evm: *Evm, memory_db: *MemoryDatabase } {
+    const memory_db = try allocator.create(MemoryDatabase);
+    memory_db.* = MemoryDatabase.init(allocator);
     const db_interface = memory_db.to_database_interface();
     
     const block_info = BlockInfo.init();
@@ -30,17 +41,21 @@ fn createTestEvm(allocator: std.mem.Allocator) !*Evm {
     
     const evm = try allocator.create(Evm);
     evm.* = try Evm.init(allocator, db_interface, block_info, tx_context, gas_price, origin, hardfork);
-    return evm;
+    return .{ .evm = evm, .memory_db = memory_db };
 }
 
 test "Frame CALL operation - real integration test" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
-    var evm = try createTestEvm(allocator);
+    const result = try createTestEvm(allocator);
+    var evm = result.evm;
+    var memory_db = result.memory_db;
     defer {
         evm.deinit();
         allocator.destroy(evm);
+        memory_db.deinit();
+        allocator.destroy(memory_db);
     }
     
     // Deploy a simple contract that returns success
@@ -53,7 +68,7 @@ test "Frame CALL operation - real integration test" {
         0xF3,       // RETURN (return 32 bytes from offset 0)
     };
     
-    const target_address = Address.fromInt(0x2000);
+    const target_address = to_address(0x2000);
     const code_hash = try evm.database.set_code(&target_bytecode);
     var account = @import("database_interface_account.zig").Account.zero();
     account.code_hash = code_hash;
@@ -61,7 +76,7 @@ test "Frame CALL operation - real integration test" {
     try evm.database.set_account(target_address, account);
     
     // Create a frame that will make the CALL
-    const caller_address = Address.fromInt(0x1000);
+    const caller_address = to_address(0x1000);
     const F = Frame(.{ .has_database = true });
     const bytecode = [_]u8{ 0xF1, 0x00 }; // CALL STOP
     
@@ -101,15 +116,19 @@ test "Frame CALL with value transfer - real integration test" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
-    var evm = try createTestEvm(allocator);
+    const result = try createTestEvm(allocator);
+    var evm = result.evm;
+    var memory_db = result.memory_db;
     defer {
         evm.deinit();
         allocator.destroy(evm);
+        memory_db.deinit();
+        allocator.destroy(memory_db);
     }
     
     // Set up accounts with balances
-    const caller_address = Address.fromInt(0x1000);
-    const target_address = Address.fromInt(0x2000);
+    const caller_address = to_address(0x1000);
+    const target_address = to_address(0x2000);
     
     var caller_account = @import("database_interface_account.zig").Account.zero();
     caller_account.balance = 10000; // Caller has 10000 wei
@@ -157,10 +176,14 @@ test "Frame DELEGATECALL preserves context - real integration test" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
-    var evm = try createTestEvm(allocator);
+    const result = try createTestEvm(allocator);
+    var evm = result.evm;
+    var memory_db = result.memory_db;
     defer {
         evm.deinit();
         allocator.destroy(evm);
+        memory_db.deinit();
+        allocator.destroy(memory_db);
     }
     
     // Deploy a contract that reads CALLER and VALUE
@@ -175,9 +198,9 @@ test "Frame DELEGATECALL preserves context - real integration test" {
         0xF3,       // RETURN
     };
     
-    const original_caller = Address.fromInt(0x1111);
-    const caller_address = Address.fromInt(0x2222);
-    const target_address = Address.fromInt(0x3333);
+    const original_caller = to_address(0x1111);
+    const caller_address = to_address(0x2222);
+    const target_address = to_address(0x3333);
     
     const code_hash = try evm.database.set_code(&target_bytecode);
     var account = @import("database_interface_account.zig").Account.zero();
@@ -225,10 +248,14 @@ test "Frame STATICCALL prevents state changes - real integration test" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
-    var evm = try createTestEvm(allocator);
+    const result = try createTestEvm(allocator);
+    var evm = result.evm;
+    var memory_db = result.memory_db;
     defer {
         evm.deinit();
         allocator.destroy(evm);
+        memory_db.deinit();
+        allocator.destroy(memory_db);
     }
     
     // Deploy a contract that tries to modify storage
@@ -244,7 +271,7 @@ test "Frame STATICCALL prevents state changes - real integration test" {
         0xF3,       // RETURN
     };
     
-    const target_address = Address.fromInt(0x4000);
+    const target_address = to_address(0x4000);
     const code_hash = try evm.database.set_code(&target_bytecode);
     var account = @import("database_interface_account.zig").Account.zero();
     account.code_hash = code_hash;
@@ -282,14 +309,18 @@ test "Frame CREATE operation - real integration test" {
     const allocator = std.testing.allocator;
     
     // Create real EVM instance
-    var evm = try createTestEvm(allocator);
+    const result = try createTestEvm(allocator);
+    var evm = result.evm;
+    var memory_db = result.memory_db;
     defer {
         evm.deinit();
         allocator.destroy(evm);
+        memory_db.deinit();
+        allocator.destroy(memory_db);
     }
     
     // Set up creator account with balance
-    const creator_address = Address.fromInt(0x5000);
+    const creator_address = to_address(0x5000);
     var creator_account = @import("database_interface_account.zig").Account.zero();
     creator_account.balance = 10000;
     try evm.database.set_account(creator_address, creator_account);
