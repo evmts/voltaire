@@ -1356,22 +1356,24 @@ test "EVM error type definition" {
     // Test that different errors are not equal
     try testing.expect(err1 != err2);
     
-    // Test that error set contains expected errors
+    // Test that error set contains expected errors - reference them indirectly
     comptime {
-        @as(void, DefaultEvm.Error.StackUnderflow);
-        @as(void, DefaultEvm.Error.StackOverflow);
-        @as(void, DefaultEvm.Error.ContractNotFound);
-        @as(void, DefaultEvm.Error.PrecompileError);
-        @as(void, DefaultEvm.Error.MemoryError);
-        @as(void, DefaultEvm.Error.StorageError);
-        @as(void, DefaultEvm.Error.CallDepthExceeded);
-        @as(void, DefaultEvm.Error.InsufficientBalance);
-        @as(void, DefaultEvm.Error.ContractCollision);
-        @as(void, DefaultEvm.Error.InvalidBytecode);
-        @as(void, DefaultEvm.Error.StaticCallViolation);
-        @as(void, DefaultEvm.Error.InvalidOpcode);
-        @as(void, DefaultEvm.Error.RevertExecution);
-        @as(void, DefaultEvm.Error.Stop);
+        const StackUnderflow = DefaultEvm.Error.StackUnderflow;
+        const StackOverflow = DefaultEvm.Error.StackOverflow;
+        const ContractNotFound = DefaultEvm.Error.ContractNotFound;
+        const PrecompileError = DefaultEvm.Error.PrecompileError;
+        const MemoryError = DefaultEvm.Error.MemoryError;
+        const StorageError = DefaultEvm.Error.StorageError;
+        const CallDepthExceeded = DefaultEvm.Error.CallDepthExceeded;
+        const InsufficientBalance = DefaultEvm.Error.InsufficientBalance;
+        const ContractCollision = DefaultEvm.Error.ContractCollision;
+        const InvalidBytecode = DefaultEvm.Error.InvalidBytecode;
+        const StaticCallViolation = DefaultEvm.Error.StaticCallViolation;
+        const InvalidOpcode = DefaultEvm.Error.InvalidOpcode;
+        const RevertExecution = DefaultEvm.Error.RevertExecution;
+        const Stop = DefaultEvm.Error.Stop;
+        // Reference the errors to prevent them from being optimized away
+        _ = .{ StackUnderflow, StackOverflow, ContractNotFound, PrecompileError, MemoryError, StorageError, CallDepthExceeded, InsufficientBalance, ContractCollision, InvalidBytecode, StaticCallViolation, InvalidOpcode, RevertExecution, Stop };
     }
 }
 
@@ -1469,7 +1471,7 @@ test "EVM call() method routes to different handlers" {
     };
     _ = evm.call(call_params) catch |err| {
         // Expected to fail for now as implementation doesn't exist
-        @as(void, err);
+        _ = err;
     };
     
     // Test DELEGATECALL routing

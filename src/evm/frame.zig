@@ -1298,7 +1298,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_calldatasize(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const calldata = host.get_input();
-            try self.stack.push(@as(u256, @intCast(calldata.len)));
+            const calldata_len = @as(WordType, @truncate(@as(u256, @intCast(calldata.len))));
+            try self.stack.push(calldata_len);
         }
 
         /// CALLDATACOPY opcode (0x37) - Copy input data to memory
@@ -1347,7 +1348,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pushes the size of the currently executing contract's code.
         /// Stack: [] → [size]
         pub fn op_codesize(self: *Self) Error!void {
-            try self.stack.push(@as(u256, @intCast(self.bytecode.len)));
+            const bytecode_len = @as(WordType, @truncate(@as(u256, @intCast(self.bytecode.len))));
+            try self.stack.push(bytecode_len);
         }
 
         /// CODECOPY opcode (0x39) - Copy executing contract code to memory
@@ -1394,7 +1396,8 @@ pub fn Frame(comptime config: FrameConfig) type {
         pub fn op_gasprice(self: *Self) Error!void {
             const host = self.host orelse return Error.InvalidOpcode;
             const gas_price = host.get_gas_price();
-            try self.stack.push(gas_price);
+            const gas_price_truncated = @as(WordType, @truncate(gas_price));
+            try self.stack.push(gas_price_truncated);
         }
 
         /// EXTCODESIZE opcode (0x3B) - Get size of account's code
@@ -1405,7 +1408,8 @@ pub fn Frame(comptime config: FrameConfig) type {
             const address_u256 = try self.stack.pop();
             const address = from_u256(address_u256);
             const code = host.get_code(address);
-            try self.stack.push(@as(u256, @intCast(code.len)));
+            const code_len = @as(WordType, @truncate(@as(u256, @intCast(code.len))));
+            try self.stack.push(code_len);
         }
 
         /// EXTCODECOPY opcode (0x3C) - Copy account's code to memory
