@@ -66,7 +66,6 @@ pub fn Frame(comptime config: FrameConfig) type {
             .stack_size = config.stack_size,
             .WordType = config.WordType,
         });
-        pub const GasType = config.GasType();
         pub const Error = error{
             StackOverflow,
             StackUnderflow,
