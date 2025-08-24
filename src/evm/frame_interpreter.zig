@@ -7,6 +7,11 @@ const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 const primitives = @import("primitives");
 
+/// Create a FrameInterpreter with the given configuration
+pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
+    return FrameInterpreter(config);
+}
+
 // FrameInterpreter combines a Frame with a Plan to execute EVM bytecode
 pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
     config.validate();
@@ -70,7 +75,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.SAR)] = &op_sar_handler;
             handlers[0x1e] = &op_invalid_handler;
             handlers[0x1f] = &op_invalid_handler;
-            handlers[@intFromEnum(Opcode.KECCAK256)] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.KECCAK256)] = &op_keccak256_handler;
             inline for (0x21..0x30) |i| {
                 handlers[i] = &op_invalid_handler;
             }
@@ -79,20 +84,28 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.ORIGIN)] = &op_origin_handler;
             handlers[@intFromEnum(Opcode.CALLER)] = &op_caller_handler;
             handlers[@intFromEnum(Opcode.CALLVALUE)] = &op_callvalue_handler;
-            handlers[@intFromEnum(Opcode.CALLDATALOAD)] = &op_invalid_handler; // TODO: implement
-            handlers[@intFromEnum(Opcode.CALLDATASIZE)] = &op_invalid_handler; // TODO: implement
-            handlers[@intFromEnum(Opcode.CALLDATACOPY)] = &op_invalid_handler; // TODO: implement
-            handlers[@intFromEnum(Opcode.CODESIZE)] = &op_invalid_handler; // TODO: implement
-            handlers[@intFromEnum(Opcode.CODECOPY)] = &op_invalid_handler; // TODO: implement
-            handlers[@intFromEnum(Opcode.GASPRICE)] = &op_invalid_handler; // TODO: implement
-            handlers[@intFromEnum(Opcode.EXTCODESIZE)] = &op_invalid_handler; // TODO: implement
-            handlers[@intFromEnum(Opcode.EXTCODECOPY)] = &op_invalid_handler; // TODO: implement
-            handlers[@intFromEnum(Opcode.RETURNDATASIZE)] = &op_invalid_handler; // TODO: implement
-            handlers[@intFromEnum(Opcode.RETURNDATACOPY)] = &op_invalid_handler; // TODO: implement
-            handlers[@intFromEnum(Opcode.EXTCODEHASH)] = &op_invalid_handler; // TODO: implement
-            inline for (0x40..0x4b) |i| {
-                handlers[i] = &op_invalid_handler; // TODO: implement
-            }
+            handlers[@intFromEnum(Opcode.CALLDATALOAD)] = &op_calldataload_handler;
+            handlers[@intFromEnum(Opcode.CALLDATASIZE)] = &op_calldatasize_handler;
+            handlers[@intFromEnum(Opcode.CALLDATACOPY)] = &op_calldatacopy_handler;
+            handlers[@intFromEnum(Opcode.CODESIZE)] = &op_codesize_handler;
+            handlers[@intFromEnum(Opcode.CODECOPY)] = &op_codecopy_handler;
+            handlers[@intFromEnum(Opcode.GASPRICE)] = &op_gasprice_handler;
+            handlers[@intFromEnum(Opcode.EXTCODESIZE)] = &op_extcodesize_handler;
+            handlers[@intFromEnum(Opcode.EXTCODECOPY)] = &op_extcodecopy_handler;
+            handlers[@intFromEnum(Opcode.RETURNDATASIZE)] = &op_returndatasize_handler;
+            handlers[@intFromEnum(Opcode.RETURNDATACOPY)] = &op_returndatacopy_handler;
+            handlers[@intFromEnum(Opcode.EXTCODEHASH)] = &op_extcodehash_handler;
+            handlers[@intFromEnum(Opcode.BLOCKHASH)] = &op_blockhash_handler;
+            handlers[@intFromEnum(Opcode.COINBASE)] = &op_coinbase_handler;
+            handlers[@intFromEnum(Opcode.TIMESTAMP)] = &op_timestamp_handler;
+            handlers[@intFromEnum(Opcode.NUMBER)] = &op_number_handler;
+            handlers[@intFromEnum(Opcode.DIFFICULTY)] = &op_difficulty_handler;
+            handlers[@intFromEnum(Opcode.GASLIMIT)] = &op_gaslimit_handler;
+            handlers[@intFromEnum(Opcode.CHAINID)] = &op_chainid_handler;
+            handlers[@intFromEnum(Opcode.SELFBALANCE)] = &op_selfbalance_handler;
+            handlers[@intFromEnum(Opcode.BASEFEE)] = &op_basefee_handler;
+            handlers[@intFromEnum(Opcode.BLOBHASH)] = &op_blobhash_handler;
+            handlers[@intFromEnum(Opcode.BLOBBASEFEE)] = &op_blobbasefee_handler;
             inline for (0x4b..0x50) |i| {
                 handlers[i] = &op_invalid_handler;
             }
@@ -176,15 +189,28 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             handlers[@intFromEnum(Opcode.SWAP14)] = &swap14_handler;
             handlers[@intFromEnum(Opcode.SWAP15)] = &swap15_handler;
             handlers[@intFromEnum(Opcode.SWAP16)] = &swap16_handler;
-            inline for (0xa0..0xa5) |i| {
-                handlers[i] = &op_invalid_handler; // TODO: implement
-            }
+            handlers[@intFromEnum(Opcode.LOG0)] = &op_log0_handler;
+            handlers[@intFromEnum(Opcode.LOG1)] = &op_log1_handler;
+            handlers[@intFromEnum(Opcode.LOG2)] = &op_log2_handler;
+            handlers[@intFromEnum(Opcode.LOG3)] = &op_log3_handler;
+            handlers[@intFromEnum(Opcode.LOG4)] = &op_log4_handler;
             inline for (0xa5..0xf0) |i| {
                 handlers[i] = &op_invalid_handler;
             }
-            inline for (0xf0..0x100) |i| {
-                handlers[i] = &op_invalid_handler; // TODO: implement
+            handlers[@intFromEnum(Opcode.CREATE)] = &op_invalid_handler; // Needs additional context
+            handlers[@intFromEnum(Opcode.CALL)] = &op_invalid_handler; // Needs additional context
+            handlers[@intFromEnum(Opcode.CALLCODE)] = &op_invalid_handler; // Deprecated
+            handlers[@intFromEnum(Opcode.RETURN)] = &op_invalid_handler; // Needs return handling
+            handlers[@intFromEnum(Opcode.DELEGATECALL)] = &op_invalid_handler; // Needs additional context
+            inline for (0xf5..0xfa) |i| {
+                handlers[i] = &op_invalid_handler;
             }
+            handlers[@intFromEnum(Opcode.STATICCALL)] = &op_invalid_handler; // Needs additional context
+            handlers[@intFromEnum(Opcode.REVERT)] = &op_invalid_handler; // Needs return handling
+            handlers[0xfc] = &op_invalid_handler;
+            handlers[0xfd] = &op_invalid_handler;
+            handlers[@intFromEnum(Opcode.INVALID)] = &op_invalid_handler;
+            handlers[@intFromEnum(Opcode.SELFDESTRUCT)] = &op_invalid_handler; // Needs additional context
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_INLINE)] = &push_add_inline_handler;
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_ADD_POINTER)] = &push_add_pointer_handler;
             handlers[@intFromEnum(planner_mod.OpcodeSynthetic.PUSH_MUL_INLINE)] = &push_mul_inline_handler;
@@ -308,7 +334,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
         
-        // TODO: Add all other handler functions here...
+        // Additional handlers implemented below
         // For now, let's just add a few more to show the pattern
         
         // Environment opcodes
@@ -378,7 +404,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             
             // Get origin from host's transaction context
-            // TODO: Implement get_transaction_context in Host interface
+            // NOTE: Host interface needs get_tx_origin method - using placeholder
             const origin = primitives.Address.to_u256(primitives.ZERO_ADDRESS);
             
             // Push origin to stack
@@ -405,7 +431,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             
             // Get caller from host
-            // TODO: Implement get_caller in Host interface
+            // NOTE: Host interface needs get_caller method - using placeholder
             const caller_u256 = primitives.Address.to_u256(primitives.ZERO_ADDRESS);
             
             // Push caller to stack
@@ -432,7 +458,7 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }
             
             // Get call value from host
-            // TODO: Implement get_call_value in Host interface
+            // NOTE: Host interface needs get_call_value method - using placeholder
             const value: u256 = 0;
             
             // Push value to stack
@@ -480,6 +506,473 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
         
+        fn op_sub_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // Get opcode info for gas consumption
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SUB)];
+
+            // Consume gas (unchecked since we validated in pre-analysis)
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+
+            // Execute the operation
+            try self.sub();
+
+            // Get next handler from plan
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SUB);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_div_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.DIV)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.div();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .DIV);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_sdiv_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SDIV)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.sdiv();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SDIV);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_mod_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MOD)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.mod();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MOD);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_smod_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SMOD)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.smod();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SMOD);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_addmod_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.ADDMOD)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.addmod();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .ADDMOD);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_mulmod_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MULMOD)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.mulmod();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MULMOD);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_exp_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.EXP)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.exp();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .EXP);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_signextend_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SIGNEXTEND)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.signextend();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SIGNEXTEND);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        // Comparison handlers
+        fn op_lt_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.LT)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.lt();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .LT);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_gt_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.GT)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.gt();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .GT);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_slt_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SLT)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.slt();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SLT);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_sgt_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SGT)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.sgt();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SGT);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_eq_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.EQ)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.eq();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .EQ);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_iszero_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.ISZERO)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.iszero();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .ISZERO);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        // Bitwise handlers
+        fn op_and_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.AND)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.@"and"();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .AND);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_or_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.OR)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.@"or"();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .OR);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_xor_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.XOR)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.xor();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .XOR);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_not_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.NOT)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.not();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .NOT);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_byte_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.BYTE)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.byte();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .BYTE);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_shl_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SHL)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.shl();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SHL);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_shr_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SHR)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.shr();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SHR);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_sar_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SAR)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.sar();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SAR);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        // Stack management handlers
+        fn op_pop_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.POP)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.pop();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .POP);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        // Memory handlers
+        fn op_mload_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MLOAD)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.mload();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MLOAD);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_mstore_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MSTORE)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.mstore();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MSTORE);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_mstore8_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MSTORE8)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.mstore8();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MSTORE8);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_msize_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MSIZE)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.msize();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MSIZE);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_mcopy_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.MCOPY)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.mcopy();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .MCOPY);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        // Storage handlers
+        fn op_sload_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SLOAD)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.sload();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SLOAD);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_sstore_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.SSTORE)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.sstore();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .SSTORE);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_tload_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.TLOAD)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.tload();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .TLOAD);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_tstore_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.TSTORE)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.tstore();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .TSTORE);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        // Control flow
+        fn op_jumpdest_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.JUMPDEST)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.jumpdest();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .JUMPDEST);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
+        fn op_gas_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            const opcode_info = opcode_data.OPCODE_INFO[@intFromEnum(Opcode.GAS)];
+            self.consumeGasUnchecked(opcode_info.gas_cost);
+            try self.gas();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .GAS);
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+        
         // Generic handler for simple opcodes that just increment PC
         fn makeSimpleHandler(comptime op_fn: fn (*Frame) Frame.Error!void, comptime opcode_enum: Opcode) HandlerFn {
             return struct {
@@ -504,39 +997,6 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             }.handler;
         }
 
-        // Define all the simple handlers using the macro
-        const op_sub_handler = makeSimpleHandler(Frame.sub, .SUB);
-        const op_div_handler = makeSimpleHandler(Frame.div, .DIV);
-        const op_sdiv_handler = makeSimpleHandler(Frame.sdiv, .SDIV);
-        const op_mod_handler = makeSimpleHandler(Frame.mod, .MOD);
-        const op_smod_handler = makeSimpleHandler(Frame.smod, .SMOD);
-        const op_addmod_handler = makeSimpleHandler(Frame.addmod, .ADDMOD);
-        const op_mulmod_handler = makeSimpleHandler(Frame.mulmod, .MULMOD);
-        const op_exp_handler = makeSimpleHandler(Frame.exp, .EXP);
-        const op_signextend_handler = makeSimpleHandler(Frame.signextend, .SIGNEXTEND);
-        const op_lt_handler = makeSimpleHandler(Frame.lt, .LT);
-        const op_gt_handler = makeSimpleHandler(Frame.gt, .GT);
-        const op_slt_handler = makeSimpleHandler(Frame.slt, .SLT);
-        const op_sgt_handler = makeSimpleHandler(Frame.sgt, .SGT);
-        const op_eq_handler = makeSimpleHandler(Frame.eq, .EQ);
-        const op_iszero_handler = makeSimpleHandler(Frame.iszero, .ISZERO);
-        const op_and_handler = makeSimpleHandler(Frame.@"and", .AND);
-        const op_or_handler = makeSimpleHandler(Frame.@"or", .OR);
-        const op_xor_handler = makeSimpleHandler(Frame.xor, .XOR);
-        const op_not_handler = makeSimpleHandler(Frame.@"not", .NOT);
-        const op_byte_handler = makeSimpleHandler(Frame.byte, .BYTE);
-        const op_shl_handler = makeSimpleHandler(Frame.shl, .SHL);
-        const op_shr_handler = makeSimpleHandler(Frame.shr, .SHR);
-        const op_sar_handler = makeSimpleHandler(Frame.sar, .SAR);
-        const op_pop_handler = makeSimpleHandler(Frame.pop, .POP);
-        const op_mload_handler = makeSimpleHandler(Frame.mload, .MLOAD);
-        const op_mstore_handler = makeSimpleHandler(Frame.mstore, .MSTORE);
-        const op_mstore8_handler = makeSimpleHandler(Frame.mstore8, .MSTORE8);
-        const op_mcopy_handler = makeSimpleHandler(Frame.mcopy, .MCOPY);
-        const op_sload_handler = makeSimpleHandler(Frame.sload, .SLOAD);
-        const op_sstore_handler = makeSimpleHandler(Frame.sstore, .SSTORE);
-        const op_tload_handler = makeSimpleHandler(Frame.tload, .TLOAD);
-        const op_tstore_handler = makeSimpleHandler(Frame.tstore, .TSTORE);
         fn op_jump_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
             const self = @as(*Frame, @ptrCast(@alignCast(frame)));
             const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
@@ -615,9 +1075,6 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, .PC);
             return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
-        const op_msize_handler = makeSimpleHandler(Frame.msize, .MSIZE);
-        const op_gas_handler = makeSimpleHandler(Frame.gas, .GAS);
-        const op_jumpdest_handler = makeSimpleHandler(Frame.jumpdest, .JUMPDEST);
         
         // Push handlers
         fn push2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
@@ -1511,10 +1968,329 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             const next_handler = plan_ptr.instructionStream[interpreter.instruction_idx].handler;
             return @call(.always_tail, next_handler, .{ self, plan_ptr });
         }
+
+        // KECCAK256 handler
+        fn op_keccak256_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_keccak256();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.KECCAK256));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        // Call data handlers
+        fn op_calldataload_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_calldataload();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLDATALOAD));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_calldatasize_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_calldatasize();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLDATASIZE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_calldatacopy_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_calldatacopy();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CALLDATACOPY));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        // Code handlers
+        fn op_codesize_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_codesize();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CODESIZE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_codecopy_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_codecopy();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CODECOPY));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_gasprice_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_gasprice();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.GASPRICE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        // External code handlers
+        fn op_extcodesize_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_extcodesize();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.EXTCODESIZE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_extcodecopy_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_extcodecopy();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.EXTCODECOPY));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_returndatasize_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_returndatasize();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.RETURNDATASIZE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_returndatacopy_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_returndatacopy();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.RETURNDATACOPY));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_extcodehash_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_extcodehash();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.EXTCODEHASH));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        // Block information handlers
+        fn op_blockhash_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_blockhash();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BLOCKHASH));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_coinbase_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_coinbase();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.COINBASE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_timestamp_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_timestamp();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.TIMESTAMP));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_number_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_number();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.NUMBER));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_difficulty_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_difficulty();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.DIFFICULTY));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_gaslimit_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_gaslimit();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.GASLIMIT));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_chainid_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_chainid();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.CHAINID));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_selfbalance_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_selfbalance();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.SELFBALANCE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_basefee_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_basefee();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BASEFEE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_blobhash_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_blobhash();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BLOBHASH));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_blobbasefee_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            try self.op_blobbasefee();
+            
+            const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.BLOBBASEFEE));
+            return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        // LOG handlers - need allocator parameter
+        fn op_log0_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
+            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
+            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            
+            // LOG operations need allocator - this is a limitation of current design
+            // For now, return InvalidOpcode until allocator is available in frame context
+            return Error.InvalidOpcode;
+            
+            //const next_handler = plan_ptr.getNextInstruction(&interpreter.instruction_idx, @intFromEnum(Opcode.LOG0));
+            //return @call(.always_tail, next_handler, .{ self, plan_ptr });
+        }
+
+        fn op_log1_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            _ = frame;
+            _ = plan;
+            return Error.InvalidOpcode;
+        }
+
+        fn op_log2_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            _ = frame;
+            _ = plan;
+            return Error.InvalidOpcode;
+        }
+
+        fn op_log3_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            _ = frame;
+            _ = plan;
+            return Error.InvalidOpcode;
+        }
+
+        fn op_log4_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
+            _ = frame;
+            _ = plan;
+            return Error.InvalidOpcode;
+        }
     };
 }
 
 // Tests
+test "FrameInterpreter basic execution - simple" {
+    std.testing.log_level = .warn;
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Simple bytecode: PUSH1 42, PUSH1 10, ADD, STOP
+    const bytecode = [_]u8{ 0x60, 0x2A, 0x60, 0x0A, 0x01, 0x00 };
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 1000000, void{});
+    defer interpreter.deinit(allocator);
+
+    std.log.warn("\n=== FrameInterpreter basic execution test ===", .{});
+    std.log.warn("Initial interpreter state:", .{});
+    interpreter.pretty_print();
+
+    // interpret should execute until STOP
+    try interpreter.interpret(); // Handles STOP internally
+    
+    std.log.warn("\nFinal interpreter state after interpret():", .{});
+    interpreter.pretty_print();
+
+    // Check final stack state
+    try std.testing.expectEqual(@as(u256, 52), interpreter.frame.stack.peek_unsafe()); // 42 + 10 = 52
+}
 test "FrameInterpreter basic execution" {
     std.testing.log_level = .warn;
     const allocator = std.testing.allocator;
