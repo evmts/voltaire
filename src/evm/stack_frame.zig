@@ -43,6 +43,22 @@ pub const StackFrame = struct {
     input_buffer: []const u8, // Input data for this call
     output_buffer: []const u8, // Output data from this call
 
+    // Comptime assertions for StackFrame struct
+    comptime {
+        // Document the struct layout for cache optimization
+        // Fields are ordered by access frequency and size for cache efficiency
+        
+        // Ensure reasonable struct size
+        if (@sizeOf(usize) == 8) {
+            // On 64-bit platforms, verify size is reasonable
+            // This is a large struct but should fit in a few cache lines
+            std.debug.assert(@sizeOf(StackFrame) <= 512); // Allow for all fields
+        }
+        
+        // Ensure proper alignment for efficient access
+        std.debug.assert(@alignOf(StackFrame) >= @alignOf(u64));
+    }
+
     /// Initialize a StackFrame with required parameters
     pub fn init(
         gas_remaining: u64,
