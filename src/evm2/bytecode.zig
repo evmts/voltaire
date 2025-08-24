@@ -1603,3 +1603,813 @@ test "Bytecode.parseSolidityMetadata" {
     const short_metadata = bytecode3.parseSolidityMetadata();
     try std.testing.expect(short_metadata == null);
 }
+
+test "Bytecode SIMD edge cases - very short bytecode" {
+    const allocator = std.testing.allocator;
+    
+    // Test SIMD operations with bytecode shorter than vector length
+    const short_code = [_]u8{0x00}; // Just STOP
+    var bytecode = try BytecodeDefault.init(allocator, &short_code);
+    defer bytecode.deinit();
+    
+    try std.testing.expectEqual(@as(usize, 1), bytecode.len());
+    
+    // Test that SIMD validation still works with short code
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
+    
+    try std.testing.expectEqual(@as(u32, 1), stats.opcode_counts[@intFromEnum(Opcode.STOP)]);
+}
+
+test "Bytecode SIMD edge cases - bytecode at vector boundaries" {
+    const allocator = std.testing.allocator;
+    
+    // Create bytecode with length exactly at common SIMD vector sizes
+    const vector_sizes = [_]usize{ 8, 16, 32, 64 };
+    
+    for (vector_sizes) |size| {
+        // Create valid bytecode of exact vector size
+        var code = try allocator.alloc(u8, size);
+        defer allocator.free(code);
+        
+        // Fill with alternating PUSH1 and data
+        var i: usize = 0;
+        while (i + 1 < size) {
+            code[i] = 0x60; // PUSH1
+            code[i + 1] = @intCast(i); // Some data
+            i += 2;
+        }
+        if (i < size) {
+            code[i] = 0x00; // STOP
+        }
+        
+        var bytecode = try BytecodeDefault.init(allocator, code);
+        defer bytecode.deinit();
+        
+        // Verify it was processed correctly
+        try std.testing.expect(bytecode.len() == size);
+    }
+}
+
+test "Bytecode SIMD fusion detection at boundaries" {
+    const allocator = std.testing.allocator;
+    
+    // Test fusion detection when PUSH+OP spans vector boundaries
+    // Create code that has fusions at different positions relative to vector boundaries
+    var code: [67]u8 = undefined; // Prime number to avoid alignment
+    var pos: usize = 0;
+    
+    // Fill with alternating PUSH1+ADD patterns
+    while (pos + 2 < code.len) {
+        code[pos] = 0x60; // PUSH1
+        code[pos + 1] = @intCast(pos); // Data
+        code[pos + 2] = 0x01; // ADD
+        pos += 3;
+    }
+    // Fill remaining with STOP
+    while (pos < code.len) {
+        code[pos] = 0x00;
+        pos += 1;
+    }
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
+    
+    // Should detect multiple PUSH+ADD fusions
+    try std.testing.expect(stats.potential_fusions.len > 0);
+    
+    // Verify all detected fusions are PUSH+ADD
+    for (stats.potential_fusions) |fusion| {
+        try std.testing.expectEqual(Opcode.ADD, fusion.second_opcode);
+    }
+}
+
+test "Bytecode bitmap operations edge cases - bit boundaries" {
+    const allocator = std.testing.allocator;
+    
+    // Create a bitmap that exercises bit boundary conditions
+    var bitmap = try allocator.alloc(u8, 8);
+    defer allocator.free(bitmap);
+    @memset(bitmap, 0);
+    
+    // Set bits at various boundary positions
+    const test_bits = [_]usize{ 0, 7, 8, 15, 16, 31, 32, 63 };
+    for (test_bits) |bit| {
+        const byte_idx = bit >> 3;
+        const bit_mask = @as(u8, 1) << @intCast(bit & 7);
+        if (byte_idx < bitmap.len) {
+            bitmap[byte_idx] |= bit_mask;
+        }
+    }
+    
+    // Test countBitsInRange across boundaries
+    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 0, 8));   // bits 0,7
+    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 8, 16));  // bits 8,15
+    try std.testing.expectEqual(@as(usize, 2), BytecodeDefault.countBitsInRange(bitmap, 16, 32)); // bits 16,31
+    try std.testing.expectEqual(@as(usize, 1), BytecodeDefault.countBitsInRange(bitmap, 32, 64)); // bit 32
+    
+    // Test across multiple byte boundaries
+    try std.testing.expectEqual(@as(usize, 4), BytecodeDefault.countBitsInRange(bitmap, 0, 16)); // bits 0,7,8,15
+    
+    // Test findNextSetBit across boundaries
+    try std.testing.expectEqual(@as(?usize, 0), BytecodeDefault.findNextSetBit(bitmap, 0));
+    try std.testing.expectEqual(@as(?usize, 7), BytecodeDefault.findNextSetBit(bitmap, 1));
+    try std.testing.expectEqual(@as(?usize, 8), BytecodeDefault.findNextSetBit(bitmap, 8));
+    try std.testing.expectEqual(@as(?usize, 15), BytecodeDefault.findNextSetBit(bitmap, 9));
+}
+
+test "Bytecode bitmap operations - empty ranges" {
+    const allocator = std.testing.allocator;
+    
+    const bitmap = try allocator.alloc(u8, 4);
+    defer allocator.free(bitmap);
+    @memset(bitmap, 0xFF); // All bits set
+    
+    // Test empty ranges
+    try std.testing.expectEqual(@as(usize, 0), BytecodeDefault.countBitsInRange(bitmap, 10, 10));
+    try std.testing.expectEqual(@as(usize, 0), BytecodeDefault.countBitsInRange(bitmap, 5, 5));
+    try std.testing.expectEqual(@as(usize, 0), BytecodeDefault.countBitsInRange(bitmap, 100, 50)); // Invalid range
+    
+    // Test single bit ranges
+    try std.testing.expectEqual(@as(usize, 1), BytecodeDefault.countBitsInRange(bitmap, 0, 1));
+    try std.testing.expectEqual(@as(usize, 1), BytecodeDefault.countBitsInRange(bitmap, 15, 16));
+    try std.testing.expectEqual(@as(usize, 1), BytecodeDefault.countBitsInRange(bitmap, 31, 32));
+}
+
+test "Bytecode SIMD markJumpdest edge cases" {
+    const allocator = std.testing.allocator;
+    
+    // Create bytecode with JUMPDEST at various positions including boundaries
+    var code = [_]u8{
+        0x5b,             // JUMPDEST at 0
+        0x60, 0x03,       // PUSH1 3
+        0x56,             // JUMP
+        0x5b,             // JUMPDEST at 4
+        0x61, 0x5b, 0x5b, // PUSH2 0x5b5b (JUMPDEST in push data)
+        0x5b,             // JUMPDEST at 8 (should be valid)
+        0x7f,             // PUSH32
+    };
+    
+    // Fill rest with data including 0x5b bytes
+    var i: usize = 10;
+    while (i < 10 + 32) {
+        code[i] = if ((i - 10) % 4 == 0) 0x5b else @intCast(i);
+        i += 1;
+    }
+    
+    const full_code = try allocator.alloc(u8, code.len);
+    defer allocator.free(full_code);
+    @memcpy(full_code, &code);
+    
+    var bytecode = try BytecodeDefault.init(allocator, full_code);
+    defer bytecode.deinit();
+    
+    // Verify only actual JUMPDESTs (not in push data) are marked
+    try std.testing.expect(bytecode.isValidJumpDest(0));  // JUMPDEST at 0
+    try std.testing.expect(bytecode.isValidJumpDest(4));  // JUMPDEST at 4
+    try std.testing.expect(!bytecode.isValidJumpDest(6)); // 0x5b in PUSH2 data
+    try std.testing.expect(!bytecode.isValidJumpDest(7)); // 0x5b in PUSH2 data
+    try std.testing.expect(bytecode.isValidJumpDest(8));  // JUMPDEST at 8
+    
+    // All 0x5b bytes in PUSH32 data should be invalid
+    for (10..42) |pos| {
+        if (full_code[pos] == 0x5b) {
+            try std.testing.expect(!bytecode.isValidJumpDest(@intCast(pos)));
+        }
+    }
+}
+
+test "Bytecode complex PUSH patterns with SIMD" {
+    const allocator = std.testing.allocator;
+    
+    // Create complex bytecode with all PUSH sizes
+    var code: [300]u8 = undefined;
+    var pos: usize = 0;
+    
+    // Add PUSH1 through PUSH32
+    var push_size: u8 = 1;
+    while (push_size <= 32 and pos < code.len) {
+        if (pos + 1 + push_size >= code.len) break;
+        
+        code[pos] = 0x60 + push_size - 1; // PUSH1 = 0x60, PUSH2 = 0x61, etc.
+        pos += 1;
+        
+        // Fill push data
+        for (0..push_size) |i| {
+            if (pos < code.len) {
+                code[pos] = @intCast((push_size * 16 + i) & 0xFF);
+                pos += 1;
+            }
+        }
+        
+        push_size += 1;
+    }
+    
+    // Fill remaining with STOP
+    while (pos < code.len) {
+        code[pos] = 0x00;
+        pos += 1;
+    }
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    const stats = try bytecode.getStats();
+    defer {
+        allocator.free(stats.push_values);
+        allocator.free(stats.potential_fusions);
+        allocator.free(stats.jumpdests);
+        allocator.free(stats.jumps);
+    }
+    
+    // Should have detected 32 different PUSH opcodes
+    var total_pushes: u32 = 0;
+    for (1..33) |i| {
+        total_pushes += stats.opcode_counts[@intFromEnum(Opcode.PUSH1) + i - 1];
+    }
+    try std.testing.expectEqual(@as(u32, 32), total_pushes);
+    
+    // Should have 32 push values recorded
+    try std.testing.expectEqual(@as(usize, 32), stats.push_values.len);
+}
+
+test "Bytecode large initcode stress test" {
+    const allocator = std.testing.allocator;
+    
+    // Test with large initcode near the limit
+    const large_size = default_config.max_initcode_size - 1000;
+    var large_code = try allocator.alloc(u8, large_size);
+    defer allocator.free(large_code);
+    
+    // Fill with valid pattern: PUSH1 + data
+    var i: usize = 0;
+    while (i + 1 < large_size) {
+        large_code[i] = 0x60; // PUSH1
+        large_code[i + 1] = @intCast(i & 0xFF);
+        i += 2;
+    }
+    if (i < large_size) {
+        large_code[i] = 0x00; // STOP
+    }
+    
+    var bytecode = try BytecodeDefault.initFromInitcode(allocator, large_code);
+    defer bytecode.deinit();
+    
+    try std.testing.expectEqual(@as(usize, large_size), bytecode.len());
+    
+    // Verify gas calculation for large initcode
+    const expected_words = (large_size + 31) / 32;
+    const expected_gas = expected_words * 2;
+    try std.testing.expectEqual(@as(u64, expected_gas), BytecodeDefault.calculateInitcodeGas(large_size));
+}
+
+test "Bytecode malformed metadata - invalid CBOR header" {
+    const allocator = std.testing.allocator;
+    
+    // Test metadata with invalid CBOR map header
+    const code_bad_header = [_]u8{
+        0x60, 0x00, // Some contract code
+        // Bad metadata with wrong CBOR header
+        0xa1, // CBOR map with 1 entry (should be 2)
+        0x64, 0x69, 0x70, 0x66, 0x73, // "ipfs"
+        0x58, 0x22, // 34 bytes following
+        // Dummy 32-byte hash
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x64, 0x73, 0x6f, 0x6c, 0x63, // "solc"
+        0x00, 0x08, 0x1e, // version
+        0x00, 0x2d, // metadata length: 45 bytes
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code_bad_header);
+    defer bytecode.deinit();
+    
+    const metadata = bytecode.parseSolidityMetadata();
+    try std.testing.expect(metadata == null); // Should fail to parse
+}
+
+test "Bytecode malformed metadata - invalid string lengths" {
+    const allocator = std.testing.allocator;
+    
+    // Test metadata with wrong string length marker
+    const code_bad_string = [_]u8{
+        0x60, 0x00, // Some contract code
+        // Bad metadata with wrong string length
+        0xa2, // CBOR map with 2 entries
+        0x65, 0x69, 0x70, 0x66, 0x73, // 5-byte string marker but "ipfs" is 4 bytes
+        0x58, 0x22, // 34 bytes following
+        // Dummy 32-byte hash
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x64, 0x73, 0x6f, 0x6c, 0x63, // "solc"
+        0x00, 0x08, 0x1e, // version
+        0x00, 0x2f, // metadata length: 47 bytes
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code_bad_string);
+    defer bytecode.deinit();
+    
+    const metadata = bytecode.parseSolidityMetadata();
+    try std.testing.expect(metadata == null);
+}
+
+test "Bytecode malformed metadata - wrong key names" {
+    const allocator = std.testing.allocator;
+    
+    // Test metadata with wrong key names
+    const code_wrong_keys = [_]u8{
+        0x60, 0x00, // Some contract code
+        // Bad metadata with wrong key
+        0xa2, // CBOR map with 2 entries
+        0x64, 0x69, 0x70, 0x66, 0x78, // "ipfx" instead of "ipfs"
+        0x58, 0x22, // 34 bytes following
+        // Dummy 32-byte hash
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x64, 0x73, 0x6f, 0x6c, 0x63, // "solc"
+        0x00, 0x08, 0x1e, // version
+        0x00, 0x2d, // metadata length: 45 bytes
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code_wrong_keys);
+    defer bytecode.deinit();
+    
+    const metadata = bytecode.parseSolidityMetadata();
+    try std.testing.expect(metadata == null);
+}
+
+test "Bytecode malformed metadata - invalid hash format" {
+    const allocator = std.testing.allocator;
+    
+    // Test metadata with wrong hash format markers
+    const code_bad_hash = [_]u8{
+        0x60, 0x00, // Some contract code
+        0xa2, // CBOR map with 2 entries
+        0x64, 0x69, 0x70, 0x66, 0x73, // "ipfs"
+        0x58, 0x20, // 32 bytes following (should be 0x22 for 34 bytes)
+        // Only 30 bytes instead of 32
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x64, 0x73, 0x6f, 0x6c, 0x63, // "solc"
+        0x00, 0x08, 0x1e, // version
+        0x00, 0x2b, // metadata length: 43 bytes
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code_bad_hash);
+    defer bytecode.deinit();
+    
+    const metadata = bytecode.parseSolidityMetadata();
+    try std.testing.expect(metadata == null);
+}
+
+test "Bytecode malformed metadata - truncated data" {
+    const allocator = std.testing.allocator;
+    
+    // Test metadata that's cut off mid-parsing
+    const code_truncated = [_]u8{
+        0x60, 0x00, // Some contract code
+        0xa2, // CBOR map with 2 entries
+        0x64, 0x69, 0x70, 0x66, 0x73, // "ipfs"
+        0x58, 0x22, // 34 bytes following
+        // Only partial hash - should be 32 bytes
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // Missing second half of hash and rest of data
+        0x00, 0x10, // metadata length: 16 bytes (too short)
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code_truncated);
+    defer bytecode.deinit();
+    
+    const metadata = bytecode.parseSolidityMetadata();
+    try std.testing.expect(metadata == null);
+}
+
+test "Bytecode malformed metadata - invalid length encoding" {
+    const allocator = std.testing.allocator;
+    
+    // Test with invalid metadata length that would extend beyond bytecode
+    const code_bad_length = [_]u8{
+        0x60, 0x00, // Some contract code (2 bytes)
+        0xFF, 0xFF, // Claim metadata is 65535 bytes (impossible)
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code_bad_length);
+    defer bytecode.deinit();
+    
+    const metadata = bytecode.parseSolidityMetadata();
+    try std.testing.expect(metadata == null);
+}
+
+test "Bytecode malformed metadata - zero length" {
+    const allocator = std.testing.allocator;
+    
+    // Test with zero metadata length
+    const code_zero_length = [_]u8{
+        0x60, 0x00, // Some contract code
+        0x00, 0x00, // Zero metadata length
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code_zero_length);
+    defer bytecode.deinit();
+    
+    const metadata = bytecode.parseSolidityMetadata();
+    try std.testing.expect(metadata == null);
+}
+
+test "Bytecode malformed metadata - minimum size violation" {
+    const allocator = std.testing.allocator;
+    
+    // Test bytecode smaller than minimum metadata size (45 bytes)
+    const code_too_small = [_]u8{
+        0x60, 0x00, 0x00, // 3 bytes of code
+        0x00, 0x05, // Claim 5 bytes of metadata
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code_too_small);
+    defer bytecode.deinit();
+    
+    const metadata = bytecode.parseSolidityMetadata();
+    try std.testing.expect(metadata == null);
+}
+
+test "Bytecode malformed metadata - boundary conditions" {
+    const allocator = std.testing.allocator;
+    
+    // Test exactly minimum size but malformed
+    var code_min_size = [_]u8{0} ** 45;
+    // Set invalid CBOR at the start of metadata
+    code_min_size[43] = 0xFF; // Invalid CBOR
+    code_min_size[44] = 0xFF; // Invalid CBOR
+    // Set length to claim it's all metadata (43 bytes + 2 length bytes)
+    code_min_size[43] = 0x00;
+    code_min_size[44] = 0x2B; // 43 bytes
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code_min_size);
+    defer bytecode.deinit();
+    
+    const metadata = bytecode.parseSolidityMetadata();
+    try std.testing.expect(metadata == null);
+}
+
+test "Bytecode malformed metadata - wrong byte string markers" {
+    const allocator = std.testing.allocator;
+    
+    // Test metadata with wrong byte string markers for IPFS hash
+    const code_wrong_markers = [_]u8{
+        0x60, 0x00, // Some contract code
+        0xa2, // CBOR map with 2 entries
+        0x64, 0x69, 0x70, 0x66, 0x73, // "ipfs"
+        0x57, 0x22, // Wrong marker (0x57 instead of 0x58)
+        // 32-byte hash
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x64, 0x73, 0x6f, 0x6c, 0x63, // "solc"
+        0x00, 0x08, 0x1e, // version
+        0x00, 0x2d, // metadata length: 45 bytes
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code_wrong_markers);
+    defer bytecode.deinit();
+    
+    const metadata = bytecode.parseSolidityMetadata();
+    try std.testing.expect(metadata == null);
+}
+
+test "Bytecode complex jump validation - nested patterns" {
+    const allocator = std.testing.allocator;
+    
+    // Test complex nested jump patterns with multiple PUSH sizes
+    const code = [_]u8{
+        0x60, 0x0D,       // PUSH1 13  (PC 0-1)
+        0x56,             // JUMP      (PC 2)
+        0x60, 0x16,       // PUSH1 22  (PC 3-4)
+        0x56,             // JUMP      (PC 5)
+        0x61, 0x00, 0x19, // PUSH2 25  (PC 6-8)
+        0x56,             // JUMP      (PC 9)
+        0x00,             // STOP      (PC 10)
+        0x60, 0x03,       // PUSH1 3   (PC 11-12)
+        0x5b,             // JUMPDEST  (PC 13) <- Target of first jump
+        0x56,             // JUMP      (PC 14)
+        0x00,             // STOP      (PC 15)
+        0x5b,             // JUMPDEST  (PC 16) <- Target of second jump
+        0x60, 0x06,       // PUSH1 6   (PC 17-18)
+        0x56,             // JUMP      (PC 19)
+        0x00,             // STOP      (PC 20)
+        0x60, 0x0B,       // PUSH1 11  (PC 21-22)
+        0x56,             // JUMP      (PC 23)
+        0x00,             // STOP      (PC 24)
+        0x5b,             // JUMPDEST  (PC 25) <- Target of PUSH2 jump
+        0x00,             // STOP      (PC 26)
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    // Verify all jumpdests are valid
+    try std.testing.expect(bytecode.isValidJumpDest(13));
+    try std.testing.expect(bytecode.isValidJumpDest(16));
+    try std.testing.expect(bytecode.isValidJumpDest(25));
+    
+    // Verify non-jumpdests are invalid
+    try std.testing.expect(!bytecode.isValidJumpDest(0));
+    try std.testing.expect(!bytecode.isValidJumpDest(3));
+    try std.testing.expect(!bytecode.isValidJumpDest(6));
+}
+
+test "Bytecode complex jump validation - PUSH32 with large targets" {
+    const allocator = std.testing.allocator;
+    
+    // Create code with PUSH32 pointing to various locations
+    var code: [100]u8 = undefined;
+    var pos: usize = 0;
+    
+    // PUSH32 pointing to position 67 (after the PUSH32)
+    code[pos] = 0x7f; // PUSH32
+    pos += 1;
+    // 32 bytes of data (most zeros, last byte is target position)
+    for (0..31) |_| {
+        code[pos] = 0x00;
+        pos += 1;
+    }
+    code[pos] = 67; // Target position
+    pos += 1;
+    
+    // JUMP
+    code[pos] = 0x56;
+    pos += 1;
+    
+    // Fill with NOPs until position 67
+    while (pos < 67) {
+        code[pos] = 0x00; // STOP (safe opcode)
+        pos += 1;
+    }
+    
+    // JUMPDEST at position 67
+    code[pos] = 0x5b;
+    pos += 1;
+    
+    // Fill rest with STOP
+    while (pos < code.len) {
+        code[pos] = 0x00;
+        pos += 1;
+    }
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    // Should validate successfully
+    try std.testing.expect(bytecode.isValidJumpDest(67));
+}
+
+test "Bytecode complex jump validation - sequential PUSH patterns" {
+    const allocator = std.testing.allocator;
+    
+    // Test multiple sequential PUSH+JUMP combinations
+    const code = [_]u8{
+        // Multiple PUSH+JUMP sequences
+        0x60, 0x12, 0x56, // PUSH1 18 JUMP
+        0x61, 0x00, 0x15, 0x56, // PUSH2 21 JUMP  
+        0x62, 0x00, 0x00, 0x18, 0x56, // PUSH3 24 JUMP
+        0x63, 0x00, 0x00, 0x00, 0x1B, 0x56, // PUSH4 27 JUMP
+        0x00, // STOP (PC 17)
+        0x5b, // JUMPDEST (PC 18)
+        0x00, 0x00, // STOP STOP
+        0x5b, // JUMPDEST (PC 21) 
+        0x00, 0x00, // STOP STOP
+        0x5b, // JUMPDEST (PC 24)
+        0x00, 0x00, // STOP STOP
+        0x5b, // JUMPDEST (PC 27)
+        0x00, // STOP
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    // All jumpdests should be valid
+    try std.testing.expect(bytecode.isValidJumpDest(18));
+    try std.testing.expect(bytecode.isValidJumpDest(21));
+    try std.testing.expect(bytecode.isValidJumpDest(24));
+    try std.testing.expect(bytecode.isValidJumpDest(27));
+}
+
+test "Bytecode complex jump validation - JUMPI conditional patterns" {
+    const allocator = std.testing.allocator;
+    
+    // Test JUMPI validation with complex patterns
+    const code = [_]u8{
+        0x60, 0x0A, // PUSH1 10 
+        0x60, 0x01, // PUSH1 1 (condition)
+        0x57,       // JUMPI (PC 4)
+        0x60, 0x0D, // PUSH1 13
+        0x60, 0x00, // PUSH1 0 (condition false)
+        0x57,       // JUMPI (PC 8) - shouldn't jump
+        0x00,       // STOP (PC 9)
+        0x5b,       // JUMPDEST (PC 10)
+        0x60, 0x0D, // PUSH1 13
+        0x56,       // JUMP (PC 12)
+        0x5b,       // JUMPDEST (PC 13)
+        0x00,       // STOP
+    };
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    // Verify jumpdests
+    try std.testing.expect(bytecode.isValidJumpDest(10));
+    try std.testing.expect(bytecode.isValidJumpDest(13));
+}
+
+test "Bytecode complex jump validation - edge case targets" {
+    const allocator = std.testing.allocator;
+    
+    // Test jumps to edge positions (start, end-1, end)
+    var code: [50]u8 = undefined;
+    @memset(&code, 0x00); // Fill with STOP
+    
+    // JUMPDEST at position 0
+    code[0] = 0x5b;
+    
+    // PUSH1 pointing to position 0
+    code[1] = 0x60; // PUSH1
+    code[2] = 0x00; // Target 0
+    code[3] = 0x56; // JUMP
+    
+    // PUSH1 pointing to last position
+    code[4] = 0x60; // PUSH1  
+    code[5] = 49;   // Target last position
+    code[6] = 0x56; // JUMP
+    
+    // JUMPDEST at last position
+    code[49] = 0x5b;
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    // Verify edge positions
+    try std.testing.expect(bytecode.isValidJumpDest(0));
+    try std.testing.expect(bytecode.isValidJumpDest(49));
+    
+    // Test jump to position beyond bytecode should fail during validation
+    const invalid_code = [_]u8{
+        0x60, 0x64, 0x56, // PUSH1 100 JUMP (beyond bytecode)
+    };
+    
+    const result = BytecodeDefault.init(allocator, &invalid_code);
+    try std.testing.expectError(BytecodeDefault.ValidationError.InvalidJumpDestination, result);
+}
+
+test "Bytecode complex jump validation - deeply nested PUSH data" {
+    const allocator = std.testing.allocator;
+    
+    // Test JUMPDEST validation with deeply nested PUSH data containing 0x5b
+    var code: [200]u8 = undefined;
+    var pos: usize = 0;
+    
+    // Start with a valid jump
+    code[pos] = 0x60; // PUSH1
+    code[pos + 1] = 100; // Target position 100
+    code[pos + 2] = 0x56; // JUMP
+    pos += 3;
+    
+    // Create nested PUSH instructions with 0x5b in data
+    const push_sizes = [_]u8{ 1, 2, 4, 8, 16, 32 };
+    for (push_sizes) |size| {
+        if (pos + 1 + size >= 100) break;
+        
+        code[pos] = 0x60 + size - 1; // PUSH1, PUSH2, etc.
+        pos += 1;
+        
+        // Fill push data with pattern including 0x5b
+        for (0..size) |i| {
+            code[pos] = if (i % 3 == 0) 0x5b else @intCast(i); // Every 3rd byte is 0x5b
+            pos += 1;
+        }
+        
+        // Add a regular opcode
+        code[pos] = 0x01; // ADD
+        pos += 1;
+    }
+    
+    // Fill up to position 100 with STOP
+    while (pos < 100) {
+        code[pos] = 0x00;
+        pos += 1;
+    }
+    
+    // JUMPDEST at position 100
+    code[100] = 0x5b;
+    pos = 101;
+    
+    // Fill rest with STOP
+    while (pos < code.len) {
+        code[pos] = 0x00;
+        pos += 1;
+    }
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    // Only position 100 should be a valid jumpdest
+    try std.testing.expect(bytecode.isValidJumpDest(100));
+    
+    // All 0x5b bytes in PUSH data should be invalid
+    for (0..100) |i| {
+        if (code[i] == 0x5b and i != 100) {
+            try std.testing.expect(!bytecode.isValidJumpDest(@intCast(i)));
+        }
+    }
+}
+
+test "Bytecode complex jump validation - mixed valid/invalid patterns" {
+    const allocator = std.testing.allocator;
+    
+    // Test a mix of valid and invalid jump patterns in the same bytecode
+    const code = [_]u8{
+        // Valid pattern: PUSH1 + JUMP to valid JUMPDEST
+        0x60, 0x08,       // PUSH1 8
+        0x56,             // JUMP (PC 2)
+        
+        // Invalid pattern: PUSH1 + JUMP to invalid destination  
+        0x60, 0x07,       // PUSH1 7  (points to JUMP, not JUMPDEST)
+        0x56,             // JUMP (PC 5)
+        
+        0x00,             // STOP (PC 6)
+        0x56,             // JUMP (PC 7) - not a JUMPDEST!
+        0x5b,             // JUMPDEST (PC 8) - valid target
+        
+        // Valid JUMPI pattern
+        0x60, 0x0F,       // PUSH1 15
+        0x60, 0x01,       // PUSH1 1
+        0x57,             // JUMPI (PC 12)
+        
+        0x00,             // STOP (PC 13)
+        0x00,             // STOP (PC 14)
+        0x5b,             // JUMPDEST (PC 15) - valid target
+        0x00,             // STOP
+    };
+    
+    // This should fail validation because of the invalid jump at PC 5
+    const result = BytecodeDefault.init(allocator, &code);
+    try std.testing.expectError(BytecodeDefault.ValidationError.InvalidJumpDestination, result);
+}
+
+test "Bytecode complex jump validation - maximum PUSH32 target" {
+    const allocator = std.testing.allocator;
+    
+    // Test PUSH32 with maximum possible target value within bounds
+    // Use a more reasonable size to avoid excessive memory usage in tests
+    var code: [2000]u8 = undefined;
+    var pos: usize = 0;
+    
+    // PUSH32 with target 1000
+    code[pos] = 0x7f; // PUSH32
+    pos += 1;
+    
+    // 32 bytes representing target 1000
+    for (0..29) |_| {
+        code[pos] = 0x00;
+        pos += 1;
+    }
+    code[pos] = 0x03; // High byte of 1000
+    pos += 1;
+    code[pos] = 0xE8; // Low byte of 1000  
+    pos += 1;
+    
+    code[pos] = 0x56; // JUMP
+    pos += 1;
+    
+    // Fill with STOP until target position
+    while (pos < 1000) {
+        code[pos] = 0x00;
+        pos += 1;
+    }
+    
+    // JUMPDEST at position 1000
+    code[1000] = 0x5b;
+    pos = 1001;
+    
+    // Fill remaining with STOP
+    while (pos < code.len) {
+        code[pos] = 0x00;
+        pos += 1;
+    }
+    
+    var bytecode = try BytecodeDefault.init(allocator, &code);
+    defer bytecode.deinit();
+    
+    // Should successfully validate the large jump target
+    try std.testing.expect(bytecode.isValidJumpDest(1000));
+}

@@ -88,3 +88,253 @@ pub const BytecodeStats = struct {
     }
 };
 
+test "BytecodeStats formatStats basic functionality" {
+    const allocator = std.testing.allocator;
+    
+    // Create mock statistics data
+    var opcode_counts = [_]u32{0} ** 256;
+    opcode_counts[@intFromEnum(Opcode.PUSH1)] = 3;
+    opcode_counts[@intFromEnum(Opcode.ADD)] = 2;
+    opcode_counts[@intFromEnum(Opcode.STOP)] = 1;
+    
+    const push_values = [_]BytecodeStats.PushValue{
+        .{ .pc = 0, .value = 0x42 },
+        .{ .pc = 5, .value = 0x1337 },
+    };
+    
+    const fusions = [_]BytecodeStats.Fusion{
+        .{ .pc = 0, .second_opcode = Opcode.ADD },
+        .{ .pc = 5, .second_opcode = Opcode.JUMP },
+    };
+    
+    const jumpdests = [_]usize{ 10, 20, 30 };
+    
+    const jumps = [_]BytecodeStats.Jump{
+        .{ .pc = 2, .target = 10 },
+        .{ .pc = 7, .target = 20 },
+    };
+    
+    const stats = BytecodeStats{
+        .opcode_counts = opcode_counts,
+        .push_values = &push_values,
+        .potential_fusions = &fusions,
+        .jumpdests = &jumpdests,
+        .jumps = &jumps,
+        .backwards_jumps = 0,
+        .is_create_code = false,
+    };
+    
+    const output = try stats.formatStats(allocator);
+    defer allocator.free(output);
+    
+    // Verify key sections are present
+    try std.testing.expect(std.mem.indexOf(u8, output, "=== Bytecode Statistics ===") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "Opcode counts:") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PUSH1: 3") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "ADD: 2") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "STOP: 1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "Total opcodes: 6") != null);
+    
+    // Verify push values section
+    try std.testing.expect(std.mem.indexOf(u8, output, "Push values (2 total):") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 0: 0x42") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 5: 0x1337") != null);
+    
+    // Verify fusion section
+    try std.testing.expect(std.mem.indexOf(u8, output, "Potential fusions (2 total):") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 0: PUSH + ADD") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 5: PUSH + JUMP") != null);
+    
+    // Verify jumpdests section
+    try std.testing.expect(std.mem.indexOf(u8, output, "Jump destinations (3 total):") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 10") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 20") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 30") != null);
+    
+    // Verify jumps section
+    try std.testing.expect(std.mem.indexOf(u8, output, "Jumps (2 total, 0 backwards):") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 2 ↓ target 0xa") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 7 ↓ target 0x14") != null);
+    
+    // Verify contract type
+    try std.testing.expect(std.mem.indexOf(u8, output, "Contract type: Runtime code") != null);
+}
+
+test "BytecodeStats formatStats empty statistics" {
+    const allocator = std.testing.allocator;
+    
+    const opcode_counts = [_]u32{0} ** 256;
+    const stats = BytecodeStats{
+        .opcode_counts = opcode_counts,
+        .push_values = &.{},
+        .potential_fusions = &.{},
+        .jumpdests = &.{},
+        .jumps = &.{},
+        .backwards_jumps = 0,
+        .is_create_code = false,
+    };
+    
+    const output = try stats.formatStats(allocator);
+    defer allocator.free(output);
+    
+    // Should still have basic structure
+    try std.testing.expect(std.mem.indexOf(u8, output, "=== Bytecode Statistics ===") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "Total opcodes: 0") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "Contract type: Runtime code") != null);
+    
+    // Should not have sections for empty data
+    try std.testing.expect(std.mem.indexOf(u8, output, "Push values") == null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "Potential fusions") == null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "Jump destinations") == null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "Jumps") == null);
+}
+
+test "BytecodeStats formatStats create code detection" {
+    const allocator = std.testing.allocator;
+    
+    var opcode_counts = [_]u32{0} ** 256;
+    opcode_counts[@intFromEnum(Opcode.CODECOPY)] = 1;
+    
+    const stats = BytecodeStats{
+        .opcode_counts = opcode_counts,
+        .push_values = &.{},
+        .potential_fusions = &.{},
+        .jumpdests = &.{},
+        .jumps = &.{},
+        .backwards_jumps = 0,
+        .is_create_code = true,
+    };
+    
+    const output = try stats.formatStats(allocator);
+    defer allocator.free(output);
+    
+    try std.testing.expect(std.mem.indexOf(u8, output, "Contract type: Create/Deploy code") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "CODECOPY: 1") != null);
+}
+
+test "BytecodeStats formatStats backwards jumps" {
+    const allocator = std.testing.allocator;
+    
+    const opcode_counts = [_]u32{0} ** 256;
+    const jumps = [_]BytecodeStats.Jump{
+        .{ .pc = 10, .target = 5 },  // Backwards jump
+        .{ .pc = 15, .target = 20 }, // Forward jump
+        .{ .pc = 25, .target = 8 },  // Backwards jump
+    };
+    
+    const stats = BytecodeStats{
+        .opcode_counts = opcode_counts,
+        .push_values = &.{},
+        .potential_fusions = &.{},
+        .jumpdests = &.{},
+        .jumps = &jumps,
+        .backwards_jumps = 2,
+        .is_create_code = false,
+    };
+    
+    const output = try stats.formatStats(allocator);
+    defer allocator.free(output);
+    
+    // Verify backwards jump detection
+    try std.testing.expect(std.mem.indexOf(u8, output, "Jumps (3 total, 2 backwards):") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 10 ↑ target 0x5") != null);  // Backwards (↑)
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 15 ↓ target 0x14") != null); // Forward (↓)
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 25 ↑ target 0x8") != null);  // Backwards (↑)
+}
+
+test "BytecodeStats formatStats large values" {
+    const allocator = std.testing.allocator;
+    
+    var opcode_counts = [_]u32{0} ** 256;
+    opcode_counts[@intFromEnum(Opcode.PUSH32)] = 999999;
+    
+    const push_values = [_]BytecodeStats.PushValue{
+        .{ .pc = 0, .value = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF }, // Max u256
+    };
+    
+    const jumps = [_]BytecodeStats.Jump{
+        .{ .pc = 100000, .target = 0xDEADBEEFCAFEBABE },
+    };
+    
+    const stats = BytecodeStats{
+        .opcode_counts = opcode_counts,
+        .push_values = &push_values,
+        .potential_fusions = &.{},
+        .jumpdests = &.{},
+        .jumps = &jumps,
+        .backwards_jumps = 0,
+        .is_create_code = false,
+    };
+    
+    const output = try stats.formatStats(allocator);
+    defer allocator.free(output);
+    
+    // Verify large numbers are formatted correctly
+    try std.testing.expect(std.mem.indexOf(u8, output, "PUSH32: 999999") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "Total opcodes: 999999") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 0: 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 100000 ↓ target 0xdeadbeefcafebabe") != null);
+}
+
+test "BytecodeStats formatStats all fusion types" {
+    const allocator = std.testing.allocator;
+    
+    const opcode_counts = [_]u32{0} ** 256;
+    const fusions = [_]BytecodeStats.Fusion{
+        .{ .pc = 0, .second_opcode = Opcode.ADD },
+        .{ .pc = 3, .second_opcode = Opcode.SUB },
+        .{ .pc = 6, .second_opcode = Opcode.MUL },
+        .{ .pc = 9, .second_opcode = Opcode.DIV },
+        .{ .pc = 12, .second_opcode = Opcode.JUMP },
+        .{ .pc = 15, .second_opcode = Opcode.JUMPI },
+    };
+    
+    const stats = BytecodeStats{
+        .opcode_counts = opcode_counts,
+        .push_values = &.{},
+        .potential_fusions = &fusions,
+        .jumpdests = &.{},
+        .jumps = &.{},
+        .backwards_jumps = 0,
+        .is_create_code = false,
+    };
+    
+    const output = try stats.formatStats(allocator);
+    defer allocator.free(output);
+    
+    // Verify all fusion types are present
+    try std.testing.expect(std.mem.indexOf(u8, output, "Potential fusions (6 total):") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 0: PUSH + ADD") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 3: PUSH + SUB") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 6: PUSH + MUL") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 9: PUSH + DIV") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 12: PUSH + JUMP") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "PC 15: PUSH + JUMPI") != null);
+}
+
+test "BytecodeStats formatStats invalid opcode handling" {
+    const allocator = std.testing.allocator;
+    
+    var opcode_counts = [_]u32{0} ** 256;
+    opcode_counts[0xFE] = 1; // Invalid opcode
+    opcode_counts[0xFF] = 2; // Invalid opcode
+    
+    const stats = BytecodeStats{
+        .opcode_counts = opcode_counts,
+        .push_values = &.{},
+        .potential_fusions = &.{},
+        .jumpdests = &.{},
+        .jumps = &.{},
+        .backwards_jumps = 0,
+        .is_create_code = false,
+    };
+    
+    const output = try stats.formatStats(allocator);
+    defer allocator.free(output);
+    
+    // Verify invalid opcodes are shown with hex notation
+    try std.testing.expect(std.mem.indexOf(u8, output, "UNKNOWN(0xfe): 1") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "UNKNOWN(0xff): 2") != null);
+    try std.testing.expect(std.mem.indexOf(u8, output, "Total opcodes: 3") != null);
+}
+
