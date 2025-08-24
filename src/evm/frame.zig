@@ -344,7 +344,7 @@ pub fn Frame(comptime config: FrameConfig) type {
         /// Pretty print the frame state for debugging.
         pub fn pretty_print(self: *const Self) void {
             log.warn("\n=== Frame State ===\n", .{});
-            log.warn("Gas Remaining: {}\n", .{self.gas_remaining});
+            log.warn("Gas Remaining: {}\n", .{self.gas_manager.gasRemaining()});
             log.warn("Bytecode Length: {}\n", .{self.bytecode.len});
 
             // Show bytecode (first 50 bytes or less)

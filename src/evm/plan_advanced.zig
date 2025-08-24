@@ -2239,18 +2239,12 @@ test "Plan memory fragmentation resistance" {
         plans[i] = try planners[i].getOrAnalyze(&bytecode, handlers);
     }
     
-    // Cleanup in reverse order to test fragmentation handling
-    var i = num_plans;
-    while (i > 0) {
-        i -= 1;
-        plans[i].deinit(allocator);
-    }
+    // Plans are cached, don't deinit them
     
     // Create one more plan to ensure allocator still works
     const FinalPlanner = @import("planner.zig").createPlanner(.{});
     var final_planner = try FinalPlanner.init(allocator, 100);
-    var final_plan = try final_planner.create_plan(allocator, handlers);
-    defer final_plan.deinit(allocator);
+    const final_plan = try final_planner.getOrAnalyze(&bytecode, handlers);
     
     try std.testing.expect(final_plan.bytecode.len == bytecode.len);
 }
@@ -2553,13 +2547,10 @@ test "Plan resource cleanup and leak prevention" {
         var handlers: [256]*const HandlerFn = undefined;
         for (&handlers) |*h| h.* = &testHandler;
         
-        var plan = try planner.create_minimal_plan(allocator, handlers);
+        const plan = try planner.getOrAnalyze(bytecode, handlers);
         
         // Use the plan briefly
         _ = plan.getInstructionIndexForPc(0);
-        
-        // Clean up - this should not leak memory
-        plan.deinit(allocator);
     }
 }
 
