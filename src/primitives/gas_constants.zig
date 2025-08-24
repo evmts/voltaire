@@ -763,3 +763,194 @@ test "wordCount edge cases" {
     const overflow_words = wordCount(overflow_bytes);
     try testing.expectEqual(std.math.maxInt(usize) / 32, overflow_words);
 }
+
+// ============================================================================
+// Additional Comprehensive Tests
+// ============================================================================
+
+test "memory_gas_cost - quadratic growth behavior" {
+    // Test quadratic growth for larger expansions
+    // Formula: gas = 3n + n²/512
+    
+    // 512 bytes = 16 words
+    // Cost = 3*16 + 16²/512 = 48 + 0.5 = 48
+    const cost_512 = memory_gas_cost(0, 512);
+    try testing.expectEqual(@as(u64, 48), cost_512);
+    
+    // 1024 bytes = 32 words
+    // Cost = 3*32 + 32²/512 = 96 + 2 = 98
+    const cost_1024 = memory_gas_cost(0, 1024);
+    try testing.expectEqual(@as(u64, 98), cost_1024);
+    
+    // 2048 bytes = 64 words
+    // Cost = 3*64 + 64²/512 = 192 + 8 = 200
+    const cost_2048 = memory_gas_cost(0, 2048);
+    try testing.expectEqual(@as(u64, 200), cost_2048);
+}
+
+test "memory_gas_cost - incremental expansions" {
+    // Test expanding from existing memory
+    const expand_1024_to_2048 = memory_gas_cost(1024, 2048);
+    const total_2048 = memory_gas_cost(0, 2048);
+    const total_1024 = memory_gas_cost(0, 1024);
+    
+    // Cost should be the difference
+    try testing.expectEqual(total_2048 - total_1024, expand_1024_to_2048);
+    
+    // Partial word expansions
+    const expand_0_to_1 = memory_gas_cost(0, 1);
+    const expand_0_to_31 = memory_gas_cost(0, 31);
+    const expand_0_to_32 = memory_gas_cost(0, 32);
+    
+    // All should cost the same (1 word)
+    try testing.expectEqual(expand_0_to_1, expand_0_to_31);
+    try testing.expectEqual(expand_0_to_31, expand_0_to_32);
+    try testing.expectEqual(@as(u64, 3), expand_0_to_1);
+}
+
+test "call_gas_cost - all flag combinations" {
+    // Test all 8 combinations of the 3 boolean parameters
+    const scenarios = [_]struct {
+        value_transfer: bool,
+        new_account: bool,
+        cold_access: bool,
+        expected: u64,
+    }{
+        // Basic warm call
+        .{ .value_transfer = false, .new_account = false, .cold_access = false, .expected = 100 },
+        // Cold call only
+        .{ .value_transfer = false, .new_account = false, .cold_access = true, .expected = 100 + 2600 },
+        // Value transfer only
+        .{ .value_transfer = true, .new_account = false, .cold_access = false, .expected = 100 + 9000 },
+        // New account only
+        .{ .value_transfer = false, .new_account = true, .cold_access = false, .expected = 100 + 25000 },
+        // Cold + value
+        .{ .value_transfer = true, .new_account = false, .cold_access = true, .expected = 100 + 2600 + 9000 },
+        // Cold + new account
+        .{ .value_transfer = false, .new_account = true, .cold_access = true, .expected = 100 + 2600 + 25000 },
+        // Value + new account
+        .{ .value_transfer = true, .new_account = true, .cold_access = false, .expected = 100 + 9000 + 25000 },
+        // All flags (maximum cost)
+        .{ .value_transfer = true, .new_account = true, .cold_access = true, .expected = 100 + 2600 + 9000 + 25000 },
+    };
+    
+    for (scenarios) |scenario| {
+        const cost = call_gas_cost(scenario.value_transfer, scenario.new_account, scenario.cold_access);
+        try testing.expectEqual(scenario.expected, cost);
+    }
+}
+
+test "sstore_gas_cost - all state transitions" {
+    // Test zero to non-zero (most expensive)
+    try testing.expectEqual(@as(u64, 20000), sstore_gas_cost(0, 0, 1, false));
+    try testing.expectEqual(@as(u64, 22100), sstore_gas_cost(0, 0, 1, true)); // cold
+    
+    // Test non-zero to different non-zero
+    try testing.expectEqual(@as(u64, 5000), sstore_gas_cost(1, 1, 2, false));
+    try testing.expectEqual(@as(u64, 7100), sstore_gas_cost(1, 1, 2, true)); // cold
+    
+    // Test non-zero to zero (clearing)
+    try testing.expectEqual(@as(u64, 5000), sstore_gas_cost(42, 42, 0, false));
+    try testing.expectEqual(@as(u64, 7100), sstore_gas_cost(42, 42, 0, true)); // cold
+    
+    // Test subsequent modifications
+    try testing.expectEqual(@as(u64, 100), sstore_gas_cost(2, 1, 3, false));
+    try testing.expectEqual(@as(u64, 2200), sstore_gas_cost(2, 1, 3, true)); // cold
+}
+
+test "create_gas_cost - init code size variations" {
+    // Test various init code sizes
+    try testing.expectEqual(@as(u64, 32000), create_gas_cost(0, InitcodeWordGas));
+    try testing.expectEqual(@as(u64, 32002), create_gas_cost(1, InitcodeWordGas));
+    try testing.expectEqual(@as(u64, 32002), create_gas_cost(32, InitcodeWordGas));
+    try testing.expectEqual(@as(u64, 32004), create_gas_cost(33, InitcodeWordGas));
+    try testing.expectEqual(@as(u64, 32064), create_gas_cost(1024, InitcodeWordGas));
+    
+    // Test maximum init code size (EIP-3860)
+    const max_size = MaxInitcodeSize; // 49152 bytes
+    const max_cost = create_gas_cost(max_size, InitcodeWordGas);
+    const expected = 32000 + (49152 / 32) * 2; // 32000 + 1536 * 2 = 35072
+    try testing.expectEqual(expected, max_cost);
+}
+
+test "log_gas_cost - all LOG opcodes" {
+    // Test LOG0 through LOG4
+    try testing.expectEqual(@as(u64, 375), log_gas_cost(0, 0)); // LOG0
+    try testing.expectEqual(@as(u64, 750), log_gas_cost(1, 0)); // LOG1
+    try testing.expectEqual(@as(u64, 1125), log_gas_cost(2, 0)); // LOG2
+    try testing.expectEqual(@as(u64, 1500), log_gas_cost(3, 0)); // LOG3
+    try testing.expectEqual(@as(u64, 1875), log_gas_cost(4, 0)); // LOG4
+    
+    // Test with data
+    const data_size = 256;
+    try testing.expectEqual(@as(u64, 375 + 256 * 8), log_gas_cost(0, data_size));
+    try testing.expectEqual(@as(u64, 1875 + 256 * 8), log_gas_cost(4, data_size));
+}
+
+test "copy_gas_cost - alignment with CODECOPY operations" {
+    // Test common copy sizes
+    const sizes = [_]usize{ 0, 1, 32, 33, 64, 100, 256, 512, 1024, 4096 };
+    
+    for (sizes) |size| {
+        const cost = copy_gas_cost(size);
+        const expected_words = wordCount(size);
+        try testing.expectEqual(expected_words * CopyGas, cost);
+    }
+}
+
+test "keccak256_gas_cost - common hash scenarios" {
+    // Empty input
+    try testing.expectEqual(@as(u64, 30), keccak256_gas_cost(0));
+    
+    // Common sizes
+    try testing.expectEqual(@as(u64, 36), keccak256_gas_cost(32)); // 1 word
+    try testing.expectEqual(@as(u64, 42), keccak256_gas_cost(64)); // 2 words
+    try testing.expectEqual(@as(u64, 78), keccak256_gas_cost(256)); // 8 words
+    
+    // Large hashes
+    try testing.expectEqual(@as(u64, 222), keccak256_gas_cost(1024)); // 32 words
+    try testing.expectEqual(@as(u64, 798), keccak256_gas_cost(4096)); // 128 words
+}
+
+test "gas calculation overflow protection" {
+    // Test that calculations handle large inputs without overflow
+    
+    // Large memory expansion
+    const large_memory = memory_gas_cost(0, 1_000_000);
+    try testing.expect(large_memory > 0);
+    try testing.expect(large_memory < std.math.maxInt(u64));
+    
+    // Large copy operation
+    const large_copy = copy_gas_cost(1_000_000);
+    try testing.expect(large_copy > 0);
+    try testing.expect(large_copy < std.math.maxInt(u64));
+    
+    // Large hash operation
+    const large_hash = keccak256_gas_cost(1_000_000);
+    try testing.expect(large_hash > 0);
+    try testing.expect(large_hash < std.math.maxInt(u64));
+}
+
+test "gas constants match Ethereum specifications" {
+    // Verify key constants match Yellow Paper and EIPs
+    
+    // Basic operations
+    try testing.expectEqual(@as(u64, 3), GasFastestStep);
+    try testing.expectEqual(@as(u64, 5), GasFastStep);
+    try testing.expectEqual(@as(u64, 8), GasMidStep);
+    
+    // Storage operations (EIP-2929)
+    try testing.expectEqual(@as(u64, 100), SloadGas);
+    try testing.expectEqual(@as(u64, 2100), ColdSloadCost);
+    try testing.expectEqual(@as(u64, 2600), ColdAccountAccessCost);
+    
+    // Contract creation
+    try testing.expectEqual(@as(u64, 32000), CreateGas);
+    try testing.expectEqual(@as(u64, 53000), TxGasContractCreation);
+    
+    // Memory and hashing
+    try testing.expectEqual(@as(u64, 3), MemoryGas);
+    try testing.expectEqual(@as(u64, 512), QuadCoeffDiv);
+    try testing.expectEqual(@as(u64, 30), Keccak256Gas);
+    try testing.expectEqual(@as(u64, 6), Keccak256WordGas);
+}
