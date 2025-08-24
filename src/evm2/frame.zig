@@ -178,24 +178,25 @@ pub fn createFrame(comptime config: FrameConfig) type {
             std.log.warn("\n", .{});
             
             // Stack state
-            std.log.warn("\nStack (size={}, capacity={}):\n", .{ self.stack.next_stack_index, Stack.stack_capacity });
-            if (self.stack.next_stack_index == 0) {
+            std.log.warn("\nStack (size={}, capacity={}):\n", .{ self.stack.size(), Stack.stack_capacity });
+            if (self.stack.size() == 0) {
                 std.log.warn("  [empty]\n", .{});
             } else {
                 // Show top 10 stack items
-                const show_items = @min(self.stack.next_stack_index, 10);
+                const show_items = @min(self.stack.size(), 10);
+                const stack_slice = self.stack.get_slice();
                 var i: usize = 0;
                 while (i < show_items) : (i += 1) {
-                    const idx = self.stack.next_stack_index - 1 - i;
-                    const value = self.stack.stack[idx];
+                    const value = stack_slice[i]; // In downward stack, [0] is top
+                    const idx = i;
                     if (i == 0) {
                         std.log.warn("  [{d:3}] 0x{x:0>64} <- TOP\n", .{ idx, value });
                     } else {
                         std.log.warn("  [{d:3}] 0x{x:0>64}\n", .{ idx, value });
                     }
                 }
-                if (self.stack.next_stack_index > 10) {
-                    std.log.warn("  ... ({} more items)\n", .{self.stack.next_stack_index - 10});
+                if (self.stack.size() > 10) {
+                    std.log.warn("  ... ({} more items)\n", .{self.stack.size() - 10});
                 }
             }
             
@@ -1350,7 +1351,8 @@ test "Frame SWAP2-SWAP15 operations" {
     // Test SWAP2 - swaps top with 3rd element
     try frame.stack.swap2();
     try std.testing.expectEqual(@as(u256, 214), frame.stack.peek_unsafe()); // 214 was 3rd, now top
-    const third_after_swap2 = frame.stack.stack[frame.stack.next_stack_index - 3];
+    const stack_slice = frame.stack.get_slice();
+    const third_after_swap2 = stack_slice[2]; // 3rd from top in downward stack
     try std.testing.expectEqual(@as(u256, 216), third_after_swap2); // 216 was top, now 3rd
 
     // Reset stack for next test
@@ -1364,7 +1366,8 @@ test "Frame SWAP2-SWAP15 operations" {
     // Test SWAP5 - swaps top with 6th element
     try frame.stack.swap5();
     try std.testing.expectEqual(@as(u256, 311), frame.stack.peek_unsafe()); // 311 was 6th, now top
-    const sixth_after_swap5 = frame.stack.stack[frame.stack.next_stack_index - 6];
+    const stack_slice2 = frame.stack.get_slice();
+    const sixth_after_swap5 = stack_slice2[5]; // 6th from top in downward stack
     try std.testing.expectEqual(@as(u256, 316), sixth_after_swap5); // 316 was top, now 6th
 
     // Reset for SWAP15 test
@@ -1378,7 +1381,8 @@ test "Frame SWAP2-SWAP15 operations" {
     // Test SWAP15 - swaps top with 16th element
     try frame.stack.swap15();
     try std.testing.expectEqual(@as(u256, 401), frame.stack.peek_unsafe()); // 401 was 16th, now top
-    const sixteenth_after_swap15 = frame.stack.stack[frame.stack.next_stack_index - 16];
+    const stack_slice3 = frame.stack.get_slice();
+    const sixteenth_after_swap15 = stack_slice3[15]; // 16th from top in downward stack
     try std.testing.expectEqual(@as(u256, 416), sixteenth_after_swap15); // 416 was top, now 16th
 
     // Test underflow for SWAP operations
