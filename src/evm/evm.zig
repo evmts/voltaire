@@ -3969,3 +3969,265 @@ test "Precompile - SHA256 (0x02) basic functionality" {
     };
     try testing.expectEqualSlices(u8, &expected, result.output);
 }
+
+test "Precompile diagnosis - ECRECOVER (0x01) placeholder implementation" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1_000_000_000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 21_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Test ECRECOVER with invalid signature (all zeros)
+    const precompile_address: Address = [_]u8{0} ** 19 ++ [_]u8{1};
+    const input_data = [_]u8{0} ** 128; // Invalid signature
+    
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = primitives.ZERO_ADDRESS,
+            .to = precompile_address,
+            .value = 0,
+            .input = &input_data,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    
+    // ECRECOVER returns zero address for invalid signatures (placeholder behavior)
+    for (result.output) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "Precompile diagnosis - RIPEMD160 (0x03) unimplemented" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1_000_000_000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 21_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    const precompile_address: Address = [_]u8{0} ** 19 ++ [_]u8{3};
+    const input_data = "test data";
+    
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = primitives.ZERO_ADDRESS,
+            .to = precompile_address,
+            .value = 0,
+            .input = input_data,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    
+    // RIPEMD160 is a placeholder implementation (returns zeros)
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 32), result.output.len);
+    
+    // Should be zeros (placeholder behavior)
+    for (result.output) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
+
+test "Precompile diagnosis - MODEXP (0x05) basic case works" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1_000_000_000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 21_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    const precompile_address: Address = [_]u8{0} ** 19 ++ [_]u8{5};
+    
+    // 3^4 mod 5 = 81 mod 5 = 1
+    var input: [99]u8 = [_]u8{0} ** 99;
+    input[31] = 1;    // base_len = 1
+    input[63] = 1;    // exp_len = 1
+    input[95] = 1;    // mod_len = 1
+    input[96] = 3;    // base = 3
+    input[97] = 4;    // exp = 4
+    input[98] = 5;    // mod = 5
+    
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = primitives.ZERO_ADDRESS,
+            .to = precompile_address,
+            .value = 0,
+            .input = &input,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 1), result.output.len);
+    try testing.expectEqual(@as(u8, 1), result.output[0]);
+}
+
+test "Precompile diagnosis - BN254 operations disabled" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1_000_000_000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 21_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    // Test ECADD (0x06)
+    const ecadd_address: Address = [_]u8{0} ** 19 ++ [_]u8{6};
+    const ecadd_input = [_]u8{0} ** 128; // Two zero points
+    
+    const ecadd_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = primitives.ZERO_ADDRESS,
+            .to = ecadd_address,
+            .value = 0,
+            .input = &ecadd_input,
+            .gas = 100000,
+        },
+    };
+    
+    const ecadd_result = try evm.call(ecadd_params);
+    
+    // BN254 operations might be disabled (check build_options.no_bn254)
+    // The precompile will either succeed with placeholder output or fail
+    if (ecadd_result.success) {
+        try testing.expectEqual(@as(usize, 64), ecadd_result.output.len);
+        // Placeholder implementation returns all zeros
+        for (ecadd_result.output) |byte| {
+            try testing.expectEqual(@as(u8, 0), byte);
+        }
+    } else {
+        // BN254 operations disabled - this is expected behavior
+        std.debug.print("BN254 operations are disabled (no_bn254 build option)\n", .{});
+    }
+}
+
+test "Precompile diagnosis - BLAKE2F (0x09) placeholder" {
+    const testing = std.testing;
+    
+    var memory_db = MemoryDatabase.init(testing.allocator);
+    defer memory_db.deinit();
+    
+    const db_interface = memory_db.to_database_interface();
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1_000_000_000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+    
+    const context = TransactionContext{
+        .gas_limit = 21_000_000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+    
+    var evm = try DefaultEvm.init(testing.allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm.deinit();
+    
+    const precompile_address: Address = [_]u8{0} ** 19 ++ [_]u8{9};
+    const input = [_]u8{0} ** 213; // Valid BLAKE2F input length
+    
+    const call_params = DefaultEvm.CallParams{
+        .call = .{
+            .caller = primitives.ZERO_ADDRESS,
+            .to = precompile_address,
+            .value = 0,
+            .input = &input,
+            .gas = 100000,
+        },
+    };
+    
+    const result = try evm.call(call_params);
+    
+    try testing.expect(result.success);
+    try testing.expectEqual(@as(usize, 64), result.output.len);
+    
+    // BLAKE2F placeholder returns all zeros
+    for (result.output) |byte| {
+        try testing.expectEqual(@as(u8, 0), byte);
+    }
+}
