@@ -157,17 +157,49 @@ export fn evm_bytecode_get_stats(handle: ?*const BytecodeHandle, stats_out: ?*CB
     const h = handle orelse return -1;
     const stats = stats_out orelse return -2;
     
-    const bytecode_stats = BytecodeStats.analyze(h.bytecode.runtime_code) catch return -3;
+    var bytecode_stats = BytecodeStats.analyze(allocator, h.bytecode.runtime_code) catch return -3;
+    defer bytecode_stats.deinit(allocator);
+    
+    // Calculate aggregate statistics
+    var total_opcodes: u32 = 0;
+    var unique_opcodes: u32 = 0;
+    var push_opcodes: u32 = 0;
+    var jump_opcodes: u32 = 0;
+    var invalid_opcodes: u32 = 0;
+    
+    for (bytecode_stats.opcode_counts, 0..) |count, opcode| {
+        if (count > 0) {
+            total_opcodes += count;
+            unique_opcodes += 1;
+            
+            // Check opcode type
+            const opcode_enum = std.meta.intToEnum(Opcode, opcode) catch {
+                invalid_opcodes += count;
+                continue;
+            };
+            
+            // Count PUSH opcodes
+            if (@intFromEnum(opcode_enum) >= @intFromEnum(Opcode.PUSH1) and 
+                @intFromEnum(opcode_enum) <= @intFromEnum(Opcode.PUSH32)) {
+                push_opcodes += count;
+            }
+            
+            // Count JUMP opcodes
+            if (opcode_enum == .JUMP or opcode_enum == .JUMPI) {
+                jump_opcodes += count;
+            }
+        }
+    }
     
     stats.* = CBytecodeStats{
-        .total_opcodes = @intCast(bytecode_stats.total_opcodes),
-        .unique_opcodes = @intCast(bytecode_stats.unique_opcodes),
-        .push_opcodes = @intCast(bytecode_stats.push_opcodes),
-        .jump_opcodes = @intCast(bytecode_stats.jump_opcodes),
-        .jumpdest_count = @intCast(bytecode_stats.jumpdest_count),
-        .invalid_opcodes = @intCast(bytecode_stats.invalid_opcodes),
-        .max_stack_depth = @intCast(bytecode_stats.max_stack_depth),
-        .estimated_gas = bytecode_stats.estimated_gas,
+        .total_opcodes = total_opcodes,
+        .unique_opcodes = unique_opcodes,
+        .push_opcodes = push_opcodes,
+        .jump_opcodes = jump_opcodes,
+        .jumpdest_count = @intCast(bytecode_stats.jumpdests.len),
+        .invalid_opcodes = invalid_opcodes,
+        .max_stack_depth = 0, // TODO: Implement stack depth analysis
+        .estimated_gas = 0,   // TODO: Implement gas estimation
     };
     
     return 0;
