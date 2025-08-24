@@ -624,19 +624,19 @@ test "Plan getMetadata for PUSH opcodes" {
     var idx: Plan(.{}).InstructionIndexType = 0;
     const push1_val = plan.getMetadata(&idx, .PUSH1);
     try std.testing.expectEqual(@as(u8, 42), push1_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
+    try std.testing.expectEqual(@as(Plan(.{}).InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
     
     // Test PUSH2
     idx = 2; // Move to PUSH2 handler position
     const push2_val = plan.getMetadata(&idx, .PUSH2);
     try std.testing.expectEqual(@as(u16, 0x1234), push2_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
+    try std.testing.expectEqual(@as(Plan(.{}).InstructionIndexType, 2), idx);
     
     // Test PUSH8
     idx = 4; // Move to PUSH8 handler position
     const push8_val = plan.getMetadata(&idx, .PUSH8);
     try std.testing.expectEqual(@as(u64, std.math.maxInt(u64)), push8_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 4), idx);
+    try std.testing.expectEqual(@as(Plan(.{}).InstructionIndexType, 4), idx);
 }
 
 test "Plan getMetadata for large PUSH opcodes" {
@@ -677,13 +677,13 @@ test "Plan getMetadata for large PUSH opcodes" {
     var idx: Plan(.{}).InstructionIndexType = 0;
     const push32_ptr = plan.getMetadata(&idx, .PUSH32);
     try std.testing.expectEqual(@as(u256, 0x123456789ABCDEF0123456789ABCDEF0), push32_ptr.*);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
+    try std.testing.expectEqual(@as(Plan(.{}).InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
     
     // Test another PUSH32
     idx = 2; // Move to next PUSH32 handler position
     const push32_ptr2 = plan.getMetadata(&idx, .PUSH32);
     try std.testing.expectEqual(std.math.maxInt(u256), push32_ptr2.*);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
+    try std.testing.expectEqual(@as(Plan(.{}).InstructionIndexType, 2), idx);
 }
 
 test "Plan getMetadata for JUMPDEST" {
@@ -716,7 +716,7 @@ test "Plan getMetadata for JUMPDEST" {
         try std.testing.expectEqual(metadata.gas, jumpdest_meta.gas);
         try std.testing.expectEqual(metadata.min_stack, jumpdest_meta.min_stack);
         try std.testing.expectEqual(metadata.max_stack, jumpdest_meta.max_stack);
-        try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
+        try std.testing.expectEqual(@as(Plan(.{}).InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
     }
 }
 
@@ -740,8 +740,8 @@ test "Plan getMetadata for PC opcode" {
     
     var idx: Plan(.{}).InstructionIndexType = 0;
     const pc_val = plan.getMetadata(&idx, .PC);
-    try std.testing.expectEqual(@as(TestPlan.PcType, 1234), pc_val);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
+    try std.testing.expectEqual(@as(Plan(.{}).PcType, 1234), pc_val);
+    try std.testing.expectEqual(@as(Plan(.{}).InstructionIndexType, 0), idx); // getMetadata doesn't advance idx
 }
 
 test "Plan getMetadata for synthetic opcodes" {
@@ -812,7 +812,7 @@ test "Plan getNextInstruction without metadata" {
     var idx: Plan(.{}).InstructionIndexType = 0;
     const handler = plan.getNextInstruction(&idx, .ADD);
     try std.testing.expectEqual(&testHandler, handler);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 1), idx);
+    try std.testing.expectEqual(@as(Plan(.{}).InstructionIndexType, 1), idx);
 }
 
 test "Plan getNextInstruction with metadata" {
@@ -840,7 +840,7 @@ test "Plan getNextInstruction with metadata" {
     var idx: Plan(.{}).InstructionIndexType = 0;
     const handler = plan.getNextInstruction(&idx, .PUSH1);
     try std.testing.expectEqual(&testHandler, handler);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx);
+    try std.testing.expectEqual(@as(Plan(.{}).InstructionIndexType, 2), idx);
 }
 
 test "Plan deinit" {
@@ -878,11 +878,11 @@ test "Plan with different WordType" {
 test "Plan PcType selection based on max_bytecode_size" {
     const SmallPlan = Plan(.{ .maxBytecodeSize = 1000 });
     try std.testing.expectEqual(u16, SmallPlan.PcType);
-    try std.testing.expectEqual(u16, SmallPlan.InstructionIndexType);
+    try std.testing.expectEqual(u16, SmallPlan.InstructionIndexT);
     
     const LargePlan = Plan(.{ .maxBytecodeSize = 65535 });
     try std.testing.expectEqual(u16, LargePlan.PcType);
-    try std.testing.expectEqual(u16, LargePlan.InstructionIndexType);
+    try std.testing.expectEqual(u16, LargePlan.InstructionIndexT);
 }
 
 test "PlanMinimal basic functionality" {
@@ -1272,7 +1272,7 @@ test "Plan PC to instruction mapping" {
     _ = PlanType; // Mark as used
     
     // Create PC mapping
-    var pc_map = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator);
+    var pc_map = std.AutoHashMap(Plan(.{}).PcType, Plan(.{}).InstructionIndexType).init(allocator);
     defer pc_map.deinit();
     
     try pc_map.put(0, 0);   // PC 0 -> Instruction 0
@@ -1442,7 +1442,7 @@ test "Plan memory management stress test" {
         const plan = Plan{
             .instructionStream = try allocator.alloc(InstructionElement, stream_size),
             .u256_constants = try allocator.alloc(PlanType.WordType, constants_size),
-            .pc_to_instruction_idx = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator),
+            .pc_to_instruction_idx = std.AutoHashMap(Plan(.{}).PcType, Plan(.{}).InstructionIndexType).init(allocator),
         };
         
         // Fill with test data
@@ -1479,7 +1479,7 @@ test "Plan memory management stress test" {
         // Verify cleanup
         try std.testing.expectEqual(@as(usize, 0), plan.instructionStream.len);
         try std.testing.expectEqual(@as(usize, 0), plan.u256_constants.len);
-        try std.testing.expectEqual(@as(?std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType), null), plan.pc_to_instruction_idx);
+        try std.testing.expectEqual(@as(?std.AutoHashMap(Plan(.{}).PcType, Plan(.{}).InstructionIndexType), null), plan.pc_to_instruction_idx);
     }
 }
 
@@ -1560,13 +1560,13 @@ test "Plan getNextInstruction edge cases" {
     var idx: Plan.InstructionIndexType = 0;
     const handler1 = plan.getNextInstruction(&idx, .PUSH1);
     try std.testing.expectEqual(&testHandler, handler1);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 2), idx); // Should skip metadata
+    try std.testing.expectEqual(@as(Plan(.{}).InstructionIndexType, 2), idx); // Should skip metadata
     
     // Test getNextInstruction without metadata opcode
     idx = 2;
     const handler2 = plan.getNextInstruction(&idx, .ADD);
     try std.testing.expectEqual(&testHandler, handler2);
-    try std.testing.expectEqual(@as(Plan.InstructionIndexType, 3), idx); // Should advance by 1
+    try std.testing.expectEqual(@as(Plan(.{}).InstructionIndexType, 3), idx); // Should advance by 1
 }
 
 test "Plan debugPrint functionality" {
@@ -1586,7 +1586,7 @@ test "Plan debugPrint functionality" {
     constants[0] = 0xDEADBEEF;
     constants[1] = 0xCAFEBABE;
     
-    var pc_map = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator);
+    var pc_map = std.AutoHashMap(Plan(.{}).PcType, Plan(.{}).InstructionIndexType).init(allocator);
     defer pc_map.deinit();
     try pc_map.put(0, 0);
     try pc_map.put(10, 2);
@@ -1855,7 +1855,7 @@ test "Plan extreme edge cases and error resilience" {
     try std.testing.expectEqual(@as(?Plan.InstructionIndexType, null), empty_plan.getInstructionIndexForPc(0));
     
     // Test with HashMap but empty instruction stream
-    var pc_map = std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator);
+    var pc_map = std.AutoHashMap(Plan(.{}).PcType, Plan(.{}).InstructionIndexType).init(allocator);
     defer pc_map.deinit();
     try pc_map.put(0, 0);
     try pc_map.put(100, 50);
@@ -1884,7 +1884,7 @@ test "Plan comprehensive deinit behavior" {
         const plan = Plan{
             .instructionStream = if (size > 0) try allocator.alloc(InstructionElement, size) else &.{},
             .u256_constants = if (size > 0) try allocator.alloc(PlanType.WordType, size / 2 + 1) else &.{},
-            .pc_to_instruction_idx = if (size > 10) std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType).init(allocator) else null,
+            .pc_to_instruction_idx = if (size > 10) std.AutoHashMap(Plan(.{}).PcType, Plan(.{}).InstructionIndexType).init(allocator) else null,
         };
         
         // Initialize data
@@ -1916,7 +1916,7 @@ test "Plan comprehensive deinit behavior" {
         // Verify cleanup
         try std.testing.expectEqual(@as(usize, 0), plan.instructionStream.len);
         try std.testing.expectEqual(@as(usize, 0), plan.u256_constants.len);
-        try std.testing.expectEqual(@as(?std.AutoHashMap(Plan.PcType, Plan.InstructionIndexType), null), plan.pc_to_instruction_idx);
+        try std.testing.expectEqual(@as(?std.AutoHashMap(Plan(.{}).PcType, Plan(.{}).InstructionIndexType), null), plan.pc_to_instruction_idx);
     }
 }
 
@@ -3392,10 +3392,12 @@ test "Plan caching and lifecycle management validation" {
     try std.testing.expect(transferred_plan.bytecode.len == transfer_bytecode.len);
     
     // Test metadata access on transferred plan
-    const push2_value = transferred_plan.getMetadata(0, .PUSH2, undefined);
+    var idx1: Plan(.{}).InstructionIndexType = 0;
+    const push2_value = transferred_plan.getMetadata(&idx1, .PUSH2);
     try std.testing.expectEqual(@as(u256, 0x1234), push2_value);
     
-    const push1_value = transferred_plan.getMetadata(3, .PUSH1, undefined);
+    var idx2: TestPlan.InstructionIndexType = 3;
+    const push1_value = transferred_plan.getMetadata(&idx2, .PUSH1);
     try std.testing.expectEqual(@as(u256, 0x56), push1_value);
     
     // Test 4: Stress test plan creation and destruction
