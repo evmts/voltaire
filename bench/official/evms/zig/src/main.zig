@@ -90,27 +90,63 @@ pub fn main() !void {
     const calldata = try hex_decode(allocator, trimmed_calldata);
     defer allocator.free(calldata);
 
-    // Run benchmarks using EVM2 Frame implementation
-    for (0..num_runs) |_| {
-        // Step 1: Deploy contract (simplified - just extract runtime code)
-        // In a real implementation, we'd execute the constructor
-        // For benchmarks, we assume the init code returns the runtime code directly
-        const runtime_code: []const u8 = init_code;
-        
-        // Step 2: Execute contract call using EVM2 FrameInterpreter
-        const Interpreter = evm.createFrameInterpreter(.{});
-        var interpreter = try Interpreter.init(allocator, runtime_code, 100_000_000, {});
-        defer interpreter.deinit(allocator);
+    // Set up EVM infrastructure
+    var memory_db = evm.MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = evm.DatabaseInterface.init(&memory_db);
 
-        const start_time = std.time.nanoTimestamp();
-        interpreter.interpret() catch |err| switch (err) {
-            Interpreter.Error.STOP => {}, // Normal termination
-            else => {
-                std.debug.print("Frame execution error: {}\n", .{err});
-                std.process.exit(1);
+    const block_info = evm.BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .base_fee = 1000000000,
+        .prev_randao = [_]u8{0} ** 32,
+    };
+
+    const context = evm.TransactionContext{
+        .gas_limit = 21000000,
+        .coinbase = primitives.ZERO_ADDRESS,
+        .chain_id = 1,
+    };
+
+    var evm_instance = try evm.DefaultEvm.init(allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
+    defer evm_instance.deinit();
+
+    // Deploy contract first
+    const deploy_address: Address = [_]u8{0} ** 19 ++ [_]u8{1};
+    const code_hash = try memory_db.set_code(init_code);
+    try memory_db.set_account(deploy_address, evm.Account{
+        .nonce = 0,
+        .balance = 0,
+        .code_hash = code_hash,
+        .storage_root = [_]u8{0} ** 32,
+    });
+
+    // Run benchmarks
+    for (0..num_runs) |_| {
+        const call_params = evm.DefaultEvm.CallParams{
+            .call = .{
+                .caller = primitives.ZERO_ADDRESS,
+                .to = deploy_address,
+                .value = 0,
+                .input = calldata,
+                .gas = 100000,
             },
         };
+
+        const start_time = std.time.nanoTimestamp();
+        const result = evm_instance.call(call_params) catch |err| {
+            std.debug.print("EVM execution error: {}\n", .{err});
+            std.process.exit(1);
+        };
         const end_time = std.time.nanoTimestamp();
+        
+        if (!result.success) {
+            std.debug.print("Contract execution failed\n", .{});
+            std.process.exit(1);
+        }
         
         const elapsed_ns = @as(u64, @intCast(end_time - start_time));
         const elapsed_ms = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
