@@ -747,215 +747,21 @@ pub fn build(b: *std.Build) void {
 
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
 
-    // Add Memory tests
-    const memory_test = b.addTest(.{
-        .name = "memory-test",
-        .root_source_file = b.path("test/evm/memory_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    memory_test.root_module.addImport("evm", evm_mod);
-    memory_test.root_module.addImport("primitives", primitives_mod);
+    // Memory, Stack, and other EVM tests removed - files no longer exist
 
-    const run_memory_test = b.addRunArtifact(memory_test);
-    const memory_test_step = b.step("test-memory", "Run Memory tests");
-    memory_test_step.dependOn(&run_memory_test.step);
+    // Analysis, interpret, control, and system comprehensive tests removed - files no longer exist
 
-    // Add Memory Leak tests
-    const memory_leak_test = b.addTest(.{
-        .name = "memory-leak-test",
-        .root_source_file = b.path("test/evm/memory_leak_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    memory_leak_test.root_module.addImport("evm", evm_mod);
-    memory_leak_test.root_module.addImport("primitives", primitives_mod);
+    // Tailcall dispatch benchmark test removed - file no longer exists
 
-    const run_memory_leak_test = b.addRunArtifact(memory_leak_test);
-    const memory_leak_test_step = b.step("test-memory-leak", "Run Memory leak prevention tests");
-    memory_leak_test_step.dependOn(&run_memory_leak_test.step);
+    // Interpret2 test removed - file no longer exists
 
-    // Add Stack tests
-    const stack_test = b.addTest(.{
-        .name = "stack-test",
-        .root_source_file = b.path("test/evm/stack_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    stack_test.root_module.addImport("evm", evm_mod);
+    // Interpret2 simple test removed - file no longer exists
 
-    const run_stack_test = b.addRunArtifact(stack_test);
-    const stack_test_step = b.step("test-stack", "Run Stack tests");
-    stack_test_step.dependOn(&run_stack_test.step);
+    // Interpret2 comprehensive test removed - file no longer exists
 
-    // Analysis comprehensive tests removed - files no longer exist
+    // Environment and block opcodes test removed - file no longer exists
 
-    // Interpret comprehensive tests
-    const interpret_test = b.addTest(.{
-        .name = "interpret-comprehensive-test",
-        .root_source_file = b.path("test/evm/interpret_comprehensive_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    interpret_test.root_module.addImport("evm", evm_mod);
-    interpret_test.root_module.addImport("primitives", primitives_mod);
-    if (bn254_lib) |bn254| {
-        interpret_test.linkLibrary(bn254);
-        interpret_test.addIncludePath(b.path("src/bn254_wrapper"));
-    }
-    interpret_test.root_module.addImport("revm_wrapper", revm_mod);
-
-    const run_interpret_test = b.addRunArtifact(interpret_test);
-    const interpret_test_step = b.step("test-interpret", "Run Interpret comprehensive tests");
-    interpret_test_step.dependOn(&run_interpret_test.step);
-
-    // Interpret corner cases tests
-    const interpret_corner_test = b.addTest(.{
-        .name = "interpret-corner-cases-test",
-        .root_source_file = b.path("test/evm/interpret_corner_cases_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    interpret_corner_test.root_module.addImport("evm", evm_mod);
-    interpret_corner_test.root_module.addImport("primitives", primitives_mod);
-
-    const run_interpret_corner_test = b.addRunArtifact(interpret_corner_test);
-    const interpret_corner_test_step = b.step("test-interpret-corner", "Run Interpret corner cases tests");
-    interpret_corner_test_step.dependOn(&run_interpret_corner_test.step);
-
-    // Control comprehensive tests
-    const control_test = b.addTest(.{
-        .name = "control-comprehensive-test",
-        .root_source_file = b.path("test/evm/control_comprehensive_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    control_test.root_module.addImport("evm", evm_mod);
-    control_test.root_module.addImport("primitives", primitives_mod);
-    if (bn254_lib) |bn254| {
-        control_test.linkLibrary(bn254);
-        control_test.addIncludePath(b.path("src/bn254_wrapper"));
-    }
-
-    const run_control_test = b.addRunArtifact(control_test);
-    const control_test_step = b.step("test-control", "Run Control comprehensive tests");
-    control_test_step.dependOn(&run_control_test.step);
-
-    // System comprehensive tests
-    const system_test = b.addTest(.{
-        .name = "system-comprehensive-test",
-        .root_source_file = b.path("test/evm/system_comprehensive_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    system_test.root_module.addImport("evm", evm_mod);
-    system_test.root_module.addImport("primitives", primitives_mod);
-    if (bn254_lib) |bn254| {
-        system_test.linkLibrary(bn254);
-        system_test.addIncludePath(b.path("src/bn254_wrapper"));
-    }
-
-    const run_system_test = b.addRunArtifact(system_test);
-    const system_test_step = b.step("test-system", "Run System comprehensive tests");
-    system_test_step.dependOn(&run_system_test.step);
-
-    // Tailcall dispatch benchmark test
-    const tailcall_benchmark = b.addTest(.{
-        .name = "tailcall-benchmark",
-        .root_source_file = b.path("test/evm/tailcall_benchmark.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    tailcall_benchmark.root_module.addImport("evm", evm_mod);
-    tailcall_benchmark.root_module.addImport("primitives", primitives_mod);
-    if (bn254_lib) |bn254| {
-        tailcall_benchmark.linkLibrary(bn254);
-        tailcall_benchmark.addIncludePath(b.path("src/bn254_wrapper"));
-    }
-
-    const run_tailcall_benchmark = b.addRunArtifact(tailcall_benchmark);
-    const tailcall_benchmark_step = b.step("test-tailcall-benchmark", "Run tailcall dispatch benchmark");
-    tailcall_benchmark_step.dependOn(&run_tailcall_benchmark.step);
-
-    // Interpret2 test
-    const interpret2_test = b.addTest(.{
-        .name = "interpret2-test",
-        .root_source_file = b.path("test/evm/interpret2_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    interpret2_test.root_module.addImport("evm", evm_mod);
-    interpret2_test.root_module.addImport("primitives", primitives_mod);
-    interpret2_test.root_module.addImport("crypto", crypto_mod);
-    interpret2_test.root_module.addImport("build_options", build_options_mod);
-
-    const run_interpret2_test = b.addRunArtifact(interpret2_test);
-    const interpret2_test_step = b.step("test-interpret2", "Run interpret2 tests");
-    interpret2_test_step.dependOn(&run_interpret2_test.step);
-
-    // Interpret2 simple test
-    const interpret2_simple_test = b.addTest(.{
-        .name = "interpret2-simple-test",
-        .root_source_file = b.path("test/evm/interpret2_simple_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    interpret2_simple_test.root_module.addImport("evm", evm_mod);
-    interpret2_simple_test.root_module.addImport("primitives", primitives_mod);
-    interpret2_simple_test.root_module.addImport("crypto", crypto_mod);
-    interpret2_simple_test.root_module.addImport("build_options", build_options_mod);
-
-    const run_interpret2_simple_test = b.addRunArtifact(interpret2_simple_test);
-    const interpret2_simple_test_step = b.step("test-interpret2-simple", "Run interpret2 simple tests");
-    interpret2_simple_test_step.dependOn(&run_interpret2_simple_test.step);
-
-    // Interpret2 comprehensive test
-    const interpret2_comprehensive_test = b.addTest(.{
-        .name = "interpret2-comprehensive-test",
-        .root_source_file = b.path("test/evm/interpret2_comprehensive_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    interpret2_comprehensive_test.root_module.addImport("evm", evm_mod);
-    interpret2_comprehensive_test.root_module.addImport("primitives", primitives_mod);
-    interpret2_comprehensive_test.root_module.addImport("crypto", crypto_mod);
-    interpret2_comprehensive_test.root_module.addImport("build_options", build_options_mod);
-
-    const run_interpret2_comprehensive_test = b.addRunArtifact(interpret2_comprehensive_test);
-    const interpret2_comprehensive_test_step = b.step("test-interpret2-comprehensive", "Run interpret2 comprehensive tests");
-    interpret2_comprehensive_test_step.dependOn(&run_interpret2_comprehensive_test.step);
-
-    // Environment and block opcodes test for interpret2
-    const environment_block_opcodes_test = b.addTest(.{
-        .name = "environment-block-opcodes-test",
-        .root_source_file = b.path("test/evm/opcodes/environment_block_opcodes_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    environment_block_opcodes_test.root_module.addImport("evm", evm_mod);
-    environment_block_opcodes_test.root_module.addImport("primitives", primitives_mod);
-    environment_block_opcodes_test.root_module.addImport("crypto", crypto_mod);
-    environment_block_opcodes_test.root_module.addImport("build_options", build_options_mod);
-
-    const run_environment_block_opcodes_test = b.addRunArtifact(environment_block_opcodes_test);
-    const environment_block_opcodes_test_step = b.step("test-environment-block-opcodes", "Run environment and block opcodes tests");
-    environment_block_opcodes_test_step.dependOn(&run_environment_block_opcodes_test.step);
-
-    // RETURN opcode test
-    const return_opcode_test = b.addTest(.{
-        .name = "return-opcode-test",
-        .root_source_file = b.path("test/evm/return_opcode_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    return_opcode_test.root_module.addImport("evm", evm_mod);
-    return_opcode_test.root_module.addImport("primitives", primitives_mod);
-    return_opcode_test.root_module.addImport("crypto", crypto_mod);
-    return_opcode_test.root_module.addImport("build_options", build_options_mod);
-
-    const run_return_opcode_test = b.addRunArtifact(return_opcode_test);
-    const return_opcode_test_step = b.step("test-return-opcode", "Run RETURN opcode tests");
-    return_opcode_test_step.dependOn(&run_return_opcode_test.step);
+    // RETURN opcode test removed - file no longer exists
 
     // Add new EVM tests
     const newevm_test = b.addTest(.{
@@ -971,263 +777,43 @@ pub fn build(b: *std.Build) void {
     const newevm_test_step = b.step("test-newevm", "Run new EVM tests");
     newevm_test_step.dependOn(&run_newevm_test.step);
 
-    // Add arithmetic opcode tests for new EVM
-    const newevm_arithmetic_test = b.addTest(.{
-        .name = "newevm-arithmetic-test",
-        .root_source_file = b.path("test/evm/opcodes/arithmetic_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    newevm_arithmetic_test.root_module.addImport("evm", evm_mod);
-    newevm_arithmetic_test.root_module.addImport("primitives", primitives_mod);
+    // Arithmetic opcode tests removed - file no longer exists
 
-    const run_newevm_arithmetic_test = b.addRunArtifact(newevm_arithmetic_test);
-    newevm_test_step.dependOn(&run_newevm_arithmetic_test.step);
+    // Comprehensive arithmetic opcode tests removed - file no longer exists
 
-    // Add comprehensive arithmetic opcode tests for interpret2
-    const newevm_arithmetic_opcodes_test = b.addTest(.{
-        .name = "newevm-arithmetic-opcodes-test",
-        .root_source_file = b.path("test/evm/opcodes/arithmetic_opcodes_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    newevm_arithmetic_opcodes_test.root_module.addImport("evm", evm_mod);
-    newevm_arithmetic_opcodes_test.root_module.addImport("primitives", primitives_mod);
+    // Bitwise opcode tests removed - file no longer exists
 
-    const run_newevm_arithmetic_opcodes_test = b.addRunArtifact(newevm_arithmetic_opcodes_test);
-    newevm_test_step.dependOn(&run_newevm_arithmetic_opcodes_test.step);
+    // Comparison opcode tests removed - file no longer exists
 
-    // Add bitwise opcode tests for new EVM
-    const newevm_bitwise_test = b.addTest(.{
-        .name = "newevm-bitwise-test",
-        .root_source_file = b.path("test/evm/opcodes/bitwise_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    newevm_bitwise_test.root_module.addImport("evm", evm_mod);
-    newevm_bitwise_test.root_module.addImport("primitives", primitives_mod);
+    // Comparison and bitwise opcodes test removed - file no longer exists
 
-    const run_newevm_bitwise_test = b.addRunArtifact(newevm_bitwise_test);
-    newevm_test_step.dependOn(&run_newevm_bitwise_test.step);
+    // Block opcode tests removed - file no longer exists
 
-    // Add comparison opcode tests for new EVM
-    const newevm_comparison_test = b.addTest(.{
-        .name = "newevm-comparison-test",
-        .root_source_file = b.path("test/evm/opcodes/comparison_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    newevm_comparison_test.root_module.addImport("evm", evm_mod);
-    newevm_comparison_test.root_module.addImport("primitives", primitives_mod);
+    // Stack opcode tests removed - file no longer exists
 
-    const run_newevm_comparison_test = b.addRunArtifact(newevm_comparison_test);
-    newevm_test_step.dependOn(&run_newevm_comparison_test.step);
+    // Stack validation tests removed - file no longer exists
 
-    // Add comparison and bitwise opcodes test for interpret2
-    const comparison_bitwise_opcodes_test = b.addTest(.{
-        .name = "comparison-bitwise-opcodes-test",
-        .root_source_file = b.path("test/evm/opcodes/comparison_bitwise_opcodes_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    comparison_bitwise_opcodes_test.root_module.addImport("evm", evm_mod);
-    comparison_bitwise_opcodes_test.root_module.addImport("primitives", primitives_mod);
+    // Jump table tests removed - file no longer exists
 
-    const run_comparison_bitwise_opcodes_test = b.addRunArtifact(comparison_bitwise_opcodes_test);
-    newevm_test_step.dependOn(&run_comparison_bitwise_opcodes_test.step);
+    // Config tests removed - file no longer exists
 
-    // Add block opcode tests for new EVM
-    const newevm_block_test = b.addTest(.{
-        .name = "newevm-block-test",
-        .root_source_file = b.path("test/evm/opcodes/block_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    newevm_block_test.root_module.addImport("evm", evm_mod);
-    newevm_block_test.root_module.addImport("primitives", primitives_mod);
-
-    const run_newevm_block_test = b.addRunArtifact(newevm_block_test);
-    newevm_test_step.dependOn(&run_newevm_block_test.step);
-
-    // Add stack opcode tests for new EVM
-    const newevm_stack_test = b.addTest(.{
-        .name = "newevm-stack-test",
-        .root_source_file = b.path("test/evm/opcodes/stack_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    newevm_stack_test.root_module.addImport("evm", evm_mod);
-    newevm_stack_test.root_module.addImport("primitives", primitives_mod);
-
-    const run_newevm_stack_test = b.addRunArtifact(newevm_stack_test);
-    newevm_test_step.dependOn(&run_newevm_stack_test.step);
-
-    // Add Stack validation tests
-    const stack_validation_test = b.addTest(.{
-        .name = "stack-validation-test",
-        .root_source_file = b.path("test/evm/stack_validation_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    stack_validation_test.root_module.stack_check = false;
-    stack_validation_test.root_module.addImport("evm", evm_mod);
-
-    const run_stack_validation_test = b.addRunArtifact(stack_validation_test);
-    const stack_validation_test_step = b.step("test-stack-validation", "Run Stack validation tests");
-    stack_validation_test_step.dependOn(&run_stack_validation_test.step);
-
-    // Add Jump table tests
-    const jump_table_test = b.addTest(.{
-        .name = "jump-table-test",
-        .root_source_file = b.path("test/evm/jump_table_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    jump_table_test.root_module.stack_check = false;
-    jump_table_test.root_module.addImport("primitives", primitives_mod);
-    jump_table_test.root_module.addImport("evm", evm_mod);
-
-    const run_jump_table_test = b.addRunArtifact(jump_table_test);
-    const jump_table_test_step = b.step("test-jump-table", "Run Jump table tests");
-    jump_table_test_step.dependOn(&run_jump_table_test.step);
-
-    // Add Config tests
-    const config_test = b.addTest(.{
-        .name = "config-test",
-        .root_source_file = b.path("test/evm/config_simple_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    config_test.root_module.stack_check = false;
-    config_test.root_module.addImport("primitives", primitives_mod);
-    config_test.root_module.addImport("evm", evm_mod);
-
-    const run_config_test = b.addRunArtifact(config_test);
-    const config_test_step = b.step("test-config", "Run Config tests");
-    config_test_step.dependOn(&run_config_test.step);
-
-    // Add Opcodes tests
-    const opcodes_test = b.addTest(.{
-        .name = "opcodes-test",
-        .root_source_file = b.path("test/evm/opcodes/opcodes_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    opcodes_test.root_module.stack_check = false;
-    opcodes_test.root_module.addImport("primitives", primitives_mod);
-    opcodes_test.root_module.addImport("evm", evm_mod);
-
-    const run_opcodes_test = b.addRunArtifact(opcodes_test);
-    const opcodes_test_step = b.step("test-opcodes", "Run Opcodes tests");
-    opcodes_test_step.dependOn(&run_opcodes_test.step);
+    // Opcodes tests removed - file no longer exists
 
     // Benchmark Runner test removed - file no longer exists
 
-    // Add Minimal Call Test
-    const minimal_call_test = b.addTest(.{
-        .name = "minimal-call-test",
-        .root_source_file = b.path("test/evm/minimal_call_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    minimal_call_test.root_module.stack_check = false;
-    minimal_call_test.root_module.addImport("primitives", primitives_mod);
-    minimal_call_test.root_module.addImport("evm", evm_mod);
-
-    const run_minimal_call_test = b.addRunArtifact(minimal_call_test);
-    const minimal_call_test_step = b.step("test-minimal-call", "Run Minimal Call test");
-    minimal_call_test_step.dependOn(&run_minimal_call_test.step);
+    // Minimal Call Test removed - file no longer exists
 
     // Debug Analysis Test removed - file no longer exists
 
-    // Add Super Minimal Test
-    const super_minimal_test = b.addTest(.{
-        .name = "super-minimal-test",
-        .root_source_file = b.path("test/evm/super_minimal_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    super_minimal_test.root_module.stack_check = false;
-    super_minimal_test.root_module.addImport("primitives", primitives_mod);
-    super_minimal_test.root_module.addImport("evm", evm_mod);
+    // Super Minimal Test removed - file no longer exists
 
-    const run_super_minimal_test = b.addRunArtifact(super_minimal_test);
-    const super_minimal_test_step = b.step("test-super-minimal", "Run Super Minimal test");
-    super_minimal_test_step.dependOn(&run_super_minimal_test.step);
+    // Generated Opcode Comparison tests removed - file no longer exists
 
-    // Add Generated Opcode Comparison tests
-    const opcode_comparison_test = b.addTest(.{
-        .name = "opcode-comparison-test",
-        .root_source_file = b.path("test/evm/opcodes/generated_opcode_comparison_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    opcode_comparison_test.root_module.stack_check = false;
-    opcode_comparison_test.root_module.addImport("primitives", primitives_mod);
-    opcode_comparison_test.root_module.addImport("evm", evm_mod);
-    opcode_comparison_test.root_module.addImport("Address", primitives_mod);
-    opcode_comparison_test.root_module.addImport("crypto", crypto_mod);
-    opcode_comparison_test.root_module.addImport("build_options", build_options_mod);
+    // VM opcode tests removed - file no longer exists
 
-    const run_opcode_comparison_test = b.addRunArtifact(opcode_comparison_test);
-    const opcode_comparison_test_step = b.step("test-opcode-comparison", "Run opcode comparison tests");
-    opcode_comparison_test_step.dependOn(&run_opcode_comparison_test.step);
+    // Integration tests removed - file no longer exists
 
-    // Add VM opcode tests
-    const vm_opcode_test = b.addTest(.{
-        .name = "vm-opcode-test",
-        .root_source_file = b.path("test/evm/vm_opcode_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    vm_opcode_test.root_module.stack_check = false;
-    vm_opcode_test.root_module.addImport("primitives", primitives_mod);
-    vm_opcode_test.root_module.addImport("evm", evm_mod);
-
-    const run_vm_opcode_test = b.addRunArtifact(vm_opcode_test);
-    const vm_opcode_test_step = b.step("test-vm-opcodes", "Run VM opcode tests");
-    vm_opcode_test_step.dependOn(&run_vm_opcode_test.step);
-
-    // Add Integration tests
-    const integration_test = b.addTest(.{
-        .name = "integration-test",
-        .root_source_file = b.path("test/evm/integration/package.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    integration_test.root_module.stack_check = false;
-    integration_test.root_module.addImport("primitives", primitives_mod);
-    integration_test.root_module.addImport("evm", evm_mod);
-
-    const run_integration_test = b.addRunArtifact(integration_test);
-    const integration_test_step = b.step("test-integration", "Run Integration tests");
-    integration_test_step.dependOn(&run_integration_test.step);
-
-    // Add comprehensive EVM tests package
-    const evm_package_test = b.addTest(.{
-        .name = "evm-package-test",
-        .root_source_file = b.path("test/evm/package.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    evm_package_test.root_module.stack_check = false;
-    evm_package_test.root_module.addImport("primitives", primitives_mod);
-    evm_package_test.root_module.addImport("evm", evm_mod);
-    evm_package_test.root_module.addImport("Address", primitives_mod);
-
-    const run_evm_package_test = b.addRunArtifact(evm_package_test);
-    const evm_package_test_step = b.step("test-evm-all", "Run all EVM tests via package");
-    evm_package_test_step.dependOn(&run_evm_package_test.step);
+    // Comprehensive EVM tests package removed - file no longer exists
 
     // Add evm.zig tests
     const evm_core_test = b.addTest(.{
@@ -1244,251 +830,24 @@ pub fn build(b: *std.Build) void {
     const run_evm_core_test = b.addRunArtifact(evm_core_test);
     const evm_core_test_step = b.step("test-evm-core", "Run evm.zig tests");
     evm_core_test_step.dependOn(&run_evm_core_test.step);
-    evm_package_test_step.dependOn(&run_evm_core_test.step);
 
-    // Add EVM E2E tests
-    const evm_e2e_test = b.addTest(.{
-        .name = "evm-e2e-test",
-        .root_source_file = b.path("src/evm/evm_e2e.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    evm_e2e_test.root_module.addImport("evm", evm_mod);
-    evm_e2e_test.root_module.addImport("primitives", primitives_mod);
-    evm_e2e_test.root_module.addImport("crypto", crypto_mod);
-    evm_e2e_test.root_module.addImport("build_options", build_options_mod);
-    if (bn254_lib) |bn254| {
-        evm_e2e_test.linkLibrary(bn254);
-        evm_e2e_test.addIncludePath(b.path("src/bn254_wrapper"));
-    }
+    // EVM E2E tests removed - file no longer exists
 
-    const run_evm_e2e_test = b.addRunArtifact(evm_e2e_test);
-    const evm_e2e_test_step = b.step("test-evm-e2e", "Run EVM E2E tests");
-    evm_e2e_test_step.dependOn(&run_evm_e2e_test.step);
+    // Comprehensive Differential tests removed - file no longer exists
 
-    // Add Comprehensive Differential tests
-    const comprehensive_differential_test = b.addTest(.{
-        .name = "comprehensive-differential-test",
-        .root_source_file = b.path("src/evm/comprehensive_differential_tests.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    comprehensive_differential_test.root_module.addImport("evm", evm_mod);
-    comprehensive_differential_test.root_module.addImport("primitives", primitives_mod);
-    comprehensive_differential_test.root_module.addImport("crypto", crypto_mod);
-    comprehensive_differential_test.root_module.addImport("build_options", build_options_mod);
-    comprehensive_differential_test.root_module.addImport("revm", revm_mod);
-    if (bn254_lib) |bn254| {
-        comprehensive_differential_test.linkLibrary(bn254);
-        comprehensive_differential_test.addIncludePath(b.path("src/bn254_wrapper"));
-    }
+    // Deployment test removed - file no longer exists
 
-    const run_comprehensive_differential_test = b.addRunArtifact(comprehensive_differential_test);
-    const comprehensive_differential_test_step = b.step("test-comprehensive-differential", "Run comprehensive differential tests");
-    comprehensive_differential_test_step.dependOn(&run_comprehensive_differential_test.step);
+    // Comprehensive opcodes tests package removed - file no longer exists
 
-    // Add deployment test
-    const deployment_test = b.addTest(.{
-        .name = "deployment-test",
-        .root_source_file = b.path("test/deployment_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    deployment_test.root_module.addImport("evm", evm_mod);
-    deployment_test.root_module.addImport("primitives", primitives_mod);
-    const run_deployment_test = b.addRunArtifact(deployment_test);
-    const deployment_test_step = b.step("test-deployment", "Run deployment tests");
-    deployment_test_step.dependOn(&run_deployment_test.step);
+    // Differential tests package removed - file no longer exists
 
-    // Add comprehensive opcodes tests package
-    const opcodes_package_test = b.addTest(.{
-        .name = "opcodes-package-test",
-        .root_source_file = b.path("test/evm/opcodes/package.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    opcodes_package_test.root_module.stack_check = false;
-    opcodes_package_test.root_module.addImport("primitives", primitives_mod);
-    opcodes_package_test.root_module.addImport("evm", evm_mod);
+    // Specific STATICCALL test removed - file no longer exists
 
-    const run_opcodes_package_test = b.addRunArtifact(opcodes_package_test);
-    const opcodes_package_test_step = b.step("test-opcodes-all", "Run all opcode tests via package");
-    opcodes_package_test_step.dependOn(&run_opcodes_package_test.step);
+    // System differential test removed - file no longer exists
 
-    // Add differential tests package
-    const differential_test = b.addTest(.{
-        .name = "differential-test",
-        .root_source_file = b.path("test/differential/package.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    differential_test.root_module.stack_check = false;
-    differential_test.root_module.addImport("primitives", primitives_mod);
-    differential_test.root_module.addImport("evm", evm_mod);
-    differential_test.root_module.addImport("revm", revm_mod);
-    differential_test.root_module.addImport("build_options", build_options_mod);
+    // Comprehensive ALL tests package removed - file no longer exists
 
-    // Link REVM Rust library for differential tests if available
-    if (revm_lib) |revm_library| {
-        differential_test.linkLibrary(revm_library);
-        differential_test.addIncludePath(b.path("src/revm_wrapper"));
-        differential_test.linkLibC();
-
-        // Link the compiled Rust dynamic library (needed on macOS for c++/Security deps)
-        const revm_rust_target_dir = if (optimize == .Debug) "debug" else "release";
-        const revm_dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir })
-        else
-            b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir});
-        differential_test.addObjectFile(b.path(revm_dylib_path));
-
-        // Platform-specific system libs/frameworks for REVM
-        if (target.result.os.tag == .linux) {
-            differential_test.linkSystemLibrary("m");
-            differential_test.linkSystemLibrary("pthread");
-            differential_test.linkSystemLibrary("dl");
-        } else if (target.result.os.tag == .macos) {
-            differential_test.linkSystemLibrary("c++");
-            differential_test.linkFramework("Security");
-            differential_test.linkFramework("SystemConfiguration");
-            differential_test.linkFramework("CoreFoundation");
-        }
-
-        // Ensure Rust library is built before running tests
-        differential_test.step.dependOn(&revm_library.step);
-    }
-
-    const run_differential_test = b.addRunArtifact(differential_test);
-    const differential_test_step = b.step("test-differential", "Run differential tests");
-    differential_test_step.dependOn(&run_differential_test.step);
-
-    // Add specific STATICCALL test for debugging
-    const staticcall_test = b.addTest(.{
-        .name = "staticcall-debug-test",
-        .root_source_file = b.path("test/differential/system_differential_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-        .filters = &.{"STATICCALL opcode enforces read-only execution"},
-    });
-    staticcall_test.root_module.stack_check = false;
-    staticcall_test.root_module.addImport("primitives", primitives_mod);
-    staticcall_test.root_module.addImport("evm", evm_mod);
-    staticcall_test.root_module.addImport("revm", revm_mod);
-    staticcall_test.root_module.addImport("build_options", build_options_mod);
-
-    if (revm_lib) |revm_library| {
-        staticcall_test.linkLibrary(revm_library);
-        staticcall_test.addIncludePath(b.path("src/revm_wrapper"));
-        staticcall_test.linkLibC();
-
-        // Link the compiled Rust dynamic library (needed on macOS for c++/Security deps)
-        const revm_rust_target_dir = if (optimize == .Debug) "debug" else "release";
-        const revm_dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir })
-        else
-            b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir});
-        staticcall_test.addObjectFile(b.path(revm_dylib_path));
-
-        // Platform-specific system libs/frameworks for REVM
-        if (target.result.os.tag == .linux) {
-            staticcall_test.linkSystemLibrary("m");
-            staticcall_test.linkSystemLibrary("pthread");
-            staticcall_test.linkSystemLibrary("dl");
-        } else if (target.result.os.tag == .macos) {
-            staticcall_test.linkSystemLibrary("c++");
-            staticcall_test.linkFramework("Security");
-            staticcall_test.linkFramework("SystemConfiguration");
-            staticcall_test.linkFramework("CoreFoundation");
-        }
-
-        // Ensure Rust library is built before running tests
-        staticcall_test.step.dependOn(&revm_library.step);
-    }
-
-    const run_staticcall_test = b.addRunArtifact(staticcall_test);
-    const staticcall_test_step = b.step("test-staticcall", "Run isolated STATICCALL test with debug logging");
-    staticcall_test_step.dependOn(&run_staticcall_test.step);
-
-    // Add system differential test as separate target (temporarily excluded from main suite due to STATICCALL issue)
-    const system_differential_test = b.addTest(.{
-        .name = "system-differential-test",
-        .root_source_file = b.path("test/differential/system_differential_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    system_differential_test.root_module.stack_check = false;
-    system_differential_test.root_module.addImport("primitives", primitives_mod);
-    system_differential_test.root_module.addImport("evm", evm_mod);
-    system_differential_test.root_module.addImport("revm", revm_mod);
-    system_differential_test.root_module.addImport("build_options", build_options_mod);
-
-    if (revm_lib) |revm_library| {
-        system_differential_test.linkLibrary(revm_library);
-        system_differential_test.addIncludePath(b.path("src/revm_wrapper"));
-        system_differential_test.linkLibC();
-
-        // Link the compiled Rust dynamic library (needed on macOS for c++/Security deps)
-        const revm_rust_target_dir = if (optimize == .Debug) "debug" else "release";
-        const revm_dylib_path = if (rust_target) |target_triple|
-            b.fmt("target/{s}/{s}/librevm_wrapper.dylib", .{ target_triple, revm_rust_target_dir })
-        else
-            b.fmt("target/{s}/librevm_wrapper.dylib", .{revm_rust_target_dir});
-        system_differential_test.addObjectFile(b.path(revm_dylib_path));
-
-        // Platform-specific system libs/frameworks for REVM
-        if (target.result.os.tag == .linux) {
-            system_differential_test.linkSystemLibrary("m");
-            system_differential_test.linkSystemLibrary("pthread");
-            system_differential_test.linkSystemLibrary("dl");
-        } else if (target.result.os.tag == .macos) {
-            system_differential_test.linkSystemLibrary("c++");
-            system_differential_test.linkFramework("Security");
-            system_differential_test.linkFramework("SystemConfiguration");
-            system_differential_test.linkFramework("CoreFoundation");
-        }
-
-        // Ensure Rust library is built before running tests
-        system_differential_test.step.dependOn(&revm_library.step);
-    }
-
-    const run_system_differential_test = b.addRunArtifact(system_differential_test);
-    const system_differential_test_step = b.step("test-system-differential", "Run system differential tests");
-    system_differential_test_step.dependOn(&run_system_differential_test.step);
-
-    // Add comprehensive ALL tests package
-    const all_tests_package = b.addTest(.{
-        .name = "all-tests-package",
-        .root_source_file = b.path("test/package.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    all_tests_package.root_module.stack_check = false;
-    all_tests_package.root_module.addImport("primitives", primitives_mod);
-    all_tests_package.root_module.addImport("evm", evm_mod);
-    all_tests_package.root_module.addImport("Address", primitives_mod);
-    all_tests_package.root_module.addImport("revm", revm_mod);
-
-    const run_all_tests_package = b.addRunArtifact(all_tests_package);
-    const all_tests_package_step = b.step("test-all-comprehensive", "Run ALL tests via package system");
-    all_tests_package_step.dependOn(&run_all_tests_package.step);
-
-    // Add benchmark fixture tests
-    const thousand_hashes_test = b.addTest(.{
-        .name = "thousand-hashes-test",
-        .root_source_file = b.path("test/1000_hashes.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    thousand_hashes_test.root_module.addImport("evm", evm_mod);
-    thousand_hashes_test.root_module.addImport("primitives", primitives_mod);
-    const run_thousand_hashes_test = b.addRunArtifact(thousand_hashes_test);
-    const thousand_hashes_test_step = b.step("test-thousand-hashes", "Run thousand hashes benchmark test");
-    thousand_hashes_test_step.dependOn(&run_thousand_hashes_test.step);
+    // Benchmark fixture tests removed - file no longer exists
 
     // Debug executable for 10k hashes - commented out as test file was removed
     // const debug_10k_exe = b.addExecutable(.{
@@ -2362,37 +1721,14 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_exe_unit_tests.step);
-    test_step.dependOn(&run_memory_test.step);
-    test_step.dependOn(&run_stack_test.step);
+    // Memory and stack test dependencies removed
     // run_analysis_test removed - file no longer exists
     test_step.dependOn(&run_newevm_test.step);
-    test_step.dependOn(&run_stack_validation_test.step);
-    test_step.dependOn(&run_jump_table_test.step);
-    test_step.dependOn(&run_config_test.step);
-    test_step.dependOn(&run_differential_test.step);
-    test_step.dependOn(&run_staticcall_test.step);
+    // Stack validation, jump table, config, differential, staticcall, and interpret2 tests removed
     test_step.dependOn(&run_evm_core_test.step);
-    test_step.dependOn(&run_interpret2_test.step);
     // benchmark runner test removed - file no longer exists
 
-    // Add inline ops test
-    const inline_ops_test = b.addTest(.{
-        .name = "inline-ops-test",
-        .root_source_file = b.path("test/evm/inline_ops_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .single_threaded = true,
-    });
-    inline_ops_test.root_module.stack_check = false;
-    inline_ops_test.root_module.addImport("primitives", primitives_mod);
-    inline_ops_test.root_module.addImport("evm", evm_mod);
-    const run_inline_ops_test = b.addRunArtifact(inline_ops_test);
-
-    // Instruction tests moved to test/evm/instruction_test.zig to avoid circular dependencies
-    // The tests are included via the regular test/evm test suite
-
-    const inline_ops_test_step = b.step("test-inline-ops", "Run inline ops performance tests");
-    inline_ops_test_step.dependOn(&run_inline_ops_test.step);
+    // Inline ops test removed - file no longer exists
 
     // Block metadata heap test removed - file no longer exists
 
@@ -2471,20 +1807,8 @@ pub fn build(b: *std.Build) void {
 
     // Add comprehensive test packages to main test step
 
-    // Add ERC20 deployment hang test
-    const erc20_deployment_test = b.addTest(.{
-        .name = "erc20-deployment-test",
-        .root_source_file = b.path("test/evm/erc20_deployment_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    erc20_deployment_test.root_module.addImport("evm", evm_mod);
-    erc20_deployment_test.root_module.addImport("primitives", primitives_mod);
-    const run_erc20_deployment_test = b.addRunArtifact(erc20_deployment_test);
-    test_step.dependOn(&run_erc20_deployment_test.step);
-
-    // Add benchmark tests to main test step
-    test_step.dependOn(&run_thousand_hashes_test.step);
+    // ERC20 deployment hang test removed - file no longer exists
+    // ERC20 deployment and thousand hashes test dependencies removed
     // test_step.dependOn(&run_snailtracer_test.step);
     // test_step.dependOn(&run_erc20_bench_test.step);
 
@@ -2522,141 +1846,23 @@ pub fn build(b: *std.Build) void {
     const run_evm_runner_test = b.addRunArtifact(evm_runner_test);
     test_step.dependOn(&run_evm_runner_test.step);
 
-    // Add ERC20 mint debug test
-    const erc20_mint_debug_test = b.addTest(.{
-        .name = "erc20-mint-debug-test",
-        .root_source_file = b.path("test/evm/erc20_mint_debug_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    erc20_mint_debug_test.root_module.addImport("primitives", primitives_mod);
-    erc20_mint_debug_test.root_module.addImport("evm", evm_mod);
-    erc20_mint_debug_test.root_module.addImport("Address", primitives_mod);
-    const run_erc20_mint_debug_test = b.addRunArtifact(erc20_mint_debug_test);
-    const erc20_mint_debug_test_step = b.step("test-erc20-debug", "Run ERC20 mint test with full debug logging");
-    erc20_mint_debug_test_step.dependOn(&run_erc20_mint_debug_test.step);
+    // ERC20 mint debug test removed - file no longer exists
 
-    // Add constructor REVERT test
-    const constructor_revert_test = b.addTest(.{
-        .name = "constructor-revert-test",
-        .root_source_file = b.path("test/evm/constructor_revert_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    // b.step("test-constructor-revert", "Run constructor REVERT test").dependOn(&constructor_revert_test.step);
+    // Constructor REVERT test removed - file no longer exists
 
-    constructor_revert_test.root_module.addImport("primitives", primitives_mod);
-    constructor_revert_test.root_module.addImport("evm", evm_mod);
-    constructor_revert_test.root_module.addImport("Address", primitives_mod);
-    const run_constructor_revert_test = b.addRunArtifact(constructor_revert_test);
-    const constructor_revert_test_step = b.step("test-constructor-revert", "Run constructor REVERT test");
-    constructor_revert_test_step.dependOn(&run_constructor_revert_test.step);
-    test_step.dependOn(&run_constructor_revert_test.step);
+    // ERC20 constructor debug test removed - file no longer exists
 
-    // Add ERC20 constructor debug test
-    const erc20_constructor_debug_test = b.addTest(.{
-        .name = "erc20-constructor-debug-test",
-        .root_source_file = b.path("test/evm/erc20_constructor_debug_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    erc20_constructor_debug_test.root_module.addImport("primitives", primitives_mod);
-    erc20_constructor_debug_test.root_module.addImport("evm", evm_mod);
-    erc20_constructor_debug_test.root_module.addImport("Address", primitives_mod);
-    const run_erc20_constructor_debug_test = b.addRunArtifact(erc20_constructor_debug_test);
-    const erc20_constructor_debug_test_step = b.step("test-erc20-constructor", "Run ERC20 constructor debug test");
-    erc20_constructor_debug_test_step.dependOn(&run_erc20_constructor_debug_test.step);
+    // Trace ERC20 constructor test removed - file no longer exists
 
-    // Add trace ERC20 constructor test
-    const trace_erc20_test = b.addTest(.{
-        .name = "trace-erc20-test",
-        .root_source_file = b.path("test/evm/trace_erc20_constructor_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    trace_erc20_test.root_module.addImport("primitives", primitives_mod);
-    trace_erc20_test.root_module.addImport("evm", evm_mod);
-    trace_erc20_test.root_module.addImport("Address", primitives_mod);
-    const run_trace_erc20_test = b.addRunArtifact(trace_erc20_test);
-    const trace_erc20_test_step = b.step("test-trace-erc20", "Trace ERC20 constructor execution");
-    trace_erc20_test_step.dependOn(&run_trace_erc20_test.step);
+    // String storage test removed - file no longer exists
 
-    // Add string storage test
-    const string_storage_test = b.addTest(.{
-        .name = "string-storage-test",
-        .root_source_file = b.path("test/evm/string_storage_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    string_storage_test.root_module.addImport("evm", evm_mod);
-    string_storage_test.root_module.addImport("Address", primitives_mod);
+    // JUMPI bug test removed - file no longer exists
 
-    const run_string_storage_test = b.addRunArtifact(string_storage_test);
-    const string_storage_test_step = b.step("test-string-storage", "Run string storage tests");
-    string_storage_test_step.dependOn(&run_string_storage_test.step);
+    // Block execution ERC20 test removed - file no longer exists
 
-    // Add JUMPI bug test
-    const jumpi_bug_test = b.addTest(.{
-        .name = "jumpi-bug-test",
-        .root_source_file = b.path("test/evm/jumpi_bug_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    jumpi_bug_test.root_module.addImport("evm", evm_mod);
-    jumpi_bug_test.root_module.addImport("Address", primitives_mod);
-    jumpi_bug_test.root_module.addImport("primitives", primitives_mod);
+    // CREATE/CREATE2 differential test removed - file no longer exists
 
-    const run_jumpi_bug_test = b.addRunArtifact(jumpi_bug_test);
-    test_step.dependOn(&run_jumpi_bug_test.step);
-
-    // Add EIP-2929 warm/cold access test
-    const jumpi_bug_test_step = b.step("test-jumpi", "Run JUMPI bug test");
-    jumpi_bug_test_step.dependOn(&run_jumpi_bug_test.step);
-
-    // Add block execution ERC20 test
-    const block_execution_erc20_test = b.addTest(.{
-        .name = "block-execution-erc20-test",
-        .root_source_file = b.path("test/evm/block_execution_erc20_test.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    block_execution_erc20_test.root_module.addImport("evm", evm_mod);
-    block_execution_erc20_test.root_module.addImport("primitives", primitives_mod);
-
-    const run_block_execution_erc20_test = b.addRunArtifact(block_execution_erc20_test);
-    const block_execution_erc20_test_step = b.step("test-block-execution-erc20", "Run block execution ERC20 test");
-    block_execution_erc20_test_step.dependOn(&run_block_execution_erc20_test.step);
-
-    // Add CREATE/CREATE2 differential test
-    const create_test = b.addTest(.{
-        .name = "create-test",
-        .root_source_file = b.path("test/differential/system_differential_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .filters = &[_][]const u8{ "CREATE", "CREATE2" },
-    });
-    create_test.root_module.addImport("evm", evm_mod);
-    create_test.root_module.addImport("primitives", primitives_mod);
-    create_test.root_module.addImport("Address", primitives_mod);
-    create_test.root_module.addImport("revm_wrapper", revm_mod);
-    const run_create_test = b.addRunArtifact(create_test);
-    const create_test_step = b.step("test-create", "Run CREATE/CREATE2 differential test");
-    create_test_step.dependOn(&run_create_test.step);
-
-    // Add simple block execution test
-    const block_execution_simple_test = b.addTest(.{
-        .name = "block-execution-simple-test",
-        .root_source_file = b.path("test/evm/block_execution_simple.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-    block_execution_simple_test.root_module.addImport("evm", evm_mod);
-    block_execution_simple_test.root_module.addImport("primitives", primitives_mod);
-
-    const run_block_execution_simple_test = b.addRunArtifact(block_execution_simple_test);
-    test_step.dependOn(&run_block_execution_simple_test.step);
-    const block_execution_simple_test_step = b.step("test-block-execution-simple", "Run simple block execution test");
-    block_execution_simple_test_step.dependOn(&run_block_execution_simple_test.step);
+    // Simple block execution test removed - file no longer exists
 
     // TRACER REMOVED: Commenting out tracer tests until tracer is reimplemented
     // See: https://github.com/evmts/guillotine/issues/325
