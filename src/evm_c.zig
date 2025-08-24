@@ -6,15 +6,11 @@ const primitives = @import("primitives");
 
 // Simple inline logging that compiles out for freestanding WASM
 fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
+    _ = level;
     _ = scope;
-    if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
-        switch (level) {
-            .err => std.log.err("[evm_c] " ++ format, args),
-            .warn => std.log.warn("[evm_c] " ++ format, args),
-            .info => std.log.info("[evm_c] " ++ format, args),
-            .debug => std.log.debug("[evm_c] " ++ format, args),
-        }
-    }
+    _ = format;
+    _ = args;
+    // Logging disabled for WASM to avoid Thread dependencies
 }
 
 const DefaultEvm = evm_root.DefaultEvm;
@@ -463,12 +459,12 @@ export fn evm_frame_create(bytecode_ptr: [*]const u8, bytecode_len: usize, initi
         return null;
     };
     
-    // Initialize frame
+    // Initialize frame (Frame doesn't have database when has_database = false)
     handle.frame.* = DefaultFrame.init(
         allocator,
         handle.bytecode,
         @intCast(initial_gas),
-        {}, // No database
+        {}, // void when has_database = false
         null // No host  
     ) catch {
         allocator.destroy(handle.frame);
