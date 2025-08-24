@@ -5,12 +5,8 @@ const database_interface = @import("database_interface.zig");
 const memory_database = @import("memory_database.zig");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const host_mod = @import("host.zig");
-const CallParams = @import("call_params.zig").CallParams;
-const CallResult = @import("call_result.zig").CallResult;
 const block_info = @import("block_info.zig");
 const transaction_context = @import("transaction_context.zig");
-const Hardfork = @import("hardfork.zig").Hardfork;
 
 // ============================================================================
 // Edge Case Tests for CREATE Opcode
@@ -207,10 +203,39 @@ test "CREATE edge case - insufficient gas for init code" {
     var interpreter = try FrameInterpreterType.init(allocator, &bytecode, insufficient_gas, db_interface);
     defer interpreter.deinit(allocator);
     
-    // Mock host that would succeed if called
-    var mock_host = host_mod.MockHost.init(allocator);
-    defer mock_host.deinit();
-    interpreter.frame.host = mock_host.to_host();
+    // Use real EVM instance for proper gas handling
+    var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
+        allocator,
+        db_interface,
+        block_info.DefaultBlockInfo{
+            .number = 1,
+            .timestamp = 1000,
+            .difficulty = 100,
+            .gas_limit = 30_000_000,
+            .coinbase = Address{0} ** 20,
+            .base_fee = 1_000_000_000,
+            .prev_randao = [_]u8{0} ** 32,
+        },
+        transaction_context.TransactionContext{
+            .nonce = 0,
+            .gas_price = 20_000_000_000,
+            .gas_limit = insufficient_gas,
+            .to = null,
+            .value = 0,
+            .data = &[_]u8{},
+            .chain_id = 1,
+            .origin = Address{0x01} ** 20,
+            .blob_hashes = &[_][32]u8{},
+            .max_fee_per_blob_gas = null,
+        },
+        20_000_000_000,
+        Address{0x01} ** 20,
+        .CANCUN,
+    );
+    defer evm_instance.deinit();
+    
+    interpreter.frame.host = evm_instance.to_host();
+    interpreter.frame.contract_address = Address{0x01} ** 20;
     
     // Execute - should fail with OutOfGas
     const result = interpreter.interpret();
@@ -250,10 +275,39 @@ test "CREATE edge case - memory expansion overflow" {
     var interpreter = try FrameInterpreterType.init(allocator, bytecode.items, 10_000_000, db_interface);
     defer interpreter.deinit(allocator);
     
-    // Mock host
-    var mock_host = host_mod.MockHost.init(allocator);
-    defer mock_host.deinit();
-    interpreter.frame.host = mock_host.to_host();
+    // Use real EVM instance for proper overflow handling
+    var evm_instance = try evm.Evm(evm.DefaultEvmConfig).init(
+        allocator,
+        db_interface,
+        block_info.DefaultBlockInfo{
+            .number = 1,
+            .timestamp = 1000,
+            .difficulty = 100,
+            .gas_limit = 30_000_000,
+            .coinbase = Address{0} ** 20,
+            .base_fee = 1_000_000_000,
+            .prev_randao = [_]u8{0} ** 32,
+        },
+        transaction_context.TransactionContext{
+            .nonce = 0,
+            .gas_price = 20_000_000_000,
+            .gas_limit = 10_000_000,
+            .to = null,
+            .value = 0,
+            .data = &[_]u8{},
+            .chain_id = 1,
+            .origin = Address{0x01} ** 20,
+            .blob_hashes = &[_][32]u8{},
+            .max_fee_per_blob_gas = null,
+        },
+        20_000_000_000,
+        Address{0x01} ** 20,
+        .CANCUN,
+    );
+    defer evm_instance.deinit();
+    
+    interpreter.frame.host = evm_instance.to_host();
+    interpreter.frame.contract_address = Address{0x01} ** 20;
     
     // Execute - should fail with OutOfBounds due to overflow
     const result = interpreter.interpret();

@@ -2,6 +2,7 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
+const address_mod = primitives.Address;
 const JournalConfig = @import("journal_config.zig").JournalConfig;
 
 /// Create a journal entry type based on configuration
@@ -146,7 +147,7 @@ test "JournalEntry creation and field access" {
     };
     const Entry = JournalEntry(config);
     
-    const addr = Address.from_hex("0x1234567890123456789012345678901234567890") catch unreachable;
+    const addr = address_mod.from_hex("0x1234567890123456789012345678901234567890") catch unreachable;
     const key: u128 = 42;
     const value: u128 = 100;
     
@@ -207,7 +208,7 @@ test "JournalEntry creation and field access" {
     }
     
     // Test account destroyed
-    const beneficiary = Address.from_hex("0x9876543210987654321098765432109876543210") catch unreachable;
+    const beneficiary = address_mod.from_hex("0x9876543210987654321098765432109876543210") catch unreachable;
     const destroyed_entry = Entry.account_destroyed(6, addr, beneficiary, 50000);
     try testing.expectEqual(@as(u16, 6), destroyed_entry.snapshot_id);
     switch (destroyed_entry.data) {

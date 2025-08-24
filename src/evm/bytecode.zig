@@ -95,9 +95,9 @@ pub fn Bytecode(comptime cfg: BytecodeConfig) type {
                 .runtime_code = runtime_code,
                 .metadata = metadata,
                 .allocator = allocator,
-                .is_push_data = undefined,
-                .is_op_start = undefined,
-                .is_jumpdest = undefined,
+                .is_push_data = &.{},
+                .is_op_start = &.{},
+                .is_jumpdest = &.{},
             };
             // Build bitmaps and validate only the runtime code
             try self.buildBitmapsAndValidate();

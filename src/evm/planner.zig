@@ -70,6 +70,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
 
         // For simple init without cache
         bytecode: BytecodeType,
+        bytecode_initialized: bool,
         
         // Cache fields
         allocator: std.mem.Allocator,
@@ -91,6 +92,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
         pub fn init(allocator: std.mem.Allocator, cache_capacity: usize) !Self {
             return .{
                 .bytecode = undefined, // Will be set per request
+                .bytecode_initialized = false,
                 .allocator = allocator,
                 .cache_capacity = cache_capacity,
                 .cache_map = std.AutoHashMap(u64, *CacheNode).init(allocator),
@@ -106,8 +108,10 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
         
         /// Deinitialize the planner and free cache.
         pub fn deinit(self: *Self) void {
-            // Deinit bytecode
-            self.bytecode.deinit();
+            // Deinit bytecode only if it was initialized
+            if (self.bytecode_initialized) {
+                self.bytecode.deinit();
+            }
             
             // Deinit cache
             var node = self.cache_head;
@@ -147,6 +151,11 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             // Cache miss - analyze and cache
             self.cache_misses += 1;
             self.bytecode = try BytecodeType.init(self.allocator, bytecode);
+            self.bytecode_initialized = true;
+            errdefer {
+                self.bytecode.deinit();
+                self.bytecode_initialized = false;
+            }
             const plan = try self.create_instruction_stream(self.allocator, handlers);
             
             // Add to cache
@@ -1808,7 +1817,7 @@ test "planner plan type compatibility across configurations" {
     
     // Test different plan configurations produce valid results
     const PlannerSmall = Planner(.{ .maxBytecodeSize = 1024 });
-    const PlannerLarge = Planner(.{ .maxBytecodeSize = 65536 });
+    const PlannerLarge = Planner(.{ .maxBytecodeSize = 65535 });
     
     var planner_small = try PlannerSmall.init(allocator, 4);
     defer planner_small.deinit();

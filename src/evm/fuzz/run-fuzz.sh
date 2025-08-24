@@ -1,5 +1,5 @@
 #!/bin/bash
-# EVM2 Fuzz Testing Runner Script
+# EVM Fuzz Testing Runner Script
 
 set -e
 
@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 
 # Default values
 DURATION="${FUZZ_DURATION:-300}"
-TEST_FILE="${FUZZ_TEST:-evm2/fuzz/evm2_fuzz.zig}"
+TEST_FILE="${FUZZ_TEST:-evm/fuzz/evm_fuzz.zig}"
 
 # Function to print colored output
 print_status() {
@@ -41,7 +41,7 @@ fi
 # Parse command line arguments
 case "$1" in
     "help"|"-h"|"--help")
-        echo "EVM2 Fuzz Testing Runner"
+        echo "EVM Fuzz Testing Runner"
         echo ""
         echo "Usage: ./run-fuzz.sh [command] [options]"
         echo ""
@@ -99,7 +99,7 @@ case "$1" in
 esac
 
 # Build image if it doesn't exist
-if ! docker image inspect guillotine-evm2-fuzz &> /dev/null; then
+if ! docker image inspect guillotine-evm-fuzz &> /dev/null; then
     print_warning "Docker image not found. Building..."
     docker-compose build fuzz
 fi

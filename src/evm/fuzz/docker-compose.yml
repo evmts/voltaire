@@ -5,14 +5,14 @@ services:
   fuzz:
     build:
       context: ../../..
-      dockerfile: src/evm2/fuzz/Dockerfile
-    image: guillotine-evm2-fuzz
-    container_name: evm2-fuzzer
+      dockerfile: src/evm/fuzz/Dockerfile
+    image: guillotine-evm-fuzz
+    container_name: evm-fuzzer
     volumes:
       # Mount source code for live updates
       - ../../../:/app:ro
     working_dir: /app/src
-    command: zig test evm2/fuzz/evm2_fuzz.zig --fuzz
+    command: zig test evm/fuzz/evm_fuzz.zig --fuzz
     environment:
       # Set fuzz testing duration (in seconds)
       - FUZZ_DURATION=${FUZZ_DURATION:-300}
@@ -27,7 +27,7 @@ services:
   # Run specific fuzz test
   fuzz-single:
     extends: fuzz
-    command: zig test ${FUZZ_TEST:-evm2/fuzz/evm2_fuzz.zig} --fuzz
+    command: zig test ${FUZZ_TEST:-evm/fuzz/evm_fuzz.zig} --fuzz
 
   # Continuous fuzzing with restart on failure
   fuzz-continuous:
@@ -36,7 +36,7 @@ services:
     command: >
       sh -c "while true; do
         echo 'Starting fuzz run at' $$(date);
-        zig test evm2/fuzz/evm2_fuzz.zig --fuzz=3600s || true;
+        zig test evm/fuzz/evm_fuzz.zig --fuzz=3600s || true;
         echo 'Fuzz run completed at' $$(date);
         sleep 10;
       done"

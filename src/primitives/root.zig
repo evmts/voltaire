@@ -124,3 +124,5 @@ pub const Siwe = @import("siwe.zig");
 
 // Export common constants
 pub const ZERO_ADDRESS = Address.ZERO_ADDRESS;
+pub const EMPTY_CODE_HASH = State.EMPTY_CODE_HASH;
+pub const EMPTY_TRIE_ROOT = State.EMPTY_TRIE_ROOT;

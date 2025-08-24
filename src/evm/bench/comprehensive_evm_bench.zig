@@ -16,9 +16,9 @@ const ERC20_MINT_SELECTOR: u32 = 0x40c10f19; // mint(address,uint256)
 const BENCHMARK_GAS_LIMIT: u64 = 100_000_000;
 const DEFAULT_RUNS = 100;
 
-/// Load test case files from bench/official/cases/
+/// Load test case files from bench/cases/
 fn readCaseFile(allocator: std.mem.Allocator, case_name: []const u8, file_name: []const u8) ![]u8 {
-    const path = try std.fmt.allocPrint(allocator, "/Users/williamcory/guillotine/bench/official/cases/{s}/{s}", .{ case_name, file_name });
+    const path = try std.fmt.allocPrint(allocator, "/Users/williamcory/guillotine/bench/cases/{s}/{s}", .{ case_name, file_name });
     defer allocator.free(path);
     const file = try std.fs.openFileAbsolute(path, .{});
     defer file.close();

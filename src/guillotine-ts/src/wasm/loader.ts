@@ -39,7 +39,7 @@ export interface GuillotineWasm {
   guillotine_get_code(vm: number, address_ptr: number): number; // Returns pointer to bytes
   guillotine_get_storage(vm: number, address_ptr: number, key_ptr: number): number; // Returns pointer to U256
   
-  // Frame API (from evm2_c.h)
+  // Frame API (from evm_c.h)
   evm_frame_create(bytecode: number, bytecode_len: number, initial_gas: bigint): number;
   evm_frame_destroy(frame_ptr: number): void;
   evm_frame_reset(frame_ptr: number, new_gas: bigint): number;

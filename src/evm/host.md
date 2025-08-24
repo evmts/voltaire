@@ -391,26 +391,29 @@ zig build test
 zig build test -- --test-filter "host"
 ```
 
-### Mock Implementation Testing
+### Integration Testing
 
-Host interfaces are typically tested with mock implementations:
+Host functionality is tested through full EVM integration tests rather than mock implementations. This approach provides better coverage and ensures real-world behavior:
 
 ```zig
-const MockHost = struct {
-    storage: std.HashMap(u256, u256),
-    balances: std.HashMap(Address, u256),
+test "host operations through EVM execution" {
+    const allocator = std.testing.allocator;
     
-    pub fn get_balance(self: *@This(), address: Address) u256 {
-        return self.balances.get(address) orelse 0;
-    }
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
     
-    pub fn get_storage(self: *@This(), address: Address, slot: u256) u256 {
-        return self.storage.get(slot) orelse 0;
-    }
+    const db_interface = memory_db.to_database_interface();
+    var vm = try Vm.init(allocator, db_interface, null, null);
+    defer vm.deinit();
     
-    // ... implement all required methods
-};
+    // Test storage operations through SSTORE/SLOAD opcodes
+    // Test balance queries through BALANCE opcode
+    // Test contract calls through CALL opcodes
+    // This ensures Host interface works in realistic scenarios
+}
 ```
+
+See `test/evm/` directory for comprehensive integration test examples.
 
 ## Context within EVM
 
