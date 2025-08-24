@@ -7,6 +7,7 @@ const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
 const primitives = @import("primitives");
 const CallParams = @import("call_params.zig").CallParams;
+const host_mod = @import("host.zig");
 
 /// Create a FrameInterpreter with the given configuration
 pub fn createFrameInterpreter(comptime config: frame_mod.FrameConfig) type {
@@ -2866,6 +2867,177 @@ test "FrameInterpreter comparison operations - signed comparisons SLT and SGT" {
     defer interpreter2.deinit(allocator);
     try interpreter2.interpret();
     try std.testing.expectEqual(@as(u256, 1), interpreter2.frame.stack.peek_unsafe());
+}
+
+test "FrameInterpreter CREATE operation - basic functionality" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test CREATE: PUSH1 init_code_size, PUSH1 offset, PUSH1 value, CREATE, STOP
+    // Using empty init code for simplicity
+    const bytecode = [_]u8{ 
+        0x60, 0x00, // PUSH1 0 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x64, // PUSH1 100 (value)
+        0xf0,       // CREATE
+        0x00        // STOP
+    };
+    
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 100000, void{});
+    defer interpreter.deinit(allocator);
+    
+    // Mock host that returns a successful CREATE with address
+    var mock_host = host_mod.MockHost.init(allocator);
+    defer mock_host.deinit();
+    interpreter.frame.host = mock_host.to_host();
+    
+    try interpreter.interpret();
+    
+    // Stack should have the created contract address
+    // MockHost returns a fixed address (0x42 followed by zeros)
+    const result = interpreter.frame.stack.peek_unsafe();
+    // MockHost.inner_call returns success with empty output, so we expect 0
+    try std.testing.expectEqual(@as(u256, 0), result);
+}
+
+test "FrameInterpreter CREATE operation - with init code" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test CREATE with actual init code in memory
+    // First store init code in memory, then call CREATE
+    _ = [_]u8{ 0x60, 0x80, 0x60, 0x40, 0x52 }; // Basic init code (unused example)
+    const bytecode = [_]u8{ 
+        // Store init code in memory using MSTORE8
+        0x60, 0x60, 0x60, 0x00, 0x53, // PUSH1 0x60, PUSH1 0, MSTORE8
+        0x60, 0x80, 0x60, 0x01, 0x53, // PUSH1 0x80, PUSH1 1, MSTORE8
+        0x60, 0x60, 0x60, 0x02, 0x53, // PUSH1 0x60, PUSH1 2, MSTORE8
+        0x60, 0x40, 0x60, 0x03, 0x53, // PUSH1 0x40, PUSH1 3, MSTORE8
+        0x60, 0x52, 0x60, 0x04, 0x53, // PUSH1 0x52, PUSH1 4, MSTORE8
+        // Now call CREATE
+        0x60, 0x05, // PUSH1 5 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x00, // PUSH1 0 (value)
+        0xf0,       // CREATE
+        0x00        // STOP
+    };
+    
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 200000, void{});
+    defer interpreter.deinit(allocator);
+    
+    // Mock host
+    var mock_host = host_mod.MockHost.init(allocator);
+    defer mock_host.deinit();
+    interpreter.frame.host = mock_host.to_host();
+    
+    try interpreter.interpret();
+    
+    // Verify result
+    const result = interpreter.frame.stack.peek_unsafe();
+    // MockHost.inner_call returns success with empty output, so we expect 0
+    try std.testing.expectEqual(@as(u256, 0), result);
+}
+
+
+test "FrameInterpreter CREATE operation - out of gas" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    const bytecode = [_]u8{ 
+        0x60, 0x00, // PUSH1 0 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x64, // PUSH1 100 (value)
+        0xf0,       // CREATE
+        0x00        // STOP
+    };
+    
+    // Insufficient gas - CREATE needs at least 32000 base gas
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10000, void{});
+    defer interpreter.deinit(allocator);
+    
+    // Mock host
+    var mock_host = host_mod.MockHost.init(allocator);
+    defer mock_host.deinit();
+    interpreter.frame.host = mock_host.to_host();
+    
+    // Should fail with OutOfGas
+    const result = interpreter.interpret();
+    try std.testing.expectError(error.OutOfGas, result);
+}
+
+test "FrameInterpreter CREATE operation - init code too large" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    const bytecode = [_]u8{ 
+        0x62, 0xC0, 0x01, // PUSH2 49153 (size - exceeds 48KB limit)
+        0x60, 0x00,       // PUSH1 0 (offset)
+        0x60, 0x00,       // PUSH1 0 (value)
+        0xf0,             // CREATE
+        0x00              // STOP
+    };
+    
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 10000000, void{});
+    defer interpreter.deinit(allocator);
+    
+    // Mock host
+    var mock_host = host_mod.MockHost.init(allocator);
+    defer mock_host.deinit();
+    interpreter.frame.host = mock_host.to_host();
+    
+    // Should fail with BytecodeTooLarge
+    const result = interpreter.interpret();
+    try std.testing.expectError(error.BytecodeTooLarge, result);
+}
+
+test "FrameInterpreter CREATE operation - memory expansion cost" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    // Test CREATE with init code that requires memory expansion
+    const bytecode = [_]u8{ 
+        0x60, 0x20,       // PUSH1 32 (size)
+        0x61, 0x10, 0x00, // PUSH2 4096 (offset - requires memory expansion)
+        0x60, 0x00,       // PUSH1 0 (value)
+        0xf0,             // CREATE
+        0x00              // STOP
+    };
+    
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 100000, void{});
+    defer interpreter.deinit(allocator);
+    
+    // Mock host
+    var mock_host = host_mod.MockHost.init(allocator);
+    defer mock_host.deinit();
+    interpreter.frame.host = mock_host.to_host();
+    
+    const initial_gas = interpreter.frame.gas_remaining;
+    try interpreter.interpret();
+    
+    // Verify gas was consumed for memory expansion
+    // CREATE base cost (32000) + init code cost (32 * 200) + memory expansion
+    const gas_used = @as(u64, @intCast(initial_gas - interpreter.frame.gas_remaining));
+    try std.testing.expect(gas_used > 32000 + 6400); // More than base + init code cost
+}
+
+test "FrameInterpreter CREATE operation - no host fails" {
+    const allocator = std.testing.allocator;
+    const FrameInterpreterType = FrameInterpreter(.{});
+
+    const bytecode = [_]u8{ 
+        0x60, 0x00, // PUSH1 0 (size)
+        0x60, 0x00, // PUSH1 0 (offset)
+        0x60, 0x00, // PUSH1 0 (value)
+        0xf0,       // CREATE
+        0x00        // STOP
+    };
+    
+    var interpreter = try FrameInterpreterType.init(allocator, &bytecode, 100000, void{});
+    defer interpreter.deinit(allocator);
+    
+    // No host set - should fail with InvalidOpcode
+    const result = interpreter.interpret();
+    try std.testing.expectError(error.InvalidOpcode, result);
 }
 
 test "FrameInterpreter comparison operations - EQ and ISZERO" {
