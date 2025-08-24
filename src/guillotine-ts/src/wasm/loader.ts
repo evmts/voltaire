@@ -122,14 +122,35 @@ export class WasmMemory {
    * Allocate memory in WASM
    */
   malloc(size: number): number {
+    // For Zig-compiled WASM without explicit memory management,
+    // we'll use a simple bump allocator
+    if (!this.wasm.__wbindgen_malloc) {
+      // Simple bump allocator - start after first 1MB
+      if (!this.allocOffset) {
+        this.allocOffset = 1024 * 1024; // Start at 1MB
+      }
+      const ptr = this.allocOffset;
+      this.allocOffset += size;
+      // Ensure we have enough memory
+      const needed = Math.ceil(this.allocOffset / 65536);
+      if (this.memory.buffer.byteLength < needed * 65536) {
+        this.memory.grow(needed - this.memory.buffer.byteLength / 65536);
+      }
+      return ptr;
+    }
     return this.wasm.__wbindgen_malloc(size);
   }
+
+  private allocOffset?: number;
 
   /**
    * Free memory in WASM
    */
   free(ptr: number, size: number): void {
-    this.wasm.__wbindgen_free(ptr, size);
+    // No-op for simple bump allocator
+    if (this.wasm.__wbindgen_free) {
+      this.wasm.__wbindgen_free(ptr, size);
+    }
   }
 
   /**
@@ -251,7 +272,7 @@ export class WasmLoader {
       // Node.js environment
       const fs = await import('fs');
       const path = await import('path');
-      const defaultPath = path.join(__dirname, '../../wasm/guillotine.wasm');
+      const defaultPath = path.join(__dirname, '../wasm/guillotine.wasm');
       const finalPath = wasmPath || defaultPath;
       wasmBinary = new Uint8Array(fs.readFileSync(finalPath));
     }
