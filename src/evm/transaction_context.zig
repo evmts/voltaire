@@ -1,8 +1,12 @@
-/// Transaction context for EVM execution
+//! Transaction-level context for EVM execution.
+
 const std = @import("std");
 const Address = @import("primitives").Address.Address;
 
-/// Transaction context
+/// Transaction execution context.
+///
+/// Contains immutable transaction parameters that remain constant
+/// throughout the entire transaction execution.
 pub const TransactionContext = struct {
     /// Transaction gas limit
     gas_limit: u64,

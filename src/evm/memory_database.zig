@@ -1,9 +1,15 @@
+//! In-memory implementation of the database interface.
+//!
+//! Provides a complete state storage solution for testing and development.
+//! Supports snapshots for transaction rollback and batch operations for
+//! atomic updates. Not suitable for production due to memory constraints.
+
 const std = @import("std");
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
 const Account = @import("database_interface.zig").Account;
 const crypto = @import("crypto");
 
-/// Simple in-memory database implementation for testing
+/// In-memory database with snapshot and batch operation support.
 pub const MemoryDatabase = struct {
     allocator: std.mem.Allocator,
     accounts: std.hash_map.HashMap([20]u8, Account, AccountContext, 80),
@@ -69,6 +75,7 @@ pub const MemoryDatabase = struct {
         }
     };
 
+    /// Initialize a new in-memory database.
     pub fn init(allocator: std.mem.Allocator) Self {
         return Self{
             .allocator = allocator,
@@ -109,6 +116,7 @@ pub const MemoryDatabase = struct {
         }
     }
 
+    /// Convert to the generic database interface.
     pub fn to_database_interface(self: *Self) DatabaseInterface {
         return DatabaseInterface.init(self);
     }

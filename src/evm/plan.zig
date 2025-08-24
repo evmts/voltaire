@@ -1,5 +1,7 @@
-/// Plan: Runtime data structure for the EVM interpreter.
-/// Contains the instruction stream (handler pointers + metadata) and constants.
+//! Runtime execution plan for optimized bytecode interpretation.
+//!
+//! Contains an instruction stream with interleaved handler pointers,
+//! metadata, and inline constants for efficient tail-call execution.
 const std = @import("std");
 const Opcode = @import("opcode.zig").Opcode;
 pub const PlanConfig = @import("plan_config.zig").PlanConfig;
@@ -72,7 +74,10 @@ comptime {
 }
 
 
-/// Factory function to create a Plan type with the given configuration.
+/// Creates a configured plan type.
+///
+/// The plan is specialized for the target platform with appropriate
+/// instruction element types and index sizes based on bytecode limits.
 pub fn Plan(comptime cfg: PlanConfig) type {
     comptime cfg.validate();
     

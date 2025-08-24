@@ -1,3 +1,9 @@
+//! Host interface for EVM external operations.
+//!
+//! Provides access to blockchain state, environment queries, and
+//! cross-contract operations. The host abstracts all interactions
+//! between the EVM and the broader blockchain context.
+
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
@@ -6,8 +12,7 @@ const CallResult = @import("call_result.zig").CallResult;
 const CallParams = @import("call_params.zig").CallParams;
 const BlockInfo = @import("block_info.zig").DefaultBlockInfo;
 
-/// Host interface for external operations
-/// This provides the EVM with access to blockchain state and external services
+/// Host interface providing blockchain context to the EVM.
 pub const Host = struct {
     /// Pointer to the actual host implementation
     ptr: *anyopaque,

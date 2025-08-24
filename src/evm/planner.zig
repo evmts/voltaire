@@ -1,8 +1,13 @@
-/// Planner module: analyzes EVM bytecode and produces an optimized Plan.
-/// The planner scans bytecode to identify jump destinations, calculate gas costs,
-/// track stack requirements, and detect optimization opportunities like opcode fusion.
-/// The resulting plan contains an instruction stream with inline metadata and constants
-/// for efficient tail-call interpreter execution.
+//! Bytecode analysis and optimization engine.
+//!
+//! Transforms raw EVM bytecode into optimized execution plans by:
+//! - Identifying valid jump destinations
+//! - Pre-calculating gas costs where possible
+//! - Detecting and fusing common opcode patterns
+//! - Inlining small constants for better cache locality
+//!
+//! The planner includes an LRU cache to avoid re-analyzing frequently
+//! executed contracts, significantly improving performance.
 const std = @import("std");
 const opcode_data = @import("opcode_data.zig");
 const Opcode = opcode_data.Opcode;
@@ -19,7 +24,10 @@ pub const HandlerFn = plan_mod.HandlerFn;
 pub const InstructionElement = plan_mod.InstructionElement;
 
 
-/// Factory that returns a planner type specialized by PlannerConfig.
+/// Creates a configured planner type.
+///
+/// The planner is specialized at compile-time based on bytecode size limits,
+/// word type, and optimization settings. Includes built-in LRU caching.
 pub fn Planner(comptime Cfg: PlannerConfig) type {
     Cfg.validate();
     const VectorLength = Cfg.vector_length;
@@ -102,8 +110,11 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
             self.cache_map.deinit();
         }
         
-        /// Get plan from cache or analyze.
-        /// Returns a reference to the cached plan. Caller should NOT call deinit() on the returned plan.
+        /// Get an optimized execution plan for the given bytecode.
+        ///
+        /// First checks the LRU cache for a previously analyzed plan. If not found,
+        /// analyzes the bytecode and caches the result. The returned plan is owned
+        /// by the cache and must not be freed by the caller.
         pub fn getOrAnalyze(self: *Self, bytecode: []const u8, handlers: [256]*const HandlerFn) !*const PlanType {
             const key = std.hash.Wyhash.hash(0, bytecode);
             
@@ -472,7 +483,7 @@ pub fn Planner(comptime Cfg: PlannerConfig) type {
                 } else if (op == @intFromEnum(Opcode.PC)) {
                     // PC opcode needs to store the current program counter value
                     try stream.append(.{ .handler = handlers[op] });
-                    try stream.append(.{ .inline_value = @as(u64, i) });
+                    try stream.append(.{ .inline_value = @intCast(i) });
                     i += 1;
                 } else {
                     // Other non-PUSH opcodes - just add the handler
