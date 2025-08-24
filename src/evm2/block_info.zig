@@ -1,6 +1,7 @@
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
 
+// TODO: Currently unused
 /// Block information structure for Host interface
 pub const BlockInfo = struct {
     /// Block number

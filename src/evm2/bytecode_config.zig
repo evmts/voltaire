@@ -27,7 +27,7 @@ pub const BytecodeConfig = struct {
         else if (self.max_bytecode_size <= std.math.maxInt(u32))
             u32
         else
-            // https://ziglang.org/documentation/master/#toc-compileError
+            // https://ziglang.org/documentation/master/#compileError
             @compileError("Bytecode size too large! It must have under u32 bytes");
     }
     /// Validate the configuration at compile time

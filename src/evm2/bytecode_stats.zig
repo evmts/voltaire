@@ -45,6 +45,8 @@ pub const BytecodeStats = struct {
                     try writer.print("  UNKNOWN(0x{x:0>2}): {}\n", .{ op, count });
                     continue;
                 };
+                // https://ziglang.org/documentation/master/#tagName
+                // @tagName returns the string representation of an enum value
                 try writer.print("  {s}: {}\n", .{ @tagName(opcode_enum), count });
                 total_opcodes += count;
             }

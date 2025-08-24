@@ -4,6 +4,7 @@ const Address = primitives.Address.Address;
 const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
 const ExecutionError = @import("evm").ExecutionError;
 const frame_mod = @import("frame.zig");
+const frame_interpreter_mod = @import("frame_interpreter.zig");
 
 pub const EvmConfig = struct {
     /// Maximum call depth allowed in the EVM (defaults to 1024 levels)
@@ -29,14 +30,14 @@ pub const EvmConfig = struct {
 };
 
 pub fn createEvm(comptime config: EvmConfig) type {
-    const Frame = frame_mod.createFrame(config.frame_config);
+    const FrameInterpreter = frame_interpreter_mod.createFrameInterpreter(config.frame_config);
     const DepthType = config.get_depth_type();
     
     return struct {
         const Self = @This();
         
         /// Stack of frames for nested calls
-        frames: [config.max_call_depth]*Frame,
+        frames: [config.max_call_depth]*FrameInterpreter,
         
         /// Current call depth (0 = root call)
         depth: DepthType,
@@ -168,7 +169,7 @@ pub fn createEvm(comptime config: EvmConfig) type {
         };
         
         // Allocate root frame
-        var frame = try Frame.init(self.allocator, bytecode, @intCast(gas));
+        var frame = try FrameInterpreter.init(self.allocator, bytecode, @intCast(gas), {});
         self.frames[0] = &frame;
         defer {
             frame.deinit(self.allocator);
@@ -234,7 +235,7 @@ pub fn createEvm(comptime config: EvmConfig) type {
         }
         
         // Execute the frame
-        frame.interpret(self.allocator) catch |err| {
+        frame.interpret() catch |err| {
             // TODO: Handle errors appropriately
             // TODO: Revert journal on failure
             // TODO: Return appropriate gas_left based on error type
@@ -256,7 +257,7 @@ pub fn createEvm(comptime config: EvmConfig) type {
         
         return CallResult{
             .success = true,
-            .gas_left = @intCast(frame.gas_remaining),
+            .gas_left = @intCast(frame.frame.gas_remaining),
             .output = null, // TODO: Get from frame output
         };
     }

@@ -22,22 +22,22 @@ pub const CreatedContracts = struct {
         }
     };
 
-    pub fn init(allocator: std.mem.Allocator) CreatedContracts {
+    pub inline fn init(allocator: std.mem.Allocator) CreatedContracts {
         return CreatedContracts{
             .created = std.HashMap(Address, void, AddressContext, std.hash_map.default_max_load_percentage).init(allocator),
             .allocator = allocator,
         };
     }
 
-    pub fn deinit(self: *CreatedContracts) void {
+    pub inline fn deinit(self: *CreatedContracts) void {
         self.created.deinit();
     }
 
-    pub fn mark_created(self: *CreatedContracts, address: Address) !void {
+    pub inline fn mark_created(self: *CreatedContracts, address: Address) !void {
         try self.created.put(address, {});
     }
 
-    pub fn was_created_in_tx(self: *const CreatedContracts, address: Address) bool {
+    pub inline fn was_created_in_tx(self: *const CreatedContracts, address: Address) bool {
         return self.created.contains(address);
     }
 };

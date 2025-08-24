@@ -4,6 +4,26 @@ const Opcode = @import("opcode.zig").Opcode;
 const bytecode_config = @import("bytecode_config.zig");
 const BytecodeConfig = bytecode_config.BytecodeConfig;
 
+// SECURITY MODEL: Untrusted Bytecode Validation
+// ==============================================
+// This module implements a two-phase security model for handling untrusted EVM bytecode:
+//
+// Phase 1 - Validation (in init/buildBitmapsAndValidate):
+// - Treat ALL bytecode as untrusted and potentially malicious
+// - Use safe std library functions (e.g., std.meta.intToEnum) that perform runtime checks
+// - Validate ALL assumptions about bytecode structure
+// - Check for invalid opcodes, truncated PUSH instructions, invalid jump destinations
+// - Build validated bitmaps that mark safe regions of code
+//
+// Phase 2 - Execution (after successful validation):
+// - Once bytecode passes validation, we can use unsafe builtins for performance
+// - @intFromEnum and @enumFromInt have no safety checks in release mode
+// - We can use these because we've already validated all opcodes are valid
+// - Bitmap lookups ensure we only execute at valid positions
+//
+// CRITICAL: Never use unsafe builtins during validation phase!
+// CRITICAL: Never trust bytecode indices without checking bitmaps first!
+
 /// Factory function to create a Bytecode type with the given configuration
 pub fn createBytecode(comptime cfg: BytecodeConfig) type {
     comptime cfg.validate();
@@ -83,6 +103,8 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
         /// Uses precomputed bitmap for O(1) lookup
         pub fn isValidJumpDest(self: Self, pc: PcType) bool {
             if (pc >= self.len()) return false;
+            // https://ziglang.org/documentation/master/#as
+            // @as performs type coercion, ensuring the value fits the target type
             return (self.is_jumpdest[pc >> 3] & (@as(u8, 1) << @intCast(pc & 7))) != 0;
         }
         
@@ -96,6 +118,8 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             var i: PcType = 0;
             while (i < self.code.len) {
                 const op = self.code[i];
+                // https://ziglang.org/documentation/master/#intFromEnum
+                // @intFromEnum converts an enum value to its integer representation
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
                     const n = op - (@intFromEnum(Opcode.PUSH1) - 1);
                     i += 1 + n;
@@ -138,8 +162,17 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             while (i < N) {
                 self.is_op_start[i >> 3] |= @as(u8, 1) << @intCast(i & 7);
                 const op = self.code[i];
-                if (op == 0xFE) return error.InvalidOpcode; 
-                if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
+                
+                // SECURITY: Validate opcode using safe enum conversion
+                // We need to ensure this is a valid opcode before using it
+                const opcode_enum = std.meta.intToEnum(Opcode, op) catch {
+                    // Invalid opcode found
+                    return error.InvalidOpcode;
+                };
+                
+                // Now we can safely check if it's a PUSH opcode
+                if (@intFromEnum(opcode_enum) >= @intFromEnum(Opcode.PUSH1) and 
+                    @intFromEnum(opcode_enum) <= @intFromEnum(Opcode.PUSH32)) {
                     const n: PcType = op - (@intFromEnum(Opcode.PUSH1) - 1);
                     if (i + n >= N) return error.TruncatedPush;
                     var j: PcType = 0;
