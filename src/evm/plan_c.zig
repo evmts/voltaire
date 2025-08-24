@@ -8,9 +8,7 @@ const Plan = evm.Plan;
 const createPlan = evm.createPlan;
 const PlanConfig = evm.PlanConfig;
 const JumpDestMetadata = evm.JumpDestMetadata;
-// InstructionElement is defined in plan.zig, import it from there
-const plan_mod = @import("plan.zig");
-const InstructionElement = plan_mod.InstructionElement;
+// Note: InstructionElement not needed for simplified plan interface
 
 const allocator = std.heap.c_allocator;
 
@@ -71,7 +69,6 @@ pub export fn evm_plan_create(bytecode: [*]const u8, bytecode_len: usize) ?*Plan
     // In practice, you'd use the planner_c.zig to create actual plans
 
     handle.* = PlanHandle{
-        .plan = plan,
         .allocator = allocator,
         .bytecode = owned_bytecode,
     };
@@ -83,7 +80,6 @@ pub export fn evm_plan_create(bytecode: [*]const u8, bytecode_len: usize) ?*Plan
 /// @param handle Plan handle
 pub export fn evm_plan_destroy(handle: ?*PlanHandle) void {
     if (handle) |h| {
-        h.plan.deinit(h.allocator);
         h.allocator.free(h.bytecode);
         h.allocator.destroy(h);
     }
@@ -98,7 +94,21 @@ pub export fn evm_plan_destroy(handle: ?*PlanHandle) void {
 /// @return Number of instructions, or 0 on error
 pub export fn evm_plan_get_instruction_count(handle: ?*const PlanHandle) u32 {
     const h = handle orelse return 0;
-    return @intCast(h.plan.instructionStream.len);
+    // Simple analysis: count instructions in bytecode
+    var count: u32 = 0;
+    var pos: usize = 0;
+    while (pos < h.bytecode.len) {
+        count += 1;
+        const opcode_byte = h.bytecode[pos];
+        // Skip data bytes for PUSH opcodes
+        if (opcode_byte >= 0x60 and opcode_byte <= 0x7F) { // PUSH1-PUSH32
+            const push_size = opcode_byte - 0x5F;
+            pos += 1 + push_size;
+        } else {
+            pos += 1;
+        }
+    }
+    return count;
 }
 
 /// Get the number of constants in the plan
@@ -106,15 +116,28 @@ pub export fn evm_plan_get_instruction_count(handle: ?*const PlanHandle) u32 {
 /// @return Number of constants, or 0 on error
 pub export fn evm_plan_get_constant_count(handle: ?*const PlanHandle) u32 {
     const h = handle orelse return 0;
-    return @intCast(h.plan.u256_constants.len);
+    // Count PUSH constants in bytecode
+    var count: u32 = 0;
+    var pos: usize = 0;
+    while (pos < h.bytecode.len) {
+        const opcode_byte = h.bytecode[pos];
+        if (opcode_byte >= 0x60 and opcode_byte <= 0x7F) { // PUSH1-PUSH32
+            count += 1;
+            const push_size = opcode_byte - 0x5F;
+            pos += 1 + push_size;
+        } else {
+            pos += 1;
+        }
+    }
+    return count;
 }
 
 /// Check if the plan has PC mapping
 /// @param handle Plan handle
 /// @return 1 if has PC mapping, 0 otherwise
 pub export fn evm_plan_has_pc_mapping(handle: ?*const PlanHandle) c_int {
-    const h = handle orelse return 0;
-    return if (h.plan.pc_to_instruction_idx != null) 1 else 0;
+    _ = handle;
+    return 0; // Simplified plan doesn't have PC mapping
 }
 
 /// Get original bytecode length
@@ -149,11 +172,7 @@ pub export fn evm_plan_get_bytecode(handle: ?*const PlanHandle, buffer: [*]u8, b
 pub export fn evm_plan_is_valid_jump_dest(handle: ?*const PlanHandle, pc: u32) c_int {
     const h = handle orelse return 0;
     
-    if (h.plan.pc_to_instruction_idx) |pc_map| {
-        return if (pc_map.contains(@intCast(pc))) 1 else 0;
-    }
-    
-    // Fallback: check if PC points to JUMPDEST in original bytecode
+    // Check if PC points to JUMPDEST in original bytecode
     if (pc >= h.bytecode.len) return 0;
     return if (h.bytecode[pc] == 0x5B) 1 else 0; // JUMPDEST opcode
 }
@@ -164,16 +183,10 @@ pub export fn evm_plan_is_valid_jump_dest(handle: ?*const PlanHandle, pc: u32) c
 /// @param instruction_idx_out Output for instruction index
 /// @return Error code
 pub export fn evm_plan_pc_to_instruction(handle: ?*const PlanHandle, pc: u32, instruction_idx_out: *u32) c_int {
-    const h = handle orelse return EVM_PLAN_ERROR_NULL_POINTER;
-    
-    const pc_map = h.plan.pc_to_instruction_idx orelse return EVM_PLAN_ERROR_INVALID_JUMP;
-    
-    if (pc_map.get(@intCast(pc))) |idx| {
-        instruction_idx_out.* = @intCast(idx);
-        return EVM_PLAN_SUCCESS;
-    }
-    
-    return EVM_PLAN_ERROR_INVALID_JUMP;
+    _ = handle;
+    _ = pc;
+    _ = instruction_idx_out;
+    return EVM_PLAN_ERROR_INVALID_JUMP; // Simplified plan doesn't have PC mapping
 }
 
 // ============================================================================
@@ -188,22 +201,34 @@ pub export fn evm_plan_pc_to_instruction(handle: ?*const PlanHandle, pc: u32, in
 pub export fn evm_plan_get_constant(handle: ?*const PlanHandle, index: u32, constant_out: [*]u8) c_int {
     const h = handle orelse return EVM_PLAN_ERROR_NULL_POINTER;
     
-    if (index >= h.plan.u256_constants.len) {
-        return EVM_PLAN_ERROR_INVALID_JUMP;
+    // Find the index-th PUSH constant
+    var count: u32 = 0;
+    var pos: usize = 0;
+    while (pos < h.bytecode.len) {
+        const opcode_byte = h.bytecode[pos];
+        if (opcode_byte >= 0x60 and opcode_byte <= 0x7F) { // PUSH1-PUSH32
+            const push_size = opcode_byte - 0x5F;
+            if (count == index) {
+                // Clear output buffer
+                @memset(constant_out[0..32], 0);
+                // Copy push data (right-aligned)
+                const data_start = @min(pos + 1, h.bytecode.len);
+                const data_end = @min(pos + 1 + push_size, h.bytecode.len);
+                const actual_size = data_end - data_start;
+                if (actual_size > 0) {
+                    const offset = 32 - actual_size;
+                    @memcpy(constant_out[offset..offset + actual_size], h.bytecode[data_start..data_end]);
+                }
+                return EVM_PLAN_SUCCESS;
+            }
+            count += 1;
+            pos += 1 + push_size;
+        } else {
+            pos += 1;
+        }
     }
     
-    const constant = h.plan.u256_constants[index];
-    
-    // Convert u256 to big-endian bytes
-    var value = constant;
-    var i: usize = 32;
-    while (i > 0) {
-        i -= 1;
-        constant_out[i] = @truncate(value & 0xFF);
-        value >>= 8;
-    }
-    
-    return EVM_PLAN_SUCCESS;
+    return EVM_PLAN_ERROR_INVALID_JUMP; // Index out of bounds
 }
 
 // ============================================================================
@@ -218,14 +243,25 @@ pub export fn evm_plan_get_constant(handle: ?*const PlanHandle, index: u32, cons
 pub export fn evm_plan_get_instruction_element(handle: ?*const PlanHandle, index: u32, element_out: *u64) c_int {
     const h = handle orelse return EVM_PLAN_ERROR_NULL_POINTER;
     
-    if (index >= h.plan.instructionStream.len) {
-        return EVM_PLAN_ERROR_INVALID_JUMP;
+    // Find the index-th instruction
+    var count: u32 = 0;
+    var pos: usize = 0;
+    while (pos < h.bytecode.len) {
+        if (count == index) {
+            element_out.* = @as(u64, h.bytecode[pos]);
+            return EVM_PLAN_SUCCESS;
+        }
+        count += 1;
+        const opcode_byte = h.bytecode[pos];
+        if (opcode_byte >= 0x60 and opcode_byte <= 0x7F) { // PUSH1-PUSH32
+            const push_size = opcode_byte - 0x5F;
+            pos += 1 + push_size;
+        } else {
+            pos += 1;
+        }
     }
     
-    const element = h.plan.instructionStream[index];
-    element_out.* = @intCast(element);
-    
-    return EVM_PLAN_SUCCESS;
+    return EVM_PLAN_ERROR_INVALID_JUMP; // Index out of bounds
 }
 
 // ============================================================================
@@ -248,18 +284,13 @@ pub const PlanStats = extern struct {
 pub export fn evm_plan_get_stats(handle: ?*const PlanHandle, stats_out: *PlanStats) c_int {
     const h = handle orelse return EVM_PLAN_ERROR_NULL_POINTER;
     
-    stats_out.instruction_count = @intCast(h.plan.instructionStream.len);
-    stats_out.constant_count = @intCast(h.plan.u256_constants.len);
+    stats_out.instruction_count = evm_plan_get_instruction_count(handle);
+    stats_out.constant_count = evm_plan_get_constant_count(handle);
     stats_out.bytecode_length = @intCast(h.bytecode.len);
-    stats_out.has_pc_mapping = if (h.plan.pc_to_instruction_idx != null) 1 else 0;
+    stats_out.has_pc_mapping = 0;
     
-    // Estimate memory usage
-    const instruction_bytes = h.plan.instructionStream.len * @sizeOf(InstructionElement);
-    const constant_bytes = h.plan.u256_constants.len * @sizeOf(u256);
-    const bytecode_bytes = h.bytecode.len;
-    const pc_map_bytes = if (h.plan.pc_to_instruction_idx != null) h.bytecode.len * 8 else 0; // rough estimate
-    
-    stats_out.memory_usage_bytes = instruction_bytes + constant_bytes + bytecode_bytes + pc_map_bytes;
+    // Estimate memory usage (just bytecode for now)
+    stats_out.memory_usage_bytes = h.bytecode.len + @sizeOf(PlanHandle);
     
     return EVM_PLAN_SUCCESS;
 }
