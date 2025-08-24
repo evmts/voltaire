@@ -213,10 +213,18 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
             
             const bitmap_bytes = (N + 7) >> 3;
             
+            // Initialize to empty slices first
+            self.is_push_data = &.{};
+            self.is_op_start = &.{};
+            self.is_jumpdest = &.{};
+            
+            // Allocate with proper cleanup
             self.is_push_data = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
             errdefer self.allocator.free(self.is_push_data);
+            
             self.is_op_start = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
             errdefer self.allocator.free(self.is_op_start);
+            
             self.is_jumpdest = self.allocator.alloc(u8, bitmap_bytes) catch return error.OutOfMemory;
             errdefer self.allocator.free(self.is_jumpdest);
             
@@ -289,11 +297,13 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                         const target = self.readPushValueN(start, @intCast(n)) orelse unreachable;
                         
                         // Validate jump destination
-                        if (target < self.code.len) {
-                            const target_pc = @as(usize, @intCast(target));
-                            if ((self.is_jumpdest[target_pc >> 3] & (@as(u8, 1) << @intCast(target_pc & 7))) == 0) {
-                                return error.InvalidJumpDestination;
-                            }
+                        if (target >= self.code.len) {
+                            // Jump target is out of bounds
+                            return error.InvalidJumpDestination;
+                        }
+                        const target_pc = @as(usize, @intCast(target));
+                        if ((self.is_jumpdest[target_pc >> 3] & (@as(u8, 1) << @intCast(target_pc & 7))) == 0) {
+                            return error.InvalidJumpDestination;
                         }
                     }
                 }
@@ -402,7 +412,7 @@ pub fn createBytecode(comptime cfg: BytecodeConfig) type {
                 // Collect PUSH values
                 if (op >= @intFromEnum(Opcode.PUSH1) and op <= @intFromEnum(Opcode.PUSH32)) {
                     const n = op - (@intFromEnum(Opcode.PUSH1) - 1);
-                    if (const value = self.readPushValueN(i, @intCast(n))) {
+                    if (self.readPushValueN(i, @intCast(n))) |value| {
                         push_values.append(.{ .pc = i, .value = value }) catch {};
                         
                         // Check for potential fusions
@@ -517,9 +527,11 @@ test "Bytecode.init and basic getters" {
 }
 
 test "Bytecode.isValidJumpDest" {
-    // PUSH1 0x04 JUMP JUMPDEST STOP
-    const code = [_]u8{ 0x60, 0x04, 0x56, 0x5b, 0x00 };
-    const bytecode = Bytecode.init(&code);
+    const allocator = std.testing.allocator;
+    // PUSH1 0x03 JUMP JUMPDEST STOP
+    const code = [_]u8{ 0x60, 0x03, 0x56, 0x5b, 0x00 };
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     try std.testing.expect(!bytecode.isValidJumpDest(0)); // PUSH1
     try std.testing.expect(!bytecode.isValidJumpDest(1)); // push data
@@ -529,55 +541,54 @@ test "Bytecode.isValidJumpDest" {
     
     // Test JUMPDEST inside PUSH data
     const code2 = [_]u8{ 0x62, 0x5b, 0x5b, 0x5b, 0x00 }; // PUSH3 0x5b5b5b STOP
-    const bytecode2 = Bytecode.init(&code2);
+    var bytecode2 = try Bytecode.init(allocator, &code2);
+    defer bytecode2.deinit();
     
     try std.testing.expect(!bytecode2.isValidJumpDest(1)); // Inside PUSH data
     try std.testing.expect(!bytecode2.isValidJumpDest(2)); // Inside PUSH data
     try std.testing.expect(!bytecode2.isValidJumpDest(3)); // Inside PUSH data
 }
 
-test "Bytecode.buildBitmaps" {
+test "Bytecode buildBitmaps are created on init" {
     const allocator = std.testing.allocator;
     
     // PUSH2 0x1234 JUMPDEST PUSH1 0x56 STOP
     const code = [_]u8{ 0x61, 0x12, 0x34, 0x5b, 0x60, 0x56, 0x00 };
-    const bytecode = Bytecode.init(&code);
-    
-    const bitmaps = try bytecode.buildBitmaps(allocator);
-    defer allocator.free(bitmaps.is_push_data);
-    defer allocator.free(bitmaps.is_op_start);
-    defer allocator.free(bitmaps.is_jumpdest);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     // Check is_op_start bitmap
-    try std.testing.expect((bitmaps.is_op_start[0] & (1 << 0)) != 0); // PC 0: PUSH2
-    try std.testing.expect((bitmaps.is_op_start[0] & (1 << 1)) == 0); // PC 1: push data
-    try std.testing.expect((bitmaps.is_op_start[0] & (1 << 2)) == 0); // PC 2: push data
-    try std.testing.expect((bitmaps.is_op_start[0] & (1 << 3)) != 0); // PC 3: JUMPDEST
-    try std.testing.expect((bitmaps.is_op_start[0] & (1 << 4)) != 0); // PC 4: PUSH1
-    try std.testing.expect((bitmaps.is_op_start[0] & (1 << 5)) == 0); // PC 5: push data
-    try std.testing.expect((bitmaps.is_op_start[0] & (1 << 6)) != 0); // PC 6: STOP
+    try std.testing.expect((bytecode.is_op_start[0] & (1 << 0)) != 0); // PC 0: PUSH2
+    try std.testing.expect((bytecode.is_op_start[0] & (1 << 1)) == 0); // PC 1: push data
+    try std.testing.expect((bytecode.is_op_start[0] & (1 << 2)) == 0); // PC 2: push data
+    try std.testing.expect((bytecode.is_op_start[0] & (1 << 3)) != 0); // PC 3: JUMPDEST
+    try std.testing.expect((bytecode.is_op_start[0] & (1 << 4)) != 0); // PC 4: PUSH1
+    try std.testing.expect((bytecode.is_op_start[0] & (1 << 5)) == 0); // PC 5: push data
+    try std.testing.expect((bytecode.is_op_start[0] & (1 << 6)) != 0); // PC 6: STOP
     
     // Check is_push_data bitmap
-    try std.testing.expect((bitmaps.is_push_data[0] & (1 << 0)) == 0); // PC 0: not push data
-    try std.testing.expect((bitmaps.is_push_data[0] & (1 << 1)) != 0); // PC 1: push data
-    try std.testing.expect((bitmaps.is_push_data[0] & (1 << 2)) != 0); // PC 2: push data
-    try std.testing.expect((bitmaps.is_push_data[0] & (1 << 3)) == 0); // PC 3: not push data
-    try std.testing.expect((bitmaps.is_push_data[0] & (1 << 4)) == 0); // PC 4: not push data
-    try std.testing.expect((bitmaps.is_push_data[0] & (1 << 5)) != 0); // PC 5: push data
-    try std.testing.expect((bitmaps.is_push_data[0] & (1 << 6)) == 0); // PC 6: not push data
+    try std.testing.expect((bytecode.is_push_data[0] & (1 << 0)) == 0); // PC 0: not push data
+    try std.testing.expect((bytecode.is_push_data[0] & (1 << 1)) != 0); // PC 1: push data
+    try std.testing.expect((bytecode.is_push_data[0] & (1 << 2)) != 0); // PC 2: push data
+    try std.testing.expect((bytecode.is_push_data[0] & (1 << 3)) == 0); // PC 3: not push data
+    try std.testing.expect((bytecode.is_push_data[0] & (1 << 4)) == 0); // PC 4: not push data
+    try std.testing.expect((bytecode.is_push_data[0] & (1 << 5)) != 0); // PC 5: push data
+    try std.testing.expect((bytecode.is_push_data[0] & (1 << 6)) == 0); // PC 6: not push data
     
     // Check is_jumpdest bitmap
-    try std.testing.expect((bitmaps.is_jumpdest[0] & (1 << 3)) != 0); // PC 3: JUMPDEST
+    try std.testing.expect((bytecode.is_jumpdest[0] & (1 << 3)) != 0); // PC 3: JUMPDEST
 }
 
 test "Bytecode.readPushValue" {
+    const allocator = std.testing.allocator;
     // PUSH1 0x42 PUSH2 0x1234 PUSH4 0xDEADBEEF
     const code = [_]u8{ 
         0x60, 0x42,                 // PUSH1
         0x61, 0x12, 0x34,          // PUSH2
         0x63, 0xDE, 0xAD, 0xBE, 0xEF // PUSH4
     };
-    const bytecode = Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     // Test typed push values
     try std.testing.expectEqual(@as(?u8, 0x42), bytecode.readPushValue(0, 1));
@@ -594,6 +605,7 @@ test "Bytecode.readPushValue" {
 }
 
 test "Bytecode.getInstructionSize and getNextPc" {
+    const allocator = std.testing.allocator;
     // PUSH1 0x42 ADD PUSH32 <32 bytes> STOP
     var code: [36]u8 = undefined;
     code[0] = 0x60; // PUSH1
@@ -605,7 +617,8 @@ test "Bytecode.getInstructionSize and getNextPc" {
         code[i] = @intCast(i);
     }
     
-    const bytecode = Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     try std.testing.expectEqual(@as(usize, 2), bytecode.getInstructionSize(0)); // PUSH1
     try std.testing.expectEqual(@as(usize, 1), bytecode.getInstructionSize(2)); // ADD
@@ -619,15 +632,17 @@ test "Bytecode.getInstructionSize and getNextPc" {
 }
 
 test "Bytecode.analyzeJumpDests" {
-    // PUSH1 0x04 JUMP JUMPDEST PUSH1 0x08 JUMP JUMPDEST STOP
+    const allocator = std.testing.allocator;
+    // PUSH1 0x03 JUMP JUMPDEST PUSH1 0x07 JUMP JUMPDEST STOP
     const code = [_]u8{ 
-        0x60, 0x04, 0x56, // PUSH1 0x04 JUMP
+        0x60, 0x03, 0x56, // PUSH1 0x03 JUMP
         0x5b,             // JUMPDEST at PC 3
-        0x60, 0x08, 0x56, // PUSH1 0x08 JUMP
+        0x60, 0x07, 0x56, // PUSH1 0x07 JUMP
         0x5b,             // JUMPDEST at PC 7
         0x00              // STOP
     };
-    const bytecode = Bytecode.init(&code);
+    var bytecode = try Bytecode.init(allocator, &code);
+    defer bytecode.deinit();
     
     const Context = struct {
         jumpdests: std.ArrayList(usize),
