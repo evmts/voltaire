@@ -4,17 +4,31 @@ const builtin = @import("builtin");
 const evm_root = @import("evm");
 const primitives = @import("primitives");
 
+// Custom log function for WASM that avoids Thread dependencies
+pub const std_options = .{
+    .logFn = if (builtin.target.cpu.arch == .wasm32 and builtin.target.os.tag == .freestanding) wasmLogFn else std.log.defaultLog,
+};
+
+fn wasmLogFn(
+    comptime message_level: std.log.Level,
+    comptime scope: @TypeOf(.enum_literal),
+    comptime format: []const u8,
+    args: anytype,
+) void {
+    _ = message_level;
+    _ = scope;
+    _ = format;
+    _ = args;
+    // No-op for WASM to avoid Thread/IO dependencies
+}
+
 // Simple inline logging that compiles out for freestanding WASM
 fn log(comptime level: std.log.Level, comptime scope: @TypeOf(.enum_literal), comptime format: []const u8, args: anytype) void {
+    _ = level;
     _ = scope;
-    if (builtin.target.cpu.arch != .wasm32 or builtin.target.os.tag != .freestanding) {
-        switch (level) {
-            .err => std.log.err("[evm_c] " ++ format, args),
-            .warn => std.log.warn("[evm_c] " ++ format, args),
-            .info => std.log.info("[evm_c] " ++ format, args),
-            .debug => std.log.debug("[evm_c] " ++ format, args),
-        }
-    }
+    _ = format;
+    _ = args;
+    // Logging disabled for WASM to avoid Thread dependencies
 }
 
 const DefaultEvm = evm_root.DefaultEvm;
@@ -609,10 +623,12 @@ export fn evm_frame_reset(frame_ptr: ?*anyopaque, new_gas: u64) c_int {
     const frame = handle.frame;
     
     // Reset frame state
-    // Stack needs to be properly initialized
-    frame.stack = DefaultFrame.Stack.init();
-    frame.memory.reset();
-    frame.gas_manager = DefaultFrame.GasManagerType.init(@intCast(new_gas));
+    // Reset stack by resetting the pointer to the base
+    frame.stack.stack_ptr = frame.stack.stack_base;
+    frame.memory.clear();
+    frame.gas_manager = DefaultFrame.GasManagerType.init(@intCast(new_gas)) catch {
+        return @intFromEnum(FrameError.FRAME_ERROR_OUT_OF_GAS);
+    };
     
     return @intFromEnum(FrameError.FRAME_OK);
 }
