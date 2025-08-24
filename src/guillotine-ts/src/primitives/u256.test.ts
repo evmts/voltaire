@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'bun:test';
 import { U256 } from './u256';
 
 describe('U256', () => {

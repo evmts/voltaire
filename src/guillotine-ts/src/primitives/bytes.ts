@@ -58,6 +58,22 @@ export class Bytes {
   }
 
   /**
+   * Convenience method to create Bytes from various inputs
+   * @param input - Hex string, byte array, or string
+   */
+  static from(input: string | Uint8Array | ArrayLike<number>): Bytes {
+    if (typeof input === 'string') {
+      // If it starts with 0x or contains only hex chars, treat as hex
+      if (input.startsWith('0x') || /^[0-9a-fA-F]+$/.test(input)) {
+        return Bytes.fromHex(input);
+      }
+      // Otherwise treat as UTF-8 string
+      return Bytes.fromString(input);
+    }
+    return Bytes.fromBytes(input);
+  }
+
+  /**
    * Creates Bytes with the specified length, filled with zeros
    */
   static zeros(length: number): Bytes {

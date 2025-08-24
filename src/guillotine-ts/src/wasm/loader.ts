@@ -39,6 +39,53 @@ export interface GuillotineWasm {
   guillotine_get_code(vm: number, address_ptr: number): number; // Returns pointer to bytes
   guillotine_get_storage(vm: number, address_ptr: number, key_ptr: number): number; // Returns pointer to U256
   
+  // Frame API (from evm2_c.h)
+  evm_frame_create(bytecode: number, bytecode_len: number, initial_gas: bigint): number;
+  evm_frame_destroy(frame_ptr: number): void;
+  evm_frame_reset(frame_ptr: number, new_gas: bigint): number;
+  evm_frame_execute(frame_ptr: number): number;
+  
+  // Stack operations
+  evm_frame_push_u64(frame_ptr: number, value: bigint): number;
+  evm_frame_push_u32(frame_ptr: number, value: number): number;
+  evm_frame_push_bytes(frame_ptr: number, bytes: number, len: number): number;
+  evm_frame_pop_u64(frame_ptr: number, value_out: number): number;
+  evm_frame_pop_u32(frame_ptr: number, value_out: number): number;
+  evm_frame_pop_bytes(frame_ptr: number, bytes_out: number): number;
+  evm_frame_peek_u64(frame_ptr: number, value_out: number): number;
+  evm_frame_stack_size(frame_ptr: number): number;
+  evm_frame_stack_capacity(frame_ptr: number): number;
+  
+  // State inspection
+  evm_frame_get_gas_remaining(frame_ptr: number): bigint;
+  evm_frame_get_gas_used(frame_ptr: number): bigint;
+  evm_frame_get_pc(frame_ptr: number): number;
+  evm_frame_get_bytecode_len(frame_ptr: number): number;
+  evm_frame_get_current_opcode(frame_ptr: number): number;
+  evm_frame_is_stopped(frame_ptr: number): boolean;
+  
+  // Memory operations
+  evm_frame_get_memory(frame_ptr: number, offset: number, length: number, data_out: number): number;
+  evm_frame_get_memory_size(frame_ptr: number): number;
+  evm_frame_get_stack(frame_ptr: number, stack_out: number, max_items: number, count_out: number): number;
+  evm_frame_get_stack_item(frame_ptr: number, index: number, item_out: number): number;
+  
+  // Debug frame API
+  evm_debug_frame_create(bytecode: number, bytecode_len: number, initial_gas: bigint): number;
+  evm_debug_set_step_mode(frame_ptr: number, enabled: boolean): number;
+  evm_debug_is_paused(frame_ptr: number): boolean;
+  evm_debug_resume(frame_ptr: number): number;
+  evm_debug_step(frame_ptr: number): number;
+  evm_debug_add_breakpoint(frame_ptr: number, pc: number): number;
+  evm_debug_remove_breakpoint(frame_ptr: number, pc: number): number;
+  evm_debug_has_breakpoint(frame_ptr: number, pc: number): number;
+  evm_debug_clear_breakpoints(frame_ptr: number): number;
+  evm_debug_get_step_count(frame_ptr: number): bigint;
+  
+  // Error handling
+  evm_error_string(error_code: number): number;
+  evm_error_is_stop(error_code: number): boolean;
+  
   // Utility functions
   guillotine_address_from_hex(hex_ptr: number): number;
   guillotine_address_to_hex(address_ptr: number): number;

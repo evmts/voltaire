@@ -93,6 +93,23 @@ export class U256 {
   }
 
   /**
+   * Convenience method to create U256 from various inputs
+   * @param input - Number, bigint, hex string, or byte array
+   */
+  static from(input: number | bigint | string | Uint8Array | ArrayLike<number>): U256 {
+    if (typeof input === 'number') {
+      return U256.fromNumber(input);
+    }
+    if (typeof input === 'bigint') {
+      return U256.fromBigInt(input);
+    }
+    if (typeof input === 'string') {
+      return U256.fromHex(input);
+    }
+    return U256.fromBytes(input);
+  }
+
+  /**
    * Returns the value as a bigint
    */
   toBigInt(): bigint {
@@ -237,7 +254,7 @@ export class U256 {
    */
   div(other: U256): U256 {
     if (other._value === 0n) {
-      throw new Error('Division by zero');
+      throw new Error('division by zero');
     }
     return new U256(this._value / other._value);
   }
@@ -247,7 +264,7 @@ export class U256 {
    */
   mod(other: U256): U256 {
     if (other._value === 0n) {
-      throw new Error('Modulo by zero');
+      throw new Error('modulo by zero');
     }
     return new U256(this._value % other._value);
   }

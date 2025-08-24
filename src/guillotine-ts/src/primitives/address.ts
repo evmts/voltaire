@@ -25,6 +25,11 @@ export class Address {
     // Remove 0x prefix if present
     const cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex;
     
+    // Check for empty string
+    if (cleanHex.length === 0) {
+      throw new Error('Invalid hex address: empty string');
+    }
+    
     // Pad with leading zeros if necessary
     const paddedHex = cleanHex.padStart(40, '0');
     
@@ -49,6 +54,17 @@ export class Address {
    */
   static zero(): Address {
     return new Address(new Uint8Array(20));
+  }
+
+  /**
+   * Convenience method to create Address from various inputs
+   * @param input - Hex string or byte array
+   */
+  static from(input: string | Uint8Array | ArrayLike<number>): Address {
+    if (typeof input === 'string') {
+      return Address.fromHex(input);
+    }
+    return Address.fromBytes(input);
   }
 
   /**

@@ -164,7 +164,7 @@ export class GuillotineError extends Error {
     
     switch (code) {
       case 0:
-        return GuillotineError.unknown('Success code returned as error');
+        return GuillotineError.unknown(msg);
       case 1:
         return GuillotineError.memoryError(msg);
       case 2:
