@@ -1942,6 +1942,12 @@ pub fn build(b: *std.Build) void {
     const test3_step = b.step("test3", "Run register-based EVM tests");
     test3_step.dependOn(&run_test3.step);
 
+    // Add zbench dependency
+    const zbench_dep = b.dependency("zbench", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // Add EVM2 module
     const evm2_mod = b.createModule(.{
         .root_source_file = b.path("src/evm2/root.zig"),
@@ -1952,6 +1958,8 @@ pub fn build(b: *std.Build) void {
     evm2_mod.addImport("evm", evm_mod);
     evm2_mod.addImport("build_options", build_options_mod);
     evm2_mod.addImport("crypto", crypto_mod);
+    evm2_mod.addImport("zbench", zbench_dep.module("zbench"));
+    evm2_mod.addIncludePath(b.path("src/revm_wrapper"));
 
     // Build EVM2 library
     const evm2_lib = b.addLibrary(.{
@@ -2031,6 +2039,50 @@ pub fn build(b: *std.Build) void {
 
     const build_evm2_runner_step = b.step("build-evm2-runner", "Build the EVM2 benchmark runner (ReleaseFast)");
     build_evm2_runner_step.dependOn(&b.addInstallArtifact(evm2_runner_exe, .{}).step);
+
+    // EVM2 zbench Benchmarks
+    const evm2_bench_exe = b.addExecutable(.{
+        .name = "evm2-bench",
+        .root_source_file = b.path("src/evm2/bench/evm_zbench_simple.zig"),
+        .target = target,
+        .optimize = .ReleaseFast,
+    });
+    evm2_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+    evm2_bench_exe.root_module.addImport("primitives", primitives_mod);
+    evm2_bench_exe.root_module.addImport("crypto", crypto_mod);
+
+    b.installArtifact(evm2_bench_exe);
+
+    const run_evm2_bench_cmd = b.addRunArtifact(evm2_bench_exe);
+    const evm2_bench_step = b.step("evm2-bench", "Run EVM2 zbench benchmarks");
+    evm2_bench_step.dependOn(&run_evm2_bench_cmd.step);
+
+    const build_evm2_bench_step = b.step("build-evm2-bench", "Build EVM2 zbench benchmarks");
+    build_evm2_bench_step.dependOn(&b.addInstallArtifact(evm2_bench_exe, .{}).step);
+
+    // Comprehensive EVM comparison benchmarks
+    const comprehensive_bench_exe = b.addExecutable(.{
+        .name = "comprehensive-evm-bench",
+        .root_source_file = b.path("src/evm2/bench/comprehensive_evm_bench.zig"),
+        .target = target,
+        .optimize = .ReleaseFast,
+    });
+    comprehensive_bench_exe.root_module.addImport("zbench", zbench_dep.module("zbench"));
+    comprehensive_bench_exe.root_module.addImport("primitives", primitives_mod);
+    comprehensive_bench_exe.root_module.addImport("evm", evm_mod);
+    comprehensive_bench_exe.root_module.addImport("evm2", evm2_mod);
+    comprehensive_bench_exe.root_module.addImport("revm", revm_mod);
+    comprehensive_bench_exe.root_module.addImport("crypto", crypto_mod);
+    comprehensive_bench_exe.root_module.addImport("build_options", build_options_mod);
+
+    b.installArtifact(comprehensive_bench_exe);
+
+    const run_comprehensive_bench_cmd = b.addRunArtifact(comprehensive_bench_exe);
+    const comprehensive_bench_step = b.step("comprehensive-evm-bench", "Run comprehensive EVM comparison benchmarks");
+    comprehensive_bench_step.dependOn(&run_comprehensive_bench_cmd.step);
+
+    const build_comprehensive_bench_step = b.step("build-comprehensive-evm-bench", "Build comprehensive EVM benchmarks");
+    build_comprehensive_bench_step.dependOn(&b.addInstallArtifact(comprehensive_bench_exe, .{}).step);
 
     // ========================================================================
     // EVM2 C API Library
