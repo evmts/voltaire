@@ -213,3 +213,40 @@ test "call result edge cases" {
     try std.testing.expect(!empty_revert.hasOutput());
     try std.testing.expect(empty_revert.isFailure());
 }
+
+test "CallResult log memory management - proper cleanup" {
+    const testing = std.testing;
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer {
+        const deinit_status = gpa.deinit();
+        if (deinit_status == .leak) {
+            std.debug.print("Memory leak detected in CallResult log cleanup test!\n", .{});
+            testing.expect(false) catch {};
+        }
+    }
+    const allocator = gpa.allocator();
+    
+    // Create logs with allocated memory
+    const topics1 = try allocator.dupe(u256, &[_]u256{ 0x1234, 0x5678 });
+    const data1 = try allocator.dupe(u8, "test log data");
+    const topics2 = try allocator.dupe(u256, &[_]u256{ 0xABCD });
+    const data2 = try allocator.dupe(u8, "second log");
+    
+    const logs = try allocator.alloc(Log, 2);
+    logs[0] = Log{
+        .address = std.mem.zeroes([20]u8),
+        .topics = topics1,
+        .data = data1,
+    };
+    logs[1] = Log{
+        .address = std.mem.zeroes([20]u8),
+        .topics = topics2,
+        .data = data2,
+    };
+    
+    // Create CallResult with logs
+    var call_result = CallResult.success_with_logs(50000, &[_]u8{}, logs);
+    
+    // This should properly clean up all allocated memory
+    call_result.deinitLogs(allocator);
+}
