@@ -1152,10 +1152,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             if (byte_cost > std.math.maxInt(GasType)) {
                 return Error.OutOfGas;
             }
-            self.gas_remaining -= @as(GasType, @intCast(byte_cost));
-            if (self.gas_remaining < 0) {
-                return Error.OutOfGas;
-            }
+            try self.gas_manager.consume(byte_cost);
 
             // Get log data
             const data = self.memory.get_slice(offset_usize, size_usize) catch return Error.OutOfBounds;
@@ -1711,10 +1708,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data_size = @as(usize, @intCast(length));
             const gas_cost = 375 + 8 * data_size;
             
-            if (self.gas_remaining < @as(i64, @intCast(gas_cost))) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @as(i64, @intCast(gas_cost));
+            try self.gas_manager.consume(gas_cost);
 
             // Get data from memory
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
@@ -1757,10 +1751,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data_size = @as(usize, @intCast(length));
             const gas_cost = 375 + 375 + 8 * data_size;
             
-            if (self.gas_remaining < @as(i64, @intCast(gas_cost))) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @as(i64, @intCast(gas_cost));
+            try self.gas_manager.consume(gas_cost);
 
             // Get data from memory
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
@@ -1806,10 +1797,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data_size = @as(usize, @intCast(length));
             const gas_cost = 375 + 375 * 2 + 8 * data_size;
             
-            if (self.gas_remaining < @as(i64, @intCast(gas_cost))) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @as(i64, @intCast(gas_cost));
+            try self.gas_manager.consume(gas_cost);
 
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
                 return Error.OutOfBounds;
@@ -1855,10 +1843,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data_size = @as(usize, @intCast(length));
             const gas_cost = 375 + 375 * 3 + 8 * data_size;
             
-            if (self.gas_remaining < @as(i64, @intCast(gas_cost))) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @as(i64, @intCast(gas_cost));
+            try self.gas_manager.consume(gas_cost);
 
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
                 return Error.OutOfBounds;
@@ -1906,10 +1891,7 @@ pub fn Frame(comptime config: FrameConfig) type {
             const data_size = @as(usize, @intCast(length));
             const gas_cost = 375 + 375 * 4 + 8 * data_size;
             
-            if (self.gas_remaining < @as(i64, @intCast(gas_cost))) {
-                return Error.OutOfGas;
-            }
-            self.gas_remaining -= @as(i64, @intCast(gas_cost));
+            try self.gas_manager.consume(gas_cost);
 
             if (offset > std.math.maxInt(usize) or length > std.math.maxInt(usize)) {
                 return Error.OutOfBounds;
@@ -2105,17 +2087,18 @@ pub fn Frame(comptime config: FrameConfig) type {
             const base_call_gas = self._calculate_call_gas(address, value, self.is_static);
             
             // Check if we have enough gas for the base call cost
-            if (self.gas_remaining < @as(GasType, @intCast(base_call_gas))) {
+            if (!self.gas_manager.hasGas(base_call_gas)) {
                 try self.stack.push(0);
                 return;
             }
             
             // Consume base call gas
-            self.gas_remaining -= @as(GasType, @intCast(base_call_gas));
+            self.gas_manager.consumeUnchecked(base_call_gas);
 
             // Apply EIP-150 gas forwarding rule: 63/64 of available gas
             const gas_stipend = if (value > 0) @as(u64, 2300) else 0; // Gas stipend for value transfer
-            const max_forward_gas = self.gas_remaining - (self.gas_remaining / 64);
+            const remaining_gas = @as(u64, @intCast(self.gas_manager.rawRemaining()));
+            const max_forward_gas = remaining_gas - (remaining_gas / 64);
             const forwarded_gas = @min(gas_u64, max_forward_gas) + gas_stipend;
 
             // Create snapshot for potential revert
