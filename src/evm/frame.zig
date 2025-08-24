@@ -8197,17 +8197,17 @@ test "Access list pre-warming effects on CALL/SLOAD/SSTORE" {
     try frame.stack.push(storage_key); // pre-warmed slot
     try frame.sload();
     _ = try frame.stack.pop();
-    const gas_used_warm_sload = gas_before_warm_sload - frame.gas_manager.gasRemaining();
+    const gas_used_warm_sload = gas_before_warm_sload - @max(frame.gas_remaining, 0);
 
     // Should use warm SLOAD cost: 100 gas
     try std.testing.expectEqual(@as(u64, 100), gas_used_warm_sload);
 
     // Test 3: SSTORE to pre-warmed storage slot
-    const gas_before_warm_sstore = frame.gas_manager.gasRemaining();
+    const gas_before_warm_sstore = @max(frame.gas_remaining, 0);
     try frame.stack.push(0xFFFF); // value
     try frame.stack.push(storage_key); // pre-warmed slot
     try frame.sstore();
-    const gas_used_warm_sstore = gas_before_warm_sstore - frame.gas_manager.gasRemaining();
+    const gas_used_warm_sstore = gas_before_warm_sstore - @max(frame.gas_remaining, 0);
 
     // Since slot was accessed (but likely zero), this is zero→non-zero but warm
     // The gas cost depends on the EVM's implementation of warm vs cold for SSTORE
@@ -8319,7 +8319,7 @@ test "CALL gas integration - sufficient gas scenario" {
     try std.testing.expectEqual(@as(u256, 1), result);
 
     // Verify gas was consumed (base cost should be deducted)
-    const gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_consumed = initial_gas - @max(frame.gas_remaining, 0);
     try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST);
 }
 
@@ -8390,7 +8390,7 @@ test "CALL gas integration - value transfer with stipend" {
     try std.testing.expectEqual(@as(u256, 1), result);
 
     // Verify value transfer gas cost was applied
-    const gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_consumed = initial_gas - @max(frame.gas_remaining, 0);
     const expected_base_cost = GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST;
     try std.testing.expect(gas_consumed >= expected_base_cost);
 }
@@ -8433,7 +8433,7 @@ test "DELEGATECALL gas integration - no value transfer cost" {
     try std.testing.expectEqual(@as(u256, 1), result);
 
     // Verify only base cost was applied (no value transfer cost)
-    const gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_consumed = initial_gas - @max(frame.gas_remaining, 0);
     try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST);
     try std.testing.expect(gas_consumed < GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST);
 }
@@ -8476,7 +8476,7 @@ test "STATICCALL gas integration - static context enforced" {
     try std.testing.expectEqual(@as(u256, 1), result);
 
     // Verify only base cost was applied (static context prevents value transfer)
-    const gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_consumed = initial_gas - @max(frame.gas_remaining, 0);
     try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST);
     try std.testing.expect(gas_consumed < GasConstants.CALL_BASE_COST + GasConstants.CALL_VALUE_TRANSFER_COST);
 }
@@ -8598,7 +8598,7 @@ test "EIP-150 compliance - 63/64 rule with base gas deduction" {
     try std.testing.expectEqual(@as(u256, 1), result);
 
     // Verify base gas was consumed first, then EIP-150 rule applied
-    const gas_remaining = frame.gas_manager.gasRemaining();
+    const gas_remaining = @max(frame.gas_remaining, 0);
     const gas_consumed = initial_gas - gas_remaining;
 
     // Should have consumed at least the base cost
@@ -8690,7 +8690,7 @@ test "Gas accounting precision - no gas leaks" {
     try std.testing.expectEqual(@as(u256, 1), result);
 
     // Verify gas accounting is consistent
-    const final_gas = frame.gas_manager.gasRemaining();
+    const final_gas = @max(frame.gas_remaining, 0);
     const total_consumed = initial_gas - final_gas;
 
     // Should have consumed at least the base cost
@@ -8770,7 +8770,7 @@ test "Memory expansion costs with call operations" {
     try std.testing.expectEqual(@as(u256, 1), result);
 
     // Verify gas consumption includes both call cost and memory expansion
-    const gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
+    const gas_consumed = initial_gas - @max(frame.gas_remaining, 0);
     try std.testing.expect(gas_consumed >= GasConstants.CALL_BASE_COST + 100); // +100 for memory expansion
 }
 
@@ -8810,10 +8810,10 @@ test "Nested call gas accounting - deep call stack" {
     }
 
     // Verify cumulative gas consumption
-    const total_gas_consumed = initial_gas - frame.gas_manager.gasRemaining();
+    const total_gas_consumed = initial_gas - @max(frame.gas_remaining, 0);
     const expected_min_gas = 3 * GasConstants.CALL_BASE_COST;
     try std.testing.expect(total_gas_consumed >= expected_min_gas);
-    try std.testing.expect(frame.gas_manager.gasRemaining() > 0); // Should still have gas remaining
+    try std.testing.expect(@max(frame.gas_remaining, 0) > 0); // Should still have gas remaining
 }
 
 test "Static context violation attempts" {
@@ -9020,7 +9020,7 @@ test "Rapid successive calls - gas depletion patterns" {
 
     // Make calls until gas is exhausted
     for (0..50) |i| { // Max 50 attempts
-        if (frame.gas_manager.gasRemaining() < GasConstants.CALL_BASE_COST + 1000) break; // Not enough gas for more calls
+        if (@max(frame.gas_remaining, 0) < GasConstants.CALL_BASE_COST + 1000) break; // Not enough gas for more calls
 
         try frame.stack.push(0); // output_size
         try frame.stack.push(0); // output_offset
@@ -9045,7 +9045,7 @@ test "Rapid successive calls - gas depletion patterns" {
     try std.testing.expect(successful_calls < 50); // But not all 50
 
     // Final gas should be very low
-    try std.testing.expect(frame.gas_manager.gasRemaining() < initial_gas / 2);
+    try std.testing.expect(@max(frame.gas_remaining, 0) < initial_gas / 2);
 }
 
 // ============================================================================
