@@ -22,9 +22,8 @@ fn hex_decode(allocator: std.mem.Allocator, hex_str: []const u8) ![]u8 {
 }
 
 pub fn main() !void {
-    std.debug.print("\n=== DEBUG: Starting benchmark runner ===\n", .{});
-    
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
     // Parse command line arguments
@@ -91,8 +90,6 @@ pub fn main() !void {
     const calldata = try hex_decode(allocator, trimmed_calldata);
     defer allocator.free(calldata);
 
-    std.debug.print("DEBUG: Setting up EVM infrastructure\n", .{});
-
     // Set up EVM infrastructure
     var memory_db = evm.MemoryDatabase.init(allocator);
     defer memory_db.deinit();
@@ -115,7 +112,8 @@ pub fn main() !void {
     };
 
     var evm_instance = try evm.DefaultEvm.init(allocator, db_interface, block_info, context, 0, primitives.ZERO_ADDRESS, .CANCUN);
-    
+    defer evm_instance.deinit();
+
     // Deploy contract first
     const deploy_address: Address = [_]u8{0} ** 19 ++ [_]u8{1};
     const code_hash = try memory_db.set_code(init_code);
@@ -126,14 +124,8 @@ pub fn main() !void {
         .storage_root = [_]u8{0} ** 32,
     });
 
-    std.debug.print("DEBUG: Starting benchmark runs (count: {})\n", .{num_runs});
-
-    // Store results to check after deinit
-    var last_result_ptr: ?[*]const u8 = null;
-    var last_result_len: usize = 0;
-
     // Run benchmarks
-    for (0..num_runs) |run_idx| {
+    for (0..num_runs) |_| {
         const call_params = evm.DefaultEvm.CallParams{
             .call = .{
                 .caller = primitives.ZERO_ADDRESS,
@@ -151,44 +143,16 @@ pub fn main() !void {
         };
         const end_time = std.time.nanoTimestamp();
         
+        // Free the result output to prevent memory leak and use-after-free
+        defer if (result.output.len > 0) allocator.free(result.output);
+        
         if (!result.success) {
             std.debug.print("Contract execution failed\n", .{});
             std.process.exit(1);
-        }
-        
-        // Save result info for debugging
-        if (run_idx == 0) {
-            last_result_ptr = result.output.ptr;
-            last_result_len = result.output.len;
-            std.debug.print("DEBUG: First result output ptr: {*}, len: {}\n", .{last_result_ptr.?, last_result_len});
         }
         
         const elapsed_ns = @as(u64, @intCast(end_time - start_time));
         const elapsed_ms = @as(f64, @floatFromInt(elapsed_ns)) / 1_000_000.0;
         print("{d:.6}\n", .{elapsed_ms});
     }
-
-    std.debug.print("DEBUG: All runs completed. About to deinit EVM...\n", .{});
-    
-    // This is where the crash happens
-    evm_instance.deinit();
-    
-    std.debug.print("DEBUG: EVM deinitialized. Testing result memory access...\n", .{});
-    
-    // Try to access the result memory - this should crash if our theory is correct
-    if (last_result_ptr) |ptr| {
-        std.debug.print("DEBUG: Attempting to read from result ptr {*}...\n", .{ptr});
-        if (last_result_len > 0) {
-            const value = ptr[0];
-            std.debug.print("DEBUG: Successfully read value: {} (theory incorrect)\n", .{value});
-        }
-    }
-    
-    std.debug.print("DEBUG: About to deinit GPA...\n", .{});
-    const leak_detected = gpa.deinit();
-    if (leak_detected == .leak) {
-        std.debug.print("DEBUG: Memory leak detected!\n", .{});
-    }
-    
-    std.debug.print("DEBUG: Program completed successfully\n", .{});
 }
