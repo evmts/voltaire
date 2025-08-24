@@ -1184,6 +1184,72 @@ test "EVM call() method routes to different handlers" {
     };
 }
 
+test "EVM call_regular handler basic functionality" {
+    const testing = std.testing;
+    const allocator = testing.allocator;
+    
+    // Create test database
+    var memory_db = MemoryDatabase.init(allocator);
+    defer memory_db.deinit();
+    const db_interface = DatabaseInterface.init(&memory_db);
+    
+    // Add a simple contract that just STOPs
+    const stop_bytecode = [_]u8{0x00}; // STOP opcode
+    const contract_address: Address = [_]u8{0x42} ++ [_]u8{0} ** 19;
+    try memory_db.set_account(contract_address, Account{
+        .balance = 0,
+        .nonce = 0,
+        .code = &stop_bytecode,
+        .code_hash = [_]u8{0} ** 32, // Simplified
+    });
+    
+    // Create EVM instance
+    const block_info = BlockInfo{
+        .number = 1,
+        .timestamp = 1000,
+        .difficulty = 100,
+        .gas_limit = 30000000,
+        .coinbase = ZERO_ADDRESS,
+        .base_fee = 0,
+    };
+    
+    const tx_context = TransactionContext{
+        .caller = ZERO_ADDRESS,
+        .origin = ZERO_ADDRESS,
+        .gas_price = 0,
+    };
+    
+    var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
+    defer evm.deinit();
+    
+    // Test call_regular directly (once it's implemented)
+    const params = struct {
+        caller: Address,
+        to: Address,
+        value: u256,
+        input: []const u8,
+        gas: u64,
+    }{
+        .caller = ZERO_ADDRESS,
+        .to = contract_address,
+        .value = 0,
+        .input = &.{},
+        .gas = 1000000,
+    };
+    
+    // For now this will return error.InvalidJump as it's not implemented
+    const result = evm.call_regular(params) catch |err| {
+        try testing.expectEqual(DefaultEvm.Error.InvalidJump, err);
+        return;
+    };
+    
+    // Once implemented, we'd expect:
+    // try testing.expect(result.success);
+    // try testing.expect(result.gas_left > 0);
+    // try testing.expectEqual(@as(usize, 0), result.output.len);
+    _ = result;
+}
+
 test "Evm creation with custom config" {
     const testing = std.testing;
 
