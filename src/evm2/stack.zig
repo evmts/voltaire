@@ -19,16 +19,28 @@ pub fn createStack(comptime config: StackConfig) type {
 
         const Self = @This();
 
-        next_stack_index: IndexType,
-        stack: *[stack_capacity]WordType,
+        // Downward stack growth: stack_ptr points to next empty slot
+        // Push: *stack_ptr = value; stack_ptr -= 1;
+        // Pop: stack_ptr += 1; return *stack_ptr;
+        stack_ptr: [*]WordType,
+        stack_base: [*]WordType, // Base pointer (high address)
+        stack_limit: [*]WordType, // Limit pointer (low address)
+        stack: *[stack_capacity]WordType align(64), // Aligned to cache line
 
         pub fn init(allocator: std.mem.Allocator) Error!Self {
             const stack_memory = allocator.alloc(WordType, stack_capacity) catch return Error.AllocationError;
             errdefer allocator.free(stack_memory);
-            @memset(std.mem.sliceAsBytes(stack_memory), 0);
+            @memset(stack_memory, 0);
+            
+            const stack_array: *[stack_capacity]WordType = @ptrCast(&stack_memory[0]);
+            const base_ptr: [*]WordType = @ptrCast(stack_array);
+            
             return Self{
-                .next_stack_index = 0,
-                .stack = @ptrCast(&stack_memory[0]),
+                // Start at the end for downward growth
+                .stack_ptr = base_ptr + stack_capacity,
+                .stack_base = base_ptr + stack_capacity,
+                .stack_limit = base_ptr,
+                .stack = stack_array,
             };
         }
 
@@ -36,58 +48,59 @@ pub fn createStack(comptime config: StackConfig) type {
             allocator.free(@as([*]WordType, @ptrCast(self.stack))[0..stack_capacity]);
         }
 
-        pub fn push_unsafe(self: *Self, value: WordType) void {
+        pub inline fn push_unsafe(self: *Self, value: WordType) void {
             @branchHint(.likely);
-            std.debug.assert(self.next_stack_index < stack_capacity);
-            self.stack[self.next_stack_index] = value;
-            self.next_stack_index += 1;
+            std.debug.assert(@intFromPtr(self.stack_ptr) > @intFromPtr(self.stack_limit));
+            self.stack_ptr -= 1;
+            self.stack_ptr[0] = value;
         }
 
-        pub fn push(self: *Self, value: WordType) Error!void {
-            if (self.next_stack_index >= stack_capacity) {
+        pub inline fn push(self: *Self, value: WordType) Error!void {
+            if (@intFromPtr(self.stack_ptr) <= @intFromPtr(self.stack_limit)) {
                 @branchHint(.cold);
                 return Error.StackOverflow;
             }
             self.push_unsafe(value);
         }
 
-        pub fn pop_unsafe(self: *Self) WordType {
+        pub inline fn pop_unsafe(self: *Self) WordType {
             @branchHint(.likely);
-            std.debug.assert(self.next_stack_index != 0);
-            self.next_stack_index -= 1;
-            return self.stack[self.next_stack_index];
+            std.debug.assert(@intFromPtr(self.stack_ptr) < @intFromPtr(self.stack_base));
+            const value = self.stack_ptr[0];
+            self.stack_ptr += 1;
+            return value;
         }
 
-        pub fn pop(self: *Self) Error!WordType {
-            if (self.next_stack_index == 0) {
+        pub inline fn pop(self: *Self) Error!WordType {
+            if (@intFromPtr(self.stack_ptr) >= @intFromPtr(self.stack_base)) {
                 @branchHint(.cold);
                 return Error.StackUnderflow;
             }
             return self.pop_unsafe();
         }
 
-        pub fn set_top_unsafe(self: *Self, value: WordType) void {
+        pub inline fn set_top_unsafe(self: *Self, value: WordType) void {
             @branchHint(.likely);
-            std.debug.assert(self.next_stack_index > 0);
-            self.stack[self.next_stack_index - 1] = value;
+            std.debug.assert(@intFromPtr(self.stack_ptr) < @intFromPtr(self.stack_base));
+            self.stack_ptr[0] = value;
         }
 
-        pub fn set_top(self: *Self, value: WordType) Error!void {
-            if (self.next_stack_index == 0) {
+        pub inline fn set_top(self: *Self, value: WordType) Error!void {
+            if (@intFromPtr(self.stack_ptr) >= @intFromPtr(self.stack_base)) {
                 @branchHint(.cold);
                 return Error.StackUnderflow;
             }
             self.set_top_unsafe(value);
         }
 
-        pub fn peek_unsafe(self: *const Self) WordType {
+        pub inline fn peek_unsafe(self: *const Self) WordType {
             @branchHint(.likely);
-            std.debug.assert(self.next_stack_index > 0);
-            return self.stack[self.next_stack_index - 1];
+            std.debug.assert(@intFromPtr(self.stack_ptr) < @intFromPtr(self.stack_base));
+            return self.stack_ptr[0];
         }
 
-        pub fn peek(self: *const Self) Error!WordType {
-            if (self.next_stack_index == 0) {
+        pub inline fn peek(self: *const Self) Error!WordType {
+            if (@intFromPtr(self.stack_ptr) >= @intFromPtr(self.stack_base)) {
                 @branchHint(.cold);
                 return Error.StackUnderflow;
             }
@@ -96,11 +109,19 @@ pub fn createStack(comptime config: StackConfig) type {
 
         // Generic dup function for DUP1-DUP16
         pub fn dup_n(self: *Self, n: u8) Error!void {
-            if (self.next_stack_index < n) {
+            // Check if we have n items on stack
+            const current_size = @intFromPtr(self.stack_base) - @intFromPtr(self.stack_ptr);
+            const required_bytes = @as(usize, n) * @sizeOf(WordType);
+            if (current_size < required_bytes) {
                 @branchHint(.cold);
                 return Error.StackUnderflow;
             }
-            const value = self.stack[self.next_stack_index - n];
+            // Check if we have room for one more
+            if (@intFromPtr(self.stack_ptr) <= @intFromPtr(self.stack_limit)) {
+                @branchHint(.cold);
+                return Error.StackOverflow;
+            }
+            const value = self.stack_ptr[n - 1];
             return self.push(value);
         }
 
@@ -170,13 +191,15 @@ pub fn createStack(comptime config: StackConfig) type {
 
         // Generic swap function for SWAP1-SWAP16
         pub fn swap_n(self: *Self, n: u8) Error!void {
-            if (self.next_stack_index < n + 1) {
+            // Check if we have n+1 items on stack
+            const current_size = @intFromPtr(self.stack_base) - @intFromPtr(self.stack_ptr);
+            const required_bytes = @as(usize, n + 1) * @sizeOf(WordType);
+            if (current_size < required_bytes) {
                 @branchHint(.cold);
                 return Error.StackUnderflow;
             }
-            const top_index = self.next_stack_index - 1;
-            const other_index = self.next_stack_index - n - 1;
-            std.mem.swap(WordType, &self.stack[top_index], &self.stack[other_index]);
+            // Swap top with nth item
+            std.mem.swap(WordType, &self.stack_ptr[0], &self.stack_ptr[n]);
         }
 
         pub fn swap1(self: *Self) Error!void {
@@ -245,11 +268,15 @@ pub fn createStack(comptime config: StackConfig) type {
         
         // Accessors for tracer
         pub fn size(self: *const Self) usize {
-            return self.next_stack_index;
+            const bytes_used = @intFromPtr(self.stack_base) - @intFromPtr(self.stack_ptr);
+            return bytes_used / @sizeOf(WordType);
         }
         
-        pub fn getSlice(self: *const Self) []const WordType {
-            return self.stack[0..self.next_stack_index];
+        pub fn get_slice(self: *const Self) []const WordType {
+            const count = self.size();
+            if (count == 0) return &[_]WordType{};
+            // Return slice from stack_ptr to stack_base
+            return self.stack_ptr[0..count];
         }
     };
 
@@ -265,21 +292,26 @@ test "Stack push and push_unsafe" {
 
     // Test push_unsafe
     stack.push_unsafe(42);
-    try std.testing.expectEqual(@as(u12, 1), stack.next_stack_index);
-    try std.testing.expectEqual(@as(u256, 42), stack.stack[0]);
+    try std.testing.expectEqual(@as(usize, 1), stack.size());
+    try std.testing.expectEqual(@as(u256, 42), stack.peek_unsafe());
 
     stack.push_unsafe(100);
-    try std.testing.expectEqual(@as(u12, 2), stack.next_stack_index);
-    try std.testing.expectEqual(@as(u256, 100), stack.stack[1]);
+    try std.testing.expectEqual(@as(usize, 2), stack.size());
+    try std.testing.expectEqual(@as(u256, 100), stack.peek_unsafe());
 
     // Test push with overflow check
     // Fill stack to near capacity
-    stack.next_stack_index = 1023;
-    try stack.push(200);
-    try std.testing.expectEqual(@as(u256, 200), stack.stack[1023]);
+    var i: usize = 2;
+    while (i < 1023) : (i += 1) {
+        try stack.push(200);
+    }
+    try std.testing.expectEqual(@as(usize, 1023), stack.size());
+    
+    try stack.push(300);
+    try std.testing.expectEqual(@as(usize, 1024), stack.size());
 
     // This should error - stack is full
-    try std.testing.expectError(error.StackOverflow, stack.push(300));
+    try std.testing.expectError(error.StackOverflow, stack.push(400));
 }
 
 test "Stack pop and pop_unsafe" {
@@ -290,23 +322,24 @@ test "Stack pop and pop_unsafe" {
     defer stack.deinit(allocator);
 
     // Setup stack with some values
-    stack.stack[0] = 10;
-    stack.stack[1] = 20;
-    stack.stack[2] = 30;
-    stack.next_stack_index = 3; // Points to next empty slot
+    try stack.push(10);
+    try stack.push(20);
+    try stack.push(30);
+    try std.testing.expectEqual(@as(usize, 3), stack.size());
 
     // Test pop_unsafe
     const val1 = stack.pop_unsafe();
     try std.testing.expectEqual(@as(u256, 30), val1);
-    try std.testing.expectEqual(@as(u12, 2), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 2), stack.size());
 
     const val2 = stack.pop_unsafe();
     try std.testing.expectEqual(@as(u256, 20), val2);
-    try std.testing.expectEqual(@as(u12, 1), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 1), stack.size());
 
     // Test pop with underflow check
     const val3 = try stack.pop();
     try std.testing.expectEqual(@as(u256, 10), val3);
+    try std.testing.expectEqual(@as(usize, 0), stack.size());
 
     // This should error - stack is empty
     try std.testing.expectError(error.StackUnderflow, stack.pop());
@@ -320,24 +353,29 @@ test "Stack set_top and set_top_unsafe" {
     defer stack.deinit(allocator);
 
     // Setup stack with some values
-    stack.stack[0] = 10;
-    stack.stack[1] = 20;
-    stack.stack[2] = 30;
-    stack.next_stack_index = 3; // Points to next empty slot after 30
+    try stack.push(10);
+    try stack.push(20);
+    try stack.push(30);
+    try std.testing.expectEqual(@as(usize, 3), stack.size());
 
     // Test set_top_unsafe - should modify the top value (30 -> 99)
     stack.set_top_unsafe(99);
-    try std.testing.expectEqual(@as(u256, 99), stack.stack[2]);
-    try std.testing.expectEqual(@as(u12, 3), stack.next_stack_index); // Index unchanged
+    try std.testing.expectEqual(@as(u256, 99), stack.peek_unsafe());
+    try std.testing.expectEqual(@as(usize, 3), stack.size()); // Size unchanged
 
+    // Clear stack
+    _ = try stack.pop();
+    _ = try stack.pop();
+    _ = try stack.pop();
+    
     // Test set_top with error check on empty stack
-    stack.next_stack_index = 0; // Empty stack
     try std.testing.expectError(error.StackUnderflow, stack.set_top(42));
 
     // Test set_top on non-empty stack
-    stack.next_stack_index = 2; // Stack has 2 items
+    try stack.push(100);
+    try stack.push(200);
     try stack.set_top(55);
-    try std.testing.expectEqual(@as(u256, 55), stack.stack[1]);
+    try std.testing.expectEqual(@as(u256, 55), try stack.peek());
 }
 
 test "Stack peek and peek_unsafe" {
@@ -348,23 +386,25 @@ test "Stack peek and peek_unsafe" {
     defer stack.deinit(allocator);
 
     // Setup stack with values
-    stack.stack[0] = 100;
-    stack.stack[1] = 200;
-    stack.stack[2] = 300;
-    stack.next_stack_index = 3; // Points to next empty slot
+    try stack.push(100);
+    try stack.push(200);
+    try stack.push(300);
+    try std.testing.expectEqual(@as(usize, 3), stack.size());
 
-    // Test peek_unsafe - should return top value without modifying index
+    // Test peek_unsafe - should return top value without modifying size
     const top_unsafe = stack.peek_unsafe();
     try std.testing.expectEqual(@as(u256, 300), top_unsafe);
-    try std.testing.expectEqual(@as(u12, 3), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 3), stack.size());
 
     // Test peek on non-empty stack
     const top = try stack.peek();
     try std.testing.expectEqual(@as(u256, 300), top);
-    try std.testing.expectEqual(@as(u12, 3), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 3), stack.size());
 
-    // Test peek on empty stack
-    stack.next_stack_index = 0;
+    // Clear stack and test peek on empty stack
+    _ = try stack.pop();
+    _ = try stack.pop();
+    _ = try stack.pop();
     try std.testing.expectError(error.StackUnderflow, stack.peek());
 }
 
@@ -377,13 +417,14 @@ test "Stack op_dup1 duplicates top stack item" {
 
     // Setup stack with value
     try stack.push(42);
-    try std.testing.expectEqual(@as(u12, 1), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 1), stack.size());
 
     // Execute op_dup1 - should duplicate top item
     try stack.dup1();
-    try std.testing.expectEqual(@as(u12, 2), stack.next_stack_index);
-    try std.testing.expectEqual(@as(u256, 42), stack.stack[0]); // Original
-    try std.testing.expectEqual(@as(u256, 42), stack.stack[1]); // Duplicate
+    try std.testing.expectEqual(@as(usize, 2), stack.size());
+    const slice = stack.get_slice();
+    try std.testing.expectEqual(@as(u256, 42), slice[0]); // Original
+    try std.testing.expectEqual(@as(u256, 42), slice[1]); // Duplicate
 }
 
 test "Stack op_dup16 duplicates 16th stack item" {
@@ -398,13 +439,15 @@ test "Stack op_dup16 duplicates 16th stack item" {
     while (i <= 16) : (i += 1) {
         try stack.push(i);
     }
-    try std.testing.expectEqual(@as(u12, 16), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 16), stack.size());
 
     // Execute op_dup16 - should duplicate 16th item from top (which is value 1)
     try stack.dup16();
-    try std.testing.expectEqual(@as(u12, 17), stack.next_stack_index);
-    try std.testing.expectEqual(@as(u256, 1), stack.stack[0]); // 16th from top (value 1)
-    try std.testing.expectEqual(@as(u256, 1), stack.stack[16]); // Duplicate on top
+    try std.testing.expectEqual(@as(usize, 17), stack.size());
+    // With downward growth, the 16th item is at index 0, newest at index 16
+    const slice = stack.get_slice();
+    try std.testing.expectEqual(@as(u256, 1), slice[0]); // 16th from top (value 1)
+    try std.testing.expectEqual(@as(u256, 1), slice[16]); // Duplicate on top
 }
 
 test "Stack op_swap1 swaps top two stack items" {
@@ -417,13 +460,15 @@ test "Stack op_swap1 swaps top two stack items" {
     // Setup stack with two values
     try stack.push(10);
     try stack.push(20);
-    try std.testing.expectEqual(@as(u12, 2), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 2), stack.size());
 
     // Execute op_swap1 - should swap top two items
     try stack.swap1();
-    try std.testing.expectEqual(@as(u12, 2), stack.next_stack_index); // Index unchanged
-    try std.testing.expectEqual(@as(u256, 20), stack.stack[0]); // Was 10, now 20
-    try std.testing.expectEqual(@as(u256, 10), stack.stack[1]); // Was 20, now 10
+    try std.testing.expectEqual(@as(usize, 2), stack.size()); // Index unchanged
+    // After swap, check the values
+    const slice = stack.get_slice();
+    try std.testing.expectEqual(@as(u256, 10), slice[0]); // Bottom value
+    try std.testing.expectEqual(@as(u256, 20), slice[1]); // Top value (they swapped)
 }
 
 test "Stack op_swap16 swaps top with 17th stack item" {
@@ -438,13 +483,15 @@ test "Stack op_swap16 swaps top with 17th stack item" {
     while (i <= 17) : (i += 1) {
         try stack.push(i);
     }
-    try std.testing.expectEqual(@as(u12, 17), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 17), stack.size());
 
     // Execute op_swap16 - should swap top item (17) with 17th from top (1)
     try stack.swap16();
-    try std.testing.expectEqual(@as(u12, 17), stack.next_stack_index); // Index unchanged
-    try std.testing.expectEqual(@as(u256, 17), stack.stack[0]); // Was 1, now 17
-    try std.testing.expectEqual(@as(u256, 1), stack.stack[16]); // Was 17, now 1
+    try std.testing.expectEqual(@as(usize, 17), stack.size()); // Index unchanged
+    // After swap16, check the values
+    const slice = stack.get_slice();
+    try std.testing.expectEqual(@as(u256, 1), slice[0]); // Top was 17, now 1
+    try std.testing.expectEqual(@as(u256, 17), slice[16]); // 17th was 1, now 17
 }
 
 test "Stack set_top underflow detection (bug fix validation)" {
@@ -460,7 +507,7 @@ test "Stack set_top underflow detection (bug fix validation)" {
     try std.testing.expectError(error.StackUnderflow, stack.set_top(42));
 
     // Verify stack remains empty after failed operation
-    try std.testing.expectEqual(@as(u12, 0), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 0), stack.size());
 }
 
 test "Stack peek underflow detection (bug fix validation)" {
@@ -475,7 +522,7 @@ test "Stack peek underflow detection (bug fix validation)" {
     try std.testing.expectError(error.StackUnderflow, stack.peek());
 
     // Verify stack remains empty after failed operation
-    try std.testing.expectEqual(@as(u12, 0), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 0), stack.size());
 }
 
 test "Stack unsafe operations assertion validation (bug fix)" {
@@ -496,7 +543,7 @@ test "Stack unsafe operations assertion validation (bug fix)" {
 
     // Pop the item to test edge case
     _ = stack.pop_unsafe();
-    try std.testing.expectEqual(@as(u12, 0), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 0), stack.size());
 }
 
 test "Stack maximum configuration comprehensive test" {
@@ -524,7 +571,7 @@ test "Stack maximum configuration comprehensive test" {
     while (i < 4095) : (i += 1) {
         try stack.push(@as(u256, i));
     }
-    try std.testing.expectEqual(@as(u12, 4095), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 4095), stack.size());
 
     // Test overflow
     try std.testing.expectError(error.StackOverflow, stack.push(999));
@@ -535,7 +582,7 @@ test "Stack maximum configuration comprehensive test" {
     try stack.dup1(); // Should work now
     
     // Empty stack and test DUP16/SWAP16
-    while (stack.next_stack_index > 0) {
+    while (stack.size() > 0) {
         _ = try stack.pop();
     }
     
@@ -553,10 +600,10 @@ test "Stack maximum configuration comprehensive test" {
     try std.testing.expectEqual(@as(u256, 1), try stack.peek());
 
     // Empty the entire stack
-    while (stack.next_stack_index > 0) {
+    while (stack.size() > 0) {
         _ = try stack.pop();
     }
-    try std.testing.expectEqual(@as(u12, 0), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 0), stack.size());
 
     // Test underflow
     try std.testing.expectError(error.StackUnderflow, stack.pop());
@@ -594,10 +641,10 @@ test "Stack minimum configuration comprehensive test" {
     try std.testing.expectEqual(@as(u8, 100), try stack.peek());
 
     // Fill small stack to capacity
-    while (stack.next_stack_index < 16) {
+    while (stack.size() < 16) {
         try stack.push(50);
     }
-    try std.testing.expectEqual(@as(u8, 16), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 16), stack.size());
 
     // Test overflow with small stack
     try std.testing.expectError(error.StackOverflow, stack.push(255));
@@ -608,7 +655,7 @@ test "Stack minimum configuration comprehensive test" {
     try stack.dup1(); // Should work
     
     // Empty and test with exactly 16 items for DUP16/SWAP16
-    while (stack.next_stack_index > 0) {
+    while (stack.size() > 0) {
         _ = try stack.pop();
     }
     
@@ -631,7 +678,7 @@ test "Stack minimum configuration comprehensive test" {
     try std.testing.expectError(error.StackUnderflow, stack.swap16());
 
     // Empty the stack
-    while (stack.next_stack_index > 0) {
+    while (stack.size() > 0) {
         _ = try stack.pop();
     }
 
@@ -656,7 +703,7 @@ test "Stack index type boundaries" {
     while (i < 15) : (i += 1) {
         try stack15.push(@as(u256, i));
     }
-    try std.testing.expectEqual(@as(u4, 15), stack15.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 15), stack15.size());
     try std.testing.expectError(error.StackOverflow, stack15.push(999));
     
     // Test u8 boundary (stack_size = 255 uses u8, 256 uses u12)
@@ -669,7 +716,7 @@ test "Stack index type boundaries" {
     while (j < 255) : (j += 1) {
         try stack255.push(@as(u256, j));
     }
-    try std.testing.expectEqual(@as(u8, 255), stack255.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 255), stack255.size());
     try std.testing.expectError(error.StackOverflow, stack255.push(999));
     
     // Test u12 at boundary (stack_size = 256 uses u12)
@@ -679,7 +726,7 @@ test "Stack index type boundaries" {
     
     // Push one item to verify u12 type works
     try stack256.push(42);
-    try std.testing.expectEqual(@as(u12, 1), stack256.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 1), stack256.size());
 }
 
 test "All DUP operations DUP1-DUP16" {
@@ -693,7 +740,7 @@ test "All DUP operations DUP1-DUP16" {
     var dup_n: u8 = 1;
     while (dup_n <= 16) : (dup_n += 1) {
         // Clear stack
-        while (stack.next_stack_index > 0) {
+        while (stack.size() > 0) {
             _ = try stack.pop();
         }
         
@@ -704,11 +751,11 @@ test "All DUP operations DUP1-DUP16" {
         }
         
         // Test the specific DUP operation
-        const initial_count = stack.next_stack_index;
+        const initial_count = stack.size();
         try stack.dup_n(dup_n);
         
         // Should have one more item now
-        try std.testing.expectEqual(initial_count + 1, stack.next_stack_index);
+        try std.testing.expectEqual(initial_count + 1, stack.size());
         
         // Top item should be the dup_n'th item from before (first item pushed)
         try std.testing.expectEqual(@as(u256, 100), try stack.peek());
@@ -731,7 +778,7 @@ test "All SWAP operations SWAP1-SWAP16" {
     var swap_n: u8 = 1;
     while (swap_n <= 16) : (swap_n += 1) {
         // Clear stack
-        while (stack.next_stack_index > 0) {
+        while (stack.size() > 0) {
             _ = try stack.pop();
         }
         
@@ -743,21 +790,22 @@ test "All SWAP operations SWAP1-SWAP16" {
         
         // Record the values before swap
         const top_value = try stack.peek();
-        const target_index = stack.next_stack_index - swap_n - 1;
-        const target_value = stack.stack[target_index];
+        const slice_before = stack.get_slice();
+        const target_value = slice_before[swap_n]; // In downward stack, nth item is at index n
         
         // Test the specific SWAP operation
-        const initial_count = stack.next_stack_index;
+        const initial_count = stack.size();
         try stack.swap_n(swap_n);
         
         // Stack size should be unchanged
-        try std.testing.expectEqual(initial_count, stack.next_stack_index);
+        try std.testing.expectEqual(initial_count, stack.size());
         
         // Top should now have the target value
         try std.testing.expectEqual(target_value, try stack.peek());
         
         // Target position should have the original top value
-        try std.testing.expectEqual(top_value, stack.stack[target_index]);
+        const slice_after = stack.get_slice();
+        try std.testing.expectEqual(top_value, slice_after[swap_n]); // In downward stack
         
         // Test underflow: remove one item and try again
         _ = try stack.pop();
@@ -839,7 +887,7 @@ test "Complex operation sequences at boundaries" {
     
     // DUP1 should work (brings to 8, at capacity)
     try stack.dup1();
-    try std.testing.expectEqual(@as(u4, 8), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 8), stack.size());
     try std.testing.expectEqual(@as(u256, 700), try stack.peek());
     
     // Any push should fail now
@@ -848,7 +896,7 @@ test "Complex operation sequences at boundaries" {
     
     // SWAP should work (doesn't change count)
     try stack.swap1();
-    try std.testing.expectEqual(@as(u4, 8), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 8), stack.size());
     try std.testing.expectEqual(@as(u256, 700), try stack.peek()); // Original second item
     
     // Pop and continue sequence
@@ -858,16 +906,26 @@ test "Complex operation sequences at boundaries" {
     const val2 = try stack.pop(); // 700 (the original top)
     try std.testing.expectEqual(@as(u256, 700), val2);
     
-    // Now we have 6 items, test complex DUP/SWAP
+    // Now we have 6 items: 100, 200, 300, 400, 500, 600 (600 on top)
+    // Let's verify the current state
+    const pre_dup = stack.get_slice();
+    try std.testing.expectEqual(@as(usize, 6), pre_dup.len);
+    try std.testing.expectEqual(@as(u256, 600), pre_dup[0]); // Top
+    try std.testing.expectEqual(@as(u256, 500), pre_dup[1]); // 2nd
+    try std.testing.expectEqual(@as(u256, 400), pre_dup[2]); // 3rd
+    
     try stack.dup3(); // Duplicate 3rd from top (should be 400)
     try std.testing.expectEqual(@as(u256, 400), try stack.peek());
     
-    try stack.swap2(); // Swap with 2nd item
-    const second_item = stack.stack[stack.next_stack_index - 2];
+    try stack.swap2(); // Swap top (400) with 3rd (500)
+    const slice = stack.get_slice();
+    // After swap: 100, 200, 300, 400, 400, 600, 500 (500 on top)
+    try std.testing.expectEqual(@as(u256, 500), slice[0]); // Top is now 500
+    const second_item = slice[1]; // Should be 600
     try std.testing.expectEqual(@as(u256, 600), second_item);
     
     // Continue until empty
-    while (stack.next_stack_index > 0) {
+    while (stack.size() > 0) {
         _ = try stack.pop();
     }
     
@@ -905,7 +963,7 @@ test "Zero values and boundary values" {
     // Test zero values (distinct from empty)
     try stack_u8.push(0);
     try std.testing.expectEqual(@as(u8, 0), try stack_u8.peek());
-    try std.testing.expectEqual(@as(u12, 1), stack_u8.next_stack_index); // Not empty!
+    try std.testing.expectEqual(@as(usize, 1), stack_u8.size()); // Not empty!
     
     // Test maximum values for each type
     try stack_u8.set_top(std.math.maxInt(u8));
@@ -929,7 +987,7 @@ test "Zero values and boundary values" {
     defer stack_min.deinit(allocator);
     
     try stack_min.push(42);
-    try std.testing.expectEqual(@as(u4, 1), stack_min.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 1), stack_min.size());
     try std.testing.expectError(error.StackOverflow, stack_min.push(99));
     try std.testing.expectError(error.StackOverflow, stack_min.dup1());
     try std.testing.expectError(error.StackUnderflow, stack_min.swap1()); // Needs 2 items
@@ -947,7 +1005,7 @@ test "Unsafe operations at exact boundaries" {
     stack.push_unsafe(2);
     stack.push_unsafe(3);
     stack.push_unsafe(4);
-    try std.testing.expectEqual(@as(u4, 4), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 4), stack.size());
     
     // Test peek_unsafe and set_top_unsafe at capacity
     try std.testing.expectEqual(@as(u256, 4), stack.peek_unsafe());
@@ -959,7 +1017,7 @@ test "Unsafe operations at exact boundaries" {
     _ = stack.pop_unsafe(); // 3  
     _ = stack.pop_unsafe(); // 2
     _ = stack.pop_unsafe(); // 1
-    try std.testing.expectEqual(@as(u4, 0), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 0), stack.size());
     
     // Test boundary with single item
     stack.push_unsafe(42);
@@ -967,5 +1025,5 @@ test "Unsafe operations at exact boundaries" {
     stack.set_top_unsafe(100);
     try std.testing.expectEqual(@as(u256, 100), stack.peek_unsafe());
     _ = stack.pop_unsafe();
-    try std.testing.expectEqual(@as(u4, 0), stack.next_stack_index);
+    try std.testing.expectEqual(@as(usize, 0), stack.size());
 }
