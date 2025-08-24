@@ -1491,9 +1491,9 @@ test "EVM call() entry point method" {
     };
     
     const tx_context = TransactionContext{
-        .caller = ZERO_ADDRESS,
-        .origin = ZERO_ADDRESS,
-        .gas_price = 0,
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
     };
     
     var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
@@ -1544,9 +1544,9 @@ test "EVM call() method routes to different handlers" {
     };
     
     const tx_context = TransactionContext{
-        .caller = ZERO_ADDRESS,
-        .origin = ZERO_ADDRESS,
-        .gas_price = 0,
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
     };
     
     var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
@@ -1657,9 +1657,9 @@ test "EVM call_regular handler basic functionality" {
     };
     
     const tx_context = TransactionContext{
-        .caller = ZERO_ADDRESS,
-        .origin = ZERO_ADDRESS,
-        .gas_price = 0,
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
     };
     
     var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
@@ -1730,9 +1730,9 @@ test "EVM staticcall handler prevents state changes" {
     };
     
     const tx_context = TransactionContext{
-        .caller = ZERO_ADDRESS,
-        .origin = ZERO_ADDRESS,
-        .gas_price = 0,
+        .gas_limit = 1000000,
+        .coinbase = ZERO_ADDRESS,
+        .chain_id = 1,
     };
     
     var evm = try DefaultEvm.init(allocator, db_interface, &block_info, &tx_context);
