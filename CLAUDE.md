@@ -755,6 +755,133 @@ The EVM implementation follows a modular architecture with clear separation of c
 3. **Memory Pooling**: Frame pool for temporary allocations
 4. **Inline Hot Paths**: Critical opcodes can be inlined
 
+### Advanced Architectural Patterns
+
+#### 1. Tail Call Recursion for Zero-Overhead Dispatch
+
+The EVM uses Zig's `@call(.always_tail, ...)` for optimal interpreter performance:
+
+```zig
+// interpret2.zig - Start execution with tail call
+const first_op = frame.ops[0];
+return try (@call(.always_tail, first_op, .{frame}));
+
+// Each opcode handler tail calls to the next
+pub fn op_add(frame: *StackFrame) Error!noreturn {
+    // Perform operation
+    const b = frame.stack.pop_unsafe();
+    const a = frame.stack.peek_unsafe();
+    frame.stack.set_top_unsafe(a +% b);
+    
+    // Tail call to next instruction
+    frame.ip += 1;
+    const next_op = frame.ops[frame.ip];
+    return @call(.always_tail, next_op, .{frame});
+}
+```
+
+This eliminates call stack growth and enables CPU return prediction optimization.
+
+#### 2. Data-Driven Design with Jump Tables
+
+The EVM uses pure data structures for opcode dispatch instead of switch statements:
+
+```zig
+// OpcodeMetadata - Struct of Arrays for cache efficiency
+pub const OpcodeMetadata = struct {
+    execute_funcs: [256]ExecutionFunc align(CACHE_LINE_SIZE),
+    constant_gas: [256]u64 align(CACHE_LINE_SIZE),
+    min_stack: [256]u32,
+    max_stack: [256]u32,
+    // ... other arrays
+};
+
+// Direct O(1) dispatch without branching
+const opcode = bytecode[pc];
+const handler = table.execute_funcs[opcode];
+```
+
+Benefits:
+- No branch prediction penalties
+- Hot data (functions, gas) in contiguous cache lines
+- Cold data separated to avoid cache pollution
+
+#### 3. Generic Plan Interface for Bytecode Analysis
+
+The Planner system provides configurable bytecode analysis:
+
+```zig
+pub fn createPlanner(comptime Cfg: PlannerConfig) type {
+    // Returns a specialized planner based on config
+    return struct {
+        const PcType = Cfg.PcType();
+        const Plan = plan_mod.createPlan(PlanCfg);
+        
+        pub fn create_instruction_stream(...) !Plan {
+            // Analyzes bytecode and produces optimized instruction stream
+            // Identifies jump destinations, fuses opcodes, inline constants
+        }
+    };
+}
+```
+
+The plan includes:
+- Pre-validated jump destinations
+- Fused opcode sequences (PUSH+ADD → PUSH_ADD)
+- Inline constants for common patterns
+- Block metadata for gas calculation
+
+#### 4. Cache-Conscious Struct Layout
+
+Structs are carefully organized by access patterns:
+
+```zig
+// EVM struct layout with cache line annotations
+pub const Evm = struct {
+    // CACHE LINE 1-2 (128 bytes) - HOT PATH
+    state: EvmState,        // Frequently accessed
+    access_list: AccessList,
+    journal: CallJournal,
+    allocator: Allocator,
+    gas_refunds: i64,
+    
+    // CACHE LINE 3 (64 bytes) - TRANSACTION LIFECYCLE
+    created_contracts: CreatedContracts,
+    self_destruct: SelfDestruct,
+    internal_arena: ArenaAllocator,
+    
+    // CACHE LINE 5+ - COLD PATH
+    table: OpcodeMetadata,  // Large, rarely accessed
+    context: Context,       // Transaction context
+    tracer: ?AnyWriter,     // Debug only
+};
+```
+
+#### 5. Comptime Validation and Documentation
+
+While explicit size/alignment assertions aren't common, the codebase uses:
+
+1. **Alignment directives** for performance:
+   ```zig
+   execute_funcs: [256]ExecutionFunc align(CACHE_LINE_SIZE),
+   ```
+
+2. **Size-aware type selection**:
+   ```zig
+   pub const InstructionElement = if (@sizeOf(usize) == 8)
+       u64  // 64-bit platforms
+   else if (@sizeOf(usize) == 4)
+       u32; // 32-bit platforms
+   ```
+
+3. **Comptime configuration validation**:
+   ```zig
+   pub fn validate(self: @This()) void {
+       if (self.stack_size > 1024) @compileError("Stack size exceeds EVM limit");
+       if (self.max_bytecode_size > 24576) @compileError("Bytecode size exceeds EVM limit");
+   }
+   ```
+
 ### Module Dependencies
 
 When working with EVM modules:
