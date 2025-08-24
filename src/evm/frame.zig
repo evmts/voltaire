@@ -4159,19 +4159,19 @@ test "Frame op_gas returns gas remaining" {
     try std.testing.expectEqual(@as(u256, 1000000), result1);
 
     // Test op_gas with modified gas_remaining
-    frame.gas_manager = try Frame.GasManagerType.init(12345);
+    frame.gas_manager = try F.GasManagerType.init(12345);
     try frame.gas();
     const result2 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 12345), result2);
 
     // Test op_gas with zero gas
-    frame.gas_manager = try Frame.GasManagerType.init(0);
+    frame.gas_manager = try F.GasManagerType.init(0);
     try frame.gas();
     const result3 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result3);
 
     // Test op_gas with negative gas (should push 0)
-    frame.gas_manager = try Frame.GasManagerType.init(0); // Can't have negative gas
+    frame.gas_manager = try F.GasManagerType.init(0); // Can't have negative gas
     try frame.gas();
     const result4 = try frame.stack.pop();
     try std.testing.expectEqual(@as(u256, 0), result4);
@@ -4732,7 +4732,7 @@ test "trace instructions behavior with different tracer types" {
     var frame_noop = try FrameNoOp.init(allocator, &bytecode, 1000, {}, null);
     defer frame_noop.deinit(allocator);
 
-    var frame_traced = try FrameWithTestTracer.init(allocator, &bytecode, 1000, {});
+    var frame_traced = try FrameWithTestTracer.init(allocator, &bytecode, 1000, {}, null);
     defer frame_traced.deinit(allocator);
 
     // Both should start with empty stacks
@@ -5666,7 +5666,7 @@ test "Frame memory operations edge cases - extreme offsets and sizes" {
     try std.testing.expectError(error.OutOfBounds, frame.mload());
 
     // Test MSTORE with offset near memory limit
-    const near_limit = frame.memory.get_memory_limit() - 32;
+    const near_limit = frame.Memory.MEMORY_LIMIT - 32;
     if (near_limit < std.math.maxInt(usize)) {
         // Only test if the offset fits in usize
         const test_value: u256 = 0xDEADBEEF;
@@ -5737,7 +5737,7 @@ test "Frame DUP operations edge cases - maximum depth" {
 
     // Test DUP with insufficient stack depth
     // Clear most of stack
-    while (frame.stack.len() > 5) {
+    while (frame.stack.size() > 5) {
         _ = frame.stack.pop_unsafe();
     }
 
@@ -5949,7 +5949,7 @@ test "Frame initialization edge cases - various configurations" {
     const bytecode1 = [_]u8{@intFromEnum(Opcode.STOP)};
     var frame1 = try F1.init(allocator, &bytecode1, 0, void{}, null);
     defer frame1.deinit(allocator);
-    try std.testing.expectEqual(@as(i32, 0), frame1.gas_remaining);
+    try std.testing.expectEqual(@as(u64, 0), frame1.gas_manager.remaining);
 
     // Test frame with maximum bytecode size for different PC types
     const SmallFrame = Frame(.{ .max_bytecode_size = 255 });
@@ -5977,7 +5977,7 @@ test "Frame error recovery - partial operations and state consistency" {
     defer frame.deinit(allocator);
 
     // Test that failed operations don't corrupt stack state
-    const initial_stack_len = frame.stack.len();
+    const initial_stack_len = frame.stack.size();
 
     // Attempt to pop from empty stack
     try std.testing.expectError(error.StackUnderflow, frame.stack.pop());
