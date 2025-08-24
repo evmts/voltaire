@@ -177,11 +177,11 @@ pub fn main() !void {
 
 ## 🧱 Design Principles
 
-1. 🧼 **Zero Allocation Philosophy** – Allocates once, avoids reallocations
+1. ⚙️ **Highly Customizable at Comptime** – Configure gas costs, EIPs, hardforks, opcodes, and precompiles with zero runtime cost
 2. 🔍 **Explicit Error Handling** – All errors are typed and recoverable
 3. 🧩 **Modular Boundaries** – Clear interfaces between components
 4. 🧪 **Test Everything** – Coverage across all levels
-5. 🛠️ **Optimized for Size & Speed** – `comptime` wherever it counts
+5. 🛠️ **Optimized for Size & Speed** – Multiple execution strategies (simple and advanced, with more optimizations coming)
 
 ---
 
@@ -210,6 +210,26 @@ pub fn main() !void {
 We welcome contributions of all kinds!
 
 See our [Contributing Guide](CONTRIBUTING.md) to get started.
+
+## 🙏 Dependencies & Acknowledgments
+
+Guillotine stands on the shoulders of giants. We're grateful to:
+
+### Core Dependencies
+- **[Zig Language & Standard Library](https://ziglang.org)** – Including their excellent crypto library
+- **[zbench](https://github.com/hendriknielaender/zBench)** – Benchmarking framework for performance testing
+- **[zig-clap](https://github.com/Hejsil/zig-clap)** – Command line argument parsing
+- **[webui](https://github.com/webui-dev/webui)** – For future devtool UI
+- **[c-kzg-4844](https://github.com/ethereum/c-kzg-4844)** – KZG commitment library for EIP-4844
+
+### Testing & Development
+- **[revm](https://github.com/bluealloy/revm)** – Reference EVM implementation used for differential testing
+- **[hyperfine](https://github.com/sharkdp/hyperfine)** – Command-line benchmarking tool
+- **[keccak-asm](https://crates.io/crates/keccak-asm)** – Assembly-optimized Keccak-256 (via Zig standard library)
+
+### Temporary Dependencies
+- **Rust toolchain** – For BN254 wrapper (will be replaced with pure Zig)
+- **arkworks** – For elliptic curve operations (temporary)
 
 ## 📚 Library Integration
 
@@ -343,7 +363,7 @@ MIT License. Free for all use. 🌍
 
 ---
 
-## 🙏 Acknowledgments
+## 🙏 Additional Acknowledgments
 
 * 🏛️ **Ethereum Foundation and OP RPGF** — for funding support
 * ⚙️ **Zig Community** — for an incredible systems programming language
