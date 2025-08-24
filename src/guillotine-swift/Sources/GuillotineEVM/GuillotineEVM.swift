@@ -200,7 +200,7 @@ public actor GuillotineEVM {
     }
     
     /// Set account balance
-    public func setBalance(_ address: Address, balance: U256) throws {
+    public func setBalance(_ address: Address, balance: U256) async throws {
         guard let vmPtr = vmPtr else {
             throw ExecutionError.internalError("VM not initialized")
         }
@@ -216,7 +216,7 @@ public actor GuillotineEVM {
     }
     
     /// Set contract code
-    public func setCode(_ address: Address, code: Bytes) throws {
+    public func setCode(_ address: Address, code: Bytes) async throws {
         guard let vmPtr = vmPtr else {
             throw ExecutionError.internalError("VM not initialized")
         }

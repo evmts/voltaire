@@ -24,6 +24,10 @@ let package = Package(
         .library(
             name: "GuillotineCompilers",
             targets: ["GuillotineCompilers"]
+        ),
+        .executable(
+            name: "BasicTest",
+            targets: ["BasicTest"]
         )
     ],
     dependencies: [
@@ -79,6 +83,19 @@ let package = Package(
                 .linkedLibrary("Guillotine", .when(platforms: [.macOS, .iOS, .watchOS, .tvOS])),
                 .unsafeFlags(["-L../../zig-out/lib"], .when(platforms: [.macOS])),
                 .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@loader_path/../../zig-out/lib"], .when(platforms: [.macOS]))
+            ]
+        ),
+        
+        // Basic test executable
+        .executableTarget(
+            name: "BasicTest",
+            dependencies: [
+                "GuillotineEVM",
+                "GuillotinePrimitives"
+            ],
+            path: "Sources/BasicTest",
+            swiftSettings: [
+                .enableExperimentalFeature("StrictConcurrency")
             ]
         ),
         
