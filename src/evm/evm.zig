@@ -13,8 +13,9 @@
 const std = @import("std");
 const primitives = @import("primitives");
 const Address = primitives.Address.Address;
-const ZERO_ADDRESS = primitives.Address.ZERO_ADDRESS;
+const ZERO_ADDRESS = primitives.ZERO_ADDRESS;
 const frame_mod = @import("frame.zig");
+const frame_interpreter_mod = @import("frame_interpreter.zig");
 const Host = @import("host.zig").Host;
 const BlockInfo = @import("block_info.zig").BlockInfo;
 const DatabaseInterface = @import("database_interface.zig").DatabaseInterface;
@@ -492,11 +493,11 @@ pub fn Evm(comptime config: EvmConfig) type {
                 };
             }
 
-            // Create frame with configuration
-            const FrameType = frame_mod.Frame(config.frame_config);
-            var frame = FrameType.init(self.allocator, code, @intCast(gas), self.database, self.to_host()) catch |err| {
+            // Create FrameInterpreter to execute the code
+            const FrameInterpreterType = frame_interpreter_mod.createFrameInterpreter(config.frame_config);
+            var interpreter = FrameInterpreterType.init(self.allocator, code, @intCast(gas), self.database) catch |err| {
                 return switch (err) {
-                    FrameType.Error.BytecodeTooLarge => CallResult{
+                    error.BytecodeTooLarge => CallResult{
                         .success = false,
                         .gas_left = 0,
                         .output = &.{},
@@ -504,54 +505,53 @@ pub fn Evm(comptime config: EvmConfig) type {
                     else => return err,
                 };
             };
-            defer frame.deinit(self.allocator);
+            defer interpreter.deinit(self.allocator);
 
-            frame.contract_address = contract_address;
-            frame.is_static = is_static;
+            // Set frame properties through the interpreter
+            interpreter.frame.contract_address = contract_address;
+            interpreter.frame.is_static = is_static;
 
             if (self.depth > 0) {
                 self.static_stack[self.depth - 1] = is_static;
             }
 
-            // Create handler array for opcodes
-            // For now, we'll use the simple frame.interpret() approach
-            // NOTE: Handler-based execution integration is architecture-dependent
-            const execution_result = frame.interpret() catch |err| {
+            // Execute the interpreter
+            interpreter.interpret() catch |err| {
                 return switch (err) {
-                    FrameType.Error.STOP => CallResult{
+                    error.STOP => CallResult{
                         .success = true,
-                        .gas_left = @intCast(@max(0, frame.gas_remaining)),
-                        .output = frame.output_data.items,
+                        .gas_left = @intCast(@max(0, interpreter.frame.gas_remaining)),
+                        .output = interpreter.frame.output_data.items,
                     },
-                    FrameType.Error.REVERT => CallResult{
+                    error.REVERT => CallResult{
                         .success = false,
-                        .gas_left = @intCast(@max(0, frame.gas_remaining)),
-                        .output = frame.output_data.items,
+                        .gas_left = @intCast(@max(0, interpreter.frame.gas_remaining)),
+                        .output = interpreter.frame.output_data.items,
                     },
-                    FrameType.Error.OutOfGas => CallResult{
+                    error.OutOfGas => CallResult{
                         .success = false,
                         .gas_left = 0,
                         .output = &.{},
                     },
-                    FrameType.Error.StackOverflow, FrameType.Error.StackUnderflow => CallResult{
+                    error.StackOverflow, error.StackUnderflow => CallResult{
                         .success = false,
-                        .gas_left = @intCast(@max(0, frame.gas_remaining)),
+                        .gas_left = @intCast(@max(0, interpreter.frame.gas_remaining)),
                         .output = &.{},
                     },
-                    FrameType.Error.InvalidJump, FrameType.Error.InvalidOpcode => CallResult{
+                    error.InvalidJump, error.InvalidOpcode => CallResult{
                         .success = false,
-                        .gas_left = @intCast(@max(0, frame.gas_remaining)),
+                        .gas_left = @intCast(@max(0, interpreter.frame.gas_remaining)),
                         .output = &.{},
                     },
                     else => return err,
                 };
             };
 
-            _ = execution_result; // Result handling can be extended here
+            // Execution completed successfully
             return CallResult{
                 .success = true,
-                .gas_left = @intCast(@max(0, frame.gas_remaining)),
-                .output = frame.output_data.items,
+                .gas_left = @intCast(@max(0, interpreter.frame.gas_remaining)),
+                .output = interpreter.frame.output_data.items,
             };
         }
 
@@ -904,6 +904,44 @@ pub fn Evm(comptime config: EvmConfig) type {
             const original_value = self.get_storage(address, slot);
             try self.record_storage_change(address, slot, original_value);
             try self.database.set_storage(address, slot, value);
+        }
+
+        /// Get transaction gas price
+        pub fn get_gas_price(self: *Self) u256 {
+            return self.gas_price;
+        }
+
+        /// Get return data from last call
+        pub fn get_return_data(self: *Self) []const u8 {
+            return self.return_data;
+        }
+
+        /// Get chain ID
+        pub fn get_chain_id(self: *Self) u256 {
+            return self.context.chain_id;
+        }
+
+        /// Get block hash by number
+        pub fn get_block_hash(self: *Self, block_number: u64) ?[32]u8 {
+            // For now, return null - would need to implement block hash storage
+            _ = self;
+            _ = block_number;
+            return null;
+        }
+
+        /// Get blob hash for the given index (EIP-4844)
+        pub fn get_blob_hash(self: *Self, index: u256) ?[32]u8 {
+            // For now, return null - would need to implement blob support
+            _ = self;
+            _ = index;
+            return null;
+        }
+
+        /// Get blob base fee (EIP-4844)
+        pub fn get_blob_base_fee(self: *Self) u256 {
+            // For now, return 0 - would need to implement blob support
+            _ = self;
+            return 0;
         }
 
         /// Convert to Host interface

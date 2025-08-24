@@ -231,6 +231,19 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
             };
         }
         
+        /// Get current PC by looking up instruction index in plan
+        pub fn getCurrentPc(self: *const Self) ?Plan.PcType {
+            if (self.plan.pc_to_instruction_idx) |map| {
+                var iter = map.iterator();
+                while (iter.next()) |entry| {
+                    if (entry.value_ptr.* == self.instruction_idx) {
+                        return entry.key_ptr.*;
+                    }
+                }
+            }
+            return null;
+        }
+
         pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
             self.frame.deinit(allocator);
             self.plan.deinit(allocator);
@@ -2229,9 +2242,8 @@ pub fn FrameInterpreter(comptime config: frame_mod.FrameConfig) type {
 
         // LOG handlers - need allocator parameter
         fn op_log0_handler(frame: *anyopaque, plan: *const anyopaque) anyerror!noreturn {
-            const self = @as(*Frame, @ptrCast(@alignCast(frame)));
-            const plan_ptr = @as(*const Plan, @ptrCast(@alignCast(plan)));
-            const interpreter = @as(*Self, @fieldParentPtr("frame", self));
+            _ = frame;
+            _ = plan;
             
             // LOG operations need allocator - this is a limitation of current design
             // For now, return InvalidOpcode until allocator is available in frame context

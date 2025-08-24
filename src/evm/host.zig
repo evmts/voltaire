@@ -58,6 +58,18 @@ pub const Host = struct {
         get_storage: *const fn (ptr: *anyopaque, address: Address, slot: u256) u256,
         /// Set storage value
         set_storage: *const fn (ptr: *anyopaque, address: Address, slot: u256, value: u256) anyerror!void,
+        /// Get transaction gas price
+        get_gas_price: *const fn (ptr: *anyopaque) u256,
+        /// Get return data from last call
+        get_return_data: *const fn (ptr: *anyopaque) []const u8,
+        /// Get chain ID
+        get_chain_id: *const fn (ptr: *anyopaque) u256,
+        /// Get block hash by number
+        get_block_hash: *const fn (ptr: *anyopaque, block_number: u64) ?[32]u8,
+        /// Get blob hash for the given index (EIP-4844)
+        get_blob_hash: *const fn (ptr: *anyopaque, index: u256) ?[32]u8,
+        /// Get blob base fee (EIP-4844)
+        get_blob_base_fee: *const fn (ptr: *anyopaque) u256,
     };
 
     /// Initialize a Host interface from any implementation
@@ -181,6 +193,36 @@ pub const Host = struct {
                 return self.set_storage(address, slot, value);
             }
 
+            fn vtable_get_gas_price(ptr: *anyopaque) u256 {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_gas_price();
+            }
+
+            fn vtable_get_return_data(ptr: *anyopaque) []const u8 {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_return_data();
+            }
+
+            fn vtable_get_chain_id(ptr: *anyopaque) u256 {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_chain_id();
+            }
+
+            fn vtable_get_block_hash(ptr: *anyopaque, block_number: u64) ?[32]u8 {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_block_hash(block_number);
+            }
+
+            fn vtable_get_blob_hash(ptr: *anyopaque, index: u256) ?[32]u8 {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_blob_hash(index);
+            }
+
+            fn vtable_get_blob_base_fee(ptr: *anyopaque) u256 {
+                const self: Impl = @ptrCast(@alignCast(ptr));
+                return self.get_blob_base_fee();
+            }
+
             const vtable = VTable{
                 .get_balance = vtable_get_balance,
                 .account_exists = vtable_account_exists,
@@ -204,6 +246,12 @@ pub const Host = struct {
                 .get_depth = vtable_get_depth,
                 .get_storage = vtable_get_storage,
                 .set_storage = vtable_set_storage,
+                .get_gas_price = vtable_get_gas_price,
+                .get_return_data = vtable_get_return_data,
+                .get_chain_id = vtable_get_chain_id,
+                .get_block_hash = vtable_get_block_hash,
+                .get_blob_hash = vtable_get_blob_hash,
+                .get_blob_base_fee = vtable_get_blob_base_fee,
             };
         };
 
@@ -321,6 +369,36 @@ pub const Host = struct {
     /// Set storage value
     pub fn set_storage(self: Host, address: Address, slot: u256, value: u256) !void {
         return self.vtable.set_storage(self.ptr, address, slot, value);
+    }
+
+    /// Get transaction gas price
+    pub fn get_gas_price(self: Host) u256 {
+        return self.vtable.get_gas_price(self.ptr);
+    }
+
+    /// Get return data from last call
+    pub fn get_return_data(self: Host) []const u8 {
+        return self.vtable.get_return_data(self.ptr);
+    }
+
+    /// Get chain ID
+    pub fn get_chain_id(self: Host) u256 {
+        return self.vtable.get_chain_id(self.ptr);
+    }
+
+    /// Get block hash by number
+    pub fn get_block_hash(self: Host, block_number: u64) ?[32]u8 {
+        return self.vtable.get_block_hash(self.ptr, block_number);
+    }
+
+    /// Get blob hash for the given index (EIP-4844)
+    pub fn get_blob_hash(self: Host, index: u256) ?[32]u8 {
+        return self.vtable.get_blob_hash(self.ptr, index);
+    }
+
+    /// Get blob base fee (EIP-4844)
+    pub fn get_blob_base_fee(self: Host) u256 {
+        return self.vtable.get_blob_base_fee(self.ptr);
     }
 };
 
@@ -574,6 +652,38 @@ pub const MockHost = struct {
     pub fn set_storage(self: *MockHost, address: Address, slot: u256, value: u256) !void {
         const key = StorageKey{ .address = address, .slot = slot };
         try self.storage.put(key, value);
+    }
+
+    pub fn get_gas_price(self: *MockHost) u256 {
+        _ = self;
+        return 20_000_000_000; // 20 gwei default gas price
+    }
+
+    pub fn get_return_data(self: *MockHost) []const u8 {
+        return self.return_data;
+    }
+
+    pub fn get_chain_id(self: *MockHost) u256 {
+        _ = self;
+        return 1; // Default mainnet chain ID
+    }
+
+    pub fn get_block_hash(self: *MockHost, block_number: u64) ?[32]u8 {
+        _ = self;
+        _ = block_number;
+        // Mock implementation - return a dummy hash
+        return [_]u8{0} ** 32;
+    }
+
+    pub fn get_blob_hash(self: *MockHost, index: u256) ?[32]u8 {
+        _ = self;
+        _ = index;
+        return null; // No blob hashes in mock
+    }
+
+    pub fn get_blob_base_fee(self: *MockHost) u256 {
+        _ = self;
+        return 0; // No blob base fee in mock
     }
 
     pub fn to_host(self: *MockHost) Host {
