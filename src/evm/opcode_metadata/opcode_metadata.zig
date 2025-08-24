@@ -205,6 +205,26 @@ stack_outputs: [256]u32 align(CACHE_LINE_SIZE),
 /// Cold path arrays - rarely accessed
 undefined_flags: [256]bool align(CACHE_LINE_SIZE),
 
+// Comptime assertions for struct size and alignment
+comptime {
+    // Verify each array is cache-line aligned
+    const Self = @This();
+    std.debug.assert(@alignOf(@TypeOf(@as(Self, undefined).execute_funcs)) == CACHE_LINE_SIZE);
+    std.debug.assert(@alignOf(@TypeOf(@as(Self, undefined).constant_gas)) == CACHE_LINE_SIZE);
+    std.debug.assert(@alignOf(@TypeOf(@as(Self, undefined).min_stack)) == CACHE_LINE_SIZE);
+    std.debug.assert(@alignOf(@TypeOf(@as(Self, undefined).max_stack)) == CACHE_LINE_SIZE);
+    std.debug.assert(@alignOf(@TypeOf(@as(Self, undefined).stack_inputs)) == CACHE_LINE_SIZE);
+    std.debug.assert(@alignOf(@TypeOf(@as(Self, undefined).stack_outputs)) == CACHE_LINE_SIZE);
+    std.debug.assert(@alignOf(@TypeOf(@as(Self, undefined).undefined_flags)) == CACHE_LINE_SIZE);
+    
+    // Document total size for awareness
+    _ = @sizeOf([256]ExecutionFunc) + // 2048 bytes
+        @sizeOf([256]u64) +         // 2048 bytes  
+        @sizeOf([256]u32) * 4 +     // 4096 bytes (4 arrays)
+        @sizeOf([256]bool);         // 256 bytes
+    // Total: ~8.5KB with padding
+}
+
 /// CANCUN opcode metadata, pre-generated at compile time.
 /// This is the latest hardfork configuration.
 pub const CANCUN = init_from_hardfork(.CANCUN);
